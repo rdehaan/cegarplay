@@ -9,13 +9,13 @@ only memory of what happened.
 - [x] Phase 2: rule refinements and refinement variants
 - [x] Phase 3: loop language, validation, project model
 - [x] Phase 4: the page
-- [ ] Phase 5: statistics, trace, texts
+- [x] Phase 5: statistics, trace, texts
 - [ ] Phase 6: pause, step, stop and threads (optional)
 - [ ] Final review
 
 ## Next step
 
-Phase 5: most of it already exists (stats.js with charts and history, trace.js, Loop tab). Remaining: Instructions text (index.html #instructions), README polish, phase 5 browser tests. Then phase 6.
+Start phase 6, task 1 (coi-serviceworker, time-boxed; else behind `?coi=1`).
 
 ## Deviations from the plan
 
@@ -38,9 +38,10 @@ Phase 5: most of it already exists (stats.js with charts and history, trace.js, 
   links (abstraction-like). A check solver with an outgoing link (second-solver
   refinement, test "refinement computed by a second solver R") legitimately returns
   identical counterexamples in a row.
-- `T` events of kind `accept` carry a candidate but no literals/facts. The phase 2
-  check "each has a candidate and literals or facts" is asserted for every
-  non-accept event (test "trace = 5 ...").
+- No `T` events for accepted candidates (kind `accept` is never sent): solutions
+  are listed in the Output tab, and this keeps both "Done when" checks true: every
+  `T` event has literals or facts (phase 2), and step 1 of the default example
+  shows a candidate, counterexample and refinement (phase 5).
 - `S:models{limit}` sets `configuration.solve.models` to the limit for that call
   and restores it (the default is 1, so without this only one model comes back).
 - `SETTINGS.seed` passes `--seed=N`, but with clasp's default heuristics the seed
@@ -103,3 +104,6 @@ Phase 5: most of it already exists (stats.js with charts and history, trace.js, 
   `body[data-ready="true"]` is set when the engine is ready.
 - `[hidden] { display: none !important }` is needed: `.control-button` sets
   `display: inline-block`, which otherwise overrides the hidden attribute.
+- Instructions text lives in `instructions.html` (an HTML fragment fetched by
+  `js/init.js` into `#instructions`; `.example-code` divs become read-only ACE
+  editors with `data-mode="loop"|"gringo"`).

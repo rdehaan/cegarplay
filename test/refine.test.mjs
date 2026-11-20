@@ -175,7 +175,8 @@ test('trace = 5 sends exactly 5 T events with candidate and literals or facts', 
   assert.equal(ts.length, 5);
   for (const t of ts) {
     assert.ok(t.candidate && t.candidate.length > 0);
-    if (t.kind !== 'accept') assert.ok((t.literals && t.literals.length) || (t.facts && t.facts.length));
+    assert.ok((t.literals && t.literals.length) || (t.facts && t.facts.length));
+    assert.notEqual(t.kind, 'accept');
   }
   assert.deepEqual(ts.map((t) => t.i), [1, 2, 3, 4, 5]);
   const rj = ts.find((t) => t.kind === 'reject');

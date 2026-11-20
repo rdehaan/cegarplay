@@ -7,6 +7,7 @@ import { Stats } from './stats.js';
 import { Control } from './control.js';
 import { LoopTab } from './loop-tab.js';
 import { Internals } from './internals.js';
+import { makeEditor } from './editors.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -117,6 +118,26 @@ $('export-standalone-button').addEventListener('click', () => {
   catch (e) { status('export-status', e.message || String(e), true); }
 });
 
+// ---- Instructions tab -----------------------------------------------------------------
+async function loadInstructions() {
+  const box = $('instructions');
+  try {
+    const r = await fetch('instructions.html');
+    if (!r.ok) throw new Error(r.statusText);
+    box.innerHTML = await r.text();
+  } catch {
+    box.innerHTML = '<p>The instructions could not be loaded.</p>';
+    return;
+  }
+  for (const el of box.querySelectorAll('.example-code')) {
+    const mode = el.dataset.mode === 'loop' ? 'ace/mode/loop' : el.dataset.mode === 'lua' ? 'ace/mode/lua' : 'ace/mode/gringo';
+    el.textContent = el.textContent.replace(/^\n/, '').replace(/\s+$/, '');
+    const ed = makeEditor(el, mode, { readOnly: true });
+    ed.setOptions({ minLines: 1, highlightActiveLine: false, highlightGutterLine: false });
+    ed.renderer.$cursorLayer.element.style.display = 'none';
+  }
+}
+
 // ---- start ------------------------------------------------------------------------
 async function start() {
   const [runtime, version] = await Promise.all([
@@ -124,6 +145,7 @@ async function start() {
     fetch('vendor/clingo-wasm/VERSION').then((r) => r.text()).catch(() => 'clingo-wasm'),
   ]);
   app.runtime = runtime;
+  loadInstructions();
   app.engineVersion = version.split('\n')[0];
   const file = params.get('file') || 'graph-coloring';
   try { await loadExample(file); status('load-status', `Loaded example "${app.project.title}".`); }

@@ -564,3 +564,15 @@ tr.mismatch td {
   background: #fdecea;
   color: #c0392b;
 }
+.example-code {
+  border: 1px solid #ddd;
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+#instructions h2 {
+  margin-top: 14px;
+  border-bottom: 1px solid #eee;
+}
+#instructions table {
+  margin-bottom: 12px;
+}

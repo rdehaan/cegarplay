@@ -797,7 +797,6 @@ function Solver:search(h)
       local cost = m.cost
       emit_solution(tostring(m), cost and #cost > 0 and cost or nil)
       found = found + 1
-      if tracing() then trace("accept", s, nil, cur) end
       if block then
         for _, L in ipairs(s.out) do
           local c, src = {}, L.src
@@ -853,7 +852,6 @@ function rt.accept(M)
   if getmetatable(M) ~= Model then fail("accept: expected a model") end
   if M.lazy then return end
   emit_solution(M.shown or candidate_text(M), M.cost)
-  trace("accept", M.solver, nil, M)
   if SETTINGS.solutions ~= 0 and rt.solutions >= SETTINGS.solutions then rt.finish("solutions", "", false) end
 end
 
