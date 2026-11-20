@@ -158,4 +158,11 @@ async function start() {
   app.control.setState('idle');
   document.body.dataset.ready = 'true';
 }
-start().catch((e) => { console.error(e); status('load-status', 'Start-up failed: ' + (e.message || e), true); });
+let leaving = false;
+addEventListener('pagehide', () => { leaving = true; });
+addEventListener('beforeunload', () => { leaving = true; });
+start().catch((e) => {
+  if (leaving) return;            // e.g. the isolation shim reloads the page during start-up
+  console.error(e);
+  status('load-status', 'Start-up failed: ' + (e.message || e), true);
+});

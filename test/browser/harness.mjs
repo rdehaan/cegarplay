@@ -2,7 +2,7 @@
 // console errors and requests to other origins.
 import { spawn } from 'node:child_process';
 import net from 'node:net';
-import { chromium } from 'playwright';
+import { chromium, firefox } from 'playwright';
 
 const ROOT = new URL('../..', import.meta.url).pathname;
 
@@ -24,7 +24,7 @@ export async function startServer({ coi = false } = {}) {
 }
 
 export async function launch() {
-  return chromium.launch();
+  return (process.env.BROWSER === 'firefox' ? firefox : chromium).launch();
 }
 
 // By default the page is opened with ?nocoi=1 (not isolated); pass { coi: true } to let the
@@ -34,14 +34,14 @@ export async function openPage(browser, server, query = '', { acceptDownloads = 
   const context = await browser.newContext({ acceptDownloads });
   const page = await context.newPage();
   const errors = [], foreign = [];
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('console', (m) => { if (m.type() === 'error' && !/chrome:\/\/juggler/.test(m.text())) errors.push(m.text()); });  // juggler: Playwright's Firefox instrumentation
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('request', (r) => { const u = r.url(); if (!u.startsWith(server.url) && !u.startsWith('blob:') && !u.startsWith('data:')) foreign.push(u); });
   await page.goto(server.url + 'index.html' + query);
   if (coi) {
     for (let i = 0; i < 100; i++) {
       const iso = await page.evaluate(() => self.crossOriginIsolated && document.body.dataset.ready === 'true').catch(() => false);
-      if (iso) break;
+      if (iso) { errors.length = 0; break; }   // errors of the first document, discarded by the shim's reload
       await page.waitForTimeout(100);
     }
   }

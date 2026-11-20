@@ -11,11 +11,27 @@ only memory of what happened.
 - [x] Phase 4: the page
 - [x] Phase 5: statistics, trace, texts
 - [x] Phase 6: pause, step, stop and threads (optional)
-- [ ] Final review
+- [x] Final review
+
+## Hand-over (final review, 2026-11-20)
+
+What works: every phase of PLAN.md, including the optional phase 6. `cd test &&
+npm test` runs 107 tests (Node and Chromium) in about 40 s: 105 pass, 2 skipped
+(row 6, slow; the native clingo export test, as this machine's clingo has no Lua).
+`npm run test:slow` also runs row 6 (passes). All browser tests also pass in
+Firefox (`BROWSER=firefox npm test`). Screenshots at 1400 px and 700 px show no
+layout breakage or horizontal overflow.
+
+Behind a switch: nothing. The isolation shim is on by default; `?nocoi=1` turns
+it off. Internals tab only with `?internals=true`.
+
+Not done / for the user: deployment to GitHub Pages (push, enable Pages on
+`main`, root); the upstream bug report for the trap; `START-HERE.md` can be
+deleted.
 
 ## Next step
 
-Final review.
+None. Possible extras (PLAN section 6) only on request.
 
 ## Deviations from the plan
 
@@ -113,3 +129,7 @@ Final review.
   server (Chromium): one reload, then `crossOriginIsolated` is true. The browser
   harness opens pages with `?nocoi=1` unless `{ coi: true }` is passed, so the
   phase 4/5 tests run on a non-isolated page as before.
+- In Firefox the shim's reload interrupts the first document's start-up, which
+  logs console errors (aborted font downloads, Playwright's `chrome://juggler`).
+  The harness clears the error list once the page is isolated, and `init.js` does
+  not log start-up errors while the page is unloading.

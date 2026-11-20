@@ -25,12 +25,34 @@ work: workers and modules need http.) URL parameters: `?file=nash` loads
 `examples/nash.json`, `?tab=4` opens the fourth tab, `?internals=true` shows
 the Internals tab.
 
+## Deploying on GitHub Pages
+
+Push the repository and enable Pages for the `main` branch, root folder. Nothing
+needs building. GitHub Pages cannot send the cross-origin isolation headers, so
+`coi-serviceworker.js` (loaded first by `index.html`) adds them through a
+service worker: on the first visit the page reloads once and is then isolated.
+Isolation enables Pause, Step and Stop, and the threaded engine (`clingo-mt`,
+solver options such as `-t 2`). Everything else works without it; `?nocoi=1`
+skips the service worker.
+
+## Known limitations
+
+- An error raised inside clingo itself (not in your loop script) ends a run
+  without a message: the page reports "clingo stopped unexpectedly" and the last
+  output lines. To keep this rare, every run is preceded by a validation of all
+  fragments and the loop script.
+- A single solve call that never returns can only be ended by Abort (or by the
+  time limit backstop, two seconds after the time limit).
+- The seed changes the search only together with randomising solver options,
+  such as `--rand-freq=0.05`.
+
 ## Tests
 
     cd test && npm install && npm test       # Node tests and Chromium browser tests
     npm run test:slow                        # adds the slow reference rows
 
-The browser tests use Playwright (`npx playwright install chromium` once).
+The browser tests use Playwright (`npx playwright install chromium` once);
+`BROWSER=firefox npm test` runs them in Firefox.
 `test/serve.py <port> [coi]` serves the site, optionally with the two
 cross-origin isolation headers.
 
@@ -51,5 +73,6 @@ declarative-cegar (cloned into `reference/`).
   BSD), `js/mode-gringo.js` (taken in modified form from potassco.github.io,
   MIT) and `js/modal.js`.
 - Examples: built from [declarative-cegar](https://github.com/rdehaan/declarative-cegar) (MIT).
+- coi-serviceworker: MIT (Guido Zuidhof and contributors).
 - Open Sans: SIL Open Font License 1.1. Font Awesome Free: fonts SIL OFL 1.1,
   icons CC BY 4.0. Licence texts in `vendor/fonts/`.
