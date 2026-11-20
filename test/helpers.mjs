@@ -146,3 +146,19 @@ export const LUA = {
     until A.exhausted and grounded == 0
 `,
 };
+
+// Compile a loop-language project and run it.
+import { compile } from '../js/compiler.js';
+export async function runProject(project, opts = {}) {
+  let compiled = null;
+  if (project.loop.language === 'loop') {
+    compiled = compile(project.loop.text, { fragments: project.fragments.map((f) => f.name) });
+    if (!compiled.ok) throw new Error('compile errors: ' + JSON.stringify(compiled.errors));
+  }
+  const a = assemble(project, compiled, RUNTIME, opts);
+  const r = await run(a.program);
+  r.assembled = a; r.compiled = compiled;
+  return r;
+}
+export const example = (name) => JSON.parse(read(`examples/${name}.json`));
+export const stripTimes = (s) => JSON.stringify(s, (k, v) => (['t', 't0', 'time', 'ground'].includes(k) ? undefined : v));

@@ -7,7 +7,7 @@ only memory of what happened.
 
 - [x] Phase 1: foundations and the runtime core
 - [x] Phase 2: rule refinements and refinement variants
-- [ ] Phase 3: loop language, validation, project model
+- [x] Phase 3: loop language, validation, project model
 - [ ] Phase 4: the page
 - [ ] Phase 5: statistics, trace, texts
 - [ ] Phase 6: pause, step, stop and threads (optional)
@@ -15,7 +15,7 @@ only memory of what happened.
 
 ## Next step
 
-Start phase 3, task 1 (`js/compiler.js`).
+Start phase 4, task 1 (copy logic-game assets, fonts).
 
 ## Deviations from the plan
 
@@ -50,6 +50,23 @@ Start phase 3, task 1 (`js/compiler.js`).
 - Propagator `check` returns at once unless `control.assignment.is_total`: after
   clauses were added (stash flush), clasp calls `check` on partial assignments.
   Rows 1-3 are unchanged by this.
+- Compiler: an unknown name (never assigned, not declared) is a static error
+  (`unknown name 'y'`), in addition to the checks of spec section 3.6. `ipairs`
+  and `_` are reserved too (the generated `for` uses them). Lines emitted for
+  `end`, labels and the like map to `null`; the `rt.prepare()` line maps to the
+  last declaration.
+- `validate` for raw Lua projects checks every fragment on its own (spec says
+  skip), so a syntax error still cannot reach clingo inside a run.
+- `validate` returns the problem list with the compiler result attached as
+  `problems.compiled`, so the run flow does not compile twice.
+- Examples: glue wrapping also wraps body atoms of predicates defined in the
+  glue fragment (`leaf_color(N,C) :- node(N), color(C).` becomes
+  `glue(leaf_color(N,C)) :- node(N), glue(color(C)).`), else the rule loses its
+  meaning. Rows 11 and 12 confirm identical statistics.
+- Example settings: graph-coloring and graph-coloring-original use n = 6 and
+  solutions = all (the default example's run must show the reference numbers);
+  nash and voting use solutions = 1. The voting example uses Shape 1 without
+  `compat`.
 
 ## Known problems
 
@@ -70,3 +87,7 @@ Start phase 3, task 1 (`js/compiler.js`).
   satisfied clauses; it was not). Test "strict _G" in `test/refine.test.mjs` runs
   the main paths with an `_G` that raises on undeclared globals. Keep helper
   locals above `rt.solver`.
+- Tests: `H.runProject(project)` compiles + runs; `H.example(name)` loads an
+  example; `H.stripTimes(S)` drops time fields for equality checks.
+- Native clingo on this machine (conda, 5.8.3) is built without Lua, so the
+  native standalone test is skipped.
