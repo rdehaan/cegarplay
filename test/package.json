@@ -1,0 +1,12 @@
+{
+  "name": "cegarplay-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-concurrency=4",
+    "test:slow": "SLOW=1 node --test --test-concurrency=4"
+  },
+  "devDependencies": {
+    "clingo-wasm": "0.6.0"
+  }
+}

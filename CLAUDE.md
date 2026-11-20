@@ -1,0 +1,48 @@
+# CegarPlay
+
+A static, build-free browser playground for CEGAR loops written in answer set
+programming, solved with clingo compiled to WebAssembly.
+
+## Where things are
+
+- `PLAN.md`: the implementation plan, in phases with checkpoints. Follow it.
+- `PROGRESS.md`: what is done and what is next. **Read it first after any
+  context clear. Update it at every checkpoint.**
+- `docs/spec-*.md`: specifications. Read only the ones the current phase names.
+- `docs/reference-numbers.md`: numbers the implementation must reproduce.
+- `spike/`: verified prototype code. Read-only; copy from it.
+- `reference/`: clones of logic-game and declarative-cegar. Read-only, git-ignored.
+
+## Rules that are easy to forget
+
+1. An error raised by clingo inside a Lua call kills the WASM instance, even
+   inside `pcall`, with no message. Validate ASP text before a run; wrap every
+   callback body in its own `xpcall`; never let a Lua error cross a clingo
+   frame; check preconditions in Lua before calling clingo.
+2. Propagator tables need `init` and all hooks at registration time.
+3. After `control:add_clause` returns false, return from `check`.
+4. Never read `ctl.statistics` of a control that is solving.
+5. Read models from a solve handle only with `h:iter()`.
+6. Clause forms: `control:add_clause{ lits }` in `check`; `init:add_clause(lits)` in `init`.
+7. No build step, no framework, no request to another origin.
+8. `js/compiler.js`, `js/driver.js`, `js/project.js` must not use the DOM or Node APIs.
+9. Trust tests over the plan; record deviations in `PROGRESS.md`. Do not change
+   reference numbers without finding the cause.
+
+## Commands
+
+```
+cd spike && npm install && npm test          # sanity check of the environment (9 checks)
+cd test && npm install && npm test           # the project's tests (node --test)
+node tools/vendor.mjs                        # copy the engine into vendor/
+node tools/make-examples.mjs                 # rebuild examples/*.json
+python3 test/serve.py 8811                   # serve the site; add "coi" for isolation headers
+```
+
+## Working style
+
+- One phase at a time. Commit at each checkpoint: `Phase N: <title>`.
+- Keep output short: pipe long test output through `tail`; never print
+  `js/ace.js`, `vendor/clingo-wasm/*.js` or the `.wasm` files.
+- At a checkpoint print `CHECKPOINT N reached. Safe to /clear, then say: continue with PLAN.md` and stop,
+  unless the user said not to stop at checkpoints.

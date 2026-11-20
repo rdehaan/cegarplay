@@ -1,0 +1,11 @@
+{
+  "name": "cegar-spike",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test/run.mjs",
+    "test:slow": "node test/run.mjs --slow",
+    "web:prepare": "node web/prepare.mjs"
+  },
+  "dependencies": { "clingo-wasm": "0.6.0" }
+}
