@@ -10,12 +10,12 @@ only memory of what happened.
 - [x] Phase 3: loop language, validation, project model
 - [x] Phase 4: the page
 - [x] Phase 5: statistics, trace, texts
-- [ ] Phase 6: pause, step, stop and threads (optional)
+- [x] Phase 6: pause, step, stop and threads (optional)
 - [ ] Final review
 
 ## Next step
 
-Start phase 6, task 1 (coi-serviceworker, time-boxed; else behind `?coi=1`).
+Final review.
 
 ## Deviations from the plan
 
@@ -107,3 +107,9 @@ Start phase 6, task 1 (coi-serviceworker, time-boxed; else behind `?coi=1`).
 - Instructions text lives in `instructions.html` (an HTML fragment fetched by
   `js/init.js` into `#instructions`; `.example-code` divs become read-only ACE
   editors with `data-mode="loop"|"gringo"`).
+- Phase 6: `coi-serviceworker` 0.1.7 is vendored at the root by `tools/vendor.mjs`
+  and configured through an inline `window.coi` in `index.html`: `?nocoi=1` neither
+  registers nor keeps the service worker. It worked at the first try on the plain
+  server (Chromium): one reload, then `crossOriginIsolated` is true. The browser
+  harness opens pages with `?nocoi=1` unless `{ coi: true }` is passed, so the
+  phase 4/5 tests run on a non-isolated page as before.

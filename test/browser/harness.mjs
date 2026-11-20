@@ -27,7 +27,10 @@ export async function launch() {
   return chromium.launch();
 }
 
-export async function openPage(browser, server, query = '', { acceptDownloads = true } = {}) {
+// By default the page is opened with ?nocoi=1 (not isolated); pass { coi: true } to let the
+// service worker shim isolate it (the page reloads once).
+export async function openPage(browser, server, query = '', { acceptDownloads = true, coi = false } = {}) {
+  if (!coi) query = query ? query + '&nocoi=1' : '?nocoi=1';
   const context = await browser.newContext({ acceptDownloads });
   const page = await context.newPage();
   const errors = [], foreign = [];
@@ -35,6 +38,13 @@ export async function openPage(browser, server, query = '', { acceptDownloads = 
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('request', (r) => { const u = r.url(); if (!u.startsWith(server.url) && !u.startsWith('blob:') && !u.startsWith('data:')) foreign.push(u); });
   await page.goto(server.url + 'index.html' + query);
+  if (coi) {
+    for (let i = 0; i < 100; i++) {
+      const iso = await page.evaluate(() => self.crossOriginIsolated && document.body.dataset.ready === 'true').catch(() => false);
+      if (iso) break;
+      await page.waitForTimeout(100);
+    }
+  }
   await page.waitForSelector('body[data-ready="true"]', { timeout: 30000 });
   return { page, context, errors, foreign };
 }

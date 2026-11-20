@@ -46,3 +46,11 @@ fs.writeFileSync(path.join(fontDir, 'fonts.css'), css.join('\n') + '\n');
 fs.copyFileSync(path.join(os, 'LICENSE'), path.join(fontDir, 'LICENSE-open-sans.txt'));
 fs.copyFileSync(path.join(fa, 'LICENSE.txt'), path.join(fontDir, 'LICENSE-font-awesome.txt'));
 console.log('fonts: ' + fs.readdirSync(fontDir).join(' '));
+
+// coi-serviceworker (MIT): adds the cross-origin isolation headers on hosts that cannot send them.
+const coi = path.join(nm, 'coi-serviceworker');
+if (fs.existsSync(coi)) {
+  fs.copyFileSync(path.join(coi, 'coi-serviceworker.js'), path.join(root, 'coi-serviceworker.js'));
+  const v = JSON.parse(fs.readFileSync(path.join(coi, 'package.json'), 'utf8')).version;
+  console.log(`coi-serviceworker ${v}`);
+}
