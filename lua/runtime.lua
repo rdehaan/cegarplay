@@ -247,6 +247,12 @@ local function new_control(args, name)
   end, 20)
 end
 
+local function plain(c)
+  local t = {}
+  for k = 1, #c do t[k] = c[k] end
+  return t
+end
+
 local function inject(s, init, q)
   for i = 1, #q do
     local c, lits = q[i], {}
@@ -277,20 +283,28 @@ function rt.solver(name, frags, options)
     end,
     check = function(_, control)
       if rt.fatal or rt.ending then return end
-      local st = s.stash
-      if #st > 0 then
-        local i = 1
-        while i <= #st do
-          local c = st[i]
-          i = i + 1
-          if not control:add_clause{ plain(c), lock = true } then
-            local rest = {}
-            for j = i, #st do rest[#rest + 1] = st[j] end
-            s.stash = rest
-            return
+      -- clasp may call check on a partial assignment after clauses were added in an earlier
+      -- check; candidates are total assignments only
+      if not control.assignment.is_total then return end
+      -- stashed clauses: the 2nd, 3rd, ... clause of one reject
+      if #s.stash > 0 then
+        local conflict = false
+        guarded(s, function()
+          local st = s.stash
+          for i = 1, #st do
+            if not control:add_clause{ plain(st[i]), lock = true } then
+              local rest = {}
+              for j = i + 1, #st do rest[#rest + 1] = st[j] end
+              s.stash = rest
+              conflict = true
+              return
+            end
           end
-        end
-        s.stash = {}
+          s.stash = {}
+        end)
+        if conflict or rt.fatal then return end
+        -- an added clause may have changed the assignment; check runs again when it is total
+        if not control.assignment.is_total then return end
       end
       local f = s.on_check
       if f then guarded(s, f, control) end
@@ -562,12 +576,6 @@ local function trace(kind, s, c, M, facts)
     counterexample = x and x.shown or nil, literals = c and literal_texts(c) or nil, facts = facts })
 end
 
-local function plain(c)
-  local t = {}
-  for k = 1, #c do t[k] = c[k] end
-  return t
-end
-
 local function is_clause_list(c) return type(c) == "table" and type(c[1]) == "table" end
 
 function Model:reject(c)
@@ -617,7 +625,7 @@ end
 
 -- Same candidate twice in a row on all outgoing links: the refinement made no progress.
 local function progress_guard(s, X)
-  if #s.out == 0 then return end
+  if #s.out == 0 or #s.inn > 0 then return end
   local last = s.last_vals
   local vals = {}
   for i, L in ipairs(s.out) do vals[i] = X[L] end
@@ -639,6 +647,9 @@ local function run_solve(s, o, limit, optimal)
   s.n.calls = s.n.calls + 1
   s.last_core = nil
   local models = {}
+  local conf = s.ctl.configuration.solve
+  local saved
+  if limit > 1 then saved = conf.models; conf.models = limit == math.huge and "0" or tostring(limit) end
   local h = s.ctl:solve{ assumptions = assume, yield = true }
   local ok, err = pcall(function()
     for m in h:iter() do
@@ -654,6 +665,7 @@ local function run_solve(s, o, limit, optimal)
     s.last_core = c
   end
   h:close()
+  if saved then conf.models = saved end
   timer_stop(fr)
   if not ok then error(err, 0) end
   reraise()
