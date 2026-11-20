@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CegarPlay</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+
+  <h1>CegarPlay</h1>
+  <p class="subtitle">Play with CEGAR loops in answer set programming</p>
+
+  <main>
+    <div class="run-bar">
+      <div class="run-buttons">
+        <button class="control-button" id="run-button" disabled>&#x23F5; Run</button>
+        <button class="control-button" id="abort-button" disabled>&#x2717; Abort</button>
+        <button class="control-button isolated-only" id="pause-button" disabled hidden>&#x23F8; Pause</button>
+        <button class="control-button isolated-only" id="step-button" disabled hidden>&#x21E5; Step</button>
+        <button class="control-button isolated-only" id="stop-button" disabled hidden>&#x23F9; Stop</button>
+        <label class="inline-label" for="solutions-select">Solutions:</label>
+        <select id="solutions-select">
+          <option value="1">1</option>
+          <option value="10">10</option>
+          <option value="100">100</option>
+          <option value="0">all</option>
+        </select>
+        <span class="status-label">Status:</span>
+        <span id="run-status" data-state="idle">idle</span>
+      </div>
+      <div id="live-line" class="live-line">&nbsp;</div>
+    </div>
+
+    <input id="tab1" type="radio" name="tabs" checked>
+    <label for="tab1" name="tabs">Control</label>
+
+    <input id="tab2" type="radio" name="tabs">
+    <label for="tab2" name="tabs">Instructions</label>
+
+    <input id="tab3" type="radio" name="tabs">
+    <label for="tab3" name="tabs" id="label-programs">Programs</label>
+
+    <input id="tab4" type="radio" name="tabs">
+    <label for="tab4" name="tabs" id="label-loop">Loop</label>
+
+    <input id="tab5" type="radio" name="tabs">
+    <label for="tab5" name="tabs" id="label-output">Output</label>
+
+    <input id="tab6" type="radio" name="tabs">
+    <label for="tab6" name="tabs">Statistics</label>
+
+    <input id="tab7" type="radio" name="tabs">
+    <label for="tab7" name="tabs">Internals</label>
+
+    <!-- 1. Control -->
+    <section id="section-control">
+      <p>
+        CegarPlay runs CEGAR loops (counterexample-guided abstraction refinement) written in answer
+        set programming, with clingo running in your browser. Load an example or a project file
+        here, then look at the <b>Programs</b> and <b>Loop</b> tabs, and press <b>Run</b>.
+      </p>
+      <p id="project-heading" class="project-heading"></p>
+      <p id="project-description" class="project-description"></p>
+
+      <h3>Load example</h3>
+      <select id="example-select">
+        <option value="graph-coloring">Graph colouring</option>
+        <option value="graph-coloring-original">Graph colouring (original rules)</option>
+        <option value="nash">Nash equilibria</option>
+        <option value="voting-justification">Voting: justifications</option>
+      </select>
+      &nbsp;
+      <button class="control-button" id="load-button">Load</button>
+      <p id="load-status" class="status-line"></p>
+
+      <h3>Upload project from file</h3>
+      <label for="file-input" class="control-button">Select file</label>
+      <input type="file" id="file-input" accept=".json,application/json">
+      <p id="upload-status" class="status-line"></p>
+
+      <h3>Download current project</h3>
+      <button class="control-button" id="download-button">Download</button>
+      &nbsp;
+      <label class="inline-label"><input type="checkbox" id="include-history"> include run history</label>
+
+      <h3>Import a file written for cegar.py</h3>
+      <p>
+        A <code>.lp</code> file with <code>#program shared.</code>, <code>guess.</code>,
+        <code>glue.</code> and <code>check.</code> sections becomes a project with four fragments
+        and the Shape 1 loop.
+      </p>
+      <label for="lp-input" class="control-button">Select .lp file</label>
+      <input type="file" id="lp-input" accept=".lp,text/plain">
+      <p id="import-status" class="status-line"></p>
+
+      <h3>Export</h3>
+      <button class="control-button" id="export-lp-button">Export as .lp (cegar.py)</button>
+      &nbsp;
+      <button class="control-button" id="export-standalone-button">Export standalone program</button>
+      <p id="export-status" class="status-line"></p>
+    </section>
+
+    <!-- 2. Instructions -->
+    <section id="section-instructions">
+      <div id="instructions"></div>
+    </section>
+
+    <!-- 3. Programs -->
+    <section id="section-programs">
+      <p>
+        The ASP fragments of the project. A solver is built from fragments (see the <b>Loop</b>
+        tab). Problems found before a run are marked in the editors.
+      </p>
+      <div id="fragments"></div>
+      <p class="inline-controls">
+        <button class="control-button" id="add-fragment-button">+ Add fragment</button>
+      </p>
+    </section>
+
+    <!-- 4. Loop -->
+    <section id="section-loop">
+      <div class="inline-controls">
+        <label class="inline-label" for="template-select">Template:</label>
+        <select id="template-select"></select>
+        &nbsp;
+        <button class="control-button" id="insert-template-button">Insert</button>
+        &nbsp;
+        <button class="control-button" id="edit-as-lua-button">Edit as Lua</button>
+      </div>
+      <h3>Loop script <a href="#" class="modal-link" data-open="modal-loop">&#xf05a;</a>
+        <span id="loop-language" class="loop-language"></span></h3>
+      <div id="loop-editor" class="editor"></div>
+
+      <h3>Constants</h3>
+      <table class="internals-table" id="constants-table">
+        <thead><tr><th>Name</th><th>Value</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="inline-controls"><button class="control-button" id="add-constant-button">+ Add constant</button></p>
+
+      <h3>Limits and recording</h3>
+      <div class="settings-grid">
+        <label for="seconds-input">Time limit (s, 0 = none)</label>
+        <input type="number" min="0" step="1" id="seconds-input">
+        <label for="candidates-input">Candidate limit (0 = none)</label>
+        <input type="number" min="0" step="1" id="candidates-input">
+        <label for="trace-input">Trace steps (0 = off)</label>
+        <input type="number" min="0" step="1" id="trace-input">
+        <label for="seed-input">Seed (0 = clingo's default)</label>
+        <input type="number" min="0" step="1" id="seed-input">
+        <label for="threads-checkbox">Threads (clingo-mt)</label>
+        <span><input type="checkbox" id="threads-checkbox" disabled>
+          <span id="threads-note" class="note">needs a cross-origin isolated page</span></span>
+      </div>
+      <p class="note">
+        The seed changes the search only together with randomising solver options, such as
+        <code>options "--rand-freq=0.05"</code>.
+      </p>
+    </section>
+
+    <!-- 5. Output -->
+    <section id="section-output">
+      <div id="result-line" class="result-line">No run yet.</div>
+      <h3>Solutions <span id="solutions-count" class="note"></span></h3>
+      <ol id="solutions" class="solutions"></ol>
+      <p id="solutions-note" class="note"></p>
+      <h3>Trace</h3>
+      <div id="trace"><p class="note">No steps recorded.</p></div>
+      <h3>Messages</h3>
+      <div id="messages" class="messages"></div>
+    </section>
+
+    <!-- 6. Statistics -->
+    <section id="section-statistics">
+      <div id="statistics"></div>
+    </section>
+
+    <!-- 7. Internals -->
+    <section id="section-internals">
+      <h3>Engine</h3>
+      <div class="table-wrapper"><table class="internals-table" id="engine-facts"></table></div>
+      <h3>Generated Lua</h3>
+      <p id="program-size" class="note"></p>
+      <div id="generated-lua" class="editor"></div>
+      <h3>Event lines of the last run</h3>
+      <pre id="raw-events" class="raw-events"></pre>
+    </section>
+  </main>
+
+  <!-- Modals -->
+  <div class="modal" id="modal-shared">
+    <div class="modal-dialog">
+      <header class="modal-header"><button class="close-modal" aria-label="close modal" data-close>✕</button></header>
+      <div class="modal-content">
+        <h3>The shared fragment</h3>
+        <p>Rules that every solver needs: domains, constants, common definitions. In the default
+          loop it is part of the abstraction solver, the check solver and the glue.</p>
+      </div>
+    </div>
+  </div>
+  <div class="modal" id="modal-abstraction">
+    <div class="modal-dialog">
+      <header class="modal-header"><button class="close-modal" aria-label="close modal" data-close>✕</button></header>
+      <div class="modal-content">
+        <h3>The abstraction fragment</h3>
+        <p>Proposes candidates. It over-approximates the solutions: every solution is a candidate,
+          but a candidate may be refuted by the check. Refinements make it more precise.</p>
+        <p>For rule refinements it may contain a part <code>#program refine(k).</code>; the loop
+          grounds it once per counterexample with facts such as <code>cex(k, T)</code>. Every head
+          in that part must mention <code>k</code>, or the second refinement has no effect.</p>
+      </div>
+    </div>
+  </div>
+  <div class="modal" id="modal-glue">
+    <div class="modal-dialog">
+      <header class="modal-header"><button class="close-modal" aria-label="close modal" data-close>✕</button></header>
+      <div class="modal-content">
+        <h3>The glue fragment</h3>
+        <p>Says which atoms the abstraction and the check share. Every atom <code>glue(T)</code> it
+          derives makes <code>T</code> an interface atom: its value in a candidate is passed to the
+          check as an assumption.</p>
+        <p>Files written for the old prototype list the atoms without <code>glue(...)</code>; the
+          link then needs the keyword <code>legacy</code>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="modal" id="modal-check">
+    <div class="modal-dialog">
+      <header class="modal-header"><button class="close-modal" aria-label="close modal" data-close>✕</button></header>
+      <div class="modal-content">
+        <h3>The check fragment</h3>
+        <p>Looks for a counterexample to the candidate, given the values of the interface atoms.
+          If it finds one, it marks with <code>relevant(T)</code> the interface atoms the
+          counterexample depends on. The refinement then says: one of these atoms must change.</p>
+        <p>If <code>relevant/1</code> marks too few atoms, the refinement also removes good
+          candidates; compare with the Reference run template to find out.</p>
+      </div>
+    </div>
+  </div>
+  <div class="modal" id="modal-loop">
+    <div class="modal-dialog">
+      <header class="modal-header"><button class="close-modal" aria-label="close modal" data-close>✕</button></header>
+      <div class="modal-content">
+        <h3>The loop script</h3>
+        <p>Declares the solvers (<code>solver A = shared + abstraction</code>), the links between
+          them (<code>link G = A -&gt; C via shared + glue</code>) and how they call each other.
+          Start from a template; the Instructions tab has the full reference.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/ace.js" charset="utf-8"></script>
+  <script src="js/mode-gringo.js" charset="utf-8"></script>
+  <script src="js/mode-loop.js" charset="utf-8"></script>
+  <script src="js/modal.js" charset="utf-8"></script>
+  <script type="module" src="js/init.js"></script>
+</body>
+
+</html>

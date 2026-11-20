@@ -8,14 +8,14 @@ only memory of what happened.
 - [x] Phase 1: foundations and the runtime core
 - [x] Phase 2: rule refinements and refinement variants
 - [x] Phase 3: loop language, validation, project model
-- [ ] Phase 4: the page
+- [x] Phase 4: the page
 - [ ] Phase 5: statistics, trace, texts
 - [ ] Phase 6: pause, step, stop and threads (optional)
 - [ ] Final review
 
 ## Next step
 
-Start phase 4, task 1 (copy logic-game assets, fonts).
+Phase 5: most of it already exists (stats.js with charts and history, trace.js, Loop tab). Remaining: Instructions text (index.html #instructions), README polish, phase 5 browser tests. Then phase 6.
 
 ## Deviations from the plan
 
@@ -67,6 +67,14 @@ Start phase 4, task 1 (copy logic-game assets, fonts).
   solutions = all (the default example's run must show the reference numbers);
   nash and voting use solutions = 1. The voting example uses Shape 1 without
   `compat`.
+- Page modules beyond the plan's list: `js/trace.js` (trace view), `js/loop-tab.js`
+  (Loop tab), `js/internals.js` (Internals tab). `js/stats.js` and the trace view
+  were written in full during phase 4 (charts, history, copy, rerun with seeds).
+- `js/modal.js` rewritten with event delegation (fragment headings are built
+  dynamically); behaviour as in logic-game.
+- Browser tests live in `test/browser/*.test.mjs` and run in `npm test`; each
+  file starts its own `serve.py` on a free port and a headless Chromium
+  (`test/browser/harness.mjs`). Playwright 1.65 (Chromium build 1255).
 
 ## Known problems
 
@@ -91,3 +99,7 @@ Start phase 4, task 1 (copy logic-game assets, fonts).
   example; `H.stripTimes(S)` drops time fields for equality checks.
 - Native clingo on this machine (conda, 5.8.3) is built without Lua, so the
   native standalone test is skipped.
+- The page exposes `window.cegarplay` (app object) for debugging and tests.
+  `body[data-ready="true"]` is set when the engine is ready.
+- `[hidden] { display: none !important }` is needed: `.control-button` sets
+  `display: inline-block`, which otherwise overrides the hidden attribute.
