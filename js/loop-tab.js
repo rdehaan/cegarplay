@@ -35,6 +35,18 @@ export class LoopTab {
     });
   }
 
+  // Compile the loop script while it is edited and mark errors at once.
+  liveCheck() {
+    clearTimeout(this.liveTimer);
+    this.liveTimer = setTimeout(() => {
+      const ed = this.app.editors;
+      if (ed.loopLanguage === 'lua' || ed.readOnly) return;
+      let r;
+      try { r = compile(ed.loop.getValue(), { fragments: [...ed.fragments.keys()] }); } catch { return; }
+      ed.setMarks('loop', r.ok ? [] : r.errors);
+    }, 500);
+  }
+
   load(project) {
     const st = project.settings;
     for (const [id, key] of Object.entries(NUMERIC)) $(id).value = st[key];

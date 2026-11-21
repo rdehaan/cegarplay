@@ -117,6 +117,12 @@ $('load-button').addEventListener('click', async () => {
   catch (e) { status('load-status', String(e.message || e), true); }
 });
 
+$('new-button').addEventListener('click', () => {
+  if (!guard() || !replaceOk()) return;
+  app.setProject(Project.starterProject());
+  status('new-status', 'Started a new project. See the Programs tab.');
+});
+
 $('file-input').addEventListener('change', async (ev) => {
   const f = ev.target.files[0];
   ev.target.value = '';

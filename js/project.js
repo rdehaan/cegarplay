@@ -96,6 +96,40 @@ export function newProject(title = 'Untitled') {
   };
 }
 
+// A small project that runs as it is, with comments that say what goes where.
+export const STARTER = {
+  shared: `% Rules every solver needs: domains, constants, common definitions.
+item(1..n).
+`,
+  abstraction: `% Proposes candidates. Every solution must be a candidate; the check removes the rest.
+% Here: any non-empty set of items.
+1 { pick(I) : item(I) }.
+#show pick/1.
+`,
+  glue: `% The atoms the abstraction and the check share: glue(T) makes T an interface atom.
+glue(pick(I)) :- item(I).
+`,
+  check: `% Looks for a counterexample to the candidate; the interface atoms (pick/1) are fixed.
+% Here: a candidate is wrong if it picks an item but not a smaller one.
+{ gap(I,J) : item(I), item(J), I < J } = 1.
+:- gap(I,J), pick(I).
+:- gap(I,J), not pick(J).
+% relevant(T): the interface atoms the counterexample depends on. The refinement says
+% that one of them must change.
+relevant(pick(I)) :- gap(I,J).
+relevant(pick(J)) :- gap(I,J).
+`,
+};
+
+export function starterProject() {
+  const p = newProject('New project');
+  p.description = 'A small starting point: sets of items that contain every item below a picked one (n solutions). Replace the fragments with your own problem.';
+  for (const f of p.fragments) f.text = STARTER[f.name] || '';
+  p.settings.constants = { n: '4' };
+  p.settings.solutions = 0;
+  return p;
+}
+
 export class ProjectError extends Error {}
 
 // Validate and fill defaults. Unknown keys are kept.

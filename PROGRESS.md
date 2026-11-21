@@ -48,6 +48,10 @@ deleted.
   derives nothing, the runtime first emits a trace step of kind `error` (even
   past the trace cap; the counterexample text only while tracing), and the
   trace view jumps to it.
+- New project (Control tab): `Project.starterProject()`, four commented
+  fragments that run as they are (downward-closed sets, n = 4 gives 4 solutions).
+- The loop script is compiled 500 ms after each edit; errors are marked at once
+  (`Editors.setMarks`).
 
 ## Next step
 

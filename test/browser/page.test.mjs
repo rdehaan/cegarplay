@@ -160,3 +160,26 @@ test('loading an example over an edited project asks first', async () => {
   assert.equal(await B.getEditor(page, 'editor-shared'), '% edited\n', 'dismissed: the project is kept');
   await context.close();
 });
+
+test('the loop script is checked while it is edited; New project runs', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?tab=4');
+  const loop = await B.getEditor(page, 'loop-editor');
+  await B.setEditor(page, 'loop-editor', loop.replace('C.solve', 'D.solve'));
+  await page.waitForFunction(() => ace.edit(document.getElementById('loop-editor')).session.getAnnotations().length > 0, null, { timeout: 3000 });
+  const ann = await page.evaluate(() => ace.edit(document.getElementById('loop-editor')).session.getAnnotations());
+  assert.match(ann[0].text, /D/);
+  assert.equal(await page.$eval('#label-loop', (e) => e.classList.contains('has-problem')), true);
+  await B.setEditor(page, 'loop-editor', loop);
+  await page.waitForFunction(() => ace.edit(document.getElementById('loop-editor')).session.getAnnotations().length === 0, null, { timeout: 3000 });
+  assert.equal(await page.$eval('#label-loop', (e) => e.classList.contains('has-problem')), false);
+  // New project (the project was edited: accept the question)
+  page.once('dialog', (d) => d.accept());
+  await page.click('label[for="tab1"]');
+  await page.click('#new-button');
+  assert.match(await B.getEditor(page, 'editor-check'), /relevant\(pick/);
+  await page.click('#run-button');
+  assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
+  assert.match(await page.textContent('#live-line'), /4 solutions/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

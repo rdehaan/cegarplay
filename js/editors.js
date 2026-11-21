@@ -37,7 +37,7 @@ export class Editors {
     this.fragments = new Map();   // name -> { editor, block, heading }
     this.readOnly = false;
     this.loop = makeEditor(document.getElementById('loop-editor'), 'ace/mode/loop');
-    this.loop.session.on('change', () => { this.clearFor('loop'); this.app.dirty && this.app.dirty(); });
+    this.loop.session.on('change', () => { this.clearFor('loop'); this.app.dirty && this.app.dirty(); this.app.loopTab && this.app.loopTab.liveCheck(); });
     this.container = document.getElementById('fragments');
     document.getElementById('add-fragment-button').addEventListener('click', () => this.addFragment());
   }
@@ -131,6 +131,17 @@ export class Editors {
     }
     this.updateTabMarkers();
     return by;
+  }
+
+  // Marks for one editor only (e.g. live checks of the loop script); others are kept.
+  setMarks(key, problems) {
+    const ed = key === 'loop' ? this.loop : this.fragments.get(key) && this.fragments.get(key).editor;
+    if (!ed) return;
+    const anns = problems.map((p) => ({ row: Math.max(0, (p.line || 1) - 1), column: Math.max(0, (p.col || 1) - 1), text: p.message, type: p.severity || 'error' }));
+    ed.session.setAnnotations(anns);
+    if (anns.length) { this.marked.add(key); this.serious.add(key); }
+    else { this.marked.delete(key); this.serious.delete(key); }
+    this.updateTabMarkers();
   }
 
   get marked() { if (!this._marked) this._marked = new Set(); return this._marked; }

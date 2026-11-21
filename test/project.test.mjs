@@ -132,3 +132,12 @@ test('standalone export runs in a native clingo with Lua', { skip: !nativeLua &&
   try { out = execFileSync('clingo', [file, '--outf=3'], { encoding: 'utf8', maxBuffer: 1 << 28 }); } catch (e) { out = e.stdout; }
   assert.match(out, /Solutions\s+: 10698/);
 });
+
+test('the starter project runs: n = 4 gives the 4 non-empty downward-closed sets', async () => {
+  const H = await import('./helpers.mjs');
+  const r = await H.runProject(P.starterProject());
+  const sols = H.ofKind(r, 'M').map((m) => m.atoms).sort();
+  assert.deepEqual(sols, ['pick(1)', 'pick(1) pick(2)', 'pick(1) pick(2) pick(3)', 'pick(1) pick(2) pick(3) pick(4)']);
+  assert.equal(H.ofKind(r, 'D')[0].outcome, 'finished');
+  assert.equal(H.ofKind(r, 'W').length, 0);
+});
