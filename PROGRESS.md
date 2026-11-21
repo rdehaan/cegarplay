@@ -283,7 +283,18 @@ phase at a time (G0a, G0, G1, ..., G4); commits `Guide N: <title>`.
   - No `guide-11-knapsack-block` (not needed for a table).
   - In a witness check the statistic "counterexamples" counts satisfiable checks (witnesses); the
     pages avoid quoting it there.
-- Next: G4 Page 12 and finish.
+- **G4 Page 12 and finish: done (2026-11-21). The guide is complete.** Page 12 (walkthrough +
+  checklist of all 38 recap rules, grouped, each linking to its rule; decision table; where next).
+  4 new examples (38 in all, budget 40). Cross-links: tutorial lesson 9, manual introduction,
+  README, `llms.txt`; CLAUDE.md names the guide and `tools/guide-numbers.mjs`. Chat package still
+  builds. Full suite 273 pass, 2 skipped (slow-only); the page-12 test now runs.
+  - **Walkthrough instance**: `conformant-planning` (4 x 4 room, pillar, t = 8) is too slow to block
+    (5.2 s; best clause 7.4 s; t = 7 has no plan). The guide's steps use a 3 x 3 room without
+    pillar, t = 6: guess 4,096; blocking 80 of 4,096; best clause (every move relevant) 4,096 too;
+    rules 83 candidates, 3 counterexamples. `conformant-planning` is linked as the scaled-up step.
+    The fragments are read from the contrib file and the room edited, so they stay in sync.
+  - The read-through for terms used before their introduction was done while writing each page
+    (the order of notions follows the plan); no separate pass by a second reader.
 
 Notes for the guide phases (checked against the code before G0a):
 - The run history's ⚠ only compares runs with the same fragments (`js/stats.js:81`); for the
@@ -293,8 +304,8 @@ Notes for the guide phases (checked against the code before G0a):
 
 ## Next step
 
-All phases of PLAN.md are done. Open items for the user: deployment to GitHub
-Pages; the upstream bug report for the trap. The guide: see "Guide" above.
+All phases of PLAN.md and GUIDE-PLAN.md are done. Open items for the user: deployment to GitHub
+Pages; the upstream bug report for the trap; a read of the guide by a person.
 
 ## Deviations from the plan
 

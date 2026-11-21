@@ -713,6 +713,76 @@
     "restarts": 0,
     "rulesA": 132
   },
+  "guide-12-step1-guess": {
+    "solutions": 4096,
+    "candidates": 4096,
+    "counterexamples": 0,
+    "refinements": 0,
+    "clauses": 0,
+    "expansions": 0,
+    "literals": 0,
+    "meanClause": 0,
+    "maxClause": 0,
+    "checkCalls": 4096,
+    "restarts": 0,
+    "rulesA": 106
+  },
+  "guide-12-step2-block": {
+    "solutions": 80,
+    "candidates": 4096,
+    "counterexamples": 4016,
+    "refinements": 4016,
+    "clauses": 4016,
+    "expansions": 0,
+    "literals": 96384,
+    "meanClause": 24,
+    "maxClause": 24,
+    "checkCalls": 4096,
+    "restarts": 0,
+    "rulesA": 106
+  },
+  "guide-12-step3-clause": {
+    "solutions": 80,
+    "candidates": 4096,
+    "counterexamples": 4016,
+    "refinements": 4016,
+    "clauses": 4016,
+    "expansions": 0,
+    "literals": 24096,
+    "meanClause": 6,
+    "maxClause": 6,
+    "checkCalls": 4096,
+    "restarts": 0,
+    "rulesA": 106
+  },
+  "guide-12-step4-rules": {
+    "solutions": 80,
+    "candidates": 83,
+    "counterexamples": 3,
+    "refinements": 83,
+    "clauses": 80,
+    "expansions": 3,
+    "literals": 1920,
+    "meanClause": 24,
+    "maxClause": 24,
+    "checkCalls": 83,
+    "restarts": 0,
+    "rulesA": 559
+  },
+  "guide-12-step4-rules@t=7": {
+    "solutions": 560,
+    "candidates": 562,
+    "counterexamples": 2,
+    "refinements": 562,
+    "clauses": 560,
+    "expansions": 2,
+    "literals": 15680,
+    "meanClause": 28,
+    "maxClause": 28,
+    "checkCalls": 562,
+    "restarts": 0,
+    "rulesA": 479
+  },
   "gc-reference": {
     "solutions": 101,
     "candidates": 3373,
@@ -880,5 +950,19 @@
     "checkCalls": 8,
     "restarts": 0,
     "rulesA": 281
+  },
+  "conformant-planning": {
+    "solutions": 3,
+    "candidates": 11,
+    "counterexamples": 8,
+    "refinements": 11,
+    "clauses": 3,
+    "expansions": 8,
+    "literals": 96,
+    "meanClause": 32,
+    "maxClause": 32,
+    "checkCalls": 11,
+    "restarts": 0,
+    "rulesA": 2643
   }
 }

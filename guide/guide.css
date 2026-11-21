@@ -296,3 +296,7 @@ ol.chapter-list .soon { color: var(--text-soft); font-size: 14px; }
   article { border: none; padding: 0; }
   details > :not(summary) { display: block; }
 }
+
+/* The checklist of page 12: each rule with a link to its chapter */
+ul.checklist li { margin: 4px 0; }
+ul.checklist li a { font-size: 13px; margin-left: 4px; white-space: nowrap; }

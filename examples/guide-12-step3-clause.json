@@ -1,0 +1,43 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide: plans, clauses",
+  "description": "A plan of t moves that takes a robot to the goal from every start cell of a 3 x 3 room. The robot's path from the failing start cell can change with any move, so every move is relevant: the clause is as weak as a block. See the guide page \"Your own loop: a walkthrough and a checklist\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% A robot in a 3 x 3 room. It does not know where it starts.\ncell(1..3,1..3).\npillar(0,0).   % no pillar\nfree(X,Y) :- cell(X,Y), not pillar(X,Y).\ngoal(2,2).\n% The four moves; t steps.\ndir(e,1,0). dir(w,-1,0). dir(n,0,1). dir(s,0,-1).\nstep(1..t).\n% to(X,Y,D,X2,Y2): moving in direction D from (X,Y) leads to (X2,Y2). A move against\n% a wall or the pillar leaves the robot where it is.\nto(X,Y,D,X+DX,Y+DY) :- free(X,Y), dir(D,DX,DY), free(X+DX,Y+DY).\nto(X,Y,D,X,Y)       :- free(X,Y), dir(D,DX,DY), not free(X+DX,Y+DY).\n",
+      "description": "The room, the moves and the horizon. Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: one move per step. Nothing else is required at first.\n1 { do(T,D) : dir(D,_,_) } 1 :- step(T).\n#show do/2.\n",
+      "description": "Proposes candidates (solver A): any sequence of t moves."
+    },
+    {
+      "name": "glue",
+      "text": "glue(do(T,D)) :- step(T), dir(D,_,_).\n",
+      "description": "The interface atoms: the moves of the plan."
+    },
+    {
+      "name": "check",
+      "text": "% A counterexample: a start cell from which the plan ends somewhere else.\n1 { start(X,Y) : free(X,Y) } 1.\nat(X,Y,0) :- start(X,Y).\nat(X2,Y2,T) :- at(X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).\n:- goal(X,Y), at(X,Y,t).\n#show start/2.\n% Any move can change the path from this start cell: every move is relevant.\nrelevant(do(T,D)) :- do(T,D).\n",
+      "description": "Looks for a start cell from which the plan does not reach the goal (solver C)."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "t": "6"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

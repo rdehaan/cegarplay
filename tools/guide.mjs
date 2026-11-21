@@ -226,6 +226,7 @@ export const QUOTED = [
   { id: 'minimal-reasons' },
   { id: 'knapsack-interdiction' },
   { id: 'knapsack-optimum' },
+  { id: 'conformant-planning' },
 ];
 
 // Every entry: id, summary, shape, tags, expected, page, status, baseline, project; optionally
@@ -546,5 +547,37 @@ loop:
 :- best(i,size(B)), size(N), N > B.
 ` }, desc: { abstraction: 'Proposes candidates (solver A): any deletion set, fewest deletions first.',
         cap: 'Grounded once, after the first solution: forbids larger deletion sets.' } }) });
+  // ---- 12 Your own loop: conformant planning in a 3 x 3 room (the library example
+  // conformant-planning has a 4 x 4 room with a pillar, too slow for a blocking run).
+  const T12 = 'Your own loop: a walkthrough and a checklist';
+  const R = (anchor) => `guide/12-your-own-loop.html#${anchor}`;
+  const ROOM = (n, t) => (n === 'shared' ? t.replace(
+    '% A robot in a 4 x 4 room with one pillar. It does not know where it starts.\ncell(1..4,1..4).\npillar(2,3).',
+    '% A robot in a 3 x 3 room. It does not know where it starts.\ncell(1..3,1..3).\npillar(0,0).   % no pillar') : t);
+  const plan = (title, description, loop, edit = (n, t) => t) => fromContrib('conformant-planning', title,
+    'A plan of t moves that takes a robot to the goal from every start cell of a 3 x 3 room. ' + description + SEE(12, T12),
+    loop, { constants: { t: '6' } }, (n, t) => edit(n, ROOM(n, t)));
+  const noRelevant = '% No relevant/1 rules: the loop passes the start cell to the refine part.';
+  const dropRefine = (n, t) => (n === 'refine' ? null : t);
+  add({ id: 'guide-12-step1-guess', summary: 'Step 1: the guess alone, every sequence of t moves accepted.',
+    shape: 'reference', expected: 4096, page: R('step-guess'), status: 'demo',
+    project: plan('Guide: plans, the guess alone', 'The check is #false: every candidate is accepted, which shows the ' +
+      'size of the candidate space.', template('reference'),
+    (n, t) => (n === 'refine' ? null : n === 'check' ? '% Step 1: no counterexample yet; every candidate is accepted.\n#false.\n' : t)) });
+  add({ id: 'guide-12-step2-block', summary: 'Step 2: the real check, every failing plan blocked on its own.',
+    shape: 'reference', expected: 80, page: R('step-block'), status: 'baseline',
+    project: plan('Guide: plans, blocking', 'The check looks for a start cell from which the plan misses the goal; ' +
+      'every failing plan is blocked on its own: the ground truth.', template('reference'), dropRefine) });
+  add({ id: 'guide-12-step3-clause', summary: 'Step 3: the best clause marks every move, and is a block in disguise.',
+    shape: 'shape1', expected: 80, page: R('step-clause'), status: 'sound', baseline: 'guide-12-step2-block',
+    project: plan('Guide: plans, clauses', 'The robot\'s path from the failing start cell can change with any move, so ' +
+      'every move is relevant: the clause is as weak as a block.', template('shape1'),
+    (n, t) => (n === 'refine' ? null : n === 'check' ? t.replace(noRelevant,
+      '% Any move can change the path from this start cell: every move is relevant.\nrelevant(do(T,D)) :- do(T,D).') : t)) });
+  add({ id: 'guide-12-step4-rules', summary: 'Step 4: each failing start cell becomes a copy of the robot inside the abstraction (Shape 3).',
+    shape: 'shape3', expected: 80, page: R('step-rules'), status: 'sound', baseline: 'guide-12-step2-block',
+    variants: [{ t: '7' }],
+    project: plan('Guide: plans, rules', 'Each counterexample start cell is grounded into the abstraction as a copy ' +
+      'of the robot that must reach the goal too (Shape 3).', contrib('conformant-planning').loop.text) });
   return E;
 }

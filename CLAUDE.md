@@ -12,6 +12,9 @@ programming, solved with clingo compiled to WebAssembly.
 - `docs/reference-numbers.md`: numbers the implementation must reproduce.
 - `spike/`: verified prototype code. Read-only; copy from it.
 - `reference/`: clones of logic-game and declarative-cegar. Read-only, git-ignored.
+- `guide/`: the design guide (static pages, `chapters.js`, `numbers.json`), planned in
+  `GUIDE-PLAN.md`. Its examples are built by `tools/guide.mjs`; `tools/guide-numbers.mjs`
+  measures them (`--check` after any change to an example or a page).
 
 ## Rules that are easy to forget
 
@@ -37,6 +40,7 @@ cd test && npm install && npm test           # the project's tests (node --test)
 node tools/vendor.mjs                        # copy the engine into vendor/
 node tools/make-examples.mjs                 # rebuild examples/*.json (+ examples/contrib/*.json)
 node tools/make-chat-package.mjs             # dist/chat-package/: docs for writing examples in web chat
+node tools/guide-numbers.mjs [--check]       # measure the guide's examples into guide/numbers.json
 python3 tools/cegarcheck.py <project.json>   # check a project with Python clingo
 python3 test/serve.py 8811                   # serve the site; add "coi" for isolation headers
 ```

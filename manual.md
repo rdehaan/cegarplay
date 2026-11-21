@@ -2,7 +2,8 @@
 
 This manual describes CegarPlay completely and precisely, for lookup. It is written for people
 who already know the basics (the **Tutorial** tab teaches them) and for AI agents that write,
-validate and run CegarPlay projects. The raw Markdown is served at `manual.md`; `llms.txt` points
+validate and run CegarPlay projects. How to design a loop, step by step and with measured examples,
+is taught by the [design guide](guide/). The raw Markdown is served at `manual.md`; `llms.txt` points
 to it.
 
 CegarPlay runs CEGAR loops (counterexample-guided abstraction refinement) written in answer set

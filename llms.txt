@@ -12,6 +12,9 @@
   and a workflow for agents.
 - [Tutorial](tutorial.html): lessons for people, as an HTML fragment (shown in the page's
   Tutorial tab).
+- [Design guide](guide/index.html): twelve pages on designing CEGAR loops (abstraction, check,
+  relevant/1, soundness testing, loop shapes, rule refinements, cores, optimisation), each step
+  an example of the library group "guide"; page 12 has a checklist of all its rules.
 
 ## Examples
 

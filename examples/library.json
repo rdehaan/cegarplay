@@ -674,6 +674,73 @@
       "baseline": "guide-05-paley-block"
     },
     {
+      "id": "guide-12-step1-guess",
+      "title": "Guide: plans, the guess alone",
+      "group": "guide",
+      "summary": "Step 1: the guess alone, every sequence of t moves accepted.",
+      "shape": "reference",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 4096
+      },
+      "page": "guide/12-your-own-loop.html#step-guess",
+      "status": "demo"
+    },
+    {
+      "id": "guide-12-step2-block",
+      "title": "Guide: plans, blocking",
+      "group": "guide",
+      "summary": "Step 2: the real check, every failing plan blocked on its own.",
+      "shape": "reference",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 80
+      },
+      "page": "guide/12-your-own-loop.html#step-block",
+      "status": "baseline"
+    },
+    {
+      "id": "guide-12-step3-clause",
+      "title": "Guide: plans, clauses",
+      "group": "guide",
+      "summary": "Step 3: the best clause marks every move, and is a block in disguise.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 80
+      },
+      "page": "guide/12-your-own-loop.html#step-clause",
+      "status": "sound",
+      "baseline": "guide-12-step2-block"
+    },
+    {
+      "id": "guide-12-step4-rules",
+      "title": "Guide: plans, rules",
+      "group": "guide",
+      "summary": "Step 4: each failing start cell becomes a copy of the robot inside the abstraction (Shape 3).",
+      "shape": "shape3",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 80
+      },
+      "page": "guide/12-your-own-loop.html#step-rules",
+      "status": "sound",
+      "baseline": "guide-12-step2-block",
+      "variants": [
+        {
+          "t": "7"
+        }
+      ]
+    },
+    {
       "id": "lang-basics",
       "title": "Loop language: the basics",
       "group": "language",

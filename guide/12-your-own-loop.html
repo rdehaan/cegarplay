@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Your own loop: a walkthrough and a checklist · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 12</p>
+        <h1>Your own loop: a walkthrough and a checklist</h1>
+        <p class="lead">This last chapter builds a loop for a problem the guide has not used, from the
+          plain statement to a measured, tested loop, naming at each step the chapter it applies.
+          Then it collects the rules of all chapters into one checklist.</p>
+
+        <h2 id="statement">The problem, and its quantifiers</h2>
+        <p>A robot stands somewhere in a 3 &times; 3 room, and does not know where. It can move east,
+          west, north or south; a move against a wall leaves it where it is. Find a plan of t moves
+          that brings it to the centre cell <em>from every start cell</em>. There are no
+          observations along the way: the same moves are made whatever the start.</p>
+        <p>State the quantifiers first (chapter 1): <em>there is</em> a plan such that <em>for all</em>
+          start cells the robot ends in the goal. The plan is the guess; a start cell from which the
+          plan fails is a counterexample. The library example <code>conformant-planning</code> is the
+          same problem in a larger room; we start small, as chapter 4 advises.</p>
+
+        <h2 id="step-guess">Step 1: the abstraction, with an empty check</h2>
+        <p>The room, the moves and the horizon go into <code>shared</code>. The abstraction guesses
+          one move per step:</p>
+        <pre class="code" data-lang="asp" data-from="guide-12-step1-guess:abstraction">1 { do(T,D) : dir(D,_,_) } 1 :- step(T).
+#show do/2.</pre>
+        <p class="listing-source">From the fragment <code>abstraction</code> of <code>guide-12-step1-guess</code>.</p>
+        <p id="step-guess-run">Before writing the check, run the abstraction with a check that is just
+          <code>#false.</code>: it accepts everything, and the count of solutions is the size of the
+          candidate space (chapter 1). For t = 6 that is
+          <span data-stat="guide-12-step1-guess:candidates">4,096</span> plans, four moves at each of
+          six steps. Small enough for a blocking loop.
+          <a class="play" href="../?example=guide-12-step1-guess&amp;fragment=abstraction&amp;from=guide/12-your-own-loop.html%23step-guess-run" target="cegarplay">Open step 1</a></p>
+
+        <h2 id="step-block">Step 2: the check, the glue, the ground truth</h2>
+        <p>The check guesses a start cell, follows the plan from it, and demands that it ends
+          <em>off</em> the goal (chapter 2: an answer set means the candidate is wrong):</p>
+        <pre class="code" data-lang="asp" data-from="guide-12-step2-block:check">1 { start(X,Y) : free(X,Y) } 1.
+at(X,Y,0) :- start(X,Y).
+at(X2,Y2,T) :- at(X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).
+:- goal(X,Y), at(X,Y,t).
+#show start/2.</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-12-step2-block</code>.</p>
+        <p>It reads <code>do/2</code>, so the glue shares exactly that:</p>
+        <pre class="code" data-lang="asp" data-from="guide-12-step2-block:glue">glue(do(T,D)) :- step(T), dir(D,_,_).</pre>
+        <p id="step-block-run">Run it with the Reference run template, which blocks each failing plan
+          (chapter 2). This run is the ground truth for everything that follows:
+          <span data-stat="guide-12-step2-block:solutions">80</span> plans work, found among
+          <span data-stat="guide-12-step2-block:candidates">4,096</span> candidates.
+          <a class="play" href="../?example=guide-12-step2-block&amp;fragment=check&amp;from=guide/12-your-own-loop.html%23step-block-run" target="cegarplay">Open step 2</a></p>
+
+        <h2 id="step-clause">Step 3: a first relevant/1, tested and measured</h2>
+        <p>Which interface atoms does a failing start cell depend on (chapter 3)? The robot's path
+          from that cell goes through every step, and changing any single move can send it
+          elsewhere, possibly to the goal. So every move of the plan is relevant:</p>
+        <pre class="code" data-lang="asp" data-from="guide-12-step3-clause:check">relevant(do(T,D)) :- do(T,D).</pre>
+        <p id="step-clause-run">The soundness test (chapter 4) passes:
+          <span data-stat="guide-12-step3-clause:solutions">80</span> solutions, as in step 2. The
+          measurement (chapter 5) shows the catch: <span data-stat="guide-12-step3-clause:candidates">4,096</span>
+          candidates, no better than blocking. Marking every move is a block in fewer literals
+          (chapter 3). The counterexample's lesson is not "one of these moves must change".
+          <a class="play" href="../?example=guide-12-step3-clause&amp;fragment=check&amp;from=guide/12-your-own-loop.html%23step-clause-run" target="cegarplay">Open step 3</a></p>
+
+        <h2 id="step-rules">Step 4: decide clause or rule, and pick the shape</h2>
+        <p>What a failing start cell really teaches is: "the plan must also work from here". That is
+          not a statement about a few moves, but a copy of the robot that starts in that cell and
+          must reach the goal: a rule refinement (chapter 9).</p>
+        <pre class="code" data-lang="asp" data-from="guide-12-step4-rules:refine">#program refine(k).
+% cex(k,start(X,Y)): the k-th counterexample is a start cell. Follow the plan from there ...
+at(k,X,Y,0) :- cex(k,start(X,Y)).
+at(k,X2,Y2,T) :- at(k,X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).
+% ... it has to end in the goal.
+:- goal(X,Y), not at(k,X,Y,t).</pre>
+        <p class="listing-source">From the fragment <code>refine</code> of <code>guide-12-step4-rules</code> (the constant here is t, so the part may use k).</p>
+        <p id="step-rules-run">Rule refinements need a solver that is not searching, so the shape is
+          Shape 3: solve, check, expand, solve again (chapter 8). Every head contains the
+          parameter (chapter 9). The result: <span data-stat="guide-12-step4-rules:candidates">83</span>
+          candidates and only <span data-stat="guide-12-step4-rules:counterexamples">3</span>
+          counterexamples; once the plan works from three well-chosen start cells, it works
+          from everywhere. The soundness test passes again:
+          <span data-stat="guide-12-step4-rules:solutions">80</span> solutions.
+          <a class="play" href="../?example=guide-12-step4-rules&amp;fragment=refine&amp;from=guide/12-your-own-loop.html%23step-rules-run" target="cegarplay">Open step 4</a></p>
+
+        <h2 id="scale">Step 5: scale the constants</h2>
+        <p id="scale-run">Only now scale (chapter 5). With t = 7 the rule loop finds
+          <span data-stat="guide-12-step4-rules@t=7:solutions">560</span> plans from
+          <span data-stat="guide-12-step4-rules@t=7:candidates">562</span> candidates. The library
+          example <code>conformant-planning</code> is the same loop in a 4 &times; 4 room with a pillar
+          and t = 8: <span data-stat="conformant-planning:solutions">3</span> plans after
+          <span data-stat="conformant-planning:candidates">11</span> candidates, where a blocking run
+          has to wade through tens of thousands.
+          <a class="play" href="../?example=conformant-planning&amp;fragment=shared&amp;from=guide/12-your-own-loop.html%23scale-run" target="cegarplay">Open conformant-planning</a></p>
+        <p>The order of the steps is the point: the empty check before the real one, the blocking
+          loop before any refinement, the soundness test before any measurement, and the small
+          instance before the large one.</p>
+
+        <h2 id="checklist">The checklist</h2>
+        <p>Every rule from the recaps of chapters 1 to 11, grouped by what it is about.</p>
+        <h3>The problem</h3>
+        <ul class="checklist">
+          <li>Look for the quantifiers. "There is an X such that for all Y …" is the shape a loop is for. <a href="01-why-a-loop.html#rule-quantifiers">Chapter 01</a></li>
+          <li>A guessed atom means "there is one". One program cannot say "for all" with it. <a href="01-why-a-loop.html#rule-guessed-means-some">Chapter 01</a></li>
+          <li>Split the problem into a guess (the abstraction) and a test of one guess (the check); each is an ordinary program. <a href="01-why-a-loop.html#rule-split">Chapter 01</a></li>
+        </ul>
+        <h3>The abstraction</h3>
+        <ul class="checklist">
+          <li>The abstraction over-approximates: every solution must be a candidate. <a href="02-first-loop.html#rule-over-approximate">Chapter 02</a></li>
+          <li>Put into the abstraction what is cheap to state and true of every solution; leave to the loop what is too much to list. <a href="07-abstraction.html#rule-cheap-in-advance">Chapter 07</a></li>
+          <li>Glue what the check depends on, which may be a derived atom; one refinement then covers every candidate with the same value. <a href="07-abstraction.html#rule-glue-what-check-needs">Chapter 07</a></li>
+          <li>Atoms the check need not see stay out of the glue; count solutions on the interface atoms. <a href="07-abstraction.html#rule-private-witness">Chapter 07</a></li>
+          <li>Nothing in the abstraction may cut a solution. Symmetry breaking is for existence, not for lists. <a href="07-abstraction.html#rule-nothing-that-cuts">Chapter 07</a></li>
+          <li>To optimise, ask the abstraction for the best candidate first; the first one that survives the check is optimal. <a href="11-optimisation.html#rule-optimal-first">Chapter 11</a></li>
+        </ul>
+        <h3>The check</h3>
+        <ul class="checklist">
+          <li>The check has an answer set exactly when the candidate is wrong; that answer set is the counterexample. <a href="02-first-loop.html#rule-check-finds-wrong">Chapter 02</a></li>
+          <li>Glue every atom of the abstraction that the check reads. An atom that is not glued is silently false in the check. <a href="02-first-loop.html#rule-glue-everything">Chapter 02</a></li>
+          <li>Know your check's polarity: does an answer set mean wrong (counterexample) or good (witness)? <a href="10-witness-and-cores.html#rule-witness-polarity">Chapter 10</a></li>
+          <li>Several counterexamples per candidate save candidates and cost check work; measure the trade. <a href="06-more-per-check.html#rule-several-cex">Chapter 06</a></li>
+          <li>A counterexample that depends on few atoms gives a short, strong clause. Ask for it with <code>#minimize</code> and <code>optimal</code> when checks are cheap. <a href="06-more-per-check.html#rule-small-cex">Chapter 06</a></li>
+        </ul>
+        <h3>The refinement</h3>
+        <ul class="checklist">
+          <li>Mark with <code>relevant/1</code> the interface atoms the counterexample depends on, and no others. The refinement then rules out every candidate that agrees on them. <a href="03-learning.html#rule-mark-dependencies">Chapter 03</a></li>
+          <li>For every refinement, argue that every solution satisfies it. If the relevant atoms keep their values, the counterexample must still be one. <a href="03-learning.html#rule-every-solution-satisfies">Chapter 03</a></li>
+          <li>Marking every interface atom is blocking: safe, and no faster. <a href="03-learning.html#rule-all-relevant-blocks">Chapter 03</a></li>
+          <li>A counterexample can depend on an atom being false. Mark it too. <a href="04-soundness.html#rule-both-polarities">Chapter 04</a></li>
+          <li>A refinement must exclude the candidate it was made from, and every solution must satisfy it. <a href="09-rule-refinements.html#rule-refinement-excludes-candidate">Chapter 09</a></li>
+          <li>Write the clauses in the check with <code>clause/3</code> when <code>relevant/1</code> cannot say what you need. <a href="06-more-per-check.html#rule-clause3">Chapter 06</a></li>
+          <li>Use a rule refinement when the lesson is not "one of these atoms must change": sums, comparisons, copies of the problem. <a href="09-rule-refinements.html#rule-rules-when-clauses-cannot">Chapter 09</a></li>
+          <li>Every head of a refine part contains its parameter, and no constant has the parameter's name. <a href="09-rule-refinements.html#rule-heads-contain-parameter">Chapter 09</a></li>
+          <li>Refine from the core only when an unsatisfiable check means the candidate is wrong. <a href="10-witness-and-cores.html#rule-core-after-failed-witness">Chapter 10</a></li>
+          <li>Cores are not minimal; shrink them when clause length matters. <a href="10-witness-and-cores.html#rule-cores-not-minimal">Chapter 10</a></li>
+          <li>When the inner problem optimises, refinements carry numbers; write them as rules. <a href="11-optimisation.html#rule-bilevel-rules">Chapter 11</a></li>
+        </ul>
+        <h3>Soundness</h3>
+        <ul class="checklist">
+          <li>Blocking is always sound and always slow. Keep the blocking loop as the ground truth for small instances. <a href="02-first-loop.html#rule-block-baseline">Chapter 02</a></li>
+          <li>A refinement that is too strong removes solutions without any sign. The run still finishes, exhausted. <a href="04-soundness.html#rule-too-strong-is-silent">Chapter 04</a></li>
+          <li>Test soundness by comparison: the blocking loop and your loop, same fragments and constants, all solutions, both exhausted, same count. <a href="04-soundness.html#rule-soundness-test">Chapter 04</a></li>
+          <li>Run the test on several small instances: a wrong loop can be right on one. <a href="04-soundness.html#rule-several-instances">Chapter 04</a></li>
+          <li>Test soundness where the blocking loop finishes; scale only afterwards. <a href="05-reading-a-run.html#rule-test-small-then-scale">Chapter 05</a></li>
+          <li>An optimum is only as good as the soundness of every refinement; test the bounded version first. <a href="11-optimisation.html#rule-optimum-needs-soundness">Chapter 11</a></li>
+        </ul>
+        <h3>Measuring</h3>
+        <ul class="checklist">
+          <li>Read the first steps of the trace: candidate, counterexample, refinement. Mistakes in a refinement show there first. <a href="05-reading-a-run.html#rule-read-trace">Chapter 05</a></li>
+          <li>A good run has short clauses, few candidates beyond the solutions, and no solver that dominates without reason. <a href="05-reading-a-run.html#rule-good-run">Chapter 05</a></li>
+          <li>Solver options can change the number of candidates, never the solutions of a sound loop. <a href="05-reading-a-run.html#rule-options-change-counts">Chapter 05</a></li>
+          <li>Rule refinements grow the abstraction; watch its size and grounding time. <a href="09-rule-refinements.html#rule-watch-grounding">Chapter 09</a></li>
+          <li>Compare shapes by the run history: same fragments, only the loop changes, the counts must agree. <a href="08-loop-shapes.html#rule-measure-shapes">Chapter 08</a></li>
+        </ul>
+        <h3>The loop shape</h3>
+        <ul class="checklist">
+          <li>Start with Shape 1: one search, clauses on the fly. It is the fastest when checks are cheap. <a href="08-loop-shapes.html#rule-shape1-default">Chapter 08</a></li>
+          <li>Use Shape 2 when checks are expensive or refinements are rules; block every accepted solution yourself. <a href="08-loop-shapes.html#rule-shape2-expensive">Chapter 08</a></li>
+        </ul>
+
+        <h2 id="decisions">Which loop for which situation</h2>
+        <table class="results decisions">
+          <thead>
+            <tr><th>Situation</th><th>Choose</th><th>Chapter</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>The counterexample depends on a few interface atoms keeping their values</td>
+              <td><code>relevant/1</code> and <code>G.clause</code>, Shape 1</td><td><a href="03-learning.html">03</a></td></tr>
+            <tr><td>Checks are cheap; candidates or solutions are many</td>
+              <td>Shape 1; several or smallest counterexamples per check</td><td><a href="06-more-per-check.html">06</a>, <a href="08-loop-shapes.html">08</a></td></tr>
+            <tr><td>Checks are expensive</td>
+              <td>Shape 2: the fewest candidates</td><td><a href="08-loop-shapes.html">08</a></td></tr>
+            <tr><td>The lesson is a sum, a comparison or a copy of the problem</td>
+              <td>A refine part, Shape 3 or batches</td><td><a href="09-rule-refinements.html">09</a></td></tr>
+            <tr><td>The check only needs a derived property of the candidate</td>
+              <td>Glue the derived atom</td><td><a href="07-abstraction.html">07</a></td></tr>
+            <tr><td>Some facts about solutions are cheap to list in advance</td>
+              <td>Put them in the abstraction</td><td><a href="07-abstraction.html">07</a></td></tr>
+            <tr><td>A good candidate is shown by a witness</td>
+              <td>Witness check, refine from the core</td><td><a href="10-witness-and-cores.html">10</a></td></tr>
+            <tr><td>The best solution is wanted</td>
+              <td><code>A.solve(optimal)</code>, first survivor; rules if the inner problem optimises</td><td><a href="11-optimisation.html">11</a></td></tr>
+            <tr><td>Any change of loop, refinement or abstraction</td>
+              <td>The soundness test against the blocking loop</td><td><a href="04-soundness.html">04</a></td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="where-next">Where next</h2>
+        <ul>
+          <li>The <a href="../?manual=true&amp;tab=8">manual</a>: the loop language in full, every
+            option, the troubleshooting table.</li>
+          <li>The library's group "Problems" (Control tab, Library): more than thirty problems from
+            the literature, each a working loop with a short description.</li>
+          <li><a href="../docs/chat-package/START-HERE.md">docs/chat-package/START-HERE.md</a>: how to
+            write a new example together with an AI assistant in a chat, with a soundness checklist.</li>
+          <li><a href="../tools/cegarcheck.py">tools/cegarcheck.py</a>: checks a project with the
+            Python clingo, outside the browser.</li>
+        </ul>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>Step 3 claimed that changing a single move can send the robot elsewhere. Take a plan
+            that fails from some start cell and try to find a single move whose change makes it
+            succeed from that cell. Why does that make every move relevant?</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>Any plan that ends in the goal from that cell differs from the failing one in some
+              moves. If a move were not marked, the clause would also rule out plans
+              that differ from the candidate only in that move, and one of them might work from every
+              cell: a lost solution (chapter 4). The moves the robot "wastes" against a wall look
+              irrelevant, but changing one of them changes where it is for the rest of the plan.
+              <a class="play" href="../?example=guide-12-step3-clause&amp;from=guide/12-your-own-loop.html%23exercise-1-solution" target="cegarplay">Open step 3</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-2">
+          <h2>Exercise 2</h2>
+          <p>Take a problem of your own with the shape "there is … for all …", or one from the
+            library's Problems group, and follow the five steps. Keep the blocking run.</p>
+          <details class="solution" id="exercise-2-solution">
+            <summary>Solution</summary>
+            <p>There is no single answer. Start from the starter project of the Tutorial tab (New
+              project gives the four fragments with comments), and check each step against the
+              checklist above.
+              <a class="play" href="../?example=starter&amp;from=guide/12-your-own-loop.html%23exercise-2-solution" target="cegarplay">Open the starter project</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-order-of-steps">Quantifiers, abstraction with an empty check, real check and
+              glue, blocking run, first refinement, soundness test, measurement, clause or rule,
+              shape, and only then larger constants.</li>
+            <li id="rule-keep-the-checklist">Before you trust a loop, go through the checklist.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="11-optimisation.html">&larr; Optimisation</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

@@ -24,6 +24,6 @@ export const CHAPTERS = [
     summary: 'When a good candidate is one with an answer set, and refining from a core.' },
   { file: '11-optimisation.html', title: 'Optimisation', ready: true,
     summary: 'Bilevel problems: the best candidate that no check can refute.' },
-  { file: '12-your-own-loop.html', title: 'Your own loop: a walkthrough and a checklist', ready: false,
+  { file: '12-your-own-loop.html', title: 'Your own loop: a walkthrough and a checklist', ready: true,
     summary: 'A fresh problem from start to finish, and the rules of the guide in one list.' },
 ];
