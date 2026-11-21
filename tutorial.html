@@ -201,7 +201,7 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
   A loop script is indented like Python: 4 spaces per level, no tabs; <code>#</code> starts a comment.
   Declarations (<code>solver</code>, <code>link</code>) come first, then statements. The examples in this lesson are
   small (most are sum-free sets again); each shows one feature, with comments in the Loop tab.
-  The <a href="#tut-quickref">quick reference</a> below lists everything.
+  The <a href="#manual-the-loop-language">manual</a> has the full grammar, every statement and expression, and the error messages.
 </p>
 
 <h3 id="tut-lang-basics">The basics</h3>
@@ -278,7 +278,9 @@ if X:
 
 <h3 id="tut-lang-lua">Raw Lua</h3>
 <p>The loop script is compiled to Lua (the Internals tab shows it, with <code>?internals=true</code>). If the language
-  lacks something, <b>Edit as Lua</b> in the Loop tab turns the script into Lua that you can change freely.</p>
+  lacks something, <b>Edit as Lua</b> in the Loop tab turns the script into Lua that you can change freely.
+  The manual lists the <a href="#manual-runtime-api">runtime API</a> and the
+  <a href="#manual-hard-rules-for-raw-lua">rules raw Lua must follow</a>.</p>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="lang-raw-lua">Load: raw Lua</button></p>
 
 <h3 id="tut-lang-errors">Mistakes in a script</h3>
@@ -309,75 +311,11 @@ if X:
   reload; download it (Control tab) to keep it for good.</p>
 
 <h2 id="tut-next">9. Where next</h2>
-<p>The quick reference below lists the loop language, the refinement variants, and the limits.
-  The Library in the Control tab has the larger problems (Nash equilibria, voting). Every example can be
+<p>The <b>technical manual</b> is the complete reference: the <a href="#manual-the-loop-language">loop language</a>
+  (grammar, every statement and expression, the error messages), the <a href="#manual-asp-conventions">ASP conventions</a>,
+  the <a href="#manual-refinement-variants">refinement variants</a>, <a href="#manual-settings">settings and limits</a>,
+  the <a href="#manual-raw-lua-projects">Lua runtime</a>, and a <a href="#manual-troubleshooting">troubleshooting</a> table.
+  Tick <b>Show the technical manual</b> at the top of this tab to give it a tab of its own; a link to it opens it too.
+  It is written to be read by AI agents as well: they can fetch <a href="manual.md" target="_blank">manual.md</a> directly.</p>
+<p>The Library in the Control tab has the larger problems (Nash equilibria, voting). Every example can be
   linked to directly: <b>Copy link</b> in the Library gives a link such as <code>?example=gc-shape3</code>.</p>
-
-<h2 id="tut-quickref">Quick reference</h2>
-<h3>Declarations</h3>
-<div class="table-wrapper"><table class="internals-table">
-  <thead><tr><th>Script</th><th>Meaning</th></tr></thead>
-  <tbody>
-    <tr><td><code>solver A = shared + abstraction options "--heuristic=Domain"</code></td><td>A clingo instance that grounds these fragments, with these options (split on spaces).</td></tr>
-    <tr><td><code>link G = A -&gt; C via shared + glue</code></td><td>A link from <code>A</code> to <code>C</code>; the interface atoms come from <code>glue/1</code> in these fragments. Add <code>legacy</code> for unwrapped glue atoms, <code>compat</code> to make <code>relevant(T)</code> a free choice as in the Python prototype.</td></tr>
-  </tbody>
-</table></div>
-<h3>Statements</h3>
-<div class="table-wrapper"><table class="internals-table">
-  <thead><tr><th>Script</th><th>Meaning</th></tr></thead>
-  <tbody>
-    <tr><td><code>x = e</code></td><td>Assign a variable. Variables are local to the main script or to one <code>on candidate</code> block.</td></tr>
-    <tr><td><code>if a: ... elif b: ... else: ...</code></td><td>Conditional. Only <code>false</code> and <code>none</code> are false.</td></tr>
-    <tr><td><code>loop:</code></td><td>Repeat forever; leave with <code>break</code> or <code>stop</code>.</td></tr>
-    <tr><td><code>while e:</code></td><td>Repeat while <code>e</code> is true.</td></tr>
-    <tr><td><code>repeat: ... until e</code></td><td>Run the block, then stop once <code>e</code> is true.</td></tr>
-    <tr><td><code>for x in e:</code></td><td>Run the block for each element of the list <code>e</code>.</td></tr>
-    <tr><td><code>break</code>, <code>continue</code></td><td>Leave the innermost loop; go to its next round.</td></tr>
-    <tr><td><code>search A:</code> / <code>on candidate M:</code> / block</td><td>Run <code>A</code>'s own search; call the block for every candidate <code>M</code>. A candidate that is not rejected is a solution.</td></tr>
-    <tr><td><code>reject M with e</code></td><td>Add the clause (or list of clauses) <code>e</code> to the searching solver. Only inside <code>on candidate</code>.</td></tr>
-    <tr><td><code>accept M</code></td><td>Count <code>M</code> as a solution (for models from <code>solve</code>; inside a search, not rejecting already accepts).</td></tr>
-    <tr><td><code>restart</code></td><td>End the current search early; the next <code>search</code> starts afresh. Solutions found so far are not reported again.</td></tr>
-    <tr><td><code>stop "msg"</code></td><td>End the run with outcome <code>stopped</code> (without a message: <code>finished</code>).</td></tr>
-    <tr><td><code>count n by e</code></td><td>Add <code>e</code> (default 1) to the custom counter <code>n</code>.</td></tr>
-    <tr><td><code>log a, b</code></td><td>Print a line to the messages in the Output tab.</td></tr>
-  </tbody>
-</table></div>
-<p>A block may also follow the colon on the same line, if it is a single simple statement: <code>if not M: stop</code>.</p>
-<h3>Expressions</h3>
-<div class="table-wrapper"><table class="internals-table">
-  <thead><tr><th>Script</th><th>Meaning</th></tr></thead>
-  <tbody>
-    <tr><td><code>S.solve(assume E, optimal)</code></td><td>Solve <code>S</code> under the assumptions <code>E</code>. Returns a model, or <code>none</code> if unsatisfiable. With <code>optimal</code>, the optimal model of a <code>#minimize</code>.</td></tr>
-    <tr><td><code>S.solve(assume E1, E2)</code></td><td>Every further argument is one more list of assumptions.</td></tr>
-    <tr><td><code>S.solve()</code></td><td>Solve without assumptions.</td></tr>
-    <tr><td><code>S.models(assume E, limit n)</code></td><td>A list of up to <code>n</code> models (empty if unsatisfiable).</td></tr>
-    <tr><td><code>S.add(c)</code></td><td>Add a clause (or list of clauses) to <code>S</code> before its next solve.</td></tr>
-    <tr><td><code>S.expand(refine, cex = X.atoms(color/2))</code></td><td>Add the facts <code>cex(k, T)</code> and ground the part <code>refine(k)</code> with the next <code>k</code>. Put <code>k</code> in every head of the part.</td></tr>
-    <tr><td><code>S.exhausted</code>, <code>S.step</code></td><td>Whether the last search of <code>S</code> ran to the end; the number of expansions so far.</td></tr>
-    <tr><td><code>G(M)</code></td><td>The values of the interface atoms in <code>M</code>, as assumptions for the target solver.</td></tr>
-    <tr><td><code>G.clause(M, X)</code></td><td>Clause: one atom marked <code>relevant</code> in <code>X</code> must change its value in <code>M</code>.</td></tr>
-    <tr><td><code>G.block(M)</code></td><td>Clause: at least one interface atom must change (rules out exactly <code>M</code>).</td></tr>
-    <tr><td><code>G.core(S)</code></td><td>Clause from the unsat core of <code>S</code>'s last solve.</td></tr>
-    <tr><td><code>G.clauses(X)</code></td><td>The clauses stated by <code>clause/3</code> atoms in <code>X</code>.</td></tr>
-    <tr><td><code>X.atoms(p/n)</code></td><td>The true atoms of <code>p/n</code> in model <code>X</code>.</td></tr>
-    <tr><td><code>[]</code>, <code>l.push(e)</code>, <code>l.size</code>, <code>l.clear()</code></td><td>A new empty list; append; its length; empty it.</td></tr>
-    <tr><td><code>none</code>, <code>!=</code>, <code>not</code>, <code>and</code>, <code>or</code></td><td>No value; not equal; the usual logic.</td></tr>
-  </tbody>
-</table></div>
-
-<h3>Limits and gotchas</h3>
-<ul>
-  <li>The time limit and the candidate limit (Loop tab, 0 = none) end a run with outcome <code>limit</code>. The default time limit is 60 s.</li>
-  <li>The seed matters only together with randomising options, such as <code>options "--rand-freq=0.05"</code>.
-    Without them, every seed gives the same search.</li>
-  <li>The no-progress guard stops Shapes 2 and 3 with <code>the refinement made no progress</code> when a refinement
-    does not change the next candidate. Check that every head in a <code>#program part(k).</code> contains <code>k</code>.</li>
-  <li>An error inside clingo itself (not in the loop script) ends the run with "clingo stopped unexpectedly" and no message.
-    The Output tab then shows the last lines clingo printed.</li>
-  <li>clingo's warnings and infos name the fragment and the line, and after the run they are marked in the editor:
-    blue for an info, yellow for a warning.</li>
-  <li>Abort always works. Pause, Step, Stop and threads need a cross-origin isolated page;
-    otherwise these controls are hidden or disabled.</li>
-  <li>All editors are read-only while a run is active.</li>
-  <li><code>?fresh=1</code> starts from the default example instead of the project kept in this browser.</li>
-</ul>

@@ -23,8 +23,17 @@ repository root with any static server, for example
 and open <http://localhost:8000/>. (Opening `index.html` as a file does not
 work: workers and modules need http.) URL parameters: `?example=nash` loads
 `examples/nash.json` from the example library (`?file=` is the older name),
-`?tab=4` opens the fourth tab, `?internals=true` shows the Internals tab,
-`?fresh=1` ignores the project kept in the browser.
+`?tab=4` opens the fourth tab, `?manual=true` shows the Manual tab (tab 8),
+`?internals=true` shows the Internals tab, `?fresh=1` ignores the project kept
+in the browser.
+
+## Tutorial and manual
+
+The Tutorial tab (`tutorial.html`) teaches CEGAR and the loop language in nine
+lessons, each with an example to load. The technical manual (`manual.md`) is the
+complete reference, for lookup and for AI agents; the page renders it in a
+Manual tab that "Show the technical manual" (Tutorial or Control tab) turns on.
+`llms.txt` points agents to the manual, the library and the headless runner.
 
 ## Example library
 

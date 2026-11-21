@@ -54,6 +54,9 @@
     <input id="tab2" type="radio" name="tabs">
     <label for="tab2" name="tabs">Tutorial</label>
 
+    <input id="tab8" type="radio" name="tabs" hidden>
+    <label for="tab8" name="tabs" id="label-manual" hidden>Manual</label>
+
     <input id="tab3" type="radio" name="tabs">
     <label for="tab3" name="tabs" id="label-programs">Programs</label>
 
@@ -119,11 +122,25 @@
       &nbsp;
       <button class="control-button" id="export-standalone-button">Export standalone program</button>
       <p id="export-status" class="status-line"></p>
+
+      <h3>Technical manual</h3>
+      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="manual-checkbox">
+        Show the technical manual</label> <span class="note">adds a Manual tab: the complete reference, for lookup and for AI agents</span></p>
     </section>
 
     <!-- 2. Tutorial -->
     <section id="section-tutorial">
+      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="manual-checkbox">
+        Show the technical manual</label> <span class="note">a reference for lookup and for AI agents, in its own tab</span></p>
       <div id="tutorial"></div>
+    </section>
+
+    <!-- 8. Manual (hidden unless the toggle is on or ?manual=true) -->
+    <section id="section-manual">
+      <p class="note">The complete reference, also as <a href="manual.md" target="_blank">raw Markdown</a>
+        (for AI agents: start from <a href="llms.txt" target="_blank">llms.txt</a>).</p>
+      <nav id="manual-toc" class="manual-toc"></nav>
+      <div id="manual"><p class="note">Loading the manual…</p></div>
     </section>
 
     <!-- 3. Programs -->
@@ -266,7 +283,8 @@
         <h3>The loop script</h3>
         <p>Declares the solvers (<code>solver A = shared + abstraction</code>), the links between
           them (<code>link G = A -&gt; C via shared + glue</code>) and how they call each other.
-          Start from a template; the Tutorial tab explains the language (lesson 7 and the quick reference).</p>
+          Start from a template; the Tutorial tab explains the language (lesson 7), and the
+          <a href="#manual-the-loop-language">manual</a> has the full reference.</p>
       </div>
     </div>
   </div>

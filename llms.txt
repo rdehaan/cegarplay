@@ -1,0 +1,26 @@
+# CegarPlay
+
+> A static browser playground for CEGAR loops (counterexample-guided abstraction refinement)
+> written in answer set programming, solved with clingo 5.8.1 (with Lua) compiled to WebAssembly.
+> A project is one JSON file: ASP fragments, a loop script, and settings.
+
+## Docs
+
+- [Technical manual](manual.md): the complete reference: project format, ASP conventions
+  (glue/1, relevant/1, #program refine(k), clause/3), the loop language with its grammar and
+  error messages, templates, the Lua runtime API, settings, outcomes, events, troubleshooting,
+  and a workflow for agents.
+- [Tutorial](tutorial.html): lessons for people, as an HTML fragment (shown in the page's
+  Tutorial tab).
+
+## Examples
+
+- [Library manifest](examples/library.json): every example with id, group, summary, loop shape
+  and expected solution count. Each example is the project file `examples/<id>.json`.
+- Open an example in the page: `index.html?example=<id>`; add `&tab=4` for the loop script,
+  `&manual=true&tab=8` for the manual.
+
+## Running without a browser
+
+- `node tools/run.mjs <project.json | library id> [-c name=value] [--solutions N|all] [--json]`
+  validates and runs a project with the same engine as the page (needs the repository and Node).

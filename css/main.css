@@ -60,6 +60,8 @@ pre {
 
 #section-tutorial ul,
 #section-tutorial ol,
+#section-manual ul,
+#section-manual ol,
 #section-internals ul,
 #section-internals ol {
   margin: 0 0 10px;
@@ -68,6 +70,7 @@ pre {
 }
 
 #section-tutorial li,
+#section-manual li,
 #section-internals li {
   margin-bottom: 4px;
 }
@@ -130,6 +133,7 @@ label[for='tab4']:before { content: '\f021'; }
 label[for='tab5']:before { content: '\f120'; }
 label[for='tab6']:before { content: '\f080'; }
 label[for='tab7']:before { content: '\f0e8'; }
+label[for='tab8']:before { content: '\f02d'; }
 
 label:hover {
   color: #888;
@@ -153,7 +157,8 @@ label[for="tab2"] {
 #tab4:checked ~ #section-loop,
 #tab5:checked ~ #section-output,
 #tab6:checked ~ #section-statistics,
-#tab7:checked ~ #section-internals {
+#tab7:checked ~ #section-internals,
+#tab8:checked ~ #section-manual {
   display: block;
 }
 
@@ -623,6 +628,37 @@ tr.mismatch td {
 #tutorial table {
   margin-bottom: 12px;
 }
+#manual h2 {
+  margin-top: 24px;
+  border-bottom: 1px solid #eee;
+}
+#manual h3 { margin-top: 18px; }
+#manual table { margin-bottom: 12px; }
+#manual td code, #manual-toc code { white-space: normal; }
+#manual .code-block {
+  background: #f7f7f7;
+  border: 1px solid #ddd;
+  padding: 8px 10px;
+  font-size: 13px;
+  overflow-x: auto;
+  margin: 0 0 12px;
+}
+#manual blockquote {
+  margin: 0 0 12px;
+  padding: 2px 12px;
+  border-left: 3px solid #ddd;
+  color: #555;
+}
+.manual-toc {
+  columns: 2 260px;
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border: 1px solid #eee;
+  font-size: 14px;
+}
+.manual-toc ol { margin: 0; padding-left: 22px; }
+.manual-toc li { break-inside: avoid; }
+.manual-toggle { margin: 0 0 12px; }
 
 .small-button {
   font-size: 12px;

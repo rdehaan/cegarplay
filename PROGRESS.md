@@ -14,7 +14,7 @@ only memory of what happened.
 - [x] Final review
 - [x] Phase 7: example library (after the final review, on request)
 - [x] Phase 8: tutorial tab
-- [ ] Phase 9: technical manual
+- [x] Phase 9: technical manual
 
 ## Hand-over (final review, 2026-11-20)
 
@@ -93,12 +93,27 @@ gets `line-height: 1.4` (descenders were clipped). Tests: every tutorial
 button names a library id and every tutorial/language/shapes example has a
 button; a tutorial button loads its example. 139 tests, 137 pass, 2 skipped.
 
+Phase 9 (done): `manual.md` (15 sections: model, project format, ASP
+conventions, loop language with grammar and every compiler error, templates,
+variants, raw Lua with hard rules and `rt` API, settings, running, output and
+events, URL parameters and storage, import/export, library, for agents,
+troubleshooting). `js/markdown.js` (DOM-free renderer: headings with ids
+`manual-<slug>`, lists, tables, fenced code; `loop`/`asp` fences become ACE
+blocks; links to `?example=<id>` carry `data-load-example`; unsafe URL schemes
+dropped). Manual tab = `tab8`, placed after Tutorial, hidden unless a
+`.manual-checkbox` (top of Tutorial tab, end of Control tab; `localStorage`
+`cegarplay.manual`) or `?manual=true`; table of contents from the h2/h3
+headings; loaded on first show. Any `a[href^="#manual-"]` opens the tab (turning
+the toggle on) and scrolls there. The tutorial's Quick reference moved into the
+manual; lessons 7 and 9 and the loop modal link to manual sections. `llms.txt`
+at the root. Tests: `test/markdown.test.mjs` (renderer; manual links resolve,
+every library id named), browser test for toggle/`?manual=true`/links/raw files.
+149 tests, 147 pass, 2 skipped; page tests pass in Firefox.
+
 ## Next step
 
-Phase 9: manual.md, js/markdown.js, Manual tab (tab8) with toggle, llms.txt.
-Then move the tutorial's "Quick reference" into the manual and link to
-`#manual-<slug>` sections from the lessons (tutorial lesson 9 "Where next";
-loop modal text in `index.html` mentions the quick reference).
+All planned phases are done. Open items for the user: deployment to GitHub
+Pages; the upstream bug report for the trap; `START-HERE.md` can be deleted.
 
 ## Deviations from the plan
 
@@ -200,8 +215,8 @@ loop modal text in `index.html` mentions the quick reference).
   `body[data-ready="true"]` is set when the engine is ready.
 - `[hidden] { display: none !important }` is needed: `.control-button` sets
   `display: inline-block`, which otherwise overrides the hidden attribute.
-- Instructions text lives in `instructions.html` (an HTML fragment fetched by
-  `js/init.js` into `#instructions`; `.example-code` divs become read-only ACE
+- Tutorial text lives in `tutorial.html` (an HTML fragment fetched by
+  `js/init.js` into `#tutorial`; `.example-code` divs become read-only ACE
   editors with `data-mode="loop"|"gringo"`).
 - Phase 6: `coi-serviceworker` 0.1.7 is vendored at the root by `tools/vendor.mjs`
   and configured through an inline `window.coi` in `index.html`: `?nocoi=1` neither

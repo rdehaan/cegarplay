@@ -256,3 +256,47 @@ test('?file= does not overwrite the kept project until it is edited; rename clea
   assert.equal(await page.$eval('#label-programs', (e) => e.classList.contains('has-problem')), false);
   await context.close();
 });
+
+test('the Manual tab: hidden by default, shown by the toggle (remembered) and by ?manual=true', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?tab=8');
+  assert.equal(await page.isHidden('label[for="tab8"]'), true);
+  assert.equal(await page.$eval('#tab2', (e) => e.checked) || await page.$eval('#tab1', (e) => e.checked), true, '?tab=8 is ignored while hidden');
+  await page.click('label[for="tab2"]');
+  await page.check('#section-tutorial .manual-checkbox');
+  assert.equal(await page.isVisible('label[for="tab8"]'), true);
+  await page.click('label[for="tab8"]');
+  await page.waitForFunction(() => document.querySelectorAll('#manual h2').length >= 12);
+  await page.waitForFunction(() => document.querySelectorAll('#manual .ace_editor').length > 5);
+  assert.ok(await page.$$eval('#manual-toc a', (l) => l.length) > 20);
+  // a ?example= link in the manual loads that example
+  await page.click('#manual a[data-load-example="gc-shape4"]');
+  await page.waitForFunction(() => /Shape 4/.test(document.getElementById('load-status').textContent));
+  assert.equal(await page.$eval('#tab8', (e) => e.checked), true);
+  // the toggle is remembered after a reload; turning it off hides the tab
+  await page.reload();
+  await page.waitForSelector('body[data-ready="true"]');
+  assert.equal(await page.isVisible('label[for="tab8"]'), true);
+  await page.click('label[for="tab1"]');
+  await page.uncheck('#section-control .manual-checkbox');
+  assert.equal(await page.isHidden('label[for="tab8"]'), true);
+  // a link from the tutorial into the manual opens it at that section
+  await page.click('label[for="tab2"]');
+  await page.click('#tutorial a[href="#manual-troubleshooting"]');
+  await page.waitForFunction(() => document.getElementById('tab8').checked && document.getElementById('manual-troubleshooting'));
+  assert.equal(await page.isVisible('#manual-troubleshooting'), true);
+  assert.deepEqual(errors, []);
+  await context.close();
+  const o = await B.openPage(browser, server, '?manual=true&tab=8');
+  await o.page.waitForFunction(() => document.querySelectorAll('#manual h2').length >= 12);
+  assert.equal(await o.page.$eval('#tab8', (e) => e.checked), true);
+  assert.deepEqual(o.errors, []);
+  await o.context.close();
+});
+
+test('manual.md and llms.txt are served as they are', async () => {
+  for (const f of ['manual.md', 'llms.txt']) {
+    const r = await fetch(`${server.url}${f}`);
+    assert.equal(r.status, 200, f);
+    assert.match(await r.text(), /^# /);
+  }
+});
