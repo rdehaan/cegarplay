@@ -34,6 +34,8 @@ app.collect = () => app.editors.collect(app.project);
 
 app.setProject = (p, { save = true } = {}) => {
   app.project = p;
+  app.exampleId = null;         // set by loadExample
+  markLoadedExample();
   app.editors.build(p);
   app.loopTab.load(p);
   app.stats.history = Array.isArray(p.runs) ? p.runs.map((r) => ({ ...r })) : [];
@@ -91,8 +93,115 @@ function status(id, text, error = false) {
 async function loadExample(name, opts) {
   if (!/^[A-Za-z0-9_-]+$/.test(name)) throw new Error(`invalid example name ${name}`);
   const r = await fetch(`examples/${name}.json`);
-  if (!r.ok) throw new Error(`examples/${name}.json: ${r.status} ${r.statusText}`);
+  if (!r.ok) {
+    const lib = await app.library;
+    const known = lib && lib.examples.some((e) => e.id === name);
+    throw new Error(known ? `examples/${name}.json: ${r.status} ${r.statusText}`
+      : `there is no example "${name}" in the library${lib ? ` (known: ${lib.examples.map((e) => e.id).join(', ')})` : ''}`);
+  }
   app.setProject(Project.load(await r.text()), opts);
+  app.exampleId = name;
+  markLoadedExample();
+}
+
+// ---- the example library (examples/library.json) ------------------------------------
+app.library = fetch('examples/library.json').then((r) => {
+  if (!r.ok) throw new Error(r.statusText);
+  return r.json();
+}).catch(() => null);
+
+const exampleLink = (id) => `${location.origin}${location.pathname}?example=${encodeURIComponent(id)}`;
+const make = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  e.append(...kids);
+  return e;
+};
+
+async function buildLibrary() {
+  const box = $('library');
+  const lib = await app.library;
+  if (!lib) { box.innerHTML = '<p class="error-text">The example library could not be loaded.</p>'; return; }
+  box.textContent = '';
+  for (const g of lib.groups) {
+    const entries = lib.examples.filter((e) => e.group === g.id);
+    if (!entries.length) continue;
+    const det = make('details', { class: 'library-group', 'data-group': g.id });
+    det.open = g.id !== 'shapes';
+    det.append(make('summary', {}, make('span', { class: 'library-group-title' }, g.title), ' ',
+      make('span', { class: 'note' }, `${entries.length} · ${g.description}`)));
+    const list = make('ul', { class: 'library-list' });
+    for (const e of entries) {
+      const tags = [e.shape !== 'custom' ? e.shape : null, ...e.tags].filter(Boolean);
+      const li = make('li', { class: 'library-entry', 'data-example': e.id,
+        'data-search': [e.id, e.title, e.summary, e.shape, ...e.tags, g.title].join(' ').toLowerCase() });
+      const text = make('div', { class: 'library-text' },
+        make('span', { class: 'library-title' }, e.title), ' ',
+        make('code', { class: 'library-id' }, e.id),
+        ...tags.map((t) => make('span', { class: 'library-tag' }, t)),
+        make('div', { class: 'library-summary' }, e.summary +
+          (e.expected ? ` Solutions: ${e.expected.solutions.toLocaleString('en')}.` : '')));
+      const load = make('button', { class: 'control-button small-button', 'data-load-example': e.id }, 'Load');
+      const copy = make('button', { class: 'control-button small-button library-copy', 'data-copy-example': e.id, title: exampleLink(e.id) }, 'Copy link');
+      li.append(text, make('div', { class: 'library-buttons' }, load, copy));
+      list.append(li);
+    }
+    det.append(list);
+    box.append(det);
+  }
+  markLoadedExample();
+  filterLibrary();
+}
+function markLoadedExample() {
+  for (const li of document.querySelectorAll('.library-entry')) li.classList.toggle('loaded', li.dataset.example === app.exampleId);
+}
+function filterLibrary() {
+  const words = $('library-filter').value.toLowerCase().split(/\s+/).filter(Boolean);
+  for (const det of document.querySelectorAll('.library-group')) {
+    let shown = 0;
+    for (const li of det.querySelectorAll('.library-entry')) {
+      const ok = words.every((w) => li.dataset.search.includes(w));
+      li.hidden = !ok;
+      if (ok) shown++;
+    }
+    det.hidden = shown === 0;
+    if (words.length && shown) det.open = true;
+  }
+}
+$('library-filter').addEventListener('input', filterLibrary);
+
+// Load an example from any element with data-load-example (library, tutorial, manual);
+// data-tab="N" then opens tab N.
+document.addEventListener('click', async (ev) => {
+  const copyBtn = ev.target.closest && ev.target.closest('[data-copy-example]');
+  if (copyBtn) {
+    const link = exampleLink(copyBtn.dataset.copyExample);
+    try { await navigator.clipboard.writeText(link); status('load-status', `Copied the link ${link}`); }
+    catch { status('load-status', `Link: ${link}`); }
+    return;
+  }
+  const btn = ev.target.closest && ev.target.closest('[data-load-example]');
+  if (!btn) return;
+  ev.preventDefault();
+  if (!guard() || !replaceOk()) return;
+  const name = btn.dataset.loadExample;
+  try {
+    await loadExample(name);
+    status('load-status', `Loaded example "${app.project.title}".`);
+    const t = btn.dataset.tab;
+    if (t && $('tab' + t)) { $('tab' + t).checked = true; requestAnimationFrame(resizeVisibleEditors); }
+    if (btn.closest('#section-tutorial, #section-manual')) flash(btn, `Loaded "${app.project.title}"`);
+  } catch (e) {
+    status('load-status', String(e.message || e), true);
+    if (btn.closest('#section-tutorial, #section-manual')) flash(btn, String(e.message || e), true);
+  }
+});
+// A short note next to a button outside the Control tab.
+function flash(btn, text, error = false) {
+  let n = btn.nextElementSibling;
+  if (!n || !n.classList.contains('load-note')) { n = make('span', { class: 'load-note note' }); btn.after(n); }
+  n.textContent = ' ' + text;
+  n.classList.toggle('error-text', error);
 }
 
 function download(name, text, type = 'application/json') {
@@ -112,13 +221,6 @@ const guard = () => {
 const replaceOk = () => !app.edited || window.confirm('Replace the current project? Your changes to it are lost unless you download it first.');
 
 // ---- Control tab ----------------------------------------------------------------
-$('load-button').addEventListener('click', async () => {
-  if (!guard() || !replaceOk()) return;
-  const name = $('example-select').value;
-  try { await loadExample(name); status('load-status', `Loaded example "${app.project.title}".`); }
-  catch (e) { status('load-status', String(e.message || e), true); }
-});
-
 $('new-button').addEventListener('click', () => {
   if (!guard() || !replaceOk()) return;
   app.setProject(Project.starterProject());
@@ -215,8 +317,10 @@ async function start() {
   app.runtime = runtime;
   loadInstructions();
   app.engineVersion = version.split('\n')[0];
-  const file = params.get('file') || 'graph-coloring';
-  const stored = params.get('file') || params.get('fresh') === '1' ? null : storedProject();
+  // ?example=<id> (or the older ?file=<id>) loads an example of the library
+  const named = params.get('example') || params.get('file');
+  const file = named || 'graph-coloring';
+  const stored = named || params.get('fresh') === '1' ? null : storedProject();
   let restored = false;
   if (stored) {
     try {
@@ -230,13 +334,12 @@ async function start() {
   }
   if (!restored) {
     // A project named in the URL does not replace the one kept in the browser until it is edited.
-    const save = !params.get('file') && params.get('fresh') !== '1' && !stored;
+    const save = !named && params.get('fresh') !== '1' && !stored;
     try { await loadExample(file, { save }); status('load-status', `Loaded example "${app.project.title}".`); }
     catch (e) { status('load-status', String(e.message || e), true); app.setProject(Project.newProject(), { save: false }); }
   }
   app.restoredOrLoaded = true;
-  const sel = $('example-select');
-  if ([...sel.options].some((o) => o.value === file)) sel.value = file;
+  buildLibrary();
   await app.engine.ready;
   app.ready = true;
   app.internals.facts();

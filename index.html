@@ -74,20 +74,19 @@
       <p>
         CegarPlay runs CEGAR loops (counterexample-guided abstraction refinement) written in answer
         set programming, with clingo running in your browser. Load an example or a project file
-        here, then look at the <b>Programs</b> and <b>Loop</b> tabs, and press <b>Run</b>.
+        here, then look at the <b>Programs</b> and <b>Loop</b> tabs, and press <b>Run</b>. New here?
+        Start with the <b>Tutorial</b> tab.
       </p>
       <p id="project-heading" class="project-heading"></p>
       <p id="project-description" class="project-description"></p>
 
-      <h3>Load example</h3>
-      <select id="example-select">
-        <option value="graph-coloring">Graph colouring</option>
-        <option value="graph-coloring-original">Graph colouring (original rules)</option>
-        <option value="nash">Nash equilibria</option>
-        <option value="voting-justification">Voting: justifications</option>
-      </select>
-      &nbsp;
-      <button class="control-button" id="load-button">Load</button>
+      <h3>Example library</h3>
+      <p class="note">Load an example to look at it and run it. Each has a link of its own:
+        <code>?example=&lt;id&gt;</code>. The <b>Tutorial</b> tab uses the first group step by step.</p>
+      <div class="library-filter">
+        <input type="search" id="library-filter" placeholder="Filter by word, id or shape" aria-label="Filter the library">
+      </div>
+      <div id="library" class="library"><p class="note">Loading the library…</p></div>
       <p id="load-status" class="status-line"></p>
 
       <h3>Start a new project</h3>

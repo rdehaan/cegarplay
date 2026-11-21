@@ -1,0 +1,43 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Loop language: the basics",
+  "description": "Shape 2 on sum-free sets, written out with most statements of the loop language. Read the comments in the Loop tab; after a run, the log lines are in the Output tab and the counters in the Statistics tab.",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% Rules every solver needs. The constant n is set in the Loop tab.\nnum(1..n).\n",
+      "description": "Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% Solver A proposes candidates: here, any set of numbers.\n{ pick(X) : num(X) }.\n#show pick/1.\n",
+      "description": "Proposes candidates (solver A)."
+    },
+    {
+      "name": "glue",
+      "text": "% The atoms solver A and solver C share. glue(T) makes T an interface atom:\n% its value in a candidate is fixed when the check runs.\nglue(pick(X)) :- num(X).\n",
+      "description": "The interface atoms: every glue(T) makes T an interface atom."
+    },
+    {
+      "name": "check",
+      "text": "% Solver C looks for a counterexample: a sum X + Y = Z inside the candidate.\n1 { sum(X,Y) : num(X), num(Y), X <= Y, X + Y <= n } 1.\n:- sum(X,Y), not pick(X).\n:- sum(X,Y), not pick(Y).\n:- sum(X,Y), not pick(X+Y).\n#show sum/2.\n\n% relevant(T): the interface atoms the counterexample depends on.\n% The refinement says: at least one of them must change.\nrelevant(pick(X)) :- sum(X,Y).\nrelevant(pick(Y)) :- sum(X,Y).\nrelevant(pick(X+Y)) :- sum(X,Y).\n",
+      "description": "Looks for a counterexample to a candidate (solver C) and marks the atoms it depends on with relevant/1."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "# Declarations come first.\n# A solver is built from fragments; options are passed to clingo.\nsolver A = shared + abstraction\nsolver C = shared + check          options \"--configuration=trendy\"\n# A link says which atoms two solvers share (here: the glue/1 atoms).\nlink   G = A -> C via shared + glue\n\n# Statements follow. Variables need no declaration; # starts a comment.\nfound = 0\nsizes = []                         # an empty list\n\nloop:                              # loop forever (until stop or break)\n    M = A.solve()                  # the next candidate, or none\n    if not M:\n        log \"no candidates left;\", found, \"solutions\"\n        break                      # leave the loop\n    X = C.solve(assume G(M))       # look for a counterexample to M\n    if X:\n        count refinements          # a counter, shown in the Statistics tab\n        A.add(G.clause(M, X))      # one relevant atom must change\n    elif found >= 1000:\n        stop \"enough solutions\"    # ends the whole run, with a message\n    else:\n        accept M                   # M is a solution\n        found = found + 1\n        sizes.push(M.atoms(pick/1).size)\n        A.add(G.block(M))          # never propose M again\n\nbiggest = 0\nfor s in sizes:\n    if s > biggest: biggest = s\nlog \"largest sum-free set:\", biggest\ncount largest by biggest\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "8"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

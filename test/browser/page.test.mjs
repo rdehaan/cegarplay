@@ -57,7 +57,7 @@ test('3. abort a long run, then run the default example again', async () => {
   assert.ok(cand > 0, live);
   await page.click('label[for="tab1"]');
   page.once('dialog', (d) => d.accept());     // the constant was edited: confirm replacing the project
-  await page.click('#load-button');
+  await page.click('#library [data-load-example="graph-coloring"]');
   await page.waitForFunction(() => /Loaded/.test(document.getElementById('load-status').textContent));
   const t0 = Date.now();
   await page.click('#run-button');
@@ -129,6 +129,28 @@ test('URL parameters: ?file=nash and ?tab=4', async () => {
   await o.context.close();
 });
 
+test('the library: groups from library.json, filter, ?example=, copy link, unknown id', async () => {
+  const lib = JSON.parse(fs.readFileSync(new URL('../../examples/library.json', import.meta.url), 'utf8'));
+  const { page, context, errors } = await B.openPage(browser, server, '?example=lang-basics&tab=4');
+  assert.match(await B.getEditor(page, 'loop-editor'), /count refinements/);
+  await page.click('label[for="tab1"]');
+  assert.equal(await page.$$eval('#library .library-entry', (l) => l.length), lib.examples.length);
+  assert.equal(await page.$eval('#library .library-entry.loaded', (e) => e.dataset.example), 'lang-basics');
+  await page.fill('#library-filter', 'shape4');
+  const shown = await page.$$eval('#library .library-entry', (l) => l.filter((e) => !e.hidden).map((e) => e.dataset.example));
+  assert.ok(shown.includes('gc-shape4') && !shown.includes('nash'), shown.join());
+  await page.fill('#library-filter', '');
+  await page.click('#library [data-copy-example="nash"]');
+  await page.waitForFunction(() => /\?example=nash/.test(document.getElementById('load-status').textContent));
+  await page.click('#library [data-load-example="tutorial-first-run"]');
+  await page.waitForFunction(() => /Sum-free/.test(document.getElementById('load-status').textContent));
+  assert.deepEqual(errors, []);
+  await context.close();
+  const o = await B.openPage(browser, server, '?example=no-such-thing');
+  await o.page.waitForFunction(() => /no example "no-such-thing".*known: /.test(document.getElementById('load-status').textContent));
+  await o.context.close();
+});
+
 test('editors are sized when their tab is shown; Ctrl+Enter runs; clingo infos mark the line', async () => {
   const { page, context, errors } = await B.openPage(browser, server);
   await page.click('label[for="tab2"]');
@@ -159,13 +181,11 @@ test('loading an example over an edited project asks first', async () => {
   // no edit yet: no question
   let asked = 0;
   page.on('dialog', (d) => { asked++; d.dismiss(); });
-  await page.selectOption('#example-select', 'nash');
-  await page.click('#load-button');
+  await page.click('#library [data-load-example="nash"]');
   await page.waitForFunction(() => /Nash/i.test(document.getElementById('load-status').textContent));
   assert.equal(asked, 0);
   await B.setEditor(page, 'editor-shared', '% edited\n');
-  await page.selectOption('#example-select', 'graph-coloring');
-  await page.click('#load-button');
+  await page.click('#library [data-load-example="graph-coloring"]');
   await page.waitForTimeout(200);
   assert.equal(asked, 1);
   assert.equal(await B.getEditor(page, 'editor-shared'), '% edited\n', 'dismissed: the project is kept');

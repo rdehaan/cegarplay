@@ -197,8 +197,9 @@ solver literals (`slit`); otherwise program literals (`src`). The clause carries
 | `rt.size(l)`, `rt.push(l, x)`, `rt.clear(l)`, `rt.list()` | List helpers for the loop language. Lists are plain arrays. |
 
 Blocking accepted solutions across restarts: whenever a search of `S` ends
-with `restart_requested`, the solutions accepted during that search must not be
-reported again. Implementation: during every search, for each accepted
+(with `restart_requested` or normally, as in Shape 4 when a final `expand`
+leads to one more search), the solutions accepted during that search must not be
+reported again by a later search of `S`. Implementation: during every search, for each accepted
 candidate, queue its blocking clause (program literals, over all outgoing
 links of `S`) in `S.pending`. They are injected at the next `init`. This costs
 one clause per solution, so only do it when `SETTINGS.solutions ~= 1`.

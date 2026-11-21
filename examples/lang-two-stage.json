@@ -1,0 +1,48 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Loop language: two checks",
+  "description": "Sum-free sets without two consecutive numbers. One check solver looks for sums, a second one for neighbours.",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% Rules every solver needs. The constant n is set in the Loop tab.\nnum(1..n).\n",
+      "description": "Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% Solver A proposes candidates: here, any set of numbers.\n{ pick(X) : num(X) }.\n#show pick/1.\n",
+      "description": "Proposes candidates (solver A)."
+    },
+    {
+      "name": "glue",
+      "text": "% The atoms solver A and solver C share. glue(T) makes T an interface atom:\n% its value in a candidate is fixed when the check runs.\nglue(pick(X)) :- num(X).\n",
+      "description": "The interface atoms: every glue(T) makes T an interface atom."
+    },
+    {
+      "name": "sums",
+      "text": "% Solver C looks for a counterexample: a sum X + Y = Z inside the candidate.\n1 { sum(X,Y) : num(X), num(Y), X <= Y, X + Y <= n } 1.\n:- sum(X,Y), not pick(X).\n:- sum(X,Y), not pick(Y).\n:- sum(X,Y), not pick(X+Y).\n#show sum/2.\n\n% relevant(T): the interface atoms the counterexample depends on.\n% The refinement says: at least one of them must change.\nrelevant(pick(X)) :- sum(X,Y).\nrelevant(pick(Y)) :- sum(X,Y).\nrelevant(pick(X+Y)) :- sum(X,Y).\n",
+      "description": "The first check: a sum inside the set."
+    },
+    {
+      "name": "neighbours",
+      "text": "% The second check: two consecutive numbers in the set.\n1 { next(X) : num(X), num(X+1) } 1.\n:- next(X), not pick(X).\n:- next(X), not pick(X+1).\nrelevant(pick(X)) :- next(X).\nrelevant(pick(X+1)) :- next(X).\n",
+      "description": "The second check: two consecutive numbers."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A  = shared + abstraction\nsolver C1 = shared + sums\nsolver C2 = shared + neighbours\nlink   G1 = A -> C1 via shared + glue\nlink   G2 = A -> C2 via shared + glue\n\n# Two checks: C2 runs only when C1 finds nothing. Whichever finds a\n# counterexample, its own link turns it into the refinement.\nsearch A:\n    on candidate M:\n        X = C1.solve(assume G1(M))\n        if X:\n            reject M with G1.clause(M, X)\n        else:\n            Y = C2.solve(assume G2(M))\n            if Y: reject M with G2.clause(M, Y)\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "8"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

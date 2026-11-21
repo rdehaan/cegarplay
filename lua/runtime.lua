@@ -881,7 +881,8 @@ function Solver:search(h)
     end
     s.stash = {}
   end
-  if not s.restart_requested then s.blocks = {} end
+  -- s.blocks (accepted solutions) stay queued, also after a search that ended normally: a later
+  -- search of the same solver (shape 4 after a final expand) must not report them again
   reraise()
   if res.satisfiable then s.n.sat = s.n.sat + 1 elseif res.unsatisfiable then s.n.unsat = s.n.unsat + 1 end
   s.exhausted = (not res.interrupted) and not (want > 0 and found >= want)

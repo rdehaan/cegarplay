@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import { importLp, save, template } from '../js/project.js';
 import { stripAspComments } from '../js/driver.js';
+import { GROUPS, PROBLEMS, buildLibrary } from './library.mjs';
 
 const root = new URL('..', import.meta.url);
 const src = (f) => fs.readFileSync(new URL(`reference/declarative-cegar/${f}`, root), 'utf8');
@@ -139,11 +140,30 @@ export function buildExamples() {
   return { 'graph-coloring': gc, 'graph-coloring-original': gco, nash, 'voting-justification': vote };
 }
 
+// All examples and the manifest: { files: { id: project }, manifest }.
+export function buildAll() {
+  const problems = buildExamples();
+  const entries = buildLibrary(problems['graph-coloring']);
+  for (const e of PROBLEMS) entries.push({ ...e, group: 'problems', project: problems[e.id] });
+  const files = {};
+  const examples = [];
+  for (const g of GROUPS) {
+    for (const e of entries.filter((x) => x.group === g.id)) {
+      files[e.id] = e.project;
+      examples.push({ id: e.id, title: e.project.title, group: e.group, summary: e.summary, shape: e.shape,
+        tags: e.tags, expected: e.expected == null ? null : { solutions: e.expected } });
+    }
+  }
+  return { files, manifest: { format: 'cegarplay-library', version: 1, groups: GROUPS, examples } };
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const dir = new URL('examples/', root);
   fs.mkdirSync(dir, { recursive: true });
-  for (const [name, p] of Object.entries(buildExamples())) {
+  const { files, manifest } = buildAll();
+  for (const [name, p] of Object.entries(files)) {
     fs.writeFileSync(new URL(`${name}.json`, dir), save(p));
-    console.log(`examples/${name}.json`);
   }
+  fs.writeFileSync(new URL('library.json', dir), JSON.stringify(manifest, null, 2) + '\n');
+  console.log(`${Object.keys(files).length} examples and examples/library.json written`);
 }

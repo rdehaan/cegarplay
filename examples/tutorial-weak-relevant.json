@@ -1,0 +1,43 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Sum-free sets (too weak relevant/1)",
+  "description": "The check marks only the sum X + Y as relevant, not X and Y. A refinement then forbids the sum for every candidate, also for sets that do not contain X or Y, so the loop finds 11 solutions instead of 61. Switch the loop to the Reference run template to see the true count.",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% Rules every solver needs. The constant n is set in the Loop tab.\nnum(1..n).\n",
+      "description": "Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% Solver A proposes candidates: here, any set of numbers.\n{ pick(X) : num(X) }.\n#show pick/1.\n",
+      "description": "Proposes candidates (solver A)."
+    },
+    {
+      "name": "glue",
+      "text": "% The atoms solver A and solver C share. glue(T) makes T an interface atom:\n% its value in a candidate is fixed when the check runs.\nglue(pick(X)) :- num(X).\n",
+      "description": "The interface atoms: every glue(T) makes T an interface atom."
+    },
+    {
+      "name": "check",
+      "text": "% Solver C looks for a counterexample: a sum X + Y = Z inside the candidate.\n1 { sum(X,Y) : num(X), num(Y), X <= Y, X + Y <= n } 1.\n:- sum(X,Y), not pick(X).\n:- sum(X,Y), not pick(Y).\n:- sum(X,Y), not pick(X+Y).\n#show sum/2.\n\n% relevant(T): the interface atoms the counterexample depends on.\n% The refinement says: at least one of them must change.\n% Too weak: X and Y are not marked.\nrelevant(pick(X+Y)) :- sum(X,Y).\n",
+      "description": "Looks for a counterexample to a candidate (solver C) and marks the atoms it depends on with relevant/1."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "8"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

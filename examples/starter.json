@@ -1,0 +1,39 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "New project",
+  "description": "A small starting point: sets of items that contain every item below a picked one (n solutions). Replace the fragments with your own problem.",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% Rules every solver needs: domains, constants, common definitions.\nitem(1..n).\n"
+    },
+    {
+      "name": "abstraction",
+      "text": "% Proposes candidates. Every solution must be a candidate; the check removes the rest.\n% Here: any non-empty set of items.\n1 { pick(I) : item(I) }.\n#show pick/1.\n"
+    },
+    {
+      "name": "glue",
+      "text": "% The atoms the abstraction and the check share: glue(T) makes T an interface atom.\nglue(pick(I)) :- item(I).\n"
+    },
+    {
+      "name": "check",
+      "text": "% Looks for a counterexample to the candidate; the interface atoms (pick/1) are fixed.\n% Here: a candidate is wrong if it picks an item but not a smaller one.\n{ gap(I,J) : item(I), item(J), I < J } = 1.\n:- gap(I,J), pick(I).\n:- gap(I,J), not pick(J).\n% relevant(T): the interface atoms the counterexample depends on. The refinement says\n% that one of them must change.\nrelevant(pick(I)) :- gap(I,J).\nrelevant(pick(J)) :- gap(I,J).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "4"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

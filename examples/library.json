@@ -1,0 +1,289 @@
+{
+  "format": "cegarplay-library",
+  "version": 1,
+  "groups": [
+    {
+      "id": "tutorial",
+      "title": "Tutorial",
+      "description": "Small examples used step by step in the Tutorial tab."
+    },
+    {
+      "id": "language",
+      "title": "The loop language",
+      "description": "One feature of the loop language each, with comments in the loop script."
+    },
+    {
+      "id": "shapes",
+      "title": "Loop shapes",
+      "description": "Graph colouring at n = 5 with each of the five templates; all give the same solutions."
+    },
+    {
+      "id": "problems",
+      "title": "Problems",
+      "description": "Larger problems from declarative-cegar."
+    }
+  ],
+  "examples": [
+    {
+      "id": "starter",
+      "title": "New project",
+      "group": "tutorial",
+      "summary": "The New project starter: four commented fragments to replace by your own problem.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 4
+      }
+    },
+    {
+      "id": "tutorial-first-run",
+      "title": "Sum-free sets",
+      "group": "tutorial",
+      "summary": "Sum-free sets of numbers: the smallest complete CEGAR loop.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 61
+      }
+    },
+    {
+      "id": "tutorial-weak-relevant",
+      "title": "Sum-free sets (too weak relevant/1)",
+      "group": "tutorial",
+      "summary": "The same problem with a relevant/1 rule that marks too little: solutions get lost.",
+      "shape": "shape2",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 11
+      }
+    },
+    {
+      "id": "lang-basics",
+      "title": "Loop language: the basics",
+      "group": "language",
+      "summary": "Declarations, options, variables, loop, if/elif/else, lists, for, count, log, stop, accept.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 61
+      }
+    },
+    {
+      "id": "lang-several-cex",
+      "title": "Loop language: several counterexamples",
+      "group": "language",
+      "summary": "for X in C.models(assume G(M), limit 3): several counterexamples per candidate.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 61
+      }
+    },
+    {
+      "id": "lang-optimal",
+      "title": "Loop language: optimal counterexamples",
+      "group": "language",
+      "summary": "C.solve(assume G(M), optimal): the smallest refinement, with #minimize in the check.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 61
+      }
+    },
+    {
+      "id": "lang-two-stage",
+      "title": "Loop language: two checks",
+      "group": "language",
+      "summary": "Two check solvers with their own fragments and links; the second runs only if the first finds nothing.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 38
+      }
+    },
+    {
+      "id": "lang-clauses",
+      "title": "Loop language: clauses from ASP",
+      "group": "language",
+      "summary": "reject M with G.clauses(X): the refinement written as clause/3 atoms in ASP.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 61
+      }
+    },
+    {
+      "id": "lang-core",
+      "title": "Loop language: unsat cores",
+      "group": "language",
+      "summary": "reject M with G.core(C): refine from an unsatisfiable core when the check looks for a witness.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 958
+      }
+    },
+    {
+      "id": "lang-second-solver",
+      "title": "Loop language: a refinement solver",
+      "group": "language",
+      "summary": "A third solver R computes the refinement: R.solve(assume GA(M), GC(X)).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 101
+      }
+    },
+    {
+      "id": "lang-legacy",
+      "title": "Loop language: legacy glue",
+      "group": "language",
+      "summary": "link ... legacy: glue fragments that list the interface atoms themselves (cegar.py files).",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 61
+      }
+    },
+    {
+      "id": "lang-raw-lua",
+      "title": "Loop language: raw Lua",
+      "group": "language",
+      "summary": "A loop written directly in Lua against the runtime API (rt.solver, rt.link, A:search, ...).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 61
+      }
+    },
+    {
+      "id": "gc-shape1",
+      "title": "Graph colouring, Shape 1",
+      "group": "shapes",
+      "summary": "Shape 1: check inside the search. One solve call of A for the whole run; refinements are added as clauses during the search.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 101
+      }
+    },
+    {
+      "id": "gc-shape2",
+      "title": "Graph colouring, Shape 2",
+      "group": "shapes",
+      "summary": "Shape 2: solve, check, refine, solve again. A is solved once per candidate.",
+      "shape": "shape2",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 101
+      }
+    },
+    {
+      "id": "gc-shape3",
+      "title": "Graph colouring, Shape 3",
+      "group": "shapes",
+      "summary": "Shape 3: ground the #program refine(k) part once per counterexample (rules instead of clauses).",
+      "shape": "shape3",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 101
+      }
+    },
+    {
+      "id": "gc-shape4",
+      "title": "Graph colouring, Shape 4",
+      "group": "shapes",
+      "summary": "Shape 4: search, collect counterexamples, ground the refine part for 20 at a time.",
+      "shape": "shape4",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 101
+      }
+    },
+    {
+      "id": "gc-reference",
+      "title": "Graph colouring, Reference run",
+      "group": "shapes",
+      "summary": "Reference run: block each refuted candidate. Always sound; slow, but its count is the truth.",
+      "shape": "reference",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 101
+      }
+    },
+    {
+      "id": "graph-coloring",
+      "title": "Graph colouring",
+      "group": "problems",
+      "summary": "Graphs with a leaf colouring that no 3-colouring extends (n = 6, all 10,698 solutions).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": {
+        "solutions": 10698
+      }
+    },
+    {
+      "id": "graph-coloring-original",
+      "title": "Graph colouring (original rules)",
+      "group": "problems",
+      "summary": "The same with the original, too weak relevant/1 rules: 9,270 instead of 10,698.",
+      "shape": "shape1",
+      "tags": [],
+      "expected": {
+        "solutions": 9270
+      }
+    },
+    {
+      "id": "nash",
+      "title": "Nash equilibria",
+      "group": "problems",
+      "summary": "Weighted graphs whose colouring game has a Nash equilibrium.",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null
+    },
+    {
+      "id": "voting-justification",
+      "title": "Voting: justifications",
+      "group": "problems",
+      "summary": "Explaining a voting outcome by axioms.",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null
+    }
+  ]
+}

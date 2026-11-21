@@ -1,0 +1,43 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Loop language: raw Lua",
+  "description": "The Shape 1 loop written in Lua. Use this when the loop language lacks something; \"Edit as Lua\" in the Loop tab turns any loop script into Lua like this.",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% Rules every solver needs. The constant n is set in the Loop tab.\nnum(1..n).\n",
+      "description": "Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% Solver A proposes candidates: here, any set of numbers.\n{ pick(X) : num(X) }.\n#show pick/1.\n",
+      "description": "Proposes candidates (solver A)."
+    },
+    {
+      "name": "glue",
+      "text": "% The atoms solver A and solver C share. glue(T) makes T an interface atom:\n% its value in a candidate is fixed when the check runs.\nglue(pick(X)) :- num(X).\n",
+      "description": "The interface atoms: every glue(T) makes T an interface atom."
+    },
+    {
+      "name": "check",
+      "text": "% Solver C looks for a counterexample: a sum X + Y = Z inside the candidate.\n1 { sum(X,Y) : num(X), num(Y), X <= Y, X + Y <= n } 1.\n:- sum(X,Y), not pick(X).\n:- sum(X,Y), not pick(Y).\n:- sum(X,Y), not pick(X+Y).\n#show sum/2.\n\n% relevant(T): the interface atoms the counterexample depends on.\n% The refinement says: at least one of them must change.\nrelevant(pick(X)) :- sum(X,Y).\nrelevant(pick(Y)) :- sum(X,Y).\nrelevant(pick(X+Y)) :- sum(X,Y).\n",
+      "description": "Looks for a counterexample to a candidate (solver C) and marks the atoms it depends on with relevant/1."
+    }
+  ],
+  "loop": {
+    "language": "lua",
+    "text": "-- A raw Lua loop: the text runs inside rt.run(function() ... end).\n-- It is the Shape 1 script, compiled by hand. See the manual for the rt API.\nlocal A = rt.solver(\"A\", {\"shared\", \"abstraction\"}, {})\nlocal C = rt.solver(\"C\", {\"shared\", \"check\"}, {})\nlocal G = rt.link(\"G\", A, C, {\"shared\", \"glue\"}, {})\nrt.prepare()                      -- grounds the solvers; call once, after the declarations\n\nlocal found = 0\nA:search{ on_candidate = function(M)\n  local X = C:solve{ assume = G:of(M) }\n  if X then\n    M:reject(G:clause(M, X))\n  else\n    found = found + 1             -- not rejected: M is a solution\n  end\nend }\nrt.log(\"solutions:\", found)\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "8"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}
