@@ -838,6 +838,20 @@ tr.mismatch td {
   border-bottom: 2px solid var(--accent);
 }
 
+.page-footer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.page-footer a:link,
+.page-footer a:visited {
+  color: var(--link);
+}
+
 /* Narrow screens (after the rules they override): 16 px gutters, no sideways scrolling. */
 @media screen and (max-width: 650px) {
   main {

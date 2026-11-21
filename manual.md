@@ -682,7 +682,9 @@ The guide's links look like `?example=guide-01-demo-clause&fragment=check&from=g
 Browser storage (`localStorage`, per browser and site):
 
 - `cegarplay.project`: the project being edited, with its run history, saved 0.8 s after each
-  change and restored at start-up (unless `?example`, `?file`, `#p=` or `?fresh=1`).
+  change and restored at start-up (unless `?example`, `?file`, `#p=` or `?fresh=1`). When the
+  browser refuses (storage full or blocked), the project is kept without its run history, and if
+  that fails too, the Control tab says "Not kept in this browser"; download the project then.
 - `cegarplay.manual`: `"1"` when "Show the technical manual" is ticked.
 - `cegarplay.theme`: `"light"` or `"dark"` when the colour theme was chosen by hand (absent for Auto).
 

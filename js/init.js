@@ -145,11 +145,24 @@ let saveTimer = null;
 function saveNow() {
   saveTimer = null;
   if ((!app.ready && !app.restoredOrLoaded) || app.saveBlocked) return;
+  let p;
+  try { p = structuredClone(app.collect()); } catch { return; }
+  // the run history is the part that grows: without it first, then say that nothing was kept
+  let note = '';
   try {
-    const p = structuredClone(app.collect());
     p.runs = app.stats.history;
     localStorage.setItem(STORE_KEY, Project.save(p));
-  } catch { /* storage unavailable or full */ }
+  } catch {
+    try {
+      localStorage.setItem(STORE_KEY, Project.save(p, { runs: false }));
+      if (p.runs && p.runs.length) note = 'Kept in this browser without the run history: storage is full. Download the project with its history to keep that.';
+    } catch {
+      note = 'Not kept in this browser: storage is full or unavailable; download the project to keep it.';
+    }
+  }
+  const e = $('storage-status');
+  e.textContent = note;
+  e.hidden = !note;
 }
 // edit = false: save, but the project was not edited (e.g. the run history changed)
 app.dirty = (edit = true) => {
@@ -508,6 +521,13 @@ async function start() {
   if (!stored && !named && shared === null) $('library-section').open = true;
   buildLibrary();
   await app.engine.ready;
+  // the clingo version, for the footer (the engine is idle here: nothing else runs yet)
+  try {
+    const v = await app.engine.exec('', '--version');
+    const m = /clingo version (\S+)/.exec((v.out || []).join('\n'));
+    if (m) app.clingoVersion = m[1];
+  } catch { /* the footer keeps its generic text */ }
+  $('footer-engine').textContent = `clingo ${app.clingoVersion || ''} via ${app.engineVersion}`.replace('  ', ' ');
   app.ready = true;
   app.internals.facts();
   app.control.setState('idle');

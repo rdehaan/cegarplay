@@ -351,10 +351,24 @@ Notes for the guide phases (checked against the code before G0a):
   group (the older `problems` is sorted by the loop: raw Lua or > 2 solvers). Example files are
   byte-identical; only `examples/library.json` changed (groups only). Library unfolded on a first visit.
 
+### Group D: polish (done)
+- D1: inline SVG favicon, description and Open Graph metas, footer (GitHub, licence, clingo
+  version from `clingo --version` run once in the engine before `app.ready`, plus `app.engineVersion`).
+- D2: `tools/vendor.mjs` drops the brands face (no unicode-range: the browser fetched it for every
+  icon) and the regular face (covers none of the icons); U+F080 still comes from v4compatibility.
+  Saves 135 KB. Only the font files and `fonts.css` changed when vendor.mjs was rerun.
+- D3: `saveNow` retries without `runs`, then shows `#storage-status`.
+- D4: `.github/workflows/test.yml`; it clones declarative-cegar at cfceb49 into `reference/`
+  (git-ignored, read by the tests). Not run on GitHub yet.
+- D5: `docs/trap-repro/repro.mjs` (four cases; prg:add / prg:ground errors inside pcall end with
+  `unreachable`, a bad literal in add_clause with `memory access out of bounds`) and the draft
+  `docs/upstream-trap-report.md` for clingo-wasm. Not filed.
+
 ## Next step
 
-All phases of PLAN.md and of the guide are done. Open items for the user: deployment to GitHub
-Pages; the upstream bug report for the trap; a read of the guide by a person.
+All phases of PLAN.md, of the guide and of TODO.md are done. Open items for the user: deployment
+to GitHub Pages; filing the drafted trap report (`docs/upstream-trap-report.md`); a first CI run on
+GitHub; a read of the guide by a person; Firefox and Safari checks of the TODO changes.
 
 ## Deviations from the plan
 

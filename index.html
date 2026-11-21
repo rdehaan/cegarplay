@@ -6,7 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <title>CegarPlay</title>
-  <link rel="icon" href="data:,">
+  <meta name="description" content="A browser playground for CEGAR loops (counterexample-guided abstraction refinement) written in answer set programming, solved with clingo in WebAssembly.">
+  <meta property="og:title" content="CegarPlay">
+  <meta property="og:description" content="Play with CEGAR loops in answer set programming: write the abstraction, the check and the loop, and run them with clingo in your browser.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232c5f8a'/%3E%3Cpath d='M16 6a10 10 0 1 0 9.2 6' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M26.5 5.5l-.8 7.6-7.4-2.2z' fill='orange'/%3E%3C/svg%3E">
   <script>
     // Cross-origin isolation through a service worker (pause, step, stop, threads).
     // ?nocoi=1 skips it and removes an earlier registration.
@@ -116,6 +120,7 @@
         <div id="library" class="library"><p class="note">Loading the library…</p></div>
       </details>
       <p id="load-status" class="status-line"></p>
+      <p id="storage-status" class="status-line error" hidden></p>
 
       <h3>Start a new project</h3>
       <button class="control-button" id="new-button">New project</button>
@@ -247,6 +252,12 @@
       <pre id="raw-events" class="raw-events"></pre>
     </section>
   </main>
+
+  <footer class="page-footer">
+    <a href="https://github.com/rdehaan/cegarplay">Source on GitHub</a> ·
+    <a href="LICENSE">MIT licence</a> ·
+    <span id="footer-engine">clingo via clingo-wasm</span>
+  </footer>
 
   <!-- Modals -->
   <div class="modal" id="modal-shared">

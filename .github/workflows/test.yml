@@ -1,0 +1,38 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: test
+    steps:
+      - uses: actions/checkout@v4
+      # reference/ is git-ignored; the tests read declarative-cegar's programs from it
+      - name: Clone declarative-cegar (the commit the reference numbers were measured on)
+        working-directory: .
+        run: |
+          git clone --quiet https://github.com/rdehaan/declarative-cegar reference/declarative-cegar
+          git -C reference/declarative-cegar checkout --quiet cfceb499aa7a6c0b3daea5aa3e129fa732e96692
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: test/package-lock.json
+      - run: npm ci
+      - name: Cache the Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('test/package-lock.json') }}
+      # --with-deps installs the system libraries even when the browser comes from the cache
+      - run: npx playwright install --with-deps chromium
+      # The native clingo export test and the Python checker tests skip themselves when
+      # clingo with Lua or the Python clingo module is missing.
+      - run: npm test

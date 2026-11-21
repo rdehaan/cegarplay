@@ -39,7 +39,14 @@ for (const w of [400, 600, 700]) {
   fs.copyFileSync(path.join(os, 'files', f), path.join(fontDir, f));
   css.push(`@font-face {\n  font-family: 'Open Sans';\n  font-style: normal;\n  font-display: swap;\n  font-weight: ${w};\n  src: url('${f}') format('woff2');\n  unicode-range: ${latinRange};\n}`);
 }
-const faCss = fs.readFileSync(path.join(fa, 'css', 'v4-font-face.css'), 'utf8');
+// Only the faces the page uses: the icons (tabs, info links) are solid glyphs, and the bar chart
+// (U+F080) comes from the v4 compatibility face. The brands face has no unicode-range, so the
+// browser would download it (115 KB) for every icon; the regular face covers none of the icons.
+const FA_DROP = ['fa-brands-400.woff2', 'fa-regular-400.woff2'];
+const faCss = fs.readFileSync(path.join(fa, 'css', 'v4-font-face.css'), 'utf8')
+  .replace(/@font-face\s*{[^}]*}/g, (block) => (FA_DROP.some((f) => block.includes(f)) ? '' : block))
+  .replace(/\n{3,}/g, '\n');
+for (const f of FA_DROP) fs.rmSync(path.join(fontDir, f), { force: true });
 for (const m of faCss.matchAll(/url\("\.\.\/webfonts\/([^"]+)"\)/g)) fs.copyFileSync(path.join(fa, 'webfonts', m[1]), path.join(fontDir, m[1]));
 css.push(faCss.replace(/\/\*![\s\S]*?\*\/\s*/, '').replace(/\.\.\/webfonts\//g, '').trim());
 fs.writeFileSync(path.join(fontDir, 'fonts.css'), css.join('\n') + '\n');
