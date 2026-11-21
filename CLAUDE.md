@@ -12,8 +12,8 @@ programming, solved with clingo compiled to WebAssembly.
 - `docs/reference-numbers.md`: numbers the implementation must reproduce.
 - `spike/`: verified prototype code. Read-only; copy from it.
 - `reference/`: clones of logic-game and declarative-cegar. Read-only, git-ignored.
-- `guide/`: the design guide (static pages, `chapters.js`, `numbers.json`), planned in
-  `GUIDE-PLAN.md`. Its examples are built by `tools/guide.mjs`; `tools/guide-numbers.mjs`
+- `guide/`: the design guide (static pages, `chapters.js`, `numbers.json`).
+  Its examples are built by `tools/guide.mjs`; `tools/guide-numbers.mjs`
   measures them (`--check` after any change to an example or a page).
 
 ## Rules that are easy to forget

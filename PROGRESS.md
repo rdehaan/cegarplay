@@ -154,10 +154,10 @@ all group `problems`, all tagged `fast` (each run < 0.2 s), listed in the manual
 - Backlog ideas from the brief (three-check abduction, MSS, strengthening by R, core
   minimisation in Lua) not done.
 
-## Guide (plan: GUIDE-PLAN.md)
+## Guide
 
-The design guide at `guide/` and a dark theme for the whole site. Follow GUIDE-PLAN.md one
-phase at a time (G0a, G0, G1, ..., G4); commits `Guide N: <title>`.
+The design guide at `guide/` and a dark theme for the whole site, built in phases
+G0a, G0, G1, ..., G4 (commits `Guide N: <title>`; the plan, GUIDE-PLAN.md, was removed after G4).
 
 - **G0a Dark theme: done (2026-11-21).** `css/theme.css` holds every colour as a role token
   (light = the old colours; dark block written twice, as the plan says, and a test keeps the
@@ -304,7 +304,7 @@ Notes for the guide phases (checked against the code before G0a):
 
 ## Next step
 
-All phases of PLAN.md and GUIDE-PLAN.md are done. Open items for the user: deployment to GitHub
+All phases of PLAN.md and of the guide are done. Open items for the user: deployment to GitHub
 Pages; the upstream bug report for the trap; a read of the guide by a person.
 
 ## Deviations from the plan
