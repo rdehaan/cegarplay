@@ -154,10 +154,42 @@ all group `problems`, all tagged `fast` (each run < 0.2 s), listed in the manual
 - Backlog ideas from the brief (three-check abduction, MSS, strengthening by R, core
   minimisation in Lua) not done.
 
+## Guide (plan: GUIDE-PLAN.md)
+
+The design guide at `guide/` and a dark theme for the whole site. Follow GUIDE-PLAN.md one
+phase at a time (G0a, G0, G1, ..., G4); commits `Guide N: <title>`.
+
+- **G0a Dark theme: done (2026-11-21).** `css/theme.css` holds every colour as a role token
+  (light = the old colours; dark block written twice, as the plan says, and a test keeps the
+  copies equal). `js/theme.js` (classic script in `<head>`) applies `data-theme` from
+  `localStorage["cegarplay.theme"]` and wires every `[data-theme-toggle]` button (Auto, Light,
+  Dark); `window.cegarTheme` has `mode/isDark/set/cycle/onChange`. `css/main.css` has no
+  colour literal left. `js/theme-cegarplay-dark.js` is the ACE theme; `makeEditor` keeps a set
+  of live editors and switches them on change. Chart colours are `var(--chart-n)` in `style`.
+  Tests: `test/theme.test.mjs` (literals, tokens, contrast >= 4.5 for 32 dark pairs, chart
+  colours), `test/browser/theme.test.mjs` (dark system, stored light, toggle and reload, every
+  tab in both themes with screenshots to `test/screenshots/theme/`, and in dark no visible
+  element with a light background). The harness's `openPage` takes `context`,
+  `contextOptions` and `path`. The "setting applies on a guide page" test is skipped until
+  `guide/index.html` exists (G0).
+  - Light check: screenshots of all 8 tabs before (HEAD in a worktree) and after differ by at
+    most 5/255 per channel (the near-whites #f2f2f2, #f4f4f4, #f7f7f7 merged into `--subtle`
+    #f5f5f5; #e3e3e3 into `--border-light` #e8e8e8), apart from the timing in Internals and
+    the new manual lines.
+  - Light keeps its old contrasts (for instance `--text-soft` #888 on white is 3.5); only dark
+    is held to 4.5.
+- Next: G0 Infrastructure.
+
+Notes for the guide phases (checked against the code before G0a):
+- The run history's ⚠ only compares runs with the same fragments (`js/stats.js:81`); for the
+  soundness test in page 4, tell the reader to keep the fragments and change only the loop to
+  `reject M with G.block(M)`.
+- `graph-coloring-original` loses a loop-dependent number: 9,270 in Shape 1, 9,277 in Shape 2.
+
 ## Next step
 
-All planned phases are done. Open items for the user: deployment to GitHub
-Pages; the upstream bug report for the trap.
+All phases of PLAN.md are done. Open items for the user: deployment to GitHub
+Pages; the upstream bug report for the trap. The guide: see "Guide" above.
 
 ## Deviations from the plan
 

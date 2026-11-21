@@ -29,15 +29,16 @@ export async function launch() {
 
 // By default the page is opened with ?nocoi=1 (not isolated); pass { coi: true } to let the
 // service worker shim isolate it (the page reloads once).
-export async function openPage(browser, server, query = '', { acceptDownloads = true, coi = false } = {}) {
+// contextOptions go to browser.newContext (for instance { colorScheme: 'dark' }); path is the page to open.
+export async function openPage(browser, server, query = '', { acceptDownloads = true, coi = false, contextOptions = {}, path = 'index.html', context: given } = {}) {
   if (!coi) query = query ? query + '&nocoi=1' : '?nocoi=1';
-  const context = await browser.newContext({ acceptDownloads });
+  const context = given || await browser.newContext({ acceptDownloads, ...contextOptions });
   const page = await context.newPage();
   const errors = [], foreign = [];
   page.on('console', (m) => { if (m.type() === 'error' && !/chrome:\/\/juggler/.test(m.text())) errors.push(m.text()); });  // juggler: Playwright's Firefox instrumentation
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('request', (r) => { const u = r.url(); if (!u.startsWith(server.url) && !u.startsWith('blob:') && !u.startsWith('data:')) foreign.push(u); });
-  await page.goto(server.url + 'index.html' + query);
+  await page.goto(server.url + path + query);
   if (coi) {
     for (let i = 0; i < 100; i++) {
       const iso = await page.evaluate(() => self.crossOriginIsolated && document.body.dataset.ready === 'true').catch(() => false);
@@ -45,7 +46,7 @@ export async function openPage(browser, server, query = '', { acceptDownloads = 
       await page.waitForTimeout(100);
     }
   }
-  await page.waitForSelector('body[data-ready="true"]', { timeout: 30000 });
+  if (path === 'index.html') await page.waitForSelector('body[data-ready="true"]', { timeout: 30000 });
   return { page, context, errors, foreign };
 }
 

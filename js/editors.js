@@ -2,9 +2,23 @@
 /* global ace */
 import { FRAGMENT_NAME, DEFAULT_FRAGMENTS } from './project.js';
 
+// The ACE theme follows the colour theme (js/theme.js); every editor made here switches with it.
+const LIVE = new Set();
+const aceTheme = () => (window.cegarTheme && window.cegarTheme.isDark() ? 'ace/theme/cegarplay_dark' : 'ace/theme/textmate');
+if (window.cegarTheme) {
+  window.cegarTheme.onChange(() => {
+    const theme = aceTheme();
+    for (const ed of LIVE) {
+      if (!ed.container.isConnected || !ed.renderer) { LIVE.delete(ed); continue; }
+      try { ed.setTheme(theme); } catch (e) { LIVE.delete(ed); }
+    }
+  });
+}
+
 export function makeEditor(el, mode, { readOnly = false } = {}) {
   const ed = ace.edit(el);
-  ed.setTheme('ace/theme/textmate');
+  ed.setTheme(aceTheme());
+  LIVE.add(ed);
   ed.$blockScrolling = Infinity;
   ed.setOptions({
     useSoftTabs: true,
@@ -104,7 +118,6 @@ export class Editors {
     for (const ed of this.allEditors()) {
       ed.setReadOnly(b);
       ed.container.classList.toggle('locked', b);
-      ed.container.style.background = b ? '#eee' : '';
     }
     for (const x of document.querySelectorAll('.frag-tool, #add-fragment-button, #insert-template-button, #edit-as-lua-button')) x.disabled = b;
     if (!b) document.getElementById('edit-as-lua-button').disabled = this.loopLanguage === 'lua';

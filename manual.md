@@ -551,6 +551,10 @@ Shape 1 note: clasp's default enumeration keeps refinement clauses added during 
 weakly; later candidates may violate them. The result stays sound (every candidate is checked),
 but refinements prune less. `options "--enum-mode=record"` on the abstraction solver keeps them.
 
+Colour theme: the button at the top right of the page cycles through Auto (follow the system's
+light or dark setting), Light and Dark. The choice is kept in this browser and also applies to the
+pages of the guide. The editors and the charts follow it.
+
 ## Running
 
 **Run** (or Ctrl+Enter / Cmd+Enter anywhere on the page) validates the project, then starts the run
@@ -650,6 +654,7 @@ Browser storage (`localStorage`, per browser and site):
 - `cegarplay.project`: the project being edited, with its run history, saved 0.8 s after each
   change and restored at start-up (unless `?example`, `?file` or `?fresh=1`).
 - `cegarplay.manual`: `"1"` when "Show the technical manual" is ticked.
+- `cegarplay.theme`: `"light"` or `"dark"` when the colour theme was chosen by hand (absent for Auto).
 
 Keyboard: Ctrl+Enter or Cmd+Enter runs from anywhere, also inside an editor.
 

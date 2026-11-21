@@ -1,0 +1,166 @@
+/* Colour tokens for the playground and the guide, in a light and a dark theme.
+   Every colour of css/main.css and guide/guide.css is one of these variables.
+   js/theme.js sets data-theme="light" or "dark" on <html> when the reader chose one;
+   without the attribute the system preference decides. The two dark blocks are
+   identical (test/theme.test.mjs checks that). */
+
+:root {
+  color-scheme: light;
+  --page: #eee;
+  --panel: #fff;
+  --text: #555;
+  --text-muted: #666;
+  --text-faint: #777;
+  --text-soft: #888;
+  --text-disabled: #aaa;
+  --tab-text: #bbb;
+  --tab-hover: #888;
+  --border: #ddd;
+  --border-strong: #ccc;
+  --border-light: #e8e8e8;
+  --border-soft: #eee;
+  --border-faint: #f2f2f2;
+  --link: #2c5f8a;
+  --anchor: LinkText;
+  --anchor-visited: VisitedText;
+  --accent: orange;
+  --error: #c0392b;
+  --error-bg: #fdecea;
+  --ok: #1e7b34;
+  --ok-bg: #e6f4ea;
+  --busy: #b36b00;
+  --busy-bg: #fff4e0;
+  --warn: #8a5a00;
+  --warn-bg: #fbf0d9;
+  --paused-bg: #e8e8e8;
+  --subtle: #f5f5f5;
+  --code-bg: #eee;
+  --locked-bg: #eee;
+  --button-bg: #fff;
+  --button-disabled-bg: #eee;
+  --hint-bg: #f1f6fb;
+  --highlight: #fff1cc;
+  --selected-bg: #eef6ee;
+  --tag-bg: #eaeaea;
+  --tooltip-bg: #fff;
+  --tooltip-text: black;
+  --backdrop: rgba(0, 0, 0, 0.25);
+  --chart-axis: #bbb;
+  --chart-1: #e67e22;
+  --chart-2: #2980b9;
+  --chart-3: #27ae60;
+  --chart-4: #8e44ad;
+  --chart-5: #c0392b;
+  --chart-6: #16a085;
+  --chart-7: #7f8c8d;
+  --chart-ground: #bdc3c7;
+  --chart-rest: #ecf0f1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #1c1d20;
+    --panel: #26282c;
+    --text: #d6d6d6;
+    --text-muted: #c2c4c7;
+    --text-faint: #b3b6ba;
+    --text-soft: #a4a8ad;
+    --text-disabled: #6e7277;
+    --tab-text: #9a9ea4;
+    --tab-hover: #c8cbcf;
+    --border: #46494e;
+    --border-strong: #5a5e64;
+    --border-light: #3d4045;
+    --border-soft: #383b40;
+    --border-faint: #313337;
+    --link: #8bbce6;
+    --anchor: #8bbce6;
+    --anchor-visited: #c4a8e8;
+    --accent: orange;
+    --error: #f28b7f;
+    --error-bg: #3e2624;
+    --ok: #7fd394;
+    --ok-bg: #1f3526;
+    --busy: #f2b45e;
+    --busy-bg: #3b2e1a;
+    --warn: #e6b765;
+    --warn-bg: #39301d;
+    --paused-bg: #36393e;
+    --subtle: #2e3034;
+    --code-bg: #303237;
+    --locked-bg: #202225;
+    --button-bg: #313338;
+    --button-disabled-bg: #2a2c30;
+    --hint-bg: #22303d;
+    --highlight: #5c4a17;
+    --selected-bg: #213528;
+    --tag-bg: #3a3d42;
+    --tooltip-bg: #2e3034;
+    --tooltip-text: #d6d6d6;
+    --backdrop: rgba(0, 0, 0, 0.6);
+    --chart-axis: #6e7277;
+    --chart-1: #f5a04f;
+    --chart-2: #5dade2;
+    --chart-3: #58d68d;
+    --chart-4: #c39bd3;
+    --chart-5: #ec7063;
+    --chart-6: #48c9b0;
+    --chart-7: #aab7b8;
+    --chart-ground: #6c7a80;
+    --chart-rest: #3a3d42;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #1c1d20;
+  --panel: #26282c;
+  --text: #d6d6d6;
+  --text-muted: #c2c4c7;
+  --text-faint: #b3b6ba;
+  --text-soft: #a4a8ad;
+  --text-disabled: #6e7277;
+  --tab-text: #9a9ea4;
+  --tab-hover: #c8cbcf;
+  --border: #46494e;
+  --border-strong: #5a5e64;
+  --border-light: #3d4045;
+  --border-soft: #383b40;
+  --border-faint: #313337;
+  --link: #8bbce6;
+  --anchor: #8bbce6;
+  --anchor-visited: #c4a8e8;
+  --accent: orange;
+  --error: #f28b7f;
+  --error-bg: #3e2624;
+  --ok: #7fd394;
+  --ok-bg: #1f3526;
+  --busy: #f2b45e;
+  --busy-bg: #3b2e1a;
+  --warn: #e6b765;
+  --warn-bg: #39301d;
+  --paused-bg: #36393e;
+  --subtle: #2e3034;
+  --code-bg: #303237;
+  --locked-bg: #202225;
+  --button-bg: #313338;
+  --button-disabled-bg: #2a2c30;
+  --hint-bg: #22303d;
+  --highlight: #5c4a17;
+  --selected-bg: #213528;
+  --tag-bg: #3a3d42;
+  --tooltip-bg: #2e3034;
+  --tooltip-text: #d6d6d6;
+  --backdrop: rgba(0, 0, 0, 0.6);
+  --chart-axis: #6e7277;
+  --chart-1: #f5a04f;
+  --chart-2: #5dade2;
+  --chart-3: #58d68d;
+  --chart-4: #c39bd3;
+  --chart-5: #ec7063;
+  --chart-6: #48c9b0;
+  --chart-7: #aab7b8;
+  --chart-ground: #6c7a80;
+  --chart-rest: #3a3d42;
+}

@@ -10,8 +10,8 @@ html, body {
 
 body {
   font: 14px/1 'Open Sans', sans-serif;
-  color: #555;
-  background: #eee;
+  color: var(--text);
+  background: var(--page);
 }
 
 h1 {
@@ -35,6 +35,13 @@ h4 {
   font-weight: 600;
 }
 
+a:link {
+  color: var(--anchor);
+}
+a:visited {
+  color: var(--anchor-visited);
+}
+
 p {
   margin: 0 0 10px;
   line-height: 1.5;
@@ -45,13 +52,13 @@ main {
   max-width: 1400px;
   padding: 50px;
   margin: 0 auto;
-  background: #fff;
+  background: var(--panel);
 }
 
 section {
   display: none;
   padding: 20px 0 0;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--border);
 }
 
 pre {
@@ -88,14 +95,14 @@ table.internals-table {
 
 table.internals-table th,
 table.internals-table td {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   padding: 6px 8px;
   text-align: left;
   vertical-align: top;
 }
 
 table.internals-table th {
-  background-color: #f5f5f5;
+  background-color: var(--subtle);
 }
 
 input[name="tabs"] {
@@ -116,7 +123,7 @@ label[name="tabs"] {
   padding: 15px 25px;
   font-weight: 600;
   text-align: center;
-  color: #bbb;
+  color: var(--tab-text);
   border: 1px solid transparent;
 }
 
@@ -136,19 +143,19 @@ label[for='tab7']:before { content: '\f0e8'; }
 label[for='tab8']:before { content: '\f02d'; }
 
 label:hover {
-  color: #888;
+  color: var(--tab-hover);
   cursor: pointer;
 }
 
 input[name="tabs"]:checked + label {
-  color: #555;
-  border: 1px solid #ddd;
-  border-top: 2px solid orange;
-  border-bottom: 1px solid #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  border-bottom: 1px solid var(--panel);
 }
 
 label[for="tab2"] {
-  color: orange;
+  color: var(--accent);
 }
 
 #tab1:checked ~ #section-control,
@@ -186,19 +193,19 @@ input[type="file"] {
   display: none;
 }
 .control-button {
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-strong);
   display: inline-block;
   padding: 6px 12px;
   cursor: pointer;
-  background: #fff;
+  background: var(--button-bg);
 }
 .control-button:disabled {
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-strong);
   display: inline-block;
   padding: 6px 12px;
   cursor: pointer;
-  background: #eee;
-  color: #aaa;
+  background: var(--button-disabled-bg);
+  color: var(--text-disabled);
 }
 
 
@@ -208,9 +215,9 @@ input[type="file"] {
 pre,
 code {
   font-size: 15px;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--border-light);
   border-radius: 3px;
-  background-color: #eee; }
+  background-color: var(--code-bg); }
 
 code {
   padding: 1px 5px; }
@@ -237,7 +244,7 @@ a.modal-link:visited,
 a.modal-link:active,
 a.modal-link:hover,
 a.modal-link:link {
-  color: #aaa;
+  color: var(--text-disabled);
   text-decoration-line: none;
 }
 .modal {
@@ -250,7 +257,7 @@ a.modal-link:link {
   align-items: center;
   justify-content: center;
   padding: 50px;
-  background: rgba(0,0,0,0.25);
+  background: var(--backdrop);
   opacity: 1;
   cursor: pointer;
   visibility: hidden;
@@ -268,7 +275,7 @@ a.modal-link:link {
   min-width: 320px;
   max-width: 1300px;
   max-height: 80vh;
-  background: #fff;
+  background: var(--panel);
   overflow: auto;
   cursor: default;
 }
@@ -276,7 +283,7 @@ a.modal-link:link {
   padding: 1rem;
 }
 .modal-content {
-  background: #fff;
+  background: var(--panel);
 }
 .modal-header {
   display: flex;
@@ -287,20 +294,20 @@ a.modal-link:link {
   font-size: 1.5rem;
 }
 .close-modal {
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-strong);
   display: inline-block;
   padding: 3px 6px;
   cursor: pointer;
-  background: #fff;
+  background: var(--button-bg);
 }
 
 #load-status {
   margin-top: 5px;
-  color: #888;
+  color: var(--text-soft);
 }
 #upload-status {
   margin-top: 5px;
-  color: #888;
+  color: var(--text-soft);
 }
 
 /* ---- CegarPlay ---------------------------------------------------------- */
@@ -310,17 +317,17 @@ h1 {
 .subtitle {
   text-align: center;
   margin: 0 0 30px;
-  color: #888;
+  color: var(--text-soft);
 }
 label[for="tab2"] {
-  color: #bbb;
+  color: var(--tab-text);
 }
 input[name="tabs"]:checked + label[for="tab2"] {
-  color: #555;
+  color: var(--text);
 }
 label[name="tabs"].has-problem:after {
   content: ' \25CF';
-  color: #c0392b;
+  color: var(--error);
 }
 .run-bar {
   padding: 0 0 1.5em;
@@ -342,16 +349,16 @@ label[name="tabs"].has-problem:after {
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 3px;
-  background: #f2f2f2;
+  background: var(--subtle);
 }
-#run-status[data-state="running"], #run-status[data-state="validating"] { color: #b36b00; background: #fff4e0; }
-#run-status[data-state="paused"] { color: #555; background: #e8e8e8; }
-#run-status[data-state="finished"] { color: #1e7b34; background: #e6f4ea; }
-#run-status[data-state="aborted"] { color: #8a5a00; background: #fbf0d9; }
-#run-status[data-state="error"] { color: #c0392b; background: #fdecea; }
+#run-status[data-state="running"], #run-status[data-state="validating"] { color: var(--busy); background: var(--busy-bg); }
+#run-status[data-state="paused"] { color: var(--text); background: var(--paused-bg); }
+#run-status[data-state="finished"] { color: var(--ok); background: var(--ok-bg); }
+#run-status[data-state="aborted"] { color: var(--warn); background: var(--warn-bg); }
+#run-status[data-state="error"] { color: var(--error); background: var(--error-bg); }
 .run-message {
   margin-top: 6px;
-  color: #c0392b;
+  color: var(--error);
   font-size: 13px;
 }
 .example-code.ace_editor {
@@ -359,12 +366,12 @@ label[name="tabs"].has-problem:after {
 }
 .run-message a {
   margin-left: 8px;
-  color: #2c5f8a;
+  color: var(--link);
 }
 .live-line {
   margin-top: 10px;
   font: 13px/1.4 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-  color: #666;
+  color: var(--text-muted);
   min-height: 1.4em;
 }
 .control-button:disabled {
@@ -372,14 +379,14 @@ label[name="tabs"].has-problem:after {
 }
 .status-line {
   margin-top: 5px;
-  color: #888;
+  color: var(--text-soft);
 }
 .status-line.error, .error-text {
-  color: #c0392b;
+  color: var(--error);
 }
 .project-box {
-  background: #f4f4f4;
-  border: 1px solid #e3e3e3;
+  background: var(--subtle);
+  border: 1px solid var(--border-light);
   border-radius: 4px;
   padding: 10px 14px;
   margin: 12px 0;
@@ -391,7 +398,7 @@ label[name="tabs"].has-problem:after {
   margin: 0;
 }
 .project-description {
-  color: #666;
+  color: var(--text-muted);
   margin: 4px 0 0;
 }
 .project-description:empty { display: none; }
@@ -401,11 +408,11 @@ label[name="tabs"].has-problem:after {
   flex-direction: column;
   gap: 4px;
 }
-.project-form .inline-label { padding: 0; font-size: 13px; color: #666; }
+.project-form .inline-label { padding: 0; font-size: 13px; color: var(--text-muted); }
 .project-form input, .project-form textarea {
   font: inherit;
   padding: 4px 6px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-strong);
   border-radius: 3px;
 }
 .project-form .small-button:first-child { margin-left: 0; }
@@ -413,18 +420,18 @@ label[name="tabs"].has-problem:after {
 .library-section > summary { cursor: pointer; }
 .library-section > summary h3 { display: inline-block; }
 .note {
-  color: #888;
+  color: var(--text-soft);
   font-size: 13px;
   font-weight: 400;
 }
 .editor {
   width: 100%;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   margin: 0 0 10px;
   font-size: 13px;
 }
 .editor.locked, .ace_editor.locked {
-  background: #eee;
+  background: var(--locked-bg);
 }
 .fragment {
   margin-bottom: 18px;
@@ -436,7 +443,7 @@ label[name="tabs"].has-problem:after {
   gap: 8px;
 }
 .fragment h3.has-problem .fragment-name {
-  color: #c0392b;
+  color: var(--error);
 }
 .fragment h3.has-problem .fragment-name:after {
   content: ' \25CF';
@@ -450,11 +457,11 @@ label[name="tabs"].has-problem:after {
   margin-left: 4px;
 }
 .fragment-description {
-  color: #888;
+  color: var(--text-soft);
   margin-bottom: 6px;
 }
 .loop-language {
-  color: #888;
+  color: var(--text-soft);
   font-weight: 400;
   font-size: 13px;
   margin-left: 8px;
@@ -473,7 +480,7 @@ label[name="tabs"].has-problem:after {
 .settings-grid input[type="number"], #constants-table input {
   width: 110px;
   padding: 3px 6px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-strong);
   font: inherit;
 }
 #constants-table input.const-name {
@@ -485,21 +492,21 @@ label[name="tabs"].has-problem:after {
   padding: 8px 0;
 }
 .result-line.error {
-  color: #c0392b;
+  color: var(--error);
 }
 .solutions {
   font: 12px/1.5 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
   max-height: 340px;
   overflow: auto;
   padding-left: 60px;
-  border: 1px solid #eee;
+  border: 1px solid var(--border-soft);
   margin-bottom: 6px;
 }
 .solutions:empty {
   border: 0;
 }
 .solutions .cost {
-  color: #888;
+  color: var(--text-soft);
   margin-left: 10px;
 }
 .messages {
@@ -509,32 +516,32 @@ label[name="tabs"].has-problem:after {
 }
 .messages .msg {
   white-space: pre-wrap;
-  border-bottom: 1px solid #f2f2f2;
+  border-bottom: 1px solid var(--border-faint);
   padding: 2px 0;
 }
 .messages .msg.error {
-  color: #c0392b;
+  color: var(--error);
 }
 .messages .msg.warning {
-  color: #8a5a00;
+  color: var(--warn);
 }
 .messages .msg.hint {
-  color: #2c5f8a;
+  color: var(--link);
   font-size: 13px;
   font-family: 'Open Sans', sans-serif;
-  background: #f1f6fb;
+  background: var(--hint-bg);
   padding: 4px 8px;
 }
 .messages details summary {
   cursor: pointer;
-  color: #888;
+  color: var(--text-soft);
 }
 .messages details pre {
   margin: 4px 0 0 16px;
   font-size: 11px;
 }
 .messages .count {
-  color: #888;
+  color: var(--text-soft);
 }
 .raw-events {
   max-height: 400px;
@@ -560,11 +567,11 @@ table.internals-table td.num, table.internals-table th.num {
   max-width: 500px;
 }
 .trace-kind.error {
-  color: #c0392b;
+  color: var(--error);
   font-weight: 700;
 }
 .trace-label, .trace-kind {
-  color: #666;
+  color: var(--text-muted);
 }
 .trace-panels {
   display: grid;
@@ -579,7 +586,7 @@ table.internals-table td.num, table.internals-table th.num {
 }
 .atoms {
   font: 12px/1.5 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--border-light);
   padding: 6px 8px;
   min-height: 60px;
   max-height: 260px;
@@ -599,11 +606,11 @@ table.internals-table td.num, table.internals-table th.num {
   margin-right: 6px;
 }
 .atoms .hl {
-  background: #fff1cc;
+  background: var(--highlight);
   font-weight: 700;
 }
 .atoms-head {
-  color: #888;
+  color: var(--text-soft);
   margin-bottom: 4px;
   font-family: 'Open Sans', sans-serif;
 }
@@ -615,7 +622,7 @@ table.internals-table td.num, table.internals-table th.num {
 .charts figure {
   flex: 1 1 300px;
   max-width: 420px;
-  border: 1px solid #eee;
+  border: 1px solid var(--border-soft);
   padding: 8px;
 }
 .charts figcaption {
@@ -628,19 +635,22 @@ table.internals-table td.num, table.internals-table th.num {
   display: block;
 }
 .chart-svg .axis {
-  stroke: #bbb;
+  stroke: var(--chart-axis);
   stroke-width: 1;
+}
+.chart-svg .swatch {
+  stroke: var(--border-strong);
 }
 .chart-svg .tick {
   font-size: 11px;
-  fill: #777;
+  fill: var(--text-faint);
 }
 tr.mismatch td {
-  background: #fdecea;
-  color: #c0392b;
+  background: var(--error-bg);
+  color: var(--error);
 }
 .example-code {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   margin: 0 0 12px;
   font-size: 13px;
 }
@@ -649,21 +659,21 @@ tr.mismatch td {
 }
 #tutorial h2 {
   margin-top: 14px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-soft);
 }
 #tutorial table {
   margin-bottom: 12px;
 }
 #manual h2 {
   margin-top: 24px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-soft);
 }
 #manual h3 { margin-top: 18px; }
 #manual table { margin-bottom: 12px; }
 #manual td code, #manual-toc code { white-space: normal; }
 #manual .code-block {
-  background: #f7f7f7;
-  border: 1px solid #ddd;
+  background: var(--subtle);
+  border: 1px solid var(--border);
   padding: 8px 10px;
   font-size: 13px;
   overflow-x: auto;
@@ -672,14 +682,14 @@ tr.mismatch td {
 #manual blockquote {
   margin: 0 0 12px;
   padding: 2px 12px;
-  border-left: 3px solid #ddd;
-  color: #555;
+  border-left: 3px solid var(--border);
+  color: var(--text);
 }
 .manual-toc {
   columns: 2 260px;
   margin: 0 0 16px;
   padding: 8px 12px;
-  border: 1px solid #eee;
+  border: 1px solid var(--border-soft);
   font-size: 14px;
 }
 .manual-toc ol { margin: 0; padding-left: 22px; }
@@ -698,20 +708,20 @@ tr.mismatch td {
   width: 100%;
   max-width: 420px;
   padding: 5px 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-strong);
   border-radius: 3px;
   font: inherit;
   margin: 4px 0 8px;
 }
 .library-group {
   margin: 0 0 6px;
-  border: 1px solid #e3e3e3;
+  border: 1px solid var(--border-light);
   border-radius: 3px;
 }
 .library-group > summary {
   cursor: pointer;
   padding: 8px 10px;
-  background: #f7f7f7;
+  background: var(--subtle);
   line-height: 1.4;
 }
 .library-group-title {
@@ -726,11 +736,11 @@ tr.mismatch td {
   align-items: center;
   justify-content: space-between;
   padding: 7px 10px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-soft);
   line-height: 1.45;
 }
 .library-entry.loaded {
-  background: #eef6ee;
+  background: var(--selected-bg);
 }
 .library-text {
   min-width: 0;
@@ -740,19 +750,19 @@ tr.mismatch td {
 }
 .library-id {
   font-size: 12px;
-  color: #888;
+  color: var(--text-soft);
 }
 .library-tag {
   display: inline-block;
   margin-left: 6px;
   padding: 0 6px;
   border-radius: 8px;
-  background: #eaeaea;
-  color: #666;
+  background: var(--tag-bg);
+  color: var(--text-muted);
   font-size: 11px;
 }
 .library-summary {
-  color: #777;
+  color: var(--text-faint);
   font-size: 13px;
 }
 .library-buttons {
@@ -765,4 +775,20 @@ tr.mismatch td {
 @media (max-width: 700px) {
   .library-entry { flex-direction: column; align-items: flex-start; }
   .library-buttons .small-button:first-child { margin-left: 0; }
+}
+
+/* ACE's annotation tooltip lives outside the editors */
+.ace_tooltip {
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+}
+
+/* Theme control (js/theme.js), top right of the page */
+.theme-toggle {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 12px;
+  padding: 3px 10px;
+  color: var(--text);
 }

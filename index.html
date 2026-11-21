@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>CegarPlay</title>
   <link rel="icon" href="data:,">
   <script>
@@ -16,12 +17,15 @@
     };
   </script>
   <script src="coi-serviceworker.js"></script>
+  <script src="js/theme.js"></script>
   <link rel="stylesheet" href="vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/main.css">
 </head>
 
 <body>
 
+  <button class="control-button theme-toggle" id="theme-button" data-theme-toggle type="button">&#x25D0; Auto</button>
   <h1>CegarPlay</h1>
   <p class="subtitle">Play with CEGAR loops in answer set programming</p>
 
@@ -301,6 +305,7 @@
   <script src="js/ace.js" charset="utf-8"></script>
   <script src="js/mode-gringo.js" charset="utf-8"></script>
   <script src="js/mode-loop.js" charset="utf-8"></script>
+  <script src="js/theme-cegarplay-dark.js" charset="utf-8"></script>
   <script src="js/modal.js" charset="utf-8"></script>
   <script type="module" src="js/init.js"></script>
 </body>

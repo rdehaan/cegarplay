@@ -4,7 +4,8 @@ import { fmt } from './output.js';
 const MAX_POINTS = 500;
 const HIST_LABELS = ['1', '2', '3–4', '5–8', '9–16', '17–32', '33–64', '65+'];
 const SVGNS = 'http://www.w3.org/2000/svg';
-const COLORS = ['#e67e22', '#2980b9', '#27ae60', '#8e44ad', '#c0392b', '#16a085', '#7f8c8d'];
+// Chart colours are tokens of css/theme.css, so the charts follow the colour theme without redrawing.
+const COLORS = [1, 2, 3, 4, 5, 6, 7].map((i) => `var(--chart-${i})`);
 
 const secs = (t) => (typeof t === 'number' ? (t < 10 ? t.toFixed(2) : t.toFixed(1)) + ' s' : '–');
 const dash = (v) => (v === null || v === undefined ? '–' : fmt(typeof v === 'number' && !Number.isInteger(v) ? Math.round(v) : v));
@@ -211,7 +212,7 @@ export class Stats {
     const x = (t) => L + (t / tMax) * (W - L - R), y = (v) => H - B - (v / yMax) * (H - T - B);
     for (const [i, name] of [[1, 'candidates'], [2, 'refinements']]) {
       const d = pts.map((p) => `${x(p[0]).toFixed(1)},${y(p[i]).toFixed(1)}`).join(' ');
-      s.append(svg('polyline', { points: d, fill: 'none', stroke: COLORS[i - 1], 'stroke-width': 2, class: `series-${name}`, 'data-points': pts.length }));
+      s.append(svg('polyline', { points: d, fill: 'none', style: `stroke: ${COLORS[i - 1]}`, 'stroke-width': 2, class: `series-${name}`, 'data-points': pts.length }));
     }
     s.append(this.legend([['candidates', COLORS[0]], ['refinements', COLORS[1]]], L + 8, T + 4));
     box.replaceChildren(s);
@@ -225,18 +226,18 @@ export class Stats {
     if (st) {
       let used = 0, ground = 0;
       Object.entries(st.solvers).forEach(([n, v], i) => { parts.push([`solving ${n}`, v.time, COLORS[i % COLORS.length]]); used += v.time; ground += v.ground; });
-      parts.push(['grounding', ground, '#bdc3c7']);
-      parts.push(['rest', Math.max(0, st.t - used - ground), '#ecf0f1']);
+      parts.push(['grounding', ground, 'var(--chart-ground)']);
+      parts.push(['rest', Math.max(0, st.t - used - ground), 'var(--chart-rest)']);
     }
     const total = parts.reduce((a, p) => a + p[1], 0) || 1;
     let x0 = 10;
     const bw = W - 20;
     parts.forEach(([name, v, c], i) => {
       const w = (v / total) * bw;
-      s.append(svg('rect', { x: x0, y: 20, width: Math.max(0, w), height: 40, fill: c, class: 'bar' }, undefined));
+      s.append(svg('rect', { x: x0, y: 20, width: Math.max(0, w), height: 40, style: `fill: ${c}`, class: 'bar' }, undefined));
       x0 += w;
       const ly = 82 + i * 18;
-      s.append(svg('rect', { x: 10, y: ly - 10, width: 12, height: 12, fill: c, stroke: '#ccc' }));
+      s.append(svg('rect', { x: 10, y: ly - 10, width: 12, height: 12, style: `fill: ${c}`, class: 'swatch' }));
       s.append(svg('text', { x: 28, y: ly, class: 'tick' }, `${name}: ${v.toFixed(3)} s (${Math.round((v / total) * 100)}%)`));
     });
     box.replaceChildren(s);
@@ -252,7 +253,7 @@ export class Stats {
     s.append(svg('text', { x: L - 4, y: T + 4, 'text-anchor': 'end', class: 'tick' }, fmt(max)));
     hist.forEach((v, i) => {
       const bh = (v / max) * (H - B - T);
-      s.append(svg('rect', { x: L + i * bw + 3, y: H - B - bh, width: bw - 6, height: bh, fill: COLORS[1], class: 'bar' }));
+      s.append(svg('rect', { x: L + i * bw + 3, y: H - B - bh, width: bw - 6, height: bh, style: `fill: ${COLORS[1]}`, class: 'bar' }));
       s.append(svg('text', { x: L + i * bw + bw / 2, y: H - B + 14, 'text-anchor': 'middle', class: 'tick' }, HIST_LABELS[i]));
       if (v) s.append(svg('text', { x: L + i * bw + bw / 2, y: H - B - bh - 3, 'text-anchor': 'middle', class: 'tick' }, fmt(v)));
     });
@@ -263,7 +264,7 @@ export class Stats {
   legend(items, x, y) {
     const g = svg('g');
     items.forEach(([name, c], i) => {
-      g.append(svg('rect', { x, y: y + i * 16, width: 10, height: 10, fill: c }));
+      g.append(svg('rect', { x, y: y + i * 16, width: 10, height: 10, style: `fill: ${c}` }));
       g.append(svg('text', { x: x + 14, y: y + i * 16 + 9, class: 'tick' }, name));
     });
     return g;
