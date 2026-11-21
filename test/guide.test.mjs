@@ -141,7 +141,9 @@ test('guide examples: sound ones give their baseline\'s count, unsound ones stri
   for (const e of GUIDE) {
     assert.equal(m[e.id].solutions, e.expected.solutions, `${e.id}: expected`);
     if (e.status === 'sound') assert.equal(m[e.id].solutions, m[e.baseline].solutions, `${e.id} vs ${e.baseline}`);
-    if (e.status === 'unsound') assert.ok(m[e.id].solutions < m[e.baseline].solutions, `${e.id} vs ${e.baseline}`);
+    // Unsound: a different count (fewer for a refinement that is too strong; a misused core can give more).
+    if (e.status === 'unsound') assert.notEqual(m[e.id].solutions, m[e.baseline].solutions, `${e.id} vs ${e.baseline}`);
+    if (e.exhausted === false) assert.equal(e.status, 'demo', `${e.id}: only demos may stop early`);
   }
 });
 
@@ -313,4 +315,18 @@ test('trace literals are signed by the value they ask for, also for atoms the so
   const t2 = H.ofKind(await H.runProject(q), 'T')[1];
   assert.equal(t2.candidate, 'del(1)');
   assert.deepEqual(t2.literals.slice(0, 2), ['-del(1)', 'del(2)']);
+});
+
+test('guide-11-fewest-deletions reports the smallest k for which the blocking loop has a solution', async () => {
+  const m = await fresh();
+  const p = H.example('guide-11-fewest-deletions');
+  p.settings = { ...p.settings, solutions: 0, trace: 0 };
+  const r = await H.runProject(p);
+  const sols = H.ofKind(r, 'M');
+  assert.equal(sols.length, 1);
+  const size = JSON.stringify(sols[0]).match(/del\(/g).length;
+  const k = Number(H.example('guide-05-paley-block').settings.constants.k);
+  assert.equal(size, k);
+  assert.ok(m['guide-05-paley-block'].solutions > 0);
+  assert.equal(m[`guide-05-paley-block@k=${k - 1}`].solutions, 0);
 });

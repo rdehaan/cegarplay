@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Refinements that are rules · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 09</p>
+        <h1>Refinements that are rules</h1>
+        <p class="lead">A clause can only say "one of these interface atoms must change". Some lessons
+          need more: a sum, a comparison, a fresh copy of part of the problem. This chapter shows how
+          a refinement can be a set of rules instead, grounded once per counterexample.</p>
+
+        <h2 id="limits">What a clause cannot say</h2>
+        <p>Every refinement so far was a clause over interface atoms. That works when the
+          counterexample depends on a few atoms keeping their values. It fails when it depends on a
+          quantity: "this alternative is better for everyone, as long as the sums come out this way"
+          is not a statement about any particular atom. The best clause is then close to a block,
+          and the loop learns little.</p>
+
+        <h2 id="refine">A program part per counterexample</h2>
+        <p>The abstraction solver can hold a <em>program part</em> with a parameter:</p>
+        <pre class="code" data-lang="asp" data-from="guide-09-clique-rules:refine">#program refine(i).
+% cex(i,q(V)): node V is in the i-th surviving clique. One of its nodes must go.
+hit(i) :- cex(i,q(V)), del(V).
+:- not hit(i).</pre>
+        <p class="listing-source">From the fragment <code>refine</code> of <code>guide-09-clique-rules</code>.</p>
+        <p>The loop grounds the part once for every counterexample:</p>
+        <div class="changed" data-lang="loop" data-before="guide-08-shape2:loop" data-after="guide-09-clique-rules:loop"><span class="same">    if X:</span><del>        A.add(G.clause(M, X))</del><ins>        A.expand(refine, cex = X.atoms(q/1))</ins></div>
+        <p><code>A.expand(refine, cex = X.atoms(q/1))</code> takes the <code>q/1</code> atoms of the
+          counterexample, adds them to A as facts <code>cex(i, q(V))</code> with the next value of
+          i (1, 2, …), and grounds <code>refine(i)</code>. The rules may use anything in A:
+          interface atoms, other atoms of the abstraction, arithmetic, aggregates. The fragment
+          <code>refine</code> is added to solver A in the first line of the script.</p>
+        <p>Two rules about the part. First, <strong>every head must contain the parameter</strong>.
+          Each expansion grounds the same rules with a new i; if a head lacks i, the second expansion
+          defines an atom the first one already defined, clingo silently ignores the new rules, and
+          the refinement has no effect. Second, the parameter here is called i because k is already
+          a constant of the problem, and a constant with the parameter's name replaces it.</p>
+        <p>This is the Loop tab's Shape 3: Shape 2 with <code>A.expand</code> in place of
+          <code>A.add</code>. Expanding needs a solver that is not searching, so rule refinements go
+          with Shape 2 or with the batches of chapter 8, not with <code>search A:</code>.</p>
+
+        <h2 id="clique-rules">Warm-up: the clique lesson as a rule</h2>
+        <p id="clique-rules-run">The part above says exactly what the clause said: one of the
+          clique's nodes must be deleted. So it should need exactly the candidates of Shape 2 with
+          clauses, and it does: <span data-stat="guide-09-clique-rules:candidates">65</span> and
+          <span data-stat="guide-08-shape2:candidates">65</span>, with
+          <span data-stat="guide-09-clique-rules:expansions">26</span> expansions for the 26
+          triangles. Nothing gained; the mechanism is clear.
+          <a class="play" href="../?example=guide-09-clique-rules&amp;fragment=refine&amp;from=guide/09-rule-refinements.html%23clique-rules-run" target="cegarplay">Open the clique rules</a></p>
+
+        <h2 id="fair">Where rules pay: fair division</h2>
+        <p>Three agents divide seven indivisible goods; each agent values each good. An allocation
+          is wanted that is <em>envy-free</em> (no agent prefers another agent's bundle) and
+          <em>efficient</em>: no other allocation makes everyone at least as happy and somebody
+          happier. "There is an allocation such that for all other allocations …": the shape again.
+          The abstraction guesses envy-free allocations <code>gets(A,G)</code>; the check looks for
+          an allocation <code>alt(A,G)</code> that dominates the candidate.</p>
+        <p>What does a dominating allocation teach? Not that some assignment must change: any
+          candidate in which every agent is no better off than in the alternative is dominated too.
+          That is a statement about sums, and it is a rule:</p>
+        <pre class="code" data-lang="asp" data-from="fair-division:refine">loses(k,A) :- agent(A),
+    #sum { V,G : cex(k,alt(A,G)), value(A,G,V) ; -V,G : gets(A,G), value(A,G,V) } &lt; 0.
+gains(k,A) :- agent(A),
+    #sum { V,G : cex(k,alt(A,G)), value(A,G,V) ; -V,G : gets(A,G), value(A,G,V) } &gt; 0.
+% The candidate must not be dominated by it: if somebody gains, somebody loses.
+:- gains(k,A), not loses(k,B) : agent(B).</pre>
+        <p class="listing-source">From the fragment <code>refine</code> of <code>fair-division</code> (this problem has no constant k, so its part may use the name).</p>
+        <p id="fair-runs">"If somebody would gain by the alternative, somebody must lose by it." The
+          best clause available speaks only of the candidate's own assignments: one of them must
+          change. That is a block in fewer words.
+          <a class="play" href="../?example=guide-09-fair-block&amp;fragment=check&amp;from=guide/09-rule-refinements.html%23fair-runs" target="cegarplay">Blocking</a>
+          <a class="play" href="../?example=guide-09-fair-clause&amp;fragment=check&amp;from=guide/09-rule-refinements.html%23fair-runs" target="cegarplay">The best clause</a>
+          <a class="play" href="../?example=fair-division&amp;fragment=refine&amp;from=guide/09-rule-refinements.html%23fair-runs" target="cegarplay">The rule</a></p>
+        <table class="results">
+          <thead>
+            <tr><th>Refinement</th><th class="num">Candidates</th><th class="num">Refinements</th><th class="num">Rules of A</th><th class="num">Solutions</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Block</td>
+              <td class="num"><span data-stat="guide-09-fair-block:candidates">11</span></td>
+              <td class="num"><span data-stat="guide-09-fair-block:refinements">8</span></td>
+              <td class="num"><span data-stat="guide-09-fair-block:rulesA">85</span></td>
+              <td class="num"><span data-stat="guide-09-fair-block:solutions">3</span></td></tr>
+            <tr><td>Best clause</td>
+              <td class="num"><span data-stat="guide-09-fair-clause:candidates">11</span></td>
+              <td class="num"><span data-stat="guide-09-fair-clause:refinements">8</span></td>
+              <td class="num"><span data-stat="guide-09-fair-clause:rulesA">85</span></td>
+              <td class="num"><span data-stat="guide-09-fair-clause:solutions">3</span></td></tr>
+            <tr><td>Rule</td>
+              <td class="num"><span data-stat="fair-division:candidates">6</span></td>
+              <td class="num"><span data-stat="fair-division:refinements">6</span></td>
+              <td class="num"><span data-stat="fair-division:rulesA">196</span></td>
+              <td class="num"><span data-stat="fair-division:solutions">3</span></td></tr>
+          </tbody>
+        </table>
+        <p>The clause is the block with <span data-stat="guide-09-fair-clause:meanClause">7.0</span>
+          literals instead of <span data-stat="guide-09-fair-block:meanClause">21.0</span>, and
+          learns nothing more. The rule needs
+          <span data-stat="fair-division:expansions">3</span> expansions where blocking needed
+          <span data-stat="guide-09-fair-block:counterexamples">8</span> refutations. (Its
+          refinements include one block per solution, as in every Shape 2 loop.) The instance is
+          tiny; on larger ones the gap grows with the number of allocations a single alternative
+          dominates.</p>
+
+        <h2 id="cost">The cost</h2>
+        <p>Every expansion grounds new rules into A, and A keeps them. In the table, the rule run's A
+          ends with <span data-stat="fair-division:rulesA">196</span> rules against
+          <span data-stat="guide-09-fair-block:rulesA">85</span>; the clique rules took A from
+          <span data-stat="guide-05-paley-clause:rulesA">63</span> to
+          <span data-stat="guide-09-clique-rules:rulesA">245</span>. With thousands of
+          counterexamples, grounding time and the size of A become what you watch in the Statistics
+          tab. Use a rule where a clause cannot say the lesson; use a clause where it can.</p>
+
+        <aside class="pitfall" id="missing-k">
+          <span class="aside-title">Pitfall: a head without the parameter</span>
+          <p>Here the heads lack i:</p>
+          <pre class="code" data-lang="asp" data-from="guide-09-missing-k:refine">hit :- cex(i,q(V)), del(V).
+:- not hit.</pre>
+          <p>The first expansion works. The second defines <code>hit</code> again; clingo ignores the
+            new rule without a word, the candidate comes back unchanged, and the loop stops with "the
+            refinement made no progress: the same candidate came back" after
+            <span data-stat="guide-09-missing-k:candidates">3</span> candidates. Check every head for the parameter.
+            <a class="play" href="../?example=guide-09-missing-k&amp;fragment=refine&amp;from=guide/09-rule-refinements.html%23missing-k" target="cegarplay">Open the part without the parameter</a></p>
+        </aside>
+
+        <aside class="theory">
+          <span class="aside-title">Theory</span>
+          <p>Expanding the "for all" of chapter 1 completely would mean one copy of the inner problem
+            per possible counterexample, all grounded at once. A rule refinement grounds one copy, for
+            one counterexample, when it is needed: it is a lazily grounded piece of that expansion.
+            A clause is what remains of such a copy when it can be reduced to interface atoms; when it
+            cannot, the copy itself is the refinement.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>Someone proposes: "the clique survives because nothing next to it is deleted; demand that
+            a node next to the clique, outside it, is deleted." Write it as a refine part and run it.
+            What happens, and which argument of chapter 3 does it fail?</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <pre class="code" data-lang="asp" data-from="guide-09-ex1:refine">hit(i) :- cex(i,q(V)), edge(V,W), not cex(i,q(W)), del(W).
+hit(i) :- cex(i,q(V)), edge(W,V), not cex(i,q(W)), del(W).
+:- not hit(i).</pre>
+            <p>The loop stops with the no-progress guard after
+              <span data-stat="guide-09-ex1:candidates">3</span> candidates. The second candidate
+              already deletes a neighbour of the clique the check returns for it, so the refinement does
+              not exclude that candidate, and it comes back. A refinement must exclude the candidate it
+              was made from (the termination argument of chapter 3), and every solution must satisfy
+              it. This one fails the first, and nothing makes it pass the second: a solution must delete
+              a node of the clique, not one next to it.
+              <a class="play" href="../?example=guide-09-ex1&amp;fragment=refine&amp;from=guide/09-rule-refinements.html%23exercise-1-solution" target="cegarplay">Open the neighbour rule</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-2">
+          <h2>Exercise 2</h2>
+          <p>Why is the clique rule's count of candidates exactly that of Shape 2 with clauses, and
+            not that of Shape 1?</p>
+          <details class="solution" id="exercise-2-solution">
+            <summary>Solution</summary>
+            <p>The rule says what the clause says, and both loops have the same shape: solve, check,
+              refine, solve again. Shape 1 adds clauses inside one search, where clasp keeps them only
+              weakly (chapter 5), so it sees more candidates.
+              <a class="play" href="../?example=guide-08-shape2&amp;fragment=loop&amp;from=guide/09-rule-refinements.html%23exercise-2-solution" target="cegarplay">Open Shape 2 with clauses</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-rules-when-clauses-cannot">Use a rule refinement when the lesson is not
+              "one of these atoms must change": sums, comparisons, copies of the problem.</li>
+            <li id="rule-heads-contain-parameter">Every head of a refine part contains its parameter,
+              and no constant has the parameter's name.</li>
+            <li id="rule-refinement-excludes-candidate">A refinement must exclude the candidate it
+              was made from, and every solution must satisfy it.</li>
+            <li id="rule-watch-grounding">Rule refinements grow the abstraction; watch its size and
+              grounding time.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="08-loop-shapes.html">&larr; Loop shapes</a>
+        <a class="next" href="10-witness-and-cores.html">Checks that look for a witness, and cores &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

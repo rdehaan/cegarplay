@@ -260,7 +260,30 @@ phase at a time (G0a, G0, G1, ..., G4); commits `Guide N: <title>`.
     (`guide-08-forgot-block`); `measureAll` and `test/library.test.mjs` expect the error. Key
     `rulesA` (rules of A after grounding) added to `tools/guide-numbers.mjs`.
   - Symmetry breaking (`:- not del(0).`) is the page-7 unsound abstraction: 18 of 39.
-- Next: G3 Pages 9-11.
+- **G3 Pages 9-11: done (2026-11-21).** Pages 09-11; 10 new examples (34 in all):
+  `guide-09-clique-rules`, `-missing-k`, `-ex1`, `-fair-block`, `-fair-clause`, `guide-10-core-block`,
+  `-core-misused`, `-minimal-block`, `guide-11-fewest-deletions`, `-ex1`; `fair-division`,
+  `lang-core`, `minimal-reasons`, `knapsack-*` linked and quoted instead of copied. Links of pages
+  09-11 clicked through by the script (in the scratchpad, not committed).
+  - **Refine parameter `i`**: the running example has a constant k, and a constant named like the
+    part's parameter replaces it (manual, Constants). The page explains it; the plan's
+    `guide-09-missing-k` keeps its id but the part lacks `i`.
+  - `guide-09-ex1` ("delete a neighbour of the clique, outside it") does not give a smaller count:
+    it stops with the no-progress guard (its refinement need not exclude its own candidate). Status
+    demo with `outcome: 'error'`; the page uses it for the "must exclude its candidate" rule.
+  - Fair division: the best clause is the block in 7 instead of 21 literals (11 candidates both);
+    the rule (existing `fair-division`) needs 6. Tiny, but honest.
+  - **Unsound now means "a different count"** (test changed): `guide-10-core-misused` (a core from
+    the clique check, whose unsat means good) reports 4,057 instead of 39.
+  - `guide-10-core` not made: `lang-core` is it; `guide-10-core-block` is its baseline. Cores are
+    not minimal: mean 6.1, max 9, where K4 needs 6.
+  - `guide-11-fewest-deletions` stops at the first optimum: manifest field `exhausted: false`
+    (demo only); a test checks its size equals the smallest k with a blocking-loop solution
+    (variant `guide-05-paley-block@k=5` = 0). `guide-11-ex1` lists all optima with a cap part: 39.
+  - No `guide-11-knapsack-block` (not needed for a table).
+  - In a witness check the statistic "counterexamples" counts satisfiable checks (witnesses); the
+    pages avoid quoting it there.
+- Next: G4 Page 12 and finish.
 
 Notes for the guide phases (checked against the code before G0a):
 - The run history's ⚠ only compares runs with the same fragments (`js/stats.js:81`); for the

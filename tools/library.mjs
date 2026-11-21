@@ -168,7 +168,7 @@ rt.log("solutions:", found)
 `;
 
 // The dual problem: a candidate graph is a solution when the check is satisfiable.
-const DUAL = {
+export const DUAL = {
   shared: `% Graphs on n nodes.
 node(1..n).
 `,

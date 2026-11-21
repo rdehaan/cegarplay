@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Checks that look for a witness, and cores · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 10</p>
+        <h1>Checks that look for a witness, and cores</h1>
+        <p class="lead">Until now the check looked for a counterexample, and an answer set meant
+          "wrong". Some properties are shown the other way round: by a witness. This chapter turns the
+          check around and shows where the refinement then comes from: the unsatisfiable core.</p>
+
+        <h2 id="witness">Witness or counterexample</h2>
+        <p>Take the problem "find the graphs on n nodes that can be 3-coloured". A candidate is a
+          graph, and it is good when a proper 3-colouring exists. The natural check looks for that
+          colouring, a <em>witness</em>:</p>
+        <pre class="code" data-lang="asp" data-from="guide-10-core-block:check">1 { col(N,1..3) } 1 :- node(N).
+:- edge(X,Y), col(X,C), col(Y,C).</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-10-core-block</code>.</p>
+        <p>Now the polarity is reversed: an answer set means the candidate is <em>good</em>, and an
+          unsatisfiable check means it is wrong. The loop rejects when the check fails:</p>
+        <pre class="code" data-lang="loop" data-from="guide-10-core-block:loop">search A:
+    on candidate M:
+        if not C.solve(assume G(M)):
+            reject M with G.block(M)</pre>
+        <p class="listing-source">From the loop script of <code>guide-10-core-block</code>.</p>
+        <p>There is no counterexample to read <code>relevant/1</code> from. Something else must
+          say why the candidate failed.</p>
+
+        <h2 id="core">The unsatisfiable core</h2>
+        <p>When clingo finds a solve under assumptions unsatisfiable, it can report a
+          <em>core</em>: a subset of the assumptions that is unsatisfiable on its own. Here the
+          assumptions are the candidate's edge atoms, so the core is a set of edges (present or
+          absent) that already rules out every 3-colouring. Every graph that agrees with the
+          candidate on those atoms has no colouring either. So the clause "one of these atoms must
+          change" is satisfied by every solution: a sound refinement.</p>
+        <p id="core-run"><code>G.core(C)</code> builds that clause from the core of the last solve of
+          C. The library example <code>lang-core</code> is the loop above with
+          <code>reject M with G.core(C)</code>.
+          <a class="play" href="../?example=lang-core&amp;fragment=loop&amp;from=guide/10-witness-and-cores.html%23core-run" target="cegarplay">Open lang-core</a>
+          <a class="play" href="../?example=guide-10-core-block&amp;fragment=loop&amp;from=guide/10-witness-and-cores.html%23core-run" target="cegarplay">Open the blocking loop</a></p>
+        <table class="results">
+          <thead>
+            <tr><th>Refinement</th><th class="num">Candidates</th><th class="num">Clauses</th><th class="num">Mean length</th>
+              <th class="num">Longest</th><th class="num">Solutions</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Block</td>
+              <td class="num"><span data-stat="guide-10-core-block:candidates">1,024</span></td>
+              <td class="num"><span data-stat="guide-10-core-block:clauses">66</span></td>
+              <td class="num"><span data-stat="guide-10-core-block:meanClause">10.0</span></td>
+              <td class="num"><span data-stat="guide-10-core-block:maxClause">10</span></td>
+              <td class="num"><span data-stat="guide-10-core-block:solutions">958</span></td></tr>
+            <tr><td>Core</td>
+              <td class="num"><span data-stat="lang-core:candidates">999</span></td>
+              <td class="num"><span data-stat="lang-core:clauses">41</span></td>
+              <td class="num"><span data-stat="lang-core:meanClause">6.1</span></td>
+              <td class="num"><span data-stat="lang-core:maxClause">9</span></td>
+              <td class="num"><span data-stat="lang-core:solutions">958</span></td></tr>
+          </tbody>
+        </table>
+        <p>On five nodes almost every graph can be coloured, so there is little to learn either way.
+          But look at the lengths.</p>
+
+        <h2 id="not-minimal">Cores are not minimal</h2>
+        <p>The smallest graph that cannot be 3-coloured is the clique on four nodes, with six edges.
+          A minimal core would therefore have six literals. clasp's cores have
+          <span data-stat="lang-core:meanClause">6.1</span> on average and up to
+          <span data-stat="lang-core:maxClause">9</span>: clasp returns the first core it finds, not
+          a smallest one. Each extra literal makes the clause weaker. If that matters, shrink the
+          core yourself (drop one atom, check again, keep the drop if the check stays unsatisfiable),
+          at the price of more check calls.</p>
+
+        <h2 id="misused">A core from the wrong check</h2>
+        <p>The argument above needs one thing: the unsatisfiable check means the candidate is
+          <em>wrong</em>. After a satisfiable check there is no core, and the loop refuses
+          <code>G.core(C)</code>. The dangerous case is a check of the other polarity, where
+          unsatisfiable means <em>good</em>. Treat the clique check of the running example as if it
+          were a witness check:</p>
+        <pre class="code" data-lang="loop" data-from="guide-10-core-misused:loop">search A:
+    on candidate M:
+        if not C.solve(assume G(M)):
+            reject M with G.core(C)</pre>
+        <p class="listing-source">From the loop script of <code>guide-10-core-misused</code>.</p>
+        <p id="misused-run">Every solution now has an unsatisfiable check, and its core says why the
+          candidate is <em>good</em>; rejecting with it removes the solution and others like it.
+          Every wrong candidate, on the other hand, is accepted. The run reports
+          <span data-stat="guide-10-core-misused:solutions">4,057</span> solutions instead of
+          <span data-stat="guide-05-paley-block:solutions">39</span>. The soundness test of
+          chapter 4 notices a count that is too large as well as one that is too small.
+          <a class="play" href="../?example=guide-10-core-misused&amp;fragment=loop&amp;from=guide/10-witness-and-cores.html%23misused-run" target="cegarplay">Open the misused core</a></p>
+
+        <h2 id="two-checks">Two checks in one loop</h2>
+        <p>Some problems need both kinds. Back to the sufficient reasons of chapter 6, now with the
+          extra demand that no kept feature is redundant (a <em>minimal</em> sufficient reason).
+          "Sufficient" is refuted by a counterexample, as before. "Every kept feature is needed" is
+          shown by a witness: for each kept feature, an input that agrees on the others and gets the
+          other answer. A second check solver D looks for that family of inputs:</p>
+        <pre class="code" data-lang="loop" data-from="minimal-reasons:loop">search A:
+    on candidate M:
+        X = C.solve(assume G(M))
+        if X:
+            reject M with G.clause(M, X)
+        elif not D.solve(assume GD(M)):
+            reject M with GD.core(D)</pre>
+        <p class="listing-source">From the loop script of <code>minimal-reasons</code>.</p>
+        <p id="two-checks-run">A candidate that passes C but has no witness in D is not minimal; the
+          core of D names kept features that already make some other kept feature redundant. The
+          loop needs <span data-stat="minimal-reasons:candidates">67</span> candidates where
+          blocking needs <span data-stat="guide-10-minimal-block:candidates">256</span>, and both
+          find <span data-stat="minimal-reasons:solutions">4</span>.
+          <a class="play" href="../?example=minimal-reasons&amp;fragment=loop&amp;from=guide/10-witness-and-cores.html%23two-checks-run" target="cegarplay">Open minimal-reasons</a>
+          <a class="play" href="../?example=guide-10-minimal-block&amp;fragment=loop&amp;from=guide/10-witness-and-cores.html%23two-checks-run" target="cegarplay">Open the blocking loop</a></p>
+
+        <h2 id="shrinking">Subset-minimal solutions in general</h2>
+        <p id="shrinking-link">Minimality has a second standard treatment. Take any candidate that
+          passes, shrink it (drop one element at a time while it still passes), report the minimal
+          set, and exclude all its supersets from then on. The library example
+          <code>reasons-by-shrinking</code> does this for the same network; it is written in raw
+          Lua because the loop language has no superset clause.
+          <a class="play" href="../?example=reasons-by-shrinking&amp;fragment=loop&amp;from=guide/10-witness-and-cores.html%23shrinking-link" target="cegarplay">Open reasons-by-shrinking</a></p>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>For each problem, should the check look for a witness or for a counterexample, and what
+            would the refinement be made from?</p>
+          <ol>
+            <li>Graphs on n nodes that have a Hamiltonian cycle.</li>
+            <li>Graphs on n nodes that have <em>no</em> Hamiltonian cycle.</li>
+            <li>Deletion sets that leave no clique of c nodes.</li>
+          </ol>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <ol>
+              <li>A witness: the cycle. A graph without one is refined with the core.</li>
+              <li>A counterexample: a cycle refutes the graph. The cycle depends on its edges being
+                present, so <code>relevant/1</code> marks them: one of them must go.</li>
+              <li>A counterexample, as in every chapter so far: a surviving clique.</li>
+            </ol>
+            <p>The rule of thumb: look at the "for all". If the property is "for all Y, not bad",
+              look for a bad Y, a counterexample. If it is "there is a Y" about the candidate, look
+              for that Y, a witness, and learn from the core when there is none.
+              <a class="play" href="../?example=lang-core&amp;fragment=check&amp;from=guide/10-witness-and-cores.html%23exercise-1-solution" target="cegarplay">Open lang-core</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-witness-polarity">Know your check's polarity: does an answer set mean wrong
+              (counterexample) or good (witness)?</li>
+            <li id="rule-core-after-failed-witness">Refine from the core only when an unsatisfiable
+              check means the candidate is wrong.</li>
+            <li id="rule-cores-not-minimal">Cores are not minimal; shrink them when clause length
+              matters.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="09-rule-refinements.html">&larr; Refinements that are rules</a>
+        <a class="next" href="11-optimisation.html">Optimisation &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

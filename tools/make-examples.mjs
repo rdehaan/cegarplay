@@ -226,7 +226,8 @@ export function buildAll({ contribDir } = {}) {
       examples.push({ id: e.id, title: e.project.title, group: e.group, summary: e.summary, shape: e.shape,
         tags: e.tags, expected: e.expected == null ? null : { solutions: e.expected },
         ...(e.page ? { page: e.page, status: e.status } : {}), ...(e.baseline ? { baseline: e.baseline } : {}),
-        ...(e.variants ? { variants: e.variants } : {}), ...(e.outcome ? { outcome: e.outcome } : {}) });
+        ...(e.variants ? { variants: e.variants } : {}), ...(e.outcome ? { outcome: e.outcome } : {}),
+        ...(e.exhausted === false ? { exhausted: false } : {}) });
     }
   }
   return { files, manifest: { format: 'cegarplay-library', version: 1, groups: GROUPS, examples } };

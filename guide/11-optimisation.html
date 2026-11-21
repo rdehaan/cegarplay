@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Optimisation · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 11</p>
+        <h1>Optimisation</h1>
+        <p class="lead">So far the loop answered "which candidates are solutions?". Often the question
+          is "which solution is best?". This chapter shows how a loop optimises, why it needs sound
+          refinements even more than before, and what to do when the inner problem optimises too.</p>
+
+        <h2 id="fewest">Fewest deletions</h2>
+        <p>Drop the bound k from the running example and ask for a deletion set that is as small as
+          possible. The abstraction proposes any deletion set and prefers small ones:</p>
+        <pre class="code" data-lang="asp" data-from="guide-11-fewest-deletions:abstraction">{ del(V) : node(V) }.
+#minimize { 1,V : del(V) }.
+#show del/1.</pre>
+        <p class="listing-source">From the fragment <code>abstraction</code> of <code>guide-11-fewest-deletions</code>.</p>
+        <p>and the loop asks it for an optimal answer set each time:</p>
+        <pre class="code" data-lang="loop" data-from="guide-11-fewest-deletions:loop">loop:
+    M = A.solve(optimal)
+    if not M: stop
+    X = C.solve(assume G(M))
+    if X:
+        A.add(G.clause(M, X))
+    else:
+        accept M
+        stop</pre>
+        <p class="listing-source">From the loop script of <code>guide-11-fewest-deletions</code>.</p>
+        <p id="fewest-run"><code>A.solve(optimal)</code> returns a smallest candidate that satisfies
+          all refinements so far. If the check refutes it, the clause goes in and the next smallest
+          comes. The first candidate without a counterexample is the answer.
+          <a class="play" href="../?example=guide-11-fewest-deletions&amp;fragment=loop&amp;from=guide/11-optimisation.html%23fewest-run" target="cegarplay">Open the fewest-deletions loop</a></p>
+        <details class="predict">
+          <summary>How many deletions will it report for n = 13, and how do you know without
+            running it?</summary>
+          <p>Six. Chapter 5's blocking loop has
+            <span data-stat="guide-05-paley-block:solutions">39</span> solutions with k = 6 and
+            <span data-stat="guide-05-paley-block@k=5:solutions">0</span> with k = 5. The loop gets
+            there after <span data-stat="guide-11-fewest-deletions:candidates">23</span> candidates.</p>
+        </details>
+
+        <h2 id="why-optimal">Why the first survivor is optimal</h2>
+        <p>Suppose a smaller solution existed. It is a candidate (the abstraction over-approximates),
+          and it satisfies every refinement (each is sound). So at every step it was available to
+          <code>A.solve(optimal)</code>, which would have returned it, or one just as small, before
+          the reported one. Hence nothing smaller exists.</p>
+        <p>The argument uses soundness at every step. A refinement that is too strong can remove the
+          true optimum, and the loop then reports a worse one with full confidence. When you count
+          solutions, an unsound loop at least shows a different number from the blocking loop; when
+          you optimise, it shows a plausible value. Run the soundness test of chapter 4 on the
+          decision version (with a bound) before you trust an optimum.</p>
+
+        <h2 id="bilevel">When the inner problem optimises too</h2>
+        <p>In a <em>bilevel</em> problem the check is itself an optimisation. The bilevel knapsack:
+          a leader locks items within a budget, then a follower packs the remaining items within a
+          capacity, as profitably as possible. The leader wants to keep the follower's profit low.</p>
+        <p id="bilevel-decision">The decision version fixes a bound: find the locked sets after which
+          the follower cannot get more than the bound. That is our familiar loop: the check packs a
+          knapsack above the bound, and the refinement says "lock one of these items".
+          <a class="play" href="../?example=knapsack-interdiction&amp;fragment=check&amp;from=guide/11-optimisation.html%23bilevel-decision" target="cegarplay">Open knapsack-interdiction</a></p>
+        <pre class="code" data-lang="asp" data-from="knapsack-interdiction:check">relevant(lock(I)) :- pack(I).
+% A packing with few items gives a short clause.
+#minimize { 1,I : pack(I) }.</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>knapsack-interdiction</code>.</p>
+        <p>To find the best bound itself, the abstraction also guesses a claim, the follower's
+          profit, smallest first, and the check packs a knapsack that beats the claim. Now a
+          refinement carries a number: "unless one of these items is locked, the claim must be at
+          least this profit". That needs a sum, so it is a rule (chapter 9):</p>
+        <pre class="code" data-lang="asp" data-from="knapsack-optimum:refine">profit(k,P) :- P = #sum { Q,I : cex(k,pack(I)), item(I,_,_,Q) }.
+% The claim has to cover this profit unless one of the packed items is locked.
+hit(k) :- cex(k,pack(I)), lock(I).
+:- not hit(k), profit(k,P), value(V), V &lt; P.</pre>
+        <p class="listing-source">From the fragment <code>refine</code> of <code>knapsack-optimum</code>.</p>
+        <p id="bilevel-optimum">The first candidate that survives the check has the optimal claim.
+          The loop then grounds a second part that forbids larger claims and goes on to list every
+          locked set that achieves the optimum:
+          <span data-stat="knapsack-optimum:solutions">2</span> sets after
+          <span data-stat="knapsack-optimum:candidates">8</span> candidates.
+          <a class="play" href="../?example=knapsack-optimum&amp;fragment=loop&amp;from=guide/11-optimisation.html%23bilevel-optimum" target="cegarplay">Open knapsack-optimum</a></p>
+
+        <h2 id="bounds">Bounds along the way</h2>
+        <p id="bounds-link">An optimisation loop knows more than its final answer while it runs. Each
+          claim the abstraction makes is a lower bound on the optimum (nothing smaller survived the
+          refinements), and the follower's best reply to a locked set is an upper bound (that set
+          achieves it). The library example <code>knapsack-bounds</code> logs both until they meet;
+          it is written in raw Lua, because the loop language cannot read numbers out of a model.
+          Stop early with both bounds in hand when the gap is small enough.
+          <a class="play" href="../?example=knapsack-bounds&amp;fragment=loop&amp;from=guide/11-optimisation.html%23bounds-link" target="cegarplay">Open knapsack-bounds</a></p>
+
+        <aside class="theory">
+          <span class="aside-title">Theory</span>
+          <p>There are two ways to optimise with a loop. <em>Optimal first</em>, as here: the
+            abstraction proposes the best remaining candidate, and the first survivor is optimal.
+            Its runs end with a proof of optimality, but every refutation costs an optimisation of
+            A. <em>Improving solutions</em>: accept any solution, then demand a better one (add
+            "cost below this" to A) and go on; each solution is a usable answer, and the last one is
+            optimal when A runs out. Both depend on sound refinements; an unsound one can hide the
+            optimum without any sign.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>Change the fewest-deletions loop so that it lists every optimal deletion set, not just
+            the first. Hint: <code>knapsack-optimum</code> does the same with a second program
+            part.</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>Block each solution and continue; after the first, ground a part that forbids larger
+              deletion sets. The abstraction derives the size, and the part reads it from the first
+              solution:</p>
+            <pre class="code" data-lang="asp" data-from="guide-11-ex1:cap">#program cap(i).
+% best(i,size(B)): the fewest deletions are B. No larger set is of interest.
+:- best(i,size(B)), size(N), N &gt; B.</pre>
+            <pre class="code" data-lang="loop" data-from="guide-11-ex1:loop">    else:
+        accept M
+        A.add(G.block(M))
+        if not capped:
+            A.expand(cap, best = M.atoms(size/1))
+            capped = true</pre>
+            <p>It lists <span data-stat="guide-11-ex1:solutions">39</span> sets of six, the
+              solutions of the blocking loop with k = 6.
+              <a class="play" href="../?example=guide-11-ex1&amp;fragment=loop&amp;from=guide/11-optimisation.html%23exercise-1-solution" target="cegarplay">Open it</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-2">
+          <h2>Exercise 2</h2>
+          <p>Suppose the fewest-deletions loop used the "busiest node" refinement of chapter 4. What
+            could it report, and would you notice?</p>
+          <details class="solution" id="exercise-2-solution">
+            <summary>Solution</summary>
+            <p>A deletion set that survives the check, so it is a solution, but possibly not a
+              smallest one: the too-strong clauses can remove every smallest set. Nothing in the run
+              would show it. Only the soundness test on the bounded version reveals the problem; the
+              blocking loop is the reference.
+              <a class="play" href="../?example=guide-04-one-node&amp;fragment=check&amp;from=guide/11-optimisation.html%23exercise-2-solution" target="cegarplay">Open the busiest-node loop</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-optimal-first">To optimise, ask the abstraction for the best candidate
+              first; the first one that survives the check is optimal.</li>
+            <li id="rule-optimum-needs-soundness">An optimum is only as good as the soundness of every
+              refinement; test the bounded version first.</li>
+            <li id="rule-bilevel-rules">When the inner problem optimises, refinements carry numbers;
+              write them as rules.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="10-witness-and-cores.html">&larr; Checks that look for a witness, and cores</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

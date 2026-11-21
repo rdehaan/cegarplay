@@ -1,0 +1,43 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide: 3-colourable graphs, blocking",
+  "description": "Graphs on n nodes that can be 3-coloured; the check looks for a colouring (a witness), and a graph without one is blocked on its own. See the guide page \"Checks that look for a witness, and cores\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% Graphs on n nodes.\nnode(1..n).\n",
+      "description": "Graphs on n nodes."
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: any graph.\n{ edge(X,Y) : node(X), node(Y), X < Y }.\n#show edge/2.\n",
+      "description": "Proposes candidates (solver A): any graph."
+    },
+    {
+      "name": "glue",
+      "text": "glue(edge(X,Y)) :- node(X), node(Y), X < Y.\n",
+      "description": "The interface atoms: the edges."
+    },
+    {
+      "name": "check",
+      "text": "% A witness, not a counterexample: a proper 3-colouring of the candidate.\n% If there is none, the candidate is wrong, and the unsat core says which\n% edges are to blame.\n1 { col(N,1..3) } 1 :- node(N).\n:- edge(X,Y), col(X,C), col(Y,C).\n",
+      "description": "Looks for a proper 3-colouring of the candidate, a witness (solver C)."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# The check looks for a witness: a candidate without one is wrong.\nsearch A:\n    on candidate M:\n        if not C.solve(assume G(M)):\n            reject M with G.block(M)\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "5"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

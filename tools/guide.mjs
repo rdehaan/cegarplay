@@ -5,7 +5,7 @@
 // problem and constants). test/guide.test.mjs checks the statuses.
 import fs from 'node:fs';
 import { template } from '../js/project.js';
-import { GROUPS, project } from './library.mjs';
+import { GROUPS, project, DUAL } from './library.mjs';
 
 // The library group of the guide's examples (defined with the other groups in library.mjs).
 export const GUIDE_GROUP = GROUPS.find((g) => g.id === 'guide');
@@ -166,15 +166,50 @@ const NODE0 = `
 :- edge(0,V), edge(0,W), edge(V,W), not del(0), not del(V), not del(W).
 `;
 
-// ---- sufficient reasons (page 6), from the library example sufficient-reason --------------
-// The fragments are read from examples/contrib/sufficient-reason.json, so they stay identical.
-const SR = JSON.parse(fs.readFileSync(new URL('../examples/contrib/sufficient-reason.json', import.meta.url), 'utf8'));
-const srFrag = (n) => SR.fragments.find((f) => f.name === n);
-const reason = (title, description, loop, editCheck = (c) => c) => project(title,
-  description + ' See the guide page "Getting more out of each check".',
-  Object.fromEntries(SR.fragments.map((f) => [f.name, f.name === 'check' ? editCheck(f.text) : f.text])), loop,
-  { constants: { k: '4' }, solutions: 0, seconds: 60, trace: 200 },
-  Object.fromEntries(SR.fragments.map((f) => [f.name, f.description || srFrag(f.name).description || 'Part of the sufficient-reason example.'])));
+// ---- side trips: fragments read from examples/contrib/<id>.json, so they stay identical --------
+const contrib = (id) => JSON.parse(fs.readFileSync(new URL(`../examples/contrib/${id}.json`, import.meta.url), 'utf8'));
+// A project from a contrib example's fragments; edit(name, text) may change a fragment's text
+// (return null to drop the fragment).
+const fromContrib = (id, title, description, loop, settings, edit = (n, t) => t) => {
+  const src = contrib(id);
+  const frags = {}, desc = {};
+  for (const f of src.fragments) {
+    const t = edit(f.name, f.text);
+    if (t === null) continue;
+    frags[f.name] = t;
+    desc[f.name] = f.description || 'Part of the library example ' + id + '.';
+  }
+  return project(title, description, frags, loop, { solutions: 0, seconds: 60, trace: 200, ...settings }, desc);
+};
+const reason = (title, description, loop, editCheck = (c) => c) => fromContrib('sufficient-reason', title,
+  description + ' See the guide page "Getting more out of each check".', loop, { constants: { k: '4' } },
+  (n, t) => (n === 'check' ? editCheck(t) : t));
+
+// ---- chapter 9: rule refinements on the running example ---------------------------------
+// The parameter of the part is i, not k: k is a constant of the problem, and a constant with
+// the parameter's name would replace it (see the manual, Constants).
+const CLIQUE_RULES = `#program refine(i).
+% cex(i,q(V)): node V is in the i-th surviving clique. One of its nodes must go.
+hit(i) :- cex(i,q(V)), del(V).
+:- not hit(i).
+`;
+const MISSING_I = `#program refine(i).
+% Wrong: the heads do not contain i, so every later step defines the same atom hit,
+% and clingo silently ignores the new rules for it.
+hit :- cex(i,q(V)), del(V).
+:- not hit.
+`;
+const NEIGHBOUR = `#program refine(i).
+% Is it right? "One node next to the clique, outside it, must go."
+hit(i) :- cex(i,q(V)), edge(V,W), not cex(i,q(W)), del(W).
+hit(i) :- cex(i,q(V)), edge(W,V), not cex(i,q(W)), del(W).
+:- not hit(i).
+`;
+const shape3 = (atoms) => template('shape3').replace('color/2', atoms)
+  .replace('solver A = shared + abstraction', 'solver A = shared + abstraction + refine');
+const CHECK_FOR_RULES = CLIQUE + `
+% No relevant/1 rules: the loop passes the clique q/1 to the refine part.
+`;
 
 // Existing examples (not in the guide group) whose numbers a page quotes, with the constants
 // they are run with. tools/guide-numbers.mjs measures them under the key ID or ID@name=value.
@@ -186,6 +221,11 @@ export const QUOTED = [
   { id: 'graph-coloring-original' },
   { id: 'clique-interdiction' },
   { id: 'clique-interdiction', constants: { n: '17', k: '9' } },
+  { id: 'fair-division' },
+  { id: 'lang-core' },
+  { id: 'minimal-reasons' },
+  { id: 'knapsack-interdiction' },
+  { id: 'knapsack-optimum' },
 ];
 
 // Every entry: id, summary, shape, tags, expected, page, status, baseline, project; optionally
@@ -287,7 +327,7 @@ c { q(V) : node(V) } c.
   const P = (n, anchor) => `guide/${{ 5: '05-reading-a-run', 6: '06-more-per-check', 7: '07-abstraction', 8: '08-loop-shapes' }[n]}.html#${anchor}`;
   const big = [{ n: '17', k: '9' }];
   add({ id: 'guide-05-paley-block', summary: 'The Paley graph (n = 13, k = 6, c = 3), every wrong candidate blocked on its own.',
-    shape: 'reference', expected: 39, page: P(5, 'block'), status: 'baseline', variants: big,
+    shape: 'reference', expected: 39, page: P(5, 'block'), status: 'baseline', variants: [...big, { k: '5' }],
     project: paley('Guide: the Paley graph, blocking',
       'Delete at most k nodes of the Paley graph on n nodes so that no clique of c nodes survives; every wrong ' +
       'candidate is blocked on its own. The ground truth for chapters 5 to 8.' + SEE(5, T5), template('reference'),
@@ -380,5 +420,131 @@ clause(1, del(V), true) :- q(V).
     project: paley('Guide: a solution that is not blocked',
       'Shape 2 without the block after accept: the solver proposes the same solution again and the run ends with ' +
       'the error "the refinement made no progress".' + SEE(8, T8), FORGOT_BLOCK) });
+  // ---- 09 Rule refinements
+  const T9 = 'Refinements that are rules', T10 = 'Checks that look for a witness, and cores', T11 = 'Optimisation';
+  const Q = (n, anchor) => `guide/${{ 9: '09-rule-refinements', 10: '10-witness-and-cores', 11: '11-optimisation' }[n]}.html#${anchor}`;
+  const RDESC = { refine: 'Rules grounded once per counterexample (#program refine(i)).', check: 'Looks for a clique of c nodes that survives the deletions (solver C).' };
+  add({ id: 'guide-09-clique-rules', summary: 'The clique lesson as a rule, grounded once per counterexample (Shape 3).',
+    shape: 'shape3', expected: 39, page: Q(9, 'clique-rules'), status: 'sound', baseline: 'guide-05-paley-block',
+    project: paley('Guide: the clique lesson as a rule',
+      'The refinement "delete one of the clique\'s nodes" written as rules of a program part refine(i), grounded for ' +
+      'every counterexample.' + SEE(9, T9), shape3('q/1'),
+      { f: { refine: CLIQUE_RULES, check: CHECK_FOR_RULES }, desc: RDESC }) });
+  add({ id: 'guide-09-missing-k', summary: 'A refine part whose heads lack the parameter: the second step changes nothing.',
+    shape: 'shape3', expected: 0, page: Q(9, 'missing-k'), status: 'demo', outcome: 'error',
+    project: paley('Guide: a refine part without its parameter',
+      'The heads of the refine part do not contain the parameter, so the second expansion defines the same atoms ' +
+      'again; clingo ignores the new rules and the loop stops with the no-progress guard.' + SEE(9, T9), shape3('q/1'),
+      { f: { refine: MISSING_I, check: CHECK_FOR_RULES }, desc: RDESC }) });
+  add({ id: 'guide-09-ex1', summary: 'Exercise: "delete a neighbour of the clique" as a refine part. Is it right?',
+    shape: 'shape3', expected: 0, page: Q(9, 'exercise-1-solution'), status: 'demo', outcome: 'error',
+    project: paley('Guide: a neighbour of the clique',
+      'A refine part that demands the deletion of a node next to the counterexample clique. It need not exclude the ' +
+      'candidate it was made from, and the loop stops with the no-progress guard.' + SEE(9, T9), shape3('q/1'),
+      { f: { refine: NEIGHBOUR, check: CHECK_FOR_RULES }, desc: RDESC }) });
+  const FAIR = 'Three agents divide seven goods; the solutions are the envy-free allocations that no other ' +
+    'allocation dominates. ';
+  const noRefine = (n, t) => (n === 'refine' ? null : t);
+  add({ id: 'guide-09-fair-block', summary: 'Fair division, blocking each dominated allocation.',
+    shape: 'reference', expected: 3, page: Q(9, 'fair'), status: 'baseline',
+    project: fromContrib('fair-division', 'Guide: fair division, blocking', FAIR + 'Every dominated candidate is ' +
+      'blocked on its own.' + SEE(9, T9), template('reference'), {}, noRefine) });
+  add({ id: 'guide-09-fair-clause', summary: 'Fair division with the best clause available: one of the candidate\'s assignments must change.',
+    shape: 'shape1', expected: 3, page: Q(9, 'fair'), status: 'sound', baseline: 'guide-09-fair-block',
+    project: fromContrib('fair-division', 'Guide: fair division, clauses', FAIR + 'The best a clause can say: one ' +
+      'of the candidate\'s assignments must change.' + SEE(9, T9), template('shape1'), {},
+    (n, t) => (n === 'refine' ? null : n === 'check' ? t.replace(
+      '% No relevant/1 rules: the loop passes the allocation alt/2 to the refine part.',
+      '% Domination depends on sums over the whole allocation: the best clause says that\n' +
+      '% one of the candidate\'s assignments must change.\nrelevant(gets(A,G)) :- gets(A,G).') : t)) });
+
+  // ---- 10 Witnesses and cores
+  add({ id: 'guide-10-core-block', summary: '3-colourable graphs on n = 5 nodes, blocking each graph without a colouring.',
+    shape: 'custom', expected: 958, page: Q(10, 'core'), status: 'baseline',
+    project: project('Guide: 3-colourable graphs, blocking',
+      'Graphs on n nodes that can be 3-coloured; the check looks for a colouring (a witness), and a graph without ' +
+      'one is blocked on its own.' + SEE(10, T10), DUAL, `solver A = shared + abstraction
+solver C = shared + check
+link   G = A -> C via shared + glue
+
+# The check looks for a witness: a candidate without one is wrong.
+search A:
+    on candidate M:
+        if not C.solve(assume G(M)):
+            reject M with G.block(M)
+`, { constants: { n: '5' }, solutions: 0, seconds: 60, trace: 200 }, {
+      shared: 'Graphs on n nodes.', abstraction: 'Proposes candidates (solver A): any graph.',
+      glue: 'The interface atoms: the edges.', check: 'Looks for a proper 3-colouring of the candidate, a witness (solver C).' }) });
+  add({ id: 'guide-10-core-misused', summary: 'A core taken from a check whose failure means the candidate is good.',
+    shape: 'custom', expected: 4057, page: Q(10, 'misused'), status: 'unsound', baseline: 'guide-05-paley-block',
+    project: paley('Guide: a core from the wrong check',
+      'The clique check looks for a counterexample, so its failure means the candidate is good. Treating it like a ' +
+      'witness check rejects every solution with its core and accepts every wrong candidate.' + SEE(10, T10),
+      DECL + `
+# Wrong: C looks for a counterexample, not a witness.
+search A:
+    on candidate M:
+        if not C.solve(assume G(M)):
+            reject M with G.core(C)
+`, { f: { check: CLIQUE } }) });
+  add({ id: 'guide-10-minimal-block', summary: 'Minimal sufficient reasons, blocking every candidate that one of the two checks refutes.',
+    shape: 'custom', expected: 4, page: Q(10, 'two-checks'), status: 'baseline',
+    project: fromContrib('minimal-reasons', 'Guide: minimal sufficient reasons, blocking',
+      'Sufficient reasons without a redundant feature; a candidate that either check refutes is blocked on its ' +
+      'own.' + SEE(10, T10), contrib('minimal-reasons').loop.text
+        .replace('reject M with G.clause(M, X)', 'reject M with G.block(M)')
+        .replace('reject M with GD.core(D)', 'reject M with G.block(M)'), {}) });
+
+  // ---- 11 Optimisation
+  const FEWEST = `% A candidate: any set of nodes to delete, as few as possible.
+{ del(V) : node(V) }.
+#minimize { 1,V : del(V) }.
+#show del/1.
+`;
+  add({ id: 'guide-11-fewest-deletions', summary: 'Fewest deletions: candidates smallest first; the first one that survives the check is optimal.',
+    shape: 'custom', expected: 1, page: Q(11, 'fewest'), status: 'demo', exhausted: false,
+    project: paley('Guide: as few deletions as possible',
+      'No bound k: the abstraction proposes deletion sets smallest first (A.solve with optimal), and the first one ' +
+      'without a surviving clique has the fewest deletions.' + SEE(11, T11), DECL + `
+# Smallest candidate first; the first one without a counterexample is optimal.
+loop:
+    M = A.solve(optimal)
+    if not M: stop
+    X = C.solve(assume G(M))
+    if X:
+        A.add(G.clause(M, X))
+    else:
+        accept M
+        stop
+`, { f: { abstraction: FEWEST }, desc: { abstraction: 'Proposes candidates (solver A): any deletion set, fewest deletions first.' } }) });
+  add({ id: 'guide-11-ex1', summary: 'All deletion sets of the smallest size: after the first, a cap forbids larger ones.',
+    shape: 'custom', expected: 39, page: Q(11, 'exercise-1-solution'), status: 'sound', baseline: 'guide-05-paley-block',
+    project: paley('Guide: every optimal deletion set',
+      'As the fewest-deletions loop, but after the first solution a program part cap forbids larger deletion sets, ' +
+      'and the loop lists every optimal one.' + SEE(11, T11), `solver A = shared + abstraction + cap
+solver C = shared + check          options "--heuristic=Domain"
+link   G = A -> C via shared + glue
+
+# After the first solution, the part cap forbids larger deletion sets; the loop goes
+# on and lists the others of the same size.
+capped = false
+loop:
+    M = A.solve(optimal)
+    if not M: stop
+    X = C.solve(assume G(M))
+    if X:
+        A.add(G.clause(M, X))
+    else:
+        accept M
+        A.add(G.block(M))
+        if not capped:
+            A.expand(cap, best = M.atoms(size/1))
+            capped = true
+`, { f: { abstraction: FEWEST.replace('#show del/1.\n', '% The number of deletions.\nsize(N) :- N = #count { V : del(V) }.\n#show del/1.\n'),
+        cap: `#program cap(i).
+% best(i,size(B)): the fewest deletions are B. No larger set is of interest.
+:- best(i,size(B)), size(N), N > B.
+` }, desc: { abstraction: 'Proposes candidates (solver A): any deletion set, fewest deletions first.',
+        cap: 'Grounded once, after the first solution: forbids larger deletion sets.' } }) });
   return E;
 }

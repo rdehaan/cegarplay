@@ -53,7 +53,7 @@ export const runKey = (id, constants) => {
 export function runs(entries = guideEntries()) {
   const out = [];
   for (const e of entries) {
-    out.push({ key: e.id, id: e.id, outcome: e.outcome });
+    out.push({ key: e.id, id: e.id, outcome: e.outcome, exhausted: e.exhausted });
     for (const c of e.variants || []) out.push({ key: runKey(e.id, c), id: e.id, constants: c });
   }
   for (const q of QUOTED) out.push({ key: runKey(q.id, q.constants), id: q.id, constants: q.constants });
@@ -85,7 +85,8 @@ export async function measureAll(entries = guideEntries()) {
       if (m.outcome !== 'error' || !m.error) throw new Error(`${r.key}: expected an error, got outcome ${m.outcome}`);
     } else {
       if (m.error) throw new Error(`${r.key}: ${m.error}`);
-      if (m.outcome !== 'finished' || !m.exhausted) throw new Error(`${r.key}: outcome ${m.outcome}, exhausted ${m.exhausted}`);
+      // exhausted: false marks a loop that stops on purpose (for instance at the first optimum).
+      if (m.outcome !== 'finished' || (r.exhausted !== false && !m.exhausted)) throw new Error(`${r.key}: outcome ${m.outcome}, exhausted ${m.exhausted}`);
     }
     out[r.key] = m.numbers;
   }

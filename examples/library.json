@@ -249,6 +249,9 @@
         {
           "n": "17",
           "k": "9"
+        },
+        {
+          "k": "5"
         }
       ]
     },
@@ -512,6 +515,163 @@
       "page": "guide/08-loop-shapes.html#forgot-block",
       "status": "demo",
       "outcome": "error"
+    },
+    {
+      "id": "guide-09-clique-rules",
+      "title": "Guide: the clique lesson as a rule",
+      "group": "guide",
+      "summary": "The clique lesson as a rule, grounded once per counterexample (Shape 3).",
+      "shape": "shape3",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 39
+      },
+      "page": "guide/09-rule-refinements.html#clique-rules",
+      "status": "sound",
+      "baseline": "guide-05-paley-block"
+    },
+    {
+      "id": "guide-09-missing-k",
+      "title": "Guide: a refine part without its parameter",
+      "group": "guide",
+      "summary": "A refine part whose heads lack the parameter: the second step changes nothing.",
+      "shape": "shape3",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 0
+      },
+      "page": "guide/09-rule-refinements.html#missing-k",
+      "status": "demo",
+      "outcome": "error"
+    },
+    {
+      "id": "guide-09-ex1",
+      "title": "Guide: a neighbour of the clique",
+      "group": "guide",
+      "summary": "Exercise: \"delete a neighbour of the clique\" as a refine part. Is it right?",
+      "shape": "shape3",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 0
+      },
+      "page": "guide/09-rule-refinements.html#exercise-1-solution",
+      "status": "demo",
+      "outcome": "error"
+    },
+    {
+      "id": "guide-09-fair-block",
+      "title": "Guide: fair division, blocking",
+      "group": "guide",
+      "summary": "Fair division, blocking each dominated allocation.",
+      "shape": "reference",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 3
+      },
+      "page": "guide/09-rule-refinements.html#fair",
+      "status": "baseline"
+    },
+    {
+      "id": "guide-09-fair-clause",
+      "title": "Guide: fair division, clauses",
+      "group": "guide",
+      "summary": "Fair division with the best clause available: one of the candidate's assignments must change.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 3
+      },
+      "page": "guide/09-rule-refinements.html#fair",
+      "status": "sound",
+      "baseline": "guide-09-fair-block"
+    },
+    {
+      "id": "guide-10-core-block",
+      "title": "Guide: 3-colourable graphs, blocking",
+      "group": "guide",
+      "summary": "3-colourable graphs on n = 5 nodes, blocking each graph without a colouring.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 958
+      },
+      "page": "guide/10-witness-and-cores.html#core",
+      "status": "baseline"
+    },
+    {
+      "id": "guide-10-core-misused",
+      "title": "Guide: a core from the wrong check",
+      "group": "guide",
+      "summary": "A core taken from a check whose failure means the candidate is good.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 4057
+      },
+      "page": "guide/10-witness-and-cores.html#misused",
+      "status": "unsound",
+      "baseline": "guide-05-paley-block"
+    },
+    {
+      "id": "guide-10-minimal-block",
+      "title": "Guide: minimal sufficient reasons, blocking",
+      "group": "guide",
+      "summary": "Minimal sufficient reasons, blocking every candidate that one of the two checks refutes.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 4
+      },
+      "page": "guide/10-witness-and-cores.html#two-checks",
+      "status": "baseline"
+    },
+    {
+      "id": "guide-11-fewest-deletions",
+      "title": "Guide: as few deletions as possible",
+      "group": "guide",
+      "summary": "Fewest deletions: candidates smallest first; the first one that survives the check is optimal.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 1
+      },
+      "page": "guide/11-optimisation.html#fewest",
+      "status": "demo",
+      "exhausted": false
+    },
+    {
+      "id": "guide-11-ex1",
+      "title": "Guide: every optimal deletion set",
+      "group": "guide",
+      "summary": "All deletion sets of the smallest size: after the first, a cap forbids larger ones.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 39
+      },
+      "page": "guide/11-optimisation.html#exercise-1-solution",
+      "status": "sound",
+      "baseline": "guide-05-paley-block"
     },
     {
       "id": "lang-basics",
