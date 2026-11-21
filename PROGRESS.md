@@ -144,8 +144,13 @@ all group `problems`, all tagged `fast` (each run < 0.2 s), listed in the manual
   `learn_literals` unnecessary; not added.
 - Manual: notes on a constant named like a program-part parameter (`k` vs `refine(k)`) and
   on `G.core` after a passed check not blocking supersets.
-- Unresolved, from the agent's report: `graph-coloring-original` (n = 6) gives 9278 in their
-  interpreter, 9265 in `cegarcheck.py`, manifest says 9270. Not investigated.
+- `graph-coloring-original` (n = 6): the agent's interpreter gave 9278, `cegarcheck.py` 9265,
+  the manifest 9270. Not a bug: its relevant/1 is unsound, so which true solutions are lost
+  depends on the loop. On the engine: Shape 1 9270, Shape 2 9277, reference 10698; both loop
+  sets are strict subsets of the reference set and differ from each other (11 vs 18 own
+  solutions). Same effect as `tutorial-weak-relevant` (11 vs 18). 9270 stays.
+- `tools/run.mjs` lost output when piped (`process.exit()` drops buffered stdout; e.g. 679
+  of 9270 `M` lines with `--json | grep`). Now sets `process.exitCode` instead.
 - Backlog ideas from the brief (three-check abduction, MSS, strengthening by R, core
   minimisation in Lua) not done.
 

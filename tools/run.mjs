@@ -89,7 +89,7 @@ async function main(argv) {
     }
     const S = r.events.filter((e) => e.kind === 'S').at(-1)?.data;
     const D = r.events.filter((e) => e.kind === 'D').at(-1)?.data;
-    if (!D) { console.log(`the engine stopped without a result (status ${r.status}); ${r.err.join(' ')}`); process.exit(1); }
+    if (!D) { console.log(`the engine stopped without a result (status ${r.status}); ${r.err.join(' ')}`); process.exitCode = 1; return; }
     console.log(`Outcome: ${D.outcome}${D.detail ? ` (${D.detail})` : ''}; exhausted: ${D.exhausted}`);
     if (S) {
       console.log(`Solutions: ${S.solutions}; candidates: ${S.candidates}; counterexamples: ${S.counterexamples}; clauses: ${S.clauses}; time: ${S.t} s`);
@@ -97,7 +97,8 @@ async function main(argv) {
     }
   }
   const D = r.events.filter((e) => e.kind === 'D').at(-1)?.data;
-  process.exit(D && D.outcome !== 'error' ? 0 : 1);
+  // exitCode, not process.exit(): exit() drops output still buffered for a pipe
+  process.exitCode = D && D.outcome !== 'error' ? 0 : 1;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main(process.argv.slice(2));
