@@ -548,9 +548,13 @@ table.internals-table td.num, table.internals-table th.num {
   font: 12px/1.5 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
   border: 1px solid #e8e8e8;
   padding: 6px 8px;
-  height: 260px;
+  min-height: 60px;
+  max-height: 260px;
   overflow: auto;
   white-space: nowrap;
+}
+.atoms .note, .atoms .atoms-head {
+  white-space: normal;
 }
 .atoms .atom-group {
   white-space: normal;

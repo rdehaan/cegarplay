@@ -4,6 +4,7 @@
   <li><a href="#instr-concepts">Four concepts</a></li>
   <li><a href="#instr-asp">ASP conventions</a></li>
   <li><a href="#instr-walkthrough">Walk-through: graph colouring</a></li>
+  <li><a href="#instr-own">Your own problem</a></li>
   <li><a href="#instr-language">The loop language</a></li>
   <li><a href="#instr-templates">The five templates</a></li>
   <li><a href="#instr-variants">Refinement variants</a></li>
@@ -100,6 +101,25 @@ relevant(leaf_color(N,C)) :- node(N), not leaf(N), color(C), not color(N,C).</di
   <li><b>Statistics</b> shows the counts, a table per solver, the clause lengths and the charts. See
     <a href="#instr-statistics">Reading the statistics</a>.</li>
 </ul>
+
+<h2 id="instr-own">Your own problem</h2>
+<p>Press <b>New project</b> in the Control tab. It gives four small fragments that run as they are: the
+  abstraction guesses a non-empty set of items, and the check looks for an item that is picked while a
+  smaller one is not. Run it (Ctrl+Enter): with <code>n = 4</code> it finds 4 solutions. Then replace the
+  fragments step by step, running after each change:</p>
+<ol>
+  <li>Put the domains in <b>shared</b> and the guess of a candidate in <b>abstraction</b>. Make the check
+    <code>#false.</code> for a moment: it then never finds a counterexample, so the run lists all candidates.
+    (An empty check is different: it has an answer set for every candidate, so every candidate has a
+    counterexample.)</li>
+  <li>List the atoms the check needs in <b>glue</b>, wrapped as <code>glue(T)</code>.</li>
+  <li>Write the <b>check</b>: rules that have an answer set exactly when the candidate is wrong. Add
+    <code>relevant(T)</code> rules for the interface atoms each counterexample depends on.</li>
+  <li>Compare with the <i>Reference run</i> template (Loop tab). If the numbers of solutions differ, the
+    <code>relevant/1</code> rules mark too few atoms (see <a href="#instr-reference">the reference run</a>).</li>
+</ol>
+<p>If a counterexample has no relevant atom, the run stops with an error, and the trace shows that
+  candidate and counterexample.</p>
 
 <h2 id="instr-language">The loop language</h2>
 <p>
