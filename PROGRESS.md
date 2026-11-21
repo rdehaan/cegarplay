@@ -29,8 +29,7 @@ Behind a switch: nothing. The isolation shim is on by default; `?nocoi=1` turns
 it off. Internals tab only with `?internals=true`.
 
 Not done / for the user: deployment to GitHub Pages (push, enable Pages on
-`main`, root); the upstream bug report for the trap; `START-HERE.md` can be
-deleted.
+`main`, root); the upstream bug report for the trap.
 
 ## Improvements after the final review (2026-11-21)
 
@@ -113,7 +112,7 @@ every library id named), browser test for toggle/`?manual=true`/links/raw files.
 ## Next step
 
 All planned phases are done. Open items for the user: deployment to GitHub
-Pages; the upstream bug report for the trap; `START-HERE.md` can be deleted.
+Pages; the upstream bug report for the trap.
 
 ## Deviations from the plan
 
