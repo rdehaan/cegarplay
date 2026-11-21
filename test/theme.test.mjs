@@ -88,3 +88,13 @@ test('dark theme: the chart colours are distinguishable on the panel', () => {
   for (const c of charts) assert.ok(contrast(c, DARK.get('--panel')) >= 3, `${c} on the panel`);
   assert.equal(new Set(charts).size, charts.length);
 });
+
+// TODO B3: the light theme too (named system colours such as LinkText are skipped).
+test('light theme: text tokens have contrast at least 4.5 against their backgrounds', () => {
+  const hex = (v) => /^#[0-9a-fA-F]{3,6}$/.test(v);
+  for (const [fg, bg] of PAIRS) {
+    const a = LIGHT.get('--' + fg), b = LIGHT.get('--' + bg);
+    if (!hex(a) || !hex(b)) continue;
+    assert.ok(contrast(a, b) >= 4.5, `light: --${fg} ${a} on --${bg} ${b}: ${contrast(a, b).toFixed(2)}`);
+  }
+});

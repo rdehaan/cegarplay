@@ -105,8 +105,23 @@ table.internals-table th {
   background-color: var(--subtle);
 }
 
+/* Visually hidden, but focusable: Tab reaches the tab row, arrow keys switch tabs. */
 input[name="tabs"] {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  opacity: 0;
+}
+
+input[name="tabs"]:focus-visible + label.tab-label {
+  outline: 2px solid var(--link);
+  outline-offset: -4px;
 }
 
 label {
@@ -117,7 +132,7 @@ label {
   border: 1px solid transparent;
 }
 
-label[name="tabs"] {
+label.tab-label {
   display: inline-block;
   margin: 0 0 -1px;
   padding: 15px 25px;
@@ -127,7 +142,7 @@ label[name="tabs"] {
   border: 1px solid transparent;
 }
 
-label[name="tabs"]:before {
+label.tab-label:before {
   font-family: fontawesome;
   font-weight: normal;
   margin-right: 10px;
@@ -169,19 +184,29 @@ label[for="tab2"] {
   display: block;
 }
 
+/* Narrow screens: the icon with a short text under it (the text stays the accessible name). */
 @media screen and (max-width: 650px) {
-  label[name="tabs"] {
-    font-size: 0;
+
+  label.tab-label {
+    padding: 8px 4px 6px;
+    min-width: 56px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+    vertical-align: bottom;
   }
 
-  label[name="tabs"]:before {
-    margin: 0;
+  label.tab-label:before {
+    display: block;
+    margin: 0 0 3px;
     font-size: 18px;
   }
 }
 @media screen and (max-width: 400px) {
-  label[name="tabs"] {
-    padding: 15px;
+  label.tab-label {
+    padding: 8px 2px 6px;
+    min-width: 0;
+    font-size: 10px;
   }
 }
 
@@ -244,7 +269,7 @@ a.modal-link:visited,
 a.modal-link:active,
 a.modal-link:hover,
 a.modal-link:link {
-  color: var(--text-disabled);
+  color: var(--text-soft);
   text-decoration-line: none;
 }
 .modal {
@@ -325,7 +350,7 @@ label[for="tab2"] {
 input[name="tabs"]:checked + label[for="tab2"] {
   color: var(--text);
 }
-label[name="tabs"].has-problem:after {
+label.tab-label.has-problem:after {
   content: ' \25CF';
   color: var(--error);
 }
@@ -811,4 +836,45 @@ tr.mismatch td {
 /* The fragment a ?fragment= link opened */
 .fragment.fragment-target > h3 .fragment-name {
   border-bottom: 2px solid var(--accent);
+}
+
+/* Narrow screens (after the rules they override): 16 px gutters, no sideways scrolling. */
+@media screen and (max-width: 650px) {
+  main {
+    padding: 24px 16px;
+  }
+
+  .modal {
+    padding: 16px;
+  }
+
+  .modal-dialog {
+    min-width: 0;
+  }
+
+  /* Constants and limits shrink to the screen; the Threads note gets its own line. */
+  #constants-table {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  #constants-table th:last-child,
+  #constants-table td:last-child {
+    width: 6.5em;
+  }
+
+  #constants-table input,
+  #constants-table input.const-name {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .settings-grid {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+
+  #threads-note {
+    display: block;
+    margin-top: 4px;
+  }
 }

@@ -567,6 +567,12 @@ pages of the guide. The editors and the charts follow it.
 **Run** (or Ctrl+Enter / Cmd+Enter anywhere on the page) validates the project, then starts the run
 in the worker. While a run is active all editors are read-only.
 
+Keyboard: the tab row is in the Tab order (arrow keys switch tabs, as in any group of radio
+buttons); **Select file** is a button; an info dialog (the ⓘ links) takes the focus, keeps Tab
+inside, closes with Escape and returns the focus to its link. Run status and run messages are
+announced to screen readers (`role="status"`). Below 650 px the tabs show their icon with a short
+name under it.
+
 Validation, in order: compile the loop script (errors marked in the Loop tab); for each solver and
 link, parse its fragments with `clingo --mode=gringo` and the constants (syntax errors and unsafe
 variables marked in the Programs tab, with fragment and line); check `expand` parts; check

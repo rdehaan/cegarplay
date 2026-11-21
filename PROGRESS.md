@@ -321,6 +321,20 @@ Notes for the guide phases (checked against the code before G0a):
   `[#inc_...]` body literal; `oneLineMessage` for the run bar. A part parameter still shows as
   `#Inc0` (clingo's name; the source name is not known there).
 
+### Group B: accessibility and small screens (done)
+- B1/B4: tab radios are visually hidden (focusable); labels have `class="tab-label"`, a
+  `.tab-text` span and a `title`; focus ring on the label; `aria-controls` on each radio. Below
+  650 px the text sits under the icon (fits in one row at 390 px with the six default tabs).
+- B2: "Select file" is a button that calls `fileInput.click()`.
+- B3: light tokens `--text-faint #686868`, `--text-soft #6b6b6b`, `--tab-text #6b6b6b`,
+  `--tab-hover #333`, `--busy #8a5200`, `--syn-comment #366b50`; info icons use `--text-soft`.
+  `test/theme.test.mjs` now checks the light pairs too. The Tutorial label was already `--tab-text`
+  (a later rule overrode the orange). `--text-disabled` stays for disabled buttons only (exempt).
+- B5: narrow-screen rules are at the end of `css/main.css` (an earlier media block was overridden
+  by the base rules below it); main padding 24/16 px below 650 px.
+- B6: `js/modal.js` sets the dialog roles at load, moves focus in and back, traps Tab.
+- Tests: `test/browser/a11y.test.mjs` (also the A4 page check).
+
 ## Next step
 
 All phases of PLAN.md and of the guide are done. Open items for the user: deployment to GitHub

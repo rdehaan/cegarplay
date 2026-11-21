@@ -82,7 +82,7 @@ export class Editors {
   addBlock(f) {
     const name = f.name;
     const info = DEFAULT_FRAGMENTS.includes(name)
-      ? el('a', { href: '#', class: 'modal-link', 'data-open': `modal-${name}`, title: 'About this fragment' }, '') : '';
+      ? el('a', { href: '#', class: 'modal-link', 'data-open': `modal-${name}`, title: 'About this fragment', 'aria-label': `About the ${name} fragment` }, '') : '';
     const btn = (label, title, fn) => el('button', { class: 'control-button frag-tool', title, onclick: () => fn(name) }, label);
     const tools = el('span', { class: 'fragment-tools' },
       btn('↑', 'Move up', (n) => this.move(n, -1)),

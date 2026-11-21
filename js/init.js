@@ -297,6 +297,7 @@ $('new-button').addEventListener('click', () => {
   status('new-status', 'Started a new project. See the Programs tab.');
 });
 
+$('file-button').addEventListener('click', () => $('file-input').click());
 $('file-input').addEventListener('change', async (ev) => {
   const f = ev.target.files[0];
   ev.target.value = '';

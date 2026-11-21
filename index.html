@@ -49,36 +49,36 @@
           <option value="0">all</option>
         </select>
         <span class="status-label">Status:</span>
-        <span id="run-status" data-state="idle">idle</span>
+        <span id="run-status" data-state="idle" role="status" aria-live="polite">idle</span>
       </div>
       <div id="live-line" class="live-line">&nbsp;</div>
-      <div id="run-message" class="run-message" hidden><span id="run-message-text"></span>
+      <div id="run-message" class="run-message" role="status" aria-live="polite" hidden><span id="run-message-text"></span>
         <a href="#" id="run-message-link">Show in the Output tab</a></div>
     </div>
 
-    <input id="tab1" type="radio" name="tabs" checked>
-    <label for="tab1" name="tabs">Control</label>
+    <input id="tab1" aria-controls="section-control" type="radio" name="tabs" checked>
+    <label for="tab1" class="tab-label" title="Control"><span class="tab-text">Control</span></label>
 
-    <input id="tab2" type="radio" name="tabs">
-    <label for="tab2" name="tabs">Tutorial</label>
+    <input id="tab2" aria-controls="section-tutorial" type="radio" name="tabs">
+    <label for="tab2" class="tab-label" title="Tutorial"><span class="tab-text">Tutorial</span></label>
 
-    <input id="tab8" type="radio" name="tabs" hidden>
-    <label for="tab8" name="tabs" id="label-manual" hidden>Manual</label>
+    <input id="tab8" aria-controls="section-manual" type="radio" name="tabs" hidden>
+    <label for="tab8" class="tab-label" id="label-manual" hidden title="Manual"><span class="tab-text">Manual</span></label>
 
-    <input id="tab3" type="radio" name="tabs">
-    <label for="tab3" name="tabs" id="label-programs">Programs</label>
+    <input id="tab3" aria-controls="section-programs" type="radio" name="tabs">
+    <label for="tab3" class="tab-label" id="label-programs" title="Programs"><span class="tab-text">Programs</span></label>
 
-    <input id="tab4" type="radio" name="tabs">
-    <label for="tab4" name="tabs" id="label-loop">Loop</label>
+    <input id="tab4" aria-controls="section-loop" type="radio" name="tabs">
+    <label for="tab4" class="tab-label" id="label-loop" title="Loop"><span class="tab-text">Loop</span></label>
 
-    <input id="tab5" type="radio" name="tabs">
-    <label for="tab5" name="tabs" id="label-output">Output</label>
+    <input id="tab5" aria-controls="section-output" type="radio" name="tabs">
+    <label for="tab5" class="tab-label" id="label-output" title="Output"><span class="tab-text">Output</span></label>
 
-    <input id="tab6" type="radio" name="tabs">
-    <label for="tab6" name="tabs">Statistics</label>
+    <input id="tab6" aria-controls="section-statistics" type="radio" name="tabs">
+    <label for="tab6" class="tab-label" title="Statistics"><span class="tab-text">Statistics</span></label>
 
-    <input id="tab7" type="radio" name="tabs">
-    <label for="tab7" name="tabs">Internals</label>
+    <input id="tab7" aria-controls="section-internals" type="radio" name="tabs">
+    <label for="tab7" class="tab-label" title="Internals"><span class="tab-text">Internals</span></label>
 
     <!-- 1. Control -->
     <section id="section-control">
@@ -123,8 +123,8 @@
       <p id="new-status" class="status-line"></p>
 
       <h3>Upload project from file</h3>
-      <label for="file-input" class="control-button">Select file</label>
-      <input type="file" id="file-input" accept=".json,application/json">
+      <button type="button" class="control-button" id="file-button">Select file</button>
+      <input type="file" id="file-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
       <p id="upload-status" class="status-line"></p>
 
       <h3>Download current project</h3>
@@ -182,7 +182,7 @@
         &nbsp;
         <button class="control-button" id="edit-as-lua-button">Edit as Lua</button>
       </div>
-      <h3>Loop script <a href="#" class="modal-link" data-open="modal-loop">&#xf05a;</a>
+      <h3>Loop script <a href="#" class="modal-link" data-open="modal-loop" title="About the loop script" aria-label="About the loop script">&#xf05a;</a>
         <span id="loop-language" class="loop-language"></span></h3>
       <div id="loop-editor" class="editor"></div>
 
