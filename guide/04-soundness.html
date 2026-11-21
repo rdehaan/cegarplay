@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Soundness: when a refinement says too much · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 04</p>
+        <h1>Soundness: when a refinement says too much</h1>
+        <p class="lead">Marking fewer atoms relevant makes a refinement stronger, and the loop
+          faster. Mark too few and the refinement removes solutions. Nothing warns you. This chapter
+          shows the mistake, how to catch it, and a real case.</p>
+
+        <h2 id="too-strong">A refinement that is too strong</h2>
+        <p>A refinement is <em>too strong</em> when some solution violates it. The loop then never
+          proposes that solution again, and so never reports it. The run finishes normally, with
+          outcome finished and the search exhausted, and lists fewer solutions than there are. No
+          error, no warning.</p>
+        <p>Since the clause from <code>relevant/1</code> asks for one of the relevant atoms to
+          change, a clause gets stronger as fewer atoms are marked. Too strong means: the check
+          marked too little.</p>
+
+        <h2 id="one-node">A plausible mistake</h2>
+        <p>Here is a tempting shortcut for the running example. A triangle must lose a node; why
+          not say which one? Delete the busiest node, the one with the most edges, since that
+          breaks the most triangles. The check marks just that node:</p>
+        <pre class="code" data-lang="asp" data-from="guide-04-one-node:check">deg(V,D) :- node(V), D = #count { W : edge(V,W) ; W : edge(W,V) }.
+busier(V) :- q(V), q(W), deg(V,D), deg(W,E), (E,W) &gt; (D,V).
+relevant(del(V)) :- q(V), not busier(V).</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-04-one-node</code>.</p>
+        <p id="one-node-run">On a tie the node with the larger number counts as busier. Each
+          refinement is now a clause with one literal: "this node must go".
+          <a class="play" href="../?example=guide-04-one-node&amp;fragment=check&amp;from=guide/04-soundness.html%23one-node-run" target="cegarplay">Open the loop that marks one node</a></p>
+        <details class="predict">
+          <summary>Before you press Run: the problem has
+            <span data-stat="guide-02-block:solutions">3</span> solutions. How many will this loop
+            report?</summary>
+          <p><span data-stat="guide-04-one-node:solutions">1</span>, after only
+            <span data-stat="guide-04-one-node:candidates">4</span> candidates. The first
+            counterexample is the triangle 1, 2, 3. All three nodes have three edges, so the tie
+            goes to node 3, and the refinement is "delete 3". The solutions that delete 1 or 2
+            instead violate it and are gone.</p>
+        </details>
+        <figure class="graph" data-del="1,4,8">
+          <figcaption>A solution the loop lost: delete 1, 4 and 8. No triangle survives, but the
+            first refinement demanded node 3.</figcaption>
+          <noscript><p>Nodes 1, 4 and 8 are crossed out; no triangle is left.</p></noscript>
+        </figure>
+        <p>Try the argument of the previous chapter on the clause "delete 3": does every solution
+          satisfy it? No. If node 3 stays, the triangle 1, 2, 3 can still be broken by deleting 1
+          or 2. The counterexample depends on all three nodes, and the check marked one.</p>
+
+        <h2 id="test">The soundness test</h2>
+        <p>You cannot see a missing solution in the output. You can only compare.
+          The blocking loop of chapter 2 is the ground truth: it is sound for any check that is
+          right. So run both on the same instance and compare the counts:</p>
+        <ul>
+          <li>the same fragments and constants;</li>
+          <li>all solutions (in the Control tab, Solutions: all);</li>
+          <li>both runs exhausted;</li>
+          <li>the same number of solutions, or the faster loop is wrong.</li>
+        </ul>
+        <p>In the playground you need not build a second project. Open the loop that marks one node,
+          run it, then change one line in the Loop tab and run again:</p>
+        <div class="changed" data-lang="loop" data-before="guide-04-one-node:loop" data-after="guide-02-block:loop"><span class="same">        if X:</span><del>            reject M with G.clause(M, X)</del><ins>            reject M with G.block(M)</ins></div>
+        <p id="test-run">The run history at the foot of the Statistics tab now has two rows for the same
+          fragments, both exhausted, with different counts, and marks both with &#x26A0;: one of the
+          two loops is unsound. Keep the fragments unchanged between the two runs; the history compares only
+          runs of the same fragments.
+          <a class="play" href="../?example=guide-04-one-node&amp;fragment=loop&amp;from=guide/04-soundness.html%23test-run" target="cegarplay">Open the loop and try it</a></p>
+        <p>The test only works where the blocking loop finishes, so use small instances. That is
+          rarely a limit: a mistake in <code>relevant/1</code> usually shows on small instances
+          already.</p>
+
+        <h2 id="instances">One instance is not enough</h2>
+        <p>Which solutions a too-strong refinement removes depends on which counterexamples the
+          check happens to return, and so on the search order, the loop shape and the instance. A
+          wrong loop can lose nothing on one instance and lose many on the next. Run the soundness
+          test on several small instances, and on several values of the constants.</p>
+
+        <h2 id="both-ways">Too weak and too strong</h2>
+        <p>Marking too much is safe but slow: at the far end it is blocking. Marking too little is
+          fast but wrong. Aim for exactly the atoms the counterexample depends on.</p>
+        <p>Remember both values. A counterexample can depend on an atom being <em>false</em> as
+          well as on one being true. In the running example, the triangle depends on three
+          deletions being false. In the next example, a colouring depends on an edge being
+          absent: add the edge, and the colouring may break.</p>
+
+        <h2 id="story">A true story: leaf colouring</h2>
+        <p>The problem: find connected graphs on n nodes, with a colouring of their leaves (nodes
+          with one neighbour) in three colours, such that no proper 3-colouring of the whole graph
+          agrees with the leaf colours. The abstraction guesses the graph and the leaf colours; the
+          check looks for a proper 3-colouring that agrees, which is the counterexample. The example
+          comes from an earlier prototype of the same loop, and its check marked these atoms:</p>
+        <pre class="code" data-lang="asp" data-from="graph-coloring-original:check">relevant(edge(N,M)) :- node(N), node(M), N &lt; M, not edge(N,M).
+relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>graph-coloring-original</code>.</p>
+        <p>Missing edges are relevant, because adding one can break the colouring. Leaf colours are
+          relevant, because changing one can too. It looks complete. It is not: removing an edge can
+          turn a node into a leaf, and if its new leaf colour differs from its colour in the
+          counterexample, the counterexample breaks. The fix marks those atoms too:</p>
+        <pre class="code" data-lang="asp" data-from="graph-coloring:check">relevant(leaf_color(N,C)) :- node(N), not leaf(N), color(C), not color(N,C).</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>graph-coloring</code>.</p>
+        <p id="story-numbers">With the original rules, n = 5 gives
+          <span data-stat="graph-coloring-original@n=5:solutions">101</span> solutions, the same as
+          the blocking loop's <span data-stat="gc-reference:solutions">101</span>. Nothing to see.
+          At n = 6 the original rules give
+          <span data-stat="graph-coloring-original:solutions">9,270</span> solutions, the fixed rules
+          <span data-stat="graph-coloring:solutions">10,698</span>, and so does the blocking loop.
+          The mistake shows from n = 6 on.
+          <a class="play" href="../?example=graph-coloring-original&amp;fragment=check&amp;from=guide/04-soundness.html%23story-numbers" target="cegarplay">Open the original rules (n = 6)</a>
+          <a class="play" href="../?example=graph-coloring&amp;fragment=check&amp;from=guide/04-soundness.html%23story-numbers" target="cegarplay">Open the fixed rules (n = 6)</a>
+          <a class="play" href="../?example=gc-reference&amp;fragment=loop&amp;from=guide/04-soundness.html%23story-numbers" target="cegarplay">Open the blocking loop (n = 5)</a></p>
+        <p>The too-strong rules were also fast. At n = 5 they needed
+          <span data-stat="graph-coloring-original@n=5:candidates">276</span> candidates, the fixed
+          rules <span data-stat="gc-shape1:candidates">1,421</span>, the blocking loop
+          <span data-stat="gc-reference:candidates">3,373</span>. A loop that is suspiciously fast is
+          worth a soundness test.</p>
+
+        <aside class="pitfall">
+          <span class="aside-title">Pitfall: skipping the soundness test</span>
+          <p>A too-strong refinement shows only as missing solutions. Make the test a routine:
+            whenever you change <code>relevant/1</code>, the glue or the loop, run the blocking loop
+            and the new loop with all solutions on a few small instances and compare the counts. A
+            row marked &#x26A0; in the run history means stop and look.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>Name both solutions that the loop marking one node loses, and the refinement that
+            removed each.</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>Deleting 1, 4, 8 and deleting 2, 4, 8. Both violate the first refinement, "delete 3",
+              made from the triangle 1, 2, 3. The other two refinements, "delete 4" and "delete 8",
+              happen to be satisfied by every solution, which is why one solution survives. The
+              blocking loop finds all three.
+              <a class="play" href="../?example=guide-02-block&amp;from=guide/04-soundness.html%23exercise-1-solution" target="cegarplay">Open the blocking loop</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-2">
+          <h2>Exercise 2</h2>
+          <p>Open the original leaf-colouring rules and, before reading the fix above, write the
+            missing <code>relevant/1</code> rule yourself. Ask: which change of the candidate, not
+            covered by the two rules, breaks the counterexample? Then compare with the blocking loop
+            <code>gc-reference</code> at n = 6 (set n in its Control tab; that run takes a while).</p>
+          <details class="solution" id="exercise-2-solution">
+            <summary>Solution</summary>
+            <p>Removing an edge can make a node a leaf, and its leaf colour then has to match its
+              colour in the counterexample. So the leaf colours other than the node's colour are
+              relevant for every node that is not a leaf yet:</p>
+            <pre class="code" data-lang="asp" data-from="graph-coloring:check">relevant(leaf_color(N,C)) :- node(N), not leaf(N), color(C), not color(N,C).</pre>
+            <p>With it the loop finds <span data-stat="graph-coloring:solutions">10,698</span>
+              solutions at n = 6, as the blocking loop does.
+              <a class="play" href="../?example=graph-coloring&amp;fragment=check&amp;from=guide/04-soundness.html%23exercise-2-solution" target="cegarplay">Open the fixed rules</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-too-strong-is-silent">A refinement that is too strong removes solutions
+              without any sign. The run still finishes, exhausted.</li>
+            <li id="rule-soundness-test">Test soundness by comparison: the blocking loop and your
+              loop, same fragments and constants, all solutions, both exhausted, same count.</li>
+            <li id="rule-several-instances">Run the test on several small instances: a wrong loop
+              can be right on one.</li>
+            <li id="rule-both-polarities">A counterexample can depend on an atom being false. Mark
+              it too.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="03-learning.html">&larr; Learning from a counterexample</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

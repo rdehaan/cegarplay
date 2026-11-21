@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>The first loop: guess, check, block · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 02</p>
+        <h1>The first loop: guess, check, block</h1>
+        <p class="lead">The simplest loop that is correct: the abstraction proposes, the check
+          refutes, and every refuted candidate is forbidden on its own. It is slow, and it is the
+          yardstick for every faster loop in this guide.</p>
+
+        <h2 id="two-programs">Two programs, two solvers</h2>
+        <p>A project in the playground is a list of <em>fragments</em>, named pieces of ASP text.
+          The loop builds a <em>solver</em> (one clingo instance) from some of them. Our problem
+          needs two solvers. The graph goes into the fragment <code>shared</code>, which both
+          solvers read. The abstraction solver A reads <code>shared</code> and
+          <code>abstraction</code>:</p>
+        <pre class="code" data-lang="asp" data-from="guide-02-block:abstraction">% A candidate: at most k nodes to delete.
+{ del(V) : node(V) } k.
+#show del/1.</pre>
+        <p class="listing-source">From the fragment <code>abstraction</code> of <code>guide-02-block</code>.</p>
+        <p>The abstraction does not have to be exact. It may propose wrong candidates; the check
+          will catch them. What it must never do is leave out a solution, because a solution that
+          is never proposed is never found. In other words, the abstraction
+          <em>over-approximates</em>: every solution is a candidate. Here every candidate is a set
+          of at most k nodes, so this holds trivially.</p>
+
+        <h2 id="check">The check</h2>
+        <p>The check solver C reads <code>shared</code> and <code>check</code>. It is the test of
+          the previous chapter:</p>
+        <pre class="code" data-lang="asp" data-from="guide-02-block:check">3 { q(V) : node(V) } 3.
+:- q(V), del(V).
+:- q(U), q(V), U &lt; V, not edge(U,V).
+#show q/1.</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-02-block</code>.</p>
+        <p>Note the direction. The check has an answer set exactly when the candidate is
+          <em>wrong</em>. The answer set is a counterexample: a surviving triangle. If the check
+          has no answer set, the candidate is a solution. A check that would instead succeed on good
+          candidates is a different design; chapter 10 is about it.</p>
+
+        <h2 id="glue">The glue</h2>
+        <p>The check reads <code>del/1</code>, but the deletions are chosen in solver A. The
+          fragment <code>glue</code> says which atoms of A the check gets to see:</p>
+        <pre class="code" data-lang="asp" data-from="guide-02-block:glue">glue(del(V)) :- node(V).</pre>
+        <p class="listing-source">From the fragment <code>glue</code> of <code>guide-02-block</code>.</p>
+        <p>Every atom T with <code>glue(T)</code> is an <em>interface atom</em>. For each candidate,
+          the loop passes the value of every interface atom to the check as an assumption: true if
+          the candidate has it, false if not. The check sees nothing else of solver A. An atom the
+          check reads but the glue does not list is simply false in the check, and no one tells
+          you.</p>
+
+        <h2 id="loop">The loop script</h2>
+        <p>The Loop tab holds a short script that wires the fragments together and says what to
+          do with each candidate. This is the whole script of the first loop:</p>
+        <pre class="code" data-lang="loop" data-from="guide-02-block:loop">solver A = shared + abstraction
+solver C = shared + check          options "--heuristic=Domain"
+link   G = A -> C via shared + glue
+
+search A:
+    on candidate M:
+        X = C.solve(assume G(M))
+        if X:
+            reject M with G.block(M)</pre>
+        <p class="listing-source">From the loop script of <code>guide-02-block</code>.</p>
+        <p>Line by line:</p>
+        <ul>
+          <li><code>solver A = shared + abstraction</code> builds solver A from two fragments;
+            the same for C. The option <code>--heuristic=Domain</code> is a clingo option for the
+            check; chapter 5 says why it is there.</li>
+          <li><code>link G = A -&gt; C via shared + glue</code> declares the <em>link</em> G: the
+            interface atoms are the <code>glue(T)</code> atoms derived from <code>shared</code>
+            and <code>glue</code>.</li>
+          <li><code>search A:</code> runs one search of solver A for all its answer sets, and
+            <code>on candidate M:</code> is called for each of them.</li>
+          <li><code>X = C.solve(assume G(M))</code> is the check: solve C with the candidate's
+            interface atoms as assumptions. X is the counterexample, or nothing.</li>
+          <li><code>reject M with G.block(M)</code> throws the candidate away and adds a
+            <em>refinement</em> to solver A. Here the refinement is a <em>block</em>: a clause
+            that says "not exactly this candidate again".</li>
+        </ul>
+        <p>A candidate that is not rejected is a <em>solution</em>. The playground calls this
+          script the Reference run; it is one of the templates of the Loop tab.</p>
+
+        <h2 id="block">Running it</h2>
+        <p id="block-run">Open the first loop, press Run, and look at the Output tab.
+          <a class="play" href="../?example=guide-02-block&amp;fragment=loop&amp;from=guide/02-first-loop.html%23block-run" target="cegarplay">Open the first loop</a></p>
+        <details class="predict">
+          <summary>Before you press Run: how many candidates will the loop look at, and how many
+            counterexamples will it find?</summary>
+          <p>Every one of the <span data-stat="guide-02-block:candidates">176</span> sets of at most
+            three nodes. Each block rules out only the candidate it was made from, so no candidate is
+            skipped. Of these, <span data-stat="guide-02-block:counterexamples">173</span> have a
+            counterexample and <span data-stat="guide-02-block:solutions">3</span> are
+            solutions.</p>
+        </details>
+
+        <h2 id="output">Reading the Output tab</h2>
+        <p>The result line says how the run ended. <em>Exhausted</em> means the abstraction has no
+          candidate left, so the list of solutions is complete. Below it are the solutions, and
+          then the <em>trace</em>: one step per refinement, which you move through with the slider.
+          Each step shows the candidate (its true interface atoms) and the refinement. In the next
+          chapters it also shows the counterexample the refinement was made from.</p>
+        <p>Step 2 of this run is the candidate that deletes only node 1. The refinement is the
+          clause</p>
+        <pre class="plain">-del(1) del(2) del(3) del(4) del(5) del(6) del(7) del(8) del(9) del(10)</pre>
+        <p>read as: "in every later candidate, node 1 is not deleted, or one of the others is". It
+          names all ten interface atoms and asks for any one of them to change. That is what a
+          block is. The Statistics tab shows the mean clause length:
+          <span data-stat="guide-02-block:meanClause">10.0</span>, the number of interface
+          atoms.</p>
+
+        <h2 id="slow">Always sound, always slow</h2>
+        <p>Blocking can never lose a solution: it forbids only a candidate that the check has just
+          shown to be wrong. We call a loop <em>sound</em> when it reports exactly the solutions of
+          the problem; the blocking loop is sound for any problem whose abstraction
+          over-approximates and whose check is right.</p>
+        <p>The price is that the loop learns nothing beyond the one candidate. It needs one check
+          per candidate, and the number of candidates grows quickly with the size of the problem.
+          For the small graph that is fine. For anything larger, the loop must learn more from each
+          counterexample. That is the next chapter.</p>
+        <p>Keep the blocking loop anyway. On a small instance it gives the true solutions, and
+          chapter 4 uses it to test faster loops.</p>
+
+        <aside class="pitfall">
+          <span class="aside-title">Pitfall: the glue</span>
+          <p>A glue that names the wrong atoms gives no warning by itself. If none of its atoms
+            occurs in the abstraction (for instance <code>glue(deleted(V))</code> for an abstraction
+            that uses <code>del/1</code>), the link has no interface atoms, and the first refinement
+            ends the run with the error "an empty clause cannot refine the candidate". If it misses
+            only some atoms, the run finishes normally, with wrong solutions: the missing atoms are
+            false in the check. Exercise 1 shows such a run.</p>
+          <p>How to find it: a block names every interface atom, so the first block clause in the
+            trace is the list of what the check can see. Compare it with the atoms the check
+            reads.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>Suppose the glue was written for an earlier graph with seven nodes:
+            <code>glue(del(1..7)).</code> What happens when you run the loop on the small graph,
+            and why?</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>The run finishes with <span data-stat="guide-02-ex1:solutions">0</span> solutions.
+              The check never sees <code>del(8)</code>, <code>del(9)</code> or
+              <code>del(10)</code>, so for the check those nodes are never deleted, and the triangle
+              8, 9, 10 survives every candidate. The loop looks at only
+              <span data-stat="guide-02-ex1:candidates">66</span> candidates, because each block now
+              names only the seven interface atoms and so forbids every candidate that agrees with
+              this one on nodes 1 to 7. The trace shows it: every block names only
+              <code>del(1)</code> to <code>del(7)</code>.
+              <a class="play" href="../?example=guide-02-ex1&amp;fragment=glue&amp;from=guide/02-first-loop.html%23exercise-1-solution" target="cegarplay">Open the run with the short glue</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-2">
+          <h2>Exercise 2</h2>
+          <p>Change the problem: no clique of c = 4 nodes may survive, instead of no triangle.
+            Write the check with a constant <code>c</code>. Then predict: will the blocking loop
+            reject more or fewer candidates than for triangles?</p>
+          <details class="solution" id="exercise-2-solution">
+            <summary>Solution</summary>
+            <pre class="code" data-lang="asp" data-from="guide-02-ex2:check">c { q(V) : node(V) } c.
+:- q(V), del(V).
+:- q(U), q(V), U &lt; V, not edge(U,V).</pre>
+            <p>The constant c is set in the Control tab. Fewer candidates are rejected: the only
+              clique of four nodes is 1, 2, 3, 4, so a candidate is wrong only when it deletes none
+              of them. The loop still looks at all
+              <span data-stat="guide-02-ex2:candidates">176</span> candidates, rejects
+              <span data-stat="guide-02-ex2:counterexamples">42</span> and reports
+              <span data-stat="guide-02-ex2:solutions">134</span> solutions.
+              <a class="play" href="../?example=guide-02-ex2&amp;fragment=check&amp;from=guide/02-first-loop.html%23exercise-2-solution" target="cegarplay">Open the check for cliques of four</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-over-approximate">The abstraction over-approximates: every solution must
+              be a candidate.</li>
+            <li id="rule-check-finds-wrong">The check has an answer set exactly when the candidate
+              is wrong; that answer set is the counterexample.</li>
+            <li id="rule-glue-everything">Glue every atom of the abstraction that the check reads.
+              An atom that is not glued is silently false in the check.</li>
+            <li id="rule-block-baseline">Blocking is always sound and always slow. Keep the blocking
+              loop as the ground truth for small instances.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="01-why-a-loop.html">&larr; Why a loop</a>
+        <a class="next" href="03-learning.html">Learning from a counterexample &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

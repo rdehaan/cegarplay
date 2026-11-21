@@ -1,8 +1,8 @@
 {
   "format": "cegarplay",
   "version": 1,
-  "title": "Guide: learning from a triangle",
-  "description": "The same problem; a surviving triangle now teaches that one of its nodes must be deleted, which rules out many candidates at once. See the guide page \"Why a loop\".",
+  "title": "Guide: the guess alone",
+  "description": "The abstraction proposes every set of at most k nodes and the check accepts them all, so the number of solutions is the number of candidates. See the guide page \"Why a loop\".",
   "fragments": [
     {
       "name": "shared",
@@ -21,13 +21,13 @@
     },
     {
       "name": "check",
-      "text": "% A counterexample: a triangle none of whose nodes is deleted.\n3 { q(V) : node(V) } 3.\n:- q(V), del(V).\n:- q(U), q(V), U < V, not edge(U,V).\n#show q/1.\n\n% The triangle survives as long as none of its nodes is deleted.\nrelevant(del(V)) :- q(V).\n",
-      "description": "Looks for a triangle that survives the deletions (solver C)."
+      "text": "% No counterexample ever: every candidate is accepted.\n#false.\n",
+      "description": "Accepts every candidate."
     }
   ],
   "loop": {
     "language": "loop",
-    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
   },
   "settings": {
     "constants": {

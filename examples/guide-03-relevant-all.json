@@ -1,8 +1,8 @@
 {
   "format": "cegarplay",
   "version": 1,
-  "title": "Guide: blocking one candidate at a time",
-  "description": "Delete at most k = 3 nodes of the small graph so that no triangle is left; every wrong candidate is blocked on its own. See the guide page \"Why a loop\".",
+  "title": "Guide: everything relevant",
+  "description": "The check marks every deleted-or-not node as relevant, so each refinement says exactly what blocking says. The numbers equal those of the blocking run. See the guide page \"Learning from a counterexample\".",
   "fragments": [
     {
       "name": "shared",
@@ -21,13 +21,13 @@
     },
     {
       "name": "check",
-      "text": "% A counterexample: a triangle none of whose nodes is deleted.\n3 { q(V) : node(V) } 3.\n:- q(V), del(V).\n:- q(U), q(V), U < V, not edge(U,V).\n#show q/1.\n\n% The triangle survives as long as none of its nodes is deleted.\nrelevant(del(V)) :- q(V).\n",
+      "text": "% A counterexample: a triangle none of whose nodes is deleted.\n3 { q(V) : node(V) } 3.\n:- q(V), del(V).\n:- q(U), q(V), U < V, not edge(U,V).\n#show q/1.\n\n% Every interface atom counts: the refinement blocks the whole candidate.\nrelevant(del(V)) :- node(V).\n",
       "description": "Looks for a triangle that survives the deletions (solver C)."
     }
   ],
   "loop": {
     "language": "loop",
-    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
   },
   "settings": {
     "constants": {

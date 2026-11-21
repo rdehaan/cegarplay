@@ -1,0 +1,43 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide: one program is not enough",
+  "description": "Guess the deletions and a triangle in one program and demand that the triangle is hit: the answer sets are the deletion sets that hit some triangle, not every triangle. See the guide page \"Why a loop\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The graph of the guide's figures: ten nodes, fifteen edges.\nnode(1..10).\nedge(1,2). edge(1,3). edge(1,4). edge(2,3). edge(2,4). edge(3,4).\nedge(4,5). edge(4,6). edge(5,6). edge(6,7). edge(6,8). edge(7,8).\nedge(8,9). edge(8,10). edge(9,10).\n",
+      "description": "The graph. Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: at most k nodes to delete.\n{ del(V) : node(V) } k.\n\n% The tempting test: guess a triangle and demand that a deleted node hits it.\n3 { q(V) : node(V) } 3.\n:- q(U), q(V), U < V, not edge(U,V).\nhit :- q(V), del(V).\n:- not hit.\n#show del/1.\n",
+      "description": "Guesses the deletions and a triangle in one program (wrong on purpose)."
+    },
+    {
+      "name": "glue",
+      "text": "% The check sees which nodes are deleted.\nglue(del(V)) :- node(V).\n",
+      "description": "The interface atoms: the deleted nodes."
+    },
+    {
+      "name": "check",
+      "text": "% No counterexample ever: every candidate is accepted.\n#false.\n",
+      "description": "Accepts every candidate."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction    options \"--project\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+  },
+  "settings": {
+    "constants": {
+      "k": "3"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

@@ -60,23 +60,23 @@ test('a guide page without JavaScript still has its previous/next links and its 
 });
 
 test('a deep link opens the named fragment and shows the way back to the guide', async () => {
-  const from = 'guide/01-why-a-loop.html%23demo-clause';
-  const { page, context, errors } = await B.openPage(browser, server, `?example=guide-01-demo-clause&fragment=check&from=${from}`);
+  const from = 'guide/03-learning.html%23hit-clique';
+  const { page, context, errors } = await B.openPage(browser, server, `?example=guide-03-hit-clique&fragment=check&from=${from}`);
   assert.ok(await page.isChecked('#tab3'), 'Programs tab');
   assert.ok(await page.$('.fragment.fragment-target[data-fragment="check"]'));
   assert.ok(await page.isVisible('#back-to-guide'));
-  assert.equal(await page.getAttribute('#back-to-guide', 'href'), 'guide/01-why-a-loop.html#demo-clause');
+  assert.equal(await page.getAttribute('#back-to-guide', 'href'), 'guide/03-learning.html#hit-clique');
   await page.click('#back-to-guide');
-  await page.waitForURL(/guide\/01-why-a-loop\.html#demo-clause$/);
+  await page.waitForURL(/guide\/03-learning\.html#hit-clique$/);
   assert.deepEqual(errors, []);
   await context.close();
 });
 
 test('fragment=loop opens the Loop tab; an unknown fragment is ignored with a note; fragment overrides tab', async () => {
-  let o = await B.openPage(browser, server, '?example=guide-01-demo-clause&fragment=loop&tab=5');
+  let o = await B.openPage(browser, server, '?example=guide-03-hit-clique&fragment=loop&tab=5');
   assert.ok(await o.page.isChecked('#tab4'));
   await o.context.close();
-  o = await B.openPage(browser, server, '?example=guide-01-demo-clause&fragment=nosuch');
+  o = await B.openPage(browser, server, '?example=guide-03-hit-clique&fragment=nosuch');
   assert.match(await o.page.textContent('#load-status'), /no fragment "nosuch"/);
   assert.ok(!(await o.page.isChecked('#tab3')));
   assert.deepEqual(o.errors, []);
@@ -86,7 +86,7 @@ test('fragment=loop opens the Loop tab; an unknown fragment is ignored with a no
 test('a from= that is not a guide page shows no link', async () => {
   for (const bad of ['https://example.org/', 'javascript:alert(1)', 'guide/../index.html', '//example.org/guide/x.html',
     'guide/01-why-a-loop.html%23a%22onmouseover%3D1', 'Guide/01.html']) {
-    const { page, context } = await B.openPage(browser, server, `?example=guide-01-demo-clause&from=${encodeURIComponent(bad)}`);
+    const { page, context } = await B.openPage(browser, server, `?example=guide-03-hit-clique&from=${encodeURIComponent(bad)}`);
     assert.ok(!(await page.isVisible('#back-to-guide')), bad);
     assert.equal(await page.getAttribute('#back-to-guide', 'href'), 'guide/', bad);
     await context.close();
@@ -96,19 +96,36 @@ test('a from= that is not a guide page shows no link', async () => {
 test('the library shows a "Guide page" link for guide examples', async () => {
   const { page, context } = await B.openPage(browser, server, '?tab=1');
   await B.openLibrary(page);
-  const href = await page.getAttribute('.library-entry[data-example="guide-01-demo-clause"] .library-guide-link', 'href');
-  assert.equal(href, 'guide/01-why-a-loop.html#demo-clause');
+  const href = await page.getAttribute('.library-entry[data-example="guide-03-hit-clique"] .library-guide-link', 'href');
+  assert.equal(href, 'guide/03-learning.html#hit-clique');
   await context.close();
 });
 
 test('a guide example run in the page gives the candidate count of numbers.json', async () => {
-  const id = 'guide-01-demo-clause';
+  const id = 'guide-03-hit-clique';
   const { page, context, errors } = await B.openPage(browser, server, `?example=${id}`);
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error', 'stopped']), 'finished');
   const s = await page.evaluate(() => window.cegarplay.stats.S);
   assert.equal(s.candidates, NUMBERS[id].candidates);
   assert.equal(s.solutions, NUMBERS[id].solutions);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('the soundness test of page 4: one changed loop line, and the run history marks both runs', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=guide-04-one-node&fragment=loop');
+  await page.click('#run-button');
+  assert.equal(await B.waitState(page, ['finished', 'error', 'stopped']), 'finished');
+  const loop = await B.getEditor(page, 'loop-editor');
+  assert.match(loop, /reject M with G\.clause\(M, X\)/);
+  await B.setEditor(page, 'loop-editor', loop.replace('reject M with G.clause(M, X)', 'reject M with G.block(M)'));
+  await page.click('#run-button');
+  assert.equal(await B.waitState(page, ['finished', 'error', 'stopped']), 'finished');
+  await page.click('label[for="tab6"]');
+  const rows = await page.$$eval('#history-table tbody tr', (l) => l.map((r) => ({ m: r.dataset.mismatch === 'true', text: r.textContent })));
+  assert.equal(rows.length, 2);
+  assert.ok(rows.every((r) => r.m && r.text.includes('⚠')), JSON.stringify(rows));
   assert.deepEqual(errors, []);
   await context.close();
 });

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Learning from a counterexample · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 03</p>
+        <h1>Learning from a counterexample</h1>
+        <p class="lead">A counterexample usually says much more than "not this candidate". This
+          chapter shows how the check tells the loop what the counterexample depends on, and how
+          one refinement then rules out many candidates at once.</p>
+
+        <h2 id="look">Look at one counterexample</h2>
+        <p>Take the candidate that deletes node 1 and nothing else. The check finds the triangle
+          2, 3, 4:</p>
+        <figure class="graph" data-del="1" data-clique="2,3,4">
+          <figcaption>Node 1 deleted; the triangle 2, 3, 4 survives.</figcaption>
+          <noscript><p>Node 1 is crossed out; the triangle 2, 3, 4 is highlighted.</p></noscript>
+        </figure>
+        <p>The blocking loop of the previous chapter answers with a clause over all ten nodes: "not
+          exactly this deletion set". But look at what the triangle actually needs. It survives
+          because nodes 2, 3 and 4 are not deleted. Whether node 1 or nodes 5 to 10 are deleted
+          does not matter to it at all. Every candidate that keeps 2, 3 and 4 fails in the same
+          way, and there are many of them.</p>
+
+        <h2 id="relevant">relevant/1: what the counterexample depends on</h2>
+        <p>The check can say this itself. It derives <code>relevant(T)</code> for each interface
+          atom T whose value the counterexample depends on. Such a T is a <em>relevant
+          atom</em>. For the triangle, the relevant atoms are the deletions of its three nodes:</p>
+        <div class="changed" data-lang="asp" data-before="guide-02-block:check" data-after="guide-03-hit-clique:check"><span class="same">#show q/1.</span><ins>relevant(del(V)) :- q(V).</ins></div>
+        <p>The loop then makes a different refinement. Instead of blocking, it calls
+          <code>G.clause(M, X)</code>: a clause over the relevant atoms only, which asks for at
+          least one of them to change its value. Here all three are false in the candidate, so the
+          clause is</p>
+        <pre class="plain">del(2) del(3) del(4)</pre>
+        <p>"delete one of these three". In the loop script only one line changes:</p>
+        <div class="changed" data-lang="loop" data-before="guide-02-block:loop" data-after="guide-03-hit-clique:loop"><span class="same">        if X:</span><del>            reject M with G.block(M)</del><ins>            reject M with G.clause(M, X)</ins></div>
+        <p>This is the Shape 1 template of the Loop tab; chapter 8 explains the name.</p>
+
+        <h2 id="region">One point or a region</h2>
+        <p>Think of the candidates as points. A block removes the one point that was refuted. The
+          clause removes every point in which nodes 2, 3 and 4 all survive: a whole region, and all
+          of it wrong.</p>
+        <figure id="space-picture">
+          <svg class="diagram" viewBox="0 0 560 230" role="img"
+            aria-label="Left: the candidate space with one refuted candidate ruled out. Right: the same space with a whole region of candidates ruled out.">
+            <rect class="frame" x="20" y="40" width="250" height="150" rx="6"></rect>
+            <circle class="dot" cx="46" cy="60" r="4"></circle>
+            <circle class="dot" cx="46" cy="82" r="4"></circle>
+            <circle class="dot" cx="46" cy="104" r="4"></circle>
+            <circle class="dot" cx="46" cy="126" r="4"></circle>
+            <circle class="dot" cx="46" cy="148" r="4"></circle>
+            <circle class="dot" cx="46" cy="170" r="4"></circle>
+            <circle class="dot" cx="68" cy="60" r="4"></circle>
+            <circle class="dot current" cx="68" cy="82" r="4"></circle>
+            <circle class="ring" cx="68" cy="82" r="10"></circle>
+            <circle class="dot" cx="68" cy="104" r="4"></circle>
+            <circle class="dot" cx="68" cy="126" r="4"></circle>
+            <circle class="dot" cx="68" cy="148" r="4"></circle>
+            <circle class="dot" cx="68" cy="170" r="4"></circle>
+            <circle class="dot" cx="90" cy="60" r="4"></circle>
+            <circle class="dot" cx="90" cy="82" r="4"></circle>
+            <circle class="dot" cx="90" cy="104" r="4"></circle>
+            <circle class="dot" cx="90" cy="126" r="4"></circle>
+            <circle class="dot" cx="90" cy="148" r="4"></circle>
+            <circle class="dot solution" cx="90" cy="170" r="4"></circle>
+            <circle class="dot" cx="112" cy="60" r="4"></circle>
+            <circle class="dot" cx="112" cy="82" r="4"></circle>
+            <circle class="dot" cx="112" cy="104" r="4"></circle>
+            <circle class="dot" cx="112" cy="126" r="4"></circle>
+            <circle class="dot" cx="112" cy="148" r="4"></circle>
+            <circle class="dot" cx="112" cy="170" r="4"></circle>
+            <circle class="dot" cx="134" cy="60" r="4"></circle>
+            <circle class="dot" cx="134" cy="82" r="4"></circle>
+            <circle class="dot" cx="134" cy="104" r="4"></circle>
+            <circle class="dot" cx="134" cy="126" r="4"></circle>
+            <circle class="dot" cx="134" cy="148" r="4"></circle>
+            <circle class="dot" cx="134" cy="170" r="4"></circle>
+            <circle class="dot" cx="156" cy="60" r="4"></circle>
+            <circle class="dot" cx="156" cy="82" r="4"></circle>
+            <circle class="dot" cx="156" cy="104" r="4"></circle>
+            <circle class="dot" cx="156" cy="126" r="4"></circle>
+            <circle class="dot" cx="156" cy="148" r="4"></circle>
+            <circle class="dot" cx="156" cy="170" r="4"></circle>
+            <circle class="dot" cx="178" cy="60" r="4"></circle>
+            <circle class="dot" cx="178" cy="82" r="4"></circle>
+            <circle class="dot" cx="178" cy="104" r="4"></circle>
+            <circle class="dot" cx="178" cy="126" r="4"></circle>
+            <circle class="dot" cx="178" cy="148" r="4"></circle>
+            <circle class="dot" cx="178" cy="170" r="4"></circle>
+            <circle class="dot" cx="200" cy="60" r="4"></circle>
+            <circle class="dot solution" cx="200" cy="82" r="4"></circle>
+            <circle class="dot" cx="200" cy="104" r="4"></circle>
+            <circle class="dot" cx="200" cy="126" r="4"></circle>
+            <circle class="dot" cx="200" cy="148" r="4"></circle>
+            <circle class="dot" cx="200" cy="170" r="4"></circle>
+            <circle class="dot" cx="222" cy="60" r="4"></circle>
+            <circle class="dot" cx="222" cy="82" r="4"></circle>
+            <circle class="dot" cx="222" cy="104" r="4"></circle>
+            <circle class="dot" cx="222" cy="126" r="4"></circle>
+            <circle class="dot solution" cx="222" cy="148" r="4"></circle>
+            <circle class="dot" cx="222" cy="170" r="4"></circle>
+            <circle class="dot" cx="244" cy="60" r="4"></circle>
+            <circle class="dot" cx="244" cy="82" r="4"></circle>
+            <circle class="dot" cx="244" cy="104" r="4"></circle>
+            <circle class="dot" cx="244" cy="126" r="4"></circle>
+            <circle class="dot" cx="244" cy="148" r="4"></circle>
+            <circle class="dot" cx="244" cy="170" r="4"></circle>
+            <rect class="frame" x="290" y="40" width="250" height="150" rx="6"></rect>
+            <rect class="region" x="304" y="48" width="112" height="90" rx="14"></rect>
+            <circle class="dot" cx="316" cy="60" r="4"></circle>
+            <circle class="dot" cx="316" cy="82" r="4"></circle>
+            <circle class="dot" cx="316" cy="104" r="4"></circle>
+            <circle class="dot" cx="316" cy="126" r="4"></circle>
+            <circle class="dot" cx="316" cy="148" r="4"></circle>
+            <circle class="dot" cx="316" cy="170" r="4"></circle>
+            <circle class="dot" cx="338" cy="60" r="4"></circle>
+            <circle class="dot current" cx="338" cy="82" r="4"></circle>
+            <circle class="dot" cx="338" cy="104" r="4"></circle>
+            <circle class="dot" cx="338" cy="126" r="4"></circle>
+            <circle class="dot" cx="338" cy="148" r="4"></circle>
+            <circle class="dot" cx="338" cy="170" r="4"></circle>
+            <circle class="dot" cx="360" cy="60" r="4"></circle>
+            <circle class="dot" cx="360" cy="82" r="4"></circle>
+            <circle class="dot" cx="360" cy="104" r="4"></circle>
+            <circle class="dot" cx="360" cy="126" r="4"></circle>
+            <circle class="dot" cx="360" cy="148" r="4"></circle>
+            <circle class="dot solution" cx="360" cy="170" r="4"></circle>
+            <circle class="dot" cx="382" cy="60" r="4"></circle>
+            <circle class="dot" cx="382" cy="82" r="4"></circle>
+            <circle class="dot" cx="382" cy="104" r="4"></circle>
+            <circle class="dot" cx="382" cy="126" r="4"></circle>
+            <circle class="dot" cx="382" cy="148" r="4"></circle>
+            <circle class="dot" cx="382" cy="170" r="4"></circle>
+            <circle class="dot" cx="404" cy="60" r="4"></circle>
+            <circle class="dot" cx="404" cy="82" r="4"></circle>
+            <circle class="dot" cx="404" cy="104" r="4"></circle>
+            <circle class="dot" cx="404" cy="126" r="4"></circle>
+            <circle class="dot" cx="404" cy="148" r="4"></circle>
+            <circle class="dot" cx="404" cy="170" r="4"></circle>
+            <circle class="dot" cx="426" cy="60" r="4"></circle>
+            <circle class="dot" cx="426" cy="82" r="4"></circle>
+            <circle class="dot" cx="426" cy="104" r="4"></circle>
+            <circle class="dot" cx="426" cy="126" r="4"></circle>
+            <circle class="dot" cx="426" cy="148" r="4"></circle>
+            <circle class="dot" cx="426" cy="170" r="4"></circle>
+            <circle class="dot" cx="448" cy="60" r="4"></circle>
+            <circle class="dot" cx="448" cy="82" r="4"></circle>
+            <circle class="dot" cx="448" cy="104" r="4"></circle>
+            <circle class="dot" cx="448" cy="126" r="4"></circle>
+            <circle class="dot" cx="448" cy="148" r="4"></circle>
+            <circle class="dot" cx="448" cy="170" r="4"></circle>
+            <circle class="dot" cx="470" cy="60" r="4"></circle>
+            <circle class="dot solution" cx="470" cy="82" r="4"></circle>
+            <circle class="dot" cx="470" cy="104" r="4"></circle>
+            <circle class="dot" cx="470" cy="126" r="4"></circle>
+            <circle class="dot" cx="470" cy="148" r="4"></circle>
+            <circle class="dot" cx="470" cy="170" r="4"></circle>
+            <circle class="dot" cx="492" cy="60" r="4"></circle>
+            <circle class="dot" cx="492" cy="82" r="4"></circle>
+            <circle class="dot" cx="492" cy="104" r="4"></circle>
+            <circle class="dot" cx="492" cy="126" r="4"></circle>
+            <circle class="dot solution" cx="492" cy="148" r="4"></circle>
+            <circle class="dot" cx="492" cy="170" r="4"></circle>
+            <circle class="dot" cx="514" cy="60" r="4"></circle>
+            <circle class="dot" cx="514" cy="82" r="4"></circle>
+            <circle class="dot" cx="514" cy="104" r="4"></circle>
+            <circle class="dot" cx="514" cy="126" r="4"></circle>
+            <circle class="dot" cx="514" cy="148" r="4"></circle>
+            <circle class="dot" cx="514" cy="170" r="4"></circle>
+            <text x="145" y="28" text-anchor="middle">Block: one point</text>
+            <text x="415" y="28" text-anchor="middle">Clause: a region</text>
+            <text class="small" x="145" y="212" text-anchor="middle">only the refuted candidate</text>
+            <text class="small" x="415" y="212" text-anchor="middle">every candidate that keeps the triangle</text>
+          </svg>
+          <figcaption>The candidate space, one dot per candidate, the solutions in green. The orange candidate was refuted. A block rules out that point; the clause from its triangle rules out the whole shaded region.</figcaption>
+        </figure>
+
+        <h2 id="relevant-all">Everything relevant is blocking again</h2>
+        <p>What if the check marks every interface atom as relevant?</p>
+        <pre class="code" data-lang="asp" data-from="guide-03-relevant-all:check">relevant(del(V)) :- node(V).</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-03-relevant-all</code>.</p>
+        <p id="relevant-all-run">Then the clause names all ten atoms and asks for one of them to change: that is exactly
+          the block. The run gives the numbers of the blocking loop, candidate for candidate.
+          <a class="play" href="../?example=guide-03-relevant-all&amp;fragment=check&amp;from=guide/03-learning.html%23relevant-all-run" target="cegarplay">Open the run with everything relevant</a></p>
+        <p>So <code>relevant/1</code> is a dial. Marking everything gives the block, which is
+          safe and learns nothing. Marking less makes each refinement stronger. The next chapter
+          shows what happens when you mark too little.</p>
+
+        <h2 id="hit-clique">The learning loop</h2>
+        <p id="hit-clique-run">Now run the loop with the triangle's three nodes marked.
+          <a class="play" href="../?example=guide-03-hit-clique&amp;fragment=check&amp;from=guide/03-learning.html%23hit-clique-run" target="cegarplay">Open the learning loop</a></p>
+        <details class="predict">
+          <summary>Before you press Run: the blocking loop looked at <span data-stat="guide-02-block:candidates">176</span> candidates. About how many
+            will this loop need?</summary>
+          <p><span data-stat="guide-03-hit-clique:candidates">13</span>. The graph has only seven
+            triangles, and each clause rules out every candidate that keeps one of them.</p>
+        </details>
+        <table class="results">
+          <thead>
+            <tr><th>Loop</th><th class="num">Candidates</th><th class="num">Refinements</th>
+              <th class="num">Mean clause length</th><th class="num">Solutions</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Blocking</td>
+              <td class="num"><span data-stat="guide-02-block:candidates">176</span></td>
+              <td class="num"><span data-stat="guide-02-block:refinements">173</span></td>
+              <td class="num"><span data-stat="guide-02-block:meanClause">10.0</span></td>
+              <td class="num"><span data-stat="guide-02-block:solutions">3</span></td></tr>
+            <tr><td>Everything relevant</td>
+              <td class="num"><span data-stat="guide-03-relevant-all:candidates">176</span></td>
+              <td class="num"><span data-stat="guide-03-relevant-all:refinements">173</span></td>
+              <td class="num"><span data-stat="guide-03-relevant-all:meanClause">10.0</span></td>
+              <td class="num"><span data-stat="guide-03-relevant-all:solutions">3</span></td></tr>
+            <tr><td>The triangle's nodes</td>
+              <td class="num"><span data-stat="guide-03-hit-clique:candidates">13</span></td>
+              <td class="num"><span data-stat="guide-03-hit-clique:refinements">10</span></td>
+              <td class="num"><span data-stat="guide-03-hit-clique:meanClause">3.0</span></td>
+              <td class="num"><span data-stat="guide-03-hit-clique:solutions">3</span></td></tr>
+          </tbody>
+        </table>
+        <p>Same solutions, far fewer candidates, short clauses. In the trace you may notice that
+          the same triangle comes back more than once: there are
+          <span data-stat="guide-03-hit-clique:counterexamples">10</span> counterexamples for seven
+          triangles. That is the solver's doing, not the design's; chapter 5 explains it.</p>
+
+        <h2 id="why-sound">Why this clause is right</h2>
+        <p>The clause "delete 2, 3 or 4" removes many candidates the check has never seen. Why is
+          that allowed? Because every solution satisfies it. A solution leaves no triangle, so in
+          particular it does not leave 2, 3, 4; so it deletes one of them. The clause removes only
+          candidates that are not solutions.</p>
+        <p>This argument is the heart of designing a refinement: <em>every solution satisfies the
+          refinement</em>. Make it for every refinement you write, before you run anything. For a
+          clause made by <code>relevant/1</code> it takes this form: if the relevant atoms keep
+          their values, the counterexample is still a counterexample, whatever the other atoms
+          do.</p>
+
+        <aside class="theory">
+          <span class="aside-title">Theory</span>
+          <p>The solutions are the <em>hitting sets</em> of size at most k of the set of triangles:
+            sets of nodes that meet every triangle. Each clause adds one triangle to hit. The loop
+            discovers triangles only when a candidate misses them, so on a large graph it may never
+            list most of them.</p>
+          <p>The loop terminates: each refinement rules out at least the current candidate (the
+            candidate deletes none of the triangle's nodes, so it violates the clause), and there
+            are finitely many candidates.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>The first candidate of the learning loop is the empty set: nothing deleted. Which
+            refinements could the check produce for it? How many candidates (for k = 3) does each
+            rule out? Then open the run and look at the first three steps of the trace.</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>Every triangle survives the empty set, so the check may return any of the seven, and
+              the clause says "delete one of its three nodes". Each such clause rules out the sets of
+              at most three nodes taken from the other seven nodes: 1 + 7 + 21 + 35 = 64
+              candidates. In this run the first three counterexamples are the triangles 1, 2, 4;
+              then 2, 3, 4 (for the candidate that deletes 1); then 4, 5, 6 (for the candidate
+              that deletes 1 and 2).
+              <a class="play" href="../?example=guide-03-hit-clique&amp;fragment=check&amp;from=guide/03-learning.html%23exercise-1-solution" target="cegarplay">Open the learning loop</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-2">
+          <h2>Exercise 2</h2>
+          <p>Raise k to 4 and then to 5 in the Control tab, for the blocking loop and for the
+            learning loop. How do the numbers of candidates grow?</p>
+          <details class="solution" id="exercise-2-solution">
+            <summary>Solution</summary>
+            <table class="results">
+              <thead>
+                <tr><th>k</th><th class="num">Blocking: candidates</th><th class="num">Learning: candidates</th>
+                  <th class="num">Learning: refinements</th><th class="num">Solutions</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>3</td>
+                  <td class="num"><span data-stat="guide-02-block:candidates">176</span></td>
+                  <td class="num"><span data-stat="guide-03-hit-clique:candidates">13</span></td>
+                  <td class="num"><span data-stat="guide-03-hit-clique:refinements">10</span></td>
+                  <td class="num"><span data-stat="guide-03-hit-clique:solutions">3</span></td></tr>
+                <tr><td>4</td>
+                  <td class="num"><span data-stat="guide-02-block@k=4:candidates">386</span></td>
+                  <td class="num"><span data-stat="guide-03-hit-clique@k=4:candidates">65</span></td>
+                  <td class="num"><span data-stat="guide-03-hit-clique@k=4:refinements">20</span></td>
+                  <td class="num"><span data-stat="guide-03-hit-clique@k=4:solutions">45</span></td></tr>
+                <tr><td>5</td>
+                  <td class="num"><span data-stat="guide-02-block@k=5:candidates">638</span></td>
+                  <td class="num"><span data-stat="guide-03-hit-clique@k=5:candidates">197</span></td>
+                  <td class="num"><span data-stat="guide-03-hit-clique@k=5:refinements">24</span></td>
+                  <td class="num"><span data-stat="guide-03-hit-clique@k=5:solutions">173</span></td></tr>
+              </tbody>
+            </table>
+            <p>The blocking loop looks at every candidate. The learning loop's candidates are
+              mostly solutions now, since there are many more of them; what it needs on top of
+              them, the refinements, grows only slowly. Each solution has to be found anyway.
+              <a class="play" href="../?example=guide-03-hit-clique&amp;from=guide/03-learning.html%23exercise-2-solution" target="cegarplay">Open the learning loop</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-mark-dependencies">Mark with <code>relevant/1</code> the interface atoms
+              the counterexample depends on, and no others. The refinement then rules out every
+              candidate that agrees on them.</li>
+            <li id="rule-every-solution-satisfies">For every refinement, argue that every solution
+              satisfies it. If the relevant atoms keep their values, the counterexample must still
+              be one.</li>
+            <li id="rule-all-relevant-blocks">Marking every interface atom is blocking: safe, and
+              no faster.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="02-first-loop.html">&larr; The first loop: guess, check, block</a>
+        <a class="next" href="04-soundness.html">Soundness: when a refinement says too much &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

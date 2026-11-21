@@ -133,7 +133,7 @@ a.play::before { content: '\25B6\00A0'; color: var(--accent); font-size: 12px; }
 a.play:hover { border-color: var(--accent); }
 
 /* Listings and "what changed" */
-pre.code, .changed {
+pre.code, pre.plain, .changed {
   background: var(--code-bg);
   border-radius: 4px;
   padding: 10px 14px;
@@ -254,6 +254,12 @@ figure svg { max-width: 100%; height: auto; }
 .diagram .learn-head { fill: var(--accent); }
 .diagram text { fill: currentColor; font: 15px 'Open Sans', sans-serif; }
 .diagram text.small { font-size: 13px; fill: var(--text-soft); }
+.diagram .frame { fill: none; stroke: var(--border-strong); stroke-width: 1; }
+.diagram .dot { fill: var(--text-soft); }
+.diagram .dot.solution { fill: var(--ok); }
+.diagram .dot.current { fill: var(--accent); }
+.diagram .region { fill: var(--error-bg); stroke: var(--error); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.diagram .ring { fill: none; stroke: var(--error); stroke-width: 2; }
 
 /* Contents page */
 ol.chapter-list { padding-left: 0; list-style: none; }

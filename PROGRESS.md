@@ -208,7 +208,36 @@ phase at a time (G0a, G0, G1, ..., G4); commits `Guide N: <title>`.
     manual describes the group and its fields instead).
   - Cross-links from the tutorial, the manual's introduction, README and `llms.txt` are left to G4
     (the plan lists them there too); only the app header link exists now.
-- Next: G1 Pages 1-4 (first remove the placeholders).
+- **G1 Pages 1-4: done (2026-11-21).** Placeholders removed. Pages 01-04 written; 10 new
+  examples (`guide-01-one-program`, `-guess`, `-one-candidate`, `guide-02-block`, `-ex1`, `-ex2`,
+  `guide-03-relevant-all`, `-hit-clique`, `guide-04-one-node`), budget 40. Every playground link
+  of pages 01-04 was opened in the served site by a script: right tab/fragment, back link, and
+  the page's run gives the numbers of `numbers.json`. New browser test: the soundness test of
+  page 4 (change one loop line, both history rows marked ⚠).
+  - **Status `demo`** (new, beside sound/unsound/baseline): illustrations that are not loops for
+    the problem (accept-all guess, one fixed candidate, the one-program attempt). No baseline.
+  - **`numbers.json` keys `ID@name=value`**: a guide entry's `variants` (manifest field) are
+    measured with other constants; `QUOTED` in `tools/guide.mjs` lists existing examples a page
+    quotes (key `ID` or `ID@n=5`). Spans split the key at the last `:`. Page 7 can use this.
+  - **Leaf colouring (page 4): no new examples.** `graph-coloring-original` at n = 5 loses
+    nothing (101 = 101), so an n = 5 "unsound" example is impossible; the n = 6 blocking run takes
+    about 8 s headless. The page links the existing `gc-reference` (n = 5), `graph-coloring-original`
+    and `graph-coloring` (n = 6) and quotes them through `QUOTED`; "lost nothing at n = 5" became
+    part of the "one instance is not enough" point. `guide-04-ex1` dropped: exercise 2 links
+    `graph-coloring`. The original rules are also fast (276 candidates at n = 5 vs 1,421 fixed).
+  - **One-node mistake**: "mark the smallest node" loses all 3 solutions; the page uses "mark the
+    busiest node (tie: larger number)", which keeps 1 of 3 ({3,4,8}).
+  - **Glue exercise**: an empty glue is a runtime error ("derive no glue/1 atom"), a misspelt one
+    ends with "an empty clause cannot refine the candidate"; the silent case used is
+    `glue(del(1..7))` (0 solutions, 66 candidates). The pitfall box names all three.
+  - Facts of A are not interface atoms, so `guide-01-one-candidate` fixes its candidate with
+    constraints, not facts.
+  - **Runtime fix**: trace literals took the sign of the solver literal, wrong for atoms the solver
+    has fixed (literal ±1); now signed relative to the atom's own literal (`literal_texts`,
+    `lua/runtime.lua`). Test in `test/guide.test.mjs`.
+  - For page 5: the Shape 1 run `guide-03-hit-clique` returns 10 counterexamples for 7 triangles
+    (the same triangle again); page 3 promises chapter 5 explains it.
+- Next: G2 Pages 5-8.
 
 Notes for the guide phases (checked against the code before G0a):
 - The run history's ⚠ only compares runs with the same fragments (`js/stats.js:81`); for the

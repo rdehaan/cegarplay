@@ -83,9 +83,10 @@ test('guide examples: manifest fields, descriptions, statuses and baselines', ()
   for (const e of GUIDE) {
     assert.match(e.id, /^guide-\d\d-[a-z0-9-]+$/, e.id);
     assert.match(e.page, FROM, `${e.id}.page`);
-    assert.ok(['sound', 'unsound', 'baseline'].includes(e.status), `${e.id}.status`);
+    // demo: an illustration that is not a loop for the problem (accepts everything, one fixed candidate, ...).
+    assert.ok(['sound', 'unsound', 'baseline', 'demo'].includes(e.status), `${e.id}.status`);
     assert.ok(e.tags.includes('fast') && e.expected, `${e.id} must be fast and have expected`);
-    if (e.status === 'baseline') assert.equal(e.baseline, undefined, e.id);
+    if (e.status === 'baseline' || e.status === 'demo') assert.equal(e.baseline, undefined, e.id);
     else {
       const b = byId.get(e.baseline);
       assert.ok(b, `${e.id}: unknown baseline ${e.baseline}`);
@@ -132,7 +133,7 @@ test('every playground link of the guide names a library example, a fragment of 
 
 // One fresh measurement of every guide example, shared by the next tests.
 let measured;
-const fresh = async () => (measured ??= await measureAll(GUIDE));
+const fresh = async () => (measured ??= await measureAll(GUIDE));   // also the variants and QUOTED runs
 
 test('guide examples: sound ones give their baseline\'s count, unsound ones strictly fewer; all finish', async () => {
   const m = await fresh();       // measureAll throws on an error event or an unfinished run
@@ -296,4 +297,19 @@ test('page 12 collects recap rules that exist', { skip: !PAGES.includes('12-your
     const [file, id] = a.attrs.href.split('#');
     assert.ok(ids(file).has(id), `${a.attrs.href}`);
   }
+});
+
+test('trace literals are signed by the value they ask for, also for atoms the solver has fixed', async () => {
+  // guide-01-one-candidate fixes del(4) and del(8) true and the others false: the block clause
+  // asks for every other value.
+  const p = H.example('guide-01-one-candidate');
+  p.settings = { ...p.settings, trace: 5 };
+  const r = await H.runProject(p);
+  const t = H.ofKind(r, 'T')[0];
+  assert.deepEqual(t.literals, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => (v === 4 || v === 8 ? '-' : '') + `del(${v})`));
+  const q = H.example('guide-02-block');
+  q.settings = { ...q.settings, trace: 5 };
+  const t2 = H.ofKind(await H.runProject(q), 'T')[1];
+  assert.equal(t2.candidate, 'del(1)');
+  assert.deepEqual(t2.literals.slice(0, 2), ['-del(1)', 'del(2)']);
 });

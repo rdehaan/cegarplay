@@ -611,9 +611,12 @@ Model.__tostring = function(M) return M.shown or candidate_text(M) or "model" en
 local function literal_texts(c)
   local L, out = c.link, array({})
   if not L then return out end
+  -- The sign is relative to the atom's own literal: an atom fixed by the solver has the
+  -- literal 1 or -1 there, so the sign of c[k] alone says nothing about the atom.
+  local lits = c.lazy and L.slit or L.src
   for k = 1, #c do
     local j = c.j[k]
-    if j then out[#out + 1] = (c[k] < 0 and "-" or "") .. L.str[j] end
+    if j then out[#out + 1] = (c[k] == lits[j] and "" or "-") .. L.str[j] end
   end
   return out
 end

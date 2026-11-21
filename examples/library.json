@@ -69,10 +69,63 @@
       }
     },
     {
-      "id": "guide-01-demo-block",
+      "id": "guide-01-one-program",
+      "title": "Guide: one program is not enough",
+      "group": "guide",
+      "summary": "The tempting single program: it finds deletion sets that hit some triangle, not every one.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 175
+      },
+      "page": "guide/01-why-a-loop.html#one-program",
+      "status": "demo"
+    },
+    {
+      "id": "guide-01-guess",
+      "title": "Guide: the guess alone",
+      "group": "guide",
+      "summary": "Only the guess: every set of at most k nodes is accepted.",
+      "shape": "reference",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 176
+      },
+      "page": "guide/01-why-a-loop.html#guess",
+      "status": "demo",
+      "variants": [
+        {
+          "k": "2"
+        },
+        {
+          "k": "4"
+        }
+      ]
+    },
+    {
+      "id": "guide-01-one-candidate",
+      "title": "Guide: checking one candidate",
+      "group": "guide",
+      "summary": "One fixed candidate, deleting 4 and 8; the check finds the triangle 1, 2, 3.",
+      "shape": "reference",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 0
+      },
+      "page": "guide/01-why-a-loop.html#one-candidate",
+      "status": "demo"
+    },
+    {
+      "id": "guide-02-block",
       "title": "Guide: blocking one candidate at a time",
       "group": "guide",
-      "summary": "The small graph with k = 3, each wrong candidate blocked on its own.",
+      "summary": "The first loop: every wrong candidate is blocked on its own (k = 3).",
       "shape": "reference",
       "tags": [
         "fast"
@@ -80,14 +133,53 @@
       "expected": {
         "solutions": 3
       },
-      "page": "guide/01-why-a-loop.html#demo-block",
+      "page": "guide/02-first-loop.html#block",
+      "status": "baseline",
+      "variants": [
+        {
+          "k": "4"
+        },
+        {
+          "k": "5"
+        }
+      ]
+    },
+    {
+      "id": "guide-02-ex1",
+      "title": "Guide: a glue that misses nodes",
+      "group": "guide",
+      "summary": "A glue that misses nodes 8 to 10: the check never sees them deleted, and no solution is left.",
+      "shape": "reference",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 0
+      },
+      "page": "guide/02-first-loop.html#exercise-1-solution",
+      "status": "unsound",
+      "baseline": "guide-02-block"
+    },
+    {
+      "id": "guide-02-ex2",
+      "title": "Guide: cliques of four",
+      "group": "guide",
+      "summary": "Cliques of c = 4 nodes instead of triangles, blocking each wrong candidate.",
+      "shape": "reference",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 134
+      },
+      "page": "guide/02-first-loop.html#exercise-2-solution",
       "status": "baseline"
     },
     {
-      "id": "guide-01-demo-clause",
-      "title": "Guide: learning from a triangle",
+      "id": "guide-03-relevant-all",
+      "title": "Guide: everything relevant",
       "group": "guide",
-      "summary": "The small graph with k = 3, refined with one clause per surviving triangle.",
+      "summary": "relevant/1 marks every interface atom: the same run as blocking.",
       "shape": "shape1",
       "tags": [
         "fast"
@@ -95,9 +187,49 @@
       "expected": {
         "solutions": 3
       },
-      "page": "guide/01-why-a-loop.html#demo-clause",
+      "page": "guide/03-learning.html#relevant-all",
       "status": "sound",
-      "baseline": "guide-01-demo-block"
+      "baseline": "guide-02-block"
+    },
+    {
+      "id": "guide-03-hit-clique",
+      "title": "Guide: learning from a triangle",
+      "group": "guide",
+      "summary": "A surviving triangle teaches that one of its three nodes must be deleted.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 3
+      },
+      "page": "guide/03-learning.html#hit-clique",
+      "status": "sound",
+      "baseline": "guide-02-block",
+      "variants": [
+        {
+          "k": "4"
+        },
+        {
+          "k": "5"
+        }
+      ]
+    },
+    {
+      "id": "guide-04-one-node",
+      "title": "Guide: one node of the triangle (unsound)",
+      "group": "guide",
+      "summary": "Too strong: only the busiest node of the triangle is marked, and solutions are lost.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 1
+      },
+      "page": "guide/04-soundness.html#one-node",
+      "status": "unsound",
+      "baseline": "guide-02-block"
     },
     {
       "id": "lang-basics",

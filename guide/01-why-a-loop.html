@@ -31,83 +31,197 @@
       <article>
         <p class="chapter-number">Chapter 01</p>
         <h1>Why a loop</h1>
-        <p class="lead">This page is a skeleton: it shows every building block of the guide on two
-          placeholder examples. The chapter itself is written in the next phase.</p>
+        <p class="lead">Some problems ask for one thing that works against every possible objection.
+          This chapter shows such a problem, why one answer set program does not solve it, and the
+          idea of the loop that does.</p>
 
         <h2 id="problem">The problem</h2>
-        <p>Delete at most k nodes of a graph so that no triangle is left. Here is the graph of the
-          first chapters, with nodes 4 and 8 deleted: the triangle 1, 2, 3 survives.</p>
-        <figure class="graph" data-del="4,8" data-clique="1,2,3">
-          <figcaption>The small graph with nodes 4 and 8 deleted; the triangle 1, 2, 3 survives.</figcaption>
+        <p>Take a graph and a number k. Delete at most k of its nodes so that no triangle is left:
+          no three remaining nodes may be joined pairwise by edges. This is a small case of
+          <em>clique interdiction</em>, and it is the running example of the guide.</p>
+        <p>Here is the graph of the first four chapters. It has ten nodes: nodes 1 to 4 are all
+          joined to each other, and a chain of triangles runs from node 4 to node 10.</p>
+        <figure class="graph">
+          <figcaption>The small graph: ten nodes, fifteen edges, seven triangles.</figcaption>
           <noscript><p>Ten nodes: a clique on 1, 2, 3, 4 and a chain of triangles 4-5-6, 6-7-8,
-            8-9-10. Nodes 4 and 8 are deleted; the triangle 1, 2, 3 survives.</p></noscript>
+            8-9-10.</p></noscript>
+        </figure>
+        <p>With k = 3, try deleting nodes 4 and 8. That breaks six of the seven triangles, but
+          1, 2, 3 survives:</p>
+        <figure class="graph" data-del="4,8" data-clique="1,2,3">
+          <figcaption>Nodes 4 and 8 deleted; the triangle 1, 2, 3 survives.</figcaption>
+          <noscript><p>Nodes 4 and 8 are crossed out; the triangle 1, 2, 3 is highlighted.</p></noscript>
         </figure>
 
-        <h2 id="check">The check</h2>
-        <p>The check looks for a triangle that no deletion touches:</p>
-        <pre class="code" data-lang="asp" data-from="guide-01-demo-clause:check">3 { q(V) : node(V) } 3.
-:- q(V), del(V).
-:- q(U), q(V), U &lt; V, not edge(U,V).</pre>
-        <p class="listing-source">From the fragment <code>check</code> of <code>guide-01-demo-clause</code>.</p>
-
-        <h2 id="blocking">Blocking, then learning</h2>
-        <p id="demo-block">The first loop blocks every wrong candidate on its own.
-          <a class="play" href="../?example=guide-01-demo-block&amp;fragment=loop&amp;from=guide/01-why-a-loop.html%23demo-block" target="cegarplay">Open the blocking loop</a></p>
-
+        <h2 id="guess">The guess is easy</h2>
+        <p>Proposing a deletion set is one choice rule:</p>
+        <pre class="code" data-lang="asp" data-from="guide-01-guess:abstraction">{ del(V) : node(V) } k.
+#show del/1.</pre>
+        <p class="listing-source">From the fragment <code>abstraction</code> of <code>guide-01-guess</code>.</p>
+        <p id="guess-run">Each answer set of this rule is a <em>candidate</em>: a proposal that may
+          or may not solve the problem. The example below runs the rule and accepts every candidate,
+          so the number of solutions it reports is simply the number of candidates.
+          <a class="play" href="../?example=guide-01-guess&amp;fragment=abstraction&amp;from=guide/01-why-a-loop.html%23guess-run" target="cegarplay">Open the guess alone</a></p>
         <details class="predict">
-          <summary>How many candidates does the blocking loop look at?</summary>
-          <p>All <span data-stat="guide-01-demo-block:candidates">176</span> sets of at most three
-            nodes: every one of them is either a solution or blocked on its own.</p>
+          <summary>Before you press Run: how many candidates are there for k = 3?</summary>
+          <p><span data-stat="guide-01-guess:candidates">176</span>: the empty set, 10 single
+            nodes, 45 pairs and 120 triples. Only a few of them are solutions.</p>
         </details>
 
-        <p id="demo-clause">The second loop learns from each triangle that one of its nodes must go.
-          <a class="play" href="../?example=guide-01-demo-clause&amp;fragment=loop&amp;from=guide/01-why-a-loop.html%23demo-clause" target="cegarplay">Open the learning loop</a></p>
-        <div class="changed" data-lang="loop" data-before="guide-01-demo-block:loop" data-after="guide-01-demo-clause:loop"><span class="same">        if X:</span><del>            reject M with G.block(M)</del><ins>            reject M with G.clause(M, X)</ins></div>
+        <h2 id="one-candidate">Testing one guess is easy</h2>
+        <p>For one given deletion set, finding a surviving triangle is just as easy: guess three
+          nodes, none deleted, pairwise joined.</p>
+        <pre class="code" data-lang="asp" data-from="guide-01-one-candidate:check">3 { q(V) : node(V) } 3.
+:- q(V), del(V).
+:- q(U), q(V), U &lt; V, not edge(U,V).
+#show q/1.</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-01-one-candidate</code>.</p>
+        <p>If this program has an answer set, the deletion set is wrong, and the answer set shows
+          why. Such an answer set is a <em>counterexample</em>.</p>
+        <p id="one-candidate-run">The next example fixes the candidate to the deletion of 4 and 8
+          and runs this test on it. After the run, open the Output tab and look at the trace: under
+          <em>Counterexample</em> you see <code>q(1) q(2) q(3)</code>, the surviving triangle of the
+          picture above.
+          <a class="play" href="../?example=guide-01-one-candidate&amp;fragment=check&amp;from=guide/01-why-a-loop.html%23one-candidate-run" target="cegarplay">Open the test of one candidate</a></p>
 
-        <table class="results">
-          <thead>
-            <tr><th>Loop</th><th class="num">Candidates</th><th class="num">Counterexamples</th><th class="num">Solutions</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Blocking</td><td class="num"><span data-stat="guide-01-demo-block:candidates">176</span></td>
-              <td class="num"><span data-stat="guide-01-demo-block:counterexamples">173</span></td>
-              <td class="num"><span data-stat="guide-01-demo-block:solutions">3</span></td></tr>
-            <tr><td>Learning</td><td class="num"><span data-stat="guide-01-demo-clause:candidates">13</span></td>
-              <td class="num"><span data-stat="guide-01-demo-clause:counterexamples">10</span></td>
-              <td class="num"><span data-stat="guide-01-demo-clause:solutions">3</span></td></tr>
-          </tbody>
-        </table>
+        <h2 id="one-program">Both in one program does not work</h2>
+        <p>The natural next step is to put the guess and the test into one program. Here is the
+          tempting version: guess the deletions, guess a triangle, and demand that a deleted node
+          hits it.</p>
+        <pre class="code" data-lang="asp" data-from="guide-01-one-program:abstraction">{ del(V) : node(V) } k.
+
+% The tempting test: guess a triangle and demand that a deleted node hits it.
+3 { q(V) : node(V) } 3.
+:- q(U), q(V), U &lt; V, not edge(U,V).
+hit :- q(V), del(V).
+:- not hit.</pre>
+        <p class="listing-source">From the fragment <code>abstraction</code> of <code>guide-01-one-program</code>.</p>
+        <p id="one-program-run">The solver is free to choose the triangle <code>q</code>. So an answer
+          set needs just <em>some</em> triangle that is hit, not every one. Deleting node 1 alone
+          passes: the solver picks the triangle 1, 2, 3 and is satisfied. (The example runs clingo
+          with <code>--project</code>, so that each deletion set counts once, however many
+          triangles it hits.)
+          <a class="play" href="../?example=guide-01-one-program&amp;fragment=abstraction&amp;from=guide/01-why-a-loop.html%23one-program-run" target="cegarplay">Open the one-program attempt</a></p>
+        <details class="predict">
+          <summary>How many deletion sets does this program accept?</summary>
+          <p><span data-stat="guide-01-one-program:solutions">175</span>: every candidate but the
+            empty set, because every node of this graph lies on some triangle. There are only
+            <span data-stat="guide-02-block:solutions">3</span> real solutions.</p>
+        </details>
+        <p>Turning the constraint around does not help. A guessed atom in an answer set program
+          always means "there is one": the solver searches for it. The problem needs "there is a
+          deletion set such that <em>every</em> triangle is hit", or equivalently "such that
+          <em>no</em> triangle survives". A guessed <code>q</code> cannot say "no triangle".</p>
+
+        <h2 id="quantifiers">Exists, then for all</h2>
+        <p>The problem has the shape <em>there is an X such that for all Y, Y is not a problem for
+          X</em>. Here X is a deletion set and Y a triple of nodes. The shape is common. In the side
+          trips of this guide you will meet these:</p>
+        <ul>
+          <li>Graph colouring: a graph with a colouring of its leaves that <em>no</em> proper
+            3-colouring of the whole graph extends.</li>
+          <li>Explanations: a small set of features of an input such that <em>every</em> input that
+            agrees on them gets the same class.</li>
+          <li>Fair division: an allocation of goods such that <em>no</em> other allocation makes
+            everyone at least as happy.</li>
+          <li>Bilevel knapsack: a choice by one player such that <em>every</em> answer of the other
+            player stays below a bound.</li>
+        </ul>
+        <p>In each case one part is guessed and the other part has to hold for all
+          possibilities.</p>
+
+        <h2 id="idea">The idea of the loop</h2>
+        <p>Keep the two easy programs apart and let them talk. One solver, the
+          <em>abstraction</em>, proposes candidates. A second solver, the <em>check</em>, looks for
+          a counterexample to each candidate. A candidate without a counterexample is a solution. A
+          counterexample is turned into a <em>refinement</em>: something the abstraction learns, so
+          that it does not propose the same mistake again.</p>
+        <figure>
+          <svg class="diagram" viewBox="0 45 560 165" role="img"
+            aria-label="Solver A proposes a candidate; solver C looks for a counterexample; a counterexample becomes a refinement for solver A.">
+            <rect class="box" x="20" y="60" width="180" height="64" rx="6"></rect>
+            <text x="110" y="88" text-anchor="middle">Abstraction</text>
+            <text class="small" x="110" y="108" text-anchor="middle">solver A proposes</text>
+            <rect class="box" x="360" y="60" width="180" height="64" rx="6"></rect>
+            <text x="450" y="88" text-anchor="middle">Check</text>
+            <text class="small" x="450" y="108" text-anchor="middle">solver C tests</text>
+            <path class="arrow" d="M200 76 H350"></path>
+            <polygon class="head" points="360,76 350,71 350,81"></polygon>
+            <text x="280" y="66" text-anchor="middle">candidate</text>
+            <path class="arrow learn" d="M360 110 H210"></path>
+            <polygon class="learn-head" points="200,110 210,105 210,115"></polygon>
+            <text x="280" y="134" text-anchor="middle">refinement</text>
+            <text class="small" x="280" y="152" text-anchor="middle">learnt from the counterexample</text>
+            <path class="arrow" d="M450 124 V168"></path>
+            <polygon class="head" points="450,178 445,168 455,168"></polygon>
+            <text x="450" y="198" text-anchor="middle">no counterexample: a solution</text>
+            <path class="arrow" d="M110 124 V168"></path>
+            <polygon class="head" points="110,178 105,168 115,168"></polygon>
+            <text x="110" y="198" text-anchor="middle">no candidate left: done</text>
+          </svg>
+          <figcaption>Propose, test, learn, repeat.</figcaption>
+        </figure>
+        <p>This is counterexample-guided abstraction refinement, CEGAR for short. The rest of the
+          guide is about doing each step well. The next chapter builds the simplest loop that is
+          correct; the one after makes it learn.</p>
 
         <aside class="theory">
           <span class="aside-title">Theory</span>
-          <p>A short aside for readers who want the background. Skipping it costs nothing later.</p>
-        </aside>
-
-        <aside class="pitfall">
-          <span class="aside-title">Pitfall</span>
-          <p>A mistake, how it shows in a run, and how to find it.</p>
+          <p>Deciding whether a normal answer set program has an answer set is NP-complete. Problems
+            of the form "exists X, for all Y" with a polynomial test are complete for the second
+            level of the polynomial hierarchy, &Sigma;<sub>2</sub><sup>P</sup>, and are believed to
+            be harder. Disjunctive programs reach that level, and the classic way to use them is
+            <em>saturation</em>: an encoding of the "for all" part that derives every atom when
+            the inner check fails. Saturation works, but it is hard to write, hard to read, and
+            grounds the whole inner problem at once. A loop keeps both parts as ordinary programs
+            and pays for the inner problem only where a candidate needs it. This guide does not use
+            saturation.</p>
         </aside>
 
         <section class="exercise" id="exercise-1">
-          <h2>Exercise</h2>
-          <p>Find by hand a set of three nodes whose deletion leaves no triangle.</p>
+          <h2>Exercise 1</h2>
+          <p>Using the picture, find by hand a set of at most three nodes whose deletion leaves no
+            triangle. How many such sets are there?</p>
           <details class="solution" id="exercise-1-solution">
             <summary>Solution</summary>
-            <p>Delete 4, 8 and one of 1, 2, 3; the learning loop finds exactly these
-              <span data-stat="guide-01-demo-clause:solutions">3</span> sets.
-              <a class="play" href="../?example=guide-01-demo-clause&amp;fragment=abstraction&amp;from=guide/01-why-a-loop.html%23exercise-1-solution" target="cegarplay">Open</a></p>
+            <p>The triangles 4, 5, 6 and 8, 9, 10 share no node, so two deletions go to them.
+              Node 4 also breaks three triangles of the clique, and node 8 also breaks 6, 7, 8.
+              That leaves the triangle 1, 2, 3, which takes the third deletion. So the solutions
+              are 4, 8 and one of 1, 2, 3: <span data-stat="guide-02-block:solutions">3</span>
+              sets. The first loop of the next chapter finds exactly these.
+              <a class="play" href="../?example=guide-02-block&amp;from=guide/01-why-a-loop.html%23exercise-1-solution" target="cegarplay">Open it and press Run</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-2">
+          <h2>Exercise 2</h2>
+          <p>In the Control tab of <code>guide-01-guess</code>, change the constant k to 2 and then
+            to 4. Predict the number of candidates before each run.</p>
+          <details class="solution" id="exercise-2-solution">
+            <summary>Solution</summary>
+            <p>For k = 2: 1 + 10 + 45 = <span data-stat="guide-01-guess@k=2:candidates">56</span>.
+              For k = 4: the <span data-stat="guide-01-guess:candidates">176</span> of k = 3 plus 210 sets of four,
+              <span data-stat="guide-01-guess@k=4:candidates">386</span>. The candidate space grows
+              quickly with k; a loop that looks at every candidate grows with it.
+              <a class="play" href="../?example=guide-01-guess&amp;from=guide/01-why-a-loop.html%23exercise-2-solution" target="cegarplay">Open the guess alone</a></p>
           </details>
         </section>
 
         <section class="recap" id="recap">
           <h2>Recap</h2>
           <ul>
-            <li id="rule-demo">A placeholder rule; the chapter's rules come in the next phase.</li>
+            <li id="rule-quantifiers">Look for the quantifiers. "There is an X such that for all Y
+              …" is the shape a loop is for.</li>
+            <li id="rule-guessed-means-some">A guessed atom means "there is one". One program
+              cannot say "for all" with it.</li>
+            <li id="rule-split">Split the problem into a guess (the abstraction) and a test of one
+              guess (the check); each is an ordinary program.</li>
           </ul>
         </section>
       </article>
       <nav class="pager">
         <a class="prev" href="index.html">&larr; Contents</a>
+        <a class="next" href="02-first-loop.html">The first loop: guess, check, block &rarr;</a>
       </nav>
     </main>
   </div>
