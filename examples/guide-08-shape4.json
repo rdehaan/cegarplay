@@ -1,0 +1,45 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide: batches and restarts",
+  "description": "A search of A that blocks wrong candidates and collects their counterexamples; after 10 it restarts and adds the clauses the check wrote with clause/3. See the guide page \"Loop shapes\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The Paley graph on n nodes (n a prime of the form 4m + 1): two nodes are joined when\n% their difference is a square modulo n.\nnode(0..n-1).\nsquare((X*X) \\ n) :- X = 1..n-1.\nedge(U,V) :- node(U), node(V), U < V, square((V-U) \\ n).\n",
+      "description": "The Paley graph on n nodes. Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: at most k nodes to delete.\n{ del(V) : node(V) } k.\n#show del/1.\n",
+      "description": "Proposes candidates (solver A): at most k deleted nodes."
+    },
+    {
+      "name": "glue",
+      "text": "% The check sees which nodes are deleted.\nglue(del(V)) :- node(V).\n",
+      "description": "The interface atoms: the deleted nodes."
+    },
+    {
+      "name": "check",
+      "text": "% A counterexample: c nodes that are not deleted and pairwise joined.\nc { q(V) : node(V) } c.\n:- q(V), del(V).\n:- q(U), q(V), U < V, not edge(U,V).\n#show q/1.\n\n% One clause: one of the clique's nodes must be deleted.\nclause(1, del(V), true) :- q(V).\n",
+      "description": "Looks for a surviving clique and writes the clause with clause/3 (solver C)."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Search, collect the counterexamples, restart after 10, and add their clauses\n# (written by the check with clause/3) between two searches.\npending = []\nrepeat:\n    search A:\n        on candidate M:\n            X = C.solve(assume G(M))\n            if X:\n                pending.push(X)\n                reject M with G.block(M)\n                if pending.size >= 10: restart\n    added = pending.size\n    for X in pending:\n        A.add(G.clauses(X))\n    pending.clear()\nuntil A.exhausted and added == 0\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "13",
+      "k": "6",
+      "c": "3"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

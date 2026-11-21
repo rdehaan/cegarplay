@@ -232,6 +232,288 @@
       "baseline": "guide-02-block"
     },
     {
+      "id": "guide-05-paley-block",
+      "title": "Guide: the Paley graph, blocking",
+      "group": "guide",
+      "summary": "The Paley graph (n = 13, k = 6, c = 3), every wrong candidate blocked on its own.",
+      "shape": "reference",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 39
+      },
+      "page": "guide/05-reading-a-run.html#block",
+      "status": "baseline",
+      "variants": [
+        {
+          "n": "17",
+          "k": "9"
+        }
+      ]
+    },
+    {
+      "id": "guide-05-paley-clause",
+      "title": "Guide: the Paley graph, learning",
+      "group": "guide",
+      "summary": "The Paley graph, one clause per surviving clique (Shape 1).",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 39
+      },
+      "page": "guide/05-reading-a-run.html#clause",
+      "status": "sound",
+      "baseline": "guide-05-paley-block",
+      "variants": [
+        {
+          "n": "17",
+          "k": "9"
+        },
+        {
+          "n": "29",
+          "c": "4",
+          "k": "13"
+        }
+      ]
+    },
+    {
+      "id": "guide-05-paley-record",
+      "title": "Guide: the Paley graph, enum-mode record",
+      "group": "guide",
+      "summary": "The same with --enum-mode=record on the abstraction: refinements are kept firmly.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 39
+      },
+      "page": "guide/05-reading-a-run.html#record",
+      "status": "sound",
+      "baseline": "guide-05-paley-block",
+      "variants": [
+        {
+          "n": "17",
+          "k": "9"
+        }
+      ]
+    },
+    {
+      "id": "guide-06-ex1",
+      "title": "Guide: thirty counterexamples per candidate",
+      "group": "guide",
+      "summary": "Up to 30 surviving cliques per candidate.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 39
+      },
+      "page": "guide/06-more-per-check.html#exercise-1-solution",
+      "status": "sound",
+      "baseline": "guide-05-paley-block",
+      "variants": [
+        {
+          "n": "17",
+          "k": "9"
+        }
+      ]
+    },
+    {
+      "id": "guide-06-clauses",
+      "title": "Guide: two clauses from one counterexample",
+      "group": "guide",
+      "summary": "The check writes the clauses itself (clause/3): up to two cliques in one counterexample.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 39
+      },
+      "page": "guide/06-more-per-check.html#clauses",
+      "status": "sound",
+      "baseline": "guide-05-paley-block",
+      "variants": [
+        {
+          "n": "17",
+          "k": "9"
+        }
+      ]
+    },
+    {
+      "id": "guide-06-reason-block",
+      "title": "Guide: sufficient reasons, blocking",
+      "group": "guide",
+      "summary": "Sufficient reasons of at most k = 4 features, blocking each wrong candidate.",
+      "shape": "reference",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 13
+      },
+      "page": "guide/06-more-per-check.html#reasons",
+      "status": "baseline"
+    },
+    {
+      "id": "guide-06-reason-clause",
+      "title": "Guide: sufficient reasons, learning",
+      "group": "guide",
+      "summary": "Sufficient reasons: keep one of the features on which the counterexample differs.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 13
+      },
+      "page": "guide/06-more-per-check.html#reasons",
+      "status": "sound",
+      "baseline": "guide-06-reason-block"
+    },
+    {
+      "id": "guide-06-reason-smallest",
+      "title": "Guide: sufficient reasons, smallest counterexample",
+      "group": "guide",
+      "summary": "Sufficient reasons: the check returns a counterexample that differs on as few features as possible.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 13
+      },
+      "page": "guide/06-more-per-check.html#smallest",
+      "status": "sound",
+      "baseline": "guide-06-reason-block"
+    },
+    {
+      "id": "guide-07-spectrum",
+      "title": "Guide: what the abstraction knows",
+      "group": "guide",
+      "summary": "The triangles among the first m nodes are excluded in the abstraction already.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 39
+      },
+      "page": "guide/07-abstraction.html#spectrum",
+      "status": "sound",
+      "baseline": "guide-05-paley-block",
+      "variants": [
+        {
+          "m": "0"
+        },
+        {
+          "m": "5"
+        },
+        {
+          "m": "13"
+        }
+      ]
+    },
+    {
+      "id": "guide-07-too-strong",
+      "title": "Guide: an abstraction that cuts solutions",
+      "group": "guide",
+      "summary": "Symmetry breaking in the abstraction: \"delete node 0\" cuts solutions.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 18
+      },
+      "page": "guide/07-abstraction.html#too-strong",
+      "status": "unsound",
+      "baseline": "guide-05-paley-block"
+    },
+    {
+      "id": "guide-07-ex1",
+      "title": "Guide: triangles through node 0 in advance",
+      "group": "guide",
+      "summary": "The triangles through node 0 are excluded in the abstraction.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 39
+      },
+      "page": "guide/07-abstraction.html#exercise-1-solution",
+      "status": "sound",
+      "baseline": "guide-05-paley-block"
+    },
+    {
+      "id": "guide-08-shape2",
+      "title": "Guide: Shape 2 on the Paley graph",
+      "group": "guide",
+      "summary": "Shape 2: solve, check, add the clause, solve again.",
+      "shape": "shape2",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 39
+      },
+      "page": "guide/08-loop-shapes.html#shape2",
+      "status": "sound",
+      "baseline": "guide-05-paley-block",
+      "variants": [
+        {
+          "n": "29",
+          "c": "4",
+          "k": "13"
+        }
+      ]
+    },
+    {
+      "id": "guide-08-shape4",
+      "title": "Guide: batches and restarts",
+      "group": "guide",
+      "summary": "Batches: collect counterexamples, restart after 10, add their clauses.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 39
+      },
+      "page": "guide/08-loop-shapes.html#shape4",
+      "status": "sound",
+      "baseline": "guide-05-paley-block",
+      "variants": [
+        {
+          "n": "29",
+          "c": "4",
+          "k": "13"
+        }
+      ]
+    },
+    {
+      "id": "guide-08-forgot-block",
+      "title": "Guide: a solution that is not blocked",
+      "group": "guide",
+      "summary": "Shape 2 without blocking the solution: the no-progress guard stops the run.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 1
+      },
+      "page": "guide/08-loop-shapes.html#forgot-block",
+      "status": "demo",
+      "outcome": "error"
+    },
+    {
       "id": "lang-basics",
       "title": "Loop language: the basics",
       "group": "language",

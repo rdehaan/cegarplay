@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Reading a run · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 05</p>
+        <h1>Reading a run</h1>
+        <p class="lead">A run leaves a record: the trace, the statistics, the run history. This chapter
+          moves the running example to a larger graph and shows how to read that record, so that you
+          can tell a good design from a poor one by its numbers.</p>
+
+        <h2 id="paley">A larger graph</h2>
+        <p>From now on the running example uses the <em>Paley graph</em> on n nodes, for n a prime
+          of the form 4m + 1. Its nodes are 0 to n &minus; 1, and two nodes are joined when their
+          difference is a square modulo n. It is defined by three rules in <code>shared</code>, so
+          the size is one constant:</p>
+        <pre class="code" data-lang="asp" data-from="guide-05-paley-clause:shared">node(0..n-1).
+square((X*X) \ n) :- X = 1..n-1.
+edge(U,V) :- node(U), node(V), U &lt; V, square((V-U) \ n).</pre>
+        <p class="listing-source">From the fragment <code>shared</code> of <code>guide-05-paley-clause</code>.</p>
+        <p>The check now looks for a clique of c nodes, with c a constant too. The defaults are
+          n = 13, k = 6, c = 3: delete six of thirteen nodes so that no triangle is left. The loops
+          are those of chapters 2 and 3.</p>
+        <p id="block">The blocking loop is the ground truth for chapters 5 to 8.
+          <a class="play" href="../?example=guide-05-paley-block&amp;fragment=loop&amp;from=guide/05-reading-a-run.html%23block" target="cegarplay">Open the blocking loop</a></p>
+        <p id="clause">The learning loop marks the clique's nodes as relevant, as in chapter 3.
+          <a class="play" href="../?example=guide-05-paley-clause&amp;fragment=check&amp;from=guide/05-reading-a-run.html%23clause" target="cegarplay">Open the learning loop</a></p>
+        <table class="results">
+          <thead>
+            <tr><th>Loop</th><th>Instance</th><th class="num">Candidates</th><th class="num">Refinements</th><th class="num">Solutions</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Blocking</td><td>n = 13, k = 6</td>
+              <td class="num"><span data-stat="guide-05-paley-block:candidates">4,096</span></td>
+              <td class="num"><span data-stat="guide-05-paley-block:refinements">4,057</span></td>
+              <td class="num"><span data-stat="guide-05-paley-block:solutions">39</span></td></tr>
+            <tr><td>Learning</td><td>n = 13, k = 6</td>
+              <td class="num"><span data-stat="guide-05-paley-clause:candidates">96</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause:refinements">57</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause:solutions">39</span></td></tr>
+            <tr><td>Blocking</td><td>n = 17, k = 9</td>
+              <td class="num"><span data-stat="guide-05-paley-block@k=9,n=17:candidates">90,793</span></td>
+              <td class="num"><span data-stat="guide-05-paley-block@k=9,n=17:refinements">90,742</span></td>
+              <td class="num"><span data-stat="guide-05-paley-block@k=9,n=17:solutions">51</span></td></tr>
+            <tr><td>Learning</td><td>n = 17, k = 9</td>
+              <td class="num"><span data-stat="guide-05-paley-clause@k=9,n=17:candidates">185</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause@k=9,n=17:refinements">134</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause@k=9,n=17:solutions">51</span></td></tr>
+          </tbody>
+        </table>
+        <p>To try the larger instance, set n = 17 and k = 9 in the Control tab. The blocking loop
+          takes a few seconds there; at n = 29 it would never finish, while the learning loop does
+          (try n = 29, c = 4, k = 13:
+          <span data-stat="guide-05-paley-clause@c=4,k=13,n=29:solutions">2,436</span> solutions
+          from <span data-stat="guide-05-paley-clause@c=4,k=13,n=29:candidates">3,086</span>
+          candidates). Beyond the blocking loop's reach, the soundness test of chapter 4 is no longer
+          possible: test on the small instances, then scale.</p>
+
+        <h2 id="trace">The trace, step by step</h2>
+        <p>Run the learning loop and open the Output tab. The first steps of the trace are:</p>
+        <table class="results">
+          <thead><tr><th>Step</th><th>Candidate</th><th>Counterexample</th><th>Refinement</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>(nothing deleted)</td><td><code>q(1) q(10) q(11)</code></td><td><code>del(1) del(10) del(11)</code></td></tr>
+            <tr><td>2</td><td><code>del(1)</code></td><td><code>q(3) q(4) q(7)</code></td><td><code>del(3) del(4) del(7)</code></td></tr>
+            <tr><td>3</td><td><code>del(1) del(3)</code></td><td><code>q(4) q(5) q(8)</code></td><td><code>del(4) del(5) del(8)</code></td></tr>
+          </tbody>
+        </table>
+        <p>Read each step as a question and an answer. The <em>candidate</em> lists the true
+          interface atoms. The <em>counterexample</em> is what the check found: a triangle none of
+          whose nodes is deleted. The <em>refinement</em> lists the clause's literals; in the
+          Output tab the candidate's atoms that the refinement names are highlighted. Each candidate
+          satisfies all the clauses before it: step 2 deletes node 1, as step 1 demanded.</p>
+        <p>When something goes wrong, the trace is where you look first. A refinement that names the
+          wrong atoms, or none, is visible at the first step it happens.</p>
+
+        <h2 id="statistics">The Statistics tab</h2>
+        <p>The Statistics tab summarises the whole run:</p>
+        <ul>
+          <li><strong>Summary</strong>: candidates, counterexamples, refinements, solutions. Here
+            every candidate is either a solution or has a counterexample, so candidates =
+            counterexamples + solutions.</li>
+          <li><strong>Solvers</strong>: per solver the calls, satisfiable and unsatisfiable answers,
+            solving time and grounding time. Solver A is called once: Shape 1 runs one search.
+            Solver C is called once per candidate,
+            <span data-stat="guide-05-paley-clause:checkCalls">96</span> times.</li>
+          <li><strong>Refinements</strong>: the number of clauses, their mean and largest length,
+            and a histogram of clause lengths. All clauses here have length
+            <span data-stat="guide-05-paley-clause:maxClause">3</span>; the blocking loop's have
+            length <span data-stat="guide-05-paley-block:maxClause">13</span>, one literal per
+            node.</li>
+          <li><strong>Charts</strong>: candidates and refinements over time, and the time split
+            between the solvers and grounding.</li>
+        </ul>
+
+        <h2 id="good-run">What a good run looks like</h2>
+        <ul>
+          <li><strong>Short clauses.</strong> A clause of length l rules out more candidates the
+            smaller l is. Clause lengths close to the number of interface atoms mean blocking in
+            disguise.</li>
+          <li><strong>Few candidates per solution.</strong> Every solution has to be proposed once.
+            The candidates beyond the solutions are what the loop pays to learn; compare them with
+            the number of refinements.</li>
+          <li><strong>No solver dominates without reason.</strong> If the check takes most of the
+            time, each check should earn more (chapter 6). If the abstraction does, it may be
+            searching blindly for something it could know in advance (chapter 7).</li>
+        </ul>
+        <p>On the larger instances the learning loop does well on all three counts.</p>
+
+        <h2 id="record">A note on enumeration</h2>
+        <p>The learning run has <span data-stat="guide-05-paley-clause:counterexamples">57</span>
+          counterexamples, but the Paley graph on 13 nodes has only 26 triangles, and the trace shows
+          some of them over and over (the triangle 0, 9, 10 most often). The design is not at
+          fault. While clasp enumerates answer sets, its default mode keeps clauses added during the
+          search only weakly, so a later candidate may violate one; the check then finds the same
+          triangle again. The result stays right, because every candidate is checked.</p>
+        <p>The option <code>--enum-mode=record</code> on solver A keeps the clauses
+          firmly:</p>
+        <div class="changed" data-lang="loop" data-before="guide-05-paley-clause:loop" data-after="guide-05-paley-record:loop"><del>solver A = shared + abstraction</del><ins>solver A = shared + abstraction    options "--enum-mode=record"</ins></div>
+        <p id="record-run">It changes the number of candidates, never the solutions:
+          <span data-stat="guide-05-paley-record:candidates">84</span> instead of
+          <span data-stat="guide-05-paley-clause:candidates">96</span> at n = 13, but
+          <span data-stat="guide-05-paley-record@k=9,n=17:candidates">186</span> instead of
+          <span data-stat="guide-05-paley-clause@k=9,n=17:candidates">185</span> at n = 17. Worth a
+          try, not a rule.
+          <a class="play" href="../?example=guide-05-paley-record&amp;fragment=loop&amp;from=guide/05-reading-a-run.html%23record-run" target="cegarplay">Open the run with enum-mode record</a></p>
+        <p>The templates also give the check the option <code>--heuristic=Domain</code>. It makes
+          clingo follow <code>#heuristic</code> statements in the check, which can steer which
+          counterexample it finds; chapter 6 uses that. Without such statements it only changes the
+          order of clasp's choices. The <a href="../?manual=true&amp;tab=8">manual</a>'s section
+          Settings lists the options.</p>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>Without looking at the trace, how many distinct counterexamples can the learning run at
+            n = 13 have at most? Then find, in the trace, a step whose counterexample an earlier step
+            already returned, and check that its candidate violates the earlier clause.</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>At most 26, one per triangle; the run has
+              <span data-stat="guide-05-paley-clause:counterexamples">57</span>, so many come back. The
+              triangle 0, 9, 10 is the most frequent. Every candidate that returns it deletes none
+              of 0, 9 and 10, so it violates the clause "delete 0, 9 or 10" learnt the first time:
+              the clause was kept only weakly.
+              <a class="play" href="../?example=guide-05-paley-clause&amp;from=guide/05-reading-a-run.html%23exercise-1-solution" target="cegarplay">Open the learning loop</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-2">
+          <h2>Exercise 2</h2>
+          <p>Your loop takes twice the time you can give it. What do you change first, and which
+            statistic tells you?</p>
+          <details class="solution" id="exercise-2-solution">
+            <summary>Solution</summary>
+            <p>Look at the Solvers table before changing anything. If the check takes most of the
+              time, make each check earn more, or make it cheaper. If the abstraction does, give it
+              more knowledge in advance, or try another loop shape. If candidates far outnumber
+              solutions and clauses are long, the refinements are too weak: look at
+              <code>relevant/1</code>. If grounding dominates, the program, not the loop, is the
+              problem. Try it on the learning loop at n = 29, c = 4, k = 13.
+              <a class="play" href="../?example=guide-05-paley-clause&amp;from=guide/05-reading-a-run.html%23exercise-2-solution" target="cegarplay">Open the learning loop</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-read-trace">Read the first steps of the trace: candidate, counterexample,
+              refinement. Mistakes in a refinement show there first.</li>
+            <li id="rule-good-run">A good run has short clauses, few candidates beyond the
+              solutions, and no solver that dominates without reason.</li>
+            <li id="rule-test-small-then-scale">Test soundness where the blocking loop finishes;
+              scale only afterwards.</li>
+            <li id="rule-options-change-counts">Solver options can change the number of candidates,
+              never the solutions of a sound loop.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="04-soundness.html">&larr; Soundness: when a refinement says too much</a>
+        <a class="next" href="06-more-per-check.html">Getting more out of each check &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

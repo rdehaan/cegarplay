@@ -237,7 +237,30 @@ phase at a time (G0a, G0, G1, ..., G4); commits `Guide N: <title>`.
     `lua/runtime.lua`). Test in `test/guide.test.mjs`.
   - For page 5: the Shape 1 run `guide-03-hit-clique` returns 10 counterexamples for 7 triangles
     (the same triangle again); page 3 promises chapter 5 explains it.
-- Next: G2 Pages 5-8.
+- **G2 Pages 5-8: done (2026-11-21).** Pages 05-08; 14 new examples (24 in all): `guide-05-paley-block`
+  (baseline of 5-8), `-paley-clause`, `-paley-record`, `guide-06-ex1` (limit 30), `-clauses`,
+  `-reason-block/-clause/-smallest` (fragments read from `examples/contrib/sufficient-reason.json`),
+  `guide-07-spectrum` (constant m), `-too-strong`, `-ex1`, `guide-08-shape2`, `-shape4`,
+  `-forgot-block`. Links of pages 05-08 clicked through in the served site by a script (tab,
+  fragment, back link, page run = numbers.json).
+  - **Instance**: n = 13, k = 6, c = 3 (as `clique-interdiction`; blocking 0.2 s). Variants n = 17,
+    k = 9 (blocking 3.7 s headless) and, without baseline, n = 29, c = 4, k = 13 (blocking cannot
+    finish there). Times are tiny at n <= 17, so the pages compare candidates/clauses and send the
+    reader to the run history for times (Shape 2 is ~6x slower than Shape 1 at n = 29 here).
+  - `guide-06-several` not made: `clique-interdiction` is exactly it; linked and quoted (QUOTED).
+  - More counterexamples per candidate do not fall smoothly (n = 17: limit 1/2/3/5/10/30/100 ->
+    185/111/124/91/95/111/52 candidates); the page says so.
+  - `--heuristic=Domain` comes from the original cegar.py; it matters only with `#heuristic`.
+    `guide-06-clauses` (two cliques per answer set, clause/3) uses a `#heuristic` and gets no second
+    clique without the option. `C.models(limit 3)` does as well; the page says so.
+  - **Shape 4 with clauses**: `G.clause(M, X)` built inside a search cannot be `A.add`ed after it
+    ("built from a candidate inside a search; use reject"), so `guide-08-shape4` pushes X and adds
+    `G.clauses(X)` (clause/3 in the check) after each restart (batch 10).
+  - Manifest field **`outcome: 'error'`** for a demo that shows a guard on purpose
+    (`guide-08-forgot-block`); `measureAll` and `test/library.test.mjs` expect the error. Key
+    `rulesA` (rules of A after grounding) added to `tools/guide-numbers.mjs`.
+  - Symmetry breaking (`:- not del(0).`) is the page-7 unsound abstraction: 18 of 39.
+- Next: G3 Pages 9-11.
 
 Notes for the guide phases (checked against the code before G0a):
 - The run history's ⚠ only compares runs with the same fragments (`js/stats.js:81`); for the

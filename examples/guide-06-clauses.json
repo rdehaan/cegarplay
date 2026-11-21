@@ -1,0 +1,45 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide: two clauses from one counterexample",
+  "description": "The check finds up to two surviving cliques in one answer set and writes one clause for each with clause/3; a #heuristic, honoured because of --heuristic=Domain, makes it look for the second. See the guide page \"Getting more out of each check\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The Paley graph on n nodes (n a prime of the form 4m + 1): two nodes are joined when\n% their difference is a square modulo n.\nnode(0..n-1).\nsquare((X*X) \\ n) :- X = 1..n-1.\nedge(U,V) :- node(U), node(V), U < V, square((V-U) \\ n).\n",
+      "description": "The Paley graph on n nodes. Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: at most k nodes to delete.\n{ del(V) : node(V) } k.\n#show del/1.\n",
+      "description": "Proposes candidates (solver A): at most k deleted nodes."
+    },
+    {
+      "name": "glue",
+      "text": "% The check sees which nodes are deleted.\nglue(del(V)) :- node(V).\n",
+      "description": "The interface atoms: the deleted nodes."
+    },
+    {
+      "name": "check",
+      "text": "% A counterexample: clique 1, c nodes that are not deleted and pairwise joined;\n% if possible a second one, clique 2, that differs from it.\nclique(1). { clique(2) }.\n#heuristic clique(2). [1,true]\nc { q(I,V) : node(V) } c :- clique(I).\n:- q(I,V), del(V).\n:- q(I,U), q(I,V), U < V, not edge(U,V).\n:- clique(2), q(2,V) : q(1,V).\n#show q/2.\n\n% One clause per clique: one of its nodes must be deleted.\nclause(I, del(V), true) :- q(I,V).\n",
+      "description": "Looks for up to two surviving cliques and writes one clause per clique (solver C)."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The check derives the clauses itself: clause(Id, Atom, Value).\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clauses(X)\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "13",
+      "k": "6",
+      "c": "3"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Getting more out of each check · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 06</p>
+        <h1>Getting more out of each check</h1>
+        <p class="lead">A check is a solver call, and each one should teach the abstraction as much as
+          it can. This chapter shows three ways to get more out of it: several counterexamples per
+          candidate, better counterexamples, and clauses the check writes itself.</p>
+
+        <h2 id="several">Several counterexamples per candidate</h2>
+        <p>A wrong candidate usually has more than one counterexample: several cliques survive. The
+          check can return more than one, and each gives a clause:</p>
+        <pre class="code" data-lang="loop" data-from="clique-interdiction:loop">search A:
+    on candidate M:
+        for X in C.models(assume G(M), limit 3):
+            reject M with G.clause(M, X)</pre>
+        <p class="listing-source">From the loop script of <code>clique-interdiction</code>.</p>
+        <p id="several-run"><code>C.models(…, limit 3)</code> enumerates up to three answer sets of
+          the check. The candidate is rejected once; all the clauses are added. The library example
+          <code>clique-interdiction</code> is exactly the running example with this loop.
+          <a class="play" href="../?example=clique-interdiction&amp;fragment=loop&amp;from=guide/06-more-per-check.html%23several-run" target="cegarplay">Open it</a></p>
+        <table class="results">
+          <thead>
+            <tr><th>Counterexamples per candidate</th><th class="num">Candidates (n = 13)</th><th class="num">Refinements (n = 13)</th>
+              <th class="num">Candidates (n = 17)</th><th class="num">Refinements (n = 17)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td>
+              <td class="num"><span data-stat="guide-05-paley-clause:candidates">96</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause:refinements">57</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause@k=9,n=17:candidates">185</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause@k=9,n=17:refinements">134</span></td></tr>
+            <tr><td>up to 3</td>
+              <td class="num"><span data-stat="clique-interdiction:candidates">68</span></td>
+              <td class="num"><span data-stat="clique-interdiction:refinements">42</span></td>
+              <td class="num"><span data-stat="clique-interdiction@k=9,n=17:candidates">124</span></td>
+              <td class="num"><span data-stat="clique-interdiction@k=9,n=17:refinements">115</span></td></tr>
+          </tbody>
+        </table>
+        <p>Fewer candidates, so fewer check calls. But each call now enumerates up to three answer
+          sets, and the refinements per candidate go up. Whether that pays depends on how expensive
+          a check is compared with a candidate. Here both are cheap, and the gain is in candidates
+          only. Measure it on your own problem; exercise 1 asks how far to go.</p>
+
+        <h2 id="reasons">Side trip: explanations</h2>
+        <p>Not all counterexamples are equally good. To see why, leave the graph for a moment. A
+          classifier (here a small neural network over eight binary features) answers yes or no on
+          an input. A <em>sufficient reason</em> for its answer is a set of features such that
+          every input that agrees with the given one on those features gets the same answer. We
+          look for sufficient reasons of at most k = 4 features.</p>
+        <p>That is "there is a set of features such that for all inputs …", the shape of chapter 1.
+          The abstraction guesses <code>keep(F)</code> for at most k features. The check looks for
+          an input that agrees on the kept features and gets the other answer:</p>
+        <pre class="code" data-lang="asp" data-from="guide-06-reason-clause:check">differs(F) :- is(F,1), not x(F).
+differs(F) :- is(F,0), x(F).
+#show x/1.
+#show differs/1.</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-06-reason-clause</code>.</p>
+        <p>The counterexample input refutes every set of kept features on which it agrees with the
+          given input, so the refinement says: keep one of the features on which it differs.</p>
+        <pre class="code" data-lang="asp" data-from="guide-06-reason-clause:check">relevant(keep(F)) :- differs(F).</pre>
+        <p>The fewer features the counterexample differs on, the shorter and stronger the clause. A
+          counterexample that differs everywhere teaches almost nothing.</p>
+
+        <h2 id="smallest">Asking for the best counterexample</h2>
+        <p>So ask the check for a counterexample that differs on as few features as
+          possible: a <code>#minimize</code> in the check, and <code>optimal</code> in the loop, so
+          that <code>C.solve</code> returns an optimal answer set.</p>
+        <div class="changed" data-lang="asp" data-before="guide-06-reason-clause:check" data-after="guide-06-reason-smallest:check"><span class="same">relevant(keep(F)) :- differs(F).</span><ins>#minimize { 1,F : differs(F) }.</ins></div>
+        <div class="changed" data-lang="loop" data-before="guide-06-reason-clause:loop" data-after="guide-06-reason-smallest:loop"><del>        X = C.solve(assume G(M))</del><ins>        X = C.solve(assume G(M), optimal)</ins></div>
+        <p id="smallest-run"><a class="play" href="../?example=guide-06-reason-smallest&amp;fragment=check&amp;from=guide/06-more-per-check.html%23smallest-run" target="cegarplay">Open the smallest counterexamples</a></p>
+        <table class="results">
+          <thead>
+            <tr><th>Loop</th><th class="num">Candidates</th><th class="num">Refinements</th><th class="num">Mean clause length</th><th class="num">Solutions</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Blocking</td>
+              <td class="num"><span data-stat="guide-06-reason-block:candidates">163</span></td>
+              <td class="num"><span data-stat="guide-06-reason-block:refinements">150</span></td>
+              <td class="num"><span data-stat="guide-06-reason-block:meanClause">8.0</span></td>
+              <td class="num"><span data-stat="guide-06-reason-block:solutions">13</span></td></tr>
+            <tr><td>Any counterexample</td>
+              <td class="num"><span data-stat="guide-06-reason-clause:candidates">29</span></td>
+              <td class="num"><span data-stat="guide-06-reason-clause:refinements">16</span></td>
+              <td class="num"><span data-stat="guide-06-reason-clause:meanClause">2.3</span></td>
+              <td class="num"><span data-stat="guide-06-reason-clause:solutions">13</span></td></tr>
+            <tr><td>Smallest counterexample</td>
+              <td class="num"><span data-stat="guide-06-reason-smallest:candidates">22</span></td>
+              <td class="num"><span data-stat="guide-06-reason-smallest:refinements">9</span></td>
+              <td class="num"><span data-stat="guide-06-reason-smallest:meanClause">2.0</span></td>
+              <td class="num"><span data-stat="guide-06-reason-smallest:solutions">13</span></td></tr>
+          </tbody>
+        </table>
+        <p id="reasons-runs">Shorter clauses, fewer of them. The cost is an optimisation inside every
+          check, which on a hard check can be much more than one answer set. The two other loops:
+          <a class="play" href="../?example=guide-06-reason-block&amp;fragment=check&amp;from=guide/06-more-per-check.html%23reasons-runs" target="cegarplay">blocking</a>
+          <a class="play" href="../?example=guide-06-reason-clause&amp;fragment=check&amp;from=guide/06-more-per-check.html%23reasons-runs" target="cegarplay">any counterexample</a></p>
+
+        <h2 id="clauses">Clauses the check writes itself</h2>
+        <p>With <code>relevant/1</code> the check chooses atoms, and the loop builds one clause: one
+          of them must change. Sometimes you want something else, for instance several clauses from
+          one answer set. Then the check derives the clauses itself, as
+          <code>clause(Id, Atom, Value)</code>: the atoms with one Id form a clause, and
+          "Value" is the value the atom should get. The loop reads them with
+          <code>G.clauses(X)</code>.</p>
+        <p>On the running example: let one answer set of the check hold up to two different
+          surviving cliques, and write one clause per clique.</p>
+        <pre class="code" data-lang="asp" data-from="guide-06-clauses:check">clique(1). { clique(2) }.
+#heuristic clique(2). [1,true]
+c { q(I,V) : node(V) } c :- clique(I).
+:- q(I,V), del(V).
+:- q(I,U), q(I,V), U &lt; V, not edge(U,V).
+:- clique(2), q(2,V) : q(1,V).
+#show q/2.
+
+% One clause per clique: one of its nodes must be deleted.
+clause(I, del(V), true) :- q(I,V).</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-06-clauses</code>.</p>
+        <p id="clauses-run">Marking both cliques with <code>relevant/1</code> would give one clause
+          of length six, much weaker than two of length three. The <code>#heuristic</code> makes the
+          check try for the second clique first; clingo follows it because the check runs with
+          <code>--heuristic=Domain</code>. Without that option the solver never bothers, and you get
+          one clique per answer set again.
+          <a class="play" href="../?example=guide-06-clauses&amp;fragment=check&amp;from=guide/06-more-per-check.html%23clauses-run" target="cegarplay">Open the two-clique check</a></p>
+        <p>It works: <span data-stat="guide-06-clauses:candidates">77</span> candidates instead of
+          <span data-stat="guide-05-paley-clause:candidates">96</span>, with
+          <span data-stat="guide-06-clauses:clauses">49</span> clauses from
+          <span data-stat="guide-06-clauses:counterexamples">38</span> counterexamples. But be
+          honest with yourself: <code>C.models(…, limit 3)</code> above did as well with less effort.
+          Use <code>clause/3</code> when the clause you need cannot be said with
+          <code>relevant/1</code>, or when a clause must be built from the counterexample alone;
+          chapter 8 needs it for the second reason.</p>
+
+        <h2 id="second-solver">A solver for the refinement</h2>
+        <p id="second-solver-link">When the refinement needs a search of its own, for instance the
+          smallest set of atoms that explains a counterexample, a third solver can compute it from
+          the candidate and the counterexample together. The library example
+          <code>lang-second-solver</code> shows the loop.
+          <a class="play" href="../?example=lang-second-solver&amp;fragment=loop&amp;from=guide/06-more-per-check.html%23second-solver-link" target="cegarplay">Open it</a></p>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>Change the limit in <code>clique-interdiction</code> to 30. Do more counterexamples per
+            candidate keep paying? Try n = 13, k = 6 and n = 17, k = 9.</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>At n = 13, up to 30 brings the candidates down to
+              <span data-stat="guide-06-ex1:candidates">40</span>. At n = 17 it needs
+              <span data-stat="guide-06-ex1@k=9,n=17:candidates">111</span>, hardly better than
+              <span data-stat="clique-interdiction@k=9,n=17:candidates">124</span> for 3, while each
+              check enumerates more. The counts do not fall smoothly: which cliques come first depends
+              on the search. Most of the gain comes with the first extra counterexamples; beyond that,
+              measure before you pay.
+              <a class="play" href="../?example=guide-06-ex1&amp;fragment=loop&amp;from=guide/06-more-per-check.html%23exercise-1-solution" target="cegarplay">Open the loop with limit 30</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-2">
+          <h2>Exercise 2</h2>
+          <p>The <code>#minimize</code> changes which counterexample the check returns. Why can that
+            never make the loop unsound?</p>
+          <details class="solution" id="exercise-2-solution">
+            <summary>Solution</summary>
+            <p>Every answer set of the check is a counterexample, and the clause made from any
+              counterexample is satisfied by every solution (chapter 3). The minimisation only picks
+              one of them. The same holds for the <code>#heuristic</code> of the two-clique check, and
+              for solver options in general.
+              <a class="play" href="../?example=guide-06-reason-smallest&amp;fragment=loop&amp;from=guide/06-more-per-check.html%23exercise-2-solution" target="cegarplay">Open the smallest counterexamples</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-several-cex">Several counterexamples per candidate save candidates and cost
+              check work; measure the trade.</li>
+            <li id="rule-small-cex">A counterexample that depends on few atoms gives a short, strong
+              clause. Ask for it with <code>#minimize</code> and <code>optimal</code> when checks
+              are cheap.</li>
+            <li id="rule-clause3">Write the clauses in the check with <code>clause/3</code> when
+              <code>relevant/1</code> cannot say what you need.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="05-reading-a-run.html">&larr; Reading a run</a>
+        <a class="next" href="07-abstraction.html">Designing the abstraction &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

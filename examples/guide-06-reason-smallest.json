@@ -1,0 +1,43 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide: sufficient reasons, smallest counterexample",
+  "description": "The check minimises the number of features on which its input differs (optimal solve), which gives the shortest clauses. See the guide page \"Getting more out of each check\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% A small network over 8 binary features. A hidden unit fires when the weighted sum of\n% its inputs reaches its threshold; the answer is \"yes\" when the weighted sum of the\n% firing units reaches 3.\nfeature(1..8).\nunit(1..3).\n% weight(U,F,W): unit U sees feature F with weight W.\nweight(1,1,-2). weight(1,3,1). weight(1,4,-1). weight(1,6,-3). weight(1,7,-3). weight(1,8,-1).\nweight(2,1,-3). weight(2,3,2). weight(2,4,-2). weight(2,5,-3). weight(2,6,-2). weight(2,7,-1).\nweight(2,8,3).\nweight(3,1,-2). weight(3,2,3). weight(3,3,2).  weight(3,5,-3). weight(3,7,-1). weight(3,8,3).\nthreshold(1,2). threshold(2,1). threshold(3,2).\nvote(1,1). vote(2,1). vote(3,3).\n% The input to be explained: is(F,B) says that feature F has the value B.\nis(1,0). is(2,1). is(3,1). is(4,0). is(5,1). is(6,0). is(7,0). is(8,1).\n% The network's answer on this input.\nfires0(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), is(F,1) } >= T.\nyes0 :- #sum { V,U : vote(U,V), fires0(U) } >= 3.\n",
+      "description": "The network and the input to be explained. Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: at most k features whose values are kept.\n{ keep(F) : feature(F) } k.\n#show keep/1.\n",
+      "description": "Proposes candidates (solver A): sets of at most k features."
+    },
+    {
+      "name": "glue",
+      "text": "glue(keep(F)) :- feature(F).\n",
+      "description": "The interface atoms: the kept features."
+    },
+    {
+      "name": "check",
+      "text": "% A counterexample: another input x/1 that agrees with the given one on the kept\n% features ...\n{ x(F) } :- feature(F).\n:- keep(F), is(F,1), not x(F).\n:- keep(F), is(F,0), x(F).\n% ... but gets the other answer from the network.\nfires(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), x(F) } >= T.\nyes :- #sum { V,U : vote(U,V), fires(U) } >= 3.\n:- yes, yes0.\n:- not yes, not yes0.\ndiffers(F) :- is(F,1), not x(F).\ndiffers(F) :- is(F,0), x(F).\n#show x/1.\n#show differs/1.\n\n% The input refutes every set of kept features on which it agrees with the given\n% input. So one of the features on which it differs has to be kept.\nrelevant(keep(F)) :- differs(F).\n\n% Prefer a counterexample that differs on few features.\n#minimize { 1,F : differs(F) }.\n",
+      "description": "Looks for an input that agrees on the kept features and gets the other answer (solver C)."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M), optimal)\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "k": "4"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

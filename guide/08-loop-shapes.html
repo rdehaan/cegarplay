@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Loop shapes · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 08</p>
+        <h1>Loop shapes</h1>
+        <p class="lead">Every loop so far ran one search of the abstraction and checked candidates as
+          they came. That is one shape among several. This chapter compares three on the same problem
+          and says when each tends to win.</p>
+
+        <h2 id="shape1">Shape 1: the check inside one search</h2>
+        <p>The loops of chapters 3 to 7 have the shape the Loop tab calls Shape 1: <code>search
+          A:</code> runs one search for all answer sets of A, the check runs on each candidate, and
+          <code>reject M with …</code> adds the clause to the running search. Solver A is called
+          once; what clasp learns along the way stays with it. A candidate that is not rejected is a
+          solution, and the search moves on by itself.</p>
+
+        <h2 id="shape2">Shape 2: solve, check, add, solve again</h2>
+        <p>The alternative is to ask A for one answer set at a time:</p>
+        <pre class="code" data-lang="loop" data-from="guide-08-shape2:loop">loop:
+    M = A.solve()
+    if not M: stop
+    X = C.solve(assume G(M))
+    if X:
+        A.add(G.clause(M, X))
+    else:
+        accept M
+        A.add(G.block(M))</pre>
+        <p class="listing-source">From the loop script of <code>guide-08-shape2</code>.</p>
+        <p id="shape2-run">Each <code>A.solve()</code> is a new solve call that starts from the
+          program plus every clause added so far. Two things change. First, nothing moves the
+          search past a solution for you: after <code>accept M</code> the loop must block it, or the
+          next solve returns it again. Second, the refinements are part of the program now, never
+          kept "weakly", but each solve starts its search afresh.
+          <a class="play" href="../?example=guide-08-shape2&amp;fragment=loop&amp;from=guide/08-loop-shapes.html%23shape2-run" target="cegarplay">Open Shape 2</a></p>
+
+        <h2 id="shape4">Batches and restarts</h2>
+        <p>A middle way: run one search as in Shape 1, but only block the wrong candidates while
+          collecting their counterexamples; after a batch, restart the search and add the clauses
+          learnt from the batch. The Loop tab's Shape 4 template does this with rule refinements
+          (chapter 9). Here is the version with clauses:</p>
+        <pre class="code" data-lang="loop" data-from="guide-08-shape4:loop">pending = []
+repeat:
+    search A:
+        on candidate M:
+            X = C.solve(assume G(M))
+            if X:
+                pending.push(X)
+                reject M with G.block(M)
+                if pending.size &gt;= 10: restart
+    added = pending.size
+    for X in pending:
+        A.add(G.clauses(X))
+    pending.clear()
+until A.exhausted and added == 0</pre>
+        <p class="listing-source">From the loop script of <code>guide-08-shape4</code>.</p>
+        <p id="shape4-run">Why <code>G.clauses(X)</code>, with the clause written in the check by
+          <code>clause/3</code> (chapter 6)? A clause made with <code>G.clause(M, X)</code> inside a
+          search is tied to that search, and the loop refuses to add it after the search has ended.
+          A clause built from the counterexample alone can be added at any time.
+          <a class="play" href="../?example=guide-08-shape4&amp;fragment=loop&amp;from=guide/08-loop-shapes.html%23shape4-run" target="cegarplay">Open the batches</a></p>
+
+        <h2 id="compare">Three shapes, measured</h2>
+        <details class="predict">
+          <summary>Before you look at the table: which shape needs the fewest candidates?</summary>
+          <p>Shape 2: its clauses are never violated by a later candidate. Shape 4 has a handicap:
+            within a batch only blocks apply, so a clique can come back until the batch ends.</p>
+        </details>
+        <table class="results">
+          <thead>
+            <tr><th>Shape</th><th>Instance</th><th class="num">Candidates</th><th class="num">Clauses</th>
+              <th class="num">Restarts</th><th class="num">Solutions</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>n = 13, c = 3, k = 6</td>
+              <td class="num"><span data-stat="guide-05-paley-clause:candidates">96</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause:clauses">57</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause:restarts">0</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause:solutions">39</span></td></tr>
+            <tr><td>2</td><td>n = 13, c = 3, k = 6</td>
+              <td class="num"><span data-stat="guide-08-shape2:candidates">65</span></td>
+              <td class="num"><span data-stat="guide-08-shape2:clauses">65</span></td>
+              <td class="num"><span data-stat="guide-08-shape2:restarts">0</span></td>
+              <td class="num"><span data-stat="guide-08-shape2:solutions">39</span></td></tr>
+            <tr><td>4</td><td>n = 13, c = 3, k = 6</td>
+              <td class="num"><span data-stat="guide-08-shape4:candidates">119</span></td>
+              <td class="num"><span data-stat="guide-08-shape4:clauses">160</span></td>
+              <td class="num"><span data-stat="guide-08-shape4:restarts">8</span></td>
+              <td class="num"><span data-stat="guide-08-shape4:solutions">39</span></td></tr>
+            <tr><td>1</td><td>n = 29, c = 4, k = 13</td>
+              <td class="num"><span data-stat="guide-05-paley-clause@c=4,k=13,n=29:candidates">3,086</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause@c=4,k=13,n=29:clauses">650</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause@c=4,k=13,n=29:restarts">0</span></td>
+              <td class="num"><span data-stat="guide-05-paley-clause@c=4,k=13,n=29:solutions">2,436</span></td></tr>
+            <tr><td>2</td><td>n = 29, c = 4, k = 13</td>
+              <td class="num"><span data-stat="guide-08-shape2@c=4,k=13,n=29:candidates">2,639</span></td>
+              <td class="num"><span data-stat="guide-08-shape2@c=4,k=13,n=29:clauses">2,639</span></td>
+              <td class="num"><span data-stat="guide-08-shape2@c=4,k=13,n=29:restarts">0</span></td>
+              <td class="num"><span data-stat="guide-08-shape2@c=4,k=13,n=29:solutions">2,436</span></td></tr>
+            <tr><td>4</td><td>n = 29, c = 4, k = 13</td>
+              <td class="num"><span data-stat="guide-08-shape4@c=4,k=13,n=29:candidates">2,956</span></td>
+              <td class="num"><span data-stat="guide-08-shape4@c=4,k=13,n=29:clauses">1,040</span></td>
+              <td class="num"><span data-stat="guide-08-shape4@c=4,k=13,n=29:restarts">52</span></td>
+              <td class="num"><span data-stat="guide-08-shape4@c=4,k=13,n=29:solutions">2,436</span></td></tr>
+          </tbody>
+        </table>
+        <p>Read the clause counts with care: Shape 2's include one block per solution, Shape 4's one
+          block per wrong candidate. Now run the three at n = 29, c = 4, k = 13 and compare the
+          elapsed times in the run history. Shape 2 has the fewest candidates and is by far the
+          slowest: it solves A once per candidate, and each solve starts over. Shape 1 is the
+          fastest. With thousands of solutions, each of which costs Shape 2 a solve call, that is
+          no surprise.</p>
+
+        <h2 id="when">When each shape tends to win</h2>
+        <ul>
+          <li><strong>Shape 1</strong> when checks are cheap and there are many candidates or many
+            solutions: one search, no restarts, clauses added on the fly.</li>
+          <li><strong>Shape 2</strong> when checks are expensive, so that the fewest candidates
+            matter most, or when you want only the first solution. It is also the natural shape for
+            refinements that are not clauses: new rules must be grounded between two solves
+            (chapter 9).</li>
+          <li><strong>Batches</strong> in between: rule refinements without a solve call per
+            candidate. Tune the batch size by measuring.</li>
+        </ul>
+        <p>All three are sound with the same check; the soundness test applies to each, and the
+          run history compares them directly, since only the loop changes.</p>
+
+        <h2 id="guards">The guards</h2>
+        <p>Shape 2 puts the bookkeeping in your hands, and the loop guards against
+          the commonest slips. Leave out the block after <code>accept M</code>:</p>
+        <div class="changed" data-lang="loop" data-before="guide-08-shape2:loop" data-after="guide-08-forgot-block:loop"><span class="same">        accept M</span><del>        A.add(G.block(M))</del></div>
+        <p id="forgot-block">The next solve returns the same solution, and the run stops with the error "the refinement
+          made no progress: the same candidate came back". The run of
+          <code>guide-08-forgot-block</code> ends after
+          <span data-stat="guide-08-forgot-block:candidates">13</span> candidates with
+          <span data-stat="guide-08-forgot-block:solutions">1</span> solution reported.
+          <a class="play" href="../?example=guide-08-forgot-block&amp;fragment=loop&amp;from=guide/08-loop-shapes.html%23forgot-block" target="cegarplay">Open the loop without the block</a></p>
+        <p>Two more guards:</p>
+        <ul>
+          <li>"refinement does not exclude the candidate": a clause given to <code>reject</code>
+            that the candidate satisfies. Such a refinement teaches nothing about this candidate,
+            which is almost always a mistake in the check.</li>
+          <li>"A.add: the clause was built from a candidate inside a search; use reject": inside
+            <code>search A:</code>, refinements go to the running search with <code>reject</code>,
+            not to A with <code>A.add</code>. This is also why the batch loop above writes its
+            clauses with <code>clause/3</code>.</li>
+        </ul>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>Change the Shape 2 script so that it stops at the first solution.</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>Stop after accepting: replace the block by <code>stop</code>. No block is needed,
+              because no further solve follows. (Setting Solutions to 1 in the Control tab does the
+              same for any shape.)</p>
+            <pre class="plain">    else:
+        accept M
+        stop</pre>
+            <p><a class="play" href="../?example=guide-08-shape2&amp;fragment=loop&amp;from=guide/08-loop-shapes.html%23exercise-1-solution" target="cegarplay">Open Shape 2 and try it</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-2">
+          <h2>Exercise 2</h2>
+          <p>In the batch loop, what happens to the number of candidates if you raise the batch size
+            from 10 to 1,000, and why? Predict, then try.</p>
+          <details class="solution" id="exercise-2-solution">
+            <summary>Solution</summary>
+            <p>The candidates go up, by about a thousand: the first search blocks 1,000 wrong
+              candidates one by one before a single clause arrives. With a batch larger than the
+              number of wrong candidates, the search never restarts and the loop becomes the blocking
+              loop, with its <span data-stat="guide-05-paley-block:candidates">4,096</span>
+              candidates; the clauses come when there is nothing left to prune. Small batches keep
+              the clauses coming.
+              <a class="play" href="../?example=guide-08-shape4&amp;fragment=loop&amp;from=guide/08-loop-shapes.html%23exercise-2-solution" target="cegarplay">Open the batches</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-shape1-default">Start with Shape 1: one search, clauses on the fly. It is
+              the fastest when checks are cheap.</li>
+            <li id="rule-shape2-expensive">Use Shape 2 when checks are expensive or refinements are
+              rules; block every accepted solution yourself.</li>
+            <li id="rule-measure-shapes">Compare shapes by the run history: same fragments, only the
+              loop changes, the counts must agree.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="07-abstraction.html">&larr; Designing the abstraction</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

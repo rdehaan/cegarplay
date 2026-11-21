@@ -283,7 +283,7 @@ ol.chapter-list .soon { color: var(--text-soft); font-size: 14px; }
   .guide-layout { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 10px 32px; }
   main { width: 100%; }
   table.results { display: block; overflow-x: auto; font-size: 14px; }
-  table.results th, table.results td { padding: 4px 6px; }
+  table.results th, table.results td { padding: 4px 6px; white-space: nowrap; }
   .chapters { position: static; flex: none; width: 100%; }
   article { padding: 16px 16px 24px; }
   h1 { font-size: 26px; }

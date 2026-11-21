@@ -29,6 +29,7 @@ export const KEYS = {
   maxClause: (s) => s.maxlen,
   checkCalls: (s) => Object.entries(s.solvers).filter(([n]) => n !== 'A').reduce((a, [, v]) => a + v.calls, 0),
   restarts: (s) => s.restarts,
+  rulesA: (s) => s.solvers.A.rules,                      // rules of the abstraction after grounding
 };
 
 // The text a data-stat span must hold.
@@ -52,7 +53,7 @@ export const runKey = (id, constants) => {
 export function runs(entries = guideEntries()) {
   const out = [];
   for (const e of entries) {
-    out.push({ key: e.id, id: e.id });
+    out.push({ key: e.id, id: e.id, outcome: e.outcome });
     for (const c of e.variants || []) out.push({ key: runKey(e.id, c), id: e.id, constants: c });
   }
   for (const q of QUOTED) out.push({ key: runKey(q.id, q.constants), id: q.id, constants: q.constants });
@@ -79,8 +80,13 @@ export async function measureAll(entries = guideEntries()) {
   const out = {};
   for (const r of runs(entries)) {
     const m = await measure(r.id, r.constants);
-    if (m.error) throw new Error(`${r.key}: ${m.error}`);
-    if (m.outcome !== 'finished' || !m.exhausted) throw new Error(`${r.key}: outcome ${m.outcome}, exhausted ${m.exhausted}`);
+    // An entry with outcome 'error' (a pitfall shown on purpose) must end with an error event.
+    if (r.outcome === 'error') {
+      if (m.outcome !== 'error' || !m.error) throw new Error(`${r.key}: expected an error, got outcome ${m.outcome}`);
+    } else {
+      if (m.error) throw new Error(`${r.key}: ${m.error}`);
+      if (m.outcome !== 'finished' || !m.exhausted) throw new Error(`${r.key}: outcome ${m.outcome}, exhausted ${m.exhausted}`);
+    }
     out[r.key] = m.numbers;
   }
   return out;

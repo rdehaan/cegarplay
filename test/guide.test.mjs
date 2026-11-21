@@ -136,7 +136,8 @@ let measured;
 const fresh = async () => (measured ??= await measureAll(GUIDE));   // also the variants and QUOTED runs
 
 test('guide examples: sound ones give their baseline\'s count, unsound ones strictly fewer; all finish', async () => {
-  const m = await fresh();       // measureAll throws on an error event or an unfinished run
+  const m = await fresh();       // measureAll throws on an error event or an unfinished run (or a missing expected error)
+  for (const e of GUIDE) if (e.outcome) assert.equal(e.status, 'demo', `${e.id}: only demos may end with an error`);
   for (const e of GUIDE) {
     assert.equal(m[e.id].solutions, e.expected.solutions, `${e.id}: expected`);
     if (e.status === 'sound') assert.equal(m[e.id].solutions, m[e.baseline].solutions, `${e.id} vs ${e.baseline}`);

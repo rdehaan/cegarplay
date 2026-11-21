@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Designing the abstraction · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 07</p>
+        <h1>Designing the abstraction</h1>
+        <p class="lead">So far the abstraction was a bare guess, and the check taught it everything. This
+          chapter asks what the abstraction should know in advance, which atoms it should share with
+          the check, and what it must never contain.</p>
+
+        <h2 id="know">The loop learns what the abstraction does not know</h2>
+        <p>Every refinement teaches the abstraction one fact about the solutions. If a fact is cheap
+          to state and true of every solution, there is no need to learn it at run time: write it
+          into the abstraction. The loop then has less to learn, and the abstraction proposes fewer
+          wrong candidates.</p>
+        <p>The rule for what may go in is the rule for refinements: every solution must satisfy it.
+          The abstraction must still over-approximate.</p>
+
+        <h2 id="spectrum">A dial from pure loop to no loop</h2>
+        <p>On the running example, the triangles themselves are such facts. A constant m puts the
+          constraint "this triangle does not survive" into the abstraction for every triangle among
+          the nodes below m:</p>
+        <pre class="code" data-lang="asp" data-from="guide-07-spectrum:abstraction">:- node(U), node(V), node(W), U &lt; V, V &lt; W, W &lt; m,
+   edge(U,V), edge(V,W), edge(U,W), not del(U), not del(V), not del(W).</pre>
+        <p class="listing-source">From the fragment <code>abstraction</code> of <code>guide-07-spectrum</code> (written for c = 3).</p>
+        <p id="spectrum-run">With m = 0 the abstraction knows nothing, and this is the learning loop
+          of chapter 5. With m = n it knows every triangle: every candidate is a solution, and the
+          check only confirms. In between, it knows some.
+          <a class="play" href="../?example=guide-07-spectrum&amp;fragment=abstraction&amp;from=guide/07-abstraction.html%23spectrum-run" target="cegarplay">Open it and vary m in the Control tab</a></p>
+        <table class="results">
+          <thead>
+            <tr><th>m</th><th class="num">Rules of A</th><th class="num">Candidates</th><th class="num">Refinements</th><th class="num">Solutions</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>0</td>
+              <td class="num"><span data-stat="guide-07-spectrum@m=0:rulesA">63</span></td>
+              <td class="num"><span data-stat="guide-07-spectrum@m=0:candidates">96</span></td>
+              <td class="num"><span data-stat="guide-07-spectrum@m=0:refinements">57</span></td>
+              <td class="num"><span data-stat="guide-07-spectrum@m=0:solutions">39</span></td></tr>
+            <tr><td>5</td>
+              <td class="num"><span data-stat="guide-07-spectrum@m=5:rulesA">65</span></td>
+              <td class="num"><span data-stat="guide-07-spectrum@m=5:candidates">84</span></td>
+              <td class="num"><span data-stat="guide-07-spectrum@m=5:refinements">45</span></td>
+              <td class="num"><span data-stat="guide-07-spectrum@m=5:solutions">39</span></td></tr>
+            <tr><td>9</td>
+              <td class="num"><span data-stat="guide-07-spectrum:rulesA">73</span></td>
+              <td class="num"><span data-stat="guide-07-spectrum:candidates">67</span></td>
+              <td class="num"><span data-stat="guide-07-spectrum:refinements">28</span></td>
+              <td class="num"><span data-stat="guide-07-spectrum:solutions">39</span></td></tr>
+            <tr><td>13</td>
+              <td class="num"><span data-stat="guide-07-spectrum@m=13:rulesA">89</span></td>
+              <td class="num"><span data-stat="guide-07-spectrum@m=13:candidates">39</span></td>
+              <td class="num"><span data-stat="guide-07-spectrum@m=13:refinements">0</span></td>
+              <td class="num"><span data-stat="guide-07-spectrum@m=13:solutions">39</span></td></tr>
+          </tbody>
+        </table>
+        <p>The rules of A are those after grounding (Statistics tab, Solvers). Each step of the dial
+          trades ground program for refinements. On this graph the whole program is tiny, so m = n
+          wins: that is the plain single program, possible here because a triangle can be listed in
+          advance. It stops being possible when what the check looks for cannot be listed: cliques
+          of a size c given as input in a large graph grow too fast, and in other problems (the
+          3-colourings of chapter 4, the inputs of chapter 6) the counterexamples are far too many.
+          Put into the abstraction what is cheap to list and often needed; leave the rest to the
+          loop.</p>
+
+        <h2 id="derived">Interface atoms need not be the guessed atoms</h2>
+        <p>The glue decides what the check sees, and so what a refinement can talk about. It does not
+          have to be the atoms the abstraction guesses. If the check depends only on some derived
+          property of the candidate, glue that property instead.</p>
+        <p>The library example <code>subset-sum-game</code> picks a set of
+          numbers; the check asks whether some other numbers make up the difference to a target. The
+          check needs only the sum of the picked numbers, so the abstraction derives
+          <code>xsum(S)</code> and the glue shares just that:</p>
+        <pre class="code" data-lang="asp" data-from="subset-sum-game:glue">glue(xsum(S)) :- S = 0..M, M = #sum { W,I : xnum(I,W) }.</pre>
+        <p class="listing-source">From the fragment <code>glue</code> of <code>subset-sum-game</code>.</p>
+        <p id="derived-example">A refinement then says "the sum is not S", which rules out every set with that sum at once.
+          Gluing <code>pick/1</code> instead would refute one set at a time. The library example
+          <code>af-semi-stable</code> uses the same idea with argumentation frameworks: it glues the derived <code>range/1</code>, not the guessed <code>in/1</code>.
+          <a class="play" href="../?example=subset-sum-game&amp;fragment=glue&amp;from=guide/07-abstraction.html%23derived-example" target="cegarplay">Open subset-sum-game</a>
+          <a class="play" href="../?example=af-semi-stable&amp;fragment=glue&amp;from=guide/07-abstraction.html%23derived-example" target="cegarplay">Open af-semi-stable</a></p>
+
+        <h2 id="private">Witnesses the check does not see</h2>
+        <p>Sometimes the abstraction needs atoms that the check must not see. In
+          the library example <code>diagnosis</code>, a candidate is a set of broken gates of a
+          circuit, and the abstraction also guesses the value of every wire, as a witness that the
+          broken gates explain the observations. The check compares with other sets of broken
+          gates only, so the glue shares <code>broken/2</code> and not the wires. Refinements then
+          speak only of gates, which is right: no counterexample depends on the wires.</p>
+        <p id="private-example">The price is in counting. A solution is an answer set of the abstraction, wires included,
+          so one set of broken gates can be reported once for each wire assignment that fits. In
+          <code>diagnosis</code> the observations fix the wires, so each diagnosis appears once; in
+          general, project the solutions onto the interface atoms when you count them.
+          <a class="play" href="../?example=diagnosis&amp;fragment=glue&amp;from=guide/07-abstraction.html%23private-example" target="cegarplay">Open diagnosis</a></p>
+
+        <h2 id="too-strong">What must never go in</h2>
+        <p>A constraint in the abstraction that some solution violates removes that
+          solution as surely as a too-strong refinement. A tempting one: every node of the Paley graph
+          looks the same as every other (the graph is symmetric), so why not demand that node 0 is
+          deleted?</p>
+        <pre class="code" data-lang="asp" data-from="guide-07-too-strong:abstraction">:- not del(0).</pre>
+        <p class="listing-source">From the fragment <code>abstraction</code> of <code>guide-07-too-strong</code>.</p>
+        <p id="too-strong-run">The loop then reports <span data-stat="guide-07-too-strong:solutions">18</span> solutions
+          instead of <span data-stat="guide-05-paley-block:solutions">39</span>. For the question
+          "is there a solution at all?" the constraint is harmless: by symmetry, if there is one,
+          there is one that deletes node 0. For the list of all solutions it is wrong. The
+          soundness test of chapter 4 catches it, as it catches any other way to cut a solution.
+          <a class="play" href="../?example=guide-07-too-strong&amp;fragment=abstraction&amp;from=guide/07-abstraction.html%23too-strong-run" target="cegarplay">Open the symmetric abstraction</a></p>
+
+        <aside class="theory">
+          <span class="aside-title">Theory</span>
+          <p>Think of the "for all" part as a big conjunction: one constraint per possible
+            counterexample. The single program of chapter 1 would need all of them in advance; this
+            is the full expansion of the quantifier. The loop adds them on demand, one per
+            counterexample. An abstraction that contains some of them in advance sits in between, and
+            the dial m above moves along that line. Chapter 9 adds rules on demand instead of
+            clauses.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>Add a different piece of knowledge to the abstraction: no triangle through node 0
+            survives. Is it sound? Run the soundness test.</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <pre class="code" data-lang="asp" data-from="guide-07-ex1:abstraction">:- edge(0,V), edge(0,W), edge(V,W), not del(0), not del(V), not del(W).</pre>
+            <p>Every solution leaves no triangle, so it satisfies this constraint: it is sound. The
+              loop finds <span data-stat="guide-07-ex1:solutions">39</span> solutions, as the
+              blocking loop does, with <span data-stat="guide-07-ex1:candidates">75</span>
+              candidates instead of <span data-stat="guide-05-paley-clause:candidates">96</span>.
+              <a class="play" href="../?example=guide-07-ex1&amp;fragment=abstraction&amp;from=guide/07-abstraction.html%23exercise-1-solution" target="cegarplay">Open it</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-2">
+          <h2>Exercise 2</h2>
+          <p>The constraint "delete node 0" removes solutions, the constraint "no triangle through
+            node 0 survives" does not. Both are about node 0. What is the difference, as a rule you
+            can apply to any constraint?</p>
+          <details class="solution" id="exercise-2-solution">
+            <summary>Solution</summary>
+            <p>Ask the question of chapter 3: does every solution satisfy it? A solution must break
+              every triangle, so it breaks those through node 0. A solution need not delete node 0; it
+              is only true that <em>some</em> solution does, which is enough for existence but not
+              for the full list.
+              <a class="play" href="../?example=guide-07-too-strong&amp;from=guide/07-abstraction.html%23exercise-2-solution" target="cegarplay">Open the symmetric abstraction</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-cheap-in-advance">Put into the abstraction what is cheap to state and true
+              of every solution; leave to the loop what is too much to list.</li>
+            <li id="rule-glue-what-check-needs">Glue what the check depends on, which may be a
+              derived atom; one refinement then covers every candidate with the same value.</li>
+            <li id="rule-private-witness">Atoms the check need not see stay out of the glue; count
+              solutions on the interface atoms.</li>
+            <li id="rule-nothing-that-cuts">Nothing in the abstraction may cut a solution. Symmetry
+              breaking is for existence, not for lists.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="06-more-per-check.html">&larr; Getting more out of each check</a>
+        <a class="next" href="08-loop-shapes.html">Loop shapes &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

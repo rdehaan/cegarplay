@@ -10,7 +10,8 @@
     "meanClause": 0,
     "maxClause": 0,
     "checkCalls": 175,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 77
   },
   "guide-01-guess": {
     "solutions": 176,
@@ -23,7 +24,8 @@
     "meanClause": 0,
     "maxClause": 0,
     "checkCalls": 176,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
   },
   "guide-01-guess@k=2": {
     "solutions": 56,
@@ -36,7 +38,8 @@
     "meanClause": 0,
     "maxClause": 0,
     "checkCalls": 56,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
   },
   "guide-01-guess@k=4": {
     "solutions": 386,
@@ -49,7 +52,8 @@
     "meanClause": 0,
     "maxClause": 0,
     "checkCalls": 386,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
   },
   "guide-01-one-candidate": {
     "solutions": 0,
@@ -62,7 +66,8 @@
     "meanClause": 10,
     "maxClause": 10,
     "checkCalls": 1,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 39
   },
   "guide-02-block": {
     "solutions": 3,
@@ -75,7 +80,8 @@
     "meanClause": 10,
     "maxClause": 10,
     "checkCalls": 176,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
   },
   "guide-02-block@k=4": {
     "solutions": 45,
@@ -88,7 +94,8 @@
     "meanClause": 10,
     "maxClause": 10,
     "checkCalls": 386,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
   },
   "guide-02-block@k=5": {
     "solutions": 173,
@@ -101,7 +108,8 @@
     "meanClause": 10,
     "maxClause": 10,
     "checkCalls": 638,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
   },
   "guide-02-ex1": {
     "solutions": 0,
@@ -114,7 +122,8 @@
     "meanClause": 7,
     "maxClause": 7,
     "checkCalls": 66,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
   },
   "guide-02-ex2": {
     "solutions": 134,
@@ -127,7 +136,8 @@
     "meanClause": 10,
     "maxClause": 10,
     "checkCalls": 176,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
   },
   "guide-03-relevant-all": {
     "solutions": 3,
@@ -140,7 +150,8 @@
     "meanClause": 10,
     "maxClause": 10,
     "checkCalls": 176,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
   },
   "guide-03-hit-clique": {
     "solutions": 3,
@@ -153,7 +164,8 @@
     "meanClause": 3,
     "maxClause": 3,
     "checkCalls": 13,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
   },
   "guide-03-hit-clique@k=4": {
     "solutions": 45,
@@ -166,7 +178,8 @@
     "meanClause": 3,
     "maxClause": 3,
     "checkCalls": 65,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
   },
   "guide-03-hit-clique@k=5": {
     "solutions": 173,
@@ -179,7 +192,8 @@
     "meanClause": 3,
     "maxClause": 3,
     "checkCalls": 197,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
   },
   "guide-04-one-node": {
     "solutions": 1,
@@ -192,7 +206,358 @@
     "meanClause": 1,
     "maxClause": 1,
     "checkCalls": 4,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 30
+  },
+  "guide-05-paley-block": {
+    "solutions": 39,
+    "candidates": 4096,
+    "counterexamples": 4057,
+    "refinements": 4057,
+    "clauses": 4057,
+    "expansions": 0,
+    "literals": 52741,
+    "meanClause": 13,
+    "maxClause": 13,
+    "checkCalls": 4096,
+    "restarts": 0,
+    "rulesA": 63
+  },
+  "guide-05-paley-block@k=9,n=17": {
+    "solutions": 51,
+    "candidates": 90793,
+    "counterexamples": 90742,
+    "refinements": 90742,
+    "clauses": 90742,
+    "expansions": 0,
+    "literals": 1542614,
+    "meanClause": 17,
+    "maxClause": 17,
+    "checkCalls": 90793,
+    "restarts": 0,
+    "rulesA": 98
+  },
+  "guide-05-paley-clause": {
+    "solutions": 39,
+    "candidates": 96,
+    "counterexamples": 57,
+    "refinements": 57,
+    "clauses": 57,
+    "expansions": 0,
+    "literals": 171,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 96,
+    "restarts": 0,
+    "rulesA": 63
+  },
+  "guide-05-paley-clause@k=9,n=17": {
+    "solutions": 51,
+    "candidates": 185,
+    "counterexamples": 134,
+    "refinements": 134,
+    "clauses": 134,
+    "expansions": 0,
+    "literals": 402,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 185,
+    "restarts": 0,
+    "rulesA": 98
+  },
+  "guide-05-paley-clause@c=4,k=13,n=29": {
+    "solutions": 2436,
+    "candidates": 3086,
+    "counterexamples": 650,
+    "refinements": 650,
+    "clauses": 650,
+    "expansions": 0,
+    "literals": 2600,
+    "meanClause": 4,
+    "maxClause": 4,
+    "checkCalls": 3086,
+    "restarts": 0,
+    "rulesA": 251
+  },
+  "guide-05-paley-record": {
+    "solutions": 39,
+    "candidates": 84,
+    "counterexamples": 45,
+    "refinements": 45,
+    "clauses": 45,
+    "expansions": 0,
+    "literals": 135,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 84,
+    "restarts": 0,
+    "rulesA": 63
+  },
+  "guide-05-paley-record@k=9,n=17": {
+    "solutions": 51,
+    "candidates": 186,
+    "counterexamples": 135,
+    "refinements": 135,
+    "clauses": 135,
+    "expansions": 0,
+    "literals": 405,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 186,
+    "restarts": 0,
+    "rulesA": 98
+  },
+  "guide-06-ex1": {
+    "solutions": 39,
+    "candidates": 40,
+    "counterexamples": 26,
+    "refinements": 26,
+    "clauses": 26,
+    "expansions": 0,
+    "literals": 78,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 40,
+    "restarts": 0,
+    "rulesA": 63
+  },
+  "guide-06-ex1@k=9,n=17": {
+    "solutions": 51,
+    "candidates": 111,
+    "counterexamples": 109,
+    "refinements": 109,
+    "clauses": 109,
+    "expansions": 0,
+    "literals": 327,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 111,
+    "restarts": 0,
+    "rulesA": 98
+  },
+  "guide-06-clauses": {
+    "solutions": 39,
+    "candidates": 77,
+    "counterexamples": 38,
+    "refinements": 49,
+    "clauses": 49,
+    "expansions": 0,
+    "literals": 147,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 77,
+    "restarts": 0,
+    "rulesA": 63
+  },
+  "guide-06-clauses@k=9,n=17": {
+    "solutions": 51,
+    "candidates": 134,
+    "counterexamples": 83,
+    "refinements": 108,
+    "clauses": 108,
+    "expansions": 0,
+    "literals": 324,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 134,
+    "restarts": 0,
+    "rulesA": 98
+  },
+  "guide-06-reason-block": {
+    "solutions": 13,
+    "candidates": 163,
+    "counterexamples": 150,
+    "refinements": 150,
+    "clauses": 150,
+    "expansions": 0,
+    "literals": 1200,
+    "meanClause": 8,
+    "maxClause": 8,
+    "checkCalls": 163,
+    "restarts": 0,
+    "rulesA": 52
+  },
+  "guide-06-reason-clause": {
+    "solutions": 13,
+    "candidates": 29,
+    "counterexamples": 16,
+    "refinements": 16,
+    "clauses": 16,
+    "expansions": 0,
+    "literals": 36,
+    "meanClause": 2.3,
+    "maxClause": 4,
+    "checkCalls": 29,
+    "restarts": 0,
+    "rulesA": 52
+  },
+  "guide-06-reason-smallest": {
+    "solutions": 13,
+    "candidates": 22,
+    "counterexamples": 9,
+    "refinements": 9,
+    "clauses": 9,
+    "expansions": 0,
+    "literals": 18,
+    "meanClause": 2,
+    "maxClause": 2,
+    "checkCalls": 22,
+    "restarts": 0,
+    "rulesA": 52
+  },
+  "guide-07-spectrum": {
+    "solutions": 39,
+    "candidates": 67,
+    "counterexamples": 28,
+    "refinements": 28,
+    "clauses": 28,
+    "expansions": 0,
+    "literals": 84,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 67,
+    "restarts": 0,
+    "rulesA": 73
+  },
+  "guide-07-spectrum@m=0": {
+    "solutions": 39,
+    "candidates": 96,
+    "counterexamples": 57,
+    "refinements": 57,
+    "clauses": 57,
+    "expansions": 0,
+    "literals": 171,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 96,
+    "restarts": 0,
+    "rulesA": 63
+  },
+  "guide-07-spectrum@m=5": {
+    "solutions": 39,
+    "candidates": 84,
+    "counterexamples": 45,
+    "refinements": 45,
+    "clauses": 45,
+    "expansions": 0,
+    "literals": 135,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 84,
+    "restarts": 0,
+    "rulesA": 65
+  },
+  "guide-07-spectrum@m=13": {
+    "solutions": 39,
+    "candidates": 39,
+    "counterexamples": 0,
+    "refinements": 0,
+    "clauses": 0,
+    "expansions": 0,
+    "literals": 0,
+    "meanClause": 0,
+    "maxClause": 0,
+    "checkCalls": 39,
+    "restarts": 0,
+    "rulesA": 89
+  },
+  "guide-07-too-strong": {
+    "solutions": 18,
+    "candidates": 46,
+    "counterexamples": 28,
+    "refinements": 28,
+    "clauses": 28,
+    "expansions": 0,
+    "literals": 84,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 46,
+    "restarts": 0,
+    "rulesA": 64
+  },
+  "guide-07-ex1": {
+    "solutions": 39,
+    "candidates": 75,
+    "counterexamples": 36,
+    "refinements": 36,
+    "clauses": 36,
+    "expansions": 0,
+    "literals": 108,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 75,
+    "restarts": 0,
+    "rulesA": 69
+  },
+  "guide-08-shape2": {
+    "solutions": 39,
+    "candidates": 65,
+    "counterexamples": 26,
+    "refinements": 65,
+    "clauses": 65,
+    "expansions": 0,
+    "literals": 585,
+    "meanClause": 9,
+    "maxClause": 13,
+    "checkCalls": 65,
+    "restarts": 0,
+    "rulesA": 63
+  },
+  "guide-08-shape2@c=4,k=13,n=29": {
+    "solutions": 2436,
+    "candidates": 2639,
+    "counterexamples": 203,
+    "refinements": 2639,
+    "clauses": 2639,
+    "expansions": 0,
+    "literals": 71456,
+    "meanClause": 27.1,
+    "maxClause": 29,
+    "checkCalls": 2639,
+    "restarts": 0,
+    "rulesA": 251
+  },
+  "guide-08-shape4": {
+    "solutions": 39,
+    "candidates": 119,
+    "counterexamples": 80,
+    "refinements": 160,
+    "clauses": 160,
+    "expansions": 0,
+    "literals": 1280,
+    "meanClause": 8,
+    "maxClause": 13,
+    "checkCalls": 119,
+    "restarts": 8,
+    "rulesA": 63
+  },
+  "guide-08-shape4@c=4,k=13,n=29": {
+    "solutions": 2436,
+    "candidates": 2956,
+    "counterexamples": 520,
+    "refinements": 1040,
+    "clauses": 1040,
+    "expansions": 0,
+    "literals": 17160,
+    "meanClause": 16.5,
+    "maxClause": 29,
+    "checkCalls": 2956,
+    "restarts": 52,
+    "rulesA": 251
+  },
+  "guide-08-forgot-block": {
+    "solutions": 1,
+    "candidates": 13,
+    "counterexamples": 11,
+    "refinements": 11,
+    "clauses": 11,
+    "expansions": 0,
+    "literals": 33,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 12,
+    "restarts": 0,
+    "rulesA": 63
   },
   "gc-reference": {
     "solutions": 101,
@@ -205,7 +570,8 @@
     "meanClause": 40,
     "maxClause": 40,
     "checkCalls": 3373,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 249
   },
   "gc-shape1": {
     "solutions": 101,
@@ -218,7 +584,8 @@
     "meanClause": 13,
     "maxClause": 14,
     "checkCalls": 1421,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 249
   },
   "graph-coloring-original@n=5": {
     "solutions": 101,
@@ -231,7 +598,8 @@
     "meanClause": 4.6,
     "maxClause": 9,
     "checkCalls": 276,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 249
   },
   "graph-coloring": {
     "solutions": 10698,
@@ -244,7 +612,8 @@
     "meanClause": 18,
     "maxClause": 20,
     "checkCalls": 31776,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 403
   },
   "graph-coloring-original": {
     "solutions": 9270,
@@ -257,6 +626,35 @@
     "meanClause": 7.5,
     "maxClause": 14,
     "checkCalls": 16577,
-    "restarts": 0
+    "restarts": 0,
+    "rulesA": 403
+  },
+  "clique-interdiction": {
+    "solutions": 39,
+    "candidates": 68,
+    "counterexamples": 42,
+    "refinements": 42,
+    "clauses": 42,
+    "expansions": 0,
+    "literals": 126,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 68,
+    "restarts": 0,
+    "rulesA": 63
+  },
+  "clique-interdiction@k=9,n=17": {
+    "solutions": 51,
+    "candidates": 124,
+    "counterexamples": 115,
+    "refinements": 115,
+    "clauses": 115,
+    "expansions": 0,
+    "literals": 345,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 124,
+    "restarts": 0,
+    "rulesA": 98
   }
 }

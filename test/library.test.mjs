@@ -36,9 +36,11 @@ for (const e of lib.examples.filter((x) => x.tags.includes('fast') && x.expected
     const p = H.example(e.id);
     p.settings = { ...p.settings, solutions: 0, trace: 0 };
     const r = await H.runProject(p);
-    assert.equal(H.last(r, 'E'), undefined, JSON.stringify(H.last(r, 'E')));
+    // A guide example may show a guard on purpose (outcome 'error' in the manifest).
+    const outcome = e.outcome || 'finished';
+    if (outcome === 'finished') assert.equal(H.last(r, 'E'), undefined, JSON.stringify(H.last(r, 'E')));
     assert.equal(H.finalStats(r).solutions, e.expected.solutions);
-    assert.equal(H.done(r).outcome, 'finished');
+    assert.equal(H.done(r).outcome, outcome);
   });
 }
 
