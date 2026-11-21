@@ -78,6 +78,49 @@ export class Control {
 
   get busy() { return ['validating', 'running', 'paused'].includes(this.state); }
 
+  // ---- live check of the fragments: clingo --mode=gringo on each edited fragment, 800 ms
+  // after the last edit, only while no run is active. A newer edit or a run drops the result.
+  scheduleFragmentCheck(name) {
+    if (!this.fragDirty) this.fragDirty = new Set();
+    this.fragDirty.add(name);
+    this.fragSeq = (this.fragSeq || 0) + 1;
+    clearTimeout(this.fragTimer);
+    this.fragTimer = setTimeout(() => this.checkFragments(), 800);
+  }
+
+  cancelFragmentCheck() {
+    clearTimeout(this.fragTimer);
+    this.fragSeq = (this.fragSeq || 0) + 1;
+    if (this.fragDirty) this.fragDirty.clear();
+  }
+
+  async checkFragments() {
+    const app = this.app;
+    if (this.busy || !this.fragDirty || !this.fragDirty.size) return;
+    if (!app.ready || app.engine.active) { this.fragTimer = setTimeout(() => this.checkFragments(), 300); return; }
+    const seq = this.fragSeq;
+    const names = [...this.fragDirty];
+    this.fragDirty.clear();
+    const p = structuredClone(app.collect());
+    p.fragments = p.fragments.filter((f) => names.includes(f.name));
+    if (!p.fragments.length) return;
+    p.loop = { language: 'lua', text: '' };      // every fragment on its own
+    let problems;
+    this.fragCheck = validate(p, (prog, o) => app.engine.exec(prog, o));
+    try { problems = await this.fragCheck; }
+    catch { return; }
+    finally { this.fragCheck = null; }
+    if (seq !== this.fragSeq || this.busy) {
+      if (!this.busy) for (const n of names) this.fragDirty.add(n);   // checked again with the newer edit
+      return;
+    }
+    if (problems.some((x) => x.where && x.where.kind === 'settings')) return;   // constants first
+    for (const n of names) {
+      const mine = problems.filter((x) => x.where && x.where.kind === 'fragment' && x.where.name === n);
+      app.editors.setMarks(n, mine.map((x) => ({ line: x.where.line, col: x.where.col, message: x.message, severity: x.severity })));
+    }
+  }
+
   // Validate, assemble and start. Resolves when the run is over.
   async run({ seed } = {}) {
     const app = this.app;
@@ -85,6 +128,8 @@ export class Control {
     this.setState('validating');
     this.runMessage('');
     if (app.loopTab) app.loopTab.cancelLiveCheck();
+    this.cancelFragmentCheck();
+    if (this.fragCheck) await this.fragCheck.catch(() => {});
     const project = structuredClone(app.collect());
     if (seed !== undefined) project.settings.seed = seed;
     app.editors.clearAnnotations();

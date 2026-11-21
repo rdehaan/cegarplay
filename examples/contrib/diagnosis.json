@@ -46,7 +46,7 @@
   },
   "library": {
     "id": "diagnosis",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Minimal diagnoses of a faulty full adder that blame a given gate: minimal models with varying wires (suspect = x2, 2 solutions).",
     "shape": "shape1",
     "tags": [

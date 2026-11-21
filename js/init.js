@@ -9,11 +9,30 @@ import { LoopTab } from './loop-tab.js';
 import { Internals } from './internals.js';
 import { makeEditor } from './editors.js';
 import { renderMarkdown } from './markdown.js';
+import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const app = { ready: false, project: Project.newProject() };
 window.cegarplay = app;
+
+// ---- the address bar: ?example=<id> and ?tab=N follow the page (replaceState, no history entries)
+const KEEP_PARAMS = ['nocoi', 'manual', 'internals', 'from', 'tab'];
+function setUrl({ example, tab, keepHash = false } = {}) {
+  const now = new URLSearchParams(location.search);
+  const next = new URLSearchParams();
+  if (example) next.set('example', example);
+  for (const k of KEEP_PARAMS) if (now.has(k)) next.set(k, now.get(k));
+  if (tab !== undefined) { if (tab) next.set('tab', tab); else next.delete('tab'); }
+  const q = next.toString();
+  const hash = keepHash ? location.hash : '';
+  try { history.replaceState(history.state, '', location.pathname + (q ? '?' + q : '') + hash); } catch { /* sandboxed */ }
+}
+// The project is no longer the one the URL names (edited, or replaced by a file or a new project).
+function urlForgetProject() {
+  const now = new URLSearchParams(location.search);
+  if (now.has('example') || now.has('file') || now.has('fragment') || shareData(location.hash) !== null) setUrl({});
+}
 
 // Internals tab only with ?internals=true
 if (params.get('internals') !== 'true') {
@@ -134,7 +153,10 @@ function saveNow() {
 }
 // edit = false: save, but the project was not edited (e.g. the run history changed)
 app.dirty = (edit = true) => {
-  if (edit) { app.edited = true; app.saveBlocked = false; }
+  if (edit) {
+    if (app.restoredOrLoaded) urlForgetProject();
+    app.edited = true; app.saveBlocked = false;
+  }
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 800);
 };
@@ -158,7 +180,7 @@ function status(id, text, error = false) {
   e.classList.toggle('error', error);
 }
 
-async function loadExample(name, opts) {
+async function loadExample(name, opts, { url = false } = {}) {
   if (!/^[A-Za-z0-9_-]+$/.test(name)) throw new Error(`invalid example name ${name}`);
   const r = await fetch(`examples/${name}.json`);
   if (!r.ok) {
@@ -170,6 +192,7 @@ async function loadExample(name, opts) {
   app.setProject(Project.load(await r.text()), opts);
   app.exampleId = name;
   markLoadedExample();
+  if (url) setUrl({ example: name });
 }
 
 // ---- the example library (examples/library.json) ------------------------------------
@@ -256,7 +279,7 @@ document.addEventListener('click', async (ev) => {
   if (!guard() || !replaceOk()) return;
   const name = btn.dataset.loadExample;
   try {
-    await loadExample(name);
+    await loadExample(name, undefined, { url: true });
     status('load-status', `Loaded example "${app.project.title}".`);
     const t = btn.dataset.tab;
     if (t && $('tab' + t)) { $('tab' + t).checked = true; requestAnimationFrame(resizeVisibleEditors); }
@@ -294,6 +317,7 @@ const replaceOk = () => !app.edited || window.confirm('Replace the current proje
 $('new-button').addEventListener('click', () => {
   if (!guard() || !replaceOk()) return;
   app.setProject(Project.starterProject());
+  urlForgetProject();
   status('new-status', 'Started a new project. See the Programs tab.');
 });
 
@@ -302,7 +326,7 @@ $('file-input').addEventListener('change', async (ev) => {
   const f = ev.target.files[0];
   ev.target.value = '';
   if (!f || !guard() || !replaceOk()) return;
-  try { app.setProject(Project.load(await f.text())); status('upload-status', `Loaded ${f.name}.`); }
+  try { app.setProject(Project.load(await f.text())); urlForgetProject(); status('upload-status', `Loaded ${f.name}.`); }
   catch (e) { status('upload-status', `${f.name}: ${e.message || e}`, true); }
 });
 
@@ -310,6 +334,16 @@ $('download-button').addEventListener('click', () => {
   const p = structuredClone(app.collect());
   p.runs = $('include-history').checked ? app.stats.history : [];
   download(slug(p.title) + '.json', Project.save(p));
+});
+
+$('share-button').addEventListener('click', async () => {
+  try {
+    const data = await encodeShare(structuredClone(app.collect()));
+    const link = `${location.origin}${location.pathname}${SHARE_PREFIX}${data}`;
+    const long = link.length > LONG_LINK ? ` It is ${link.length.toLocaleString('en')} characters long: some mail and chat programs cut links that long; download the project file instead.` : '';
+    try { await navigator.clipboard.writeText(link); status('share-status', `Copied a share link for "${app.project.title || 'Untitled'}".${long}`, !!long); }
+    catch { status('share-status', `Share link (copy it by hand): ${link}`, !!long); }
+  } catch (e) { status('share-status', `No share link: ${e.message || e}`, true); }
 });
 
 $('export-standalone-button').addEventListener('click', () => {
@@ -408,7 +442,10 @@ function resizeVisibleEditors() {
   }
 }
 for (const r of document.querySelectorAll('input[name="tabs"]')) {
-  r.addEventListener('change', () => requestAnimationFrame(resizeVisibleEditors));
+  r.addEventListener('change', () => {
+    requestAnimationFrame(resizeVisibleEditors);
+    if (r.checked) setUrl({ example: new URLSearchParams(location.search).get('example'), tab: r.id === 'tab1' ? '' : r.id.slice(3), keepHash: true });
+  });
 }
 app.resizeVisibleEditors = resizeVisibleEditors;
 
@@ -422,6 +459,8 @@ addEventListener('keydown', (ev) => {
 }, true);
 
 // ---- start ------------------------------------------------------------------------
+// What a first visit opens with: small and fast (graph-coloring stays in the library).
+const DEFAULT_EXAMPLE = 'tutorial-first-run';
 async function start() {
   const [runtime, version] = await Promise.all([
     fetch('lua/runtime.lua').then((r) => r.text()),
@@ -432,9 +471,20 @@ async function start() {
   app.engineVersion = version.split('\n')[0];
   // ?example=<id> (or the older ?file=<id>) loads an example of the library
   const named = params.get('example') || params.get('file');
-  const file = named || 'graph-coloring';
-  const stored = named || params.get('fresh') === '1' ? null : storedProject();
-  let restored = false;
+  const file = named || DEFAULT_EXAMPLE;
+  const shared = shareData(location.hash);
+  const stored = named || shared !== null || params.get('fresh') === '1' ? null : storedProject();
+  let restored = false, shareError = null;
+  if (shared !== null) {
+    // #p=<data>: like ?example=, it does not replace the kept project until it is edited
+    try {
+      app.setProject(await decodeShare(shared), { save: false });
+      restored = true;
+      status('load-status', `Opened "${app.project.title || 'Untitled'}" from a share link. It is kept in this browser once you edit it.`);
+    } catch (e) {
+      shareError = `The share link could not be opened: ${e.message || e}`;
+    }
+  }
   if (stored) {
     try {
       app.setProject(stored);
@@ -447,12 +497,15 @@ async function start() {
   }
   if (!restored) {
     // A project named in the URL does not replace the one kept in the browser until it is edited.
-    const save = !named && params.get('fresh') !== '1' && !stored;
+    const save = !named && shared === null && params.get('fresh') !== '1' && !stored;
     try { await loadExample(file, { save }); status('load-status', `Loaded example "${app.project.title}".`); }
     catch (e) { status('load-status', String(e.message || e), true); app.setProject(Project.newProject(), { save: false }); }
+    if (shareError) status('load-status', `${shareError}. Opened the example "${app.project.title}" instead.`, true);
   }
   if (named && !restored && app.exampleId === named && params.get('fragment')) openFragment(params.get('fragment'));
   app.restoredOrLoaded = true;
+  // nothing kept in this browser: show the library open
+  if (!stored && !named && shared === null) $('library-section').open = true;
   buildLibrary();
   await app.engine.ready;
   app.ready = true;

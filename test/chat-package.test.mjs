@@ -61,7 +61,12 @@ test('contrib: a project with a library block becomes a library entry; bad block
   try {
     const { files, manifest } = buildAll({ contribDir: url });
     const e = manifest.examples.find((x) => x.id === 'demo');
-    assert.deepEqual([e.group, e.expected], ['problems', { solutions: 4 }]);
+    assert.deepEqual([e.group, e.expected], ['exists-forall', { solutions: 4 }]);
+    // the older group name is sorted by the loop
+    fs.writeFileSync(join(dir, 'a.json'), JSON.stringify({ ...t, library: { ...t.library, id: 'demo', group: 'problems' } }));
+    assert.equal(loadContrib(url)[0].group, 'exists-forall');
+    fs.writeFileSync(join(dir, 'a.json'), JSON.stringify({ ...t, loop: { language: 'lua', text: '' }, library: { ...t.library, id: 'demo', group: 'problems' } }));
+    assert.equal(loadContrib(url)[0].group, 'several-solvers');
     assert.equal(files.demo.library, undefined);
     assert.equal(files.demo.title, 'My problem');
     for (const [lib2, msg] of [[{ ...t.library, id: 'nash' }, /already used/], [{ ...t.library, id: 'a b' }, /library\.id/],

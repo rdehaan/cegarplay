@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "stable-models",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Stable models of a disjunctive program given as facts: classical models checked against the reduct (11 atoms, 22 rules, 3 solutions).",
     "shape": "shape1",
     "tags": [

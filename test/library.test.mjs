@@ -30,7 +30,7 @@ test('every Load button of the tutorial names a library example', () => {
   assert.ok(ids.length >= 15, `only ${ids.length} buttons`);
   const known = new Set(lib.examples.map((e) => e.id));
   for (const id of ids) assert.ok(known.has(id), `unknown example ${id}`);
-  for (const e of lib.examples.filter((x) => !['problems', 'guide'].includes(x.group))) assert.ok(ids.includes(e.id), `${e.id} is not in the tutorial`);
+  for (const e of lib.examples.filter((x) => !['problems', 'exists-forall', 'several-solvers', 'guide'].includes(x.group))) assert.ok(ids.includes(e.id), `${e.id} is not in the tutorial`);
 });
 
 for (const e of lib.examples.filter((x) => x.tags.includes('fast') && x.expected)) {
@@ -83,4 +83,16 @@ test('tools/run.mjs: the time limit ends a loop without solver calls, and the ba
   assert.equal(r2.status, 1);
   assert.ok(Date.now() - t0 < 10000);
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('C5: the manual\'s library table lists the manifest\'s groups and ids', () => {
+  const man = H.read('manual.md');
+  const sec = man.slice(man.indexOf('## Example library'), man.indexOf('## For agents'));
+  const rows = new Map([...sec.matchAll(/^\| `?([a-z-]+)`? \| (.*) \|$/gm)].map((m) => [m[1], m[2]]));
+  for (const g of lib.groups) {
+    assert.ok(rows.has(g.id), `the manual has no row for group ${g.id}`);
+    if (g.id === 'guide') continue;
+    const ids = [...rows.get(g.id).matchAll(/`([^`]+)`/g)].map((m) => m[1]).sort();
+    assert.deepEqual(ids, lib.examples.filter((e) => e.group === g.id).map((e) => e.id).sort(), g.id);
+  }
 });

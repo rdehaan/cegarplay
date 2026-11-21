@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "belief-update",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Updating beliefs by minimal change (possible-models approach): old and new worlds that refute a query, checked against closer worlds (7 atoms, 8 solutions).",
     "shape": "shape1",
     "tags": [

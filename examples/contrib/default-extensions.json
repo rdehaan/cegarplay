@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "default-extensions",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Extensions of prerequisite-free normal defaults that entail a query: two kinds of counterexample in one check (Nixon diamond, 7 defaults, 3 solutions).",
     "shape": "shape2",
     "tags": [

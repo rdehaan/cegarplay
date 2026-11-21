@@ -53,6 +53,7 @@ test('B1: ?tab=N still opens that tab', async () => {
 
 test('B2: the file control is in the Tab order and Enter opens the file dialog', async () => {
   const { page, context } = await B.openPage(browser, server);
+  await page.waitForSelector('#library .library-group');
   await page.evaluate(() => document.activeElement && document.activeElement.blur());
   const a = await tabUntil(page, (x) => x.id === 'file-button', 80);
   assert.ok(a, 'Select file is reachable with Tab');

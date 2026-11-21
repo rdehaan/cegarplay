@@ -46,7 +46,7 @@
   },
   "library": {
     "id": "kemeny-control",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Deleting a few voters so that the favourite becomes a Kemeny winner; better rankings are collected and grounded in batches (Shape 4; 7 voters, budget = 2, 3 solutions).",
     "shape": "shape4",
     "tags": [

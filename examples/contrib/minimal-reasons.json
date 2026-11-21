@@ -44,7 +44,7 @@
   },
   "library": {
     "id": "minimal-reasons",
-    "group": "problems",
+    "group": "several-solvers",
     "summary": "Subset-minimal sufficient reasons with two checks: a counterexample for sufficiency, a witness with unsat cores for minimality (8 features, 4 solutions).",
     "shape": "custom",
     "tags": [

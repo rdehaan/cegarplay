@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "reasons-by-shrinking",
-    "group": "problems",
+    "group": "several-solvers",
     "summary": "Minimal sufficient reasons by shrinking accepted candidates with hand-made assumption lists, in raw Lua (8 features, 4 solutions).",
     "shape": "custom",
     "tags": [

@@ -182,7 +182,15 @@ export function buildExamples() {
 
 // Contributed examples: examples/contrib/*.json, each a project with a top-level
 // 'library' block { id, group, summary, shape, tags, expected }. Returns library entries.
-export const CONTRIB_GROUPS = ['problems'];
+// 'problems' (the older name) is sorted by the loop: raw Lua or more than two solvers ->
+// several-solvers, else exists-forall.
+export const CONTRIB_GROUPS = ['exists-forall', 'several-solvers', 'problems'];
+function contribGroup(group, project) {
+  if (group !== 'problems') return group;
+  const l = project.loop;
+  const solvers = l.language === 'lua' ? Infinity : (l.text.match(/^\s*solver\s/gm) || []).length;
+  return solvers > 2 ? 'several-solvers' : 'exists-forall';
+}
 export function loadContrib(dir = new URL('examples/contrib/', root), taken = new Set()) {
   if (!fs.existsSync(dir)) return [];
   const out = [];
@@ -194,7 +202,7 @@ export function loadContrib(dir = new URL('examples/contrib/', root), taken = ne
     try { raw = JSON.parse(fs.readFileSync(new URL(name, dir), 'utf8')); } catch (e) { fail(`not JSON: ${e.message}`); }
     const lib = raw && raw.library;
     if (!lib || typeof lib !== 'object') fail('no "library" block');
-    const { id, group = 'problems', summary, shape, tags = [], expected = null } = lib;
+    const { id, group = 'exists-forall', summary, shape, tags = [], expected = null } = lib;
     if (typeof id !== 'string' || !/^[A-Za-z0-9_-]+$/.test(id)) fail(`library.id must match [A-Za-z0-9_-]+, got ${JSON.stringify(id)}`);
     if (taken.has(id)) fail(`library.id '${id}' is already used`);
     if (!CONTRIB_GROUPS.includes(group)) fail(`library.group must be one of ${CONTRIB_GROUPS.join(', ')}`);
@@ -206,7 +214,7 @@ export function loadContrib(dir = new URL('examples/contrib/', root), taken = ne
     let project;
     try { project = load(JSON.stringify(rest)); } catch (e) { fail(e.message); }
     taken.add(id);
-    out.push({ id, group, summary, shape, tags, expected, project });
+    out.push({ id, group: contribGroup(group, project), summary, shape, tags, expected, project });
   }
   return out;
 }

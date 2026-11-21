@@ -41,7 +41,7 @@
   },
   "library": {
     "id": "arrowing",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Edge colourings of K_n without a red triangle and without a blue 4-cycle; the check embeds a pattern graph (n = 6, 100 solutions; n = 7, none).",
     "shape": "shape1",
     "tags": [

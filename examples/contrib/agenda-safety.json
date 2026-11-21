@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "agenda-safety",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Minimally inconsistent subsets of an agenda with three or more formulas, the witnesses that majority voting is unsafe (doctrinal paradox agenda, 6 solutions).",
     "shape": "shape2",
     "tags": [

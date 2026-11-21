@@ -578,6 +578,11 @@ link, parse its fragments with `clingo --mode=gringo` and the constants (syntax 
 variables marked in the Programs tab, with fragment and line); check `expand` parts; check
 constants; check `-t` against the engine. A run starts only without errors.
 
+While you type, each edited fragment is parsed on its own with `clingo --mode=gringo` 0.8 s after
+the last change (only while no run is active; a run cancels a pending check, and the result of an
+older edit is dropped). Syntax errors and unsafe variables are then marked at once, as the loop
+script is compiled 0.5 s after each edit.
+
 | Run status | Meaning |
 | --- | --- |
 | `idle`, `validating`, `running`, `paused` | As named. |
@@ -659,8 +664,17 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown). |
 | `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
 | `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
-| `?fresh=1` | Start from the default example, ignoring the kept project. |
+| `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
+| `#p=<data>` | A share link (**Copy share link** in the Control tab): the whole project without its run history, in the URL fragment, which never reaches the server. `<data>` is `z` + base64url of the deflate-raw compressed project JSON (`u` + base64url of the plain JSON in a browser without `CompressionStream`). Takes precedence over the kept project and, like `?example`, does not replace it until you edit. A damaged link opens the default example with an error in the status line. Links over 8,000 characters get a warning. |
 | `?nocoi=1` | Do not use the isolation service worker (and remove it). Pause, Step, Stop and threads are then unavailable. |
+
+The address bar follows the page (without new history entries): loading an example from the library
+or the tutorial sets `?example=<id>`, switching tabs sets `?tab=N` (none for the Control tab), and
+the first edit, a new project or an uploaded file removes `?example`, `?fragment` and `#p=`. A reload
+therefore shows the same example on the same tab. `nocoi`, `manual`, `internals` and `from` are kept.
+
+With nothing kept in the browser the page opens with `tutorial-first-run` (a run of 0.1 s) and the
+example library unfolded.
 
 Example: `?example=gc-shape4&tab=5` loads graph colouring with Shape 4 and opens the Output tab.
 The guide's links look like `?example=guide-01-demo-clause&fragment=check&from=guide/01-why-a-loop.html%23demo-clause`.
@@ -668,7 +682,7 @@ The guide's links look like `?example=guide-01-demo-clause&fragment=check&from=g
 Browser storage (`localStorage`, per browser and site):
 
 - `cegarplay.project`: the project being edited, with its run history, saved 0.8 s after each
-  change and restored at start-up (unless `?example`, `?file` or `?fresh=1`).
+  change and restored at start-up (unless `?example`, `?file`, `#p=` or `?fresh=1`).
 - `cegarplay.manual`: `"1"` when "Show the technical manual" is ticked.
 - `cegarplay.theme`: `"light"` or `"dark"` when the colour theme was chosen by hand (absent for Auto).
 
@@ -702,13 +716,13 @@ with the example's own settings, checked by `test/library.test.mjs` for every ex
 
 | Group | Ids |
 | --- | --- |
-| tutorial | `starter`, `tutorial-first-run`, `tutorial-weak-relevant` |
-| language | `lang-basics`, `lang-several-cex`, `lang-optimal`, `lang-two-stage`, `lang-clauses`, `lang-core`, `lang-second-solver`, `lang-legacy`, `lang-raw-lua` |
-| shapes | `gc-shape1`, `gc-shape2`, `gc-shape3`, `gc-shape4`, `gc-reference` |
-| guide | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
-| problems | `graph-coloring`, `graph-coloring-original`, `nash`, `voting-justification` |
-| problems (contributed, exists-forall) | `qbf`, `qbf-optimal`, `qbf-expansion`, `smallest-mus`, `min-dnf`, `integer-expressions`, `strategic-companies`, `diagnosis`, `stable-models`, `abduction`, `default-extensions`, `belief-update`, `af-preferred`, `af-semi-stable`, `conformant-planning`, `sufficient-reason`, `actual-cause`, `clique-interdiction`, `clique-colouring`, `arrowing`, `choosability`, `subset-sum-game`, `knapsack-interdiction`, `fewest-clues`, `fair-division`, `hedonic-core`, `boolean-game`, `strong-nash`, `kemeny-control`, `agenda-safety` |
-| problems (contributed, several solvers or raw Lua) | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking` |
+| `tutorial` | `starter`, `tutorial-first-run`, `tutorial-weak-relevant` |
+| `language` | `lang-basics`, `lang-several-cex`, `lang-optimal`, `lang-two-stage`, `lang-clauses`, `lang-core`, `lang-second-solver`, `lang-legacy`, `lang-raw-lua` |
+| `shapes` | `gc-shape1`, `gc-shape2`, `gc-shape3`, `gc-shape4`, `gc-reference` |
+| `guide` | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
+| `problems` | `graph-coloring`, `graph-coloring-original`, `nash`, `voting-justification` |
+| `exists-forall` | `qbf`, `qbf-optimal`, `qbf-expansion`, `smallest-mus`, `min-dnf`, `integer-expressions`, `strategic-companies`, `diagnosis`, `stable-models`, `abduction`, `default-extensions`, `belief-update`, `af-preferred`, `af-semi-stable`, `conformant-planning`, `sufficient-reason`, `actual-cause`, `clique-interdiction`, `clique-colouring`, `arrowing`, `choosability`, `subset-sum-game`, `knapsack-interdiction`, `fewest-clues`, `fair-division`, `hedonic-core`, `boolean-game`, `strong-nash`, `kemeny-control`, `agenda-safety` |
+| `several-solvers` | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.
 
@@ -723,8 +737,8 @@ run `node tools/make-examples.mjs`, measure its count with `node tools/run.mjs <
 count in `expected`.
 
 Without editing the tools: put a project file with a top-level `library` block
-(`{ "id", "group": "problems", "summary", "shape", "tags", "expected" }`, where `expected` is the
-solution count or `null`) in `examples/contrib/`; `node tools/make-examples.mjs` adds it to the
+(`{ "id", "group", "summary", "shape", "tags", "expected" }`, where `group` is `exists-forall` or
+`several-solvers` and `expected` is the solution count or `null`) in `examples/contrib/`; `node tools/make-examples.mjs` adds it to the
 library (the block is dropped from `examples/<id>.json`). See `examples/contrib/README.md`.
 `node tools/make-chat-package.mjs` writes `dist/chat-package/`, a flat folder (this manual, the
 tutorial, every example, a template, the checker below, a guide) for writing examples in a chat

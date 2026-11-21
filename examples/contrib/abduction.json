@@ -41,7 +41,7 @@
   },
   "library": {
     "id": "abduction",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Propositional abduction: consistent hypothesis sets that entail the observation, with a hidden consistency witness in the abstraction (7 hypotheses, k = 2, 17 solutions).",
     "shape": "shape2",
     "tags": [

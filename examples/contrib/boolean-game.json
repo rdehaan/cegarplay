@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "boolean-game",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Pure Nash equilibria of a Boolean game: a counterexample is a player with a profitable deviation (4 players, 8 variables, 6 solutions).",
     "shape": "shape1",
     "tags": [

@@ -97,7 +97,11 @@ export class Editors {
     const editor = makeEditor(box, 'ace/mode/gringo');
     editor.setValue(f.text || '', -1);
     editor.session.getUndoManager().reset();
-    editor.session.on('change', () => { this.clearFor(name); this.app.dirty && this.app.dirty(); });
+    editor.session.on('change', () => {
+      this.clearFor(name);
+      this.app.dirty && this.app.dirty();
+      if (this.app.control && !this.readOnly) this.app.control.scheduleFragmentCheck(name);
+    });
     this.fragments.set(name, { editor, block, heading, desc });
   }
 
@@ -157,6 +161,7 @@ export class Editors {
     ed.session.setAnnotations(anns);
     if (anns.length) { this.marked.add(key); this.serious.add(key); }
     else { this.marked.delete(key); this.serious.delete(key); }
+    if (key !== 'loop') this.fragments.get(key).heading.classList.toggle('has-problem', anns.length > 0);
     this.updateTabMarkers();
   }
 

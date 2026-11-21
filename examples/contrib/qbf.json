@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "qbf",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Exists-forall QBF with a DNF matrix: clause refinements from the false x-literals of the open terms (6 + 5 variables, 12 terms, 5 solutions).",
     "shape": "shape1",
     "tags": [

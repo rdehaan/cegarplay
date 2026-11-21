@@ -335,6 +335,22 @@ Notes for the guide phases (checked against the code before G0a):
 - B6: `js/modal.js` sets the dialog roles at load, moves focus in and back, traps Tab.
 - Tests: `test/browser/a11y.test.mjs` (also the A4 page check).
 
+### Group C: features (done)
+- C1: `js/share.js` (DOM-free; `CompressionStream` deflate-raw + base64url, prefix `z`, plain `u`).
+  "Copy share link" in the Control tab; `#p=` at start-up beats the kept project, `save: false`.
+  A damaged link opens the default example with the error in the status line.
+- C2: `setUrl`/`urlForgetProject` in `js/init.js`: library/tutorial loads set `?example=`, tab
+  changes set `?tab=`; the first edit (`app.dirty` after start-up), New project and Upload drop
+  `example`, `fragment` and `#p=`.
+- C3: `Control.scheduleFragmentCheck` (800 ms, per edited fragment, raw-Lua style validation so a
+  broken loop script does not hide fragment errors); sequence number drops stale results; `run()`
+  cancels and awaits a running check before its own validation (the engine runs one job at a time).
+- C4 (owner approved): first visit opens `tutorial-first-run`; browser tests that relied on
+  graph-coloring now name it (`?example=graph-coloring`).
+- C5: groups `problems` (4), `exists-forall` (30), `several-solvers` (7); the contrib files carry the
+  group (the older `problems` is sorted by the loop: raw Lua or > 2 solvers). Example files are
+  byte-identical; only `examples/library.json` changed (groups only). Library unfolded on a first visit.
+
 ## Next step
 
 All phases of PLAN.md and of the guide are done. Open items for the user: deployment to GitHub

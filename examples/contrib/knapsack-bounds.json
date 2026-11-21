@@ -47,7 +47,7 @@
   },
   "library": {
     "id": "knapsack-bounds",
-    "group": "problems",
+    "group": "several-solvers",
     "summary": "The bilevel knapsack optimisation in raw Lua: numbers read from models give lower and upper bounds that are logged until they meet (optimum 25, 2 solutions).",
     "shape": "custom",
     "tags": [

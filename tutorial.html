@@ -33,7 +33,7 @@
 <p>
   A set of numbers is <i>sum-free</i> if no two members (possibly the same one twice) add up to a third member.
   The first example lists all sum-free subsets of 1..8. Solver <code>A</code> guesses any set; solver
-  <code>C</code> looks for a sum inside it.
+  <code>C</code> looks for a sum inside it. On a first visit the page opens with it already loaded.
 </p>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="tutorial-first-run">Load: Sum-free sets</button></p>
 <p>Run it. It takes a fraction of a second, and the run bar shows
@@ -89,7 +89,7 @@ search A:
     must change its value. A candidate that is not rejected is a solution.</li>
 </ul>
 <p>
-  The same structure, at a larger scale: the default example looks for connected graphs on <code>n</code> nodes with a
+  The same structure, at a larger scale: the graph colouring example looks for connected graphs on <code>n</code> nodes with a
   colouring of the leaves that no proper 3-colouring of the whole graph extends. Guessing a graph is easy;
   checking that <em>no</em> colouring exists is the hard part, so it goes to the check solver, and a counterexample
   is a colouring. Its fragments have comments; read them in the Programs tab.

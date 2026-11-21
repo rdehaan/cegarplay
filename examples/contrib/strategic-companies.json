@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "strategic-companies",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Strategic sets of companies that contain a given company; minimality is refuted by a smaller set, refined with G.clauses (8 companies, 2 solutions).",
     "shape": "custom",
     "tags": [

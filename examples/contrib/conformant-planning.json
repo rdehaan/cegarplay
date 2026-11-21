@@ -46,7 +46,7 @@
   },
   "library": {
     "id": "conformant-planning",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "A sequence of moves that reaches the goal from every start cell; each counterexample start cell is simulated inside the abstraction (Shape 3; t = 8, 3 solutions).",
     "shape": "shape3",
     "tags": [

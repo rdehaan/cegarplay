@@ -232,6 +232,8 @@ export const GROUPS = [
   { id: 'language', title: 'The loop language', description: 'One feature of the loop language each, with comments in the loop script.' },
   { id: 'shapes', title: 'Loop shapes', description: 'Graph colouring at n = 5 with each of the five templates; all give the same solutions.' },
   { id: 'problems', title: 'Problems', description: 'Larger problems from declarative-cegar.' },
+  { id: 'exists-forall', title: 'Contributed: exists-forall problems', description: 'One abstraction and one check solver each, in the loop language.' },
+  { id: 'several-solvers', title: 'Contributed: several solvers or raw Lua', description: 'More than one check, a solver that computes the refinement, staged searches, or raw Lua.' },
 ];
 
 // Every entry: id, group, summary, shape (template or 'custom'), tags, expected solutions.

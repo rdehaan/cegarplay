@@ -11,7 +11,7 @@ const points = (page) => page.$eval('#svg-progress polyline.series-candidates', 
 const historyRows = (page) => page.$$eval('#history-table tbody tr', (rows) => rows.filter((r) => !r.textContent.includes('no finished runs')).length);
 
 test('charts exist and update during a run', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?tab=6');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring&tab=6');
   for (const id of ['svg-progress', 'svg-time', 'svg-hist']) assert.ok(await page.$('#' + id), id);
   await page.evaluate(() => { window.cegarplay.project.settings.constants.n = '7'; });
   await page.click('#run-button');
@@ -31,7 +31,7 @@ test('charts exist and update during a run', async () => {
 });
 
 test('statistics after the default example: summary, solvers, refinements, histogram', async () => {
-  const { page, context } = await B.openPage(browser, server, '?tab=6');
+  const { page, context } = await B.openPage(browser, server, '?example=graph-coloring&tab=6');
   await page.click('#run-button');
   await B.waitState(page, ['finished']);
   const summary = await page.textContent('#stats-summary');
@@ -51,7 +51,7 @@ test('statistics after the default example: summary, solvers, refinements, histo
 });
 
 test('trace: step 1 of the default example shows candidate, counterexample and refinement', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?tab=5');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring&tab=5');
   await page.click('#run-button');
   await B.waitState(page, ['finished']);
   assert.equal(await page.textContent('#trace-label'), 'step 1 of 200');

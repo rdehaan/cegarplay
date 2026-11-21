@@ -42,7 +42,7 @@
   },
   "library": {
     "id": "min-dnf",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "DNF formulas with at most k terms equivalent to a given one: counterexample assignments become clauses over a pool of terms (n = 3, k = 3, 2 solutions).",
     "shape": "custom",
     "tags": [

@@ -47,7 +47,7 @@
   },
   "library": {
     "id": "knapsack-optimum",
-    "group": "problems",
+    "group": "several-solvers",
     "summary": "Bilevel knapsack optimisation: an optimal abstraction gives lower bounds, the follower's best replies are grounded as rules, and a second part caps the claims (optimum 25, 2 solutions).",
     "shape": "custom",
     "tags": [

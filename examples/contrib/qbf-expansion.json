@@ -44,7 +44,7 @@
   },
   "library": {
     "id": "qbf-expansion",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "The 2QBF example with Shape 3: each counterexample y-assignment instantiates the formula in the abstraction (5 solutions).",
     "shape": "shape3",
     "tags": [

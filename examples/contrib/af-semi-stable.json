@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "af-semi-stable",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Semi-stable extensions of an argumentation framework; the interface is the derived range/1, so clauses speak about ranges (11 arguments, 2 solutions).",
     "shape": "shape1",
     "tags": [

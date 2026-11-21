@@ -26,7 +26,7 @@ test('the service worker shim isolates the page on the plain server; ?nocoi=1 do
 });
 
 test('pause freezes the counters, step advances, resume continues, stop ends with statistics', async () => {
-  const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&tab=6', { coi: true });
+  const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&example=graph-coloring&tab=6', { coi: true });
   assert.equal(await page.evaluate(() => self.crossOriginIsolated), true);
   await setN7(page);
   await page.click('#run-button');
@@ -76,7 +76,7 @@ test('threads: a solver with -t 2 gives 9,270 on reference row 2', async () => {
 });
 
 test('abort works on the isolated page too', async () => {
-  const { page, context } = await B.openPage(browser, coiServer, '?nocoi=1', { coi: true });
+  const { page, context } = await B.openPage(browser, coiServer, '?nocoi=1&example=graph-coloring', { coi: true });
   await setN7(page);
   await page.click('#run-button');
   await B.waitState(page, ['running']);

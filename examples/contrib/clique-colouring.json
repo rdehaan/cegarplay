@@ -41,7 +41,7 @@
   },
   "library": {
     "id": "clique-colouring",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Two-colourings of the nodes without a one-coloured maximal clique (complement of a cycle, n = 8, 44 solutions).",
     "shape": "shape1",
     "tags": [

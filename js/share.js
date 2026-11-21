@@ -1,0 +1,54 @@
+// Share links: a project in the URL fragment (#p=<data>), which never reaches the server.
+// <data> is 'z' + base64url(deflate-raw(JSON)) when CompressionStream is available, else
+// 'u' + base64url(JSON). The run history is left out. No DOM: Node tests use this module too.
+import * as Project from './project.js';
+
+export const SHARE_PREFIX = '#p=';
+export const LONG_LINK = 8000;
+
+function toBase64url(bytes) {
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function fromBase64url(text) {
+  if (!/^[A-Za-z0-9_-]*$/.test(text)) throw new Error('the share link is damaged (unexpected characters)');
+  const b = text.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((text.length + 3) % 4);
+  let s;
+  try { s = atob(b); } catch { throw new Error('the share link is damaged (bad base64)'); }
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out;
+}
+
+async function pipe(bytes, stream) {
+  const s = new Blob([bytes]).stream().pipeThrough(stream);
+  return new Uint8Array(await new Response(s).arrayBuffer());
+}
+
+// The data part of a share link for project p ({ compress: false } forces the plain form).
+export async function encodeShare(p, { compress = typeof CompressionStream === 'function' } = {}) {
+  const json = Project.save({ ...p, runs: [] }, { runs: false });
+  const bytes = new TextEncoder().encode(JSON.stringify(JSON.parse(json)));
+  if (compress) return 'z' + toBase64url(await pipe(bytes, new CompressionStream('deflate-raw')));
+  return 'u' + toBase64url(bytes);
+}
+
+// The project of a share link's data part; throws with a readable message on a bad link.
+export async function decodeShare(data) {
+  const kind = data[0], body = data.slice(1);
+  let bytes = fromBase64url(body);
+  if (kind === 'z') {
+    if (typeof DecompressionStream !== 'function') throw new Error('this browser cannot read compressed share links');
+    try { bytes = await pipe(bytes, new DecompressionStream('deflate-raw')); }
+    catch { throw new Error('the share link is damaged (cannot decompress)'); }
+  } else if (kind !== 'u') {
+    throw new Error('the share link is damaged (unknown format)');
+  }
+  return Project.load(new TextDecoder().decode(bytes));
+}
+
+// The data part of a URL fragment ('#p=...'), or null.
+export function shareData(hash) {
+  return typeof hash === 'string' && hash.startsWith(SHARE_PREFIX) ? hash.slice(SHARE_PREFIX.length) : null;
+}

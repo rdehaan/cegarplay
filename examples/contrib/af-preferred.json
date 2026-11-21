@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "af-preferred",
-    "group": "problems",
+    "group": "exists-forall",
     "summary": "Preferred extensions that leave out a query argument (sceptical acceptance), with one refinement clause per added argument (9 arguments, 3 solutions).",
     "shape": "custom",
     "tags": [

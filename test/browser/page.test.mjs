@@ -22,7 +22,7 @@ test('1. the page loads with no console error and no request to another origin',
 });
 
 test('2. the default example runs to the reference numbers', async () => {
-  const { page, context, errors } = await B.openPage(browser, server);
+  const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring');
   assert.equal(await page.$eval('#solutions-select', (e) => e.value), '0');
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error', 'aborted']), 'finished');
@@ -44,7 +44,7 @@ test('2. the default example runs to the reference numbers', async () => {
 });
 
 test('3. abort a long run, then run the default example again', async () => {
-  const { page, context, errors } = await B.openPage(browser, server);
+  const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring');
   await page.click('label[for="tab4"]');
   await page.fill('#constants-table tbody tr input.const-value', '7');
   await page.click('#run-button');
@@ -104,7 +104,7 @@ test('5. download JSON, reload (autosave restores), upload: all editors equal', 
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#download-button')]);
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'cegarplay-')), dl.suggestedFilename());
   await dl.saveAs(file);
-  assert.equal(path.basename(file), 'graph-colouring.json');
+  assert.equal(path.basename(file), 'sum-free-sets.json');
   // a reload restores the project being edited (autosave in localStorage) ...
   await page.waitForTimeout(1000);
   await page.reload();
@@ -171,7 +171,7 @@ test('a Load button in the tutorial loads its example and stays in the tab', asy
 });
 
 test('editors are sized when their tab is shown; Ctrl+Enter runs; clingo infos mark the line', async () => {
-  const { page, context, errors } = await B.openPage(browser, server);
+  const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring');
   await page.click('label[for="tab2"]');
   await page.waitForTimeout(200);
   const cropped = await page.$$eval('#tutorial .ace_editor', (l) => l.filter((e) => {
