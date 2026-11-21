@@ -1,0 +1,45 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Knapsack interdiction",
+  "description": "A bilevel knapsack: the leader locks items within a budget, then the follower packs the rest within a capacity; the solutions are the leader's choices that keep the follower's best profit at or below a bound (Sigma-2-complete; Caprara, Carvalho, Lodi and Woeginger). The check packs a knapsack that beats the bound, preferring few items ('optimal'), and the refinement locks one of them. With bound = 24 there is no solution: 25 is the best the leader can do.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The items. Added to every solver.",
+      "text": "% item(I,Cost,Weight,Profit): the leader can lock item I at the given cost; the\n% follower can pack it (if it is not locked) with the given weight and profit.\nitem(1,3,4,9).  item(2,2,3,7).  item(3,4,5,12). item(4,1,2,4).\nitem(5,3,6,13). item(6,2,4,8).  item(7,5,7,16). item(8,1,3,5).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): locked items within the budget.",
+      "text": "% A candidate: a set of locked items whose costs stay within the leader's budget.\n{ lock(I) : item(I,_,_,_) }.\n:- #sum { C,I : lock(I), item(I,C,_,_) } > budget.\n#show lock/1.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the locked items.",
+      "text": "glue(lock(I)) :- item(I,_,_,_).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a packing of the remaining items that beats the bound (solver C).",
+      "text": "% A counterexample: the follower packs items that are not locked, within the capacity,\n% with a profit above the bound.\n{ pack(I) : item(I,_,_,_) }.\n:- pack(I), lock(I).\n:- #sum { W,I : pack(I), item(I,_,W,_) } > capacity.\n:- #sum { P,I : pack(I), item(I,_,_,P) } <= bound.\n#show pack/1.\n\n% The packing stays possible as long as none of its items is locked.\nrelevant(lock(I)) :- pack(I).\n% A packing with few items gives a short clause.\n#minimize { 1,I : pack(I) }.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# 'optimal' returns a counterexample that is optimal for the #minimize statement of\n# the check: a packing with as few items as possible, hence a clause with few literals.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M), optimal)\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "budget": "6",
+      "capacity": "12",
+      "bound": "25"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

@@ -1,0 +1,52 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Abduction",
+  "description": "Explanations of an observation: at most k hypotheses that are consistent with a theory and, together with it, entail the manifestations; existence is Sigma-2-complete (Eiter and Gottlob). The abstraction guesses the hypotheses with a hidden model that shows consistency; the check looks for a model in which a manifestation is false, and the refinement adds a hypothesis that is false there. Shape 2 counts each explanation once, whatever the hidden model.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The theory, the hypotheses and the manifestations. Added to every solver.",
+      "text": "% Why does the car not start? A theory in clause form:\n% pos(C,A): atom A occurs in clause C, neg(C,A): its negation does.\nneg(1,flat).    pos(1,nostart).                   % a flat battery: no start\nneg(2,flat).    pos(2,dim).                       % a flat battery: dim lights\nneg(3,empty).   pos(3,nostart).                   % an empty tank: no start\nneg(4,starter). pos(4,nostart).                   % a broken starter: no start\nneg(5,plugs).   neg(5,damp). pos(5,nostart).      % fouled plugs in a damp engine: no start\nneg(6,cold).    pos(6,flat). pos(6,damp).         % a cold night: flat battery or damp engine\nneg(7,lights).  pos(7,flat).                      % lights left on: flat battery\nneg(8,rain).    pos(8,damp).                      % rain: damp engine\npos(9,gauge).                                     % the fuel gauge shows fuel\nneg(10,gauge).  neg(10,empty).                    % ... so the tank is not empty\nclause(C) :- pos(C,_).\nclause(C) :- neg(C,_).\natom(A) :- pos(_,A).\natom(A) :- neg(_,A).\n% What may be assumed, and what has to be explained.\nhypothesis(flat; empty; starter; plugs; cold; lights; rain).\nmanifestation(nostart).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): consistent sets of at most k hypotheses.",
+      "text": "% A candidate: at most k hypotheses ...\n{ assume(H) : hypothesis(H) } k.\n% ... that are consistent with the theory. The witness is a model w/1 of the theory in\n% which the assumed hypotheses hold. It is not shown and not glued: Shape 2 blocks an\n% accepted candidate by its interface atoms, so the witness does not multiply solutions.\n{ w(A) } :- atom(A).\n:- clause(C), not w(A) : pos(C,A); w(A) : neg(C,A).\n:- assume(H), not w(H).\n#show assume/1.\n% 'always' is true in every candidate. The check blames it when a counterexample does\n% not depend on the candidate: then no candidate is a solution, and the clause \"always\n% must change\" ends the search.\n{ always }.\n:- not always.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the assumed hypotheses.",
+      "text": "glue(assume(H)) :- hypothesis(H).\nglue(always).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a model of theory and hypotheses in which a manifestation is false (solver C).",
+      "text": "% A counterexample: a model of the theory and the assumed hypotheses in which some\n% manifestation is false. Then the hypotheses do not entail the manifestations.\n{ m(A) } :- atom(A).\n:- clause(C), not m(A) : pos(C,A); m(A) : neg(C,A).\n:- assume(H), not m(H).\n:- m(A) : manifestation(A).\n#show m/1.\n\n% The model refutes every set of hypotheses that are all true in it. So a hypothesis\n% that is false in the model has to be assumed.\nrelevant(assume(H)) :- hypothesis(H), not m(H).\n% If all hypotheses are true in the model, nothing explains the manifestations: blame\n% the atom that is always true.\nmissing :- hypothesis(H), not m(H).\nrelevant(always) :- not missing.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+  },
+  "settings": {
+    "constants": {
+      "k": "2"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "abduction",
+    "group": "problems",
+    "summary": "Propositional abduction: consistent hypothesis sets that entail the observation, with a hidden consistency witness in the abstraction (7 hypotheses, k = 2, 17 solutions).",
+    "shape": "shape2",
+    "tags": [
+      "fast"
+    ],
+    "expected": 17
+  }
+}

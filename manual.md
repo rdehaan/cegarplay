@@ -178,6 +178,11 @@ control and the validation the options `-c name=value`. Names match `[a-z][A-Za-
 non-empty and contain no white space or quotes. Use `#const n = 4.` in a fragment for a default that
 the table overrides.
 
+Do not name a constant like the parameter of a program part: with a constant `k`, `-c k=...`
+replaces the `k` of `#program refine(k).`, every expansion defines the same atoms, and the loop
+loses solutions or stops with the no-progress guard. The same goes for `expand` fact names that are
+keywords of the loop language (`limit`, `count`, `by`, `optimal`, `assume`, ...).
+
 ### Showing atoms
 
 Solutions are printed as the shown atoms of the candidate's model (`#show` in the abstraction).
@@ -452,6 +457,12 @@ loop's count with it to find a `relevant/1` that is too weak.
 In the second-solver variant, `R` has two incoming links: `GA` from `A` (the candidate) and `GC`
 from `C` (the counterexample). `GA.clause(M, Y)` reads `relevant/1` from `R`'s model `Y`.
 
+`G.core(C)` is only a refinement for a failed *witness* check. After a check that found no
+counterexample it is still a valid lemma, but not a block of the candidate's supersets: the core
+contains assumptions that atoms are false, so supersets satisfy the clause. To remove the supersets
+of a solution, state the clause with a helper solver and `clause/3` (example `reasons-by-size`) or
+build it in Lua (example `reasons-by-shrinking`).
+
 ## Raw Lua projects
 
 With `loop.language = "lua"` the compiler is skipped. The text runs as the body of
@@ -676,6 +687,8 @@ with the example's own settings, checked by `test/library.test.mjs` for every ex
 | language | `lang-basics`, `lang-several-cex`, `lang-optimal`, `lang-two-stage`, `lang-clauses`, `lang-core`, `lang-second-solver`, `lang-legacy`, `lang-raw-lua` |
 | shapes | `gc-shape1`, `gc-shape2`, `gc-shape3`, `gc-shape4`, `gc-reference` |
 | problems | `graph-coloring`, `graph-coloring-original`, `nash`, `voting-justification` |
+| problems (contributed, exists-forall) | `qbf`, `qbf-optimal`, `qbf-expansion`, `smallest-mus`, `min-dnf`, `integer-expressions`, `strategic-companies`, `diagnosis`, `stable-models`, `abduction`, `default-extensions`, `belief-update`, `af-preferred`, `af-semi-stable`, `conformant-planning`, `sufficient-reason`, `actual-cause`, `clique-interdiction`, `clique-colouring`, `arrowing`, `choosability`, `subset-sum-game`, `knapsack-interdiction`, `fewest-clues`, `fair-division`, `hedonic-core`, `boolean-game`, `strong-nash`, `kemeny-control`, `agenda-safety` |
+| problems (contributed, several solvers or raw Lua) | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.
 

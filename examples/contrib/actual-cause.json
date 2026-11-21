@@ -1,0 +1,57 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Actual causes",
+  "description": "Halpern and Pearl's actual causation on the rock-throwing story: is Suzy's throw a cause of the bottle shattering, although Billy's rock would have hit it otherwise (Sigma-2-complete for single-variable causes)? The abstraction guesses a witness, variables held at chosen values under which flipping the cause changes the effect; the check tries to change the effect with the cause in place, by applying part of the witness and freezing other variables. Set the constant cause to bt: no solution, Billy's throw is not a cause.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The variables of the story and the effect. Added to every solver.",
+      "text": "% Suzy and Billy both throw a rock at a bottle. Suzy's rock gets there first.\n% st, bt: Suzy / Billy throws.  sh, bh: Suzy's / Billy's rock hits.  bs: the bottle shatters.\nvar(st;bt;sh;bh;bs).\n% The effect to be explained.\neffect(bs).\n"
+    },
+    {
+      "name": "model",
+      "description": "The structural equations, for any scenario; used by solver A and by solver C.",
+      "text": "% The causal model. val(S,V): variable V is 1 in scenario S.\n% set(S,V,B): scenario S holds V at the value B by an intervention; the equation of a\n% held variable is switched off.\nheld(S,V) :- set(S,V,_).\nval(S,V)  :- set(S,V,1).\n% Suzy throws; Billy throws.\nval(S,st) :- scenario(S), not held(S,st).\nval(S,bt) :- scenario(S), not held(S,bt).\n% Suzy's rock hits if she throws; Billy's hits if he throws and hers did not hit.\nval(S,sh) :- scenario(S), not held(S,sh), val(S,st).\nval(S,bh) :- scenario(S), not held(S,bh), val(S,bt), not val(S,sh).\n% The bottle shatters if a rock hits it.\nval(S,bs) :- scenario(S), not held(S,bs), val(S,sh).\nval(S,bs) :- scenario(S), not held(S,bs), val(S,bh).\n% The actual world: no interventions.\nscenario(actual).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): witnesses that pass condition (a).",
+      "text": "% A candidate witness: a set W of variables other than the cause (inw/1), each held at\n% a value (wval(V) means 1).\n{ inw(V) } :- var(V), V != cause.\n{ wval(V) } :- inw(V).\n% Condition (a): give the cause the other value and hold W; the effect changes.\nscenario(flip).\nset(flip,cause,0) :- val(actual,cause).\nset(flip,cause,1) :- not val(actual,cause).\nset(flip,V,1) :- inw(V), wval(V).\nset(flip,V,0) :- inw(V), not wval(V).\n:- effect(E), val(actual,E), val(flip,E).\n:- effect(E), not val(actual,E), not val(flip,E).\n#show.\n#show hold(V,1) : inw(V), wval(V).\n#show hold(V,0) : inw(V), not wval(V).\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the witness set and its values.",
+      "text": "glue(inw(V))  :- var(V), V != cause.\nglue(wval(V)) :- var(V), V != cause.\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a violation of condition (b) (solver C).",
+      "text": "% A counterexample to condition (b): the cause keeps its actual value, some variables\n% of W are held at the witness values (part/1), some other variables are frozen at\n% their actual values (frozen/1), and the effect changes all the same.\nscenario(test).\nset(test,cause,1) :- val(actual,cause).\nset(test,cause,0) :- not val(actual,cause).\n{ part(V) } :- inw(V).\nset(test,V,1) :- part(V), wval(V).\nset(test,V,0) :- part(V), not wval(V).\n{ frozen(V) } :- var(V), V != cause, not inw(V).\nset(test,V,1) :- frozen(V), val(actual,V).\nset(test,V,0) :- frozen(V), not val(actual,V).\n:- effect(E), val(actual,E), val(test,E).\n:- effect(E), not val(actual,E), not val(test,E).\n#show part/1.\n#show frozen/1.\n\n% The same test applies to every witness that still holds the variables in part/1 at\n% the same values and still leaves the frozen variables out of W.\nrelevant(inw(V))  :- part(V).\nrelevant(wval(V)) :- part(V).\nrelevant(inw(V))  :- frozen(V).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + model + abstraction\nsolver C = shared + model + check       options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "cause": "st"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "actual-cause",
+    "group": "problems",
+    "summary": "Halpern-Pearl actual causation on the rock-throwing story: witnesses for Suzy's throw being a cause (cause = st, 4 solutions; cause = bt, none).",
+    "shape": "shape1",
+    "tags": [
+      "fast"
+    ],
+    "expected": 4
+  }
+}

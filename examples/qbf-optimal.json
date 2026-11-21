@@ -1,0 +1,41 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "2QBF, smallest refinement",
+  "description": "The 2QBF example with a check that chooses what to blame: one false x-literal per open term, with as few x-variables as possible (#minimize). The loop calls the check with 'optimal', so every refinement is a shortest clause. Compare the mean clause length and the number of candidates with the plain 2QBF example.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The formula, as facts. Added to every solver.",
+      "text": "% A quantified Boolean formula  exists x1..x6  forall y1..y5 : T1 v ... v T12,\n% where each term T is a conjunction of literals.\n% xlit(T,I,S): term T contains x_I (S = 1) or its negation (S = 0); ylit/3 likewise.\nxvar(1..6).  yvar(1..5).\nxlit(1,2,0). xlit(1,5,1). ylit(1,3,0).      % ~x2 & x5 & ~y3\nxlit(2,6,0). ylit(2,2,1). ylit(2,5,1).      % ~x6 & y2 & y5\nxlit(3,2,1). xlit(3,5,0). ylit(3,4,1).      % x2 & ~x5 & y4\nxlit(4,4,0). ylit(4,1,1). ylit(4,4,0).      % ~x4 & y1 & ~y4\nxlit(5,4,1). xlit(5,5,0). ylit(5,3,1).      % x4 & ~x5 & y3\nxlit(6,4,1). ylit(6,2,0). ylit(6,3,1).      % x4 & ~y2 & y3\nxlit(7,5,0). ylit(7,1,1). ylit(7,5,1).      % ~x5 & y1 & y5\nxlit(8,3,0). ylit(8,2,0). ylit(8,4,1).      % ~x3 & ~y2 & y4\nxlit(9,1,0). ylit(9,3,0). ylit(9,4,0).      % ~x1 & ~y3 & ~y4\nxlit(10,6,0). ylit(10,1,1). ylit(10,3,1).   % ~x6 & y1 & y3\nxlit(11,5,1). xlit(11,6,0). ylit(11,2,0).   % x5 & ~x6 & ~y2\nxlit(12,6,1). ylit(12,2,1). ylit(12,4,1).   % x6 & y2 & y4\nterm(T) :- xlit(T,_,_).\nterm(T) :- ylit(T,_,_).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): assignments to the x-variables.",
+      "text": "% A candidate: any assignment to the x-variables (x(I) means that x_I is true).\n{ x(I) } :- xvar(I).\n#show x/1.\n% 'always' is true in every candidate. The check blames it when a counterexample does\n% not depend on the candidate: then no candidate is a solution, and the clause \"always\n% must change\" ends the search.\n{ always }.\n:- not always.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the x-variables, and the atom that is always true.",
+      "text": "% The check has to know the value of every x-variable.\nglue(x(I)) :- xvar(I).\nglue(always).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a y-assignment that falsifies the formula (solver C) and chooses a smallest set of x-literals to blame.",
+      "text": "% A counterexample: an assignment to the y-variables under which every term is false.\n1 { yval(J,0); yval(J,1) } 1 :- yvar(J).\n% The y-assignment closes a term when it makes one of its y-literals false.\nclosed(T) :- ylit(T,J,S), yval(J,1-S).\n% A term that stays open must be false because of the candidate: bad(T,I) says that\n% the literal on x_I in term T is false.\nbad(T,I) :- xlit(T,I,1), not x(I).\nbad(T,I) :- xlit(T,I,0), x(I).\nfalsified(T) :- closed(T).\nfalsified(T) :- bad(T,_).\n:- term(T), not falsified(T).\n#show yval/2.\n\n% One false x-literal per open term is enough to keep that term false. relevant/1\n% cannot be guessed directly, so the check guesses blame/2 and derives relevant/1.\n1 { blame(T,I) : bad(T,I) } 1 :- term(T), not closed(T).\nrelevant(x(I)) :- blame(_,I).\n% Prefer counterexamples that blame few x-variables: shorter clauses remove more candidates.\n#minimize { 1,I : relevant(x(I)) }.\n% If the y-assignment closes every term on its own, no candidate is a solution at all:\n% blame the atom that is always true.\nopen :- term(T), not closed(T).\nrelevant(always) :- not open.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# With 'optimal', C.solve returns a counterexample that is optimal for the #minimize\n# statement of the check fragment: here the y-assignment and the blamed x-literals\n# that mark as few x-variables as possible.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M), optimal)\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

@@ -1,0 +1,52 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Smallest unsatisfiable subsets",
+  "description": "Sets of at most k clauses of a formula that are unsatisfiable together; existence is Sigma-2-complete (Liberatore). The check finds an assignment that satisfies the picked clauses, and the refinement says that a clause it falsifies has to be picked, so the abstraction collects hitting-set constraints. With k = 4 the two smallest cores come out; try k = 5 (23 solutions).",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The formula, as facts. Added to every solver.",
+      "text": "% An unsatisfiable formula in conjunctive normal form over v1..v5.\n% pos(C,V): clause C contains variable V, neg(C,V): its negation.\nneg(1,1).                             % ~v1\npos(2,1). neg(2,2).                   % v1 | ~v2\nneg(3,2). neg(3,4).                   % ~v2 | ~v4\npos(4,2). neg(4,3).                   % v2 | ~v3\npos(5,2). pos(5,3).                   % v2 | v3\npos(6,2). neg(6,4).                   % v2 | ~v4\nneg(7,3). pos(7,5).                   % ~v3 | v5\npos(8,3). neg(8,4).                   % v3 | ~v4\npos(9,3). pos(9,4).                   % v3 | v4\npos(10,3). pos(10,5).                 % v3 | v5\npos(11,1). pos(11,2). pos(11,4).      % v1 | v2 | v4\npos(12,1). pos(12,3). pos(12,4).      % v1 | v3 | v4\nclause(C) :- pos(C,_).\nclause(C) :- neg(C,_).\nvar(V) :- pos(_,V).\nvar(V) :- neg(_,V).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): sets of at most k clauses.",
+      "text": "% A candidate: at most k clauses of the formula.\n{ pick(C) : clause(C) } k.\n#show pick/1.\n% 'always' is true in every candidate. The check blames it when a counterexample does\n% not depend on the candidate: then no candidate is a solution, and the clause \"always\n% must change\" ends the search.\n{ always }.\n:- not always.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the picked clauses.",
+      "text": "glue(pick(C)) :- clause(C).\nglue(always).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for an assignment that satisfies the picked clauses (solver C).",
+      "text": "% A counterexample: an assignment that satisfies every picked clause.\n{ t(V) } :- var(V).\nsat(C) :- pos(C,V), t(V).\nsat(C) :- neg(C,V), not t(V).\n:- pick(C), not sat(C).\n#show t/1.\n\n% The assignment satisfies every set of clauses that avoids the clauses it falsifies.\n% So one of those has to be picked: a positive clause over atoms that are false now.\nrelevant(pick(C)) :- clause(C), not sat(C).\n% An assignment that satisfies the whole formula falsifies none: the formula is then\n% satisfiable and has no unsatisfiable subset. Blame the atom that is always true.\nfalsified :- clause(C), not sat(C).\nrelevant(always) :- not falsified.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "k": "4"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "smallest-mus",
+    "group": "problems",
+    "summary": "Unsatisfiable subsets with at most k clauses, by collecting hitting-set constraints from satisfying assignments (12 clauses, k = 4, 2 solutions).",
+    "shape": "shape1",
+    "tags": [
+      "fast"
+    ],
+    "expected": 2
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Minimal diagnoses",
+  "description": "Reiter's faulty full adder: sets of broken gates that explain the observed outputs while no proper subset does, that is, models of the circuit that are minimal in the broken gates with the wires varying (circumscription; Pi-2-complete in general, Eiter and Gottlob). The abstraction guesses broken gates and wire values with the suspect gate broken, and the check looks for an explanation with fewer broken gates. The circuit rules are written once, with a world argument, and used by both solvers.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The circuit and the observations, as facts. Added to every solver.",
+      "text": "% A full adder: gate(Name, Kind, Input1, Input2, Output).\ngate(x1,xor,a,b,p).\ngate(x2,xor,p,c,s).\ngate(a1,and,a,b,q).\ngate(a2,and,p,c,r).\ngate(o1,or,q,r,co).\npart(G) :- gate(G,_,_,_,_).\nwire(a;b;c;p;q;r;s;co).\n% Observed: with inputs a = 1, b = 0, c = 1 the adder shows sum s = 1 and carry co = 0\n% (it should show s = 0 and co = 1).\nobs(a,1). obs(b,0). obs(c,1). obs(s,1). obs(co,0).\n"
+    },
+    {
+      "name": "circuit",
+      "description": "The behaviour of the circuit in a world; used by solver A and by solver C.",
+      "text": "% How the circuit behaves in a world W. Solver A uses the world \"now\" (the candidate),\n% solver C the world \"alt\" (the counterexample); the rules are written once.\n% on(W,X): wire X carries 1 in world W.  broken(W,G): gate G is assumed faulty there.\nout(W,G) :- gate(G,and,X,Y,_), on(W,X), on(W,Y).\nout(W,G) :- gate(G,or,X,_,_), on(W,X).\nout(W,G) :- gate(G,or,_,Y,_), on(W,Y).\nout(W,G) :- gate(G,xor,X,Y,_), on(W,X), not on(W,Y).\nout(W,G) :- gate(G,xor,X,Y,_), on(W,Y), not on(W,X).\n% A gate that is not broken computes its function; a broken gate may output anything.\n:- world(W), gate(G,_,_,_,Z), not broken(W,G), on(W,Z), not out(W,G).\n:- world(W), gate(G,_,_,_,Z), not broken(W,G), not on(W,Z), out(W,G).\n% The observations hold.\n:- world(W), obs(X,1), not on(W,X).\n:- world(W), obs(X,0), on(W,X).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): broken gates and wire values that fit the observations.",
+      "text": "% A candidate: a set of broken gates and a value for every wire that fit the\n% observations (the circuit fragment sees to that for the world \"now\").\nworld(now).\n{ broken(now,G) } :- part(G).\n{ on(now,X) } :- wire(X).\n% Is the suspect gate part of a minimal diagnosis? (Set the constant in the Loop tab.)\n:- not broken(now,suspect).\n#show.\n#show broken(G) : broken(now,G).\n#show on(X) : on(now,X).\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: which gates the candidate breaks. The wire values stay private to solver A.",
+      "text": "glue(broken(now,G)) :- part(G).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for an explanation that breaks fewer gates (solver C).",
+      "text": "% A counterexample: the observations can also be explained in a world \"alt\" in which a\n% proper subset of the candidate's gates is broken. The wires may take other values.\nworld(alt).\n{ broken(alt,G) } :- broken(now,G).\n{ on(alt,X) } :- wire(X).\nmended(G) :- broken(now,G), not broken(alt,G).\nfewer :- mended(G).\n:- not fewer.\n#show.\n#show broken(G) : broken(alt,G).\n\n% The smaller explanation refutes every candidate that breaks its gates and at least\n% one more. Mark its gates and, as a witness, the first gate it mends.\nrelevant(broken(now,G)) :- broken(alt,G).\nrelevant(broken(now,G)) :- mended(G), not mended(H) : part(H), H < G.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + circuit + abstraction\nsolver C = shared + circuit + check     options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "suspect": "x2"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

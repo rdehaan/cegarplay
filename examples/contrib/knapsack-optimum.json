@@ -1,0 +1,58 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Knapsack interdiction, optimum",
+  "description": "The bilevel knapsack as an optimisation problem: the smallest profit the leader can hold the follower to, and every set of locked items that achieves it. The abstraction proposes locked items with a claimed value, smallest claim first; the follower's best packing refutes a claim and is grounded as a rule that later claims have to cover. The first candidate that survives has the optimal value (25); a second program part then forbids larger claims, and the loop lists the other optimal choices.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The items. Added to every solver.",
+      "text": "% item(I,Cost,Weight,Profit): the leader can lock item I at the given cost; the\n% follower can pack it (if it is not locked) with the given weight and profit.\nitem(1,3,4,9).  item(2,2,3,7).  item(3,4,5,12). item(4,1,2,4).\nitem(5,3,6,13). item(6,2,4,8).  item(7,5,7,16). item(8,1,3,5).\n% top(T): no packing is worth more than T.\ntop(T) :- T = #sum { P,I : item(I,_,_,P) }.\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): locked items and a claimed value, smallest claim first.",
+      "text": "% A candidate: locked items within the budget ...\n{ lock(I) : item(I,_,_,_) }.\n:- #sum { C,I : lock(I), item(I,C,_,_) } > budget.\n% ... and a claim: the follower cannot get more than V. Small claims are preferred.\n1 { value(V) : V = 0..T } 1 :- top(T).\n#minimize { V : value(V) }.\n#show lock/1.\n#show value/1.\n"
+    },
+    {
+      "name": "refine",
+      "description": "Two parts: refine(k) per counterexample packing, cap(k) once the optimum is known.",
+      "text": "#program refine(k).\n% cex(k,pack(I)): the k-th counterexample packs item I. Its profit:\nprofit(k,P) :- P = #sum { Q,I : cex(k,pack(I)), item(I,_,_,Q) }.\n% The claim has to cover this profit unless one of the packed items is locked.\nhit(k) :- cex(k,pack(I)), lock(I).\n:- not hit(k), profit(k,P), value(V), V < P.\n\n#program cap(k).\n% best(k,value(B)): the optimal value B is known. No larger claim is of interest.\n:- best(k,value(B)), value(V), V > B.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the locked items and the claim.",
+      "text": "glue(lock(I)) :- item(I,_,_,_).\nglue(value(V)) :- top(T), V = 0..T.\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a packing of the remaining items worth more than the claim (solver C).",
+      "text": "% A counterexample: the follower packs items that are not locked, within the capacity,\n% and gets more than the claimed value.\n{ pack(I) : item(I,_,_,_) }.\n:- pack(I), lock(I).\n:- #sum { W,I : pack(I), item(I,_,W,_) } > capacity.\n:- value(V), #sum { P,I : pack(I), item(I,_,_,P) } <= V.\n% With 'optimal' the follower's best packing comes back (the strongest counterexample).\n#minimize { -P,I : pack(I), item(I,_,_,P) }.\n#show pack/1.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction + refine\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# An optimisation loop. A.solve(optimal) returns locked items with the smallest claim\n# that is still possible; C.solve(..., optimal) answers with the follower's best\n# packing if it beats the claim. The packing is grounded into A (part refine): later\n# claims have to cover it. The first candidate that survives the check has the optimal\n# value. The part cap then forbids larger claims, so the loop goes on to list the\n# other optimal choices and ends when A has no candidate left.\ncapped = false\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    X = C.solve(assume G(M), optimal)\n    if X:\n        A.expand(refine, cex = X.atoms(pack/1))\n    else:\n        accept M\n        A.add(G.block(M))\n        if not capped:\n            A.expand(cap, best = M.atoms(value/1))\n            capped = true\n"
+  },
+  "settings": {
+    "constants": {
+      "budget": "6",
+      "capacity": "12"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "knapsack-optimum",
+    "group": "problems",
+    "summary": "Bilevel knapsack optimisation: an optimal abstraction gives lower bounds, the follower's best replies are grounded as rules, and a second part caps the claims (optimum 25, 2 solutions).",
+    "shape": "custom",
+    "tags": [
+      "fast"
+    ],
+    "expected": 2
+  }
+}

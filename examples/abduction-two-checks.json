@@ -1,0 +1,48 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Abduction with two checks",
+  "description": "The Abduction example with both tests moved out of the abstraction: one check solver looks for a witness that the hypotheses are consistent with the theory, a second one for a counterexample to the entailment. A failed witness check is refined with its unsat core (the hypotheses that contradict the theory), a counterexample through relevant/1. Compare with Abduction, which keeps the consistency witness inside the abstraction.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The theory, the hypotheses and the manifestations. Added to every solver.",
+      "text": "% Why does the car not start? A theory in clause form:\n% pos(C,A): atom A occurs in clause C, neg(C,A): its negation does.\nneg(1,flat).    pos(1,nostart).                   % a flat battery: no start\nneg(2,flat).    pos(2,dim).                       % a flat battery: dim lights\nneg(3,empty).   pos(3,nostart).                   % an empty tank: no start\nneg(4,starter). pos(4,nostart).                   % a broken starter: no start\nneg(5,plugs).   neg(5,damp). pos(5,nostart).      % fouled plugs in a damp engine: no start\nneg(6,cold).    pos(6,flat). pos(6,damp).         % a cold night: flat battery or damp engine\nneg(7,lights).  pos(7,flat).                      % lights left on: flat battery\nneg(8,rain).    pos(8,damp).                      % rain: damp engine\npos(9,gauge).                                     % the fuel gauge shows fuel\nneg(10,gauge).  neg(10,empty).                    % ... so the tank is not empty\nclause(C) :- pos(C,_).\nclause(C) :- neg(C,_).\natom(A) :- pos(_,A).\natom(A) :- neg(_,A).\n% What may be assumed, and what has to be explained.\nhypothesis(flat; empty; starter; plugs; cold; lights; rain).\nmanifestation(nostart).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): any set of at most k hypotheses.",
+      "text": "% A candidate: at most k hypotheses. Nothing else: both tests are left to the checks.\n{ assume(H) : hypothesis(H) } k.\n#show assume/1.\n% 'always' is true in every candidate. The check blames it when a counterexample does\n% not depend on the candidate: then no candidate is a solution, and the clause \"always\n% must change\" ends the search.\n{ always }.\n:- not always.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the assumed hypotheses.",
+      "text": "glue(assume(H)) :- hypothesis(H).\nglue(always).\n"
+    },
+    {
+      "name": "consistent",
+      "description": "The first check (solver C1): a witness that theory and hypotheses are consistent.",
+      "text": "% A witness, not a counterexample: a model of the theory in which the assumed\n% hypotheses hold. If there is none, the hypotheses contradict the theory, and the\n% unsat core names the hypotheses that are to blame.\n{ w(A) } :- atom(A).\n:- clause(C), not w(A) : pos(C,A); w(A) : neg(C,A).\n:- assume(H), not w(H).\n#show w/1.\n"
+    },
+    {
+      "name": "entails",
+      "description": "The second check (solver C2): a model in which a manifestation is false.",
+      "text": "% A counterexample: a model of the theory and the assumed hypotheses in which some\n% manifestation is false. Then the hypotheses do not entail the manifestations.\n{ m(A) } :- atom(A).\n:- clause(C), not m(A) : pos(C,A); m(A) : neg(C,A).\n:- assume(H), not m(H).\n:- m(A) : manifestation(A).\n#show m/1.\n\n% The model refutes every set of hypotheses that are all true in it. So a hypothesis\n% that is false in the model has to be assumed.\nrelevant(assume(H)) :- hypothesis(H), not m(H).\n% If all hypotheses are true in the model, nothing explains the manifestations: blame\n% the atom that is always true.\nmissing :- hypothesis(H), not m(H).\nrelevant(always) :- not missing.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A  = shared + abstraction\nsolver C1 = shared + consistent\nsolver C2 = shared + entails       options \"--heuristic=Domain\"\nlink   G1 = A -> C1 via shared + glue\nlink   G2 = A -> C2 via shared + glue\n\n# Two checks of two kinds. C1 looks for a witness (a model that shows the hypotheses\n# are consistent with the theory): no witness, no solution, and the unsat core of the\n# failed solve is the refinement. C2 looks for a counterexample (a model in which a\n# manifestation is false) and refines through relevant/1.\nsearch A:\n    on candidate M:\n        if not C1.solve(assume G1(M)):\n            reject M with G1.core(C1)\n        else:\n            X = C2.solve(assume G2(M))\n            if X: reject M with G2.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "k": "2"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

@@ -1,0 +1,50 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Default extensions",
+  "description": "Default reasoning with defaults that have no prerequisites (Poole systems): an extension is a maximal set of defaults consistent with the facts, and asking whether a query follows in some extension is Sigma-2-complete. The check has two ways to refute a candidate, a model in which the query is false or a model that satisfies one more default, each with its own relevant/1 rule. The sample is the Nixon diamond with a few more defaults.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "Facts, defaults and the query. Added to every solver.",
+      "text": "% Facts and defaults in clause form: pos(C,A) / neg(C,A) as in a CNF.\n% Hard knowledge: Nixon is a quaker and a republican; nobody is both a hawk and a pacifist.\npos(1,quaker).\npos(2,republican).\nneg(3,hawk).  neg(3,pacifist).\nhard(1..3).\n% Defaults, each a clause that is assumed as long as this is consistent:\nneg(d1,quaker).      pos(d1,pacifist).     % quakers are pacifists\nneg(d2,republican).  pos(d2,hawk).         % republicans are hawks\nneg(d3,hawk).        pos(d3,army).         % hawks support the army\nneg(d4,pacifist).    neg(d4,army).         % pacifists do not\nneg(d5,republican).  pos(d5,rich).         % republicans are rich\nneg(d6,quaker).      neg(d6,rich).         % quakers are not\nneg(d7,rich).        pos(d7,army).         % the rich support the army\ndefault(d1;d2;d3;d4;d5;d6;d7).\nclause(C) :- hard(C).\nclause(C) :- default(C).\natom(A) :- pos(_,A).\natom(A) :- neg(_,A).\n% Does this follow in some extension?\nquery(army).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): sets of defaults that are consistent with the facts.",
+      "text": "% A candidate: a set of defaults that is consistent with the hard knowledge.\n% The model w/1 shows consistency; it is private to solver A (see the Abduction example).\n{ on(D) } :- default(D).\n{ w(A) } :- atom(A).\nused(C) :- hard(C).\nused(C) :- on(C).\n:- used(C), not w(A) : pos(C,A); w(A) : neg(C,A).\n#show on/1.\n% 'always' is true in every candidate. The check blames it when a counterexample does\n% not depend on the candidate: then no candidate is a solution, and the clause \"always\n% must change\" ends the search.\n{ always }.\n:- not always.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the chosen defaults.",
+      "text": "glue(on(D)) :- default(D).\nglue(always).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a model that shows the query does not follow, or that one more default fits (solver C).",
+      "text": "% A model of the hard knowledge and the chosen defaults ...\n{ m(A) } :- atom(A).\nsat(C) :- pos(C,A), m(A).\nsat(C) :- neg(C,A), not m(A).\n:- hard(C), not sat(C).\n:- on(D), not sat(D).\n% ... is a counterexample in two cases:\n% (1) the query is false in it: the chosen defaults do not entail the query;\nopen :- query(A), not m(A).\n% (2) it satisfies a default that was left out: the set is not maximal.\nfits(D) :- default(D), not on(D), sat(D).\nmore :- fits(D).\n:- not open, not more.\n#show m/1.\n\n% In both cases the model refutes every set of defaults that are all true in it,\n% so a default that is false in the model has to be chosen ...\nrelevant(on(D)) :- default(D), not sat(D).\n% ... or, in case (2) only, the default that fits has to be chosen (the first, if several).\nrelevant(on(D)) :- not open, fits(D), not fits(E) : default(E), E < D.\n% If the query is false although every default holds in the model, no set of defaults\n% entails the query: blame the atom that is always true.\nbroken :- default(D), not sat(D).\nrelevant(always) :- open, not broken.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "default-extensions",
+    "group": "problems",
+    "summary": "Extensions of prerequisite-free normal defaults that entail a query: two kinds of counterexample in one check (Nixon diamond, 7 defaults, 3 solutions).",
+    "shape": "shape2",
+    "tags": [
+      "fast"
+    ],
+    "expected": 3
+  }
+}

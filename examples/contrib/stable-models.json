@@ -1,0 +1,50 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Stable models by hand",
+  "description": "The answer sets of a disjunctive logic program given as facts; deciding whether one exists is Sigma-2-complete (Eiter and Gottlob). The abstraction guesses a classical model of the rules, the check looks for a smaller model of the reduct, and relevant/1 names the atoms that make this smaller model work. The sample program is itself a guess-and-saturate encoding of an exists-forall formula.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The object program, as facts. Added to every solver.",
+      "text": "% A disjunctive logic program, as facts. head(R,A): atom A is in the head of rule R;\n% pos(R,A): A is in the body; neg(R,A): \"not A\" is in the body.\n% The program guesses p, q and r and then tests them by saturation:\n%  1: p :- not np.          2: np :- not p.\n%  3: q :- not nq.          4: nq :- not q.\n%  5: r :- not nr.          6: nr :- not r.\nhead(1,p). neg(1,np).       head(2,np). neg(2,p).\nhead(3,q). neg(3,nq).       head(4,nq). neg(4,q).\nhead(5,r). neg(5,nr).       head(6,nr). neg(6,r).\n%  7: a ; b.      8: c ; d.      9: e ; f.\nhead(7,a). head(7,b).       head(8,c). head(8,d).       head(9,e). head(9,f).\n% 10: w :- a, c, p.        11: w :- a, c, r.\n% 12: w :- a, d.           13: w :- b, c, e, q.\n% 14: w :- b, c, f.        15: w :- b, d.\nhead(10,w). pos(10,a). pos(10,c). pos(10,p).\nhead(11,w). pos(11,a). pos(11,c). pos(11,r).\nhead(12,w). pos(12,a). pos(12,d).\nhead(13,w). pos(13,b). pos(13,c). pos(13,e). pos(13,q).\nhead(14,w). pos(14,b). pos(14,c). pos(14,f).\nhead(15,w). pos(15,b). pos(15,d).\n% 16..21: a :- w.  b :- w.  c :- w.  d :- w.  e :- w.  f :- w.\nhead(16,a). head(17,b). head(18,c). head(19,d). head(20,e). head(21,f).\npos(16..21,w).\n% 22: :- not w.\nrule(22). neg(22,w).\nrule(R) :- head(R,_).\natom(A) :- head(_,A).\natom(A) :- pos(_,A).\natom(A) :- neg(_,A).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): classical models of the program.",
+      "text": "% A candidate: a set of atoms that satisfies every rule read as a classical implication\n% (if the body holds, an atom of the head is true).\n{ in(A) } :- atom(A).\n:- rule(R), in(A) : pos(R,A); not in(A) : neg(R,A); not in(A) : head(R,A).\n#show in/1.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the atoms of the candidate model.",
+      "text": "glue(in(A)) :- atom(A).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a smaller model of the reduct (solver C).",
+      "text": "% The reduct with respect to the candidate drops every rule with \"not A\" in its body\n% for an atom A of the candidate, and the negative literals of the other rules.\ngone(R) :- neg(R,A), in(A).\n% A counterexample: a proper subset of the candidate that satisfies the reduct.\n% Then the candidate is not a minimal model of its reduct, so it is not stable.\n{ sub(A) } :- in(A).\n:- rule(R), not gone(R), sub(A) : pos(R,A); not sub(A) : head(R,A).\nleft(A) :- in(A), not sub(A).\nsmaller :- left(A).\n:- not smaller.\n#show sub/1.\n\n% What the counterexample depends on:\n% - its own atoms stay in the candidate;\nrelevant(in(A)) :- sub(A).\n% - one atom that it leaves out stays in the candidate too (the first one will do);\nrelevant(in(A)) :- left(A), not left(B) : atom(B), B < A.\n% - a rule that the subset violates must stay out of the reduct: for each such rule,\n%   the atoms that removed it stay in the candidate.\nneeded(R) :- gone(R), sub(A) : pos(R,A); not sub(A) : head(R,A).\nrelevant(in(A)) :- needed(R), neg(R,A), in(A).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "stable-models",
+    "group": "problems",
+    "summary": "Stable models of a disjunctive program given as facts: classical models checked against the reduct (11 atoms, 22 rules, 3 solutions).",
+    "shape": "shape1",
+    "tags": [
+      "fast"
+    ],
+    "expected": 3
+  }
+}

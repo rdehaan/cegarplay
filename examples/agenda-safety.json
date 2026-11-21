@@ -1,0 +1,41 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Agenda safety",
+  "description": "Majority voting on an agenda is always consistent exactly if every minimally inconsistent subset has at most two formulas; checking this is Pi-2-complete (Endriss, Grandi and Porello). The solutions are the witnesses of unsafety: the abstraction guesses a subset of three or more formulas with, for each member, a model of the others, and the check looks for a model of the whole subset. The sample is the agenda of the doctrinal paradox.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The agenda, as formulas in clause form. Added to every solver.",
+      "text": "% An agenda for judgment aggregation: the premises p and q, the conclusion r, the\n% doctrine \"r holds exactly if p and q hold\", and the negation of each.\n% cl(F,C): clause C belongs to formula F; pos(C,V) / neg(C,V): its literals.\nvar(p;q;r).\ncl(p,1).   pos(1,p).                              % p\ncl(np,2).  neg(2,p).                              % not p\ncl(q,3).   pos(3,q).                              % q\ncl(nq,4).  neg(4,q).                              % not q\ncl(r,5).   pos(5,r).                              % r\ncl(nr,6).  neg(6,r).                              % not r\ncl(d,7).   neg(7,r). pos(7,p).                    % doctrine: r implies p,\ncl(d,8).   neg(8,r). pos(8,q).                    %           r implies q,\ncl(d,9).   pos(9,r). neg(9,p). neg(9,q).          %           p and q imply r\ncl(nd,10). pos(10,r). pos(10,p).                  % its negation: r or p,\ncl(nd,11). pos(11,r). pos(11,q).                  %               r or q,\ncl(nd,12). neg(12,r). neg(12,p). neg(12,q).       %               not all three\nformula(F) :- cl(F,_).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): subsets of three or more formulas, each proper subset of which is consistent.",
+      "text": "% A candidate: at least three formulas of the agenda ...\n3 { in(F) : formula(F) }.\n% ... such that leaving out any one of them gives a consistent set: for each chosen F,\n% w(F,V) is a model of the other chosen formulas. These models are private to solver A.\n{ w(F,V) } :- in(F), var(V).\n:- in(F), in(G), F != G, cl(G,C), not w(F,V) : pos(C,V); w(F,V) : neg(C,V).\n#show in/1.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the chosen formulas.",
+      "text": "glue(in(F)) :- formula(F).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a model of all chosen formulas (solver C).",
+      "text": "% A counterexample: a model of all chosen formulas. Then the subset is consistent.\n{ m(V) } :- var(V).\nfalse(F) :- cl(F,C), not m(V) : pos(C,V); m(V) : neg(C,V).\n:- in(F), false(F).\n#show m/1.\n\n% The model satisfies every subset of the formulas that are true in it. So a formula\n% that is false in it has to be chosen. (There always is one: the agenda contains the\n% negation of each formula.)\nrelevant(in(F)) :- formula(F), false(F).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

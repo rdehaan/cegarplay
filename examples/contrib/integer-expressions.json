@@ -1,0 +1,50 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Integer expressions",
+  "description": "Integer expressions denote sets of numbers; asking whether two of them denote different sets was among the first problems shown Sigma-2-complete (Stockmeyer and Meyer). The solutions are the numbers of expression 1 that expression 2 cannot make: the abstraction derives a number by choosing a side at every union, and the check tries to derive the same number from expression 2. Only the derived atom value/1 is glued and the loop is Shape 2, so the derivation is a hidden witness and each number is counted once.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The two expressions and their subexpressions. Added to every solver.",
+      "text": "% Integer expressions are built from numbers with plus(A,B) (add a number of A to a\n% number of B) and union(A,B) (a number of A or a number of B); each denotes a set.\nnum(0..100).\n% Expression 1: the amounts that four coins from {1, 5, 10, 25} can make.\nexpr(1, plus(plus(C,C),plus(C,C))) :- C = union(union(1,5),union(10,25)).\n% Expression 2: the amounts that three coins from {2, 5, 10, 20} can make.\nexpr(2, plus(plus(C,C),C)) :- C = union(union(2,5),union(10,20)).\n% at(P,E): the subexpression E sits at position P. Positions tell equal subexpressions\n% apart: e(I) is the root of expression I, l(P) and r(P) are the two parts below P.\nat(e(I),E) :- expr(I,E).\nat(l(P),A) :- at(P,plus(A,_)).\nat(r(P),B) :- at(P,plus(_,B)).\nat(l(P),A) :- at(P,union(A,_)).\nat(r(P),B) :- at(P,union(_,B)).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): numbers of expression 1, each with a derivation.",
+      "text": "% A candidate: a number of expression 1. A derivation walks down from the root; it\n% takes both parts of a plus and chooses one part of a union.\nlive(e(1)).\nlive(l(P)) :- live(P), at(P,plus(_,_)).\nlive(r(P)) :- live(P), at(P,plus(_,_)).\n1 { live(l(P)); live(r(P)) } 1 :- live(P), at(P,union(_,_)).\n% The number is the sum of the numbers it reaches.\nvalue(S) :- S = #sum { K,P : live(P), at(P,K), num(K) }.\n#show value/1.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atom: the number, not its derivation.",
+      "text": "glue(value(S)) :- num(S).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a derivation of the same number from expression 2 (solver C).",
+      "text": "% A counterexample: expression 2 can make the same number.\nwalk(e(2)).\nwalk(l(P)) :- walk(P), at(P,plus(_,_)).\nwalk(r(P)) :- walk(P), at(P,plus(_,_)).\n1 { walk(l(P)); walk(r(P)) } 1 :- walk(P), at(P,union(_,_)).\n:- value(S), #sum { K,P : walk(P), at(P,K), num(K) } != S.\n#show.\n#show part(K,P) : walk(P), at(P,K), num(K).\n\n% The counterexample depends on the number only: this number is not a solution.\nrelevant(value(S)) :- value(S).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "integer-expressions",
+    "group": "problems",
+    "summary": "Numbers that one integer expression denotes and another does not (Stockmeyer and Meyer); the candidate is a derived number, its derivation a hidden witness (22 solutions).",
+    "shape": "shape2",
+    "tags": [
+      "fast"
+    ],
+    "expected": 22
+  }
+}

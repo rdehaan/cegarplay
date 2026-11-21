@@ -1,0 +1,60 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "2QBF, blame by a third solver",
+  "description": "The 2QBF example with a refinement solver. The check returns any y-assignment that falsifies the formula and has no relevant/1 rules; a third solver R receives the candidate and the counterexample over two links and chooses a smallest set of x-variables to blame. Compare the clause lengths with 2QBF and with 2QBF, smallest refinement, where one solver does both jobs.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The formula, as facts. Added to every solver.",
+      "text": "% A quantified Boolean formula  exists x1..x6  forall y1..y5 : T1 v ... v T12,\n% where each term T is a conjunction of literals.\n% xlit(T,I,S): term T contains x_I (S = 1) or its negation (S = 0); ylit/3 likewise.\nxvar(1..6).  yvar(1..5).\nxlit(1,2,0). xlit(1,5,1). ylit(1,3,0).      % ~x2 & x5 & ~y3\nxlit(2,6,0). ylit(2,2,1). ylit(2,5,1).      % ~x6 & y2 & y5\nxlit(3,2,1). xlit(3,5,0). ylit(3,4,1).      % x2 & ~x5 & y4\nxlit(4,4,0). ylit(4,1,1). ylit(4,4,0).      % ~x4 & y1 & ~y4\nxlit(5,4,1). xlit(5,5,0). ylit(5,3,1).      % x4 & ~x5 & y3\nxlit(6,4,1). ylit(6,2,0). ylit(6,3,1).      % x4 & ~y2 & y3\nxlit(7,5,0). ylit(7,1,1). ylit(7,5,1).      % ~x5 & y1 & y5\nxlit(8,3,0). ylit(8,2,0). ylit(8,4,1).      % ~x3 & ~y2 & y4\nxlit(9,1,0). ylit(9,3,0). ylit(9,4,0).      % ~x1 & ~y3 & ~y4\nxlit(10,6,0). ylit(10,1,1). ylit(10,3,1).   % ~x6 & y1 & y3\nxlit(11,5,1). xlit(11,6,0). ylit(11,2,0).   % x5 & ~x6 & ~y2\nxlit(12,6,1). ylit(12,2,1). ylit(12,4,1).   % x6 & y2 & y4\nterm(T) :- xlit(T,_,_).\nterm(T) :- ylit(T,_,_).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): assignments to the x-variables.",
+      "text": "% A candidate: any assignment to the x-variables (x(I) means that x_I is true).\n{ x(I) } :- xvar(I).\n#show x/1.\n% 'always' is true in every candidate. The check blames it when a counterexample does\n% not depend on the candidate: then no candidate is a solution, and the clause \"always\n% must change\" ends the search.\n{ always }.\n:- not always.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms from A: the x-variables.",
+      "text": "% The check has to know the value of every x-variable.\nglue(x(I)) :- xvar(I).\nglue(always).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a y-assignment that falsifies the formula (solver C); no relevant/1 rules.",
+      "text": "% A counterexample: an assignment to the y-variables under which every term is false.\n1 { yval(J,0); yval(J,1) } 1 :- yvar(J).\n% The y-assignment closes a term when it makes one of its y-literals false.\nclosed(T) :- ylit(T,J,S), yval(J,1-S).\n% A term that stays open must be false because of the candidate: bad(T,I) says that\n% the literal on x_I in term T is false.\nbad(T,I) :- xlit(T,I,1), not x(I).\nbad(T,I) :- xlit(T,I,0), x(I).\nfalsified(T) :- closed(T).\nfalsified(T) :- bad(T,_).\n:- term(T), not falsified(T).\n#show yval/2.\n% No relevant/1 rules here: solver R works out what to blame.\n"
+    },
+    {
+      "name": "rglue",
+      "description": "The interface atoms from C to R: the y-assignment.",
+      "text": "% The interface atoms of link GC: the y-assignment found by solver C.\nglue(yval(J,B)) :- yvar(J), B = 0..1.\n"
+    },
+    {
+      "name": "blame",
+      "description": "Solver R: chooses a smallest set of x-variables to blame and derives relevant/1.",
+      "text": "% Solver R sees the candidate (x/1, through link GA) and the counterexample (yval/2,\n% through link GC) and decides which x-variables to blame.\nclosed(T) :- ylit(T,J,S), yval(J,1-S).\nbad(T,I) :- xlit(T,I,1), not x(I).\nbad(T,I) :- xlit(T,I,0), x(I).\n% One false x-literal per open term keeps that term false ...\n1 { blame(T,I) : bad(T,I) } 1 :- term(T), not closed(T).\nrelevant(x(I)) :- blame(_,I).\n% ... and the fewer x-variables are blamed, the shorter the clause.\n#minimize { 1,I : relevant(x(I)) }.\n% If the y-assignment closes every term on its own, no candidate is a solution at all:\n% blame the atom that is always true.\nopen :- term(T), not closed(T).\nrelevant(always) :- not open.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nsolver R = shared + blame\nlink G  = A -> C via shared + glue\nlink GA = A -> R via shared + glue\nlink GC = C -> R via shared + rglue\n\n# C finds any y-assignment that falsifies the formula. A third solver R then sees the\n# candidate (link GA) and the counterexample (link GC) and chooses a smallest set of\n# x-variables to blame; GA.clause reads relevant/1 from R's model.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            Y = R.solve(assume GA(M), GC(X), optimal)\n            reject M with GA.clause(M, Y)\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "qbf-blame-solver",
+    "group": "problems",
+    "summary": "The 2QBF example with a refinement solver that minimises the blamed x-variables for the counterexample at hand (5 solutions).",
+    "shape": "custom",
+    "tags": [
+      "fast"
+    ],
+    "expected": 5
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Conformant planning",
+  "description": "A plan of t moves that takes a robot to the goal from every start cell, without observations; bounded conformant planning is Sigma-2-complete (Baral, Kreinovich and Trejo). Each counterexample is a start cell, and the part #program refine(k) adds a copy of the robot that starts there and must reach the goal (Shape 3). At most 15 counterexamples can occur, while the Reference run removes 65,536 plans one by one; try t = 9 (63 solutions).",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The room, the moves and the horizon. Added to every solver.",
+      "text": "% A robot in a 4 x 4 room with one pillar. It does not know where it starts.\ncell(1..4,1..4).\npillar(2,3).\nfree(X,Y) :- cell(X,Y), not pillar(X,Y).\ngoal(2,2).\n% The four moves; t steps.\ndir(e,1,0). dir(w,-1,0). dir(n,0,1). dir(s,0,-1).\nstep(1..t).\n% to(X,Y,D,X2,Y2): moving in direction D from (X,Y) leads to (X2,Y2). A move against\n% a wall or the pillar leaves the robot where it is.\nto(X,Y,D,X+DX,Y+DY) :- free(X,Y), dir(D,DX,DY), free(X+DX,Y+DY).\nto(X,Y,D,X,Y)       :- free(X,Y), dir(D,DX,DY), not free(X+DX,Y+DY).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): any sequence of t moves.",
+      "text": "% A candidate: one move per step. Nothing else is required at first.\n1 { do(T,D) : dir(D,_,_) } 1 :- step(T).\n#show do/2.\n"
+    },
+    {
+      "name": "refine",
+      "description": "Grounded once per counterexample: the plan must also work from that start cell.",
+      "text": "#program refine(k).\n% cex(k,start(X,Y)): the k-th counterexample is a start cell. Follow the plan from there ...\nat(k,X,Y,0) :- cex(k,start(X,Y)).\nat(k,X2,Y2,T) :- at(k,X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).\n% ... it has to end in the goal.\n:- goal(X,Y), not at(k,X,Y,t).\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the moves of the plan.",
+      "text": "glue(do(T,D)) :- step(T), dir(D,_,_).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a start cell from which the plan does not reach the goal (solver C).",
+      "text": "% A counterexample: a start cell from which the plan ends somewhere else.\n1 { start(X,Y) : free(X,Y) } 1.\nat(X,Y,0) :- start(X,Y).\nat(X2,Y2,T) :- at(X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).\n:- goal(X,Y), at(X,Y,t).\n#show start/2.\n% No relevant/1 rules: the loop passes the start cell to the refine part.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.expand(refine, cex = X.atoms(start/2))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+  },
+  "settings": {
+    "constants": {
+      "t": "8"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

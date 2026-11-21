@@ -1,0 +1,50 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Strong Nash equilibria",
+  "description": "A profile of a graphical game is a strong Nash equilibrium if no coalition can change its members' actions so that every member gains; deciding whether one exists is Sigma-2-complete (Gottlob, Greco and Scarcello). The abstraction guesses a profile and the check a coalition with a joint deviation, which depends only on the actions of the members and of their neighbours. The sample game has 5 Nash equilibria, 1 of them strong.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The players, their neighbours and their payoffs. Added to every solver.",
+      "text": "% A graphical game: eight players, each chooses action 1 or 2.\nplayer(1..8).\naction(1..2).\n% w(P,Q,W): player P gets W for choosing the same action as neighbour Q (W may be\n% negative: P would rather differ from Q). Players only care about their neighbours.\nw(1,2,-1). w(1,5,2). w(1,8,-1).\nw(2,1,2). w(2,3,1).\nw(3,2,3). w(3,4,2). w(3,5,1). w(3,6,1).\nw(4,3,3). w(4,5,-2).\nw(5,1,3). w(5,3,2). w(5,4,1). w(5,6,2).\nw(6,3,-2). w(6,5,2). w(6,7,3).\nw(7,6,-1). w(7,8,3).\nw(8,1,-1). w(8,7,-1).\n% bonus(P,A,B): player P gets B on top for choosing action A.\nbonus(1,1,0). bonus(1,2,0).\nbonus(2,1,1). bonus(2,2,0).\nbonus(3,1,0). bonus(3,2,1).\nbonus(4,1,0). bonus(4,2,2).\nbonus(5,1,2). bonus(5,2,1).\nbonus(6,1,1). bonus(6,2,1).\nbonus(7,1,2). bonus(7,2,0).\nbonus(8,1,2). bonus(8,2,2).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): one action per player.",
+      "text": "% A candidate: a profile, that is, one action for every player.\n1 { act(P,A) : action(A) } 1 :- player(P).\n#show act/2.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the players' actions.",
+      "text": "glue(act(P,A)) :- player(P), action(A).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a coalition whose members all gain by a joint deviation (solver C).",
+      "text": "% A counterexample: a coalition s/1 and a new profile new/2 in which only members of\n% the coalition act differently (a member may also keep its action) ...\n1 { s(P) : player(P) }.\n1 { new(P,A) : action(A) } 1 :- player(P).\n:- new(P,A), not s(P), not act(P,A).\n% ... and every member is strictly better off. A player's payoff is the sum of w over\n% the neighbours with the same action, plus the bonus of its action.\n:- s(P), #sum {  W,Q : w(P,Q,W), new(P,A), new(Q,A) ;  B,bonus : new(P,A), bonus(P,A,B) ;\n                -W,Q : w(P,Q,W), act(P,A), act(Q,A) ; -B,bonus : act(P,A), bonus(P,A,B) } <= 0.\n#show s/1.\n#show to(P,A) : s(P), new(P,A).\n\n% The members' old and new payoffs depend on the actions of the members and of their\n% neighbours, and on nothing else.\nnear(P) :- s(P).\nnear(Q) :- s(P), w(P,Q,_).\nrelevant(act(P,A)) :- near(P), act(P,A).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "strong-nash",
+    "group": "problems",
+    "summary": "Strong Nash equilibria of a graphical game: a counterexample is a coalition whose members all gain by deviating together (8 players, 1 solution).",
+    "shape": "shape1",
+    "tags": [
+      "fast"
+    ],
+    "expected": 1
+  }
+}

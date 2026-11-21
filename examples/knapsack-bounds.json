@@ -1,0 +1,49 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Knapsack bounds in Lua",
+  "description": "The optimisation loop of Knapsack interdiction, optimum in raw Lua. Lua can read numbers out of models, which the loop language cannot: the claim of the abstraction is a lower bound on the optimum, the follower's best reply to the same locked items an upper bound, and the script logs both until they meet at 25. The solutions are the same 2 locked sets.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The items. Added to every solver.",
+      "text": "% item(I,Cost,Weight,Profit): the leader can lock item I at the given cost; the\n% follower can pack it (if it is not locked) with the given weight and profit.\nitem(1,3,4,9).  item(2,2,3,7).  item(3,4,5,12). item(4,1,2,4).\nitem(5,3,6,13). item(6,2,4,8).  item(7,5,7,16). item(8,1,3,5).\n% top(T): no packing is worth more than T.\ntop(T) :- T = #sum { P,I : item(I,_,_,P) }.\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): locked items and a claimed value, smallest claim first.",
+      "text": "% A candidate: locked items within the budget ...\n{ lock(I) : item(I,_,_,_) }.\n:- #sum { C,I : lock(I), item(I,C,_,_) } > budget.\n% ... and a claim: the follower cannot get more than V. Small claims are preferred.\n1 { value(V) : V = 0..T } 1 :- top(T).\n#minimize { V : value(V) }.\n#show lock/1.\n#show value/1.\n"
+    },
+    {
+      "name": "refine",
+      "description": "Two parts: refine(k) per counterexample packing, cap(k) once the optimum is known.",
+      "text": "#program refine(k).\n% cex(k,pack(I)): the k-th counterexample packs item I. Its profit:\nprofit(k,P) :- P = #sum { Q,I : cex(k,pack(I)), item(I,_,_,Q) }.\n% The claim has to cover this profit unless one of the packed items is locked.\nhit(k) :- cex(k,pack(I)), lock(I).\n:- not hit(k), profit(k,P), value(V), V < P.\n\n#program cap(k).\n% best(k,value(B)): the optimal value B is known. No larger claim is of interest.\n:- best(k,value(B)), value(V), V > B.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the locked items and the claim.",
+      "text": "glue(lock(I)) :- item(I,_,_,_).\nglue(value(V)) :- top(T), V = 0..T.\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a packing worth more than the claim (solver C) and states its profit.",
+      "text": "% A counterexample: the follower packs items that are not locked, within the capacity,\n% and gets more than the claimed value.\n{ pack(I) : item(I,_,_,_) }.\n:- pack(I), lock(I).\n:- #sum { W,I : pack(I), item(I,_,W,_) } > capacity.\n:- value(V), #sum { P,I : pack(I), item(I,_,_,P) } <= V.\n% With 'optimal' the follower's best packing comes back (the strongest counterexample).\n#minimize { -P,I : pack(I), item(I,_,_,P) }.\n#show pack/1.\n% gain(P): the profit of the packing, for the script to read.\ngain(P) :- P = #sum { Q,I : pack(I), item(I,_,_,Q) }.\n#show gain/1.\n"
+    }
+  ],
+  "loop": {
+    "language": "lua",
+    "text": "-- The optimisation loop of \"Knapsack interdiction, optimum\", with numeric bounds.\n-- Lua can read numbers out of models, which the loop language cannot. The claim of\n-- solver A is a lower bound on the optimum; the follower's best reply to the same\n-- locked items is an upper bound. The script logs both until they meet.\nlocal A = rt.solver(\"A\", {\"shared\", \"abstraction\", \"refine\"}, {})\nlocal C = rt.solver(\"C\", {\"shared\", \"check\"}, {})\nlocal G = rt.link(\"G\", A, C, {\"shared\", \"glue\"}, {})\nrt.capture(\"pack\", 1)\nrt.capture(\"value\", 1)\nrt.capture(\"gain\", 1)\nrt.prepare()\n\n-- The number N of the one true atom pred(N) in a model.\nlocal function number_in(model, pred)\n  return model:atoms(pred, 1)[1].arguments[1].number\nend\n\nlocal lower, upper = 0, nil           -- upper stays nil until a reply has been seen\nlocal capped = false\nwhile true do\n  local M = A:solve{ optimal = true } -- locked items with the smallest claim still possible\n  if not M then break end\n  lower = number_in(M, \"value\")\n  local X = C:solve{ assume = G:of(M), optimal = true }   -- the follower's best reply\n  if X then\n    local reply = number_in(X, \"gain\")\n    if not upper or reply < upper then upper = reply end\n    rt.log(\"bounds:\", lower, \"to\", upper)\n    rt.count(\"refuted\", 1)\n    A:expand(\"refine\", { cex = X:atoms(\"pack\", 1) })\n  else\n    upper = lower                     -- no reply beats the claim: the claim is the optimum\n    rt.accept(M)\n    A:add(G:block(M))\n    if not capped then\n      capped = true\n      rt.log(\"optimum:\", lower)\n      A:expand(\"cap\", { best = M:atoms(\"value\", 1) })\n    end\n  end\nend\n"
+  },
+  "settings": {
+    "constants": {
+      "budget": "6",
+      "capacity": "12"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

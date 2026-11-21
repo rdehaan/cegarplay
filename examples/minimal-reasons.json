@@ -1,0 +1,46 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Minimal sufficient reasons",
+  "description": "Sufficient reasons for a small neural network's answer that have no redundant feature. One check looks for a counterexample (an input that agrees on the kept features and gets the other answer); a second one for a witness that every kept feature is needed, and is refined with its unsat core when there is none. clasp's cores are not minimal, so the loop still needs 67 candidates (256 when each candidate is only blocked); the 4 solutions are those of Reasons by size, found by a different loop.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The network and the input to be explained. Added to every solver.",
+      "text": "% A small network over 8 binary features. A hidden unit fires when the weighted sum of\n% its inputs reaches its threshold; the answer is \"yes\" when the weighted sum of the\n% firing units reaches 3.\nfeature(1..8).\nunit(1..3).\n% weight(U,F,W): unit U sees feature F with weight W.\nweight(1,1,-2). weight(1,3,1). weight(1,4,-1). weight(1,6,-3). weight(1,7,-3). weight(1,8,-1).\nweight(2,1,-3). weight(2,3,2). weight(2,4,-2). weight(2,5,-3). weight(2,6,-2). weight(2,7,-1).\nweight(2,8,3).\nweight(3,1,-2). weight(3,2,3). weight(3,3,2).  weight(3,5,-3). weight(3,7,-1). weight(3,8,3).\nthreshold(1,2). threshold(2,1). threshold(3,2).\nvote(1,1). vote(2,1). vote(3,3).\n% The input to be explained: is(F,B) says that feature F has the value B.\nis(1,0). is(2,1). is(3,1). is(4,0). is(5,1). is(6,0). is(7,0). is(8,1).\n% The network's answer on this input.\nfires0(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), is(F,1) } >= T.\nyes0 :- #sum { V,U : vote(U,V), fires0(U) } >= 3.\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): any set of features.",
+      "text": "% A candidate: any set of features whose values are kept.\n{ keep(F) : feature(F) }.\n#show keep/1.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the kept features.",
+      "text": "glue(keep(F)) :- feature(F).\n"
+    },
+    {
+      "name": "check",
+      "description": "The first check (solver C): an input that agrees on the kept features and gets the other answer.",
+      "text": "% A counterexample: another input x/1 that agrees with the given one on the kept\n% features ...\n{ x(F) } :- feature(F).\n:- keep(F), is(F,1), not x(F).\n:- keep(F), is(F,0), x(F).\n% ... but gets the other answer from the network.\nfires(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), x(F) } >= T.\nyes :- #sum { V,U : vote(U,V), fires(U) } >= 3.\n:- yes, yes0.\n:- not yes, not yes0.\ndiffers(F) :- is(F,1), not x(F).\ndiffers(F) :- is(F,0), x(F).\n#show x/1.\n#show differs/1.\n\n% The input refutes every set of kept features on which it agrees with the given\n% input. So one of the features on which it differs has to be kept.\nrelevant(keep(F)) :- differs(F).\n"
+    },
+    {
+      "name": "necessary",
+      "description": "The second check (solver D): a witness that no kept feature can be dropped.",
+      "text": "% A witness, not a counterexample: every kept feature is needed. For each kept feature\n% F0 there is an input y(F0,.) that agrees with the given input on the other kept\n% features and gets the other answer (so dropping F0 would not do).\n{ y(F0,F) } :- keep(F0), feature(F).\n:- keep(F0), keep(F), F != F0, is(F,1), not y(F0,F).\n:- keep(F0), keep(F), F != F0, is(F,0), y(F0,F).\nfires(F0,U) :- keep(F0), threshold(U,T), #sum { W,F : weight(U,F,W), y(F0,F) } >= T.\nyes(F0) :- keep(F0), #sum { V,U : vote(U,V), fires(F0,U) } >= 3.\n:- keep(F0), yes(F0), yes0.\n:- keep(F0), not yes(F0), not yes0.\n% If there is no such family of inputs, some kept feature is redundant, and the unsat\n% core names kept features that already make it so.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nsolver D = shared + necessary\nlink   G  = A -> C via shared + glue\nlink   GD = A -> D via shared + glue\n\n# C looks for a counterexample to \"the kept features force the answer\".\n# D looks for a witness of \"every kept feature is needed\"; without one the candidate\n# is not minimal, and the unsat core of D says which kept features make it so.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n        elif not D.solve(assume GD(M)):\n            reject M with GD.core(D)\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

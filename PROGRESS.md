@@ -123,6 +123,32 @@ For writing library examples in Claude web chat without the repository.
   ~200 KB); guide in `docs/chat-package/START-HERE.md` (`{{IDS}}` filled in).
 - `test/chat-package.test.mjs` (checker tests skip without Python clingo).
 
+## Sigma-2 library import (2026-11-21, plan: ~/.claude/plans/the-external-agent-has-wobbly-wigderson.md)
+
+37 projects from a web-chat agent (zip with brief, not committed) added to `examples/contrib/`,
+all group `problems`, all tagged `fast` (each run < 0.2 s), listed in the manual's library table.
+- 30 exists-forall problems (`qbf` ... `agenda-safety`): engine counts equal the agent's
+  Python-clingo and brute-force counts at the first run; no changes.
+- 6 advanced drafts in the loop language / raw Lua (`abduction-two-checks`, `minimal-reasons`,
+  `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`): expected counts
+  at the first run. Cross-checks done: reference variants (every refinement `G.block(M)`) of
+  the three with relevant/1 or cores give the same counts; same printed solution sets for
+  abduction-two-checks = abduction, qbf-blame-solver = qbf, the three reasons examples, and
+  knapsack-optimum = knapsack-bounds = knapsack-interdiction with `bound=25`; `k=7` gives 59,
+  `budget=7` gives 4; knapsack-bounds logs bounds 28, 28, 27, 26, 25, 25, then "optimum: 25".
+- `reasons-by-shrinking`: the five open helpers written with documented calls only. A's
+  interface literals come from `G:of(M)` and `G:block(M)` (same j order); assumptions on A
+  give a model for `rt.accept`. Gotcha: when shrinking drops nothing, re-solving A for the
+  same values trips the no-progress guard, so the script accepts `M` itself then.
+  No runtime change needed. A documented `G:literals()` (A's literals per j) would make
+  `learn_literals` unnecessary; not added.
+- Manual: notes on a constant named like a program-part parameter (`k` vs `refine(k)`) and
+  on `G.core` after a passed check not blocking supersets.
+- Unresolved, from the agent's report: `graph-coloring-original` (n = 6) gives 9278 in their
+  interpreter, 9265 in `cegarcheck.py`, manifest says 9270. Not investigated.
+- Backlog ideas from the brief (three-check abduction, MSS, strengthening by R, core
+  minimisation in Lua) not done.
+
 ## Next step
 
 All planned phases are done. Open items for the user: deployment to GitHub

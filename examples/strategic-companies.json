@@ -1,0 +1,41 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Strategic companies",
+  "description": "A set of companies is strategic if it makes every good, is closed under control, and no proper subset has both properties; deciding whether a given company is strategic is Sigma-2-complete (Cadoli, Eiter and Gottlob). The abstraction guesses a closed producing set with company b, and the check looks for a smaller one. The check writes the refinement itself as clause/3 atoms, one clause per company it could drop.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The holding: who makes what, who controls whom. Added to every solver.",
+      "text": "% A holding owns the companies a..h, which make the goods 1..6.\ncompany(a;b;c;d;e;f;g;h).\ngood(1..6).\n% makes(C,G): company C makes good G.\nmakes(a,1). makes(e,1).\nmakes(b,2). makes(d,2). makes(g,2).\nmakes(a,3). makes(b,3).\nmakes(e,4). makes(g,4).\nmakes(d,5). makes(e,5).\nmakes(b,6). makes(c,6). makes(f,6).\n% owner(T,K,O): O belongs to the K-th group of companies that together control company T.\nowner(b,1,a). owner(b,1,c).\nowner(e,1,b). owner(e,1,h).\nowner(e,2,g). owner(e,2,h).\nowner(f,1,h).\nowner(f,2,b). owner(f,2,e). owner(f,2,g).\ngroup(T,K) :- owner(T,K,_).\n% Is this company strategic, that is, in some strategic set?\nquery(b).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): producing, closed sets that contain the query company.",
+      "text": "% A candidate: a set of companies ...\n{ in(C) } :- company(C).\n% ... that makes every good ...\n:- good(G), not in(C) : makes(C,G).\n% ... is closed under control ...\n:- group(T,K), not in(T), in(O) : owner(T,K,O).\n% ... and contains the company we ask about.\n:- query(C), not in(C).\n#show in/1.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the members of the set.",
+      "text": "glue(in(C)) :- company(C).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a proper subset with the same two properties (solver C) and states the refinement as clause/3 atoms.",
+      "text": "% A counterexample: a proper subset of the candidate that also makes every good and is\n% closed under control. Then the candidate is not minimal.\n{ sub(C) } :- in(C).\n:- good(G), not sub(C) : makes(C,G).\n:- group(T,K), not sub(T), sub(O) : owner(T,K,O).\ndropped(C) :- in(C), not sub(C).\nsmaller :- dropped(C).\n:- not smaller.\n#show sub/1.\n\n% The subset refutes every set that contains it and one more company. For each dropped\n% company D, clause D says: a member of the subset leaves, or D leaves.\n% (Leaving out the last literal would also forbid the subset itself, which may be strategic.)\nclause(D, in(C), false) :- dropped(D), sub(C).\nclause(D, in(D), false) :- dropped(D).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The check writes the refinement itself, as clause(Id, Atom, Value) atoms: one clause\n# per company that the smaller set leaves out. G.clauses(X) turns them into clauses.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clauses(X)\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

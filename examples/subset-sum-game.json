@@ -1,0 +1,41 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Subset sum game",
+  "description": "Generalised subset sum: pick x-numbers so that no choice of y-numbers brings the total to the target, a Sigma-2-complete problem (Berman, Karpinski, Larmore, Plandowski and Rytter). The check only needs the sum of the picked numbers, so the interface is the derived atom xsum/1, and a refinement forbids a sum together with every set that has it. Glue pick/1 instead (and mark all of it relevant) to get one refinement per set.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The numbers and the target. Added to every solver.",
+      "text": "% Two lists of numbers and a target. The x-player picks some of the first list; then\n% the y-player may add some of the second list to reach the target exactly.\nxnum(1,2). xnum(2,8). xnum(3,9). xnum(4,10). xnum(5,12). xnum(6,13). xnum(7,14).\nynum(1,2). ynum(2,4). ynum(3,7). ynum(4,16). ynum(5,18). ynum(6,19). ynum(7,21).\ntarget(71).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): any set of x-numbers, with its sum.",
+      "text": "% A candidate: any set of x-numbers.\n{ pick(I) : xnum(I,_) }.\n% Its sum. This derived atom is all the check needs to know.\nxsum(S) :- S = #sum { W,I : pick(I), xnum(I,W) }.\n#show pick/1.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the sum of the picked numbers (a derived atom).",
+      "text": "glue(xsum(S)) :- S = 0..M, M = #sum { W,I : xnum(I,W) }.\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for y-numbers that complete the sum to the target (solver C).",
+      "text": "% A counterexample: a set of y-numbers that adds exactly the missing amount.\n{ take(J) : ynum(J,_) }.\n:- xsum(S), target(T), #sum { W,J : take(J), ynum(J,W) } != T - S.\n#show take/1.\n\n% It depends on the sum only: no set with this sum is a solution.\nrelevant(xsum(S)) :- xsum(S).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

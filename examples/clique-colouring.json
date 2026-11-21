@@ -1,0 +1,43 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Clique colouring",
+  "description": "Colour the nodes red and blue so that no maximal clique with two or more nodes has one colour only; existence is Sigma-2-complete (Marx). The check looks for a one-coloured maximal clique, and the refinement says that one of its nodes changes colour. With n = 5 the graph is a 5-cycle and there is no solution; try n = 10 (330 solutions).",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The graph. Added to every solver.",
+      "text": "% The complement of a cycle on n nodes: two nodes are joined unless they are\n% neighbours on the cycle 0, 1, ..., n-1, 0.\nnode(0..n-1).\nedge(U,V) :- node(U), node(V), U != V, (U-V+n) \\ n != 1, (V-U+n) \\ n != 1.\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): colourings with two colours.",
+      "text": "% A candidate: every node is red or blue.\n{ red(V) } :- node(V).\n#show red/1.\n#show blue(V) : node(V), not red(V).\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: which nodes are red.",
+      "text": "glue(red(V)) :- node(V).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a maximal clique in one colour (solver C).",
+      "text": "% A counterexample: a clique with at least two nodes ...\n{ q(V) } :- node(V).\n:- q(U), q(V), U < V, not edge(U,V).\n:- #count { V : q(V) } < 2.\n% ... that is maximal: no further node is joined to all of its nodes ...\n:- node(W), not q(W), edge(W,V) : q(V).\n% ... and has one colour only.\n:- q(U), q(V), red(U), not red(V).\n#show q/1.\n\n% Being a maximal clique does not depend on the colouring; having one colour depends\n% on the colours of the clique's nodes only.\nrelevant(red(V)) :- q(V).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "8"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

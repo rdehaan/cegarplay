@@ -1,0 +1,48 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Fewest clues",
+  "description": "Add k clues to a partly filled 4 x 4 Sudoku so that it has exactly one solution; the fewest clues problem is Sigma-2-complete (Demaine, Ma, Schvartzman, Waingarten and Aaronson). The abstraction guesses a solved grid and the cells to reveal; the check looks for two different grids that agree with all clues, and the refinement adds a clue that rules out one of them. Delete the printed clues and raise k for larger runs.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The size of the puzzle and the printed clues. Added to every solver.",
+      "text": "% A 4 x 4 Sudoku: every row, every column and each of the four 2 x 2 boxes contains the\n% values 1..4 once.\nrow(1..4). col(1..4). val(1..4).\nbox(R,C,(R-1)/2*2+(C-1)/2) :- row(R), col(C).\n% Clues that are already printed in the grid.\npre(1,1,1). pre(2,2,2).\nprinted(R,C) :- pre(R,C,_).\n"
+    },
+    {
+      "name": "sudoku",
+      "description": "The rules of the puzzle for any grid; used by solver A (one grid) and solver C (two grids).",
+      "text": "% The rules of the puzzle, for every grid G that a solver declares with grid(G):\n% cell(G,R,C,V) says that grid G has the value V in row R, column C.\n1 { cell(G,R,C,V) : val(V) } 1 :- grid(G), row(R), col(C).\n:- cell(G,R,C1,V), cell(G,R,C2,V), C1 < C2.\n:- cell(G,R1,C,V), cell(G,R2,C,V), R1 < R2.\n:- cell(G,R1,C1,V), cell(G,R2,C2,V), box(R1,C1,B), box(R2,C2,B), (R1,C1) < (R2,C2).\n% Every grid respects the printed clues.\n:- grid(G), pre(R,C,V), not cell(G,R,C,V).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): a solved grid and k of its cells as clues.",
+      "text": "% A candidate: a solved grid s and k of its cells that are revealed as clues.\ngrid(s).\nk { clue(R,C) : row(R), col(C), not printed(R,C) } k.\n% given(R,C,V): the puzzle shows the value V in row R, column C.\ngiven(R,C,V) :- clue(R,C), cell(s,R,C,V).\n#show given/3.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the clues with their values. The solved grid stays private to solver A.",
+      "text": "glue(given(R,C,V)) :- row(R), col(C), val(V), not printed(R,C).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for two different grids that agree with all clues (solver C).",
+      "text": "% A counterexample: two different grids a and b that both agree with the clues.\n% (One of them may be the candidate's own grid.)\ngrid(a). grid(b).\n:- given(R,C,V), not cell(a,R,C,V).\n:- given(R,C,V), not cell(b,R,C,V).\ndiffer :- cell(a,R,C,V), not cell(b,R,C,V).\n:- not differ.\n#show.\n#show a(R,C,V) : cell(a,R,C,V).\n#show b(R,C,V) : cell(b,R,C,V).\n\n% Both grids fit every puzzle that shows only values on which they agree. So a clue\n% has to appear that contradicts one of them: any value in a cell where a or b has\n% another value.\nboth(R,C,V) :- cell(a,R,C,V), cell(b,R,C,V).\nrelevant(given(R,C,V)) :- row(R), col(C), val(V), not printed(R,C), not both(R,C,V).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + sudoku + abstraction\nsolver C = shared + sudoku + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "k": "2"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

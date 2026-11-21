@@ -1,0 +1,41 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Core-stable coalitions",
+  "description": "A partition of agents into coalitions is core-stable if no group would all be strictly better off as a coalition of their own; existence is Sigma-2-complete for additive values (Woeginger). The abstraction guesses a partition and the check a blocking coalition. relevant/1 marks only the changes that could make a member of the blocking coalition happier where it is: losing a companion it dislikes, or gaining one it likes.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The agents and how they value each other. Added to every solver.",
+      "text": "% Six agents form coalitions. value(I,J,V): agent I values being with agent J at V;\n% a coalition is worth the sum over its other members.\nagent(1..6).\nvalue(1,2,-2). value(1,3,-3). value(1,4,1).  value(1,5,-3). value(1,6,4).\nvalue(2,1,4).  value(2,3,4).  value(2,4,3).  value(2,5,-1). value(2,6,-3).\nvalue(3,1,4).  value(3,2,-4). value(3,4,3).  value(3,5,3).  value(3,6,-4).\nvalue(4,1,4).  value(4,2,1).  value(4,3,-1). value(4,5,-3). value(4,6,2).\nvalue(5,1,-4). value(5,2,-4). value(5,3,-4). value(5,4,5).  value(5,6,-4).\nvalue(6,1,3).  value(6,2,-1). value(6,3,3).  value(6,4,-4). value(6,5,5).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): partitions of the agents.",
+      "text": "% A candidate: a partition, given by tog(I,J) for agents I < J in the same coalition.\n{ tog(I,J) } :- agent(I), agent(J), I < J.\nsame(I,J) :- tog(I,J).\nsame(J,I) :- tog(I,J).\n:- same(I,J), same(J,K), I < K, not same(I,K).\n% Shown as in(I,R): agent I is in the coalition whose smallest member is R.\nfirst(R) :- agent(R), not same(R,J) : agent(J), J < R.\nin(R,R) :- first(R).\nin(I,R) :- first(R), same(I,R).\n#show in/2.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: which pairs of agents are together.",
+      "text": "glue(tog(I,J)) :- agent(I), agent(J), I < J.\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a blocking coalition (solver C).",
+      "text": "same(I,J) :- tog(I,J).\nsame(J,I) :- tog(I,J).\n% A counterexample: a group of agents each of whom values the group strictly more\n% than its present coalition.\n1 { s(I) : agent(I) }.\n:- s(I), #sum { V,J : s(J), value(I,J,V) ; -V,J : same(I,J), value(I,J,V) } <= 0.\n#show s/1.\n\n% The group keeps blocking unless a member becomes happier where it is. Only two\n% kinds of change can do that:\n% a companion the member dislikes leaves its coalition ...\nhelp(I,J) :- s(I), same(I,J), value(I,J,V), V < 0.\n% ... or an agent the member likes joins it.\nhelp(I,J) :- s(I), agent(J), I != J, not same(I,J), value(I,J,V), V > 0.\nrelevant(tog(I,J)) :- help(I,J), I < J.\nrelevant(tog(J,I)) :- help(I,J), J < I.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

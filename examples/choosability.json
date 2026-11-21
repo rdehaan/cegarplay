@@ -1,0 +1,45 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "List colouring",
+  "description": "List assignments from which a graph cannot be properly coloured: they refute choosability, which is Pi-2-complete once lists of size 3 occur (Erdos, Rubin and Taylor; Gutner and Tarsi). The abstraction guesses the lists, the check finds a colouring from them, and the refinement says that one node loses the colour it was given. The default is K(3,3) with lists of size 2, an easy case; try a = 2, b = 4, p = 4 (144 solutions).",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The graph, the palette and the list sizes. Added to every solver.",
+      "text": "% The complete bipartite graph with a nodes on the left and b nodes on the right.\nleft(1..a).\nright(a+1..a+b).\nnode(V) :- left(V).\nnode(V) :- right(V).\nedge(U,V) :- left(U), right(V).\n% The palette, and size(V,K): the list of node V has K colours.\n% (Mix sizes 2 and 3 for the hard case, for example: size(1,3). size(V,2) :- node(V), V > 1.)\ncolour(1..p).\nsize(V,2) :- node(V).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): a list of colours for every node.",
+      "text": "% A candidate: a list of the required size for every node.\nK { list(V,C) : colour(C) } K :- size(V,K).\n#show list/2.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the lists.",
+      "text": "glue(list(V,C)) :- node(V), colour(C).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a proper colouring from the lists (solver C).",
+      "text": "% A counterexample: a proper colouring that gives every node a colour from its list.\n1 { col(V,C) : list(V,C) } 1 :- node(V).\n:- edge(U,V), col(U,C), col(V,C).\n#show col/2.\n\n% The colouring works for all lists that still contain the colours it uses.\nrelevant(list(V,C)) :- col(V,C).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "a": "3",
+      "b": "3",
+      "p": "3"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

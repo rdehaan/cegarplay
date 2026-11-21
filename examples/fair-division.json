@@ -1,0 +1,46 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Fair and efficient division",
+  "description": "Allocations of indivisible goods that are envy-free and Pareto-efficient; existence is Sigma-2-complete even for additive values (de Keijzer, Bouveret, Klos and Zhang). The abstraction guesses an envy-free allocation and the check one that dominates it. Being dominated depends on sums, which a clause cannot say, so the refinement is a rule (Shape 3): no later candidate may be dominated by this counterexample.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "Agents, goods and values. Added to every solver.",
+      "text": "% Three agents divide seven goods. value(A,G,V): good G is worth V to agent A;\n% a bundle is worth the sum of its goods.\nagent(1..3).\ngood(1..7).\nvalue(1,1,1). value(1,2,2). value(1,3,2). value(1,4,6). value(1,5,3). value(1,6,5). value(1,7,5).\nvalue(2,1,4). value(2,2,1). value(2,3,3). value(2,4,7). value(2,5,7). value(2,6,9). value(2,7,6).\nvalue(3,1,9). value(3,2,8). value(3,3,9). value(3,4,5). value(3,5,1). value(3,6,1). value(3,7,6).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): envy-free allocations.",
+      "text": "% A candidate: every good goes to one agent ...\n1 { gets(A,G) : agent(A) } 1 :- good(G).\n% ... and nobody envies anybody: A does not value B's bundle more than the own one.\n:- agent(A), agent(B), A != B,\n   #sum { V,G : gets(B,G), value(A,G,V) ; -V,G : gets(A,G), value(A,G,V) } > 0.\n#show gets/2.\n"
+    },
+    {
+      "name": "refine",
+      "description": "Grounded once per counterexample: later candidates must not be dominated by it.",
+      "text": "#program refine(k).\n% cex(k,alt(A,G)): in the k-th counterexample agent A gets good G.\n% loses(k,A) / gains(k,A): agent A is worse / better off there than in the candidate.\nloses(k,A) :- agent(A),\n    #sum { V,G : cex(k,alt(A,G)), value(A,G,V) ; -V,G : gets(A,G), value(A,G,V) } < 0.\ngains(k,A) :- agent(A),\n    #sum { V,G : cex(k,alt(A,G)), value(A,G,V) ; -V,G : gets(A,G), value(A,G,V) } > 0.\n% The candidate must not be dominated by it: if somebody gains, somebody loses.\n:- gains(k,A), not loses(k,B) : agent(B).\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: who gets what.",
+      "text": "glue(gets(A,G)) :- agent(A), good(G).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for an allocation that Pareto-dominates the candidate (solver C).",
+      "text": "% A counterexample: another allocation (it need not be envy-free) in which ...\n1 { alt(A,G) : agent(A) } 1 :- good(G).\n% ... nobody is worse off ...\n:- agent(A), #sum { V,G : alt(A,G), value(A,G,V) ; -V,G : gets(A,G), value(A,G,V) } < 0.\n% ... and somebody is better off.\ngains(A) :- agent(A), #sum { V,G : alt(A,G), value(A,G,V) ; -V,G : gets(A,G), value(A,G,V) } > 0.\nbetter :- gains(A).\n:- not better.\n#show alt/2.\n% No relevant/1 rules: the loop passes the allocation alt/2 to the refine part.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.expand(refine, cex = X.atoms(alt/2))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}
