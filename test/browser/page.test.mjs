@@ -151,15 +151,27 @@ test('the library: groups from library.json, filter, ?example=, copy link, unkno
   await o.context.close();
 });
 
+test('a Load button in the tutorial loads its example and stays in the tab', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?tab=2');
+  await page.waitForSelector('#tutorial [data-load-example="gc-shape3"]');
+  await page.click('#tutorial [data-load-example="gc-shape3"]');
+  await page.waitForFunction(() => /Shape 3/.test(document.getElementById('load-status').textContent));
+  assert.match(await page.$eval('#tutorial [data-load-example="gc-shape3"] + .load-note', (e) => e.textContent), /Loaded/);
+  assert.equal(await page.$eval('#tab2', (e) => e.checked), true);
+  assert.match(await B.getEditor(page, 'loop-editor'), /A\.expand\(refine/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
 test('editors are sized when their tab is shown; Ctrl+Enter runs; clingo infos mark the line', async () => {
   const { page, context, errors } = await B.openPage(browser, server);
   await page.click('label[for="tab2"]');
   await page.waitForTimeout(200);
-  const cropped = await page.$$eval('#instructions .ace_editor', (l) => l.filter((e) => {
+  const cropped = await page.$$eval('#tutorial .ace_editor', (l) => l.filter((e) => {
     const ed = e.env.editor;
     return e.offsetHeight + 2 < ed.session.getScreenLength() * ed.renderer.lineHeight;
   }).length);
-  assert.equal(cropped, 0, 'no example editor in the Instructions is cropped');
+  assert.equal(cropped, 0, 'no example editor in the Tutorial is cropped');
   await page.click('label[for="tab3"]');
   await page.waitForTimeout(200);
   assert.ok(await page.$eval('#editor-abstraction', (e) => e.offsetHeight) > 100);

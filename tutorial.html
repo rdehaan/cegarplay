@@ -1,0 +1,383 @@
+<h2 id="tut-contents">Contents</h2>
+<ol>
+  <li><a href="#tut-cegar">What CEGAR is</a></li>
+  <li><a href="#tut-first-run">Your first run</a></li>
+  <li><a href="#tut-fragments">Fragments, solvers and links</a></li>
+  <li><a href="#tut-reading">Reading the trace and the statistics</a></li>
+  <li><a href="#tut-weak">When <code>relevant/1</code> is too weak</a></li>
+  <li><a href="#tut-shapes">Choosing a loop shape</a></li>
+  <li><a href="#tut-language">Writing loop scripts</a></li>
+  <li><a href="#tut-own">Your own problem</a></li>
+  <li><a href="#tut-next">Where next</a></li>
+</ol>
+<p>Every lesson has a <b>Load</b> button. It replaces the project you are editing (the page asks first
+  if you changed it), and you stay in this tab. Press <b>Run</b> or <b>Ctrl+Enter</b> (<b>Cmd+Enter</b> on a
+  Mac): the run bar at the top shows the counts while you read on. All examples are also in the
+  Library in the Control tab.</p>
+
+<h2 id="tut-cegar">1. What CEGAR is</h2>
+<p>
+  CEGAR (counterexample-guided abstraction refinement) splits a hard problem into a solver
+  that proposes candidates and a solver that checks them.
+  When the check finds a counterexample, the loop adds a refinement to the first solver
+  that rules out the candidate, and usually many similar ones.
+  The loop ends when the first solver has no candidates left; every candidate that passed the check is a solution.
+</p>
+<p>
+  CegarPlay runs such loops in your browser. The problem is written in answer set programming,
+  the loop is a short script, and both run in <a href="https://potassco.org">clingo</a> compiled to WebAssembly.
+  The larger examples come from <a href="https://github.com/rdehaan/declarative-cegar">declarative-cegar</a>.
+</p>
+
+<h2 id="tut-first-run">2. Your first run</h2>
+<p>
+  A set of numbers is <i>sum-free</i> if no two members (possibly the same one twice) add up to a third member.
+  The first example lists all sum-free subsets of 1..8. Solver <code>A</code> guesses any set; solver
+  <code>C</code> looks for a sum inside it.
+</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="tutorial-first-run">Load: Sum-free sets</button></p>
+<p>Run it. It takes a fraction of a second, and the run bar shows
+  <b>107 candidates, 46 counterexamples, 46 refinements, 61 solutions</b>. Then open the <b>Output</b> tab:</p>
+<ul>
+  <li><b>Solutions</b> lists the 61 sets (the first one is the empty set).</li>
+  <li><b>Trace</b> shows the run one step at a time. Step 1: the candidate is <code>pick(2) pick(4)</code>;
+    the check finds the counterexample <code>sum(2,2)</code>, because 2 + 2 = 4; the refinement is the clause
+    <code>-pick(2) ∨ -pick(4)</code>: from now on, 2 and 4 are never picked together.</li>
+</ul>
+<p>
+  One clause rules out every set that contains both 2 and 4, not only this candidate. That is why 46
+  refinements are enough for a search over 256 sets.
+  (Step 2 may show a candidate that the clause of step 1 already rules out. In this loop shape clasp
+  does not always apply a fresh clause to the very next candidate; the check catches it again, and the result is
+  the same.)
+</p>
+
+<h2 id="tut-fragments">3. Fragments, solvers and links</h2>
+<p>Open the <b>Programs</b> tab. The problem is split into four <b>fragments</b>, named pieces of ASP text:</p>
+<ul>
+  <li><b>shared</b>: <code>num(1..n).</code> Every solver needs it. <code>n</code> is set in the Constants table
+    of the Loop tab (here <code>n = 8</code>), which overrides a <code>#const</code> in the text.</li>
+  <li><b>abstraction</b>: <code>{ pick(X) : num(X) }.</code> The candidates: any set.</li>
+  <li><b>glue</b>: <code>glue(pick(X)) :- num(X).</code> Each derived <code>glue(T)</code> makes <code>T</code> an
+    <b>interface atom</b>: an atom both solvers talk about. When the check runs, these atoms are fixed to their values in the candidate.</li>
+  <li><b>check</b>: has an answer set exactly when the candidate is wrong, and marks with <code>relevant(T)</code>
+    the interface atoms the counterexample depends on:</li>
+</ul>
+<div class="example-code" data-mode="gringo">1 { sum(X,Y) : num(X), num(Y), X &lt;= Y, X + Y &lt;= n } 1.
+:- sum(X,Y), not pick(X).
+:- sum(X,Y), not pick(Y).
+:- sum(X,Y), not pick(X+Y).
+relevant(pick(X)) :- sum(X,Y).
+relevant(pick(Y)) :- sum(X,Y).
+relevant(pick(X+Y)) :- sum(X,Y).</div>
+<p>Now open the <b>Loop</b> tab. The loop script first declares the <b>solvers</b> (clingo instances, each grounding
+  a list of fragments) and a <b>link</b> between them:</p>
+<div class="example-code" data-mode="loop">solver A = shared + abstraction
+solver C = shared + check
+link   G = A -&gt; C via shared + glue
+
+search A:
+    on candidate M:
+        X = C.solve(assume G(M))
+        if X:
+            reject M with G.clause(M, X)</div>
+<ul>
+  <li><code>search A:</code> runs <code>A</code>'s search and calls the <code>on candidate</code> block for each candidate <code>M</code>.</li>
+  <li><code>G(M)</code> turns the candidate into assumptions for <code>C</code>: the values of the interface atoms in <code>M</code>.</li>
+  <li><code>C.solve(...)</code> returns a counterexample, or <code>none</code> if the check is unsatisfiable.</li>
+  <li><code>G.clause(M, X)</code> is the refinement: at least one atom marked <code>relevant</code> in <code>X</code>
+    must change its value. A candidate that is not rejected is a solution.</li>
+</ul>
+<p>
+  The same structure, at a larger scale: the default example looks for connected graphs on <code>n</code> nodes with a
+  colouring of the leaves that no proper 3-colouring of the whole graph extends. Guessing a graph is easy;
+  checking that <em>no</em> colouring exists is the hard part, so it goes to the check solver, and a counterexample
+  is a colouring. Its fragments have comments; read them in the Programs tab.
+</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="graph-coloring">Load: Graph colouring (n = 6)</button></p>
+<p>With Solutions set to <code>all</code>, a run takes a few seconds: 31,776 candidates, 21,078 counterexamples and
+  refinements, 10,698 solutions.</p>
+
+<h2 id="tut-reading">4. Reading the trace and the statistics</h2>
+<p>The trace (Output tab) records the first steps of a run (Trace steps in the Loop tab, default 200). Each step
+  shows the candidate, the counterexample and the refinement; candidate atoms that occur in the refinement are
+  highlighted. If a run stops with an error about a candidate, the trace jumps to that step.</p>
+<p>The <b>Statistics</b> tab, after a run:</p>
+<ul>
+  <li><b>Candidates</b>, <b>Counterexamples</b>, <b>Refinements</b> (clauses + expansions), <b>Solutions</b>.
+    "exhausted" after the outcome means the search ran to the end, so the count of solutions is complete.</li>
+  <li>A table per solver: solve calls and how they ended, time spent solving and grounding, clasp's counters.
+    For a check, Sat is the number of counterexamples found.</li>
+  <li>The Refinements table: number of clauses and their lengths. Short clauses are strong refinements:
+    each removes many candidates.</li>
+  <li>Charts of candidates and refinements over time, where the time went, and the clause lengths.</li>
+  <li>The <b>run history</b>: one row per finished run in this session. Use it to compare loops on the same problem.</li>
+</ul>
+
+<h2 id="tut-weak">5. When <code>relevant/1</code> is too weak</h2>
+<p>
+  A clause from <code>G.clause</code> removes every candidate that agrees with the counterexample on the relevant
+  atoms. If the <code>relevant/1</code> rules miss an atom, the clause also removes real solutions, and nothing warns you.
+  This example marks only the sum <code>X + Y</code>, not <code>X</code> and <code>Y</code>:
+</p>
+<div class="example-code" data-mode="gringo">% Too weak: X and Y are not marked.
+relevant(pick(X+Y)) :- sum(X,Y).</div>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="tutorial-weak-relevant">Load: Sum-free sets (too weak relevant/1)</button></p>
+<p>
+  Run it: <b>11 solutions</b> instead of 61. After the counterexample <code>sum(2,2)</code>, the refinement says
+  "never pick 4", also for sets without 2.
+</p>
+<p>
+  How to find out: <code>G.block(M)</code> removes only the candidate itself, so a loop that refines with
+  <code>G.block</code> is always sound. In the Loop tab, choose the template <b>Reference run</b>, press
+  <b>Insert</b>, and run again: 61 solutions (and 256 candidates, one per set). Both runs are in the run
+  history of the Statistics tab, and since both ran to the end with different counts, they are marked ⚠.
+</p>
+<p>
+  Do this check on a small instance of every new problem: run your loop with Solutions <code>all</code>,
+  then the Reference run, and compare.
+  (This example uses Shape 2, explained in the next lesson. With Shape 1 the loss may not show at this size,
+  for the reason mentioned in lesson 2.)
+</p>
+<p>The same story at a larger scale: the original rules of the graph colouring example lack the third
+  <code>relevant/1</code> rule (a node that is not a leaf may become one later) and find 9,270 solutions instead of 10,698.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="graph-coloring-original">Load: Graph colouring (original rules)</button></p>
+
+<h2 id="tut-shapes">6. Choosing a loop shape</h2>
+<p>
+  The Loop tab has five templates. They use the same declarations and differ in how the solvers call each other.
+  The examples below are graph colouring at <code>n = 5</code>; all five find the same 101 solutions.
+</p>
+<div class="table-wrapper"><table class="internals-table">
+  <thead><tr><th>Example</th><th>Candidates</th><th>Counterexamples</th><th>Refinements</th></tr></thead>
+  <tbody>
+    <tr><td>Shape 1</td><td>1,421</td><td>1,320</td><td>1,320 clauses</td></tr>
+    <tr><td>Shape 2</td><td>1,259</td><td>1,158</td><td>1,259 clauses (1,158 + 101 blocks)</td></tr>
+    <tr><td>Shape 3</td><td>222</td><td>121</td><td>121 expansions + 101 blocks</td></tr>
+    <tr><td>Shape 4</td><td>327</td><td>226</td><td>226 blocks + 226 expansions</td></tr>
+    <tr><td>Reference run</td><td>3,373</td><td>3,272</td><td>3,272 blocks</td></tr>
+  </tbody>
+</table></div>
+
+<h3 id="tut-shape1">Shape 1: check inside the search</h3>
+<p>One search of <code>A</code> for the whole run; the check runs inside it, and a counterexample rejects
+  the candidate at once with a clause. Usually the fastest. Use it first.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="gc-shape1">Load: Shape 1</button></p>
+
+<h3 id="tut-shape2">Shape 2: solve, check, refine, solve again</h3>
+<p>The classic loop: each round solves <code>A</code> from the start, with the new clauses added. A solution must
+  be blocked by hand (<code>A.add(G.block(M))</code>), or the next round finds it again. Easier to follow and to
+  change than Shape 1; slower, because every round is a new solve call.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="gc-shape2">Load: Shape 2</button></p>
+<div class="example-code" data-mode="loop">loop:
+    M = A.solve()
+    if not M: stop
+    X = C.solve(assume G(M))
+    if X:
+        A.add(G.clause(M, X))
+    else:
+        accept M
+        A.add(G.block(M))</div>
+
+<h3 id="tut-shape3">Shape 3: ground new rules per counterexample</h3>
+<p>Instead of a clause, each counterexample is handed to the part <code>#program refine(k).</code> of the abstraction,
+  which grounds new rules: <code>A.expand(refine, cex = X.atoms(color/2))</code> adds the facts <code>cex(k, T)</code> and grounds
+  <code>refine(k)</code>. Rules can say more than one clause: here, that the next graph must break the colouring found
+  (an edge between two nodes of the same colour, or a different leaf colour). Few candidates, but grounding costs time. Look at the end of the abstraction fragment.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="gc-shape3">Load: Shape 3</button></p>
+
+<h3 id="tut-shape4">Shape 4: search, collect, ground in batches</h3>
+<p>As Shape 3, but the search goes on: each failed candidate is blocked and its counterexample kept; after 20,
+  the search restarts and grounds them all at once. Fewer, larger grounding steps.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="gc-shape4">Load: Shape 4</button></p>
+
+<h3 id="tut-reference">Reference run</h3>
+<p>Shape 1 with <code>G.block(M)</code>: rejects exactly one candidate at a time. Slow, but always sound: its count is
+  the truth to compare with (lesson 5).</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="gc-reference">Load: Reference run</button></p>
+
+<h2 id="tut-language">7. Writing loop scripts</h2>
+<p>
+  A loop script is indented like Python: 4 spaces per level, no tabs; <code>#</code> starts a comment.
+  Declarations (<code>solver</code>, <code>link</code>) come first, then statements. The examples in this lesson are
+  small (most are sum-free sets again); each shows one feature, with comments in the Loop tab.
+  The <a href="#tut-quickref">quick reference</a> below lists everything.
+</p>
+
+<h3 id="tut-lang-basics">The basics</h3>
+<p>Shape 2 written out with most statements: variables, <code>loop</code>, <code>if</code>/<code>elif</code>/<code>else</code>,
+  <code>break</code>, <code>stop "message"</code>, <code>accept</code>, lists (<code>[]</code>, <code>push</code>, <code>size</code>),
+  <code>for</code>, <code>count</code> and <code>log</code>. After a run, the <code>log</code> lines are under Messages in the
+  Output tab, and the counters (<code>refinements</code>, <code>largest</code>) in the Statistics tab.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="lang-basics">Load: the basics</button></p>
+<div class="example-code" data-mode="loop">X = C.solve(assume G(M))       # look for a counterexample to M
+if X:
+    count refinements          # a counter, shown in the Statistics tab
+    A.add(G.clause(M, X))      # one relevant atom must change
+elif found &gt;= 1000:
+    stop "enough solutions"    # ends the whole run, with a message
+else:
+    accept M                   # M is a solution</div>
+
+<h3 id="tut-lang-several">Several counterexamples per candidate</h3>
+<p><code>C.models(..., limit 3)</code> returns a list of up to three counterexamples; each one refines <code>A</code>.
+  The same 61 solutions with 100 candidates instead of 107.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="lang-several-cex">Load: several counterexamples</button></p>
+<div class="example-code" data-mode="loop">for X in C.models(assume G(M), limit 3):
+    reject M with G.clause(M, X)</div>
+
+<h3 id="tut-lang-optimal">The smallest refinement</h3>
+<p>With <code>optimal</code>, <code>C.solve</code> returns an optimal model of a <code>#minimize</code> statement.
+  The check gets <code>#minimize { 1,T : relevant(T) }.</code>, so it prefers counterexamples that mark few atoms,
+  which give shorter clauses.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="lang-optimal">Load: optimal counterexamples</button></p>
+<div class="example-code" data-mode="loop">X = C.solve(assume G(M), optimal)</div>
+
+<h3 id="tut-lang-two-stage">Two checks</h3>
+<p>Sum-free sets without two consecutive numbers, with one check solver per condition. Each check has its own
+  fragment and link; <code>C2</code> runs only when <code>C1</code> finds nothing.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="lang-two-stage">Load: two checks</button></p>
+<div class="example-code" data-mode="loop">X = C1.solve(assume G1(M))
+if X:
+    reject M with G1.clause(M, X)
+else:
+    Y = C2.solve(assume G2(M))
+    if Y: reject M with G2.clause(M, Y)</div>
+
+<h3 id="tut-lang-clauses">Refinements written in ASP</h3>
+<p>The check can state the refinement itself with atoms <code>clause(Id, T, Value)</code>: the atoms with one
+  <code>Id</code> form one clause, <code>true</code> adds the literal <code>T</code>, <code>false</code> adds <code>not T</code>.
+  <code>T</code> must be an interface atom. The loop reads them with <code>G.clauses(X)</code>.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="lang-clauses">Load: clauses from ASP</button></p>
+<div class="example-code" data-mode="gringo">clause(1, pick(X), false) :- sum(X,Y).
+clause(1, pick(Y), false) :- sum(X,Y).
+clause(1, pick(X+Y), false) :- sum(X,Y).</div>
+
+<h3 id="tut-lang-core">Unsat cores, when the check looks for a witness</h3>
+<p>Sometimes the check confirms a candidate instead of refuting it: here, a graph is a solution when it can be
+  3-coloured. A candidate is rejected when the check is <i>unsatisfiable</i>, and <code>G.core(C)</code> builds the
+  clause from the unsatisfiable core: the edges that together make a colouring impossible. 41 clauses suffice
+  for 999 candidates. (In this example every satisfiable check counts as a counterexample in the statistics.)</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="lang-core">Load: unsat cores</button></p>
+<div class="example-code" data-mode="loop">if not C.solve(assume G(M)):
+    reject M with G.core(C)</div>
+
+<h3 id="tut-lang-second">A refinement computed by its own solver</h3>
+<p>A third solver <code>R</code> computes the refinement from the candidate and the counterexample together. A solve
+  call can take several assumption lists, here one per link.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="lang-second-solver">Load: a refinement solver</button></p>
+<div class="example-code" data-mode="loop">X = C.solve(assume G(M))
+if X:
+    Y = R.solve(assume GA(M), GC(X))
+    reject M with GA.clause(M, Y)</div>
+
+<h3 id="tut-lang-legacy">Files from cegar.py</h3>
+<p>The Python prototype's files list the interface atoms in the glue directly (<code>pick(X) :- num(X).</code>).
+  The keyword <code>legacy</code> on the link reads them that way. The Control tab imports such <code>.lp</code> files.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="lang-legacy">Load: legacy glue</button></p>
+
+<h3 id="tut-lang-lua">Raw Lua</h3>
+<p>The loop script is compiled to Lua (the Internals tab shows it, with <code>?internals=true</code>). If the language
+  lacks something, <b>Edit as Lua</b> in the Loop tab turns the script into Lua that you can change freely.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="lang-raw-lua">Load: raw Lua</button></p>
+
+<h3 id="tut-lang-errors">Mistakes in a script</h3>
+<p>The script is compiled while you type. Load any example above, open the Loop tab, and change
+  <code>C.solve</code> into <code>D.solve</code>: after a moment the line is marked, the Loop tab label turns red,
+  and the message says <code>'D' is not a declared solver</code>. Other errors found before a run: unknown fragments, wrong
+  indentation, <code>reject</code> outside <code>on candidate</code>, <code>A.add</code> inside the search of <code>A</code>.
+  A run does not start while there are errors.</p>
+
+<h2 id="tut-own">8. Your own problem</h2>
+<p>Start from the starter project (also <b>New project</b> in the Control tab). Its four fragments run as they are:
+  the abstraction guesses a non-empty set of items, and the check looks for an item that is picked while a smaller
+  one is not. With <code>n = 4</code> it finds 4 solutions.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="starter">Load: the starter</button></p>
+<p>Replace the fragments step by step, running after each change:</p>
+<ol>
+  <li>Put the domains in <b>shared</b> and the guess of a candidate in <b>abstraction</b>. Make the check
+    <code>#false.</code> for a moment: it then never finds a counterexample, so the run lists all candidates.
+    (An empty check is different: it has an answer set for every candidate, so every candidate has a
+    counterexample.)</li>
+  <li>List the atoms the check needs in <b>glue</b>, wrapped as <code>glue(T)</code>.</li>
+  <li>Write the <b>check</b>: rules that have an answer set exactly when the candidate is wrong. Add
+    <code>relevant(T)</code> rules for the interface atoms each counterexample depends on.</li>
+  <li>Compare with the Reference run on a small instance (lesson 5).</li>
+</ol>
+<p>If a counterexample has no relevant atom, the run stops with <code>relevant/1 derived nothing for link G</code>,
+  and the trace shows that candidate and counterexample. Your project is kept in this browser and comes back after a
+  reload; download it (Control tab) to keep it for good.</p>
+
+<h2 id="tut-next">9. Where next</h2>
+<p>The quick reference below lists the loop language, the refinement variants, and the limits.
+  The Library in the Control tab has the larger problems (Nash equilibria, voting). Every example can be
+  linked to directly: <b>Copy link</b> in the Library gives a link such as <code>?example=gc-shape3</code>.</p>
+
+<h2 id="tut-quickref">Quick reference</h2>
+<h3>Declarations</h3>
+<div class="table-wrapper"><table class="internals-table">
+  <thead><tr><th>Script</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>solver A = shared + abstraction options "--heuristic=Domain"</code></td><td>A clingo instance that grounds these fragments, with these options (split on spaces).</td></tr>
+    <tr><td><code>link G = A -&gt; C via shared + glue</code></td><td>A link from <code>A</code> to <code>C</code>; the interface atoms come from <code>glue/1</code> in these fragments. Add <code>legacy</code> for unwrapped glue atoms, <code>compat</code> to make <code>relevant(T)</code> a free choice as in the Python prototype.</td></tr>
+  </tbody>
+</table></div>
+<h3>Statements</h3>
+<div class="table-wrapper"><table class="internals-table">
+  <thead><tr><th>Script</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>x = e</code></td><td>Assign a variable. Variables are local to the main script or to one <code>on candidate</code> block.</td></tr>
+    <tr><td><code>if a: ... elif b: ... else: ...</code></td><td>Conditional. Only <code>false</code> and <code>none</code> are false.</td></tr>
+    <tr><td><code>loop:</code></td><td>Repeat forever; leave with <code>break</code> or <code>stop</code>.</td></tr>
+    <tr><td><code>while e:</code></td><td>Repeat while <code>e</code> is true.</td></tr>
+    <tr><td><code>repeat: ... until e</code></td><td>Run the block, then stop once <code>e</code> is true.</td></tr>
+    <tr><td><code>for x in e:</code></td><td>Run the block for each element of the list <code>e</code>.</td></tr>
+    <tr><td><code>break</code>, <code>continue</code></td><td>Leave the innermost loop; go to its next round.</td></tr>
+    <tr><td><code>search A:</code> / <code>on candidate M:</code> / block</td><td>Run <code>A</code>'s own search; call the block for every candidate <code>M</code>. A candidate that is not rejected is a solution.</td></tr>
+    <tr><td><code>reject M with e</code></td><td>Add the clause (or list of clauses) <code>e</code> to the searching solver. Only inside <code>on candidate</code>.</td></tr>
+    <tr><td><code>accept M</code></td><td>Count <code>M</code> as a solution (for models from <code>solve</code>; inside a search, not rejecting already accepts).</td></tr>
+    <tr><td><code>restart</code></td><td>End the current search early; the next <code>search</code> starts afresh. Solutions found so far are not reported again.</td></tr>
+    <tr><td><code>stop "msg"</code></td><td>End the run with outcome <code>stopped</code> (without a message: <code>finished</code>).</td></tr>
+    <tr><td><code>count n by e</code></td><td>Add <code>e</code> (default 1) to the custom counter <code>n</code>.</td></tr>
+    <tr><td><code>log a, b</code></td><td>Print a line to the messages in the Output tab.</td></tr>
+  </tbody>
+</table></div>
+<p>A block may also follow the colon on the same line, if it is a single simple statement: <code>if not M: stop</code>.</p>
+<h3>Expressions</h3>
+<div class="table-wrapper"><table class="internals-table">
+  <thead><tr><th>Script</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>S.solve(assume E, optimal)</code></td><td>Solve <code>S</code> under the assumptions <code>E</code>. Returns a model, or <code>none</code> if unsatisfiable. With <code>optimal</code>, the optimal model of a <code>#minimize</code>.</td></tr>
+    <tr><td><code>S.solve(assume E1, E2)</code></td><td>Every further argument is one more list of assumptions.</td></tr>
+    <tr><td><code>S.solve()</code></td><td>Solve without assumptions.</td></tr>
+    <tr><td><code>S.models(assume E, limit n)</code></td><td>A list of up to <code>n</code> models (empty if unsatisfiable).</td></tr>
+    <tr><td><code>S.add(c)</code></td><td>Add a clause (or list of clauses) to <code>S</code> before its next solve.</td></tr>
+    <tr><td><code>S.expand(refine, cex = X.atoms(color/2))</code></td><td>Add the facts <code>cex(k, T)</code> and ground the part <code>refine(k)</code> with the next <code>k</code>. Put <code>k</code> in every head of the part.</td></tr>
+    <tr><td><code>S.exhausted</code>, <code>S.step</code></td><td>Whether the last search of <code>S</code> ran to the end; the number of expansions so far.</td></tr>
+    <tr><td><code>G(M)</code></td><td>The values of the interface atoms in <code>M</code>, as assumptions for the target solver.</td></tr>
+    <tr><td><code>G.clause(M, X)</code></td><td>Clause: one atom marked <code>relevant</code> in <code>X</code> must change its value in <code>M</code>.</td></tr>
+    <tr><td><code>G.block(M)</code></td><td>Clause: at least one interface atom must change (rules out exactly <code>M</code>).</td></tr>
+    <tr><td><code>G.core(S)</code></td><td>Clause from the unsat core of <code>S</code>'s last solve.</td></tr>
+    <tr><td><code>G.clauses(X)</code></td><td>The clauses stated by <code>clause/3</code> atoms in <code>X</code>.</td></tr>
+    <tr><td><code>X.atoms(p/n)</code></td><td>The true atoms of <code>p/n</code> in model <code>X</code>.</td></tr>
+    <tr><td><code>[]</code>, <code>l.push(e)</code>, <code>l.size</code>, <code>l.clear()</code></td><td>A new empty list; append; its length; empty it.</td></tr>
+    <tr><td><code>none</code>, <code>!=</code>, <code>not</code>, <code>and</code>, <code>or</code></td><td>No value; not equal; the usual logic.</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Limits and gotchas</h3>
+<ul>
+  <li>The time limit and the candidate limit (Loop tab, 0 = none) end a run with outcome <code>limit</code>. The default time limit is 60 s.</li>
+  <li>The seed matters only together with randomising options, such as <code>options "--rand-freq=0.05"</code>.
+    Without them, every seed gives the same search.</li>
+  <li>The no-progress guard stops Shapes 2 and 3 with <code>the refinement made no progress</code> when a refinement
+    does not change the next candidate. Check that every head in a <code>#program part(k).</code> contains <code>k</code>.</li>
+  <li>An error inside clingo itself (not in the loop script) ends the run with "clingo stopped unexpectedly" and no message.
+    The Output tab then shows the last lines clingo printed.</li>
+  <li>clingo's warnings and infos name the fragment and the line, and after the run they are marked in the editor:
+    blue for an info, yellow for a warning.</li>
+  <li>Abort always works. Pause, Step, Stop and threads need a cross-origin isolated page;
+    otherwise these controls are hidden or disabled.</li>
+  <li>All editors are read-only while a run is active.</li>
+  <li><code>?fresh=1</code> starts from the default example instead of the project kept in this browser.</li>
+</ul>

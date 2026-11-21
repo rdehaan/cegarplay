@@ -13,7 +13,7 @@ only memory of what happened.
 - [x] Phase 6: pause, step, stop and threads (optional)
 - [x] Final review
 - [x] Phase 7: example library (after the final review, on request)
-- [ ] Phase 8: tutorial tab
+- [x] Phase 8: tutorial tab
 - [ ] Phase 9: technical manual
 
 ## Hand-over (final review, 2026-11-20)
@@ -81,11 +81,24 @@ Control tab (filter, Load, Copy link; replaces the select); `?example=<id>`
 example. `tools/run.mjs`: headless runner. `test/library.test.mjs`. 137 tests,
 135 pass, 2 skipped.
 
+Phase 8 (done): `instructions.html` -> `tutorial.html`, tab 2 "Tutorial"
+(`#section-tutorial`, `#tutorial`, `loadTutorial`). Nine lessons with Load
+buttons (`data-load-example`, no `data-tab`: the reader stays in the tab and
+gets a `.load-note`), covering every non-`problems` library example; numbers in
+the text measured with `tools/run.mjs`. The reference tables (language,
+limits) stay as a "Quick reference" section at the end of the tutorial until
+the manual exists; the templates, variants and statistics tables were dropped
+(the lessons and `gc-*`/`lang-*` examples cover them). `.example-code.ace_editor`
+gets `line-height: 1.4` (descenders were clipped). Tests: every tutorial
+button names a library id and every tutorial/language/shapes example has a
+button; a tutorial button loads its example. 139 tests, 137 pass, 2 skipped.
+
 ## Next step
 
-Phase 8: Tutorial tab (rename Instructions; lessons with load buttons; a
-loop-language tour using the `lang-*` examples). Then phase 9: manual.md,
-js/markdown.js, Manual tab (tab8) with toggle, llms.txt.
+Phase 9: manual.md, js/markdown.js, Manual tab (tab8) with toggle, llms.txt.
+Then move the tutorial's "Quick reference" into the manual and link to
+`#manual-<slug>` sections from the lessons (tutorial lesson 9 "Where next";
+loop modal text in `index.html` mentions the quick reference).
 
 ## Deviations from the plan
 

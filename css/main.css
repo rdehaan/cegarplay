@@ -58,8 +58,8 @@ pre {
   margin: 0 0 10px;
 }
 
-#section-instructions ul,
-#section-instructions ol,
+#section-tutorial ul,
+#section-tutorial ol,
 #section-internals ul,
 #section-internals ol {
   margin: 0 0 10px;
@@ -67,7 +67,7 @@ pre {
   line-height: 1.5;
 }
 
-#section-instructions li,
+#section-tutorial li,
 #section-internals li {
   margin-bottom: 4px;
 }
@@ -148,7 +148,7 @@ label[for="tab2"] {
 }
 
 #tab1:checked ~ #section-control,
-#tab2:checked ~ #section-instructions,
+#tab2:checked ~ #section-tutorial,
 #tab3:checked ~ #section-programs,
 #tab4:checked ~ #section-loop,
 #tab5:checked ~ #section-output,
@@ -348,6 +348,8 @@ label[name="tabs"].has-problem:after {
   margin-top: 6px;
   color: #c0392b;
   font-size: 13px;
+}
+.example-code.ace_editor {
   line-height: 1.4;
 }
 .run-message a {
@@ -611,11 +613,14 @@ tr.mismatch td {
   margin: 0 0 12px;
   font-size: 13px;
 }
-#instructions h2 {
+.example-code.ace_editor {
+  line-height: 1.4;
+}
+#tutorial h2 {
   margin-top: 14px;
   border-bottom: 1px solid #eee;
 }
-#instructions table {
+#tutorial table {
   margin-bottom: 12px;
 }
 

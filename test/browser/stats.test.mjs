@@ -134,10 +134,10 @@ test('Loop tab: constants, limits, edit as Lua runs the same', async () => {
   await context.close();
 });
 
-test('instructions are shown with code blocks; internals show the generated Lua', async () => {
+test('the tutorial is shown with code blocks; internals show the generated Lua', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?tab=2&internals=true');
-  await page.waitForFunction(() => document.querySelectorAll('#instructions .ace_editor').length > 3);
-  assert.ok((await page.textContent('#instructions')).length > 3000);
+  await page.waitForFunction(() => document.querySelectorAll('#tutorial .ace_editor').length > 3);
+  assert.ok((await page.textContent('#tutorial')).length > 3000);
   await page.click('#run-button');
   await B.waitState(page, ['finished']);
   await page.click('label[for="tab7"]');

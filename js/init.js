@@ -266,15 +266,15 @@ $('export-standalone-button').addEventListener('click', () => {
   catch (e) { status('export-status', e.message || String(e), true); }
 });
 
-// ---- Instructions tab -----------------------------------------------------------------
-async function loadInstructions() {
-  const box = $('instructions');
+// ---- Tutorial tab ---------------------------------------------------------------------
+async function loadTutorial() {
+  const box = $('tutorial');
   try {
-    const r = await fetch('instructions.html');
+    const r = await fetch('tutorial.html');
     if (!r.ok) throw new Error(r.statusText);
     box.innerHTML = await r.text();
   } catch {
-    box.innerHTML = '<p>The instructions could not be loaded.</p>';
+    box.innerHTML = '<p>The tutorial could not be loaded.</p>';
     return;
   }
   for (const el of box.querySelectorAll('.example-code')) {
@@ -315,7 +315,7 @@ async function start() {
     fetch('vendor/clingo-wasm/VERSION').then((r) => r.text()).catch(() => 'clingo-wasm'),
   ]);
   app.runtime = runtime;
-  loadInstructions();
+  loadTutorial();
   app.engineVersion = version.split('\n')[0];
   // ?example=<id> (or the older ?file=<id>) loads an example of the library
   const named = params.get('example') || params.get('file');

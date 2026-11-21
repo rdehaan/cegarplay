@@ -196,7 +196,7 @@ locked editors.
 | # | Label | id of section | Content |
 | --- | --- | --- | --- |
 | 1 | Control | `section-control` | Example selector + Load; upload JSON; download JSON; import `.lp`; export `.lp`; export standalone. Status lines like logic-game. |
-| 2 | Instructions | `section-instructions` | Section 11. |
+| 2 | Tutorial | `section-tutorial` | Section 11. |
 | 3 | Programs | `section-programs` | One block per fragment: heading with the name, description line, ACE editor (`mode-gringo`). Buttons: add fragment, rename, delete, move up/down. |
 | 4 | Loop | `section-loop` | Template selector + Insert; loop editor (`mode-loop`, or Lua mode off: plain text for raw Lua); constants table (name, value, add/remove); limits (seconds, candidates), trace steps, seed. "Edit as Lua" button. |
 | 5 | Output | `section-output` | Result line; solutions list (numbered, atoms, cost); messages (clingo `W` events grouped by solver + code + message with a count; `L` events; stderr lines; errors in red); trace view (section 9). |
