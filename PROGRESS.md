@@ -109,6 +109,20 @@ at the root. Tests: `test/markdown.test.mjs` (renderer; manual links resolve,
 every library id named), browser test for toggle/`?manual=true`/links/raw files.
 149 tests, 147 pass, 2 skipped; page tests pass in Firefox.
 
+## Chat package (2026-11-21, plan: ~/.claude/plans/i-want-to-create-golden-quokka.md)
+
+For writing library examples in Claude web chat without the repository.
+- `examples/contrib/*.json`: projects with a top-level `library` block; `loadContrib` in
+  `tools/make-examples.mjs` adds them to the library (group `problems` only, id must be new).
+- `tools/cegarcheck.py`: Python clingo checker (link semantics of `rt.link`, Shape 2 loop;
+  modes block/clause/clauses/core/expand, optimal, witness checks detected from
+  `if not C.solve`). Gives the library count for all 13 supported examples in both its
+  own mode and block mode. `tutorial-weak-relevant` gives 18 (page: 11): with a too-weak
+  relevant/1 the count depends on the search order.
+- `tools/make-chat-package.mjs` -> `dist/chat-package/` (git-ignored, flat, 27 files,
+  ~200 KB); guide in `docs/chat-package/START-HERE.md` (`{{IDS}}` filled in).
+- `test/chat-package.test.mjs` (checker tests skip without Python clingo).
+
 ## Next step
 
 All planned phases are done. Open items for the user: deployment to GitHub

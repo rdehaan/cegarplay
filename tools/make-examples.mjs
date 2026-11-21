@@ -1,6 +1,6 @@
 // Build examples/*.json from reference/declarative-cegar.   node tools/make-examples.mjs
 import fs from 'node:fs';
-import { importLp, save, template } from '../js/project.js';
+import { importLp, load, save, template } from '../js/project.js';
 import { stripAspComments } from '../js/driver.js';
 import { GROUPS, PROBLEMS, buildLibrary } from './library.mjs';
 
@@ -140,11 +140,43 @@ export function buildExamples() {
   return { 'graph-coloring': gc, 'graph-coloring-original': gco, nash, 'voting-justification': vote };
 }
 
+// Contributed examples: examples/contrib/*.json, each a project with a top-level
+// 'library' block { id, group, summary, shape, tags, expected }. Returns library entries.
+export const CONTRIB_GROUPS = ['problems'];
+export function loadContrib(dir = new URL('examples/contrib/', root), taken = new Set()) {
+  if (!fs.existsSync(dir)) return [];
+  const out = [];
+  const names = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
+  for (const name of names) {
+    const where = `examples/contrib/${name}`;
+    const fail = (msg) => { throw new Error(`${where}: ${msg}`); };
+    let raw;
+    try { raw = JSON.parse(fs.readFileSync(new URL(name, dir), 'utf8')); } catch (e) { fail(`not JSON: ${e.message}`); }
+    const lib = raw && raw.library;
+    if (!lib || typeof lib !== 'object') fail('no "library" block');
+    const { id, group = 'problems', summary, shape, tags = [], expected = null } = lib;
+    if (typeof id !== 'string' || !/^[A-Za-z0-9_-]+$/.test(id)) fail(`library.id must match [A-Za-z0-9_-]+, got ${JSON.stringify(id)}`);
+    if (taken.has(id)) fail(`library.id '${id}' is already used`);
+    if (!CONTRIB_GROUPS.includes(group)) fail(`library.group must be one of ${CONTRIB_GROUPS.join(', ')}`);
+    if (typeof summary !== 'string' || !summary) fail('library.summary is missing');
+    if (typeof shape !== 'string' || !shape) fail('library.shape is missing');
+    if (!Array.isArray(tags) || tags.some((t) => typeof t !== 'string')) fail('library.tags must be a list of strings');
+    if (expected !== null && !(Number.isInteger(expected) && expected >= 0)) fail('library.expected must be a whole number or null');
+    const { library, ...rest } = raw;
+    let project;
+    try { project = load(JSON.stringify(rest)); } catch (e) { fail(e.message); }
+    taken.add(id);
+    out.push({ id, group, summary, shape, tags, expected, project });
+  }
+  return out;
+}
+
 // All examples and the manifest: { files: { id: project }, manifest }.
-export function buildAll() {
+export function buildAll({ contribDir } = {}) {
   const problems = buildExamples();
   const entries = buildLibrary(problems['graph-coloring']);
   for (const e of PROBLEMS) entries.push({ ...e, group: 'problems', project: problems[e.id] });
+  entries.push(...loadContrib(contribDir, new Set(entries.map((e) => e.id))));
   const files = {};
   const examples = [];
   for (const g of GROUPS) {

@@ -3,3 +3,4 @@ reference/
 spike/web/vendor/
 spike/web/gc*_standalone.lp
 .DS_Store
+dist/

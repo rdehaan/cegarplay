@@ -24,3 +24,10 @@
 
 - `node tools/run.mjs <project.json | library id> [-c name=value] [--solutions N|all] [--json]`
   validates and runs a project with the same engine as the page (needs the repository and Node).
+- `python3 tools/cegarcheck.py <project.json> [--mode block] [--solutions all]` runs a project
+  with Python clingo (one abstraction, one check, one link); compare with `--mode block`.
+
+## Contributing examples
+
+- Put a project with a top-level `library` block in `examples/contrib/` (see
+  `examples/contrib/README.md`), then `node tools/make-examples.mjs`.

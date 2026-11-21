@@ -684,6 +684,14 @@ To add an example: add it in `buildLibrary` in `tools/library.mjs` (hand-written
 run `node tools/make-examples.mjs`, measure its count with `node tools/run.mjs <id>`, and put the
 count in `expected`.
 
+Without editing the tools: put a project file with a top-level `library` block
+(`{ "id", "group": "problems", "summary", "shape", "tags", "expected" }`, where `expected` is the
+solution count or `null`) in `examples/contrib/`; `node tools/make-examples.mjs` adds it to the
+library (the block is dropped from `examples/<id>.json`). See `examples/contrib/README.md`.
+`node tools/make-chat-package.mjs` writes `dist/chat-package/`, a flat folder (this manual, the
+tutorial, every example, a template, the checker below, a guide) for writing examples in a chat
+without the repository.
+
 ## For agents
 
 ### Workflow
@@ -713,6 +721,19 @@ per solution, `log:` and clingo lines, then `Outcome: ...; exhausted: ...` and `
 candidates: ...; counterexamples: ...; clauses: ...; time: ... s`. Validation problems are printed
 as `fragment:line:col: error: message`. Exit code 0 when the run ends without an error, 1 on a
 problem or error, 2 on bad usage. Example: `node tools/run.mjs tutorial-first-run --quiet`.
+
+### Python checker
+
+```sh
+python3 tools/cegarcheck.py <project.json> [--mode auto|block|clause|clauses|core|expand]
+        [-c name=value] [--solutions N|all] [--optimal] [--cex NAME=pred/arity] [--show]
+```
+
+Runs a project with Python clingo (`pip install clingo`) where the page's engine is not available.
+It copies the runtime's link semantics for one abstraction, one check and one link, in a
+solve-check-refine loop (Shape 2); the mode is read from the loop script, and `--mode block` is the
+reference run. Raw Lua and scripts with more solvers or links are refused. Only solution counts of
+exhausted runs compare with the page.
 
 ### Driving the page
 

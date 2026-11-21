@@ -35,7 +35,9 @@ programming, solved with clingo compiled to WebAssembly.
 cd spike && npm install && npm test          # sanity check of the environment (9 checks)
 cd test && npm install && npm test           # the project's tests (node --test)
 node tools/vendor.mjs                        # copy the engine into vendor/
-node tools/make-examples.mjs                 # rebuild examples/*.json
+node tools/make-examples.mjs                 # rebuild examples/*.json (+ examples/contrib/*.json)
+node tools/make-chat-package.mjs             # dist/chat-package/: docs for writing examples in web chat
+python3 tools/cegarcheck.py <project.json>   # check a project with Python clingo
 python3 test/serve.py 8811                   # serve the site; add "coi" for isolation headers
 ```
 
