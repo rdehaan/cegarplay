@@ -298,19 +298,6 @@ $('download-button').addEventListener('click', () => {
   download(slug(p.title) + '.json', Project.save(p));
 });
 
-$('lp-input').addEventListener('change', async (ev) => {
-  const f = ev.target.files[0];
-  ev.target.value = '';
-  if (!f || !guard() || !replaceOk()) return;
-  try {
-    const p = Project.importLp(await f.text(), f.name.replace(/\.lp$/, ''));
-    p.description = `Imported from ${f.name}.`;
-    app.setProject(p);
-    const legacy = /\blegacy\b/.test(p.loop.text);
-    status('import-status', `Imported ${f.name}` + (legacy ? ' (no glue(...) atoms found: the link uses legacy).' : '.'));
-  } catch (e) { status('import-status', `${f.name}: ${e.message || e}`, true); }
-});
-
 $('export-standalone-button').addEventListener('click', () => {
   const p = app.collect();
   try { download(slug(p.title) + '-standalone.lp', Project.exportStandalone(p, app.runtime), 'text/plain'); status('export-status', 'Exported the standalone program (run it with: clingo file.lp --outf=3).'); }

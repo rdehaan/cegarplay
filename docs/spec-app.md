@@ -51,7 +51,8 @@ into `reference/logic-game` and read `index.html`, `css/main.css`,
 
 ### 2.1 Import of files written for `cegar.py`
 
-`importLp(text, title)` returns a project.
+`importLp(text, title)` returns a project. It has no UI (the import button was
+removed at the user's request); `tools/make-examples.mjs` and the tests use it.
 
 1. Split at the directives `#program shared.`, `#program guess.`,
    `#program base.`, `#program glue.`, `#program check.` into fragments

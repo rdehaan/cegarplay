@@ -124,22 +124,11 @@
       &nbsp;
       <label class="inline-label"><input type="checkbox" id="include-history"> include run history</label>
 
-      <h3>Import a file written for cegar.py</h3>
-      <p>
-        A <code>.lp</code> file with <code>#program shared.</code>, <code>guess.</code>,
-        <code>glue.</code> and <code>check.</code> sections becomes a project with four fragments
-        and the Shape 1 loop.
-      </p>
-      <label for="lp-input" class="control-button">Select .lp file</label>
-      <input type="file" id="lp-input" accept=".lp,text/plain">
-      <p id="import-status" class="status-line"></p>
-
       <h3>Export</h3>
-      <button class="control-button" id="export-standalone-button">Export standalone program</button>
+      <button class="control-button" id="export-standalone-button">Export for clingo</button>
       <p>
         One <code>.lp</code> file with the fragments, the runtime and the loop. Run it with
-        <code>clingo file.lp --outf=3</code>, using a clingo built with Lua (conda-forge or
-        Ubuntu's <code>gringo</code>; the PyPI package won't work).
+        <code>clingo file.lp --outf=3</code>, using a clingo built with Lua.
       </p>
       <p id="export-status" class="status-line"></p>
 
