@@ -344,6 +344,16 @@ label[name="tabs"].has-problem:after {
 #run-status[data-state="finished"] { color: #1e7b34; background: #e6f4ea; }
 #run-status[data-state="aborted"] { color: #8a5a00; background: #fbf0d9; }
 #run-status[data-state="error"] { color: #c0392b; background: #fdecea; }
+.run-message {
+  margin-top: 6px;
+  color: #c0392b;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.run-message a {
+  margin-left: 8px;
+  color: #2c5f8a;
+}
 .live-line {
   margin-top: 10px;
   font: 13px/1.4 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
@@ -603,4 +613,11 @@ tr.mismatch td {
 }
 #instructions table {
   margin-bottom: 12px;
+}
+
+.small-button {
+  font-size: 12px;
+  padding: 2px 8px;
+  margin-left: 10px;
+  vertical-align: middle;
 }

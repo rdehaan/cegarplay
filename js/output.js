@@ -3,6 +3,7 @@ import { TraceView } from './trace.js';
 
 const SHOW_SOLUTIONS = 1000;
 const MAX_MESSAGES = 2000;
+const KEEP_SOLUTIONS = 200000;   // kept for the download
 export const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('en-US') : n == null ? '–' : String(n));
 
 export class Output {
@@ -13,6 +14,8 @@ export class Output {
     this.solCount = document.getElementById('solutions-count');
     this.solNote = document.getElementById('solutions-note');
     this.msgEl = document.getElementById('messages');
+    this.dlButton = document.getElementById('download-solutions-button');
+    this.dlButton.addEventListener('click', () => this.downloadSolutions());
     this.trace = new TraceView(document.getElementById('trace'));
     this.clear();
   }
@@ -20,6 +23,7 @@ export class Output {
   clear() {
     this.solutions = 0;
     this.pendingSolutions = [];
+    this.kept = [];
     this.warnings = new Map();
     this.messages = 0;
     this.lastLines = [];
@@ -60,14 +64,31 @@ export class Output {
       this.pendingSolutions = [];
     }
     this.solCount.textContent = this.solutions ? `(${fmt(this.solutions)})` : '';
+    this.dlButton.hidden = this.solutions === 0;
     this.solNote.textContent = this.solutions > SHOW_SOLUTIONS ? `The first ${fmt(SHOW_SOLUTIONS)} solutions are shown.` : '';
     this.trace.render();
   }
 
   solution(m) {
     this.solutions++;
+    if (this.kept.length < KEEP_SOLUTIONS) this.kept.push(m);
     if (this.solutions <= SHOW_SOLUTIONS) this.pendingSolutions.push(m);
     this.schedule();
+  }
+
+  solutionsText() {
+    const lines = this.kept.map((m) => `${m.n}: ${m.atoms || ''}${m.cost && m.cost.length ? `  % cost ${m.cost.join(' ')}` : ''}`);
+    if (this.solutions > this.kept.length) lines.push(`% the first ${this.kept.length} of ${this.solutions} solutions`);
+    return lines.join('\n') + '\n';
+  }
+
+  downloadSolutions() {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([this.solutionsText()], { type: 'text/plain' }));
+    a.download = 'solutions.txt';
+    document.body.append(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }
 
   message(text, kind = '') {

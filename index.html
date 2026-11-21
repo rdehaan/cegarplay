@@ -44,6 +44,8 @@
         <span id="run-status" data-state="idle">idle</span>
       </div>
       <div id="live-line" class="live-line">&nbsp;</div>
+      <div id="run-message" class="run-message" hidden><span id="run-message-text"></span>
+        <a href="#" id="run-message-link">Show in the Output tab</a></div>
     </div>
 
     <input id="tab1" type="radio" name="tabs" checked>
@@ -181,7 +183,8 @@
     <!-- 5. Output -->
     <section id="section-output">
       <div id="result-line" class="result-line">No run yet.</div>
-      <h3>Solutions <span id="solutions-count" class="note"></span></h3>
+      <h3>Solutions <span id="solutions-count" class="note"></span>
+        <button class="control-button small-button" id="download-solutions-button" hidden>Download</button></h3>
       <ol id="solutions" class="solutions"></ol>
       <p id="solutions-note" class="note"></p>
       <h3>Trace</h3>

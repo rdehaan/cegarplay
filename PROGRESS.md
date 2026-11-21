@@ -52,6 +52,10 @@ deleted.
   fragments that run as they are (downward-closed sets, n = 4 gives 4 solutions).
 - The loop script is compiled 500 ms after each edit; errors are marked at once
   (`Editors.setMarks`).
+- Run message under the run bar when a run ends in an error or does not
+  start (visible from every tab, with a link to the Output tab).
+- Output: "Download" next to Solutions saves all solutions (up to 200,000 kept),
+  not only the 1,000 shown.
 
 ## Next step
 

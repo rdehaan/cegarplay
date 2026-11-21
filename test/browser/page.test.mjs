@@ -30,6 +30,15 @@ test('2. the default example runs to the reference numbers', async () => {
   assert.match(live, /10,698 solutions/);
   assert.match(live, /31,776 candidates · 21,078 counterexamples · 21,078 refinements/);
   assert.equal(await page.$$eval('#solutions li', (l) => l.length), 1000);
+  // the download holds all solutions, not only the 1,000 shown
+  await page.click('label[for="tab5"]');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#download-solutions-button')]);
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'cegarplay-')), dl.suggestedFilename());
+  await dl.saveAs(file);
+  const lines = fs.readFileSync(file, 'utf8').trim().split('\n');
+  assert.equal(lines.length, 10698);
+  assert.match(lines[10697], /^10698: .*edge\(/);
+  assert.equal(new Set(lines.map((l) => l.replace(/^\d+: /, ''))).size, 10698, 'all different');
   assert.deepEqual(errors, []);
   await context.close();
 });
@@ -72,6 +81,8 @@ test('4. a syntax error in a fragment: annotation, status error, no run', async 
   assert.equal(await page.$eval('label[for="tab3"]', (e) => e.classList.contains('has-problem')), true);
   assert.equal((await page.textContent('#live-line')).trim(), '');
   assert.match(await page.textContent('#result-line'), /Not started/);
+  assert.equal(await page.isVisible('#run-message'), true);
+  assert.match(await page.textContent('#run-message-text'), /fragment check, line 2: syntax error/);
   // editing clears the annotation
   await B.setEditor(page, 'editor-check', text);
   assert.equal(await page.evaluate(() => ace.edit(document.getElementById('editor-check')).session.getAnnotations().length), 0);

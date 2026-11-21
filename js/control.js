@@ -52,7 +52,14 @@ export class Control {
     this.stopButton.addEventListener('click', () => this.stop());
     const iso = app.engine.isolated && !!app.engine.control;
     for (const b of [this.pauseButton, this.stepButton, this.stopButton]) b.hidden = !iso;
+    $('run-message-link').addEventListener('click', (e) => { e.preventDefault(); $('tab5').checked = true; $('tab5').dispatchEvent(new Event('change')); });
     this.setState('idle');
+  }
+
+  // A short message under the run bar for runs that end in an error (visible from every tab).
+  runMessage(text) {
+    $('run-message').hidden = !text;
+    $('run-message-text').textContent = text || '';
   }
 
   setState(state) {
@@ -76,6 +83,7 @@ export class Control {
     const app = this.app;
     if (this.busy || !app.ready) return null;
     this.setState('validating');
+    this.runMessage('');
     const project = structuredClone(app.collect());
     if (seed !== undefined) project.settings.seed = seed;
     app.editors.clearAnnotations();
@@ -99,6 +107,10 @@ export class Control {
       app.output.result(`Not started: ${problems.filter((p) => p.severity === 'error').length} problem(s) found before the run.`, 'error');
       app.output.problems(problems);
       app.editors.annotate(problems);
+      const first = problems.find((p) => p.severity === 'error');
+      const w = first.where || {};
+      const at = w.kind === 'fragment' ? `fragment ${w.name}, line ${w.line}` : w.kind === 'loop' ? `loop script, line ${w.line}` : 'settings';
+      this.runMessage(`Not started: ${at}: ${first.message.split('\n')[0]}`);
       this.setState('error');
       return { state: 'error', problems };
     }
@@ -182,6 +194,10 @@ export class Control {
     app.stats.done(this.D, this.D ? info : null);
     app.editors.setReadOnly(false);
     if (this.marks.length) app.editors.annotate(this.marks);
+    if (state === 'error') {
+      const line = this.E && this.assembled ? mapLine(this.assembled, this.E.line) : null;
+      this.runMessage(this.E ? `Error: ${this.E.message}${line ? ` (loop script, line ${line})` : ''}` : app.output.resultEl.textContent);
+    }
     this.setState(state);
     return { state, D: this.D, E: this.E };
   }
