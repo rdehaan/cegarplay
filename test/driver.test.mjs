@@ -104,3 +104,18 @@ test('assemble: settings, constants and the loop position', () => {
   assert.ok(a.program.includes('SETTINGS = { solutions = 3, seconds = 5, candidates = 7, trace = 2, seed = 4, poll = true, plain = false }'));
   assert.ok(a.program.startsWith('#script (lua)\n') && a.program.endsWith('#end.\n'));
 });
+
+// TODO A5: clingo's internal part literal is not shown; the run bar gets one sentence.
+import { cleanClingoMessage, oneLineMessage } from '../js/driver.js';
+test('A5: unsafe variables: no #inc_ in the message, one-line form names the variable', async () => {
+  const p = H.example('tutorial-first-run');
+  p.fragments[1].text += '\nbar(Y).\n#program step(k).\nfoo(X) :- num(k).\n';
+  const probs = (await validate(p, H.engineRun)).filter((x) => x.severity === 'error');
+  assert.equal(probs.length, 2);
+  for (const pr of probs) assert.doesNotMatch(pr.message, /#inc_/);
+  assert.equal(probs[0].message, "unsafe variables in:\nbar(Y).\n'Y' is unsafe");
+  assert.equal(oneLineMessage(probs[0].message), "unsafe variable 'Y' in bar(Y).");
+  assert.match(probs[1].message, /^unsafe variables in:\nfoo\(X\):-num\(#Inc0\)\.\n'X' is unsafe$/);
+  assert.equal(cleanClingoMessage('a(X):-[#inc_base];b(X).'), 'a(X):-b(X).');
+  assert.equal(oneLineMessage('syntax error, unexpected .'), 'syntax error, unexpected .');
+});

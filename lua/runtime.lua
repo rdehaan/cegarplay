@@ -194,6 +194,15 @@ local function tick(poll)
     if l == "stop" then rt.finish("stopped", "stopped by user", false) end
   end
 end
+-- Called at the top of every loop body of the script: the time limit and the stop poll
+-- in loops that make no solver call. Cheap: the real check runs every 256 iterations.
+rt.ticks = 0
+function rt.tick()
+  local n = rt.ticks + 1
+  if n < 256 then rt.ticks = n; return end
+  rt.ticks = 0
+  tick(true)
+end
 local function count_candidate()
   if SETTINGS.candidates > 0 and rt.candidates >= SETTINGS.candidates then
     rt.finish("limit", "candidate limit of " .. SETTINGS.candidates .. " reached", false)
@@ -279,7 +288,10 @@ local function new_control(args, name, frags)
   return clingo.Control(a, function(code, msg)
     -- a Lua error here would cross a clingo frame: keep it inside pcall
     local ok = pcall(function()
-      local text, at = locate_message((tostring(msg):gsub("\n+$", "")), starts)
+      local m = tostring(msg):gsub("\n+$", "")
+      -- the internal body literal of a non-base part (as in js/driver.js cleanClingoMessage)
+      m = m:gsub(":%-%[#inc_[^%]]*%]%.", "."):gsub("%[#inc_[^%]]*%];", ""):gsub(";%[#inc_[^%]]*%]", "")
+      local text, at = locate_message(m, starts)
       local w = { solver = name, code = tostring(code), message = text }
       if at then w.fragment, w.line, w.col = at.fragment, at.line, at.col end
       emit("W", w)
@@ -319,6 +331,15 @@ function rt.solver(name, frags, options)
         for _, L in ipairs(s.out) do
           local sl, src = L.slit, L.src
           for j = 1, L.n do sl[j] = init:solver_literal(src[j]) end
+        end
+        -- captures, for M.atoms(p/n) on a candidate (searches only)
+        for _, c in pairs(s.caps) do
+          c.slits = nil
+          if s.searching and c.lits then
+            local sl, lits = {}, c.lits
+            for j = 1, #lits do sl[j] = init:solver_literal(lits[j]) end
+            c.slits = sl
+          end
         end
       end)
     end,
@@ -435,7 +456,7 @@ function rt.link(name, from, to, glue, opts)
   end
   from:ground()
   local L = setmetatable({ name = name, from = from, to = to, n = 0, src = {}, slit = {}, dst = {}, ind = {}, sym = {},
-    str = {}, jof = {}, jstr = {}, buf = {}, vbuf = {}, legacy = opts.legacy, compat = opts.compat, facts = 0 }, Link)
+    str = {}, jof = {}, jstr = {}, vbuf = {}, legacy = opts.legacy, compat = opts.compat, facts = 0 }, Link)
   local b = to.ctl:backend()
   for atom in from.ctl.symbolic_atoms:iter() do
     local sym = atom.symbol
@@ -462,8 +483,16 @@ function rt.link(name, from, to, glue, opts)
   return L
 end
 
+-- Lists of literals made by G(M) (and rt.concat) -> the links they belong to (A.solve checks them).
+local list_links = setmetatable({}, { __mode = "k" })
+
+local function stale(what, keep)
+  fail(what .. ": the candidate is no longer valid (it belongs to an earlier step); store " .. keep .. " instead")
+end
+
 local function check_model(L, M, what, side)
   if getmetatable(M) ~= Model then fail(L.name .. "." .. what .. ": expected a model, got " .. tostring(M)) end
+  if M.lazy and M.done then stale(L.name .. "." .. what, L.name .. "(M) or a counterexample") end
   local want = side == "from" and L.from or L.to
   if M.solver ~= want then
     fail(L.name .. "." .. what .. ": expected a model of " .. want.name .. ", got one of " .. M.solver.name)
@@ -473,8 +502,10 @@ end
 
 function Link:of(M)
   check_model(self, M, "of", "from")
-  local a, v, dst = self.buf, M[self], self.dst
+  -- a fresh list: a stored G(M) keeps its values after the candidate is gone
+  local a, v, dst = {}, M[self], self.dst
   for j = 1, self.n do a[j] = v[j] and dst[j] or -dst[j] end
+  list_links[a] = { self }
   return a
 end
 
@@ -591,14 +622,30 @@ local function snapshot(s, m)
 end
 
 function Model:atoms(pred, arity)
-  local t = self[pred .. "/" .. tostring(arity)]
-  if not t then fail("atoms(" .. pred .. "/" .. tostring(arity) .. "): not captured in solver " .. self.solver.name) end
-  return t
+  local key = pred .. "/" .. tostring(arity)
+  local t = self[key]
+  if t then return t end
+  if self.lazy then
+    -- a candidate inside search: built on demand from the assignment (solver literals of
+    -- the capture are mapped in the init hook of a searching solver)
+    if self.done then stale("atoms(" .. key .. ")", "the list of M.atoms(" .. key .. ")") end
+    local c = self.solver.caps[key]
+    if c and c.slits then
+      local ass, sl, syms = self.control.assignment, c.slits, c.syms
+      t = array({})
+      for j = 1, #sl do if ass:is_true(sl[j]) then t[#t + 1] = syms[j] end end
+      self[key] = t
+      owner[t] = self
+      return t
+    end
+  end
+  fail("atoms(" .. key .. "): not captured in solver " .. self.solver.name)
 end
 
 -- The candidate as text: the true interface atoms over all outgoing links.
 candidate_text = function(M)
   if not M then return nil end
+  if M.lazy and M.done then return "(a candidate of an earlier step)" end
   local t = {}
   for _, L in ipairs(M.solver.out) do
     local v = M[L]
@@ -670,9 +717,15 @@ local function check_idle(s, what)
   if s.busy then fail(s.name .. "." .. what .. ": the solver is busy (searching or solving)") end
 end
 
-local function convert_assumptions(a)
+local function convert_assumptions(a, s, what)
   if a == nil then return {} end
   if type(a) ~= "table" then fail("assume: expected a list of literals") end
+  local ls = list_links[a]
+  if ls then
+    for _, L in ipairs(ls) do
+      if L.to ~= s then fail(s.name .. "." .. what .. ": the assumptions of " .. L.name .. " are for solver " .. L.to.name) end
+    end
+  end
   return a
 end
 
@@ -691,10 +744,10 @@ local function progress_guard(s, X)
   fail("the refinement made no progress: the same candidate came back")
 end
 
-local function run_solve(s, o, limit, optimal)
-  check_idle(s, "solve")
+local function run_solve(s, o, limit, optimal, what)
+  check_idle(s, what)
   o = o or {}
-  local assume = convert_assumptions(o.assume)
+  local assume = convert_assumptions(o.assume, s, what)
   tick(rt.searching == nil)
   local fr = timer_start(s)
   s.n.calls = s.n.calls + 1
@@ -732,7 +785,7 @@ local function run_solve(s, o, limit, optimal)
 end
 
 function Solver:solve(o)
-  local models = run_solve(self, o, 1, o and o.optimal)
+  local models = run_solve(self, o, 1, o and o.optimal, "solve")
   local X = models[1]
   if X then progress_guard(self, X); self.last_model = X end
   return X
@@ -742,18 +795,21 @@ function Solver:models(o)
   local limit = o and o.limit or 0
   if type(limit) ~= "number" then fail(self.name .. ".models: limit must be a number") end
   if limit <= 0 then limit = math.huge end
-  return array(run_solve(self, o, limit, false))
+  return array(run_solve(self, o, limit, false, "models"))
 end
 
 function rt.concat(...)
-  local out = {}
+  local out, links = {}, nil
   for i = 1, select("#", ...) do
     local a = select(i, ...)
     if a ~= nil then
       if type(a) ~= "table" then fail("concat: expected lists of literals") end
       for j = 1, #a do out[#out + 1] = a[j] end
+      local ls = list_links[a]
+      if ls then links = links or {}; for _, L in ipairs(ls) do links[#links + 1] = L end end
     end
   end
+  if links then list_links[out] = links end
   return out
 end
 
@@ -904,6 +960,7 @@ end
 
 function rt.accept(M)
   if getmetatable(M) ~= Model then fail("accept: expected a model") end
+  if M.lazy and M.done then stale("accept", "a counterexample or the model of a solve") end
   if M.lazy then return end
   emit_solution(M.shown or candidate_text(M), M.cost)
   if SETTINGS.solutions ~= 0 and rt.solutions >= SETTINGS.solutions then rt.finish("solutions", "", false) end

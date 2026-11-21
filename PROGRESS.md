@@ -302,6 +302,25 @@ Notes for the guide phases (checked against the code before G0a):
   `reject M with G.block(M)`.
 - `graph-coloring-original` loses a loop-dependent number: 9,270 in Shape 1, 9,277 in Shape 2.
 
+## TODO review (TODO.md, 2026-11-21)
+
+### Group A: runtime correctness (done)
+- A1: `check_model` fails for a finished lazy candidate (`G.block: the candidate is no longer
+  valid ...; store G(M) or a counterexample instead`); also `accept` and `atoms`; `tostring` of such a
+  candidate is `(a candidate of an earlier step)`. `G:of` now returns a fresh array (it was a
+  reused buffer, so a stored `G(M)` was stale too); the per-candidate `vbuf` stays shared.
+  graph-coloring 2.55 s vs 2.52 s before, gc-shape1 0.134 vs 0.132 s: noise.
+- A2: `M.atoms(p/n)` on a live candidate: the init hook of a *searching* solver maps every
+  capture's literals to solver literals (`c.slits`); the list is built on demand and cached in M.
+- A3: `G:of` lists are remembered in a weak table `list_links` (no extra fields: clingo rejects
+  tables with non-integer keys); `rt.concat` merges them; `run_solve` checks `L.to == s`.
+- A4: the compiler appends `rt.tick()` to every loop header line (line map unchanged);
+  `rt.tick` calls `tick(true)` every 256 iterations. `tools/run.mjs` runs the engine in a worker
+  thread when the time limit is above 0 and ends it after `N + 2` s (exit 1).
+- A5: `cleanClingoMessage` (driver.js, mirrored in runtime.lua for W events) drops the
+  `[#inc_...]` body literal; `oneLineMessage` for the run bar. A part parameter still shows as
+  `#Inc0` (clingo's name; the source name is not known there).
+
 ## Next step
 
 All phases of PLAN.md and of the guide are done. Open items for the user: deployment to GitHub

@@ -640,13 +640,14 @@ export function compile(source, { fragments = [] } = {}) {
         emit('end', null, depth);
         break;
       }
-      case 'loop': emit('while true do', s.line, depth); loopBody(s.body, depth, s.line); emit('end', null, depth); break;
-      case 'while': emit(`while ${ex(s.cond)} do`, s.line, depth); loopBody(s.body, depth, s.line); emit('end', null, depth); break;
-      case 'repeat': emit('repeat', s.line, depth); loopBody(s.body, depth, s.line); emit(`until ${ex(s.cond)}`, s.untilLine, depth); break;
+      // rt.tick() on the header line: the time limit also holds in a loop without solver calls
+      case 'loop': emit('while true do rt.tick()', s.line, depth); loopBody(s.body, depth, s.line); emit('end', null, depth); break;
+      case 'while': emit(`while ${ex(s.cond)} do rt.tick()`, s.line, depth); loopBody(s.body, depth, s.line); emit('end', null, depth); break;
+      case 'repeat': emit('repeat rt.tick()', s.line, depth); loopBody(s.body, depth, s.line); emit(`until ${ex(s.cond)}`, s.untilLine, depth); break;
       case 'for': {
         checkName(s.v, 'a loop variable');
         if (isDecl(s.v.value)) err(s.v, `'${s.v.value}' is a solver or link and cannot be a loop variable`);
-        emit(`for _, ${s.v.value} in ipairs(${ex(s.iter)}) do`, s.line, depth);
+        emit(`for _, ${s.v.value} in ipairs(${ex(s.iter)}) do rt.tick()`, s.line, depth);
         loopBody(s.body, depth, s.line);
         emit('end', null, depth);
         break;

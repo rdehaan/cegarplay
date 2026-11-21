@@ -159,3 +159,82 @@ test('a clingo location over two lines is mapped at both ends', async () => {
   assert.ok(w, 'warning about q/2');
   assert.match(w.message, /^abstraction:3:\d+-4:\d+: info: /);
 });
+
+// TODO review, group A: candidates, captures and assumptions in loop scripts.
+import { mapLine } from '../js/driver.js';
+const FIRST = H.example('tutorial-first-run');
+const DECLS = FIRST.loop.text.split('\n').slice(0, 4).join('\n') + '\n';
+const withLoop = (text, settings = {}) => ({ ...FIRST, loop: { language: 'loop', text: DECLS + text }, settings: { ...FIRST.settings, ...settings } });
+
+test('A1: a stored candidate is no longer valid after its step', async () => {
+  const src = `saved = []
+n = 0
+search A:
+    on candidate M:
+        n = n + 1
+        if n <= 3:
+            saved.push(M)
+            log "live", G.block(M)
+        if n > 6: restart
+for M in saved:
+    log "stale", G.block(M)
+`;
+  const r = await H.runProject(withLoop(src));
+  assert.equal(H.ofKind(r, 'L').length, 3);
+  assert.equal(H.done(r).outcome, 'error');
+  const e = H.last(r, 'E');
+  assert.equal(e.message, 'G.block: the candidate is no longer valid (it belongs to an earlier step); store G(M) or a counterexample instead');
+  assert.equal(mapLine(r.assembled, e.line), 4 + 11);
+});
+
+test('A1: a stored G(M) keeps the values of its own candidate', async () => {
+  const src = `saved = []
+search A:
+    on candidate M:
+        if saved.size < 3:
+            saved.push(G(M))
+            log G(M)
+for a in saved:
+    log a
+`;
+  const r = await H.runProject(withLoop(src));
+  const ls = H.ofKind(r, 'L').map((l) => l.text);
+  assert.equal(ls.length, 6);
+  assert.equal(new Set(ls.slice(0, 3)).size, 3);
+  assert.deepEqual(ls.slice(3), ls.slice(0, 3));
+});
+
+test('A2: M.atoms(p/n) on a candidate inside search', async () => {
+  const r = await H.runProject(withLoop('n = 0\nsearch A:\n    on candidate M:\n        log M.atoms(pick/1)\n        n = n + 1\n        if n >= 5: stop\n'));
+  assert.notEqual(H.done(r).outcome, 'error', JSON.stringify(H.last(r, 'E')));
+  const ls = H.ofKind(r, 'L').map((l) => l.text);
+  assert.equal(ls.length, 5);
+  for (const t of ls) assert.match(t, /^\[(pick\(\d+\)(, pick\(\d+\))*)?\]$/);
+  assert.ok(ls.some((t) => t !== '[]'));
+});
+
+test('A2: M.atoms(p/n) of a candidate agrees with the solution it becomes', async () => {
+  const r = await H.runProject(withLoop(`search A:
+    on candidate M:
+        X = C.solve(assume G(M))
+        if X:
+            reject M with G.clause(M, X)
+        else:
+            log M.atoms(pick/1)
+`, { solutions: 3 }));
+  const logs = H.ofKind(r, 'L').map((l) => l.text);
+  const sols = H.ofKind(r, 'M').map((m) => m.atoms.split(' ').filter((a) => a.startsWith('pick(')).sort().join(', '));
+  assert.equal(logs.length, 3);
+  assert.deepEqual(logs.map((l) => l.slice(1, -1).split(', ').filter(Boolean).sort().join(', ')), sols);
+});
+
+test('A3: assumptions for another solver are an error', async () => {
+  const r = await H.runProject(withLoop('M = A.solve()\nX = A.solve(assume G(M))\nlog X\n'));
+  assert.equal(H.done(r).outcome, 'error');
+  assert.equal(H.last(r, 'E').message, 'A.solve: the assumptions of G are for solver C');
+});
+
+test('A4: the time limit ends a loop without solver calls', async () => {
+  const r = await H.runProject(withLoop('loop:\n    x = 1\n', { seconds: 1 }));
+  assert.equal(H.done(r).outcome, 'limit');
+});

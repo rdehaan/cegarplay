@@ -2,7 +2,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
+import os from 'node:os';
+import nodePath from 'node:path';
 import * as H from './helpers.mjs';
 import { load } from '../js/project.js';
 
@@ -62,4 +64,23 @@ test('tools/run.mjs runs a library id and a file', () => {
   const out2 = execFileSync(process.execPath, [H.path('tools/run.mjs').pathname, H.path('examples/starter.json').pathname, '-c', 'n=3'], { encoding: 'utf8' });
   assert.match(out2, /Solutions: 3;/);
   assert.match(out2, /^Solution 1: /m);
+});
+
+test('tools/run.mjs: the time limit ends a loop without solver calls, and the backstop a raw Lua spin', () => {
+  const dir = fs.mkdtempSync(nodePath.join(os.tmpdir(), 'cegarplay-'));
+  const first = JSON.parse(H.read('examples/tutorial-first-run.json'));
+  const decls = first.loop.text.split('\n').slice(0, 4).join('\n');
+  const spin = { ...first, runs: [], loop: { language: 'loop', text: decls + '\nloop:\n    x = 1\n' } };
+  fs.writeFileSync(nodePath.join(dir, 'spin.json'), JSON.stringify(spin));
+  const r1 = spawnSync(process.execPath, [H.path('tools/run.mjs').pathname, nodePath.join(dir, 'spin.json'), '--seconds', '1'], { encoding: 'utf8' });
+  assert.match(r1.stdout, /Outcome: limit \(time limit of 1 s reached\)/);
+  assert.equal(r1.status, 0);
+  const raw = { ...spin, loop: { language: 'lua', text: 'local A = rt.solver("A", {"shared", "abstraction"}, {})\nrt.prepare()\nwhile true do end\n' } };
+  fs.writeFileSync(nodePath.join(dir, 'raw.json'), JSON.stringify(raw));
+  const t0 = Date.now();
+  const r2 = spawnSync(process.execPath, [H.path('tools/run.mjs').pathname, nodePath.join(dir, 'raw.json'), '--seconds', '1'], { encoding: 'utf8', timeout: 30000 });
+  assert.match(r2.stdout, /did not stop at the time limit of 1 s; ended after 3 s/);
+  assert.equal(r2.status, 1);
+  assert.ok(Date.now() - t0 < 10000);
+  fs.rmSync(dir, { recursive: true, force: true });
 });

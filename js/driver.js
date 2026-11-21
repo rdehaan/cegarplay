@@ -93,6 +93,27 @@ function locate(starts, line) {
   return hit ? { name: hit.name, line: line - hit.first + 1 } : { name: starts[0] && starts[0].name, line };
 }
 
+// clingo writes the rules of a non-base part with an internal body literal for the part,
+// '[#inc_name(...)]': drop it, so 'bar(Y):-[#inc_validate__].' reads 'bar(Y).'.
+export function cleanClingoMessage(msg) {
+  return String(msg)
+    .replace(/:-\[#inc_[^\]]*\]\./g, '.')
+    .replace(/\[#inc_[^\]]*\];/g, '')
+    .replace(/;\[#inc_[^\]]*\]/g, '');
+}
+
+// One line for a (possibly multi-line) problem message, for the run bar:
+// 'unsafe variables in:\nbar(Y).\n'Y' is unsafe' -> 'unsafe variable 'Y' in bar(Y).'
+export function oneLineMessage(msg) {
+  const lines = String(msg).split('\n').map((l) => l.trim()).filter(Boolean);
+  if (lines.length > 2 && /^unsafe variables in:$/.test(lines[0])) {
+    const vars = lines.slice(2).map((l) => /^(.*) is unsafe$/.exec(l)).filter(Boolean).map((m) => m[1]);
+    if (vars.length) return `unsafe variable${vars.length > 1 ? 's' : ''} ${vars.join(', ')} in ${lines[1]}`;
+  }
+  if (lines.length > 1 && lines[0].endsWith(':')) return `${lines[0]} ${lines.slice(1).join('; ')}`;
+  return lines.join('; ');
+}
+
 // Parse clingo's stderr: '-:L:C1-C2: error: message' (end may be 'L2:C2'), notes and indented
 // continuation lines belong to the previous problem.
 export function parseClingoErrors(err) {
@@ -106,6 +127,7 @@ export function parseClingoErrors(err) {
       out.at(-1).message += '\n' + extra;
     }
   }
+  for (const e of out) e.message = cleanClingoMessage(e.message);
   return out;
 }
 

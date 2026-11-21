@@ -1,5 +1,5 @@
 // Run bar and run flow (spec-app.md section 6).
-import { validate, assemble, mapLine } from './driver.js';
+import { validate, assemble, mapLine, oneLineMessage } from './driver.js';
 import { TEMPLATES, template } from './project.js';
 import { hashText } from './stats.js';
 import { fmt } from './output.js';
@@ -111,7 +111,7 @@ export class Control {
       const first = problems.find((p) => p.severity === 'error');
       const w = first.where || {};
       const at = w.kind === 'fragment' ? `fragment ${w.name}, line ${w.line}` : w.kind === 'loop' ? `loop script, line ${w.line}` : 'settings';
-      this.runMessage(`Not started: ${at}: ${first.message.split('\n')[0]}`);
+      this.runMessage(`Not started: ${at}: ${oneLineMessage(first.message)}`);
       this.setState('error');
       return { state: 'error', problems };
     }

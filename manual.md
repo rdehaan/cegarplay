@@ -298,18 +298,20 @@ A block may follow the colon on the same line if it is one simple statement: `if
 | `S.expand(refine, cex = L)` | Add the facts `cex(k, T)` for each atom `T` in the list `L`, then ground `refine(k)` with the next `k`. More named lists are allowed: `S.expand(refine, cex = L1, old = L2)`. Not inside `on candidate` of `S`. |
 | `S.exhausted` | Whether the last search of `S` ran to the end (not interrupted, model limit not reached). |
 | `S.step` | The number of expansions of `S` so far (the last `k`). |
-| `G(M)` | The values of `G`'s interface atoms in `M`, as an assumption list for `G`'s target. |
+| `G(M)` | The values of `G`'s interface atoms in `M`, as an assumption list for `G`'s target (a new list: it can be stored). Passing it to another solver is an error (`A.solve: the assumptions of G are for solver C`). |
 | `G.clause(M, X)` | Clause: one interface atom with `relevant(T)` true in `X` must change its value from `M`. Error if there is none. |
 | `G.block(M)` | Clause: at least one interface atom must change (rules out exactly `M`'s interface values). |
 | `G.core(C)` | Clause from the unsat core of the last solve of `C` (the target of `G`), which must have been unsatisfiable: one of the assumed values in the core must change. |
 | `G.clauses(X)` | The list of clauses stated by `clause/3` atoms in `X`. |
-| `X.atoms(p/n)` | The list of true atoms of predicate `p/n` in model `X`. Every `p/n` used in the script is recorded automatically. |
+| `X.atoms(p/n)` | The list of true atoms of predicate `p/n` in model `X`, also for a candidate `M` inside `on candidate` (read from the current assignment). Every `p/n` used in the script is recorded automatically. |
 | `[]`, `l.push(e)`, `l.size`, `l.clear()` | A new empty list; append; its length; empty it. |
 | `none`, `true`, `false` | The values. `none` is what `solve` returns when unsatisfiable. |
 | `==`, `!=`, `<`, `<=`, `>`, `>=`, `+`, `-`, `*`, `/`, `and`, `or`, `not` | As usual (Lua semantics). |
 
 Models and lists can be stored in variables and lists. A candidate `M` inside `on candidate` is
-valid only during that call; store `G(M)`-based results or a counterexample `X` instead.
+valid only during that call; store `G(M)`, `M.atoms(p/n)` or a counterexample `X` instead. Using a
+stored candidate later is an error: `G.block: the candidate is no longer valid (it belongs to an
+earlier step); store G(M) or a counterexample instead`.
 
 ### Static errors
 
@@ -356,6 +358,7 @@ threads, `solver S: the option -t needs the threaded engine ...`.
 | `X.atoms(color/2)` | `X:atoms("color", 2)` |
 | `S.expand(refine, cex = L)` | `S:expand("refine", { cex = L })` |
 | `S.step` | `S.k` |
+| `loop:`, `while c:`, `repeat:`, `for x in l:` | `while true do rt.tick()`, `while c do rt.tick()`, `repeat rt.tick()`, `for _, x in ipairs(l) do rt.tick()` (`rt.tick` checks the time limit and Stop every 256 iterations, also in a loop without solver calls) |
 | `continue` | `goto __continue_N` |
 | `l.push(e)`, `l.size` | `rt.push(l, e)`, `rt.size(l)` |
 
@@ -517,9 +520,10 @@ its line.
 | `M:reject(c)` | Only for candidates inside `search`. `c` is a clause or a list of clauses; every literal of the first clause must be false under the candidate (`refinement does not exclude the candidate`). |
 | `S:add(c)` | Queue a clause or list of clauses for `S`'s next solve. Not while searching; not with clauses built from a candidate inside a search. |
 | `S:expand(part, facts)` | `facts = { name = list_of_symbols }`: increment `S.k`, add `name(k, T)` facts, ground `part(k)`. Not while searching. |
-| `rt.concat(a, b, ...)` | One assumption list from several. |
-| `G:of(M)`, `G:clause(M, X)`, `G:block(M)`, `G:core(S)`, `G:clauses(X)` | As in the loop language. `G:of` returns a reused array: copy it to keep it. |
-| `X:atoms(pred, arity)` | Captured atoms (clingo symbols). Error if not captured. |
+| `rt.concat(a, b, ...)` | One assumption list from several (it remembers the links of the `G:of` lists it contains). |
+| `G:of(M)`, `G:clause(M, X)`, `G:block(M)`, `G:core(S)`, `G:clauses(X)` | As in the loop language. `G:of` returns a new array, remembered as belonging to `G`: `S:solve` fails if `G`'s target is not `S`. Raw Lua arrays are not checked. |
+| `X:atoms(pred, arity)` | Captured atoms (clingo symbols); for a candidate inside `search`, built on demand from the assignment. Error if not captured. |
+| `rt.tick()` | The compiler puts it at the top of every loop body: time limit and Stop poll every 256 calls. Call it in long raw Lua loops without solver calls. |
 | `rt.accept(M)`, `rt.restart()`, `rt.stop(msg)` | As `accept`, `restart`, `stop`. |
 | `rt.count(name, n)`, `rt.log(...)` | As `count`, `log`. |
 | `rt.size(l)`, `rt.push(l, x)`, `rt.clear(l)`, `rt.list()` | List helpers. |
@@ -530,7 +534,9 @@ derived nothing for link G`, `the refinement made no progress: the same candidat
 values twice in a row), `refinement does not exclude the candidate`, `reject works only on a
 candidate inside search; use S.add between solves`, `reject: the clause was built from a model
 outside the search; use S.add`, `reject: the candidate is no longer valid (it belongs to an earlier
-step)`, `reject: an empty clause cannot refine the candidate`, `link G: the glue fragments derive no
+step)`, `G.block: the candidate is no longer valid (it belongs to an earlier step); store G(M) or a
+counterexample instead` (also `G.clause`, `G.of`, `atoms`, `accept`: a candidate used after its `on
+candidate` call), `A.solve: the assumptions of G are for solver C`, `reject: an empty clause cannot refine the candidate`, `link G: the glue fragments derive no
 glue/1 atom`, `link G: solver C was already grounded; declare links before using it`, `atoms(p/n):
 not captured in solver S`, `restart works only inside on candidate`, `rt.prepare() may be called
 only once`.
@@ -746,7 +752,9 @@ It uses the same engine, validation and runtime as the page. Output: one `Soluti
 per solution, `log:` and clingo lines, then `Outcome: ...; exhausted: ...` and `Solutions: ...;
 candidates: ...; counterexamples: ...; clauses: ...; time: ... s`. Validation problems are printed
 as `fragment:line:col: error: message`. Exit code 0 when the run ends without an error, 1 on a
-problem or error, 2 on bad usage. Example: `node tools/run.mjs tutorial-first-run --quiet`.
+problem or error, 2 on bad usage. With a time limit above 0, a run that does not stop by itself (a
+raw Lua loop without `rt.tick()`) is ended `N + 2` s after the start with `Outcome: limit (the run
+did not stop ...)` and exit code 1, like the page's backstop. Example: `node tools/run.mjs tutorial-first-run --quiet`.
 
 ### Python checker
 
@@ -781,6 +789,9 @@ exhausted runs compare with the page.
 | Every candidate is rejected | An empty (or too weak) check has an answer set for every candidate. The check must be unsatisfiable when the candidate is correct. |
 | clingo stopped unexpectedly | The engine trapped: in raw Lua, a broken clingo call or an error in a callback (see the hard rules). In a loop script this should not happen; report it with the project. |
 | `refinement does not exclude the candidate` | A clause given to `reject` has a literal that is true under the candidate. Build clauses with `G.clause`, `G.block`, `G.core`. |
+| `... the candidate is no longer valid (it belongs to an earlier step)` | A candidate `M` was stored and used after its `on candidate` call; the solver has moved on and its values are gone. Store `G(M)`, `M.atoms(p/n)` or a counterexample instead. |
+| `A.solve: the assumptions of G are for solver C` | `G(M)` was passed to a solver that is not `G`'s target. Solve the target (`C.solve(assume G(M))`). |
+| `unsafe variable 'Y' in bar(Y).` | A variable of the rule occurs in no positive body literal. Add a domain atom such as `num(Y)`. |
 | The run ends with outcome `limit` | Time (default 60 s) or candidate limit; raise it in the Loop tab, or set 0. |
 | Seeds give the same statistics | The seed needs randomising options (`--rand-freq=0.05`, `--sign-def=rnd`). |
 | `-t` rejected | Threads need a cross-origin isolated page and the Threads box in the Loop tab. |
