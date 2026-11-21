@@ -96,7 +96,8 @@ export class Output {
       g.countEl.textContent = ` (×${fmt(g.count)})`;
       return;
     }
-    const d = this.message(`${w.solver}: ${w.code}: ${w.message}`, 'warning');
+    const where = w.fragment ? ` (fragment ${w.fragment}, line ${w.line})` : '';
+    const d = this.message(`solver ${w.solver}${where}: ${w.message.replace(/^[a-z_0-9]+:\d+:[\d:-]+: /, '')}`, /: error: /.test(w.message) ? 'error' : 'warning');
     if (!d) return;
     const c = document.createElement('span');
     c.className = 'count';
@@ -113,6 +114,19 @@ export class Output {
   }
 
   error(text) { this.message(text, 'error'); }
+
+  // A collapsed block, e.g. a traceback.
+  details(summary, text, kind = '') {
+    const d = this.message('', kind);
+    if (!d) return;
+    const det = document.createElement('details');
+    const s = document.createElement('summary');
+    s.textContent = summary;
+    const pre = document.createElement('pre');
+    pre.textContent = text;
+    det.append(s, pre);
+    d.append(det);
+  }
 
   problems(list) {
     for (const p of list) {

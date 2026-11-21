@@ -37,7 +37,7 @@ export class Editors {
     this.fragments = new Map();   // name -> { editor, block, heading }
     this.readOnly = false;
     this.loop = makeEditor(document.getElementById('loop-editor'), 'ace/mode/loop');
-    this.loop.session.on('change', () => this.clearFor('loop'));
+    this.loop.session.on('change', () => { this.clearFor('loop'); this.app.dirty && this.app.dirty(); });
     this.container = document.getElementById('fragments');
     document.getElementById('add-fragment-button').addEventListener('click', () => this.addFragment());
   }
@@ -80,7 +80,7 @@ export class Editors {
     const editor = makeEditor(box, 'ace/mode/gringo');
     editor.setValue(f.text || '', -1);
     editor.session.getUndoManager().reset();
-    editor.session.on('change', () => this.clearFor(name));
+    editor.session.on('change', () => { this.clearFor(name); this.app.dirty && this.app.dirty(); });
     this.fragments.set(name, { editor, block, heading, desc });
   }
 
@@ -119,19 +119,22 @@ export class Editors {
       else if (w.kind === 'loop') key = 'loop';
       if (!key) continue;
       if (!by.has(key)) by.set(key, []);
-      by.get(key).push({ row: Math.max(0, (w.line || 1) - 1), column: Math.max(0, (w.col || 1) - 1), text: p.message, type: p.severity === 'error' ? 'error' : 'warning' });
+      by.get(key).push({ row: Math.max(0, (w.line || 1) - 1), column: Math.max(0, (w.col || 1) - 1), text: p.message, type: ['error', 'warning', 'info'].includes(p.severity) ? p.severity : 'warning' });
     }
     for (const [key, anns] of by) {
       const ed = key === 'loop' ? this.loop : this.fragments.get(key).editor;
       ed.session.setAnnotations(anns);
-      if (key !== 'loop') this.fragments.get(key).heading.classList.add('has-problem');
+      const serious = anns.some((a) => a.type !== 'info');
+      if (key !== 'loop' && serious) this.fragments.get(key).heading.classList.add('has-problem');
       this.marked.add(key);
+      if (serious) this.serious.add(key);
     }
     this.updateTabMarkers();
     return by;
   }
 
   get marked() { if (!this._marked) this._marked = new Set(); return this._marked; }
+  get serious() { if (!this._serious) this._serious = new Set(); return this._serious; }
 
   clearFor(key) {
     if (!this.marked.has(key)) return;
@@ -139,15 +142,16 @@ export class Editors {
     if (ed) ed.session.clearAnnotations();
     if (key !== 'loop' && this.fragments.get(key)) this.fragments.get(key).heading.classList.remove('has-problem');
     this.marked.delete(key);
+    this.serious.delete(key);
     this.updateTabMarkers();
   }
 
   clearAnnotations() { for (const k of [...this.marked]) this.clearFor(k); }
 
   updateTabMarkers() {
-    const frag = [...this.marked].some((k) => k !== 'loop');
+    const frag = [...this.serious].some((k) => k !== 'loop');
     document.getElementById('label-programs').classList.toggle('has-problem', frag);
-    document.getElementById('label-loop').classList.toggle('has-problem', this.marked.has('loop'));
+    document.getElementById('label-loop').classList.toggle('has-problem', this.serious.has('loop'));
   }
 
   // ---- fragment operations ---------------------------------------------------

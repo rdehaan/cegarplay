@@ -29,6 +29,23 @@ Not done / for the user: deployment to GitHub Pages (push, enable Pages on
 `main`, root); the upstream bug report for the trap; `START-HERE.md` can be
 deleted.
 
+## Improvements after the final review (2026-11-21)
+
+- Bug: ACE editors built inside a hidden tab (fragments, loop, the Instructions'
+  code examples) were cropped or empty until something resized them. `init.js`
+  now resizes the editors of a tab when it is shown and after a project load.
+- Ctrl+Enter / Cmd+Enter runs from anywhere (capture listener on `window`).
+- Autosave: the project (with run history) is kept in `localStorage`
+  (`cegarplay.project`) and restored at start-up unless `?file=` or `?fresh=1`.
+  Loading an example or a file over an edited project asks first (`app.edited`).
+- clingo messages: the runtime's logger rewrites `<block>:L:C` to
+  `fragment:L:C` (line within the fragment) and adds `fragment/line/col` to the
+  W event; the page marks these lines in the editors after the run (infos in
+  blue do not set the red tab marker).
+- Run-time errors: a hint sentence for common errors (`relevant/1 derived
+  nothing`, glue derives nothing, no progress); the Lua traceback is collapsed.
+- Trace panels: atoms flow inline, one line per predicate.
+
 ## Next step
 
 None. Possible extras (PLAN section 6) only on request.

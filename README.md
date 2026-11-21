@@ -23,7 +23,10 @@ repository root with any static server, for example
 and open <http://localhost:8000/>. (Opening `index.html` as a file does not
 work: workers and modules need http.) URL parameters: `?file=nash` loads
 `examples/nash.json`, `?tab=4` opens the fourth tab, `?internals=true` shows
-the Internals tab.
+the Internals tab, `?fresh=1` ignores the project kept in the browser.
+
+The project being edited is saved in the browser's `localStorage` and restored
+after a reload (unless `?file=` or `?fresh=1` is given). Ctrl+Enter runs.
 
 ## Deploying on GitHub Pages
 

@@ -323,4 +323,9 @@ search A:
   <li>Abort always works. Pause, Step, Stop and threads (clingo-mt) need a cross-origin isolated page;
     otherwise these controls are hidden or disabled.</li>
   <li>All editors are read-only while a run is active.</li>
+  <li><b>Ctrl+Enter</b> (<b>Cmd+Enter</b> on a Mac) runs the project from anywhere on the page, also from inside an editor.</li>
+  <li>clingo's warnings and infos (for example "atom does not occur in any rule head") name the fragment and the line,
+    and after the run they are marked in the editor: blue for an info, yellow for a warning.</li>
+  <li>The project you are editing is kept in this browser and comes back after a reload. Loading an example or a file
+    asks first if you changed the project. To keep a project, download it; <code>?fresh=1</code> starts from the default example.</li>
 </ul>

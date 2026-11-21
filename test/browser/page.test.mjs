@@ -47,6 +47,7 @@ test('3. abort a long run, then run the default example again', async () => {
   const cand = Number((/([\d,]+) candidates/.exec(live) || [0, '0'])[1].replace(/,/g, ''));
   assert.ok(cand > 0, live);
   await page.click('label[for="tab1"]');
+  page.once('dialog', (d) => d.accept());     // the constant was edited: confirm replacing the project
   await page.click('#load-button');
   await page.waitForFunction(() => /Loaded/.test(document.getElementById('load-status').textContent));
   const t0 = Date.now();
@@ -77,7 +78,7 @@ test('4. a syntax error in a fragment: annotation, status error, no run', async 
   await context.close();
 });
 
-test('5. download JSON, reload, upload: all editors equal', async () => {
+test('5. download JSON, reload (autosave restores), upload: all editors equal', async () => {
   const { page, context } = await B.openPage(browser, server);
   await B.setEditor(page, 'editor-shared', '% changed\n' + await B.getEditor(page, 'editor-shared'));
   await B.setEditor(page, 'loop-editor', (await B.getEditor(page, 'loop-editor')).replace('search A:', '# a comment\nsearch A:'));
@@ -88,7 +89,14 @@ test('5. download JSON, reload, upload: all editors equal', async () => {
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'cegarplay-')), dl.suggestedFilename());
   await dl.saveAs(file);
   assert.equal(path.basename(file), 'graph-colouring.json');
+  // a reload restores the project being edited (autosave in localStorage) ...
+  await page.waitForTimeout(1000);
   await page.reload();
+  await page.waitForSelector('body[data-ready="true"]');
+  for (const id of ids) assert.equal(await B.getEditor(page, id), before[id], 'restored ' + id);
+  assert.match(await page.$eval('#load-status', (e) => e.textContent), /Restored/);
+  // ... ?fresh=1 starts from the default example
+  await page.goto(page.url() + '&fresh=1');
   await page.waitForSelector('body[data-ready="true"]');
   assert.notEqual(await B.getEditor(page, 'editor-shared'), before['editor-shared']);
   await page.setInputFiles('#file-input', file);
@@ -108,4 +116,47 @@ test('URL parameters: ?file=nash and ?tab=4', async () => {
   const o = await B.openPage(browser, server, '?internals=true&tab=7');
   assert.equal(await o.page.isVisible('#section-internals'), true);
   await o.context.close();
+});
+
+test('editors are sized when their tab is shown; Ctrl+Enter runs; clingo infos mark the line', async () => {
+  const { page, context, errors } = await B.openPage(browser, server);
+  await page.click('label[for="tab2"]');
+  await page.waitForTimeout(200);
+  const cropped = await page.$$eval('#instructions .ace_editor', (l) => l.filter((e) => {
+    const ed = e.env.editor;
+    return e.offsetHeight + 2 < ed.session.getScreenLength() * ed.renderer.lineHeight;
+  }).length);
+  assert.equal(cropped, 0, 'no example editor in the Instructions is cropped');
+  await page.click('label[for="tab3"]');
+  await page.waitForTimeout(200);
+  assert.ok(await page.$eval('#editor-abstraction', (e) => e.offsetHeight) > 100);
+  // a check that uses an atom no rule defines: an info marker on that line, no red tab marker
+  await B.setEditor(page, 'editor-check', (await B.getEditor(page, 'editor-check')) + '\n:- undefined_atom(X), node(X).\n');
+  await page.click('#editor-check');
+  await page.keyboard.press('Control+Enter');
+  assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
+  const ann = await page.evaluate(() => ace.edit(document.getElementById('editor-check')).session.getAnnotations());
+  assert.ok(ann.some((a) => a.type === 'info' && /undefined_atom/.test(a.text)), JSON.stringify(ann));
+  assert.equal(await page.$eval('#label-programs', (e) => e.classList.contains('has-problem')), false);
+  assert.match(await page.$eval('#messages', (e) => e.textContent), /fragment check, line \d+/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('loading an example over an edited project asks first', async () => {
+  const { page, context } = await B.openPage(browser, server);
+  // no edit yet: no question
+  let asked = 0;
+  page.on('dialog', (d) => { asked++; d.dismiss(); });
+  await page.selectOption('#example-select', 'nash');
+  await page.click('#load-button');
+  await page.waitForFunction(() => /Nash/i.test(document.getElementById('load-status').textContent));
+  assert.equal(asked, 0);
+  await B.setEditor(page, 'editor-shared', '% edited\n');
+  await page.selectOption('#example-select', 'graph-coloring');
+  await page.click('#load-button');
+  await page.waitForTimeout(200);
+  assert.equal(asked, 1);
+  assert.equal(await B.getEditor(page, 'editor-shared'), '% edited\n', 'dismissed: the project is kept');
+  await context.close();
 });

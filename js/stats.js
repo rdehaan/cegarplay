@@ -317,6 +317,7 @@ export class Stats {
     this.table('history-table', ['Time', 'Loop', 'Outcome', 'Elapsed', 'Candidates', 'Refinements', 'Mean clause', 'Solutions', 'Seed'],
       rows.length ? rows : [['(no finished runs yet)', '', '', '', '', '', '', '', '']], [3, 4, 5, 6, 7, 8]);
     this.root.querySelector('#history-note').hidden = bad.size === 0;
+    if (this.app.dirty) this.app.dirty(false);
   }
 
   // ---- copy ---------------------------------------------------------------------

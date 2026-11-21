@@ -17,6 +17,23 @@ export function splitAtoms(s) {
   return out;
 }
 
+// "-edge(1,2)" -> "edge/2"
+export function predicateOf(atom) {
+  const a = atom.replace(/^-/, '');
+  const i = a.indexOf('(');
+  if (i < 0) return a + '/0';
+  let depth = 0, n = 1, inStr = false;
+  for (let j = i; j < a.length; j++) {
+    const c = a[j];
+    if (inStr) { if (c === '\\') j++; else if (c === '"') inStr = false; continue; }
+    if (c === '"') inStr = true;
+    else if (c === '(') depth++;
+    else if (c === ')') depth--;
+    else if (c === ',' && depth === 1) n++;
+  }
+  return a.slice(0, i) + '/' + n;
+}
+
 const KIND = { reject: 'Rejected inside the search', add: 'Clause added between solves', expand: 'Rules grounded (expand)', accept: 'Accepted as a solution' };
 
 export class TraceView {
@@ -110,12 +127,21 @@ export class TraceView {
     box.textContent = '';
     if (head) { const h = document.createElement('div'); h.className = 'atoms-head'; h.textContent = head; box.append(h); }
     if (!atoms.length) { const d = document.createElement('div'); d.className = 'note'; d.textContent = empty || '(none)'; box.append(d); return; }
+    // one line per predicate; the atoms of a predicate wrap
     const frag = document.createDocumentFragment();
+    let line = null, pred = null;
     for (const a of atoms) {
-      const d = document.createElement('div');
+      const p = predicateOf(a);
+      if (!line || p !== pred) {
+        line = document.createElement('div');
+        line.className = 'atom-group';
+        frag.append(line);
+        pred = p;
+      }
+      const d = document.createElement('span');
+      d.className = hl(a) ? 'atom hl' : 'atom';
       d.textContent = a;
-      if (hl(a)) d.className = 'hl';
-      frag.append(d);
+      line.append(d, ' ');
     }
     box.append(frag);
   }

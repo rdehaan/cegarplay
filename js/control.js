@@ -17,6 +17,22 @@ export function loopLabel(loop) {
   return first || 'custom';
 }
 
+// A sentence of advice for common run-time errors, or null.
+export function errorHint(message) {
+  const m = String(message || '');
+  if (/relevant\/1 derived nothing/.test(m)) {
+    return 'The check found a counterexample, but no relevant(T) atom holds in it, so there is nothing to build a clause from. ' +
+      'Add relevant/1 rules to the check fragment for the interface atoms the counterexample depends on, or use G.block(M) to rule out the whole candidate.';
+  }
+  if (/derive no (glue\/1|shown) atom/.test(m)) {
+    return 'The glue fragments derive no glue(T) atom. Wrap the shared atoms as glue(T), or add the keyword legacy to the link for files written for cegar.py.';
+  }
+  if (/no progress|same candidate/.test(m)) {
+    return 'The refinement did not change the abstraction, so the loop would propose the same candidate forever. Check that the clause or the rules of the refine part mention the candidate.';
+  }
+  return null;
+}
+
 const PARALLEL = /^(-t|--parallel-mode)(=|$)/;
 
 export class Control {
@@ -97,6 +113,7 @@ export class Control {
     app.output.result('Running…');
     this.D = null;
     this.E = null;
+    this.marks = [];
     this.setState('running');
     const info = {
       loopLabel: loopLabel(project.loop), settings: { ...project.settings, constants: { ...project.settings.constants } },
@@ -119,15 +136,25 @@ export class Control {
       case 'H': app.stats.header(data); app.internals && app.internals.header(data); break;
       case 'S': app.stats.update(data); break;
       case 'M': app.output.solution(data); break;
-      case 'W': app.output.warning(data); break;
+      case 'W': {
+        app.output.warning(data);
+        if (data.fragment && this.marks.length < 200) {
+          const sev = /: error: /.test(data.message) ? 'error' : /: warning: /.test(data.message) ? 'warning' : 'info';
+          this.marks.push({ where: { kind: 'fragment', name: data.fragment, line: data.line, col: data.col }, severity: sev,
+            message: `solver ${data.solver}: ${data.message.replace(/^[a-z_0-9]+:\d+:[\d:-]+: (info|warning|error): /, '')}` });
+        }
+        break;
+      }
       case 'L': app.output.log(data.text); break;
       case 'T': app.output.trace.add(data); app.output.schedule(); break;
       case 'E': {
         this.E = data;
         const line = mapLine(this.assembled, data.line);
         app.output.error(`Error: ${data.message}${line ? ` (loop script, line ${line})` : ''}`);
-        if (data.traceback) app.output.message(data.traceback.trim(), 'error trace');
-        if (line) app.editors.annotate([{ where: { kind: 'loop', line, col: 1 }, severity: 'error', message: data.message }]);
+        const hint = errorHint(data.message);
+        if (hint) app.output.message(hint, 'hint');
+        if (data.traceback) app.output.details('Lua traceback (for debugging the runtime)', data.traceback.trim(), 'error trace');
+        if (line) this.marks.push({ where: { kind: 'loop', line, col: 1 }, severity: 'error', message: data.message });
         break;
       }
       case 'D': this.D = data; break;
@@ -154,6 +181,7 @@ export class Control {
     }
     app.stats.done(this.D, this.D ? info : null);
     app.editors.setReadOnly(false);
+    if (this.marks.length) app.editors.annotate(this.marks);
     this.setState(state);
     return { state, D: this.D, E: this.E };
   }

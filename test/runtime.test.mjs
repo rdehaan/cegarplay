@@ -130,3 +130,22 @@ test('log, count and stop', async () => {
   assert.deepEqual(H.finalStats(r).counters, { x: 3 });
   assert.deepEqual(H.done(r), { outcome: 'stopped', exhausted: false, detail: 'enough' });
 });
+
+test('clingo messages carry the fragment and the line within it', async () => {
+  const p = await H.example('graph-coloring');
+  p.fragments.find((f) => f.name === 'abstraction').text = 'a :- not b.\nb :- not a.\n';
+  const r = await H.runProject(p);
+  const W = r.events.filter((e) => e.kind === 'W').map((e) => e.data);
+  assert.ok(W.length > 0);
+  const check = p.fragments.find((f) => f.name === 'check').text.split('\n');
+  for (const w of W) {
+    assert.ok(!/<block>/.test(w.message), w.message);
+    assert.ok(w.fragment, w.message);
+    assert.ok(w.message.startsWith(`${w.fragment}:${w.line}:${w.col}`), w.message);
+    if (w.fragment === 'check') {
+      const atom = w.message.split('\n')[1].trim();
+      const name = atom.replace(/\(.*$/, '');
+      assert.ok(check[w.line - 1].includes(name), `${atom} on line ${w.line}: ${check[w.line - 1]}`);
+    }
+  }
+});

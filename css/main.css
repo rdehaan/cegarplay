@@ -475,6 +475,21 @@ label[name="tabs"].has-problem:after {
 .messages .msg.warning {
   color: #8a5a00;
 }
+.messages .msg.hint {
+  color: #2c5f8a;
+  font-size: 13px;
+  font-family: 'Open Sans', sans-serif;
+  background: #f1f6fb;
+  padding: 4px 8px;
+}
+.messages details summary {
+  cursor: pointer;
+  color: #888;
+}
+.messages details pre {
+  margin: 4px 0 0 16px;
+  font-size: 11px;
+}
 .messages .count {
   color: #888;
 }
@@ -522,6 +537,15 @@ table.internals-table td.num, table.internals-table th.num {
   height: 260px;
   overflow: auto;
   white-space: nowrap;
+}
+.atoms .atom-group {
+  white-space: normal;
+  margin-bottom: 4px;
+}
+.atoms .atom {
+  white-space: nowrap;
+  display: inline-block;
+  margin-right: 6px;
 }
 .atoms .hl {
   background: #fff1cc;

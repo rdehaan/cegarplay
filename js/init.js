@@ -41,8 +41,44 @@ app.setProject = (p) => {
   $('project-heading').textContent = p.title || 'Untitled';
   $('project-description').textContent = p.description || '';
   document.title = p.title ? `CegarPlay · ${p.title}` : 'CegarPlay';
+  requestAnimationFrame(() => app.resizeVisibleEditors());
+  app.dirty();
+  app.edited = false;           // set again by the first edit (editor change or input)
 };
-app.projectChanged = () => {};
+
+// ---- autosave in this browser ------------------------------------------------------
+// The project being edited is kept in localStorage, so a reload or a closed tab does not
+// lose it. Browser storage may be missing or full; then nothing is kept.
+const STORE_KEY = 'cegarplay.project';
+let saveTimer = null;
+function saveNow() {
+  saveTimer = null;
+  if (!app.ready && !app.restoredOrLoaded) return;
+  try {
+    const p = structuredClone(app.collect());
+    p.runs = app.stats.history;
+    localStorage.setItem(STORE_KEY, Project.save(p));
+  } catch { /* storage unavailable or full */ }
+}
+// edit = false: save, but the project was not edited (e.g. the run history changed)
+app.dirty = (edit = true) => {
+  if (edit) app.edited = true;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 800);
+};
+app.projectChanged = () => app.dirty();
+for (const ev of ['input', 'change']) {
+  document.querySelector('main').addEventListener(ev, (e) => {
+    if (e.target.closest && e.target.closest('#section-programs, #section-loop, .run-bar')) app.dirty();
+  }, true);
+}
+addEventListener('pagehide', () => { if (saveTimer) { clearTimeout(saveTimer); saveNow(); } });
+function storedProject() {
+  try {
+    const t = localStorage.getItem(STORE_KEY);
+    return t ? Project.load(t) : null;
+  } catch { return null; }
+}
 
 function status(id, text, error = false) {
   const e = $(id);
@@ -70,10 +106,12 @@ const guard = () => {
   if (app.control.busy) { window.alert('Not possible during a run.'); return false; }
   return true;
 };
+// Before replacing a project that was edited.
+const replaceOk = () => !app.edited || window.confirm('Replace the current project? Your changes to it are lost unless you download it first.');
 
 // ---- Control tab ----------------------------------------------------------------
 $('load-button').addEventListener('click', async () => {
-  if (!guard()) return;
+  if (!guard() || !replaceOk()) return;
   const name = $('example-select').value;
   try { await loadExample(name); status('load-status', `Loaded example "${app.project.title}".`); }
   catch (e) { status('load-status', String(e.message || e), true); }
@@ -82,7 +120,7 @@ $('load-button').addEventListener('click', async () => {
 $('file-input').addEventListener('change', async (ev) => {
   const f = ev.target.files[0];
   ev.target.value = '';
-  if (!f || !guard()) return;
+  if (!f || !guard() || !replaceOk()) return;
   try { app.setProject(Project.load(await f.text())); status('upload-status', `Loaded ${f.name}.`); }
   catch (e) { status('upload-status', `${f.name}: ${e.message || e}`, true); }
 });
@@ -96,7 +134,7 @@ $('download-button').addEventListener('click', () => {
 $('lp-input').addEventListener('change', async (ev) => {
   const f = ev.target.files[0];
   ev.target.value = '';
-  if (!f || !guard()) return;
+  if (!f || !guard() || !replaceOk()) return;
   try {
     const p = Project.importLp(await f.text(), f.name.replace(/\.lp$/, ''));
     p.description = `Imported from ${f.name}.`;
@@ -136,7 +174,29 @@ async function loadInstructions() {
     ed.setOptions({ minLines: 1, highlightActiveLine: false, highlightGutterLine: false });
     ed.renderer.$cursorLayer.element.style.display = 'none';
   }
+  requestAnimationFrame(resizeVisibleEditors);
 }
+
+// ---- tabs ---------------------------------------------------------------------------
+// ACE editors built inside a hidden tab measure themselves wrongly; resize them when shown.
+function resizeVisibleEditors() {
+  for (const el of document.querySelectorAll('main > section .ace_editor')) {
+    if (el.offsetParent !== null && el.env && el.env.editor) el.env.editor.resize(true);
+  }
+}
+for (const r of document.querySelectorAll('input[name="tabs"]')) {
+  r.addEventListener('change', () => requestAnimationFrame(resizeVisibleEditors));
+}
+app.resizeVisibleEditors = resizeVisibleEditors;
+
+// Ctrl+Enter (Cmd+Enter) runs, from anywhere on the page, also inside an editor.
+addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey) && !ev.shiftKey && !ev.altKey) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (!app.control.busy && app.ready) app.control.run();
+  }
+}, true);
 
 // ---- start ------------------------------------------------------------------------
 async function start() {
@@ -148,8 +208,16 @@ async function start() {
   loadInstructions();
   app.engineVersion = version.split('\n')[0];
   const file = params.get('file') || 'graph-coloring';
-  try { await loadExample(file); status('load-status', `Loaded example "${app.project.title}".`); }
-  catch (e) { status('load-status', String(e.message || e), true); app.setProject(Project.newProject()); }
+  const stored = params.get('file') || params.get('fresh') === '1' ? null : storedProject();
+  if (stored) {
+    app.setProject(stored);
+    app.edited = true;
+    status('load-status', `Restored "${stored.title || 'Untitled'}", the project you were editing in this browser. Load an example to start over.`);
+  } else {
+    try { await loadExample(file); status('load-status', `Loaded example "${app.project.title}".`); }
+    catch (e) { status('load-status', String(e.message || e), true); app.setProject(Project.newProject()); }
+  }
+  app.restoredOrLoaded = true;
   const sel = $('example-select');
   if ([...sel.options].some((o) => o.value === file)) sel.value = file;
   await app.engine.ready;

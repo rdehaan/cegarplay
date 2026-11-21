@@ -55,13 +55,13 @@ test('trace: step 1 of the default example shows candidate, counterexample and r
   await page.click('#run-button');
   await B.waitState(page, ['finished']);
   assert.equal(await page.textContent('#trace-label'), 'step 1 of 200');
-  const cand = await page.$$eval('#trace-candidate div', (l) => l.map((d) => d.textContent));
-  const cex = await page.$$eval('#trace-counterexample div', (l) => l.map((d) => d.textContent));
-  const ref = await page.$$eval('#trace-refinement div:not(.atoms-head)', (l) => l.map((d) => d.textContent));
+  const cand = await page.$$eval('#trace-candidate .atom', (l) => l.map((d) => d.textContent));
+  const cex = await page.$$eval('#trace-counterexample .atom', (l) => l.map((d) => d.textContent));
+  const ref = await page.$$eval('#trace-refinement .atom', (l) => l.map((d) => d.textContent));
   assert.ok(cand.some((a) => a.startsWith('edge(')), cand.join(' '));
   assert.ok(cex.some((a) => a.startsWith('color(')), cex.join(' '));
   assert.ok(ref.length > 0 && ref.every((a) => /^-?[a-z_]+\(/.test(a)), ref.join(' '));
-  assert.ok(await page.$$eval('#trace-candidate div.hl', (l) => l.length) > 0, 'refinement atoms highlighted');
+  assert.ok(await page.$$eval('#trace-candidate .atom.hl', (l) => l.length) > 0, 'refinement atoms highlighted');
   assert.match(await page.textContent('#trace-cap'), /first 200 steps/);
   await page.click('#trace-next');
   assert.equal(await page.textContent('#trace-label'), 'step 2 of 200');

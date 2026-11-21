@@ -236,14 +236,52 @@ local function check_frags(what, name, frags)
     if FRAGMENTS[p] == nil then fail(what .. " " .. name .. ": unknown fragment '" .. tostring(p) .. "'") end
   end
 end
-local function new_control(args, name)
+-- Where each fragment starts in the text that join(frags) builds: { {name, first, last}, ... }.
+local function fragment_lines(frags)
+  local out, line = {}, 1
+  for _, p in ipairs(frags or {}) do
+    local text = FRAGMENTS[p] or ""
+    local _, nl = text:gsub("\n", "")
+    out[#out + 1] = { name = p, first = line + 1, last = line + 1 + nl }
+    line = line + 2 + nl
+  end
+  return out
+end
+-- Rewrites "<block>:L:C" in a clingo message to "fragment:L:C"; returns the text and the
+-- first location found ({ fragment, line, col } or nil).
+local function locate_message(msg, starts)
+  local first
+  local text = msg:gsub("<block>:(%d+):(%d+)(%-?[%d:]*)", function(l, c, rest)
+    l = tonumber(l)
+    for _, s in ipairs(starts) do
+      if l >= s.first and l <= s.last then
+        local line = l - s.first + 1
+        if not first then first = { fragment = s.name, line = line, col = tonumber(c) } end
+        local l2, c2 = rest:match("^%-(%d+):(%d+)$")
+        if l2 then rest = "-" .. (tonumber(l2) - s.first + 1) .. ":" .. c2 end
+        return s.name .. ":" .. line .. ":" .. c .. rest
+      end
+    end
+    return nil
+  end)
+  return text, first
+end
+local function new_control(args, name, frags)
   local a = {}
   for _, o in ipairs(args or {}) do a[#a + 1] = o end
   a[#a + 1] = "--stats"
   for _, c in ipairs(CONSTS) do a[#a + 1] = "-c"; a[#a + 1] = c end
   if SETTINGS.seed ~= 0 then a[#a + 1] = "--seed=" .. SETTINGS.seed end
+  local starts = fragment_lines(frags)
   return clingo.Control(a, function(code, msg)
-    emit("W", { solver = name, code = tostring(code), message = (tostring(msg):gsub("\n+$", "")) })
+    -- a Lua error here would cross a clingo frame: keep it inside pcall
+    local ok = pcall(function()
+      local text, at = locate_message((tostring(msg):gsub("\n+$", "")), starts)
+      local w = { solver = name, code = tostring(code), message = text }
+      if at then w.fragment, w.line, w.col = at.fragment, at.line, at.col end
+      emit("W", w)
+    end)
+    if not ok then pcall(emit, "W", { solver = name, code = tostring(code), message = tostring(msg) }) end
   end, 20)
 end
 
@@ -269,7 +307,7 @@ function rt.solver(name, frags, options)
   local s = setmetatable({ name = name, frags = frags, options = options or {}, grounded = false, out = {}, inn = {},
     k = 0, caps = {}, queue = {}, blocks = {}, stash = {}, busy = false, searching = false,
     n = { calls = 0, sat = 0, unsat = 0, time = 0, ground = 0 }, clasp = {} }, Solver)
-  s.ctl = new_control(s.options, name)
+  s.ctl = new_control(s.options, name, frags)
   s.hooks = {
     init = function(_, init)
       guarded(s, function()
@@ -377,7 +415,7 @@ function rt.link(name, from, to, glue, opts)
   check_frags("link", name, glue)
   if to.grounded then fail("link " .. name .. ": solver " .. to.name .. " was already grounded; declare links before using it") end
   local set, found = {}, false
-  local g = new_control({ "1" }, name)
+  local g = new_control({ "1" }, name, glue)
   g:add("base", {}, join(glue))
   g:ground({ { "base", {} } })
   local h = g:solve{ yield = true }
