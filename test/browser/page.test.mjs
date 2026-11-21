@@ -57,8 +57,13 @@ test('3. abort a long run, then run the default example again', async () => {
   assert.ok(cand > 0, live);
   await page.click('label[for="tab1"]');
   page.once('dialog', (d) => d.accept());     // the constant was edited: confirm replacing the project
+  await B.openLibrary(page);
   await page.click('#library [data-load-example="graph-coloring"]');
   await page.waitForFunction(() => /Loaded/.test(document.getElementById('load-status').textContent));
+  // the results of the aborted run are gone
+  assert.equal(await B.waitState(page, ['idle'], 5000), 'idle');
+  assert.equal((await page.textContent('#live-line')).trim(), '');
+  assert.equal(await page.textContent('#result-line'), 'No run yet.');
   const t0 = Date.now();
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error', 'aborted']), 'finished');
@@ -134,6 +139,8 @@ test('the library: groups from library.json, filter, ?example=, copy link, unkno
   const { page, context, errors } = await B.openPage(browser, server, '?example=lang-basics&tab=4');
   assert.match(await B.getEditor(page, 'loop-editor'), /count refinements/);
   await page.click('label[for="tab1"]');
+  assert.deepEqual(await page.$$eval('#library-section, .library-group', (l) => l.filter((d) => d.open).length), 0, 'folded by default');
+  await B.openLibrary(page);
   assert.equal(await page.$$eval('#library .library-entry', (l) => l.length), lib.examples.length);
   assert.equal(await page.$eval('#library .library-entry.loaded', (e) => e.dataset.example), 'lang-basics');
   await page.fill('#library-filter', 'shape4');
@@ -193,6 +200,7 @@ test('loading an example over an edited project asks first', async () => {
   // no edit yet: no question
   let asked = 0;
   page.on('dialog', (d) => { asked++; d.dismiss(); });
+  await B.openLibrary(page);
   await page.click('#library [data-load-example="nash"]');
   await page.waitForFunction(() => /Nash/i.test(document.getElementById('load-status').textContent));
   assert.equal(asked, 0);
@@ -299,4 +307,25 @@ test('manual.md and llms.txt are served as they are', async () => {
     assert.equal(r.status, 200, f);
     assert.match(await r.text(), /^# /);
   }
+});
+
+test('the project title and description can be edited', async () => {
+  const { page, context, errors } = await B.openPage(browser, server);
+  await page.click('#edit-project-button');
+  await page.fill('#project-title-input', 'My title');
+  await page.fill('#project-description-input', 'My description.');
+  await page.click('#save-project-info');
+  assert.equal(await page.textContent('#project-heading'), 'My title');
+  assert.equal(await page.textContent('#project-description'), 'My description.');
+  assert.equal(await page.title(), 'CegarPlay · My title');
+  assert.equal(await page.isHidden('#project-form'), true);
+  await page.click('#edit-project-button');
+  await page.fill('#project-title-input', 'Other');
+  await page.press('#project-title-input', 'Escape');
+  assert.equal(await page.textContent('#project-heading'), 'My title', 'Escape cancels');
+  await page.waitForTimeout(1200);          // autosave
+  await page.reload();
+  await page.waitForFunction(() => /My title/.test(document.getElementById('project-heading').textContent));
+  assert.deepEqual(errors, []);
+  await context.close();
 });

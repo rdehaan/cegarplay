@@ -56,3 +56,7 @@ export async function waitState(page, states, timeout = 60000) {
 }
 export const setEditor = (page, id, text) => page.evaluate(([i, t]) => ace.edit(document.getElementById(i)).setValue(t, -1), [id, text]);
 export const getEditor = (page, id) => page.evaluate((i) => ace.edit(document.getElementById(i)).getValue(), id);
+// The example library is folded by default: unfold the section and every group.
+export const openLibrary = (page) => page.evaluate(() => {
+  for (const d of document.querySelectorAll('#library-section, .library-group')) d.open = true;
+});

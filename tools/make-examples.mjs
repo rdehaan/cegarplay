@@ -101,8 +101,19 @@ const DESC = {
   check: 'Looks for a counterexample to a candidate (solver C). relevant(T) marks the interface atoms the counterexample depends on.',
 };
 
+// The cegar.py files mark their sections with banners (%* *** GUESS PROGRAM *** ... *%); after
+// the split at #program they sit at the edge of the wrong fragment, so they are dropped.
+const BANNER = /%\*[^%]*?\*\*\* [A-Z]+ PROGRAM \*\*\*[^%]*?\*%/g;
+const stripBanners = (t) => t.replace(BANNER, '').replace(/\n[ \t]*(\n[ \t]*){2,}/g, '\n\n').replace(/^\s*\n/, '').replace(/\s*$/, '\n');
+// Replace text that must be there: a change in the reference file is then noticed.
+function cut(text, old, by = '') {
+  if (!text.includes(old)) throw new Error(`make-examples: text not found: ${old.slice(0, 60)}`);
+  return text.replace(old, by);
+}
+
 function make(file, title, description, edit, settings) {
   const p = importLp(src(file), title);
+  for (const f of p.fragments) f.text = stripBanners(f.text);
   p.description = description;
   for (const f of p.fragments) f.description = DESC[f.name];
   edit(p);
@@ -131,7 +142,35 @@ export function buildExamples() {
   const nash = make('nash.lp', 'Nash equilibria',
     'Weighted graphs whose colouring game has a Nash equilibrium (guessed by the abstraction) that the check ' +
     'tries to refute.',
-    (p) => { frag(p, 'glue').text = wrapGlue(frag(p, 'glue').text); p.loop.text = template('shape1'); },
+    (p) => {
+      frag(p, 'glue').text = wrapGlue(frag(p, 'glue').text);
+      const a = frag(p, 'abstraction'), c = frag(p, 'check');
+      a.text = cut(a.text, `% Optional: require that cumulative size of color sets is large
+%:- not #count { P,C : color_available(P,C) } >= 10.
+
+`);
+      c.text = cut(c.text, '(for stronger refinement using strategy 2)', '(gives a stronger refinement)');
+      c.text = cut(c.text, `%%% Refinement strategy 1:
+%%% All glue atoms are relevant (trivial refinement)
+% relevant(edge(P,Q,W)) :- player(P), player(Q), weight(W).
+% relevant(color_available(P,C)) :- player(P), color(C).
+% relevant(plays(P,C)) :- player(P), color(C).
+
+%%% Refinement strategy 2:
+%%% Only 'neighborhood' of difference is relevant
+% relevant(edge(P,Q,W)) :- player(P), player(Q), weight(W), player_differs(P).
+% relevant(color_available(P,C)) :- player(P), color(C), player_differs(P).
+% adjacent_to_differing_player(P) :- player(P),
+%     player(Q), edge(P,Q,_), player_differs(Q).
+% relevant(plays(P,C)) :- player(P), color(C), adjacent_to_differing_player(P).
+
+%%% Refinement strategy 3:
+%%% Only 'neighborhood' of difference is relevant
+%%% (stricter definition of neighborhood)
+`, `% Refinement: only the neighbourhood of the difference is relevant
+`);
+      p.loop.text = template('shape1');
+    },
     { solutions: 1 });
   const vote = make('explain1.lp', 'Voting: justifications',
     'Explaining a voting outcome by axioms: the abstraction guesses axiom instances and profiles, the check ' +

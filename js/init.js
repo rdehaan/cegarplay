@@ -56,17 +56,50 @@ app.control = new Control(app);
 
 app.collect = () => app.editors.collect(app.project);
 
+function showProjectInfo(p) {
+  $('project-heading').textContent = p.title || 'Untitled';
+  $('project-description').textContent = p.description || '';
+  document.title = p.title ? `CegarPlay · ${p.title}` : 'CegarPlay';
+}
+function editProjectInfo(on) {
+  $('project-info').hidden = on;
+  $('project-form').hidden = !on;
+  if (!on) return;
+  $('project-title-input').value = app.project.title || '';
+  $('project-description-input').value = app.project.description || '';
+  $('project-title-input').focus();
+}
+function saveProjectInfo() {
+  app.project.title = $('project-title-input').value.trim() || 'Untitled';
+  app.project.description = $('project-description-input').value.trim();
+  showProjectInfo(app.project);
+  editProjectInfo(false);
+  app.dirty();
+}
+$('edit-project-button').addEventListener('click', () => editProjectInfo(true));
+$('save-project-info').addEventListener('click', saveProjectInfo);
+$('cancel-project-info').addEventListener('click', () => editProjectInfo(false));
+$('project-form').addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') editProjectInfo(false);
+  else if (e.key === 'Enter' && e.target.id === 'project-title-input') { e.preventDefault(); saveProjectInfo(); }
+});
+
 app.setProject = (p, { save = true } = {}) => {
   app.project = p;
   app.exampleId = null;         // set by loadExample
   markLoadedExample();
+  // the results of an earlier run belong to the earlier project
+  app.output.clear();
+  app.stats.reset();
+  app.control.runMessage('');
+  app.control.setState('idle');
+  app.editors.clearAnnotations();
   app.editors.build(p);
   app.loopTab.load(p);
   app.stats.history = Array.isArray(p.runs) ? p.runs.map((r) => ({ ...r })) : [];
   app.stats.renderHistory();
-  $('project-heading').textContent = p.title || 'Untitled';
-  $('project-description').textContent = p.description || '';
-  document.title = p.title ? `CegarPlay · ${p.title}` : 'CegarPlay';
+  showProjectInfo(p);
+  editProjectInfo(false);
   requestAnimationFrame(() => app.resizeVisibleEditors());
   app.saveBlocked = !save;      // until the first edit
   if (save) app.dirty();
@@ -151,7 +184,7 @@ async function buildLibrary() {
     const entries = lib.examples.filter((e) => e.group === g.id);
     if (!entries.length) continue;
     const det = make('details', { class: 'library-group', 'data-group': g.id });
-    det.open = g.id !== 'shapes';
+    det.open = false;
     det.append(make('summary', {}, make('span', { class: 'library-group-title' }, g.title), ' ',
       make('span', { class: 'note' }, `${entries.length} · ${g.description}`)));
     const list = make('ul', { class: 'library-list' });

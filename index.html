@@ -80,16 +80,33 @@
         here, then look at the <b>Programs</b> and <b>Loop</b> tabs, and press <b>Run</b>. New here?
         Start with the <b>Tutorial</b> tab.
       </p>
-      <p id="project-heading" class="project-heading"></p>
-      <p id="project-description" class="project-description"></p>
-
-      <h3>Example library</h3>
-      <p class="note">Load an example to look at it and run it. Each has a link of its own:
-        <code>?example=&lt;id&gt;</code>. The <b>Tutorial</b> tab uses the first group step by step.</p>
-      <div class="library-filter">
-        <input type="search" id="library-filter" placeholder="Filter by word, id or shape" aria-label="Filter the library">
+      <div class="project-box">
+        <div id="project-info">
+          <button class="control-button small-button project-edit" id="edit-project-button" title="Edit the title and the description">Edit</button>
+          <p id="project-heading" class="project-heading"></p>
+          <p id="project-description" class="project-description"></p>
+        </div>
+        <div id="project-form" class="project-form" hidden>
+          <label class="inline-label" for="project-title-input">Title</label>
+          <input type="text" id="project-title-input">
+          <label class="inline-label" for="project-description-input">Description</label>
+          <textarea id="project-description-input" rows="3"></textarea>
+          <div>
+            <button class="control-button small-button" id="save-project-info">Save</button>
+            <button class="control-button small-button" id="cancel-project-info">Cancel</button>
+          </div>
+        </div>
       </div>
-      <div id="library" class="library"><p class="note">Loading the library…</p></div>
+
+      <details id="library-section" class="library-section">
+        <summary><h3>Example library</h3></summary>
+        <p class="note">Load an example to look at it and run it. Each has a link of its own:
+          <code>?example=&lt;id&gt;</code>. The <b>Tutorial</b> tab uses the first group step by step.</p>
+        <div class="library-filter">
+          <input type="search" id="library-filter" placeholder="Filter by word, id or shape" aria-label="Filter the library">
+        </div>
+        <div id="library" class="library"><p class="note">Loading the library…</p></div>
+      </details>
       <p id="load-status" class="status-line"></p>
 
       <h3>Start a new project</h3>
