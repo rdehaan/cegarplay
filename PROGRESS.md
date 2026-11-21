@@ -56,6 +56,12 @@ deleted.
   start (visible from every tab, with a link to the Output tab).
 - Output: "Download" next to Solutions saves all solutions (up to 200,000 kept),
   not only the 1,000 shown.
+- Fixes after an independent review: two-line clingo locations mapped at both
+  ends; a project opened with `?file=` (or a failed restore) does not overwrite
+  the kept project until it is edited (`app.saveBlocked`); a stored project that
+  fails to load falls back to the example; `Editors.build` clears marks; a run
+  cancels the pending live check; trace groups by predicate regardless of sort.
+- `npm test`: 115 tests, 113 pass, 2 skipped. Firefox browser tests pass.
 
 ## Next step
 

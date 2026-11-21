@@ -257,8 +257,11 @@ local function locate_message(msg, starts)
       if l >= s.first and l <= s.last then
         local line = l - s.first + 1
         if not first then first = { fragment = s.name, line = line, col = tonumber(c) } end
+        local trail = rest:match(":$") and ":" or ""
+        if trail ~= "" then rest = rest:sub(1, -2) end
         local l2, c2 = rest:match("^%-(%d+):(%d+)$")
         if l2 then rest = "-" .. (tonumber(l2) - s.first + 1) .. ":" .. c2 end
+        rest = rest .. trail
         return s.name .. ":" .. line .. ":" .. c .. rest
       end
     end

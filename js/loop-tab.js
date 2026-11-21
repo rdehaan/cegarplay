@@ -36,6 +36,8 @@ export class LoopTab {
   }
 
   // Compile the loop script while it is edited and mark errors at once.
+  cancelLiveCheck() { clearTimeout(this.liveTimer); }
+
   liveCheck() {
     clearTimeout(this.liveTimer);
     this.liveTimer = setTimeout(() => {

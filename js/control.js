@@ -84,6 +84,7 @@ export class Control {
     if (this.busy || !app.ready) return null;
     this.setState('validating');
     this.runMessage('');
+    if (app.loopTab) app.loopTab.cancelLiveCheck();
     const project = structuredClone(app.collect());
     if (seed !== undefined) project.settings.seed = seed;
     app.editors.clearAnnotations();

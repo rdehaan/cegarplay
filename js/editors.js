@@ -46,6 +46,9 @@ export class Editors {
   build(project) {
     for (const f of this.fragments.values()) f.editor.destroy();
     this.fragments.clear();
+    this.marked.clear();
+    this.serious.clear();
+    this.loop.session.clearAnnotations();
     this.container.textContent = '';
     for (const f of project.fragments) this.addBlock(f);
     this.setLoop(project.loop);

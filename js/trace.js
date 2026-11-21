@@ -132,7 +132,14 @@ export class TraceView {
     box.textContent = '';
     if (head) { const h = document.createElement('div'); h.className = 'atoms-head'; h.textContent = head; box.append(h); }
     if (!atoms.length) { const d = document.createElement('div'); d.className = 'note'; d.textContent = empty || '(none)'; box.append(d); return; }
-    // one line per predicate; the atoms of a predicate wrap
+    // one line per predicate (in order of first appearance); the atoms of a predicate wrap
+    const groups = new Map();
+    for (const a of atoms) {
+      const p = predicateOf(a);
+      if (!groups.has(p)) groups.set(p, []);
+      groups.get(p).push(a);
+    }
+    atoms = [...groups.values()].flat();
     const frag = document.createDocumentFragment();
     let line = null, pred = null;
     for (const a of atoms) {

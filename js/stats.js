@@ -312,7 +312,7 @@ export class Stats {
     const rows = this.history.map((r, i) => ({
       attrs: bad.has(i) ? { class: 'mismatch', 'data-mismatch': 'true' } : {},
       cells: [(bad.has(i) ? '⚠ ' : '') + r.time, r.loop, r.outcome + (r.exhausted ? ' (exhausted)' : ''), secs(r.elapsed), fmt(r.candidates),
-        fmt(r.refinements), r.meanLength == null ? '–' : r.meanLength.toFixed(2), fmt(r.solutions), String(r.seed ?? 0)],
+        fmt(r.refinements), typeof r.meanLength !== 'number' ? '–' : r.meanLength.toFixed(2), fmt(r.solutions), String(r.seed ?? 0)],
     }));
     this.table('history-table', ['Time', 'Loop', 'Outcome', 'Elapsed', 'Candidates', 'Refinements', 'Mean clause', 'Solutions', 'Seed'],
       rows.length ? rows : [['(no finished runs yet)', '', '', '', '', '', '', '', '']], [3, 4, 5, 6, 7, 8]);

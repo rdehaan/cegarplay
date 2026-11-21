@@ -149,3 +149,13 @@ test('clingo messages carry the fragment and the line within it', async () => {
     }
   }
 });
+
+test('a clingo location over two lines is mapped at both ends', async () => {
+  const p = await H.example('graph-coloring');
+  const f = p.fragments.find((x) => x.name === 'abstraction');
+  f.text = '% one\n% two\np(X) :- q(X,\n   X).\n' + f.text;
+  const r = await H.runProject(p);
+  const w = r.events.filter((e) => e.kind === 'W').map((e) => e.data).find((d) => /q\(X,X\)/.test(d.message));
+  assert.ok(w, 'warning about q/2');
+  assert.match(w.message, /^abstraction:3:\d+-4:\d+: info: /);
+});

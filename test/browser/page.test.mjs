@@ -194,3 +194,33 @@ test('the loop script is checked while it is edited; New project runs', async ()
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('?file= does not overwrite the kept project until it is edited; rename clears marks', async () => {
+  const { page, context } = await B.openPage(browser, server);
+  await B.setEditor(page, 'editor-shared', '% kept\n');
+  await page.waitForTimeout(1200);
+  await page.goto(page.url() + '&file=nash');
+  await page.waitForSelector('body[data-ready="true"]');
+  await page.click('#run-button');
+  await B.waitState(page, ['finished', 'error']);
+  await page.waitForTimeout(1200);
+  await page.goto(page.url().replace(/&file=nash/, ''));
+  await page.waitForSelector('body[data-ready="true"]');
+  assert.equal(await B.getEditor(page, 'editor-shared'), '% kept\n');
+  // marks of a run go away when the fragment is renamed
+  await page.goto(page.url() + '&fresh=1');
+  await page.waitForSelector('body[data-ready="true"]');
+  await B.setEditor(page, 'editor-check', (await B.getEditor(page, 'editor-check')) + '\nx :- y.\n');
+  await page.click('#run-button');
+  await B.waitState(page, ['finished', 'error']);
+  await B.setEditor(page, 'editor-abstraction', (await B.getEditor(page, 'editor-abstraction')) + '\n:- q.\n');
+  await page.click('#run-button');
+  await B.waitState(page, ['finished', 'error']);
+  page.once('dialog', (d) => d.accept('check2'));
+  await page.click('label[for="tab3"]');
+  assert.ok(await page.evaluate(() => window.cegarplay.editors.marked.size) > 0, 'the run left marks');
+  await page.click('[data-fragment="check"] button[title="Rename this fragment"]');
+  assert.equal(await page.evaluate(() => window.cegarplay.editors.marked.size), 0);
+  assert.equal(await page.$eval('#label-programs', (e) => e.classList.contains('has-problem')), false);
+  await context.close();
+});

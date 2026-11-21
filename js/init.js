@@ -32,7 +32,7 @@ app.control = new Control(app);
 
 app.collect = () => app.editors.collect(app.project);
 
-app.setProject = (p) => {
+app.setProject = (p, { save = true } = {}) => {
   app.project = p;
   app.editors.build(p);
   app.loopTab.load(p);
@@ -42,7 +42,9 @@ app.setProject = (p) => {
   $('project-description').textContent = p.description || '';
   document.title = p.title ? `CegarPlay · ${p.title}` : 'CegarPlay';
   requestAnimationFrame(() => app.resizeVisibleEditors());
-  app.dirty();
+  app.saveBlocked = !save;      // until the first edit
+  if (save) app.dirty();
+  else if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
   app.edited = false;           // set again by the first edit (editor change or input)
 };
 
@@ -53,7 +55,7 @@ const STORE_KEY = 'cegarplay.project';
 let saveTimer = null;
 function saveNow() {
   saveTimer = null;
-  if (!app.ready && !app.restoredOrLoaded) return;
+  if ((!app.ready && !app.restoredOrLoaded) || app.saveBlocked) return;
   try {
     const p = structuredClone(app.collect());
     p.runs = app.stats.history;
@@ -62,7 +64,7 @@ function saveNow() {
 }
 // edit = false: save, but the project was not edited (e.g. the run history changed)
 app.dirty = (edit = true) => {
-  if (edit) app.edited = true;
+  if (edit) { app.edited = true; app.saveBlocked = false; }
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 800);
 };
@@ -86,11 +88,11 @@ function status(id, text, error = false) {
   e.classList.toggle('error', error);
 }
 
-async function loadExample(name) {
+async function loadExample(name, opts) {
   if (!/^[A-Za-z0-9_-]+$/.test(name)) throw new Error(`invalid example name ${name}`);
   const r = await fetch(`examples/${name}.json`);
   if (!r.ok) throw new Error(`examples/${name}.json: ${r.status} ${r.statusText}`);
-  app.setProject(Project.load(await r.text()));
+  app.setProject(Project.load(await r.text()), opts);
 }
 
 function download(name, text, type = 'application/json') {
@@ -215,13 +217,22 @@ async function start() {
   app.engineVersion = version.split('\n')[0];
   const file = params.get('file') || 'graph-coloring';
   const stored = params.get('file') || params.get('fresh') === '1' ? null : storedProject();
+  let restored = false;
   if (stored) {
-    app.setProject(stored);
-    app.edited = true;
-    status('load-status', `Restored "${stored.title || 'Untitled'}", the project you were editing in this browser. Load an example to start over.`);
-  } else {
-    try { await loadExample(file); status('load-status', `Loaded example "${app.project.title}".`); }
-    catch (e) { status('load-status', String(e.message || e), true); app.setProject(Project.newProject()); }
+    try {
+      app.setProject(stored);
+      app.edited = true;
+      restored = true;
+      status('load-status', `Restored "${stored.title || 'Untitled'}", the project you were editing in this browser. Load an example to start over.`);
+    } catch (e) {
+      console.warn('the project kept in the browser could not be restored:', e);
+    }
+  }
+  if (!restored) {
+    // A project named in the URL does not replace the one kept in the browser until it is edited.
+    const save = !params.get('file') && params.get('fresh') !== '1' && !stored;
+    try { await loadExample(file, { save }); status('load-status', `Loaded example "${app.project.title}".`); }
+    catch (e) { status('load-status', String(e.message || e), true); app.setProject(Project.newProject(), { save: false }); }
   }
   app.restoredOrLoaded = true;
   const sel = $('example-select');
