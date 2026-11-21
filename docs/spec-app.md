@@ -72,7 +72,6 @@ into `reference/logic-game` and read `index.html`, `css/main.css`,
 | Function | Output |
 | --- | --- |
 | `save(project)` | Project JSON |
-| `exportLp(project)` | The four default fragments joined with `#program shared.` / `guess.` / `glue.` / `check.` headers. Offered only if the project has exactly those four fragments. |
 | `exportStandalone(project, runtimeLua)` | The assembled program with `SETTINGS.plain = true` and a comment header: how to run (`clingo file.lp --outf=3`), and that clingo must be built with Lua (the PyPI `clingo` package is not; Ubuntu's `gringo` package and conda-forge builds are). |
 
 ## 3. Validation (`js/driver.js`, no DOM)

@@ -65,18 +65,6 @@ test('importLp: explain1.lp is split despite its comments', () => {
   assert.match(r.fragments[1].text, /#program refine\(k\)\.\nb\(k\)\./);
 });
 
-test('exportLp(importLp(x)) re-imports to the same fragments', () => {
-  for (const f of ['graph-coloring.lp', 'nash.lp', 'explain1.lp']) {
-    const p = P.importLp(lp(f));
-    const q = P.importLp(P.exportLp(p));
-    assert.deepEqual(q.fragments, p.fragments, f);
-  }
-  const p = P.newProject();
-  p.fragments.push({ name: 'extra', text: '' });
-  assert.equal(P.canExportLp(p), false);
-  assert.throws(() => P.exportLp(p));
-});
-
 test('the example files are up to date', () => {
   for (const [name, p] of Object.entries(buildExamples())) {
     assert.equal(H.read(`examples/${name}.json`), P.save(p), `${name}.json: run node tools/make-examples.mjs`);

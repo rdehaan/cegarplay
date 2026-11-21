@@ -664,7 +664,6 @@ Pause, Step, Stop and threads works.
 | Upload project from file | Loads a project JSON (`Project.load`). |
 | Download current project | The project JSON; "include run history" adds `runs`. |
 | Import a file written for cegar.py | A `.lp` file split at `#program shared.`, `#program guess.` (or `base.`), `#program glue.`, `#program check.` into the four default fragments (text before the first directive goes to `abstraction`; other directives such as `#program refine(k).` stay in place; directives inside comments and strings are ignored). Loop: Shape 1, with `legacy` if the glue has no `glue(`. |
-| Export as .lp (cegar.py) | The four default fragments under those headers. Only for projects with exactly these four fragments. |
 | Export standalone program | One `.lp` file with the fragments, the runtime and the loop: `clingo file.lp --outf=3` prints `Answer: n` lines and a summary. Needs a clingo built with Lua (conda-forge, Ubuntu's `gringo`; not the PyPI package). |
 
 ## Example library

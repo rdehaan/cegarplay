@@ -272,11 +272,11 @@ Tasks:
 2. `js/driver.js`: `validate` and the final `assemble`. Tests in
    `test/driver.test.mjs` for the three verified validation cases, mapped to
    the right fragment and line when the fragment is second in a solver.
-3. `js/project.js`: model, `load`, `save`, `importLp`, `exportLp`,
-   `exportStandalone`. Tests in `test/project.test.mjs`: round trip; import of
+3. `js/project.js`: model, `load`, `save`, `importLp`,
+   `exportStandalone` (`exportLp` was removed later at the user's request). Tests in `test/project.test.mjs`: round trip; import of
    the three files in `reference/declarative-cegar` (four fragments each,
    `legacy` detected for two of them, `explain1.lp` split correctly despite its
-   comments); `exportLp(importLp(x))` re-imports to the same fragments.
+   comments).
 4. `tools/make-examples.mjs` and the four example files of spec-app section 7.
    Tests: reference rows 11 and 12; `examples/graph-coloring.json` gives
    10,698 with Shape 1 and with Shape 4.

@@ -311,12 +311,6 @@ $('lp-input').addEventListener('change', async (ev) => {
   } catch (e) { status('import-status', `${f.name}: ${e.message || e}`, true); }
 });
 
-$('export-lp-button').addEventListener('click', () => {
-  const p = app.collect();
-  try { download(slug(p.title) + '.lp', Project.exportLp(p), 'text/plain'); status('export-status', 'Exported as .lp.'); }
-  catch (e) { status('export-status', e.message || String(e), true); }
-});
-
 $('export-standalone-button').addEventListener('click', () => {
   const p = app.collect();
   try { download(slug(p.title) + '-standalone.lp', Project.exportStandalone(p, app.runtime), 'text/plain'); status('export-status', 'Exported the standalone program (run it with: clingo file.lp --outf=3).'); }

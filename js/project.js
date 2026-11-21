@@ -1,4 +1,4 @@
-// Project model, load/save, import of cegar.py files, exports. No DOM, no Node APIs.
+// Project model, load/save, import of cegar.py files, standalone export. No DOM, no Node APIs.
 import { compile } from './compiler.js';
 import { assemble, DEFAULT_SETTINGS, stripAspComments } from './driver.js';
 
@@ -258,18 +258,6 @@ export function importLp(text, title = 'Imported') {
   const legacy = parts.glue.trim() !== '' && !usesGlueAtoms(parts.glue);
   p.loop = { language: 'loop', text: template('shape1', { legacy }) };
   return p;
-}
-
-export function canExportLp(project) {
-  const names = project.fragments.map((f) => f.name);
-  return names.length === 4 && DEFAULT_FRAGMENTS.every((n) => names.includes(n));
-}
-
-export function exportLp(project) {
-  if (!canExportLp(project)) throw new ProjectError('export as .lp needs exactly the fragments shared, abstraction, glue and check');
-  const get = (n) => project.fragments.find((f) => f.name === n).text;
-  const sec = [['shared', 'shared'], ['guess', 'abstraction'], ['glue', 'glue'], ['check', 'check']];
-  return sec.map(([h, n]) => `#program ${h}.\n${get(n).replace(/\s+$/, '')}\n`).join('\n');
 }
 
 export function exportStandalone(project, runtimeLua) {

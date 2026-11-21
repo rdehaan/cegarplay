@@ -161,6 +161,7 @@ Pages; the upstream bug report for the trap.
 
 ## Deviations from the plan
 
+- The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The import stays; the standalone export now has a run hint below its button.
 - Branch renamed `master` -> `main` before the first commit.
 - Root `package.json` with `"type": "module"` and `vendor/clingo-wasm/package.json`
   (written by `tools/vendor.mjs`) so Node loads `js/*.js` and the vendored glue as ES
