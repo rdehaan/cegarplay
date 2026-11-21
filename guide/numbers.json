@@ -1,0 +1,28 @@
+{
+  "guide-01-demo-block": {
+    "solutions": 3,
+    "candidates": 176,
+    "counterexamples": 173,
+    "refinements": 173,
+    "clauses": 173,
+    "expansions": 0,
+    "literals": 1730,
+    "meanClause": 10,
+    "maxClause": 10,
+    "checkCalls": 176,
+    "restarts": 0
+  },
+  "guide-01-demo-clause": {
+    "solutions": 3,
+    "candidates": 13,
+    "counterexamples": 10,
+    "refinements": 10,
+    "clauses": 10,
+    "expansions": 0,
+    "literals": 30,
+    "meanClause": 3,
+    "maxClause": 3,
+    "checkCalls": 13,
+    "restarts": 0
+  }
+}

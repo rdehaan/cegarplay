@@ -28,7 +28,7 @@ test('every Load button of the tutorial names a library example', () => {
   assert.ok(ids.length >= 15, `only ${ids.length} buttons`);
   const known = new Set(lib.examples.map((e) => e.id));
   for (const id of ids) assert.ok(known.has(id), `unknown example ${id}`);
-  for (const e of lib.examples.filter((x) => x.group !== 'problems')) assert.ok(ids.includes(e.id), `${e.id} is not in the tutorial`);
+  for (const e of lib.examples.filter((x) => !['problems', 'guide'].includes(x.group))) assert.ok(ids.includes(e.id), `${e.id} is not in the tutorial`);
 });
 
 for (const e of lib.examples.filter((x) => x.tags.includes('fast') && x.expected)) {

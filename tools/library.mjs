@@ -37,7 +37,7 @@ const SUMFREE_DESC = {
   check: 'Looks for a counterexample to a candidate (solver C) and marks the atoms it depends on with relevant/1.',
 };
 
-function project(title, description, fragments, loop, settings = {}, descriptions = SUMFREE_DESC) {
+export function project(title, description, fragments, loop, settings = {}, descriptions = SUMFREE_DESC) {
   const p = newProject(title);
   p.description = description;
   p.fragments = Object.entries(fragments).map(([name, text]) => ({ name, text, ...(descriptions[name] ? { description: descriptions[name] } : {}) }));
@@ -228,6 +228,7 @@ search A:
 // ---- the manifest ----------------------------------------------------------------------
 export const GROUPS = [
   { id: 'tutorial', title: 'Tutorial', description: 'Small examples used step by step in the Tutorial tab.' },
+  { id: 'guide', title: 'Guide', description: 'the examples of the design guide, in reading order' },
   { id: 'language', title: 'The loop language', description: 'One feature of the loop language each, with comments in the loop script.' },
   { id: 'shapes', title: 'Loop shapes', description: 'Graph colouring at n = 5 with each of the five templates; all give the same solutions.' },
   { id: 'problems', title: 'Problems', description: 'Larger problems from declarative-cegar.' },

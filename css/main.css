@@ -792,3 +792,23 @@ tr.mismatch td {
   padding: 3px 10px;
   color: var(--text);
 }
+
+/* Links top left: the guide, and the way back to the guide page that opened an example */
+.header-links {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  font-size: 13px;
+}
+.header-links a {
+  color: var(--link);
+  margin-right: 14px;
+}
+.library-guide-link {
+  margin-left: 6px;
+  color: var(--link);
+}
+/* The fragment a ?fragment= link opened */
+.fragment.fragment-target > h3 .fragment-name {
+  border-bottom: 2px solid var(--accent);
+}

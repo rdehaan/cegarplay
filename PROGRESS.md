@@ -178,7 +178,37 @@ phase at a time (G0a, G0, G1, ..., G4); commits `Guide N: <title>`.
     the new manual lines.
   - Light keeps its old contrasts (for instance `--text-soft` #888 on white is 3.5); only dark
     is held to 4.5.
-- Next: G0 Infrastructure.
+- **G0 Infrastructure: done (2026-11-21).** Group `guide` (after `tutorial`) built by
+  `tools/guide.mjs` (`buildGuide()`, `GUIDE_GROUP`, `SMALL_EDGES`; `project()` is now exported from
+  `tools/library.mjs`); manifest entries carry `page`, `status`, `baseline`.
+  `tools/guide-numbers.mjs` (keys: solutions, candidates, counterexamples, refinements = clauses +
+  expansions, clauses, expansions, literals, meanClause, maxClause, checkCalls = calls of all
+  solvers but A, restarts; integers formatted `toLocaleString('en')`, meanClause one decimal)
+  writes `guide/numbers.json`; `--check` also checks every `data-stat` span. App: `&fragment=`
+  (Programs tab on that fragment, `loop` = Loop tab, overrides `tab`, unknown = status note),
+  `&from=` (regex-checked, "← Back to the guide" top left), a "Guide" link top left, a "Guide page"
+  link in library entries; both parameters in the manual. Guide: `guide.css`, `guide.js` (nav,
+  tokeniser, graph figure; exports `GRAPH`, `LOOP_KEYWORDS`, `tokenise` for the tests),
+  `chapters.js`, `index.html` (loop diagram), skeleton `01-why-a-loop.html` with every building
+  block. Tests: `test/guide.test.mjs` (11), `test/browser/guide.test.mjs` (pages in light/dark at
+  desktop/phone width with screenshots to `test/screenshots/guide/`, no-JS, deep links, hostile
+  `from=`, library link, in-page run = numbers.json); the theme test on a guide page now runs.
+  - **Small graph designed and frozen already in G0** (the figure and the placeholders need it):
+    K4 on 1-4 plus the triangle chain 4-5-6, 6-7-8, 8-9-10 (10 nodes, 15 edges, 7 triangles,
+    planar, 4-5-6 and 8-9-10 disjoint). k = 3: 3 solutions ({4, 8, x}, x in 1..3); blocking run
+    176 candidates, clause run 13 (13.5x). Found by a search over random triangle unions.
+  - **Placeholders to remove in G1:** `guide-01-demo-block` (baseline) and `guide-01-demo-clause`
+    (sound), and the skeleton content of page 01. The browser tests use `guide-01-demo-clause`
+    where the plan says `guide-03-hit-clique`: switch them when that example exists.
+  - `chapters.js` entries have `ready`; the sidebar and the tests use the ready ones, the contents
+    page lists the rest as "(in preparation)". Set `ready: true` when a page is written.
+  - Syntax colours of the guide are tokens `--syn-*` in `theme.css` (dark values as the ACE dark
+    theme); contrast pairs added to `test/theme.test.mjs`.
+  - `test/markdown.test.mjs`: the manual names every library id except the guide group's (the
+    manual describes the group and its fields instead).
+  - Cross-links from the tutorial, the manual's introduction, README and `llms.txt` are left to G4
+    (the plan lists them there too); only the app header link exists now.
+- Next: G1 Pages 1-4 (first remove the placeholders).
 
 Notes for the guide phases (checked against the code before G0a):
 - The run history's ⚠ only compares runs with the same fragments (`js/stats.js:81`); for the

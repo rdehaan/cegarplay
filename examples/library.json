@@ -8,6 +8,11 @@
       "description": "Small examples used step by step in the Tutorial tab."
     },
     {
+      "id": "guide",
+      "title": "Guide",
+      "description": "the examples of the design guide, in reading order"
+    },
+    {
       "id": "language",
       "title": "The loop language",
       "description": "One feature of the loop language each, with comments in the loop script."
@@ -62,6 +67,37 @@
       "expected": {
         "solutions": 11
       }
+    },
+    {
+      "id": "guide-01-demo-block",
+      "title": "Guide: blocking one candidate at a time",
+      "group": "guide",
+      "summary": "The small graph with k = 3, each wrong candidate blocked on its own.",
+      "shape": "reference",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 3
+      },
+      "page": "guide/01-why-a-loop.html#demo-block",
+      "status": "baseline"
+    },
+    {
+      "id": "guide-01-demo-clause",
+      "title": "Guide: learning from a triangle",
+      "group": "guide",
+      "summary": "The small graph with k = 3, refined with one clause per surviving triangle.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 3
+      },
+      "page": "guide/01-why-a-loop.html#demo-clause",
+      "status": "sound",
+      "baseline": "guide-01-demo-block"
     },
     {
       "id": "lang-basics",

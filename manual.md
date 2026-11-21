@@ -641,6 +641,8 @@ prints them as `{"kind": ..., "data": ...}`.
 | Parameter | Effect |
 | --- | --- |
 | `?example=<id>` | Load the library example `<id>` (also `?file=<id>`). It does not replace the project kept in the browser until you edit it. |
+| `&fragment=<name>` | With `?example`: open the Programs tab on that fragment's editor (`loop` opens the Loop tab). Overrides `?tab`. An unknown name is ignored with a note in the status line. |
+| `&from=guide/<page>.html#<anchor>` | Show a link "← Back to the guide" at the top left, to that guide page. Only a page of the guide is accepted. |
 | `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown). |
 | `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
 | `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
@@ -648,6 +650,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?nocoi=1` | Do not use the isolation service worker (and remove it). Pause, Step, Stop and threads are then unavailable. |
 
 Example: `?example=gc-shape4&tab=5` loads graph colouring with Shape 4 and opens the Output tab.
+The guide's links look like `?example=guide-01-demo-clause&fragment=check&from=guide/01-why-a-loop.html%23demo-clause`.
 
 Browser storage (`localStorage`, per browser and site):
 
@@ -689,11 +692,17 @@ with the example's own settings, checked by `test/library.test.mjs` for every ex
 | tutorial | `starter`, `tutorial-first-run`, `tutorial-weak-relevant` |
 | language | `lang-basics`, `lang-several-cex`, `lang-optimal`, `lang-two-stage`, `lang-clauses`, `lang-core`, `lang-second-solver`, `lang-legacy`, `lang-raw-lua` |
 | shapes | `gc-shape1`, `gc-shape2`, `gc-shape3`, `gc-shape4`, `gc-reference` |
+| guide | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
 | problems | `graph-coloring`, `graph-coloring-original`, `nash`, `voting-justification` |
 | problems (contributed, exists-forall) | `qbf`, `qbf-optimal`, `qbf-expansion`, `smallest-mus`, `min-dnf`, `integer-expressions`, `strategic-companies`, `diagnosis`, `stable-models`, `abduction`, `default-extensions`, `belief-update`, `af-preferred`, `af-semi-stable`, `conformant-planning`, `sufficient-reason`, `actual-cause`, `clique-interdiction`, `clique-colouring`, `arrowing`, `choosability`, `subset-sum-game`, `knapsack-interdiction`, `fewest-clues`, `fair-division`, `hedonic-core`, `boolean-game`, `strong-nash`, `kemeny-control`, `agenda-safety` |
 | problems (contributed, several solvers or raw Lua) | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.
+
+Entries of the group `guide` have three more fields: `page` (the guide page and anchor that link
+it), `status` (`baseline`, `sound` or `unsound`) and `baseline` (the id of the blocking run of the
+same problem; absent on baselines). They are built by `tools/guide.mjs`; `node
+tools/guide-numbers.mjs` measures them into `guide/numbers.json`, which the pages quote.
 
 To add an example: add it in `buildLibrary` in `tools/library.mjs` (hand-written examples) or
 `buildExamples` in `tools/make-examples.mjs` (examples built from `reference/declarative-cegar`),

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Why a loop · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 01</p>
+        <h1>Why a loop</h1>
+        <p class="lead">This page is a skeleton: it shows every building block of the guide on two
+          placeholder examples. The chapter itself is written in the next phase.</p>
+
+        <h2 id="problem">The problem</h2>
+        <p>Delete at most k nodes of a graph so that no triangle is left. Here is the graph of the
+          first chapters, with nodes 4 and 8 deleted: the triangle 1, 2, 3 survives.</p>
+        <figure class="graph" data-del="4,8" data-clique="1,2,3">
+          <figcaption>The small graph with nodes 4 and 8 deleted; the triangle 1, 2, 3 survives.</figcaption>
+          <noscript><p>Ten nodes: a clique on 1, 2, 3, 4 and a chain of triangles 4-5-6, 6-7-8,
+            8-9-10. Nodes 4 and 8 are deleted; the triangle 1, 2, 3 survives.</p></noscript>
+        </figure>
+
+        <h2 id="check">The check</h2>
+        <p>The check looks for a triangle that no deletion touches:</p>
+        <pre class="code" data-lang="asp" data-from="guide-01-demo-clause:check">3 { q(V) : node(V) } 3.
+:- q(V), del(V).
+:- q(U), q(V), U &lt; V, not edge(U,V).</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-01-demo-clause</code>.</p>
+
+        <h2 id="blocking">Blocking, then learning</h2>
+        <p id="demo-block">The first loop blocks every wrong candidate on its own.
+          <a class="play" href="../?example=guide-01-demo-block&amp;fragment=loop&amp;from=guide/01-why-a-loop.html%23demo-block" target="cegarplay">Open the blocking loop</a></p>
+
+        <details class="predict">
+          <summary>How many candidates does the blocking loop look at?</summary>
+          <p>All <span data-stat="guide-01-demo-block:candidates">176</span> sets of at most three
+            nodes: every one of them is either a solution or blocked on its own.</p>
+        </details>
+
+        <p id="demo-clause">The second loop learns from each triangle that one of its nodes must go.
+          <a class="play" href="../?example=guide-01-demo-clause&amp;fragment=loop&amp;from=guide/01-why-a-loop.html%23demo-clause" target="cegarplay">Open the learning loop</a></p>
+        <div class="changed" data-lang="loop" data-before="guide-01-demo-block:loop" data-after="guide-01-demo-clause:loop"><span class="same">        if X:</span><del>            reject M with G.block(M)</del><ins>            reject M with G.clause(M, X)</ins></div>
+
+        <table class="results">
+          <thead>
+            <tr><th>Loop</th><th class="num">Candidates</th><th class="num">Counterexamples</th><th class="num">Solutions</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Blocking</td><td class="num"><span data-stat="guide-01-demo-block:candidates">176</span></td>
+              <td class="num"><span data-stat="guide-01-demo-block:counterexamples">173</span></td>
+              <td class="num"><span data-stat="guide-01-demo-block:solutions">3</span></td></tr>
+            <tr><td>Learning</td><td class="num"><span data-stat="guide-01-demo-clause:candidates">13</span></td>
+              <td class="num"><span data-stat="guide-01-demo-clause:counterexamples">10</span></td>
+              <td class="num"><span data-stat="guide-01-demo-clause:solutions">3</span></td></tr>
+          </tbody>
+        </table>
+
+        <aside class="theory">
+          <span class="aside-title">Theory</span>
+          <p>A short aside for readers who want the background. Skipping it costs nothing later.</p>
+        </aside>
+
+        <aside class="pitfall">
+          <span class="aside-title">Pitfall</span>
+          <p>A mistake, how it shows in a run, and how to find it.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise</h2>
+          <p>Find by hand a set of three nodes whose deletion leaves no triangle.</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>Delete 4, 8 and one of 1, 2, 3; the learning loop finds exactly these
+              <span data-stat="guide-01-demo-clause:solutions">3</span> sets.
+              <a class="play" href="../?example=guide-01-demo-clause&amp;fragment=abstraction&amp;from=guide/01-why-a-loop.html%23exercise-1-solution" target="cegarplay">Open</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-demo">A placeholder rule; the chapter's rules come in the next phase.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

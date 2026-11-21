@@ -70,6 +70,10 @@ const PAIRS = [
   ['text-soft', 'subtle'], ['text-muted', 'subtle'], ['text-muted', 'tag-bg'], ['text', 'highlight'],
   ['text', 'selected-bg'], ['text-faint', 'selected-bg'], ['text-soft', 'selected-bg'], ['text', 'code-bg'],
   ['text', 'button-bg'], ['text', 'locked-bg'], ['tooltip-text', 'tooltip-bg'], ['text-faint', 'page'],
+  // the guide: highlighted code, "what changed" lines, asides
+  ['syn-comment', 'code-bg'], ['syn-keyword', 'code-bg'], ['syn-string', 'code-bg'], ['syn-number', 'code-bg'],
+  ['syn-variable', 'code-bg'], ['syn-special', 'code-bg'], ['text', 'error-bg'], ['text', 'ok-bg'],
+  ['syn-keyword', 'error-bg'], ['syn-keyword', 'ok-bg'], ['text', 'hint-bg'], ['text', 'warn-bg'], ['link', 'subtle'],
 ];
 
 test('dark theme: text tokens have contrast at least 4.5 against their backgrounds', () => {

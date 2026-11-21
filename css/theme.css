@@ -55,6 +55,12 @@
   --chart-7: #7f8c8d;
   --chart-ground: #bdc3c7;
   --chart-rest: #ecf0f1;
+  --syn-comment: #3f7a5c;
+  --syn-keyword: #1a3fc4;
+  --syn-string: #036a07;
+  --syn-number: #8a4b00;
+  --syn-variable: #1f6f80;
+  --syn-special: #8a3ca0;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -109,6 +115,12 @@
     --chart-7: #aab7b8;
     --chart-ground: #6c7a80;
     --chart-rest: #3a3d42;
+  --syn-comment: #8aa596;
+  --syn-keyword: #82aaff;
+  --syn-string: #a5d68a;
+  --syn-number: #f5b36b;
+  --syn-variable: #6fc3d6;
+  --syn-special: #c792ea;
   }
 }
 
@@ -163,4 +175,10 @@
   --chart-7: #aab7b8;
   --chart-ground: #6c7a80;
   --chart-rest: #3a3d42;
+  --syn-comment: #8aa596;
+  --syn-keyword: #82aaff;
+  --syn-string: #a5d68a;
+  --syn-number: #f5b36b;
+  --syn-variable: #6fc3d6;
+  --syn-special: #c792ea;
 }

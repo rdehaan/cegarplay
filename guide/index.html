@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <h1>Designing CEGAR loops</h1>
+        <p class="lead">A course in building counterexample-guided loops in answer set programming:
+          what goes in the abstraction, how a counterexample becomes a refinement, how a refinement
+          goes wrong, and which loop to choose.</p>
+
+        <h2 id="what">What this guide is</h2>
+        <p>The guide teaches the design of a loop, not the use of the tool. For a tour of the
+          playground's tabs, take the <a href="../?tab=2">Tutorial</a>; for the loop language and
+          every option, look in the <a href="../?manual=true&amp;tab=8">Manual</a>.</p>
+        <p>You should know answer set programming: choice rules, constraints, <code>#show</code>,
+          and running clingo. You need not know anything about CEGAR.</p>
+
+        <h2 id="loop">The loop in one picture</h2>
+        <figure>
+          <svg class="diagram" viewBox="0 45 560 165" role="img"
+            aria-label="Solver A proposes a candidate; solver C looks for a counterexample; a counterexample becomes a refinement for solver A.">
+            <rect class="box" x="20" y="60" width="180" height="64" rx="6"></rect>
+            <text x="110" y="88" text-anchor="middle">Abstraction</text>
+            <text class="small" x="110" y="108" text-anchor="middle">solver A proposes</text>
+            <rect class="box" x="360" y="60" width="180" height="64" rx="6"></rect>
+            <text x="450" y="88" text-anchor="middle">Check</text>
+            <text class="small" x="450" y="108" text-anchor="middle">solver C tests</text>
+            <path class="arrow" d="M200 76 H350"></path>
+            <polygon class="head" points="360,76 350,71 350,81"></polygon>
+            <text x="280" y="66" text-anchor="middle">candidate</text>
+            <path class="arrow learn" d="M360 110 H210"></path>
+            <polygon class="learn-head" points="200,110 210,105 210,115"></polygon>
+            <text x="280" y="134" text-anchor="middle">refinement</text>
+            <text class="small" x="280" y="152" text-anchor="middle">learnt from the counterexample</text>
+            <path class="arrow" d="M450 124 V168"></path>
+            <polygon class="head" points="450,178 445,168 455,168"></polygon>
+            <text x="450" y="198" text-anchor="middle">no counterexample: a solution</text>
+            <path class="arrow" d="M110 124 V168"></path>
+            <polygon class="head" points="110,178 105,168 115,168"></polygon>
+            <text x="110" y="198" text-anchor="middle">no candidate left: done</text>
+          </svg>
+          <figcaption>Propose, test, learn, repeat.</figcaption>
+        </figure>
+
+        <h2 id="links">How the links work</h2>
+        <p id="links-example">Every step of the guide is an example of the playground. A link marked
+          <a class="play" href="../?example=guide-01-demo-clause&amp;fragment=check&amp;from=guide/index.html%23links-example" target="cegarplay">Open</a>
+          loads the example in the playground and shows the program the text talks about. All such
+          links use the same browser tab, so the guide stays where it is. In the playground, press
+          Run; the link "Back to the guide" at the top left brings you back to the paragraph you came
+          from. Loading an example does not replace the project you are editing in the playground
+          until you change it.</p>
+        <p>The numbers on the pages (candidates, counterexamples, solutions) were measured with the
+          same engine the playground uses, and a test keeps them up to date: your run shows the same
+          numbers.</p>
+
+        <h2 id="chapters-list">Chapters</h2>
+        <ol class="chapter-list">
+          <li><span class="num">01</span><a href="01-why-a-loop.html">Why a loop</a>
+            <span class="summary">A problem with one quantifier too many for one program, and the idea of the loop.</span></li>
+          <li><span class="num">02</span>The first loop: guess, check, block <span class="soon">(in preparation)</span>
+            <span class="summary">Two programs, two solvers, the glue, and blocking one wrong candidate at a time.</span></li>
+          <li><span class="num">03</span>Learning from a counterexample <span class="soon">(in preparation)</span>
+            <span class="summary">relevant/1: a counterexample rules out many candidates at once.</span></li>
+          <li><span class="num">04</span>Soundness: when a refinement says too much <span class="soon">(in preparation)</span>
+            <span class="summary">A refinement that excludes a solution, how it shows, and how to test for it.</span></li>
+          <li><span class="num">05</span>Reading a run <span class="soon">(in preparation)</span>
+            <span class="summary">The statistics, the trace and the run history, on a larger graph.</span></li>
+          <li><span class="num">06</span>Getting more out of each check <span class="soon">(in preparation)</span>
+            <span class="summary">Several counterexamples per candidate, and stronger ones.</span></li>
+          <li><span class="num">07</span>Designing the abstraction <span class="soon">(in preparation)</span>
+            <span class="summary">What the abstraction knows in advance, and what it should leave to the check.</span></li>
+          <li><span class="num">08</span>Loop shapes <span class="soon">(in preparation)</span>
+            <span class="summary">One search or many solves, and when each pays.</span></li>
+          <li><span class="num">09</span>Refinements that are rules <span class="soon">(in preparation)</span>
+            <span class="summary">Grounding a refinement as a program part instead of adding clauses.</span></li>
+          <li><span class="num">10</span>Checks that look for a witness, and cores <span class="soon">(in preparation)</span>
+            <span class="summary">When a good candidate is one with an answer set, and refining from a core.</span></li>
+          <li><span class="num">11</span>Optimisation <span class="soon">(in preparation)</span>
+            <span class="summary">Bilevel problems: the best candidate that no check can refute.</span></li>
+          <li><span class="num">12</span>Your own loop: a walkthrough and a checklist <span class="soon">(in preparation)</span>
+            <span class="summary">A fresh problem from start to finish, and the rules of the guide in one list.</span></li>
+        </ol>
+      </article>
+      <nav class="pager">
+        <a class="next" href="01-why-a-loop.html">Why a loop &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

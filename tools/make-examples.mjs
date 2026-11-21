@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { importLp, load, save, template } from '../js/project.js';
 import { stripAspComments } from '../js/driver.js';
 import { GROUPS, PROBLEMS, buildLibrary } from './library.mjs';
+import { buildGuide } from './guide.mjs';
 
 const root = new URL('..', import.meta.url);
 const src = (f) => fs.readFileSync(new URL(`reference/declarative-cegar/${f}`, root), 'utf8');
@@ -215,6 +216,7 @@ export function buildAll({ contribDir } = {}) {
   const problems = buildExamples();
   const entries = buildLibrary(problems['graph-coloring']);
   for (const e of PROBLEMS) entries.push({ ...e, group: 'problems', project: problems[e.id] });
+  entries.push(...buildGuide());
   entries.push(...loadContrib(contribDir, new Set(entries.map((e) => e.id))));
   const files = {};
   const examples = [];
@@ -222,7 +224,8 @@ export function buildAll({ contribDir } = {}) {
     for (const e of entries.filter((x) => x.group === g.id)) {
       files[e.id] = e.project;
       examples.push({ id: e.id, title: e.project.title, group: e.group, summary: e.summary, shape: e.shape,
-        tags: e.tags, expected: e.expected == null ? null : { solutions: e.expected } });
+        tags: e.tags, expected: e.expected == null ? null : { solutions: e.expected },
+        ...(e.page ? { page: e.page, status: e.status } : {}), ...(e.baseline ? { baseline: e.baseline } : {}) });
     }
   }
   return { files, manifest: { format: 'cegarplay-library', version: 1, groups: GROUPS, examples } };

@@ -64,7 +64,8 @@ test('the manual renders: every section, every library id linked, internal links
   for (const [, id] of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.has(id), `link to #${id}`);
   const lib = JSON.parse(H.read('examples/library.json'));
   for (const [, id] of html.matchAll(/data-load-example="([^"]+)"/g)) assert.ok(lib.examples.some((e) => e.id === id), id);
-  for (const e of lib.examples) assert.ok(md.includes('`' + e.id + '`'), `manual names ${e.id}`);
+  // The guide's examples are named on the guide's pages (test/guide.test.mjs), not one by one here.
+  for (const e of lib.examples.filter((x) => x.group !== 'guide')) assert.ok(md.includes('`' + e.id + '`'), `manual names ${e.id}`);
   assert.ok(!/<script/i.test(html));
   // the tutorial's links into the manual resolve too
   for (const [, id] of H.read('tutorial.html').matchAll(/href="#(manual-[^"]+)"/g)) assert.ok(ids.has(id), `tutorial link #${id}`);

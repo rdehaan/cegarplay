@@ -43,6 +43,17 @@ for (const c of document.querySelectorAll('.manual-checkbox')) {
   c.addEventListener('change', () => showManual(c.checked));
 }
 
+// ?from=guide/<page>.html#<anchor>: a link back to the guide page that opened this example.
+// Only a guide page of this site is accepted, never an arbitrary URL.
+const FROM_PATTERN = /^guide\/[a-z0-9-]+\.html(#[a-z0-9-]+)?$/;
+{
+  const from = params.get('from');
+  if (from && FROM_PATTERN.test(from)) {
+    $('back-to-guide').href = from;
+    $('back-to-guide').hidden = false;
+  }
+}
+
 const tab = params.get('tab');
 if (tab && /^[1-8]$/.test(tab) && (tab !== '7' || params.get('internals') === 'true') && !$('tab' + tab).hidden) $('tab' + tab).checked = true;
 
@@ -197,7 +208,9 @@ async function buildLibrary() {
         make('code', { class: 'library-id' }, e.id),
         ...tags.map((t) => make('span', { class: 'library-tag' }, t)),
         make('div', { class: 'library-summary' }, e.summary +
-          (e.expected ? ` Solutions: ${e.expected.solutions.toLocaleString('en')}.` : '')));
+          (e.expected ? ` Solutions: ${e.expected.solutions.toLocaleString('en')}.` : ''),
+          ...(e.page && FROM_PATTERN.test(e.page)
+            ? [make('a', { class: 'library-guide-link', href: e.page, target: 'cegarplay-guide' }, 'Guide page')] : [])));
       const load = make('button', { class: 'control-button small-button', 'data-load-example': e.id }, 'Load');
       const copy = make('button', { class: 'control-button small-button library-copy', 'data-copy-example': e.id, title: exampleLink(e.id) }, 'Copy link');
       li.append(text, make('div', { class: 'library-buttons' }, load, copy));
@@ -437,6 +450,7 @@ async function start() {
     try { await loadExample(file, { save }); status('load-status', `Loaded example "${app.project.title}".`); }
     catch (e) { status('load-status', String(e.message || e), true); app.setProject(Project.newProject(), { save: false }); }
   }
+  if (named && !restored && app.exampleId === named && params.get('fragment')) openFragment(params.get('fragment'));
   app.restoredOrLoaded = true;
   buildLibrary();
   await app.engine.ready;
@@ -445,6 +459,27 @@ async function start() {
   app.control.setState('idle');
   document.body.dataset.ready = 'true';
 }
+// ?fragment=<name>: open the Programs tab on that fragment's editor; "loop" opens the Loop tab.
+function openFragment(name) {
+  if (name === 'loop') {
+    $('tab4').checked = true;
+    requestAnimationFrame(() => { resizeVisibleEditors(); app.editors.loop.focus(); });
+    return;
+  }
+  const f = app.editors.fragments.get(name);
+  if (!f) {
+    status('load-status', `Loaded example "${app.project.title}". It has no fragment "${name}"; the link's fragment= is ignored.`);
+    return;
+  }
+  $('tab3').checked = true;
+  requestAnimationFrame(() => {
+    resizeVisibleEditors();
+    f.block.scrollIntoView({ block: 'start' });
+    f.block.classList.add('fragment-target');
+    f.editor.focus();
+  });
+}
+
 let leaving = false;
 addEventListener('pagehide', () => { leaving = true; });
 addEventListener('beforeunload', () => { leaving = true; });
