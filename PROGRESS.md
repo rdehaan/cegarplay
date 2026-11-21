@@ -16,7 +16,7 @@ only memory of what happened.
 ## Hand-over (final review, 2026-11-20)
 
 What works: every phase of PLAN.md, including the optional phase 6. `cd test &&
-npm test` runs 107 tests (Node and Chromium) in about 40 s: 105 pass, 2 skipped
+npm test` runs 111 tests (Node and Chromium) in about 40 s: 105 pass, 2 skipped
 (row 6, slow; the native clingo export test, as this machine's clingo has no Lua).
 `npm run test:slow` also runs row 6 (passes). All browser tests also pass in
 Firefox (`BROWSER=firefox npm test`). Screenshots at 1400 px and 700 px show no
@@ -44,7 +44,10 @@ deleted.
   blue do not set the red tab marker).
 - Run-time errors: a hint sentence for common errors (`relevant/1 derived
   nothing`, glue derives nothing, no progress); the Lua traceback is collapsed.
-- Trace panels: atoms flow inline, one line per predicate.
+- Trace panels: atoms flow inline, one line per predicate. When relevant/1
+  derives nothing, the runtime first emits a trace step of kind `error` (even
+  past the trace cap; the counterexample text only while tracing), and the
+  trace view jumps to it.
 
 ## Next step
 

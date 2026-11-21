@@ -34,7 +34,7 @@ export function predicateOf(atom) {
   return a.slice(0, i) + '/' + n;
 }
 
-const KIND = { reject: 'Rejected inside the search', add: 'Clause added between solves', expand: 'Rules grounded (expand)', accept: 'Accepted as a solution' };
+const KIND = { reject: 'Rejected inside the search', add: 'Clause added between solves', expand: 'Rules grounded (expand)', accept: 'Accepted as a solution', error: 'The step where the run stopped with an error' };
 
 export class TraceView {
   constructor(root) {
@@ -76,7 +76,8 @@ export class TraceView {
   add(t) {
     const atEnd = this.pos >= this.events.length - 1;
     this.events.push(t);
-    if (this.events.length === 1) this.pos = 0;
+    if (t.kind === 'error') this.pos = this.events.length - 1;
+    else if (this.events.length === 1) this.pos = 0;
     else if (atEnd && this.follow) this.pos = this.events.length - 1;
     this.dirty = true;
   }
@@ -104,7 +105,9 @@ export class TraceView {
     const t = this.events[this.pos];
     this.slider.value = String(this.pos + 1);
     this.root.querySelector('#trace-label').textContent = `step ${this.pos + 1} of ${n}`;
-    this.root.querySelector('#trace-kind').textContent = `${KIND[t.kind] || t.kind} · solver ${t.solver}`;
+    const kindEl = this.root.querySelector('#trace-kind');
+    kindEl.textContent = `${KIND[t.kind] || t.kind} · solver ${t.solver}`;
+    kindEl.classList.toggle('error', t.kind === 'error');
     const lits = (t.literals || []).map((l) => l.replace(/^-/, ''));
     const inRef = new Set(lits);
     const facts = t.facts || [];
@@ -116,7 +119,9 @@ export class TraceView {
       t.counterexample === undefined ? (t.kind === 'accept' ? 'none: the check found no counterexample' : 'not recorded') : '');
     const ref = t.literals ? [...t.literals].sort((a, b) => a.replace(/^-/, '').localeCompare(b.replace(/^-/, ''))) : [...facts].sort();
     const head = t.literals ? 'one of these must hold:' : t.facts ? 'facts grounded with the refine part:' : '';
-    this.fill('#trace-refinement', ref, () => false, t.kind === 'accept' ? 'none' : '', head);
+    this.fill('#trace-refinement', ref, () => false,
+      t.kind === 'accept' ? 'none' : t.kind === 'error' ? 'none: relevant/1 marks no interface atom in this counterexample' : '',
+      t.kind === 'error' ? '' : head);
     const capEl = this.root.querySelector('#trace-cap');
     capEl.textContent = this.cap && n >= this.cap
       ? `The trace holds only the first ${n} steps. Raise "Trace steps" in the Loop tab to record more.` : '';

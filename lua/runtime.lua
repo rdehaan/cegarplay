@@ -479,6 +479,8 @@ local function new_clause(L, lazy, m, x)
   return { link = L, lazy = lazy, m = m, x = x, j = {} }
 end
 
+local candidate_text   -- defined below, with the trace helpers
+
 function Link:clause(M, X)
   check_model(self, M, "clause", "from")
   check_model(self, X, "clause", "to")
@@ -493,7 +495,14 @@ function Link:clause(M, X)
       idx[k] = j
     end
   end
-  if #c == 0 then fail("relevant/1 derived nothing for link " .. self.name) end
+  if #c == 0 then
+    -- show the step in the trace (even past the trace cap), then fail
+    pcall(function()
+      emit("T", { i = rt.traced + 1, kind = "error", solver = M.solver.name, candidate = candidate_text(M),
+        counterexample = X.shown, literals = array({}) })
+    end)
+    fail("relevant/1 derived nothing for link " .. self.name)
+  end
   return c
 end
 
@@ -585,7 +594,7 @@ function Model:atoms(pred, arity)
 end
 
 -- The candidate as text: the true interface atoms over all outgoing links.
-local function candidate_text(M)
+candidate_text = function(M)
   if not M then return nil end
   local t = {}
   for _, L in ipairs(M.solver.out) do

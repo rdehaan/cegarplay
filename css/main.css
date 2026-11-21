@@ -516,6 +516,10 @@ table.internals-table td.num, table.internals-table th.num {
   flex: 1 1 200px;
   max-width: 500px;
 }
+.trace-kind.error {
+  color: #c0392b;
+  font-weight: 700;
+}
 .trace-label, .trace-kind {
   color: #666;
 }

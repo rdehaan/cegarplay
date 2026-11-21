@@ -243,3 +243,23 @@ test('the runtime reads no undeclared global (strict _G) on the main paths', asy
     assert.ok(!r2.out.some((l) => l.startsWith('Error')), r2.out.join('\n'));
   }
 });
+
+test('relevant/1 derived nothing: the failing step is in the trace, then the error', async () => {
+  const p = await H.example('graph-coloring');
+  const check = p.fragments.find((f) => f.name === 'check');
+  check.text = check.text.replace(/relevant/g, 'relevant_x');
+  const r = await H.runProject(p);
+  assert.notEqual(r.status, 'trap');
+  const T = H.ofKind(r, 'T');
+  assert.equal(T.length, 1);
+  assert.equal(T[0].kind, 'error');
+  // with the trace off, the step is still shown, without the counterexample (not recorded)
+  p.settings.trace = 0;
+  const T0 = H.ofKind(await H.runProject(p), 'T');
+  assert.equal(T0.length, 1);
+  assert.match(T0[0].candidate, /edge\(/);
+  assert.match(T[0].candidate, /edge\(/);
+  assert.match(T[0].counterexample, /color\(/);
+  assert.deepEqual(T[0].literals, []);
+  assert.match(H.ofKind(r, 'E')[0].message, /relevant\/1 derived nothing/);
+});
