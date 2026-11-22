@@ -102,8 +102,9 @@
         CegarPlay runs CEGAR loops (counterexample-guided abstraction refinement) written in answer
         set programming, with clingo running in your browser. Load an example or a project file
         here. A project is written in the <b>Programs</b>, <b>Loop</b> and <b>Instances</b> tabs;
-        press <b>Run</b> (or <b>Audit</b>) and look at the run in <b>Output</b>, <b>Statistics</b> and
-        the <b>Observatory</b>; the <b>Campaign</b> tab compares many runs. New here? Start with the
+        press <b>Run</b> (or <b>Audit</b>) and look at the run in <b>Output</b> and <b>Statistics</b>.
+        <b>Advanced mode</b> (under Tabs, below) adds the <b>Observatory</b>, which shows a run as
+        pictures, and the <b>Campaign</b> tab, which compares many runs. New here? Start with the
         <b>Tutorial</b> tab.
       </p>
       <div class="project-box">
@@ -171,15 +172,24 @@
       </p>
       <p id="export-status" class="status-line"></p>
 
-      <h3>Technical manual</h3>
+      <h3>Tabs</h3>
+      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="tutorial-checkbox" checked>
+        Tutorial</label> <span class="note">lessons with an example each; hide it once you know your way around</span></p>
       <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="manual-checkbox">
-        Show the technical manual</label> <span class="note">adds a Manual tab: the complete reference, for lookup and for AI agents</span></p>
+        Technical manual</label> <span class="note">the complete reference, for lookup and for AI agents</span></p>
+      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="advanced-checkbox">
+        Advanced mode</label> <span class="note">adds the <b>Observatory</b> (a run as pictures: anatomy, call
+        timeline, domain view, candidate space) and the <b>Campaign</b> tab (grids of runs on several engines)</span></p>
+      <p class="note">These choices are kept in this browser.</p>
     </section>
 
     <!-- 2. Tutorial -->
     <section id="section-tutorial">
-      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="manual-checkbox">
-        Show the technical manual</label> <span class="note">a reference for lookup and for AI agents, in its own tab</span></p>
+      <p class="manual-toggle tab-toggles">
+        <label class="inline-label" title="The complete reference, for lookup and for AI agents, in its own tab"><input type="checkbox" class="manual-checkbox"> Technical manual</label>
+        <label class="inline-label" title="The Observatory and Campaign tabs (lessons 5, 6 and 8)"><input type="checkbox" class="advanced-checkbox"> Advanced mode</label>
+        <label class="inline-label" title="Tabs in the Control tab brings it back"><input type="checkbox" class="tutorial-checkbox" checked> Show this tab</label>
+        <span class="note">Kept in this browser; also under Tabs in the Control tab.</span></p>
       <div id="tutorial"></div>
     </section>
 

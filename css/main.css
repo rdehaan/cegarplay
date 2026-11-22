@@ -1058,3 +1058,5 @@ body.lecture .view-notes { font-size: 28px; text-align: center; list-style: none
 .audit-only { display: none; }
 body[data-last-mode="audit"] .audit-only { display: block; }
 .audit-note { border-left: 3px solid var(--accent); padding: 4px 10px; background: var(--panel); }
+
+.tab-toggles { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 22px; }

@@ -16,12 +16,17 @@ The page's tabs follow the work:
   facts and constants, generators of random instances, importers for common
   file formats, Run all, Fuzz).
 - **Run and look**: *Output* (solutions, trace, messages, the audit's verdict),
-  *Statistics* (counts, solver tables, charts, the run history) and
-  *Observatory* (the loop's anatomy and call timeline, a picture of each step in
-  the problem's own terms, every candidate at once in the candidate space, all
-  driven by one cursor; exports for slides and a lecture mode).
-- **Compare**: *Campaign* (grids of instances × variants × seeds on several
-  engines, with plots and the runs whose counts disagree in red).
+  *Statistics* (counts, solver tables, charts, the run history) and, in
+  Advanced mode, *Observatory* (the loop's anatomy and call timeline, a picture
+  of each step in the problem's own terms, every candidate at once in the
+  candidate space, all driven by one cursor; exports for slides and a lecture
+  mode).
+- **Compare** (Advanced mode): *Campaign* (grids of instances × variants ×
+  seeds on several engines, with plots and the runs whose counts disagree in
+  red).
+
+Advanced mode, the Tutorial and the Manual are toggles under *Tabs* in the
+Control tab; the browser remembers them.
 - **Trust**: *Audit* (every candidate and counterexample of an instance against
   the loop's refinements), certificates per refinement, lifted refinements,
   proof logs checked by an independent Python checker, and recordings that

@@ -2,7 +2,7 @@
   "format": "cegarplay",
   "version": 2,
   "title": "Nash equilibria",
-  "description": "Weighted graphs whose colouring game has a Nash equilibrium (guessed by the abstraction) that the check tries to refute. The check corrects two relevant/1 rules of the original file (edge/3 for edge/2), without which the loop loses solutions (Audit at n = 3, w = 1: 576 solutions, 81 of them lost).",
+  "description": "Weighted graphs whose colouring game has a Nash equilibrium (guessed by the abstraction) that the check tries to refute. Instances: the number of players n and of edge weights w.",
   "fragments": [
     {
       "name": "shared",

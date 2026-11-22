@@ -21,6 +21,9 @@
 <p>The tabs follow the work: you <b>write</b> a project (Programs, Loop, Instances), <b>run</b> it and
   <b>look</b> at the run (Output, Statistics, Observatory), and <b>compare</b> many runs (Campaign).
   Lessons 2 to 6 use one small problem throughout; lessons 7 to 11 add the tools for larger ones.</p>
+<p>The Observatory and the Campaign tab appear in <b>Advanced mode</b>: tick it at the top of this tab or under
+  <b>Tabs</b> in the Control tab (lessons 5, 6 and 8 use them). There you can also hide this tab once you no longer
+  need it; the page remembers both choices.</p>
 
 <h2 id="tut-cegar">1. What CEGAR is</h2>
 <p>
@@ -123,7 +126,8 @@ search A:
 </ul>
 
 <h2 id="tut-observatory">5. Watching a run: the Observatory</h2>
-<p>The <b>Observatory</b> tab shows a run as pictures. Load the sum-free sets again, run them, and open it.</p>
+<p>The <b>Observatory</b> tab shows a run as pictures. Turn on <b>Advanced mode</b> (at the top of this tab) to see it.
+  Load the sum-free sets again, run them, and open it.</p>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="tutorial-first-run">Load: Sum-free sets</button></p>
 <ul>
   <li><b>Loop anatomy</b>: one box per solver, one arrow per link. Here <code>A</code> made 1 search call, and
@@ -220,7 +224,7 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
 <p>A <b>suite</b> is a grid of runs: instances × variants × solver seeds, each with all solutions. A <b>variant</b>
   changes the project for a run, for example its loop. The too weak sum-free sets have a suite <code>scaling</code>:
   <code>n</code> from 4 to 8, with the project's loop (<code>default</code>) and with the Reference run (<code>reference</code>).</p>
-<p>Open the <b>Campaign</b> tab and press <b>Start</b>. The ten runs share several engines and take under a second.
+<p>Open the <b>Campaign</b> tab (in Advanced mode) and press <b>Start</b>. The ten runs share several engines and take under a second.
   Then:</p>
 <ul>
   <li>the summary: per variant, the median time and candidates, and how fast they grow with <code>n</code>;</li>
@@ -247,7 +251,7 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
     <tr><td>Reference run</td><td>3,373</td><td>3,272</td><td>3,272 blocks</td></tr>
   </tbody>
 </table></div>
-<p>Run two of them, tick <b>Record calls</b> first, and compare their loop anatomies and timelines in the Observatory:
+<p>Run two of them, tick <b>Record calls</b> first, and compare their loop anatomies and timelines in the Observatory (Advanced mode):
   the picture shows where each shape spends its time.</p>
 
 <h3 id="tut-shape1">Shape 1: check inside the search</h3>
@@ -461,7 +465,7 @@ if Y: reject M with GXC.core(C)</div>
   <li>Press <b>Audit</b> on a small instance (lesson 6). Unsound? Look at the witness and at the candidate space.</li>
   <li>Add a few instances with their expected counts and press <b>Run all</b>; let <b>Fuzz</b> look for an instance
     that breaks the loop; write a suite to see how the run time grows (lessons 7 and 8).</li>
-  <li>Press <b>Suggest a view</b> in the Observatory for a picture of your problem, and adapt it.</li>
+  <li>In Advanced mode, press <b>Suggest a view</b> in the Observatory for a picture of your problem, and adapt it.</li>
 </ol>
 <p>If a counterexample has no relevant atom, the run stops with <code>relevant/1 derived nothing for link G</code>,
   and the trace shows that candidate and counterexample. Your project is kept in this browser and comes back after a

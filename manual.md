@@ -17,7 +17,11 @@ constants, limits, recording and certificates) and **Instances** (inputs, genera
 Fuzz); then a run: **Output**, **Statistics** and **Observatory**; and many runs: **Campaign**. The
 run bar above the tabs holds **Run**, **Audit**, Abort (and Pause, Step, Stop on an isolated page),
 the Solutions and Instance pickers and the live counts. **Manual** and **Internals** appear when
-asked for.
+asked for. The Control tab's **Tabs** block has three toggles, kept in this browser: **Tutorial**
+(shown by default), **Technical manual**, and **Advanced mode** (off by default), which adds the
+Observatory and Campaign tabs. A link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`,
+`?lecture=1`, `?view=`, `?step=`, `?advanced=1`, a link to a tutorial lesson) shows it for that
+visit without changing the stored choice.
 
 ## Model and terms
 
@@ -1075,6 +1079,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory. The numbers are fixed; they are not the order on screen. |
 | `&instance=<id>` | Pick that instance of the project in the run bar. An unknown id is ignored with a note. |
 | `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
+| `?advanced=1` | Advanced mode for this visit: the Observatory and Campaign tabs (without changing the remembered toggle). `?tab=10`, `?tab=11`, `?lecture=1`, `?view=` and `?step=` imply it. |
 | `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
 | `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
 | `#p=<data>` | A share link (**Copy share link** in the Control tab): the whole project without its run history, in the URL fragment, which never reaches the server. `<data>` is `z` + base64url of the deflate-raw compressed project JSON (`u` + base64url of the plain JSON in a browser without `CompressionStream`). Takes precedence over the kept project and, like `?example`, does not replace it until you edit. A damaged link opens the default example with an error in the status line. Links over 8,000 characters get a warning. |
@@ -1101,6 +1106,8 @@ Browser storage (`localStorage`, per browser and site):
   browser refuses (storage full or blocked), the project is kept without its run history, and if
   that fails too, the Control tab says "Not kept in this browser"; download the project then.
 - `cegarplay.manual`: `"1"` when "Show the technical manual" is ticked.
+- `cegarplay.advanced`: `"1"` when Advanced mode is on (absent when off).
+- `cegarplay.tutorial`: `"0"` when the Tutorial tab is hidden (absent when shown).
 - `cegarplay.theme`: `"light"` or `"dark"` when the colour theme was chosen by hand (absent for Auto).
 
 Keyboard: Ctrl+Enter or Cmd+Enter runs from anywhere, also inside an editor.

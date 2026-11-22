@@ -30,10 +30,13 @@ export async function launch() {
 // By default the page is opened with ?nocoi=1 (not isolated); pass { coi: true } to let the
 // service worker shim isolate it (the page reloads once).
 // contextOptions go to browser.newContext (for instance { colorScheme: 'dark' }); path is the page to open.
-export async function openPage(browser, server, query = '', { acceptDownloads = true, coi = false, contextOptions = {}, path = 'index.html', context: given } = {}) {
+// advanced: open the page in Advanced mode (Observatory and Campaign tabs), as most tests need;
+// the stored choice is set before the page's scripts run. advanced: false leaves storage alone.
+export async function openPage(browser, server, query = '', { acceptDownloads = true, coi = false, contextOptions = {}, path = 'index.html', context: given, advanced = true } = {}) {
   if (!coi) query = query ? query + '&nocoi=1' : '?nocoi=1';
   const context = given || await browser.newContext({ acceptDownloads, ...contextOptions });
   const page = await context.newPage();
+  if (advanced) await page.addInitScript(() => { try { if (localStorage.getItem('cegarplay.advanced') === null) localStorage.setItem('cegarplay.advanced', '1'); } catch { /* no storage */ } });
   const errors = [], foreign = [];
   page.on('console', (m) => { if (m.type() === 'error' && !/chrome:\/\/juggler/.test(m.text())) errors.push(m.text()); });  // juggler: Playwright's Firefox instrumentation
   page.on('pageerror', (e) => errors.push(String(e)));

@@ -62,12 +62,47 @@ function showManual(on, { store = true } = {}) {
   $('tab8').hidden = !visible;
   $('label-manual').hidden = !visible;
   for (const c of document.querySelectorAll('.manual-checkbox')) c.checked = visible;
-  if (!visible && $('tab8').checked) $('tab2').checked = true;
+  if (!visible && $('tab8').checked) $('tab1').checked = true;
   if (visible) loadManual();
 }
 showManual(manualStored(), { store: false });
 for (const c of document.querySelectorAll('.manual-checkbox')) {
   c.addEventListener('change', () => showManual(c.checked));
+}
+
+// ---- which tabs show: Advanced mode (Campaign, Observatory) and the Tutorial ----------------
+// Both are kept in this browser. A link that opens one of these tabs (?tab=, ?lecture=, ?view=,
+// ?step=, ?advanced=1, a #tut- link) shows it for this visit without changing the stored choice.
+const TAB_PREFS = {
+  advanced: { key: 'cegarplay.advanced', fallback: false, tabs: ['tab10', 'tab11'], box: '.advanced-checkbox' },
+  tutorial: { key: 'cegarplay.tutorial', fallback: true, tabs: ['tab2'], box: '.tutorial-checkbox' },
+};
+function prefStored(name) {
+  const p = TAB_PREFS[name];
+  try { const v = localStorage.getItem(p.key); return v === null ? p.fallback : v === '1'; } catch { return p.fallback; }
+}
+function showTabs(name, on, { store = true } = {}) {
+  const p = TAB_PREFS[name];
+  if (store) {
+    try { if (on === p.fallback) localStorage.removeItem(p.key); else localStorage.setItem(p.key, on ? '1' : '0'); } catch { /* no storage */ }
+  }
+  for (const id of p.tabs) {
+    $(id).hidden = !on;
+    document.querySelector(`label[for="${id}"]`).hidden = !on;
+    if (!on && $(id).checked) { $('tab1').checked = true; $('tab1').dispatchEvent(new Event('change', { bubbles: true })); }
+  }
+  for (const c of document.querySelectorAll(p.box)) c.checked = on;
+  document.body.classList.toggle(`no-${name}`, !on);
+}
+app.showTabs = showTabs;
+{
+  const visitAdvanced = params.get('advanced') === '1' || ['10', '11'].includes(params.get('tab')) ||
+    params.has('lecture') || params.has('view') || params.has('step');
+  showTabs('advanced', prefStored('advanced') || visitAdvanced, { store: false });
+  showTabs('tutorial', prefStored('tutorial') || params.get('tab') === '2', { store: false });
+}
+for (const name of Object.keys(TAB_PREFS)) {
+  for (const c of document.querySelectorAll(TAB_PREFS[name].box)) c.addEventListener('change', () => showTabs(name, c.checked));
 }
 
 // ?from=guide/<page>.html#<anchor>: a link back to the guide page that opened this example.
@@ -507,6 +542,7 @@ document.addEventListener('click', async (ev) => {
   ev.preventDefault();
   const modal = a.closest('.modal');
   if (modal) modal.classList.remove('is-visible');
+  if ($('tab2').hidden) showTabs('tutorial', true, { store: false });
   $('tab2').checked = true;
   $('tab2').dispatchEvent(new Event('change', { bubbles: true }));
   await tutorialLoaded;

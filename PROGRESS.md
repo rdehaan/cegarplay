@@ -826,6 +826,19 @@ Goal: the app, library, tutorial, manual and guide as one whole with the PLAN2 f
 - Manual "For agents" workflow: input in instances, expected counts checked with `--instance all`,
   suites for scaling.
 
+## Tabs and encodings (2026-11-22, on request)
+
+- Only correct encodings outside the guide: `nash`'s and `graph-coloring`'s descriptions no longer
+  mention the originals or the fixes (the fixes stay, explained in `tools/make-examples.mjs` and
+  above). `tutorial-weak-relevant` stays: lessons 6-8 teach the Audit, Fuzz and campaigns with it.
+  The guide's unsound examples stay (they make its points).
+- Control tab, block **Tabs**: Tutorial (default on, key `cegarplay.tutorial` = "0" when off),
+  Technical manual, Advanced mode (default off, key `cegarplay.advanced` = "1"): Observatory and
+  Campaign. Copies of the toggles at the top of the Tutorial tab. A visit opened by `?tab=2/10/11`,
+  `?lecture`, `?view`, `?step`, `?advanced=1` or a `#tut-` link shows the tab without storing;
+  the checkboxes show what is visible. `test/browser/tabs.test.mjs`; the browser harness opens
+  pages in Advanced mode unless `{ advanced: false }`.
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.

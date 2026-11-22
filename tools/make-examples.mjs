@@ -198,9 +198,8 @@ function voteInstances(blocks) {
 
 export function buildExamples() {
   const gc = make('graph-coloring.lp', 'Graph colouring',
-    'Connected graphs with a leaf colouring that no proper 3-colouring extends. The check rules include the ' +
-    'added relevant/1 rule, so Shape 1 finds all 10,698 solutions at n = 6. The abstraction also holds the ' +
-    '#program refine(k). part used by Shapes 3 and 4.',
+    'Connected graphs with a leaf colouring that no proper 3-colouring extends. Shape 1 finds all 10,698 ' +
+    'solutions at n = 6. The abstraction also holds the #program refine(k). part used by Shapes 3 and 4.',
     (p) => {
       frag(p, 'glue').text = wrapGlue(frag(p, 'glue').text);
       frag(p, 'check').text = frag(p, 'check').text.replace(/\s*$/, '\n') + FIX;
@@ -217,8 +216,7 @@ export function buildExamples() {
   gc.version = 2;
   const nash = make('nash.lp', 'Nash equilibria',
     'Weighted graphs whose colouring game has a Nash equilibrium (guessed by the abstraction) that the check ' +
-    'tries to refute. The check corrects two relevant/1 rules of the original file (edge/3 for edge/2), ' +
-    'without which the loop loses solutions (Audit at n = 3, w = 1: 576 solutions, 81 of them lost).',
+    'tries to refute. Instances: the number of players n and of edge weights w.',
     (p) => {
       frag(p, 'glue').text = wrapGlue(frag(p, 'glue').text);
       frag(p, 'check').text = nashFix(frag(p, 'check').text);
