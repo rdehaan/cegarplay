@@ -1005,3 +1005,29 @@ Test in `test/browser/stats.test.mjs`; row in docs/spec-app.md §5.1.
   logs console errors (aborted font downloads, Playwright's `chrome://juggler`).
   The harness clears the error list once the page is isolated, and `init.js` does
   not log start-up errors while the page is unloading.
+
+## Sudoku examples (2026-11-22)
+
+Two contrib examples (group `exists-forall`, not `fast`, `expected: null`: the runs stop at the
+first puzzle, `solutions = 1`). Both are the 9 x 9 version of `fewest-clues` (same check: two
+grids that agree with the clues; same clause refinement).
+- `sudoku-unique`: k clues, unique solution. An instance may fix the solved grid with
+  `solution/3` (`grid(s) :- not fixed.`, so the grounder makes the grid facts: each solve is
+  much cheaper). Engine times (seed 0): free grid k = 26 0.4 s, 25 2.3 s, 24 14.5 s, 28 56 s
+  (search luck, not monotone); k <= 21 does not finish in 4 min, also with a fixed grid at
+  k <= 19, so **17 is out of reach** of this loop. Instance `seventeen`: a 17-clue puzzle from
+  Royle's list with 14 clues printed, k = 3: 4 s; all solutions 17 s, exactly 1 (the known one).
+  Uniqueness lemmas in A (deadly rectangles, two clueless rows in a band, two unshown values)
+  did not help reliably; not used.
+- `sudoku-hard`: also not solvable by naked/hidden singles, naked/hidden pairs and locked
+  candidates (fragment `beginner`). A *guesses* the pencil marks (out/known) and requires them
+  to be closed under the techniques with a cell left empty: such a set exists iff the least
+  fixpoint is incomplete. (A positive least-fixpoint encoding was ~10x slower: unfounded-set
+  checks.) Deductions are sound, so rules only derive the values of the grid s: small grounding
+  (83k rules on a fixed grid). The free witness gives many models per puzzle, so A has
+  `options "--project"`; `tools/cegarcheck.py` now blocks accepted candidates on the interface
+  atoms when A has `--project`. Example: fixed grid, k = 26, 7 s; free grid k = 32 34 s.
+- Checks: the beginner fragment agrees with a Python reference solver on 312 puzzles (incl.
+  ones that need only pairs, only locked candidates, both). Small instances: engine = Python
+  clingo (clause and block modes) = brute force (one-clue-missing: 7 unique / 3 also hard;
+  rectangle-one: 8 / 0). `tools/audit.mjs` runs out of memory on these (9 x 9).

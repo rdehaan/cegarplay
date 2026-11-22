@@ -30,7 +30,9 @@ The loop: solve A, check the candidate with C, refine A, solve A again.
 'auto' (the default) reads the mode, the fact names and 'optimal' from the loop script.
 
 Accepted candidates are blocked: in a 'search' script on all atoms of A (as clasp's
-enumeration does), in a 'loop' script on the interface atoms (as G.block(M) does).
+enumeration does), in a 'loop' script on the interface atoms (as G.block(M) does). With
+'--project' among A's options, also a 'search' script blocks on the interface atoms: that is
+clasp's projective enumeration when A shows its interface atoms (as sudoku-hard does).
 
 Only the solution count of an exhausted run can be compared with the page; candidate
 counts and statistics differ from Shapes 1 and 4. Raw Lua projects and scripts with more
@@ -341,7 +343,9 @@ class Checker:
                 last = None
                 if show:
                     print(f"Solution {sols}: {' '.join(M['shown'])}")
-                self.add_clause(self.block_all(M) if self.info["search"] else self.block_interface(M))
+                projective = any(o.startswith("--project") for o in self.info["A"]["options"])
+                self.add_clause(self.block_all(M) if self.info["search"] and not projective
+                                else self.block_interface(M))
         return {"solutions": sols, "candidates": cands, "counterexamples": cexs,
                 "refinements": clauses, "exhausted": exhausted, "time": time.time() - t0}
 

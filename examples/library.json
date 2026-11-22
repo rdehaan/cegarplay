@@ -1465,6 +1465,30 @@
       }
     },
     {
+      "id": "sudoku-hard",
+      "title": "Sudoku beyond the beginner",
+      "group": "exists-forall",
+      "summary": "A 9 x 9 Sudoku with a unique solution that singles, pairs and locked candidates cannot finish; the beginner is part of the abstraction (k = 26 on a fixed grid; the run stops at the first puzzle).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 6
+      }
+    },
+    {
+      "id": "sudoku-unique",
+      "title": "Sudoku with a unique solution",
+      "group": "exists-forall",
+      "summary": "A 9 x 9 Sudoku with k clues and a unique solution, generated from scratch; a counterexample is a pair of solutions (k = 25; the run stops at the first puzzle).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 6
+      }
+    },
+    {
       "id": "sufficient-reason",
       "title": "Sufficient reasons",
       "group": "exists-forall",
