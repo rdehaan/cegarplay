@@ -123,6 +123,6 @@ export class Engine {
   setControl(v) { if (this.control) { Atomics.store(this.control, 0, v); Atomics.notify(this.control, 0); } }
   pause() { this.setControl(1); }
   resume() { this.stepping = false; this.setControl(0); }
-  step() { this.stepping = true; this.setControl(0); }
+  step() { this.stepping = false; this.setControl(3); }
   stop() { this.stepping = false; this.setControl(2); }
 }

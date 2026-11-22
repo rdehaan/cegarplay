@@ -157,6 +157,7 @@ label[for='tab6']:before { content: '\f080'; }
 label[for='tab7']:before { content: '\f0e8'; }
 label[for='tab8']:before { content: '\f02d'; }
 label[for='tab9']:before { content: '\f03a'; }
+label[for='tab11']:before { content: '\f06e'; }
 
 label:hover {
   color: var(--tab-hover);
@@ -182,7 +183,8 @@ label[for="tab2"] {
 #tab6:checked ~ #section-statistics,
 #tab7:checked ~ #section-internals,
 #tab8:checked ~ #section-manual,
-#tab9:checked ~ #section-instances {
+#tab9:checked ~ #section-instances,
+#tab11:checked ~ #section-observatory {
   display: block;
 }
 
@@ -972,3 +974,23 @@ tr.mismatch td {
     margin-top: 4px;
   }
 }
+
+/* Observatory: loop anatomy (js/anatomy.js) */
+.anatomy-diagram { overflow-x: auto; }
+.anatomy-svg { max-width: 100%; height: auto; }
+.anatomy-box { fill: var(--panel); stroke: var(--border-strong); stroke-width: 1.5; }
+.anatomy-box.busy { stroke: var(--accent); }
+.anatomy-name { fill: var(--text); font-weight: 600; font-size: 14px; }
+.anatomy-frag, .anatomy-count { fill: var(--text-muted); font-size: 12px; }
+.anatomy-badge { fill: var(--accent); }
+.anatomy-badge-text { fill: var(--panel); font-size: 11px; font-weight: 600; }
+.anatomy-arrow { fill: none; stroke: var(--text-muted); stroke-width: 1.5; }
+.anatomy-arrowhead { fill: var(--text-muted); }
+.anatomy-label { fill: var(--text); font-size: 12px; paint-order: stroke; stroke: var(--page); stroke-width: 4px; stroke-linejoin: round; }
+.anatomy-link.pulse .anatomy-arrow { animation: anatomy-pulse 0.4s ease-out; }
+@keyframes anatomy-pulse { from { stroke: var(--accent); stroke-width: 4; } to { stroke: var(--text-muted); stroke-width: 1.5; } }
+@media (prefers-reduced-motion: reduce) { .anatomy-link.pulse .anatomy-arrow { animation: none; } }
+.anatomy-timeline-box { width: 100%; overflow: hidden; }
+.anatomy-timeline { display: block; cursor: grab; border: 1px solid var(--border); }
+#anatomy-lines tr.selected td { background: var(--selected-bg); }
+.anatomy-src { color: var(--text-muted); }

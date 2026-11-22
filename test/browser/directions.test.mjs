@@ -167,3 +167,60 @@ test('I2: Preview 6 shows six instances; Add as instance stores a recipe that a 
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+const SHAPES = ['lang-basics', 'lang-clauses', 'lang-core', 'lang-legacy', 'lang-optimal', 'lang-raw-lua', 'lang-second-solver',
+  'lang-several-cex', 'lang-two-stage', 'gc-shape1', 'gc-shape2', 'gc-shape3', 'gc-shape4', 'gc-reference'];
+
+test('V2: one box per declared solver and one arrow per link, for the lang-* examples and the shapes', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?tab=11');
+  for (const id of SHAPES) {
+    await page.evaluate(async (x) => { await window.cegarplay.loadExample(x); }, id);
+    const want = await page.evaluate(() => {
+      const p = window.cegarplay.project;
+      if (p.loop.language === 'lua') return null;
+      const m = p.loop.text.split('\n');
+      return { solvers: m.filter((l) => /^\s*solver\s/.test(l)).length, links: m.filter((l) => /^\s*link\s/.test(l)).length };
+    });
+    await page.click('#run-button');
+    await settled(page);
+    await page.waitForTimeout(50);
+    const got = await page.evaluate(() => ({ solvers: document.querySelectorAll('#anatomy-diagram .anatomy-solver').length,
+      links: document.querySelectorAll('#anatomy-diagram .anatomy-link').length, H: window.cegarplay.recording.H }));
+    const expect = want || { solvers: got.H.solvers.length, links: got.H.links.length };
+    assert.deepEqual({ solvers: got.solvers, links: got.links }, expect, id);
+  }
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('V2: the line table sums to the final S calls; 100,000 synthetic calls redraw under 50 ms', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&tab=11');
+  await page.check('#anatomy-calls');
+  await page.click('#run-button');
+  await settled(page);
+  const sums = await page.evaluate(() => {
+    const a = window.cegarplay.anatomy;
+    const S = window.cegarplay.stats.S;
+    return { table: a.rows().reduce((x, r) => x + r.calls, 0), S: Object.values(S.solvers).reduce((x, s) => x + s.calls, 0),
+      rows: document.querySelectorAll('#anatomy-lines tr[data-line]').length };
+  });
+  assert.equal(sums.table, sums.S);
+  assert.ok(sums.rows >= 2);
+  // a click on a row filters the timeline
+  await page.click('#anatomy-lines tr[data-line] a');
+  assert.match(await page.textContent('#anatomy-note'), /Showing the calls of loop line/);
+  const ms = await page.evaluate(() => {
+    const a = window.cegarplay.anatomy;
+    a.filterLine = null;
+    a.calls = [];
+    for (let i = 0; i < 100000; i++) a.calls.push({ id: i + 1, s: (i % 2) + 1, t0: i * 1e-4, dt: 5e-5, r: i % 3 ? 'sat' : 'unsat', p: 0, n: 0 });
+    a.drawTimeline(); a.drawTimeline();
+    const t = [];
+    for (let k = 0; k < 3; k++) { a.drawTimeline(); t.push(a.lastDrawMs); }
+    return Math.min(...t);
+  });
+  console.log(`# timeline redraw of 100,000 calls: ${ms.toFixed(1)} ms`);
+  assert.ok(ms < 50, `${ms} ms`);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

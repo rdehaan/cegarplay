@@ -89,3 +89,29 @@ test('abort works on the isolated page too', async () => {
   assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
   await context.close();
 });
+
+test('V2: pausing freezes the Observatory counters; Step moves them by one candidate', async () => {
+  const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&example=graph-coloring&tab=11', { coi: true });
+  await setN7(page);
+  await page.click('#run-button');
+  await B.waitState(page, ['running']);
+  await page.waitForTimeout(800);
+  await page.click('#pause-button');
+  await page.waitForTimeout(300);
+  const read = () => page.evaluate(() => ({ text: [...document.querySelectorAll('#anatomy-diagram .anatomy-count')].map((e) => e.textContent).join('|'),
+    candidates: window.cegarplay.anatomy.S && window.cegarplay.anatomy.S.candidates }));
+  const a = await read();
+  assert.ok(a.text.includes('calls'));
+  await page.waitForTimeout(700);
+  assert.deepEqual(await read(), a, 'frozen while paused');
+  await page.click('#step-button');
+  await page.waitForTimeout(400);
+  const b = await read();
+  assert.equal(b.candidates - a.candidates, 1, `${a.candidates} -> ${b.candidates}`);
+  await page.waitForTimeout(500);
+  assert.deepEqual(await read(), b, 'paused again after the step');
+  await page.click('#stop-button');
+  await B.waitState(page, ['finished', 'error', 'aborted']);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

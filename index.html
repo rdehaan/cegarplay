@@ -87,6 +87,9 @@
     <input id="tab6" aria-controls="section-statistics" type="radio" name="tabs">
     <label for="tab6" class="tab-label" title="Statistics"><span class="tab-text">Statistics</span></label>
 
+    <input id="tab11" aria-controls="section-observatory" type="radio" name="tabs">
+    <label for="tab11" class="tab-label" id="label-observatory" title="Observatory"><span class="tab-text">Observatory</span></label>
+
     <input id="tab7" aria-controls="section-internals" type="radio" name="tabs">
     <label for="tab7" class="tab-label" title="Internals"><span class="tab-text">Internals</span></label>
 
@@ -274,6 +277,12 @@
     <!-- 6. Statistics -->
     <section id="section-statistics">
       <div id="statistics"></div>
+    </section>
+
+    <section id="section-observatory">
+      <div id="anatomy" class="observatory-region"></div>
+      <div id="domain-view" class="observatory-region" hidden></div>
+      <div id="candidate-space" class="observatory-region" hidden></div>
     </section>
 
     <!-- 7. Internals -->

@@ -207,6 +207,7 @@ export class Control {
     this.D = null;
     this.E = null;
     this.marks = [];
+    if (app.anatomy) app.anatomy.start({ assembled, compiled });
     this.setState('running');
     const info = {
       loopLabel: (mode === 'audit' ? 'audit: ' : '') + loopLabel(project.loop) + (instanceId ? ` [${instanceId}]` : ''), mode, instance: instanceId, settings: { ...project.settings, constants: { ...project.settings.constants } },
@@ -226,6 +227,7 @@ export class Control {
     const app = this.app;
     if (app.recording && !this.replaying) app.recording.add(kind, data);
     app.internals && raw && app.internals.raw(raw);
+    if (app.anatomy) app.anatomy.event(kind, data);
     switch (kind) {
       case 'H': app.stats.header(data); app.internals && app.internals.header(data); break;
       case 'S': app.stats.update(data); break;
@@ -282,6 +284,7 @@ export class Control {
     if (info.mode !== 'audit' && app.instancesTab) app.instancesTab.noteRun(info.instance, app.stats.S, this.D);
     app.editors.setReadOnly(false);
     if (this.marks.length) app.editors.annotate(this.marks);
+    if (app.anatomy) app.anatomy.done();
     if (state === 'error') {
       const line = this.E && this.assembled ? mapLine(this.assembled, this.E.line) : null;
       this.runMessage(this.E ? `Error: ${this.E.message}${line ? ` (loop script, line ${line})` : ''}` : app.output.resultEl.textContent);
@@ -327,11 +330,13 @@ export class Control {
     app.output.clear();
     app.output.trace.clear(rec.traces.length || 0);
     app.stats.start({});
+    if (app.anatomy) app.anatomy.start({});
     try {
       for (const e of rec.events) this.onEvent(e.kind, e.data, null);
     } finally { this.replaying = false; }
     app.output.flush();
     app.stats.done(this.D, null);
+    if (app.anatomy) app.anatomy.done();
     app.recording = rec;
     const what = this.D ? this.describe(this.D) : 'the recording has no final event';
     app.output.result(`Replayed: ${what}`);

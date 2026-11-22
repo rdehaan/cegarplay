@@ -31,6 +31,8 @@ export class LoopTab {
       const steps = $('record-select').value, calls = $('record-calls').checked;
       const n = Math.max(0, Math.floor(Number($('record-n').value) || 0));
       $('record-n').hidden = steps === 'off' || steps === 'all';
+      const ac = $('anatomy-calls');
+      if (ac) ac.checked = calls;
       if (steps === 'off' && !calls) delete this.app.project.settings.record;
       else this.app.project.settings.record = { steps, n, calls };
       this.app.dirty && this.app.dirty();

@@ -375,7 +375,7 @@ commit at each checkpoint, no stops.
 - [x] V1 Recording
 - [x] S2 Capture, level 2, level 3
 - [x] I2 Generators
-- [ ] V2 Loop anatomy
+- [x] V2 Loop anatomy
 - [ ] S3 `lift` links
 - [ ] I3 Campaigns
 - [ ] V3 Domain views
@@ -484,8 +484,23 @@ Notes per phase:
   - Also: `tools/make-replays.mjs` keeps a replay whose content apart from times is unchanged
     (this commit rewrites all 93 once: their `n` fields were stale since S2).
 
-**Next step (PLAN2):** V2 Loop anatomy (`docs/directions/observatory.md`, phase V2). After V2
-(end of wave 2), run an independent review of the wave's commits (S2, I2, V2) as was done for wave 1.
+- **V2 (done):** `js/anatomy.js` (pure `layout`, `searchIds`, `lineTable`, `binCalls`; class `Anatomy`:
+  SVG diagram, canvas timeline, line table, loop-editor info annotations), Observatory tab `tab11`
+  with regions `#anatomy`, `#domain-view`, `#candidate-space`; "Record calls" checkbox synced with
+  the Loop tab; tokens `--call-sat/-unsat/-int/-search` in the three theme blocks;
+  `app.loadExample` exposed for tests. Tests: `test/anatomy.test.mjs`, browser V2 tests in
+  `directions.test.mjs` (14 examples: boxes = solvers, arrows = links; table sum = S calls;
+  100,000 synthetic calls redraw in 3.4 ms, budget 50 ms) and `isolated.test.mjs` (pause freezes,
+  Step = exactly +1 candidate).
+  - Deviation (needed for "Step moves by one candidate"): Step used to run until the next output
+    flush (often a thousand candidates). Now the control word has a fourth value 3 = step; the
+    worker answers `pause` to the first poll of a pause (the runtime sends a fresh S, then reads
+    again and blocks) and lets one poll through on a step. Old behaviour otherwise unchanged.
+  - Searches are recognised as calls that enclose others (`C.p`), since C events carry no kind.
+  - Fix of I2: an unknown `--instance` exited 1 instead of 2 (`resolveProject` threw first).
+
+**Next step (PLAN2):** review of wave 2 (S2, I2, V2) by a background agent, then S3 `lift` links
+(`docs/directions/soundness.md`, phase S3).
 
 ## Next step (PLAN.md, guide, TODO)
 

@@ -10,6 +10,7 @@ import { Internals } from './internals.js';
 import { InstancesTab } from './instances-tab.js';
 import { Recording, REPLAY_PATTERN } from './recording.js';
 import { makeEditor } from './editors.js';
+import { Anatomy } from './anatomy.js';
 import { renderMarkdown } from './markdown.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
 
@@ -86,6 +87,7 @@ app.loopTab = new LoopTab(app);
 app.internals = new Internals(app);
 app.control = new Control(app);
 app.instancesTab = new InstancesTab(app);
+app.anatomy = new Anatomy(app, $('anatomy'));
 
 app.collect = () => app.editors.collect(app.project);
 app.genLua = () => ({ draw: app.modules.draw, generate: app.modules.generate });
@@ -131,6 +133,7 @@ app.setProject = (p, { save = true } = {}) => {
   app.editors.build(p);
   app.loopTab.load(p);
   app.instancesTab.load();
+  app.anatomy.load();
   app.stats.history = Array.isArray(p.runs) ? p.runs.map((r) => ({ ...r })) : [];
   app.stats.renderHistory();
   showProjectInfo(p);
@@ -198,6 +201,7 @@ function status(id, text, error = false) {
   e.classList.toggle('error', error);
 }
 
+app.loadExample = (name, opts) => loadExample(name, opts);
 async function loadExample(name, opts, { url = false } = {}) {
   if (!/^[A-Za-z0-9_-]+$/.test(name)) throw new Error(`invalid example name ${name}`);
   const r = await fetch(`examples/${name}.json`);
@@ -497,6 +501,7 @@ function resizeVisibleEditors() {
 for (const r of document.querySelectorAll('input[name="tabs"]')) {
   r.addEventListener('change', () => {
     requestAnimationFrame(resizeVisibleEditors);
+    if (r.checked && r.id === 'tab11') requestAnimationFrame(() => { app.anatomy.dirty = { diagram: true, timeline: true, table: true }; app.anatomy.render(); });
     if (r.checked) setUrl({ example: new URLSearchParams(location.search).get('example'), tab: r.id === 'tab1' ? '' : r.id.slice(3), keepHash: true });
   });
 }

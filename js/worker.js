@@ -1,6 +1,8 @@
 // Engine worker: one clingo-wasm instance; one blocking run per message; output streamed in batches.
 // Control word (cross-origin isolated pages only): Int32Array on a SharedArrayBuffer,
-//   0 run | 1 pause | 2 stop. The runtime polls it through io.read() -> stdin.
+//   0 run | 1 pause | 2 stop | 3 step. The runtime polls it through io.read() -> stdin.
+// On a pause the first read answers 'pause' (the runtime then sends fresh statistics) and the
+// next read blocks; a step lets one read through and sets the word back to 1.
 let control = null, module = null, out = [], err = [], lastFlush = 0, runId = null;
 
 function flush() {
@@ -11,14 +13,21 @@ function flush() {
 // stdin: answer 'go' or 'stop' once per io.read("l"); return null after the newline, or
 // Emscripten keeps reading.
 const feed = [];
+let announced = false;
 function stdin() {
   if (feed.length) return feed.shift();
   if (feed.done) { feed.done = false; return null; }
   flush();
   let cmd = 'go';
   if (control) {
-    while (Atomics.load(control, 0) === 1) Atomics.wait(control, 0, 1);
-    if (Atomics.load(control, 0) === 2) cmd = 'stop';
+    if (Atomics.load(control, 0) === 1 && !announced) { announced = true; cmd = 'pause'; }
+    else {
+      while (Atomics.load(control, 0) === 1) Atomics.wait(control, 0, 1);
+      announced = false;
+      const v = Atomics.load(control, 0);
+      if (v === 2) cmd = 'stop';
+      else if (v === 3) Atomics.compareExchange(control, 0, 3, 1);     // one step, then paused
+    }
   }
   for (const ch of cmd + '\n') feed.push(ch.charCodeAt(0));
   feed.done = true;

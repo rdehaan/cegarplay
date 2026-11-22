@@ -21,7 +21,7 @@ import { resolveProject } from '../js/instances.js';
 import fs from 'node:fs';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import factory from '../vendor/clingo-wasm/clingo.js';
-import { load, derive } from '../js/project.js';
+import { load, derive, ProjectError } from '../js/project.js';
 import { Recording } from '../js/recording.js';
 import { assemble, parseEvent, validate, auditPlan, auditBody, modulesFor } from '../js/driver.js';
 
@@ -64,7 +64,10 @@ export async function runProject(project, { onEvent, backstop = false, audit = n
   const t0 = Date.now();
   try {
     project = await resolveProject(project, instance, engineRun, { draw: lua('draw.lua'), generate: lua('generate.lua') });
-  } catch (e) { return { problems: [{ severity: 'error', message: e.message }], events: [] }; }
+  } catch (e) {
+    if (e instanceof ProjectError) throw e;      // an unknown instance: a usage error, as before
+    return { problems: [{ severity: 'error', message: e.message }], events: [] };
+  }
   project = derive(project, { instance, variant });
   if (constants) project = { ...project, settings: { ...project.settings, constants: { ...project.settings.constants, ...constants } } };
   const problems = await validate(project, engineRun);

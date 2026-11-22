@@ -193,6 +193,8 @@ local function tick(poll)
   end
   if poll and SETTINGS.poll then
     local l = io.read("l")
+    -- the page paused the run: fresh statistics, then the read that blocks until resume or step
+    if l == "pause" then send_stats(); l = io.read("l") end
     if l == "stop" then rt.finish("stopped", "stopped by user", false) end
   end
 end

@@ -725,6 +725,9 @@ script is compiled 0.5 s after each edit.
 **Abort** terminates the worker at once and starts a new one. On a cross-origin isolated page
 (see [URL parameters](#manual-url-parameters-and-browser-storage)) there are also **Pause** /
 **Resume**, **Step** (one candidate) and **Stop** (ends the run cleanly, with final statistics).
+A pause makes the runtime send fresh statistics before it waits, so the counters show the state at
+the pause; Step lets exactly one poll through (one candidate of a `search`; in a loop of `solve`
+calls the poll runs every 256 iterations of a loop body) and pauses again with fresh statistics.
 
 Messages from clingo (infos and warnings, such as `atom does not occur in any rule head`) name the
 fragment and the line within it (`check:3:5`), and are marked in that editor after the run (blue
@@ -807,6 +810,21 @@ library example has a replay in `examples/replays/`. Details: `docs/spec-recordi
 Counting rules: *candidates* are the assignments seen by `on candidate` plus models returned by
 `solve`/`models` of solvers without incoming links; *counterexamples* are satisfiable solves that
 were given assumptions.
+
+### Observatory tab
+
+Tab 11 (`?tab=11`). **Loop anatomy**: one box per solver (name, fragments, calls, sat, unsat,
+solving time, a `+k` badge after k expansions), placed in columns by the longest path over the
+links, and one arrow per link labelled with its name and interface size (from the `H` event); a
+link flashes on each recorded step through it (above 30 steps per second the label shows the rate
+instead). **Timeline** (needs **Record calls**, the same setting as in the Loop tab): one lane per
+solver; a call is a bar from its start to its end coloured by result (sat, unsat, interrupted); a
+search is a thin band; marks above the lanes show solutions, refinements and expansions; calls
+narrower than a pixel share a column split by the share of sat and unsat calls. Wheel zooms, drag
+pans, double click shows all. **Cost per line**: one row per loop line with calls, sat, unsat,
+exclusive time (nested calls subtracted) and time with nested calls, sorted by time; a click
+selects the line and filters the timeline; after a run the loop editor shows the same figures as
+info annotations. The domain view (V3) and candidate space (V4) regions follow.
 
 ### Event lines
 
