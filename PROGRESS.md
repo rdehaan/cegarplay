@@ -380,7 +380,7 @@ commit at each checkpoint, no stops.
 - [x] I3 Campaigns
 - [x] V3 Domain views
 - [x] S4 Rule refinements, exact level
-- [ ] I4 Fuzz and shrink
+- [x] I4 Fuzz and shrink
 - [ ] V4 Candidate space
 - [ ] S5 Certified counts
 - [ ] I5 Mining, pools, importers
@@ -584,7 +584,20 @@ Notes per phase:
   `ViewPanel.suggest` may meet a busy frame engine; no timeout for view frames; ThreadPool has no
   error listener.
 
-**Next step (PLAN2):** I4 Fuzz and shrink (`docs/directions/instance-lab.md`, phase I4).
+- **I4 (done):** `js/shrink.js` (ddmin with parallel rounds, `shrinkConstants`,
+  `normaliseFacts`), `js/fuzz.js` (`defaultSource`, `fuzzInstances`, `auditOf`, `countOf`, `fuzz`
+  with compare fallback, `shrinkInstance`, `diagnose`), `lua/replay.lua` (`rt.replay`, `@@Y`),
+  Instances tab Fuzz button and result card with the three actions. `test/fuzz.test.mjs` (slow:
+  graph-coloring-original n = 3..6 behind SLOW).
+  - Deviation: at n = 2 the loop of `tutorial-weak-relevant` does not lose `pick(2)` (search
+    order), so the diagnosis reports the witness alone there, as the doc allows; `firstViolated`
+    is checked at n = 8 on 10 of the 50 lost solutions.
+  - The pool is not used: shrink tests run through the one validation engine (`jobs` is accepted
+    for a pool-backed engineRun). Fuzz in the page prefers the 1..v constants grid over a
+    library suite.
+
+**Next step (PLAN2):** V4 Candidate space (`docs/directions/observatory.md`, phase V4; end of
+wave 4: review S4, I4, V4).
 
 ## Next step (PLAN.md, guide, TODO)
 

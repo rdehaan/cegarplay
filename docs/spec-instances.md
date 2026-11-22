@@ -168,3 +168,37 @@ over two varying parameters, one variant against another per instance, solved wi
 Library: `tutorial-weak-relevant` has the variant `reference` (the Reference template) and the
 suite `scaling` (n = 4..8; every n disagrees, n = 8: 11 against 61); `qbf` has the suite `random`
 (qbf-dnf, t = 6, 8, 10, 12, five seeds each).
+
+## 6. Fuzz, shrink and diagnose
+
+`js/fuzz.js` (no DOM), with `env = { engineRun, runtime, modules: { audit, ground, replay },
+luaTexts }`:
+
+- `defaultSource(project)`: a constants grid 1..v over each numeric constant (v <= 50); else all
+  instances. `fuzzInstances(project, source)` orders a source (a suite's `instances` spec) by the
+  product of its numeric parameters.
+- `fuzz(project, { source, env })`: one audit per instance; the first `unsound` verdict stops the
+  walk (`limit` and errors skip the instance). A script without an audit mode falls back to
+  comparing solution hashes and counts with the variant `reference` (mode `compare`, said in
+  `note`). Returns `{ found: { instance, params, verdict, project }, tried, mode, skipped, note }`.
+- `shrinkInstance(plain, env)`: the instance facts normalised to one ground fact per item
+  (`normaliseFacts`: `clingo --mode=gringo --text`), then `shrink` (ddmin; the tests of one round
+  run `jobs` at a time) with the test "the `schema` fragment is satisfiable with the facts and the
+  audit is unsound", then `shrinkConstants` lowers each numeric constant while the test holds.
+- `diagnose(plain, verdict, env)`: the project's own loop with every step recorded. When the run
+  lost the witness's solution: `Recording.firstViolated(solution)` for clause refinements; for an
+  expand witness, the assemble mode `replay` (`lua/replay.lua`, `rt.replay`) grounds the recorded
+  facts of each expansion on the solver and solves under the solution's interface values after
+  each; the first unsatisfiable step is `culprit` (event `@@Y {"culprit", "steps"}`). When the run
+  did not lose it (its search order avoided the bad refinement), the witness alone is reported.
+
+Instances tab: **Fuzz** (source: the 1..v constants grid, else the first generator or constants
+suite), a progress line, and a card with the minimal instance, the lost solution, the witness,
+the culprit step, and "Open in trace" (runs the instance, opens Output), "Show audit witness"
+(audits it), "Save as regression instance" (tag `regression`, expected = the audited count).
+
+Measured: `tutorial-weak-relevant` over n = 1..8 stops at n = 2 (candidate `pick(1) pick(2)`, lost
+`pick(2)`; this loop's own run finds `pick(2)` before the weak clause, so no culprit step at n = 2;
+at n = 8 the run loses 50 of 61 and `firstViolated` names a step for each); the fixture with
+`num/1` as eight facts shrinks to `num(1). num(2).` and n = 2 in 15 audits; `tutorial-first-run`
+over n = 1..8 is sound; gc-shape3 with `:- cex(k,color(1,C)).` added: culprit expansion 1.

@@ -2,6 +2,7 @@
 import { makeEditor } from './editors.js';
 import { IMPORTERS, importerFor, freshId, checkFacts, ImportError } from './instances.js';
 import { generate, PARAM_TYPES } from './generate.js';
+import { fuzz, shrinkInstance, diagnose, defaultSource } from './fuzz.js';
 import { INSTANCE_ID } from './project.js';
 import { fmt } from './output.js';
 
@@ -68,6 +69,7 @@ export class InstancesTab {
       el('button', { class: 'control-button', id: 'import-instance-button', onclick: () => this.fileInput.click() }, 'Import file'),
       this.format,
       el('button', { class: 'control-button', id: 'run-all-instances-button', onclick: () => this.runAll() }, 'Run all'),
+      el('button', { class: 'control-button', id: 'fuzz-button', onclick: () => this.fuzz(), title: 'Audit instances from small to large; shrink the first unsound one and name the refinement that loses a solution' }, 'Fuzz'),
       this.fileInput);
     this.form = el('div', { class: 'instance-form', id: 'instance-form', hidden: true });
     this.idInput = el('input', { id: 'instance-id', size: 16, 'aria-label': 'Instance id' });
@@ -89,7 +91,7 @@ export class InstancesTab {
     this.root.append(
       el('p', {}, 'An instance is a set of facts and constant values that a run applies on top of the project. ',
         'The run bar picks the instance a run uses. "Run all" runs each instance and compares its solution count with the expected one.'),
-      bar, this.status, el('div', { class: 'table-wrapper' }, this.table), this.form);
+      bar, this.status, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table), this.form);
     this.buildGenerators();
     this.editor = makeEditor(editorBox, 'ace/mode/gringo');
     this.editor.on('change', () => {
@@ -430,5 +432,71 @@ export class InstancesTab {
       }
       this.preview.append(card);
     }
+  }
+
+  // ---- fuzz (docs/spec-instances.md section 6) ----------------------------------------------
+  async fuzz() {
+    const app = this.app;
+    if (!app.ready || app.control.busy || this.fuzzing) return;
+    this.fuzzing = true;
+    const env = { engineRun: (p, o) => app.engine.exec(p, o), runtime: app.runtime, modules: app.modules, luaTexts: app.genLua() };
+    const project = structuredClone(app.collect());
+    const suite = (project.suites || []).find((s) => s.instances && (s.instances.generator || s.instances.constants));
+    // smallest first: a grid 1..v over the numeric constants, else a suite's grid, else the instances
+    const def = defaultSource(project);
+    const source = def.constants ? def : suite ? suite.instances : def;
+    this.fuzzCard.hidden = true;
+    try {
+      this.say('Fuzz: auditing instances from small to large…');
+      const r = await fuzz(project, { source, env, onProgress: (x) => this.say(`Fuzz: ${x.tried} of ${x.total} instances (${x.instance}: ${x.verdict})…`) });
+      if (!r.found) { this.say(`Fuzz: no unsound instance among ${r.tried}${r.skipped ? ` (${r.skipped} skipped)` : ''}.${r.note ? ` ${r.note}.` : ''}`); return; }
+      if (r.mode !== 'audit') { this.say(`Fuzz: instance ${r.found.instance.id} gives ${r.found.counts[0]} solutions against ${r.found.counts[1]} with the reference (${r.note}).`, true); return; }
+      this.say(`Fuzz: ${r.found.instance.id} is unsound; shrinking…`);
+      const s = await shrinkInstance(r.found.project, env, { onStep: (items, tests) => this.say(`Fuzz: shrinking, ${items.length} facts after ${tests} audits…`) });
+      if (s.error || !s.verdict) { this.say(`Fuzz: ${r.found.instance.id} is unsound; shrinking failed (${s.error || 'no verdict'}).`, true); return; }
+      const dg = await diagnose(s.project, s.verdict, env);
+      this.showFuzz(r.found, s, dg);
+      this.say(`Fuzz: ${r.found.instance.id} is unsound (after ${r.tried} instances); shrunk to ${s.facts.length} facts.`, true);
+    } catch (e) {
+      this.say(`Fuzz stopped: ${e.message || e}`, true);
+    } finally { this.fuzzing = false; }
+  }
+
+  showFuzz(found, s, dg) {
+    const w = s.verdict.witness || {};
+    const card = this.fuzzCard;
+    card.textContent = '';
+    card.hidden = false;
+    card.dataset.verdict = 'unsound';
+    const step = dg.step ? `step ${dg.step.i} (${{ r: 'reject', a: 'add', e: 'expand' }[dg.step.k] || dg.step.k})` : dg.culprit ? `expansion ${dg.culprit}` : null;
+    const consts = Object.entries(s.constants || {}).map(([k, v]) => `${k}=${v}`).join(', ');
+    card.append(
+      el('h3', {}, 'Fuzz: an unsound instance'),
+      el('p', {}, `Found at ${found.instance.id}; shrunk from ${s.from} facts to ${s.facts.length}${consts ? ` (constants ${consts})` : ''} in ${s.tests} audits.`),
+      el('pre', { id: 'fuzz-facts' }, s.facts.join('\n') || '(no facts)'),
+      el('p', {}, `Lost solution {${(w.solution || []).join(' ')}}; the audit's witness: candidate {${(w.candidate || []).join(' ')}}, counterexample [${w.counterexample || ''}]` +
+        (w.relevant ? `, relevant {${w.relevant.join(' ')}}` : '') + '.'),
+      el('p', { id: 'fuzz-culprit' }, step ? `The loop's own run loses it at ${step}.` : 'The loop\'s own run does not lose this solution (its search order avoids the bad refinement here); the witness shows the unsound pair.'),
+      el('div', { class: 'instances-bar' },
+        el('button', { class: 'control-button small-button', id: 'fuzz-trace', onclick: () => this.fuzzAction('trace', s) }, 'Open in trace'),
+        el('button', { class: 'control-button small-button', id: 'fuzz-witness', onclick: () => this.fuzzAction('audit', s) }, 'Show audit witness'),
+        el('button', { class: 'control-button small-button', id: 'fuzz-save', onclick: () => this.fuzzAction('save', s) }, 'Save as regression instance')));
+  }
+
+  fuzzSave(s) {
+    if (this.fuzzSaved && this.list.some((x) => x.id === this.fuzzSaved)) return this.fuzzSaved;
+    const id = freshId(this.app.project, 'regression');
+    const constants = Object.fromEntries(Object.entries(s.constants || {}).filter(([k, v]) => this.app.project.settings.constants[k] !== v));
+    this.add({ id, facts: s.facts.join('\n') + '\n', constants, expected: { solutions: s.verdict.solutions }, tags: ['regression'] });
+    this.fuzzSaved = id;
+    return id;
+  }
+
+  async fuzzAction(what, s) {
+    const id = this.fuzzSave(s);
+    if (what === 'save') { this.say(`Saved instance ${id} with its true count ${s.verdict.solutions} (tag regression).`); return; }
+    const tab = document.getElementById(what === 'trace' ? 'tab5' : 'tab1');
+    await this.app.control.run(what === 'audit' ? { mode: 'audit', instance: id } : { instance: id });
+    if (tab) { tab.checked = true; tab.dispatchEvent(new Event('change')); }
   }
 }

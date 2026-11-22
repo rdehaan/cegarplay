@@ -323,3 +323,21 @@ test('V3: the domain view draws a step; another step keeps every position; a cac
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('I4: Fuzz on tutorial-weak-relevant reports n = 2, the lost solution pick(2), and saves a regression instance', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=9');
+  await page.click('#fuzz-button');
+  await page.waitForSelector('#fuzz-card:not([hidden])', { timeout: 60000 });
+  const text = await page.textContent('#fuzz-card');
+  assert.match(text, /Found at n2/);
+  assert.match(text, /Lost solution \{pick\(2\)\}/);
+  assert.match(text, /candidate \{pick\(1\) pick\(2\)\}/);
+  await page.click('#fuzz-save');
+  const x = await page.evaluate(() => window.cegarplay.project.instances.find((i) => i.tags.includes('regression')));
+  assert.equal(x.expected.solutions, 3);
+  await page.click('#fuzz-witness');
+  await settled(page);
+  assert.match(await page.textContent('#result-line'), /Audit: unsound/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

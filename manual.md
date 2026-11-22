@@ -160,6 +160,15 @@ its file. Format: `docs/spec-instances.md` section 5.
               "where": ["solutions(reference) >= 1"] } ]
 ```
 
+### Fuzz
+
+**Fuzz** (Instances tab) audits instances from small to large (constants 1..v, or a suite's grid),
+stops at the first unsound one, shrinks its facts and constants (delta debugging, keeping the
+`schema` fragment satisfied and the audit unsound) and diagnoses it: the lost solution, the
+audit's witness, and the step of the loop's own run whose refinement removes the solution (for
+`expand` loops, a replay of the recorded expansions). The card saves the instance as a regression
+instance with its true count. Details: `docs/spec-instances.md` section 6.
+
 ### Generators
 
 A **generator** is an ASP program whose shown atoms are an instance. Randomness enters through six
