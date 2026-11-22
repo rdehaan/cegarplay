@@ -73,7 +73,7 @@ two-space indentation.
 | Field | Type | Default | Rules |
 | --- | --- | --- | --- |
 | `format` | string | (required) | Must be `"cegarplay"`. A file with logic-game keys is rejected as a logic-game file. |
-| `version` | number | 1 | A version above 1 is rejected (newer than this CegarPlay). |
+| `version` | number | 1 | 1, or 2 when a key of format version 2 is used (see [Instances](#manual-instances)). A version above 2 is rejected (newer than this CegarPlay). |
 | `title` | string | `"Untitled"` | Shown in the Control tab and the page title. |
 | `description` | string | `""` | Shown under the title. |
 | `fragments` | list | (required) | Ordered (tab order in the Programs tab). |
@@ -89,11 +89,62 @@ two-space indentation.
 | `settings.trace` | number | 200 | Number of trace steps recorded; 0 = off. |
 | `settings.seed` | number | 0 | Passed as `--seed=N` unless 0. |
 | `runs` | list | `[]` | Final statistics of earlier runs (Statistics tab, run history). Written only when "include run history" is ticked on download. |
+| `instances` | list | none | Format version 2. See [Instances](#manual-instances). |
+| `variants` | list | none | Format version 2. See [Instances](#manual-instances). |
+| `settings.instance` | string | the first instance | The instance a run uses; `""` = the project as written. |
+
+### Instances
+
+An **instance** is a set of facts plus constant values that a run applies on top of the project.
+The facts reach every solver and every link's glue control as a fragment named `instance` (put
+first; the name is reserved), and the instance's constants override the project's. Messages from
+clingo about an instance fact name `instance:<line>`. The loop language does not change.
+
+```json
+"instances": [
+  { "id": "triangle", "facts": "node(1). node(2). node(4). edge(1,2). edge(1,4). edge(2,4).",
+    "constants": { "k": "3" }, "expected": { "solutions": 7 }, "tags": ["regression"] }
+],
+"variants": [
+  { "name": "reference", "swap": { "check": "check_block" }, "loop": "solver A = ...", "constants": { "k": "2" } }
+]
+```
+
+| Field | Rules |
+| --- | --- |
+| `instances[].id` | Matches `[A-Za-z0-9_-]+`; unique. |
+| `instances[].facts` | ASP text (facts, or any rules). |
+| `instances[].constants` | Object of strings; override `settings.constants`. |
+| `instances[].expected.solutions` | Whole number or null: the solution count of an exhausted run with all solutions (checked by "Run all", `--instance all` and the library tests). |
+| `instances[].tags` | List of strings (`slow` instances are skipped by the default test run). |
+| `instances[].recipe` | Object: a generator recipe (see the generator chapter when it exists). |
+| `variants[].name` | Matches `[A-Za-z0-9_-]+`; unique; not `default`. |
+| `variants[].loop` | A loop script (string) or `{ language, text }` that replaces the project's. |
+| `variants[].swap` | Fragment name to fragment name: the first gets the text of the second. |
+| `variants[].constants`, `variants[].settings` | Merged into the project's. |
+
+A project without any of these keys is saved with `"version": 1`, so older pages still open it;
+with a non-empty one it is saved as version 2. `js/project.js` exports `applyInstance(project, id)`,
+`applyVariant(project, name)` and `derive(project, { instance, variant })` (variant first), which
+return the plain project of one run. An optional fragment named `schema` holds constraints every
+instance must satisfy (`checkSchema` in `js/instances.js`).
+
+The **Instances** tab (tab 9) lists the instances with their tags, expected count and the count of
+their last run; it edits facts, constants, expected count and tags; **Import file** reads facts
+(`.lp`), DIMACS graphs (`.col`: `node/1`, `edge/2`), QDIMACS (`qblock/2`, `qvar/2`, `clause/1`,
+`qlit/3`), ASPARTIX (`.apx`: `arg/1`, `att/2`), Trivial Graph Format (`.tgf`: `arg/1`, `att/2`),
+PrefLib strict orders (`.soc`, `.soi`: `ballot/2` as `kemeny-control` writes them) and jaggpy
+scenarios (`.jagg`: `var/1`, `cl/1`, `pos/2`, `neg/2`); each importer is checked with clingo before
+the instance is added. **Run all** runs every instance and marks a count other than the expected one
+with ✗ in red. The run bar's **Instance** picker (shown only for a project with instances) chooses
+the instance of the next run; the run history names it in brackets.
 
 `Project.load` errors (exact texts): `not a JSON file: ...`, `not a CegarPlay project: expected a
 JSON object`, `this is a logic-game file, not a CegarPlay project`, `not a CegarPlay project (format
-is ..., expected "cegarplay")`, `project version N is newer than this CegarPlay (1)`, `fragments must
-be a list`, `fragment N is not an object`, `fragment N: invalid name "..." (use lower case letters,
+is ..., expected "cegarplay")`, `project version N is newer than this CegarPlay (2)`, `fragments must
+be a list`, `the fragment name 'instance' is reserved for the facts of an instance`, `instance N: id
+must match [A-Za-z0-9_-]+`, `duplicate instance id '...'`, `variant ...: swap names an unknown
+fragment (... -> ...)`, `fragment N is not an object`, `fragment N: invalid name "..." (use lower case letters,
 digits and _)`, `duplicate fragment name '...'`, `loop.language must be "loop" or "lua"`.
 A negative or non-numeric value of `solutions`, `seconds`, `candidates`, `trace` or `seed` is
 replaced by its default without an error.
@@ -723,7 +774,8 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?example=<id>` | Load the library example `<id>` (also `?file=<id>`). It does not replace the project kept in the browser until you edit it. |
 | `&fragment=<name>` | With `?example`: open the Programs tab on that fragment's editor (`loop` opens the Loop tab). Overrides `?tab`. An unknown name is ignored with a note in the status line. |
 | `&from=guide/<page>.html#<anchor>` | Show a link "← Back to the guide" at the top left, to that guide page. Only a page of the guide is accepted. |
-| `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown). |
+| `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances. |
+| `&instance=<id>` | Pick that instance of the project in the run bar. An unknown id is ignored with a note. |
 | `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
 | `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
 | `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
@@ -832,7 +884,7 @@ without the repository.
 
 ```sh
 node tools/run.mjs <project.json | library id> [-c name=value] [--solutions N|all]
-                   [--seconds N] [--trace N] [--json] [--quiet]
+                   [--seconds N] [--trace N] [--instance ID|all] [--variant NAME] [--json] [--quiet]
 ```
 
 It uses the same engine, validation and runtime as the page. Output: one `Solution n: atoms` line
@@ -841,7 +893,10 @@ candidates: ...; counterexamples: ...; clauses: ...; time: ... s`. Validation pr
 as `fragment:line:col: error: message`. Exit code 0 when the run ends without an error, 1 on a
 problem or error, 2 on bad usage. With a time limit above 0, a run that does not stop by itself (a
 raw Lua loop without `rt.tick()`) is ended `N + 2` s after the start with `Outcome: limit (the run
-did not stop ...)` and exit code 1, like the page's backstop. Example: `node tools/run.mjs tutorial-first-run --quiet`.
+did not stop ...)` and exit code 1, like the page's backstop. `--instance ID` runs one instance
+(`-c` still wins over its constants); `--instance all` prints one line per instance with its count
+and `as expected` or `MISMATCH: expected N`, and exits with 1 on a mismatch. An unknown instance or
+variant exits with 2. Example: `node tools/run.mjs tutorial-first-run --quiet`.
 
 ### Audit tool
 
@@ -858,7 +913,7 @@ usage (also: nothing to audit), 3 candidate or time limit.
 
 ```sh
 python3 tools/cegarcheck.py <project.json> [--mode auto|block|clause|clauses|core|expand]
-        [-c name=value] [--solutions N|all] [--optimal] [--cex NAME=pred/arity] [--show]
+        [--instance ID] [-c name=value] [--solutions N|all] [--optimal] [--cex NAME=pred/arity] [--show]
 ```
 
 Runs a project with Python clingo (`pip install clingo`) where the page's engine is not available.

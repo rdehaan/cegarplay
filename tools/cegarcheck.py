@@ -133,6 +133,9 @@ def parse_script(text):
 
 def join(fragments, names, what):
     parts = []
+    # an instance (format version 2) reaches every solver and glue control first, as in the runtime
+    if "instance" in fragments and "instance" not in names:
+        names = ["instance"] + list(names)
     for n in names:
         if n not in fragments:
             raise CheckError(f"{what}: unknown fragment '{n}'")
@@ -343,6 +346,26 @@ class Checker:
                 "refinements": clauses, "exhausted": exhausted, "time": time.time() - t0}
 
 
+def select_instance(project, want):
+    """The instance a run uses (js/project.js selectedInstance): the id given, else
+    settings.instance, else the first; "" means the project as written."""
+    lst = project.get("instances") or []
+    if not lst:
+        if want:
+            raise CheckError(f"no instance named '{want}' (the project has no instances)")
+        return None
+    if want is None:
+        want = (project.get("settings") or {}).get("instance")
+    if want == "":
+        return None
+    if want is None:
+        return lst[0]
+    for x in lst:
+        if x.get("id") == want:
+            return x
+    raise CheckError(f"no instance named '{want}'")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Check a CegarPlay project with Python clingo.")
     ap.add_argument("project")
@@ -352,6 +375,7 @@ def main(argv=None):
     ap.add_argument("--optimal", action="store_true", default=None)
     ap.add_argument("-c", dest="consts", action="append", default=[], help="name=value")
     ap.add_argument("--solutions", default=None, help="N or all (default: the project's setting)")
+    ap.add_argument("--instance", default=None, help="the instance to check (format version 2)")
     ap.add_argument("--max-candidates", type=int, default=1000000)
     ap.add_argument("--seconds", type=float, default=300)
     ap.add_argument("--show", action="store_true", help="print the solutions")
@@ -381,6 +405,12 @@ def main(argv=None):
             o.part = o.part or info.get("part", "refine")
         settings = project.get("settings") or {}
         consts = dict((settings.get("constants") or {}))
+        inst = select_instance(project, o.instance)
+        if inst is not None:
+            project = dict(project)
+            project["fragments"] = [{"name": "instance", "text": inst.get("facts") or ""}] + \
+                [f for f in project["fragments"] if f["name"] != "instance"]
+            consts.update({k: str(v) for k, v in (inst.get("constants") or {}).items()})
         for c in o.consts:
             if "=" not in c:
                 raise CheckError(f"-c {c}: expected name=value")

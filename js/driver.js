@@ -231,6 +231,8 @@ export async function validate(project, engineRun) {
     groups = names.map((n) => [n]);       // raw Lua: check every fragment on its own
   }
   if (problems.length) return problems;
+  // the facts of an instance reach every solver and every glue control (lua/runtime.lua)
+  if (names.includes('instance')) groups = groups.map((g) => (g.includes('instance') ? g : ['instance', ...g]));
   const consts = constantList(project.settings).flatMap((c) => ['-c', c]).join(' ');
   const seenGroups = new Set(), seen = new Set();
   for (const g of groups) {

@@ -134,6 +134,14 @@ export function buildExamples() {
       frag(p, 'abstraction').text = frag(p, 'abstraction').text.replace(/\s*$/, '\n') + REFINE_PART;
       p.loop.text = template('shape1');
     }, { constants: { n: '6' }, solutions: 0 });
+  // three constants-only instances (docs/spec-instances.md); "" = the project as written (n = 6)
+  gc.instances = [
+    { id: 'n4', facts: '', constants: { n: '4' }, expected: { solutions: 1 }, tags: ['small'] },
+    { id: 'n5', facts: '', constants: { n: '5' }, expected: { solutions: 101 }, tags: [] },
+    { id: 'n6', facts: '', constants: { n: '6' }, expected: { solutions: 10698 }, tags: ['slow'] },
+  ];
+  gc.settings.instance = '';
+  gc.version = 2;
   const gco = make('graph-coloring.lp', 'Graph colouring (original rules)',
     'The graph colouring example with the relevant/1 rules of the original prototype. These rules are too ' +
     'weak: a refinement can exclude candidates that are solutions, so Shape 1 reports 9,270 solutions at n = 6 ' +

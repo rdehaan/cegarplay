@@ -371,7 +371,7 @@ commit at each checkpoint, no stops.
 
 - [x] L0 Repair (blocking clause over all outgoing links; `knapsack-fortification`, `qbf-three-blocks`)
 - [x] S1 Audit
-- [ ] I1 Instances
+- [x] I1 Instances
 - [ ] V1 Recording
 - [ ] S2 Capture, level 2, level 3
 - [ ] I2 Generators
@@ -416,7 +416,23 @@ Notes per phase:
     adds `:- cex(k,color(1,C)).` instead.
   - `test/browser/a11y.test.mjs` B2: Tab cap 80 -> 100 (one more button in the run bar).
 
-**Next step (PLAN2):** I1 Instances.
+- **I1 (done):** format version 2 (`VERSION = 2`; `usesV2` decides the saved version, so old
+  projects stay byte-identical), `instances`, `variants`, `settings.instance` (absent = first,
+  `""` = as written); `applyInstance`, `applyVariant`, `derive`, `selectedInstance` in
+  `js/project.js`; runtime `with_instance` (fragment `instance` first for solvers and glue);
+  validation prepends `instance`. `js/instances.js`: importers (all seven, also I5's apx, tgf,
+  preflib, jagg), `checkFacts`, `checkSchema` (exit status 20/30). `js/instances-tab.js`: tab 9,
+  run-bar picker, Run all with ✓/✗, Import. `?instance=`, `?tab=9`. `tools/run.mjs --instance
+  ID|all --variant`, `tools/audit.mjs --instance`, `cegarcheck.py --instance`; `test/helpers.mjs
+  runProject` derives. Library: `graph-coloring` n4/n5/n6 (1/101/10,698; n6 tagged slow);
+  `af-preferred`, `qbf`, `kemeny-control` facts moved to instance `example`; af-preferred and qbf
+  have 3 generated instances each, counts checked against the reference loop and Python.
+  - Deviation: `test/browser/a11y.test.mjs` B2 now checks that Enter clicks `#file-input`
+    instead of waiting for Playwright's `filechooser` event, which timed out only in the full
+    parallel run (passes alone and in every subset tried).
+  - Not done: `docs/chat-package` docs do not describe instances yet (the package builds).
+
+**Next step (PLAN2):** V1 Recording.
 
 ## Next step (PLAN.md, guide, TODO)
 

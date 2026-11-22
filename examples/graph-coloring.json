@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Graph colouring",
   "description": "Connected graphs with a leaf colouring that no proper 3-colouring extends. The check rules include the added relevant/1 rule, so Shape 1 finds all 10,698 solutions at n = 6. The abstraction also holds the #program refine(k). part used by Shapes 3 and 4.",
   "fragments": [
@@ -37,7 +37,47 @@
     "seconds": 60,
     "candidates": 0,
     "trace": 200,
-    "seed": 0
+    "seed": 0,
+    "instance": ""
   },
-  "runs": []
+  "runs": [],
+  "instances": [
+    {
+      "id": "n4",
+      "facts": "",
+      "constants": {
+        "n": "4"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "small"
+      ]
+    },
+    {
+      "id": "n5",
+      "facts": "",
+      "constants": {
+        "n": "5"
+      },
+      "expected": {
+        "solutions": 101
+      },
+      "tags": []
+    },
+    {
+      "id": "n6",
+      "facts": "",
+      "constants": {
+        "n": "6"
+      },
+      "expected": {
+        "solutions": 10698
+      },
+      "tags": [
+        "slow"
+      ]
+    }
+  ]
 }

@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Preferred extensions",
   "description": "Preferred extensions (maximal admissible sets) of an argumentation framework that leave out a query argument: they show that the argument is not sceptically accepted, a Pi-2-complete question (Dunne and Bench-Capon). The abstraction guesses an admissible set and the check a larger one. The refinement, written as clause/3 atoms, says: leave the larger set somewhere, or contain all of it.",
   "fragments": [
     {
       "name": "shared",
       "description": "The framework and the query argument. Added to every solver.",
-      "text": "% An argumentation framework: arguments and attacks.\narg(a;b;c;d;e;f;g;h;i).\natt(a,d). att(a,e). att(a,i). att(b,g). att(c,f). att(c,g). att(d,a). att(d,g).\natt(e,a). att(e,g). att(e,i). att(f,c). att(g,c). att(i,e). att(i,f). att(i,h).\n% Is this argument in every preferred extension?\nquery(a).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\n"
     },
     {
       "name": "abstraction",
@@ -37,5 +37,51 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% An argumentation framework: arguments and attacks.\narg(a;b;c;d;e;f;g;h;i).\natt(a,d). att(a,e). att(a,i). att(b,g). att(c,f). att(c,g). att(d,a). att(d,g).\natt(e,a). att(e,g). att(e,i). att(f,c). att(g,c). att(i,e). att(i,f). att(i,h).\n% Is this argument in every preferred extension?\nquery(a).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "random-1",
+      "facts": "arg(a;b;c;d;e;f;g).\natt(a,b). att(a,c). att(a,f). att(a,g). att(b,d). att(c,b). att(c,d). att(d,g). att(f,a). att(f,g). att(g,a).\nquery(b).\n",
+      "constants": {},
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    },
+    {
+      "id": "random-2",
+      "facts": "arg(a;b;c;d;e;f;g).\natt(a,c). att(a,d). att(a,f). att(b,a). att(b,c). att(b,e). att(b,f). att(d,a). att(e,d). att(g,b).\nquery(c).\n",
+      "constants": {},
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 1
+      }
+    },
+    {
+      "id": "random-3",
+      "facts": "arg(a;b;c;d;e;f;g).\natt(a,c). att(c,b). att(d,b). att(d,c). att(d,e). att(e,d). att(e,f). att(e,g). att(f,b). att(g,c). att(g,d). att(g,e).\nquery(b).\n",
+      "constants": {},
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 1
+      }
+    }
+  ],
   "runs": []
 }

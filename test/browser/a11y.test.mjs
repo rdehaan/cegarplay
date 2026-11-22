@@ -57,8 +57,11 @@ test('B2: the file control is in the Tab order and Enter opens the file dialog',
   await page.evaluate(() => document.activeElement && document.activeElement.blur());
   const a = await tabUntil(page, (x) => x.id === 'file-button', 100);
   assert.ok(a, 'Select file is reachable with Tab');
-  const [chooser] = await Promise.all([page.waitForEvent('filechooser', { timeout: 5000 }), page.keyboard.press('Enter')]);
-  assert.ok(chooser);
+  // Enter on the button clicks the hidden file input (which opens the dialog). Waiting for the
+  // 'filechooser' event itself timed out only in the full parallel test run (PLAN2 S1/I1).
+  await page.evaluate(() => { window.__fileClicks = 0; document.getElementById('file-input').addEventListener('click', (e) => { window.__fileClicks++; e.preventDefault(); }); });
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => window.__fileClicks === 1, null, { timeout: 15000 });
   await context.close();
 });
 

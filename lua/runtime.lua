@@ -239,6 +239,16 @@ local function join(frags, header)
   for _, p in ipairs(frags) do t[#t + 1] = (header or "#program base.") .. "\n" .. FRAGMENTS[p] end
   return concat(t, "\n")
 end
+-- An instance (docs/spec-instances.md) is delivered as the fragment "instance": every solver
+-- and every link's glue control gets it first.
+local function with_instance(frags)
+  if FRAGMENTS.instance == nil or type(frags) ~= "table" then return frags end
+  for _, p in ipairs(frags) do if p == "instance" then return frags end end
+  local t = { "instance" }
+  for _, p in ipairs(frags) do t[#t + 1] = p end
+  return t
+end
+rt.with_instance = with_instance
 local function check_frags(what, name, frags)
   if type(frags) ~= "table" or #frags == 0 then fail(what .. " " .. name .. ": no fragments given") end
   for _, p in ipairs(frags) do
@@ -320,6 +330,7 @@ function rt.solver(name, frags, options)
   if type(name) ~= "string" then fail("rt.solver: the name must be a string") end
   for _, s in ipairs(rt.solvers) do if s.name == name then fail("solver " .. name .. " is declared twice") end end
   check_frags("solver", name, frags)
+  frags = with_instance(frags)
   if rt.prepared then fail("solver " .. name .. ": declare all solvers before rt.prepare()") end
   local s = setmetatable({ name = name, frags = frags, options = options or {}, grounded = false, out = {}, inn = {},
     k = 0, caps = {}, queue = {}, blocks = {}, stash = {}, busy = false, searching = false,
@@ -439,6 +450,7 @@ function rt.link(name, from, to, glue, opts)
   if from == to then fail("link " .. name .. ": a solver cannot be linked to itself") end
   for _, L in ipairs(rt.links) do if L.name == name then fail("link " .. name .. " is declared twice") end end
   check_frags("link", name, glue)
+  glue = with_instance(glue)
   if to.grounded then fail("link " .. name .. ": solver " .. to.name .. " was already grounded; declare links before using it") end
   local set, found = {}, false
   local g = new_control({ "1" }, name, glue)

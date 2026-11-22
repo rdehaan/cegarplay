@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Kemeny control",
   "description": "Can the chair delete a few voters (at most 'budget') so that the favourite tops a Kemeny ranking of the remaining ballots? This control problem is Sigma-2-complete (Fitzsimmons, Hemaspaandra, Hoover and Narvaez). The abstraction guesses the deleted voters and a ranking with the favourite on top, and the check a ranking closer to the remaining ballots; the refinement is a rule about distances, and the loop is Shape 4 (collect counterexamples, ground them in batches).",
   "fragments": [
     {
       "name": "shared",
       "description": "The election and the chair's favourite. Added to every solver.",
-      "text": "% An election with four candidates and seven voters; ballot(V,(A,B,C,D)): voter V\n% ranks A first and D last.\ncand(a;b;c;d).\nballot(1,(d,c,b,a)).\nballot(2,(a,c,d,b)).\nballot(3,(c,d,a,b)).\nballot(4,(b,d,c,a)).\nballot(5,(c,a,b,d)).\nballot(6,(a,d,c,b)).\nballot(7,(b,a,d,c)).\nvoter(V) :- ballot(V,_).\nrank(V,1,A) :- ballot(V,(A,_,_,_)).\nrank(V,2,B) :- ballot(V,(_,B,_,_)).\nrank(V,3,C) :- ballot(V,(_,_,C,_)).\nrank(V,4,D) :- ballot(V,(_,_,_,D)).\n% prefers(V,X,Y): voter V ranks X above Y.\nprefers(V,X,Y) :- rank(V,I,X), rank(V,J,Y), I < J.\nplace(1..4).\n% The chair wants this candidate to win.\nfavourite(b).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\nvoter(V) :- ballot(V,_).\nrank(V,1,A) :- ballot(V,(A,_,_,_)).\nrank(V,2,B) :- ballot(V,(_,B,_,_)).\nrank(V,3,C) :- ballot(V,(_,_,C,_)).\nrank(V,4,D) :- ballot(V,(_,_,_,D)).\n% prefers(V,X,Y): voter V ranks X above Y.\nprefers(V,X,Y) :- rank(V,I,X), rank(V,J,Y), I < J.\nplace(1..4).\n"
     },
     {
       "name": "abstraction",
@@ -53,5 +53,18 @@
       "fast"
     ],
     "expected": 3
-  }
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% An election with four candidates and seven voters; ballot(V,(A,B,C,D)): voter V\n% ranks A first and D last.\ncand(a;b;c;d).\nballot(1,(d,c,b,a)).\nballot(2,(a,c,d,b)).\nballot(3,(c,d,a,b)).\nballot(4,(b,d,c,a)).\nballot(5,(c,a,b,d)).\nballot(6,(a,d,c,b)).\nballot(7,(b,a,d,c)).\n% The chair wants this candidate to win.\nfavourite(b).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": [
+        "library"
+      ]
+    }
+  ]
 }

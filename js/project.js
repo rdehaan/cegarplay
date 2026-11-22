@@ -3,7 +3,12 @@ import { compile } from './compiler.js';
 import { assemble, DEFAULT_SETTINGS, stripAspComments } from './driver.js';
 
 export const FORMAT = 'cegarplay';
-export const VERSION = 1;
+export const VERSION = 2;
+// Keys of format version 2 (docs/spec-instances.md). A project that uses none saves as version 1.
+export const V2_KEYS = ['instances', 'generators', 'variants', 'suites', 'views', 'pools'];
+export const INSTANCE_ID = /^[A-Za-z0-9_-]+$/;
+// The fragment a run gets from its instance; no user fragment may have this name.
+export const INSTANCE_FRAGMENT = 'instance';
 export const DEFAULT_FRAGMENTS = ['shared', 'abstraction', 'glue', 'check'];
 export const FRAGMENT_NAME = /^[a-z][a-z0-9_]*$/;
 
@@ -86,7 +91,7 @@ export const template = (key, { legacy = false } = {}) => TEMPLATES[key].text(le
 export function newProject(title = 'Untitled') {
   return {
     format: FORMAT,
-    version: VERSION,
+    version: 1,
     title,
     description: '',
     fragments: DEFAULT_FRAGMENTS.map((name) => ({ name, text: '' })),
@@ -156,6 +161,7 @@ export function load(json) {
     if (!f || typeof f !== 'object') throw new ProjectError(`fragment ${i + 1} is not an object`);
     if (typeof f.name !== 'string' || !FRAGMENT_NAME.test(f.name)) throw new ProjectError(`fragment ${i + 1}: invalid name ${JSON.stringify(f.name)} (use lower case letters, digits and _)`);
     if (names.has(f.name)) throw new ProjectError(`duplicate fragment name '${f.name}'`);
+    if (f.name === INSTANCE_FRAGMENT) throw new ProjectError(`the fragment name '${INSTANCE_FRAGMENT}' is reserved for the facts of an instance`);
     names.add(f.name);
     return { ...f, text: typeof f.text === 'string' ? f.text : '' };
   });
@@ -172,13 +178,134 @@ export function load(json) {
     out.settings[k] = Number.isFinite(v) && v >= 0 ? v : DEFAULT_SETTINGS[k];
   }
   out.runs = Array.isArray(p.runs) ? p.runs : [];
+  if ('instances' in p) out.instances = loadInstances(p.instances);
+  if ('variants' in p) out.variants = loadVariants(p.variants, names);
+  if ('instance' in st && st.instance !== null && st.instance !== '' && typeof st.instance !== 'string') throw new ProjectError('settings.instance must be an instance id or ""');
+  out.version = usesV2(out) ? 2 : 1;
   return out;
+}
+
+const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
+const strMap = (x, what) => {
+  if (x === undefined) return {};
+  if (!isObj(x)) throw new ProjectError(`${what} must be an object`);
+  return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, String(v)]));
+};
+
+function loadInstances(list) {
+  if (!Array.isArray(list)) throw new ProjectError('instances must be a list');
+  const ids = new Set();
+  return list.map((x, i) => {
+    const where = `instance ${i + 1}`;
+    if (!isObj(x)) throw new ProjectError(`${where} is not an object`);
+    if (typeof x.id !== 'string' || !INSTANCE_ID.test(x.id)) throw new ProjectError(`${where}: id must match [A-Za-z0-9_-]+`);
+    if (ids.has(x.id)) throw new ProjectError(`duplicate instance id '${x.id}'`);
+    ids.add(x.id);
+    const out = { ...x, id: x.id, facts: typeof x.facts === 'string' ? x.facts : '' };
+    if (x.facts !== undefined && typeof x.facts !== 'string') throw new ProjectError(`instance ${x.id}: facts must be a string`);
+    out.constants = strMap(x.constants, `instance ${x.id}: constants`);
+    if (x.expected !== undefined) {
+      if (!isObj(x.expected)) throw new ProjectError(`instance ${x.id}: expected must be an object`);
+      const n = x.expected.solutions;
+      if (!(n === null || n === undefined || (Number.isInteger(n) && n >= 0))) throw new ProjectError(`instance ${x.id}: expected.solutions must be a whole number or null`);
+    }
+    if (x.tags !== undefined && !(Array.isArray(x.tags) && x.tags.every((t) => typeof t === 'string'))) throw new ProjectError(`instance ${x.id}: tags must be a list of strings`);
+    out.tags = x.tags || [];
+    if (x.recipe !== undefined && !isObj(x.recipe)) throw new ProjectError(`instance ${x.id}: recipe must be an object`);
+    return out;
+  });
+}
+
+function loadVariants(list, fragmentNames) {
+  if (!Array.isArray(list)) throw new ProjectError('variants must be a list');
+  const seen = new Set();
+  return list.map((v, i) => {
+    if (!isObj(v)) throw new ProjectError(`variant ${i + 1} is not an object`);
+    if (typeof v.name !== 'string' || !INSTANCE_ID.test(v.name)) throw new ProjectError(`variant ${i + 1}: name must match [A-Za-z0-9_-]+`);
+    if (seen.has(v.name) || v.name === 'default') throw new ProjectError(`variant name '${v.name}' is used twice or reserved`);
+    seen.add(v.name);
+    const out = { ...v };
+    if (v.loop !== undefined) {
+      if (typeof v.loop === 'string') out.loop = { language: 'loop', text: v.loop };
+      else if (isObj(v.loop) && typeof v.loop.text === 'string') out.loop = { language: v.loop.language === 'lua' ? 'lua' : 'loop', text: v.loop.text };
+      else throw new ProjectError(`variant ${v.name}: loop must be a string or { language, text }`);
+    }
+    out.swap = strMap(v.swap, `variant ${v.name}: swap`);
+    for (const [a, b] of Object.entries(out.swap)) {
+      if (!fragmentNames.has(a) || !fragmentNames.has(b)) throw new ProjectError(`variant ${v.name}: swap names an unknown fragment (${a} -> ${b})`);
+    }
+    out.constants = strMap(v.constants, `variant ${v.name}: constants`);
+    if (v.settings !== undefined && !isObj(v.settings)) throw new ProjectError(`variant ${v.name}: settings must be an object`);
+    return out;
+  });
+}
+
+// Whether a project needs format version 2 (a key of V2_KEYS that is not empty).
+export function usesV2(project) {
+  return V2_KEYS.some((k) => Array.isArray(project[k]) && project[k].length > 0) ||
+    !!(project.settings && project.settings.instance);
 }
 
 export function save(project, { runs = true } = {}) {
   const p = { ...project };
   if (!runs) p.runs = [];
+  p.version = usesV2(project) ? 2 : 1;
+  for (const k of V2_KEYS) if (Array.isArray(p[k]) && p[k].length === 0) delete p[k];
+  if (p.settings && 'instance' in p.settings && !usesV2(project)) { p.settings = { ...p.settings }; delete p.settings.instance; }
   return JSON.stringify(p, null, 2) + '\n';
+}
+
+// ---------------------------------------------------------------------------
+// Derived projects: a variant and an instance applied (implementation.md, groundwork 1).
+// Both return a new plain project; the stored one is not touched.
+// ---------------------------------------------------------------------------
+
+export function applyVariant(project, name) {
+  if (!name || name === 'default') return project;
+  const v = (project.variants || []).find((x) => x.name === name);
+  if (!v) throw new ProjectError(`no variant named '${name}'`);
+  const p = structuredClone(project);
+  const text = Object.fromEntries(project.fragments.map((f) => [f.name, f.text]));
+  for (const [a, b] of Object.entries(v.swap || {})) {
+    const f = p.fragments.find((x) => x.name === a);
+    if (f) f.text = text[b];
+  }
+  if (v.loop) p.loop = { ...p.loop, ...v.loop };
+  p.settings = { ...p.settings, ...(v.settings || {}), constants: { ...p.settings.constants, ...(v.constants || {}) } };
+  p.variant = name;
+  return p;
+}
+
+// The instance a run uses: the id given, else settings.instance, else the first instance.
+// settings.instance = "" means "the project as written" (only for constants-only instances).
+export function selectedInstance(project, id) {
+  const list = project.instances || [];
+  if (!list.length) {
+    if (id) throw new ProjectError(`no instance named '${id}' (the project has no instances)`);
+    return null;
+  }
+  const want = id !== undefined && id !== null ? id : project.settings && project.settings.instance;
+  if (want === '') return null;
+  if (want === undefined || want === null) return list[0];
+  const x = list.find((i) => i.id === want);
+  if (!x) throw new ProjectError(`no instance named '${want}'`);
+  return x;
+}
+
+export function applyInstance(project, id) {
+  const x = typeof id === 'object' && id ? id : selectedInstance(project, id);
+  if (!x) return project;
+  if (x.facts === undefined && x.recipe) throw new ProjectError(`instance ${x.id}: its facts are not generated yet`);
+  const p = structuredClone(project);
+  p.fragments = [{ name: INSTANCE_FRAGMENT, text: x.facts || '' }, ...p.fragments.filter((f) => f.name !== INSTANCE_FRAGMENT)];
+  p.settings = { ...p.settings, constants: { ...p.settings.constants, ...(x.constants || {}) } };
+  p.instance = x.id;
+  return p;
+}
+
+// The plain project of one run: variant first, then instance.
+export function derive(project, { instance, variant } = {}) {
+  return applyInstance(applyVariant(project, variant), instance);
 }
 
 // ---------------------------------------------------------------------------
@@ -261,6 +388,7 @@ export function importLp(text, title = 'Imported') {
 }
 
 export function exportStandalone(project, runtimeLua) {
+  project = derive(project);                // the instance the run bar picks
   let compiled = null;
   if (project.loop.language === 'loop') {
     const c = compile(project.loop.text, { fragments: project.fragments.map((f) => f.name) });

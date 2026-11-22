@@ -125,6 +125,7 @@ export class Editors {
     }
     for (const x of document.querySelectorAll('.frag-tool, #add-fragment-button, #insert-template-button, #edit-as-lua-button')) x.disabled = b;
     if (!b) document.getElementById('edit-as-lua-button').disabled = this.loopLanguage === 'lua';
+    if (this.app && this.app.instancesTab) this.app.instancesTab.setReadOnly(b);
   }
 
   // ---- annotations ---------------------------------------------------------

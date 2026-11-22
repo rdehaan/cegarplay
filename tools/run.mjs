@@ -6,6 +6,9 @@
 //   --solutions N     number of solutions to look for (0 or "all" = all)
 //   --seconds N       time limit (0 = none)
 //   --trace N         number of trace steps to record (default 0)
+//   --instance ID     run one instance of the project (format version 2); "all" runs each
+//                     and prints one line per instance (exit 1 on an expected-count mismatch)
+//   --variant NAME    run a variant of the project
 //   --json            print every event as one JSON line ({kind, data}) instead of a summary
 //   --quiet           do not print the solutions
 //
@@ -15,7 +18,7 @@
 import fs from 'node:fs';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import factory from '../vendor/clingo-wasm/clingo.js';
-import { load } from '../js/project.js';
+import { load, derive } from '../js/project.js';
 import { assemble, parseEvent, validate, auditPlan, auditBody } from '../js/driver.js';
 
 const root = new URL('..', import.meta.url);
@@ -44,15 +47,19 @@ function engineRunWithin(program, ms) {
 
 function usage(msg) {
   if (msg) console.error(msg);
-  console.error('usage: node tools/run.mjs <project.json | library id> [-c name=value] [--solutions N|all] [--seconds N] [--trace N] [--json] [--quiet]');
+  console.error('usage: node tools/run.mjs <project.json | library id> [-c name=value] [--solutions N|all] [--seconds N] [--trace N] [--instance ID|all] [--variant NAME] [--json] [--quiet]');
   process.exit(2);
 }
 
 const lua = (name) => fs.readFileSync(new URL(`lua/${name}`, root), 'utf8');
 
 // audit: { link, limit } runs the audit mode (lua/audit.lua) instead of the loop.
-export async function runProject(project, { onEvent, backstop = false, audit = null } = {}) {
+// instance, variant: derive the plain project first (js/project.js derive); constants given
+// here override the instance's.
+export async function runProject(project, { onEvent, backstop = false, audit = null, instance, variant, constants } = {}) {
   const t0 = Date.now();
+  project = derive(project, { instance, variant });
+  if (constants) project = { ...project, settings: { ...project.settings, constants: { ...project.settings.constants, ...constants } } };
   const problems = await validate(project, engineRun);
   const errors = problems.filter((p) => p.severity === 'error');
   if (errors.length) return { problems: errors, events: [] };
@@ -77,13 +84,15 @@ async function main(argv) {
   const args = [...argv];
   let target = null;
   const consts = {}, set = {};
-  let json = false, quiet = false;
+  let json = false, quiet = false, instance, variant;
   while (args.length) {
     const a = args.shift();
     if (a === '-c') { const kv = args.shift() || usage('-c needs name=value'); const i = kv.indexOf('='); if (i < 1) usage(`bad constant ${kv}`); consts[kv.slice(0, i)] = kv.slice(i + 1); }
     else if (a === '--solutions') { const v = args.shift(); set.solutions = v === 'all' ? 0 : Number(v); }
     else if (a === '--seconds') set.seconds = Number(args.shift());
     else if (a === '--trace') set.trace = Number(args.shift());
+    else if (a === '--instance') instance = args.shift() || usage('--instance needs an id or all');
+    else if (a === '--variant') variant = args.shift() || usage('--variant needs a name');
     else if (a === '--json') json = true;
     else if (a === '--quiet') quiet = true;
     else if (a === '-h' || a === '--help') usage();
@@ -96,10 +105,34 @@ async function main(argv) {
   let project;
   try { project = load(fs.readFileSync(file, 'utf8')); }
   catch (e) { console.error(`cannot load ${target}: ${e.message}`); process.exit(1); }
-  project.settings = { ...project.settings, trace: 0, ...set, constants: { ...project.settings.constants, ...consts } };
+  project.settings = { ...project.settings, trace: 0, ...set };
   for (const k of Object.keys(set)) if (!Number.isFinite(project.settings[k]) || project.settings[k] < 0) usage(`bad value for --${k}`);
+  const constants = Object.keys(consts).length ? consts : undefined;
 
-  const r = await runProject(project, { backstop: true });
+  if (instance === 'all') {
+    const list = project.instances || [];
+    if (!list.length) { console.error(`${target} has no instances`); process.exitCode = 1; return; }
+    let bad = 0;
+    for (const x of list) {
+      const r = await runProject(project, { backstop: true, instance: x.id, variant, constants });
+      const S = r.events.filter((e) => e.kind === 'S').at(-1)?.data;
+      const D = r.events.filter((e) => e.kind === 'D').at(-1)?.data;
+      const want = x.expected && Number.isInteger(x.expected.solutions) ? x.expected.solutions : null;
+      const got = S ? S.solutions : null;
+      const exhausted = D && D.outcome === 'finished' && D.exhausted === true;
+      const mismatch = want !== null && exhausted && got !== want;
+      if (mismatch || (r.problems && r.problems.length) || !D || D.outcome === 'error') bad++;
+      const what = r.problems && r.problems.length ? `problem: ${r.problems[0].message}` : !D ? `no result (${r.status})`
+        : `${got} solutions; ${D.outcome}${D.exhausted ? ' (exhausted)' : ''}; ${S ? S.candidates : '?'} candidates; ${S ? S.t : '?'} s`;
+      console.log(`${x.id}: ${what}${want !== null ? (mismatch ? `; MISMATCH: expected ${want}` : exhausted ? '; as expected' : `; expected ${want}`) : ''}`);
+    }
+    process.exitCode = bad ? 1 : 0;
+    return;
+  }
+
+  let r;
+  try { r = await runProject(project, { backstop: true, instance, variant, constants }); }
+  catch (e) { console.error(e.message); process.exitCode = 2; return; }
   if (r.problems.length) {
     for (const p of r.problems) {
       const w = p.where;

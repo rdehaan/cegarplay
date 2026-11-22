@@ -199,6 +199,9 @@ search A:
 // gc: the graph-coloring example (built by make-examples.mjs), copied and changed here.
 function gcVariant(gc, title, description, loop, edit = () => {}, n = '5') {
   const p = structuredClone(gc);
+  delete p.instances;
+  delete p.settings.instance;
+  p.version = 1;
   p.title = title;
   p.description = description;
   p.loop = typeof loop === 'string' ? { language: 'loop', text: loop } : loop;

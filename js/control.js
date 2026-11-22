@@ -1,6 +1,6 @@
 // Run bar and run flow (spec-app.md section 6).
 import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody } from './driver.js';
-import { TEMPLATES, template } from './project.js';
+import { TEMPLATES, template, derive } from './project.js';
 import { hashText } from './stats.js';
 import { fmt } from './output.js';
 
@@ -126,7 +126,9 @@ export class Control {
 
   // Validate, assemble and start. Resolves when the run is over.
   //   mode 'audit': the audit of lua/audit.lua instead of the loop (docs/spec-soundness.md).
-  async run({ seed, mode = 'run' } = {}) {
+  //   instance, variant: the run uses the derived project (js/project.js derive); without
+  //   instance, the one picked in the run bar.
+  async run({ seed, mode = 'run', instance, variant } = {}) {
     const app = this.app;
     if (this.busy || !app.ready) return null;
     this.setState('validating');
@@ -134,10 +136,20 @@ export class Control {
     if (app.loopTab) app.loopTab.cancelLiveCheck();
     this.cancelFragmentCheck();
     if (this.fragCheck) await this.fragCheck.catch(() => {});
-    const project = structuredClone(app.collect());
+    let project = structuredClone(app.collect());
     if (seed !== undefined) project.settings.seed = seed;
     app.editors.clearAnnotations();
-    let problems;
+    let problems, instanceId = null;
+    try {
+      project = derive(project, { instance, variant });
+      instanceId = project.instance || null;
+    } catch (e) {
+      app.output.clear();
+      app.output.result(`Not started: ${e.message}`, 'error');
+      this.runMessage(`Not started: ${e.message}`);
+      this.setState('error');
+      return { state: 'error', problems: [{ severity: 'error', message: e.message }] };
+    }
     try {
       problems = await validate(project, (p, o) => app.engine.exec(p, o));
     } catch (e) {
@@ -188,7 +200,7 @@ export class Control {
     this.marks = [];
     this.setState('running');
     const info = {
-      loopLabel: (mode === 'audit' ? 'audit: ' : '') + loopLabel(project.loop), mode, settings: { ...project.settings, constants: { ...project.settings.constants } },
+      loopLabel: (mode === 'audit' ? 'audit: ' : '') + loopLabel(project.loop) + (instanceId ? ` [${instanceId}]` : ''), mode, instance: instanceId, settings: { ...project.settings, constants: { ...project.settings.constants } },
       engine: app.engineVersion, solvers: compiled ? compiled.solvers : [],
       fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])),
     };
@@ -257,6 +269,7 @@ export class Control {
     }
     if (this.audit) info.audit = this.audit;
     app.stats.done(this.D, this.D ? info : null);
+    if (info.mode !== 'audit' && app.instancesTab) app.instancesTab.noteRun(info.instance, app.stats.S, this.D);
     app.editors.setReadOnly(false);
     if (this.marks.length) app.editors.annotate(this.marks);
     if (state === 'error') {

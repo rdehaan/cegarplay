@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import factory from '../vendor/clingo-wasm/clingo.js';
 import { assemble, parseEvent } from '../js/driver.js';
+import { derive } from '../js/project.js';
 
 export const ROOT = new URL('..', import.meta.url);
 export const path = (p) => new URL(p, ROOT);
@@ -150,6 +151,9 @@ export const LUA = {
 // Compile a loop-language project and run it.
 import { compile } from '../js/compiler.js';
 export async function runProject(project, opts = {}) {
+  const { instance, variant, ...rest } = opts;
+  project = derive(project, { instance, variant });
+  opts = rest;
   let compiled = null;
   if (project.loop.language === 'loop') {
     compiled = compile(project.loop.text, { fragments: project.fragments.map((f) => f.name) });

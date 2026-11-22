@@ -156,6 +156,7 @@ label[for='tab5']:before { content: '\f120'; }
 label[for='tab6']:before { content: '\f080'; }
 label[for='tab7']:before { content: '\f0e8'; }
 label[for='tab8']:before { content: '\f02d'; }
+label[for='tab9']:before { content: '\f03a'; }
 
 label:hover {
   color: var(--tab-hover);
@@ -180,7 +181,8 @@ label[for="tab2"] {
 #tab5:checked ~ #section-output,
 #tab6:checked ~ #section-statistics,
 #tab7:checked ~ #section-internals,
-#tab8:checked ~ #section-manual {
+#tab8:checked ~ #section-manual,
+#tab9:checked ~ #section-instances {
   display: block;
 }
 
@@ -517,6 +519,32 @@ label.tab-label.has-problem:after {
   padding: 8px 0;
 }
 .result-line.error {
+  color: var(--error);
+}
+.instances-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+.instances-table tr.selected td:first-child {
+  font-weight: 600;
+}
+.instances-table tr.mismatch td {
+  color: var(--error);
+}
+.instances-table tr.match td:nth-child(6) {
+  color: var(--ok);
+}
+.instance-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin: 12px 0 4px;
+}
+#instances-status.error {
   color: var(--error);
 }
 .audit-panel {

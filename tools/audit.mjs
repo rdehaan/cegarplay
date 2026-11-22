@@ -29,9 +29,9 @@ export function loadTarget(target) {
 }
 
 // Audit a project; returns { verdict, events, problems }.
-export async function auditProject(project, { link, limit, seconds = 0, instance } = {}) {
+export async function auditProject(project, { link, limit, seconds = 0, instance, variant, constants } = {}) {
   const r = await runProject({ ...project, settings: { ...project.settings, seconds } },
-    { audit: { link, limit }, instance, backstop: seconds > 0 });
+    { audit: { link, limit }, instance, variant, constants, backstop: seconds > 0 });
   const A = (r.events || []).filter((e) => e.kind === 'A' && e.data.verdict).map((e) => e.data).at(-1) || null;
   const D = (r.events || []).filter((e) => e.kind === 'D').map((e) => e.data).at(-1) || null;
   const E = (r.events || []).filter((e) => e.kind === 'E').map((e) => e.data).at(-1) || null;
@@ -60,8 +60,9 @@ async function main(argv) {
   if (!target) usage();
   let project;
   try { project = loadTarget(target); } catch (e) { console.error(`cannot load ${target}: ${e.message}`); process.exit(2); }
-  project.settings = { ...project.settings, constants: { ...project.settings.constants, ...consts } };
-  const r = await auditProject(project, { link, limit, seconds, instance });
+  let r;
+  try { r = await auditProject(project, { link, limit, seconds, instance, constants: Object.keys(consts).length ? consts : undefined }); }
+  catch (e) { console.error(e.message); process.exitCode = 2; return; }
   if (r.problems.length) {
     for (const p of r.problems) console.error(`${p.where?.name || p.where?.kind || 'project'}${p.where?.line ? ':' + p.where.line : ''}: ${p.severity}: ${p.message}`);
     process.exitCode = 2;

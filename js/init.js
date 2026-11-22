@@ -7,6 +7,7 @@ import { Stats } from './stats.js';
 import { Control } from './control.js';
 import { LoopTab } from './loop-tab.js';
 import { Internals } from './internals.js';
+import { InstancesTab } from './instances-tab.js';
 import { makeEditor } from './editors.js';
 import { renderMarkdown } from './markdown.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
@@ -17,7 +18,7 @@ const app = { ready: false, project: Project.newProject() };
 window.cegarplay = app;
 
 // ---- the address bar: ?example=<id> and ?tab=N follow the page (replaceState, no history entries)
-const KEEP_PARAMS = ['nocoi', 'manual', 'internals', 'from', 'tab'];
+const KEEP_PARAMS = ['nocoi', 'manual', 'internals', 'from', 'tab', 'instance'];
 function setUrl({ example, tab, keepHash = false } = {}) {
   const now = new URLSearchParams(location.search);
   const next = new URLSearchParams();
@@ -74,7 +75,7 @@ const FROM_PATTERN = /^guide\/[a-z0-9-]+\.html(#[a-z0-9-]+)?$/;
 }
 
 const tab = params.get('tab');
-if (tab && /^[1-8]$/.test(tab) && (tab !== '7' || params.get('internals') === 'true') && !$('tab' + tab).hidden) $('tab' + tab).checked = true;
+if (tab && /^([1-9]|1[01])$/.test(tab) && $('tab' + tab) && (tab !== '7' || params.get('internals') === 'true') && !$('tab' + tab).hidden) $('tab' + tab).checked = true;
 
 app.engine = new Engine({ threads: false });
 app.editors = new Editors(app);
@@ -83,6 +84,7 @@ app.stats = new Stats(app);
 app.loopTab = new LoopTab(app);
 app.internals = new Internals(app);
 app.control = new Control(app);
+app.instancesTab = new InstancesTab(app);
 
 app.collect = () => app.editors.collect(app.project);
 
@@ -126,6 +128,7 @@ app.setProject = (p, { save = true } = {}) => {
   app.editors.clearAnnotations();
   app.editors.build(p);
   app.loopTab.load(p);
+  app.instancesTab.load();
   app.stats.history = Array.isArray(p.runs) ? p.runs.map((r) => ({ ...r })) : [];
   app.stats.renderHistory();
   showProjectInfo(p);
@@ -518,6 +521,14 @@ async function start() {
     if (shareError) status('load-status', `${shareError}. Opened the example "${app.project.title}" instead.`, true);
   }
   if (named && !restored && app.exampleId === named && params.get('fragment')) openFragment(params.get('fragment'));
+  // ?instance=<id>: the instance the run bar picks (not saved until an edit)
+  const wantInstance = params.get('instance');
+  if (wantInstance !== null) {
+    if ((app.project.instances || []).some((x) => x.id === wantInstance)) {
+      app.project.settings.instance = wantInstance;
+      app.instancesTab.load();
+    } else status('load-status', `The project has no instance "${wantInstance}"; the link's instance= is ignored.`);
+  }
   app.restoredOrLoaded = true;
   // nothing kept in this browser: show the library open
   if (!stored && !named && shared === null) $('library-section').open = true;

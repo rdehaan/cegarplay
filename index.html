@@ -53,6 +53,8 @@
           <option value="100">100</option>
           <option value="0">all</option>
         </select>
+        <label class="inline-label" for="instance-select" id="instance-select-label" hidden>Instance:</label>
+        <select id="instance-select" hidden></select>
         <span class="status-label">Status:</span>
         <span id="run-status" data-state="idle" role="status" aria-live="polite">idle</span>
       </div>
@@ -72,6 +74,9 @@
 
     <input id="tab3" aria-controls="section-programs" type="radio" name="tabs">
     <label for="tab3" class="tab-label" id="label-programs" title="Programs"><span class="tab-text">Programs</span></label>
+
+    <input id="tab9" aria-controls="section-instances" type="radio" name="tabs">
+    <label for="tab9" class="tab-label" id="label-instances" title="Instances"><span class="tab-text">Instances</span></label>
 
     <input id="tab4" aria-controls="section-loop" type="radio" name="tabs">
     <label for="tab4" class="tab-label" id="label-loop" title="Loop"><span class="tab-text">Loop</span></label>
@@ -225,6 +230,11 @@
     </section>
 
     <!-- 5. Output -->
+    <!-- 9. Instances -->
+    <section id="section-instances">
+      <div id="instances"></div>
+    </section>
+
     <section id="section-output">
       <div id="result-line" class="result-line">No run yet.</div>
       <div id="audit-panel" class="audit-panel" hidden></div>
