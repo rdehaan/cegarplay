@@ -191,6 +191,7 @@ export function load(json) {
   out.runs = Array.isArray(p.runs) ? p.runs : [];
   if ('instances' in p) out.instances = loadInstances(p.instances);
   if ('variants' in p) out.variants = loadVariants(p.variants, names);
+  if ('generators' in p) out.generators = loadGenerators(p.generators);
   if ('instance' in st && st.instance !== null && st.instance !== '' && typeof st.instance !== 'string') throw new ProjectError('settings.instance must be an instance id or ""');
   out.version = usesV2(out) ? 2 : 1;
   return out;
@@ -225,6 +226,27 @@ function loadInstances(list) {
     out.tags = x.tags || [];
     if (x.recipe !== undefined && !isObj(x.recipe)) throw new ProjectError(`instance ${x.id}: recipe must be an object`);
     return out;
+  });
+}
+
+export const GENERATOR_PARAM_TYPES = ['int', 'permille'];
+function loadGenerators(list) {
+  if (!Array.isArray(list)) throw new ProjectError('generators must be a list');
+  const seen = new Set();
+  return list.map((g, i) => {
+    if (!isObj(g)) throw new ProjectError(`generator ${i + 1} is not an object`);
+    if (typeof g.name !== 'string' || !INSTANCE_ID.test(g.name)) throw new ProjectError(`generator ${i + 1}: name must match [A-Za-z0-9_-]+`);
+    if (seen.has(g.name)) throw new ProjectError(`duplicate generator name '${g.name}'`);
+    seen.add(g.name);
+    if (typeof g.text !== 'string') throw new ProjectError(`generator ${g.name}: text must be a string`);
+    const params = g.params === undefined ? {} : g.params;
+    if (!isObj(params)) throw new ProjectError(`generator ${g.name}: params must be an object`);
+    for (const [k, t] of Object.entries(params)) {
+      if (!/^[a-z][A-Za-z0-9_]*$/.test(k)) throw new ProjectError(`generator ${g.name}: parameter name '${k}' must start with a lower case letter`);
+      if (!GENERATOR_PARAM_TYPES.includes(t)) throw new ProjectError(`generator ${g.name}: parameter ${k} has type '${t}' (use int or permille)`);
+    }
+    if (g.defaults !== undefined && !isObj(g.defaults)) throw new ProjectError(`generator ${g.name}: defaults must be an object`);
+    return { ...g, params };
   });
 }
 

@@ -1,6 +1,7 @@
 // Instances tab (tab 9) and the instance picker of the run bar (docs/spec-instances.md).
 import { makeEditor } from './editors.js';
 import { IMPORTERS, importerFor, freshId, checkFacts, ImportError } from './instances.js';
+import { generate, PARAM_TYPES } from './generate.js';
 import { INSTANCE_ID } from './project.js';
 import { fmt } from './output.js';
 
@@ -80,6 +81,7 @@ export class InstancesTab {
         el('label', {}, 'Expected solutions ', this.expInput), el('label', {}, 'Tags ', this.tagsInput),
         el('button', { class: 'control-button small-button', id: 'delete-instance-button', onclick: () => this.remove() }, 'Delete')),
       el('p', { class: 'note' }, 'Facts of this instance. A run gives them to every solver and every glue control, as the fragment "instance".'),
+      this.recipeNote = el('p', { class: 'note', id: 'instance-recipe', hidden: true }),
       editorBox);
     for (const [inp, fn] of [[this.idInput, 'rename'], [this.expInput, 'setExpected'], [this.tagsInput, 'setTags'], [this.constInput, 'setConstants']]) {
       inp.addEventListener('change', () => this[fn](inp.value));
@@ -88,6 +90,7 @@ export class InstancesTab {
       el('p', {}, 'An instance is a set of facts and constant values that a run applies on top of the project. ',
         'The run bar picks the instance a run uses. "Run all" runs each instance and compares its solution count with the expected one.'),
       bar, this.status, el('div', { class: 'table-wrapper' }, this.table), this.form);
+    this.buildGenerators();
     this.editor = makeEditor(editorBox, 'ace/mode/gringo');
     this.editor.on('change', () => {
       if (this.loading) return;
@@ -98,6 +101,8 @@ export class InstancesTab {
 
   load() {
     this.results = new Map();
+    this.gen = (this.app.project.generators || [])[0] ? this.app.project.generators[0].name : null;
+    this.renderGenerators();
     this.current = this.list.length ? this.selectedId() || this.list[0].id : null;
     if (this.current === '') this.current = this.list[0].id;
     this.render();
@@ -155,6 +160,12 @@ export class InstancesTab {
     this.expInput.value = x.expected && Number.isInteger(x.expected.solutions) ? String(x.expected.solutions) : '';
     this.tagsInput.value = (x.tags || []).join(', ');
     this.constInput.value = constText(x.constants);
+    this.recipeNote.hidden = !x.recipe;
+    if (x.recipe) {
+      const r = x.recipe;
+      this.recipeNote.textContent = `Recipe: generator ${r.generator}, ${constText(r.params) || 'default parameters'}, seed ${r.seed || 0}. ` +
+        (x.facts === undefined ? 'Its facts are generated when a run uses it.' : 'Facts written here replace the recipe\'s.');
+    }
     this.loading = true;
     this.editor.setValue(x.facts || '', -1);
     this.loading = false;
@@ -274,5 +285,150 @@ export class InstancesTab {
       if (res && want !== null && res.exhausted && res.solutions !== want) bad++;
     }
     this.say(bad ? `Ran ${n} instances: ${bad} with a count other than expected (marked ✗).` : `Ran ${n} instances; every expected count matches.`, bad > 0);
+  }
+
+  // ---- generators (docs/spec-instances.md section 4) ------------------------------------
+  get generators() { return this.app.project.generators || (this.app.project.generators = []); }
+  get generator() { return this.generators.find((g) => g.name === this.gen) || null; }
+
+  buildGenerators() {
+    this.genSelect = el('select', { id: 'generator-select', 'aria-label': 'Generator' });
+    this.genSelect.addEventListener('change', () => { this.gen = this.genSelect.value; this.renderGenerators(); });
+    this.genName = el('input', { id: 'generator-name', size: 14, 'aria-label': 'Generator name' });
+    this.genName.addEventListener('change', () => this.renameGenerator(this.genName.value));
+    this.genParams = el('table', { class: 'internals-table', id: 'generator-params' });
+    this.genSeed = el('input', { id: 'generator-seed', size: 6, inputmode: 'numeric', value: '1', 'aria-label': 'First seed' });
+    this.genStatus = el('p', { id: 'generator-status', class: 'note', role: 'status', 'aria-live': 'polite' });
+    this.preview = el('div', { id: 'generator-preview', class: 'generator-preview' });
+    const box = el('div', { class: 'instance-editor', id: 'generator-editor' });
+    this.genBody = el('div', { id: 'generator-body', hidden: true },
+      el('div', { class: 'instance-fields' }, el('label', {}, 'Name ', this.genName),
+        el('button', { class: 'control-button small-button', id: 'delete-generator-button', onclick: () => this.removeGenerator() }, 'Delete')),
+      el('p', { class: 'note' }, 'ASP whose shown atoms are the instance. Draws: @flip(P, K...), @int(Lo, Hi, K...), @weighted((W1, ..., Wm), K...), ' +
+        '@perm(N, I, K...), @subset(M, N, I, K...), @mallows(N, Phi, I, K...); P and Phi in thousandths. An unsatisfiable draw is redrawn.'),
+      box,
+      el('div', { class: 'table-wrapper' }, this.genParams),
+      el('div', { class: 'instances-bar' },
+        el('button', { class: 'control-button small-button', id: 'add-param-button', onclick: () => this.addParam() }, 'Add parameter'),
+        el('label', {}, 'Seed ', this.genSeed),
+        el('button', { class: 'control-button', id: 'preview-button', onclick: () => this.previewSix() }, 'Preview 6')),
+      this.genStatus, this.preview);
+    this.root.append(el('h3', {}, 'Generators'),
+      el('div', { class: 'instances-bar' }, this.genSelect,
+        el('button', { class: 'control-button', id: 'add-generator-button', onclick: () => this.addGenerator() }, 'New generator')),
+      this.genBody);
+    this.genEditor = makeEditor(box, 'ace/mode/gringo');
+    this.genEditor.on('change', () => {
+      if (this.genLoading) return;
+      const g = this.generator;
+      if (g) { g.text = this.genEditor.getValue(); this.app.dirty(); }
+    });
+  }
+
+  renderGenerators() {
+    const list = this.generators, g = this.generator;
+    this.genSelect.textContent = '';
+    this.genSelect.hidden = !list.length;
+    for (const x of list) this.genSelect.append(el('option', { value: x.name }, x.name));
+    if (g) this.genSelect.value = g.name;
+    this.genBody.hidden = !g;
+    if (!g) return;
+    this.genName.value = g.name;
+    this.genLoading = true;
+    if (this.genEditor.getValue() !== g.text) this.genEditor.setValue(g.text || '', -1);
+    this.genLoading = false;
+    this.genParams.textContent = '';
+    this.genParams.append(el('tr', {}, ...['Parameter', 'Type', 'Value', ''].map((h) => el('th', {}, h))));
+    for (const [k, t] of Object.entries(g.params || {})) {
+      const type = el('select', { 'aria-label': `Type of ${k}` }, ...PARAM_TYPES.map((x) => el('option', { value: x, selected: x === t }, x)));
+      type.addEventListener('change', () => { g.params[k] = type.value; this.app.dirty(); });
+      const val = el('input', { size: 6, value: g.defaults && g.defaults[k] !== undefined ? String(g.defaults[k]) : '', 'aria-label': `Value of ${k}` });
+      val.addEventListener('change', () => { g.defaults = { ...(g.defaults || {}), [k]: val.value.trim() === '' ? undefined : Number(val.value) }; this.app.dirty(); });
+      this.genParams.append(el('tr', {}, el('td', {}, k), el('td', {}, type), el('td', {}, val),
+        el('td', {}, el('button', { class: 'control-button small-button', onclick: () => { delete g.params[k]; if (g.defaults) delete g.defaults[k]; this.renderGenerators(); this.app.dirty(); } }, 'Remove'))));
+    }
+    requestAnimationFrame(() => this.genEditor.resize());
+  }
+
+  addGenerator() {
+    let name = 'gen';
+    for (let i = 2; this.generators.some((g) => g.name === name); i++) name = `gen${i}`;
+    this.generators.push({ name, text: '% one fact per node; each edge with probability p/1000\nnode(1..n).\nedge(X,Y) :- node(X), node(Y), X < Y, @flip(p, X, Y) = 1.\n#show node/1.  #show edge/2.\n',
+      params: { n: 'int', p: 'permille' }, defaults: { n: 5, p: 500 } });
+    this.gen = name;
+    this.renderGenerators();
+    this.app.dirty();
+  }
+
+  removeGenerator() {
+    const i = this.generators.findIndex((g) => g.name === this.gen);
+    if (i < 0) return;
+    this.generators.splice(i, 1);
+    this.gen = this.generators.length ? this.generators[0].name : null;
+    this.preview.textContent = '';
+    this.renderGenerators();
+    this.app.dirty();
+  }
+
+  renameGenerator(v) {
+    const g = this.generator;
+    v = v.trim();
+    if (!g || v === g.name) return;
+    if (!INSTANCE_ID.test(v) || this.generators.some((x) => x.name === v)) { this.genStatus.textContent = `"${v}" is not a valid new name.`; this.genName.value = g.name; return; }
+    for (const x of this.list) if (x.recipe && x.recipe.generator === g.name) x.recipe.generator = v;
+    g.name = v; this.gen = v;
+    this.renderGenerators();
+    this.app.dirty();
+  }
+
+  addParam() {
+    const g = this.generator;
+    if (!g) return;
+    const k = (window.prompt('Parameter name (a lower case letter first):') || '').trim();
+    if (!/^[a-z][A-Za-z0-9_]*$/.test(k)) return;
+    g.params = { ...(g.params || {}), [k]: 'int' };
+    this.renderGenerators();
+    this.app.dirty();
+  }
+
+  // Six instances from seeds s..s+5, each with its attempt number and label.
+  async previewSix() {
+    const g = this.generator;
+    if (!g || !this.app.ready || this.app.engine.active) return;
+    const s0 = Math.trunc(Number(this.genSeed.value)) || 0;
+    const seeds = [0, 1, 2, 3, 4, 5].map((i) => s0 + i);
+    this.genStatus.textContent = 'Generating…';
+    this.preview.textContent = '';
+    let res;
+    try { res = await generate(g, {}, seeds, this.app.genLua(), (p, o) => this.app.engine.exec(p, o)); }
+    catch (e) { this.genStatus.textContent = `Not generated: ${e.message || e}`; return; }
+    if (res.problems.length) {
+      const p = res.problems[0];
+      this.genStatus.textContent = `Not generated: ${p.line ? `line ${p.line}: ` : ''}${p.message}`;
+      if (p.line) this.genEditor.getSession().setAnnotations(res.problems.filter((x) => x.line).map((x) => ({ row: x.line - 1, column: (x.col || 1) - 1, text: x.message, type: 'error' })));
+      return;
+    }
+    this.genEditor.getSession().setAnnotations([]);
+    const tried = res.results.filter((r) => !r.error).reduce((a, r) => a + r.attempt + 1, 0);
+    const ok = res.results.filter((r) => !r.error).length;
+    this.genStatus.textContent = ok ? `${ok} instances, ${ok} accepted of ${tried} draws.` : 'No instance.';
+    for (const r of res.results) {
+      const card = el('div', { class: 'generator-card', 'data-seed': String(r.seed) });
+      if (r.error) card.append(el('p', { class: 'error' }, `Seed ${r.seed}: ${r.error}`));
+      else {
+        const params = Object.fromEntries(Object.keys(g.params || {}).filter((k) => g.defaults && g.defaults[k] !== undefined).map((k) => [k, g.defaults[k]]));
+        card.append(
+          el('p', {}, `Seed ${r.seed}, attempt ${r.attempt}, `, el('span', { class: r.exact ? 'label-exact' : 'label-completed' }, r.exact ? 'exact' : 'solver-completed')),
+          el('pre', { class: 'generator-facts' }, r.facts.split(' ').join('\n')),
+          el('button', { class: 'control-button small-button', onclick: () => {
+            const id = freshId(this.app.project, `${g.name}-s${r.seed}`);
+            this.add({ id, recipe: { generator: g.name, params, seed: r.seed }, constants: {}, tags: ['generated'] });
+            delete this.list.find((x) => x.id === id).facts;
+            this.showForm();
+            this.say(`Added instance ${id} (recipe: ${g.name}, seed ${r.seed}).`);
+          } }, 'Add as instance'));
+      }
+      this.preview.append(card);
+    }
   }
 }

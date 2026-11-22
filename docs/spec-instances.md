@@ -1,7 +1,7 @@
 # Instances specification
 
-Format version 2 of a project (design: `docs/directions/instance-lab.md`). Generators, suites
-and pools are added in later phases (I2, I3, I5).
+Format version 2 of a project (design: `docs/directions/instance-lab.md`). Suites and pools are
+added in later phases (I3, I5).
 
 ## 1. Instances and variants
 
@@ -65,3 +65,57 @@ exit status (20 = unsatisfiable = violated).
 `kemeny-control` keep their former facts as the instance `example`; `af-preferred` and `qbf` also
 have three generated instances (`random-1..3`) whose counts agree between the loop and the
 reference run. `test/instances.test.mjs` runs every instance with an expected count.
+
+## 4. Generators
+
+`generators[]`: `{ name, text, params: { name: "int" | "permille" }, defaults, description }`.
+A recipe `{ generator, params, seed, attempts }` names one instance: the first accepted attempt
+0, 1, ... (at most `attempts`, default 100) of the generator with `defaults` overridden by `params`.
+
+Draws (`lua/draw.lua`; Python twin `tools/draw.py`, checked by `test/draw-vectors.json`, 200 values
+written from Lua by `tools/make-draw-vectors.mjs`):
+
+- `hash(seed, attempt, name, keys)`: a splitmix64-style mixer on 64-bit integers (Lua 5.4 wraps;
+  Python masks), fed with `seed * 0x9e3779b97f4a7c15 + attempt`, the bytes of the function name,
+  and for key i the mixed `h + i` followed by the bytes of the key's clingo text.
+- A draw in `0..r-1` is `(hash >> 11) % r`: 53 bits, so the modulo bias of `@int` is below
+  r / 2^53, that is below 2^-30 for ranges under 2^23.
+- `flip`, `int`, `weighted`: one hash each. `perm` and `subset` build the whole permutation of 1..N
+  once per key by Fisher–Yates (position j from N down to 2 swaps with `draw(j, "perm", (N, j, K...)) + 1`)
+  and cache it for the attempt. `mallows` builds the ranking by repeated insertion: item k goes to
+  place j of 1..k with weight `phi^(k-j)` kept as 30-bit integers (`x = 2^30; x = x * phi // 1000`),
+  one draw per item; not Fisher–Yates.
+- The functions form a context table passed to `ctl:ground(parts, context)` (the grounder calls
+  `ctx.flip(ctx, P, K...)`), so seed and attempt are no globals. Every body runs inside `xpcall`;
+  a bad argument (not an integer, an empty range, an index outside 1..N, `phi` outside 0..1000)
+  sets `draw.error` and returns 0, and the runner reports it.
+
+Runner (`lua/generate.lua`, `gen.run{ text, params, seeds, attempts }`): per attempt a fresh control
+with the parameters as `-c` constants, ground with the context, at most two models read with
+`h:iter()`. Output, one line per seed:
+
+```
+@@G {"attempt":0,"exact":true,"facts":"edge(1,5). ... node(7).","seed":1}
+@@G {"error":"@flip: the probability must be an integer, got a","seed":1,"attempt":0}
+@@G {"error":"no accepted draw in 100 attempts","seed":3}
+```
+
+`facts` is each shown symbol with a full stop, sorted as text (byte order), joined by one space:
+valid ASP by construction. A draw error ends the run; a seed without an accepted draw does not.
+
+JavaScript (`js/generate.js`, no DOM): `paramList(generator, params)`, `assembleGenerator(generator,
+params, seeds, luaTexts)`, `generate(generator, params, seeds, luaTexts, engineRun) -> { results,
+problems }`, `runRecipe(project, recipe, luaTexts, engineRun)`. `js/driver.js validateGenerator`
+runs `clingo --mode=gringo` on the text behind a one-line stub script that defines the six
+functions (each returning 0), so a syntax error or an unsafe variable is reported with its line in
+the generator and never reaches `ctl:add`. `js/instances.js resolveInstance(project, id,
+engineRun, luaTexts)` and `resolveProject(...)` turn a recipe into facts on demand, cached in
+memory by a hash of generator text, parameters and seed; every run path (page, `tools/run.mjs`,
+`tools/audit.mjs`, `test/helpers.mjs runProject`) resolves before `derive`. `tools/cegarcheck.py
+--instance` generates with `tools/draw.py` and Python clingo.
+
+Library (`tools/library.mjs GENERATORS`, attached by `tools/make-examples.mjs`): `gnp` (connected
+G(n,p), reference rows 26 and 30), `gnm`, `af-gnp`, `qbf-dnf`, `ballots-ic`, `ballots-mallows`.
+`clique-colouring`, `arrowing`, `choosability` and `af-semi-stable` moved their graph into the
+instance `example`; `qbf` has the recipe instance `dnf-1` (8 solutions in its loop and in the
+Reference template).

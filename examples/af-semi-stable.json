@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Semi-stable extensions",
   "description": "Semi-stable extensions: admissible sets whose range (the set and everything it attacks) is maximal; credulous acceptance is Sigma-2-complete (Dvorak and Woltran). The check only needs the candidate's range, so the interface atoms are the derived atoms range/1 rather than the guessed in/1, and a refinement removes every set whose range is too small. The sample framework has no stable extension, three preferred and two semi-stable ones.",
   "fragments": [
     {
       "name": "shared",
       "description": "The framework. Added to every solver.",
-      "text": "% An argumentation framework without a stable extension (z attacks itself).\narg(a;b;c;d;e;f;g;h;i;j;z).\natt(a,b). att(b,a).                 % a and b attack each other\natt(i,j). att(j,i).                 % so do i and j\natt(b,j). att(j,b).                 % and b and j\natt(b,c). att(c,d). att(d,e). att(e,c).     % b attacks the cycle c, d, e\natt(j,f). att(f,g). att(g,h). att(h,f).     % j attacks the cycle f, g, h\natt(z,z).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\n"
     },
     {
       "name": "abstraction",
@@ -37,5 +37,33 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% An argumentation framework without a stable extension (z attacks itself).\narg(a;b;c;d;e;f;g;h;i;j;z).\natt(a,b). att(b,a).                 % a and b attack each other\natt(i,j). att(j,i).                 % so do i and j\natt(b,j). att(j,b).                 % and b and j\natt(b,c). att(c,d). att(d,e). att(e,c).     % b attacks the cycle c, d, e\natt(j,f). att(f,g). att(g,h). att(h,f).     % j attacks the cycle f, g, h\natt(z,z).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": [
+        "library"
+      ]
+    }
+  ],
+  "runs": [],
+  "generators": [
+    {
+      "name": "af-gnp",
+      "description": "A random argumentation framework: n arguments, each attack X -> Y with probability p/1000.",
+      "params": {
+        "n": "int",
+        "p": "permille"
+      },
+      "defaults": {
+        "n": 7,
+        "p": 250
+      },
+      "text": "% af-gnp: arguments 1..n; each ordered pair (also X = Y) attacks with probability p/1000\narg(1..n).\natt(X,Y) :- arg(X), arg(Y), @flip(p, X, Y) = 1.\n\n#show arg/1.  #show att/2.\n"
+    }
+  ]
 }

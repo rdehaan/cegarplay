@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Clique colouring",
   "description": "Colour the nodes red and blue so that no maximal clique with two or more nodes has one colour only; existence is Sigma-2-complete (Marx). The check looks for a one-coloured maximal clique, and the refinement says that one of its nodes changes colour. With n = 5 the graph is a 5-cycle and there is no solution; try n = 10 (330 solutions).",
   "fragments": [
     {
       "name": "shared",
       "description": "The graph. Added to every solver.",
-      "text": "% The complement of a cycle on n nodes: two nodes are joined unless they are\n% neighbours on the cycle 0, 1, ..., n-1, 0.\nnode(0..n-1).\nedge(U,V) :- node(U), node(V), U != V, (U-V+n) \\ n != 1, (V-U+n) \\ n != 1.\n"
+      "text": "% The instance (its facts) is in the Instances tab.\n"
     },
     {
       "name": "abstraction",
@@ -39,5 +39,46 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% The complement of a cycle on n nodes: two nodes are joined unless they are\n% neighbours on the cycle 0, 1, ..., n-1, 0.\nnode(0..n-1).\nedge(U,V) :- node(U), node(V), U != V, (U-V+n) \\ n != 1, (V-U+n) \\ n != 1.\n",
+      "constants": {},
+      "expected": {
+        "solutions": 44
+      },
+      "tags": [
+        "library"
+      ]
+    }
+  ],
+  "runs": [],
+  "generators": [
+    {
+      "name": "gnp",
+      "description": "A connected random graph G(n,p): each edge with probability p/1000; a disconnected draw is redrawn.",
+      "params": {
+        "n": "int",
+        "p": "permille"
+      },
+      "defaults": {
+        "n": 7,
+        "p": 300
+      },
+      "text": "% gnp: a connected random graph with n nodes; each edge is present with probability p/1000\nnode(1..n).\nedge(X,Y) :- node(X), node(Y), X < Y, @flip(p, X, Y) = 1.\n\nreach(1).\nreach(Y) :- reach(X), edge(X,Y).\nreach(X) :- reach(Y), edge(X,Y).\n:- node(X), not reach(X).            % a disconnected draw is rejected and redrawn\n% the example's check reads edges in both directions\nedge(Y,X) :- edge(X,Y).\n\n#show node/1.  #show edge/2.\n"
+    },
+    {
+      "name": "gnm",
+      "description": "A random graph G(n,m): exactly m of the n(n-1)/2 possible edges, chosen uniformly.",
+      "params": {
+        "n": "int",
+        "m": "int"
+      },
+      "defaults": {
+        "n": 7,
+        "m": 10
+      },
+      "text": "% gnm: m edges chosen uniformly among the pairs of n nodes (pair I is the I-th pair X < Y)\nnode(1..n).\npair(X,Y,(X-1)*n - (X-1)*X/2 + Y - X) :- node(X), node(Y), X < Y.\nedge(X,Y) :- pair(X,Y,I), @subset(m, n*(n-1)/2, I, edges) = 1.\n% the example's check reads edges in both directions\nedge(Y,X) :- edge(X,Y).\n\n#show node/1.  #show edge/2.\n"
+    }
+  ]
 }

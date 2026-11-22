@@ -544,6 +544,26 @@ label.tab-label.has-problem:after {
   align-items: center;
   margin: 12px 0 4px;
 }
+.generator-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+}
+.generator-card {
+  border: 1px solid var(--border);
+  padding: 4px 8px 8px;
+  min-width: 0;
+}
+.generator-card p { margin: 4px 0; }
+.generator-facts {
+  max-height: 160px;
+  overflow: auto;
+  font-size: 12px;
+  margin: 4px 0;
+}
+.label-exact { color: var(--ok); font-weight: 600; }
+.label-completed { color: var(--error); font-weight: 600; }
 #instances-status.error {
   color: var(--error);
 }

@@ -17,6 +17,7 @@
 // Exit code: 0 when the run ends without an error, 1 on a problem or error, 2 on bad usage.
 // With a time limit above 0 the run is ended N + 2 s after the start (exit code 1) if the
 // runtime does not stop by itself, like the page's backstop.
+import { resolveProject } from '../js/instances.js';
 import fs from 'node:fs';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import factory from '../vendor/clingo-wasm/clingo.js';
@@ -61,6 +62,9 @@ const lua = (name) => fs.readFileSync(new URL(`lua/${name}`, root), 'utf8');
 // here override the instance's.
 export async function runProject(project, { onEvent, backstop = false, audit = null, instance, variant, constants } = {}) {
   const t0 = Date.now();
+  try {
+    project = await resolveProject(project, instance, engineRun, { draw: lua('draw.lua'), generate: lua('generate.lua') });
+  } catch (e) { return { problems: [{ severity: 'error', message: e.message }], events: [] }; }
   project = derive(project, { instance, variant });
   if (constants) project = { ...project, settings: { ...project.settings, constants: { ...project.settings.constants, ...constants } } };
   const problems = await validate(project, engineRun);

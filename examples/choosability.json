@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "List colouring",
   "description": "List assignments from which a graph cannot be properly coloured: they refute choosability, which is Pi-2-complete once lists of size 3 occur (Erdos, Rubin and Taylor; Gutner and Tarsi). The abstraction guesses the lists, the check finds a colouring from them, and the refinement says that one node loses the colour it was given. The default is K(3,3) with lists of size 2, an easy case; try a = 2, b = 4, p = 4 (144 solutions).",
   "fragments": [
     {
       "name": "shared",
       "description": "The graph, the palette and the list sizes. Added to every solver.",
-      "text": "% The complete bipartite graph with a nodes on the left and b nodes on the right.\nleft(1..a).\nright(a+1..a+b).\nnode(V) :- left(V).\nnode(V) :- right(V).\nedge(U,V) :- left(U), right(V).\n% The palette, and size(V,K): the list of node V has K colours.\n% (Mix sizes 2 and 3 for the hard case, for example: size(1,3). size(V,2) :- node(V), V > 1.)\ncolour(1..p).\nsize(V,2) :- node(V).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\n% The palette, and size(V,K): the list of node V has K colours.\n% (Mix sizes 2 and 3 for the hard case, for example: size(1,3). size(V,2) :- node(V), V > 1.)\ncolour(1..p).\nsize(V,2) :- node(V).\n"
     },
     {
       "name": "abstraction",
@@ -41,5 +41,46 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% The complete bipartite graph with a nodes on the left and b nodes on the right.\nleft(1..a).\nright(a+1..a+b).\nnode(V) :- left(V).\nnode(V) :- right(V).\nedge(U,V) :- left(U), right(V).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 36
+      },
+      "tags": [
+        "library"
+      ]
+    }
+  ],
+  "runs": [],
+  "generators": [
+    {
+      "name": "gnp",
+      "description": "A connected random graph G(n,p): each edge with probability p/1000; a disconnected draw is redrawn.",
+      "params": {
+        "n": "int",
+        "p": "permille"
+      },
+      "defaults": {
+        "n": 7,
+        "p": 300
+      },
+      "text": "% gnp: a connected random graph with n nodes; each edge is present with probability p/1000\nnode(1..n).\nedge(X,Y) :- node(X), node(Y), X < Y, @flip(p, X, Y) = 1.\n\nreach(1).\nreach(Y) :- reach(X), edge(X,Y).\nreach(X) :- reach(Y), edge(X,Y).\n:- node(X), not reach(X).            % a disconnected draw is rejected and redrawn\n\n#show node/1.  #show edge/2.\n"
+    },
+    {
+      "name": "gnm",
+      "description": "A random graph G(n,m): exactly m of the n(n-1)/2 possible edges, chosen uniformly.",
+      "params": {
+        "n": "int",
+        "m": "int"
+      },
+      "defaults": {
+        "n": 7,
+        "m": 10
+      },
+      "text": "% gnm: m edges chosen uniformly among the pairs of n nodes (pair I is the I-th pair X < Y)\nnode(1..n).\npair(X,Y,(X-1)*n - (X-1)*X/2 + Y - X) :- node(X), node(Y), X < Y.\nedge(X,Y) :- pair(X,Y,I), @subset(m, n*(n-1)/2, I, edges) = 1.\n\n#show node/1.  #show edge/2.\n"
+    }
+  ]
 }

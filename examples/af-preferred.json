@@ -83,5 +83,20 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "generators": [
+    {
+      "name": "af-gnp",
+      "description": "A random argumentation framework: n arguments, each attack X -> Y with probability p/1000, and a random query argument.",
+      "params": {
+        "n": "int",
+        "p": "permille"
+      },
+      "defaults": {
+        "n": 7,
+        "p": 250
+      },
+      "text": "% af-gnp: arguments 1..n; each ordered pair (also X = Y) attacks with probability p/1000\narg(1..n).\natt(X,Y) :- arg(X), arg(Y), @flip(p, X, Y) = 1.\nquery(@int(1, n, query)).\n\n#show arg/1.  #show att/2.  #show query/1.\n"
+    }
+  ]
 }

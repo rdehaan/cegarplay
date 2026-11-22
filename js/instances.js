@@ -2,7 +2,8 @@
 //
 // An importer is (text, names) -> { facts, constants }, where names renames the canonical
 // predicates (for instance { node: 'vertex' }). Facts are one ground fact per line.
-import { INSTANCE_FRAGMENT, INSTANCE_ID } from './project.js';
+import { INSTANCE_FRAGMENT, INSTANCE_ID, selectedInstance } from './project.js';
+import { runRecipe, recipeKey } from './generate.js';
 import { parseClingoErrors } from './driver.js';
 
 export class ImportError extends Error {}
@@ -225,3 +226,32 @@ export async function checkSchema(project, id, engineRun) {
 }
 
 export { INSTANCE_FRAGMENT };
+
+// ---------------------------------------------------------------------------
+// Recipes (docs/spec-instances.md section 4): an instance with a `recipe` and no facts gets its
+// facts from the generator on demand. Kept in memory by a content hash of the generator text,
+// parameters and seed; the project keeps the recipe only.
+// ---------------------------------------------------------------------------
+const recipeCache = new Map();
+
+// The instance `id` (default: the selected one) with facts, generated when needed.
+// luaTexts = { draw, generate }: the texts of lua/draw.lua and lua/generate.lua.
+export async function resolveInstance(project, id, engineRun, luaTexts) {
+  const x = selectedInstance(project, id);
+  if (!x || typeof x.facts === 'string' || !x.recipe) return x;
+  const key = recipeKey(project, x.recipe);
+  let r = recipeCache.get(key);
+  if (!r) {
+    r = await runRecipe(project, x.recipe, luaTexts, engineRun);
+    recipeCache.set(key, r);
+  }
+  return { ...x, facts: r.facts, generated: { attempt: r.attempt, exact: r.exact } };
+}
+
+// A copy of the project whose selected (or given) instance has facts; other instances unchanged.
+export async function resolveProject(project, id, engineRun, luaTexts) {
+  const x = await resolveInstance(project, id, engineRun, luaTexts);
+  if (!x || !x.generated) return project;
+  return { ...project, instances: project.instances.map((i) => (i.id === x.id ? x : i)) };
+}
+export const clearRecipeCache = () => recipeCache.clear();

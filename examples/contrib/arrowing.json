@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Ramsey arrowing",
   "description": "Colour the edges of the complete graph on n nodes red and blue without a red copy of one pattern graph and without a blue copy of another; with the graphs as input, deciding whether every colouring contains a copy is Pi-2-complete (Schaefer). The check embeds a pattern into the edges of its colour, and the refinement says that one of the edges used changes colour. With n = 7 the run proves that there is no solution: the Ramsey number of a triangle and a 4-cycle is 7.",
   "fragments": [
     {
       "name": "shared",
       "description": "The host graph and the two pattern graphs. Added to every solver.",
-      "text": "% The host graph: the complete graph on n nodes.\nnode(1..n).\nedge(U,V) :- node(U), node(V), U < V.\n% Two pattern graphs, one per colour. pedge(Colour,P,Q): the pattern has the edge P-Q.\ncolour(red;blue).\npedge(red,1,2).  pedge(red,2,3).  pedge(red,1,3).                    % a red triangle\npedge(blue,1,2). pedge(blue,2,3). pedge(blue,3,4). pedge(blue,1,4).  % a blue 4-cycle\npnode(C,P) :- pedge(C,P,_).\npnode(C,P) :- pedge(C,_,P).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\n% Two pattern graphs, one per colour. pedge(Colour,P,Q): the pattern has the edge P-Q.\ncolour(red;blue).\npedge(red,1,2).  pedge(red,2,3).  pedge(red,1,3).                    % a red triangle\npedge(blue,1,2). pedge(blue,2,3). pedge(blue,3,4). pedge(blue,1,4).  % a blue 4-cycle\npnode(C,P) :- pedge(C,P,_).\npnode(C,P) :- pedge(C,_,P).\n"
     },
     {
       "name": "abstraction",
@@ -48,5 +48,18 @@
       "fast"
     ],
     "expected": 100
-  }
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% The host graph: the complete graph on n nodes.\nnode(1..n).\nedge(U,V) :- node(U), node(V), U < V.\n",
+      "constants": {},
+      "expected": {
+        "solutions": 100
+      },
+      "tags": [
+        "library"
+      ]
+    }
+  ]
 }

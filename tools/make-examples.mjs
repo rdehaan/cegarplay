@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { importLp, load, save, template } from '../js/project.js';
 import { stripAspComments } from '../js/driver.js';
-import { GROUPS, PROBLEMS, buildLibrary } from './library.mjs';
+import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES } from './library.mjs';
 import { buildGuide } from './guide.mjs';
 
 const root = new URL('..', import.meta.url);
@@ -234,6 +234,10 @@ export function buildAll({ contribDir } = {}) {
   for (const e of PROBLEMS) entries.push({ ...e, group: 'problems', project: problems[e.id] });
   entries.push(...buildGuide());
   entries.push(...loadContrib(contribDir, new Set(entries.map((e) => e.id))));
+  for (const e of entries) {
+    if (GENERATORS[e.id]) { e.project.generators = structuredClone(GENERATORS[e.id]); e.project.version = 2; }
+    if (RECIPES[e.id]) e.project.instances = [...(e.project.instances || []), ...structuredClone(RECIPES[e.id]).map((x) => ({ constants: {}, ...x }))];
+  }
   const files = {};
   const examples = [];
   for (const g of GROUPS) {

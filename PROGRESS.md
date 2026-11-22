@@ -374,7 +374,7 @@ commit at each checkpoint, no stops.
 - [x] I1 Instances
 - [x] V1 Recording
 - [x] S2 Capture, level 2, level 3
-- [ ] I2 Generators
+- [x] I2 Generators
 - [ ] V2 Loop anatomy
 - [ ] S3 `lift` links
 - [ ] I3 Campaigns
@@ -462,13 +462,30 @@ Notes per phase:
   - Not done: comparing the store with `clingo --mode=gringo` text (aspif numbering differs from
     the observer's; a smaller structural test checks the capture instead).
 
-**Next step (PLAN2):** I2 Generators (not started; session paused here by the owner on 2026-11-22).
-Starting points: `spike2/gen/draws.lua` (mixer of the missing probe3.lua, unchanged: copy it into
-`lua/draw.lua` as a context table passed to `ctl:ground(parts, context)`, not as globals; every
-function body in `xpcall`), `spike2/gen/draws.py` (Python twin -> `tools/draw.py`),
-`spike2/gen/test_draws.py` (the checks: 30 seeds identical, six functions, rule order, row 26/30).
-Tasks and checks: `docs/directions/instance-lab.md`, phase I2. After V2 (end of wave 2), run an
-independent review of the wave's diff as was done for wave 1.
+- **I2 (done):** `lua/draw.lua` (mixer of the spike unchanged; a context table per attempt passed
+  to `ctl:ground`, every body in `xpcall`, bad arguments -> `draw.error` and 0), `lua/generate.lua`
+  (`gen.run{ text, params, seeds, attempts }`, `@@G` per seed), `js/generate.js`,
+  `js/driver.js validateGenerator` (one-line stub script, so lines shift by exactly 1),
+  `js/instances.js resolveInstance/resolveProject` (recipe -> facts, in-memory cache by content
+  hash), resolution in every run path (page `Control.run`, `tools/run.mjs`, `test/helpers.mjs`),
+  `tools/draw.py` (twin + `generate` on Python clingo), `cegarcheck.py --instance` with recipes,
+  `test/draw-vectors.json` (200 values, `tools/make-draw-vectors.mjs`), `generators` in format v2
+  (`loadGenerators`), Instances tab: generator list/editor, parameter table, seed, Preview 6 with
+  attempt and exact/solver-completed label, Add as instance (recipe only). Library: `gnp`, `gnm`,
+  `af-gnp`, `qbf-dnf`, `ballots-ic`, `ballots-mallows` (`tools/library.mjs GENERATORS`), and the
+  recipe instance `qbf` `dnf-1` (8 solutions in its own loop, in the Reference template and in
+  cegarcheck.py). Rows 26 and 30 hold (attempts 0, 2, 0, 0, 0; the facts are pinned in
+  `test/draw.test.mjs`, since `spike2/probe3.lua` was not delivered).
+  - Recipe semantics: one recipe = one seed; attempts 0, 1, ... until a draw is accepted. Preview 6
+    uses seeds s..s+5 (not six attempts of one seed), so each card is a storable recipe.
+  - `clique-colouring`, `arrowing`, `choosability`, `af-semi-stable` moved their graph/AF from
+    `shared` into the instance `example` (counts unchanged: library test green), so a generated
+    graph can replace it. `clique-colouring`'s generators add `edge(Y,X) :- edge(X,Y).`
+  - Also: `tools/make-replays.mjs` keeps a replay whose content apart from times is unchanged
+    (this commit rewrites all 93 once: their `n` fields were stale since S2).
+
+**Next step (PLAN2):** V2 Loop anatomy (`docs/directions/observatory.md`, phase V2). After V2
+(end of wave 2), run an independent review of the wave's commits (S2, I2, V2) as was done for wave 1.
 
 ## Next step (PLAN.md, guide, TODO)
 

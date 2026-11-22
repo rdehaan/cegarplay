@@ -119,7 +119,7 @@ clingo about an instance fact name `instance:<line>`. The loop language does not
 | `instances[].constants` | Object of strings; override `settings.constants`. |
 | `instances[].expected.solutions` | Whole number or null: the solution count of an exhausted run with all solutions (checked by "Run all", `--instance all` and the library tests). |
 | `instances[].tags` | List of strings (`slow` instances are skipped by the default test run). |
-| `instances[].recipe` | Object: a generator recipe (see the generator chapter when it exists). |
+| `instances[].recipe` | `{ generator, params, seed }`: the facts come from a generator (below) when a run uses the instance; a file stores the recipe only. |
 | `variants[].name` | Matches `[A-Za-z0-9_-]+`; unique; not `default`. |
 | `variants[].loop` | A loop script (string) or `{ language, text }` that replaces the project's. |
 | `variants[].swap` | Fragment name to fragment name: the first gets the text of the second. |
@@ -140,6 +140,42 @@ scenarios (`.jagg`: `var/1`, `cl/1`, `pos/2`, `neg/2`); each importer is checked
 the instance is added. **Run all** runs every instance and marks a count other than the expected one
 with ✗ in red. The run bar's **Instance** picker (shown only for a project with instances) chooses
 the instance of the next run; the run history names it in brackets.
+
+### Generators
+
+A **generator** is an ASP program whose shown atoms are an instance. Randomness enters through six
+seeded draw functions, evaluated while grounding; rules shape the instance and constraints filter
+it: an unsatisfiable draw is redrawn with the next attempt number (at most 100).
+
+```json
+"generators": [
+  { "name": "gnp", "params": { "n": "int", "p": "permille" }, "defaults": { "n": 7, "p": 300 },
+    "text": "node(1..n).\nedge(X,Y) :- node(X), node(Y), X < Y, @flip(p, X, Y) = 1.\n#show node/1.  #show edge/2.\n" }
+],
+"instances": [ { "id": "gnp-s1", "recipe": { "generator": "gnp", "params": { "n": 7 }, "seed": 1 } } ]
+```
+
+| Function | Value |
+| --- | --- |
+| `@flip(P, K...)` | 1 with probability P/1000, else 0 |
+| `@int(Lo, Hi, K...)` | a uniform integer in Lo..Hi |
+| `@weighted((W1, ..., Wm), K...)` | index i with probability Wi / (W1 + ... + Wm) |
+| `@perm(N, I, K...)` | the image of I under a uniform permutation of 1..N named by K |
+| `@subset(M, N, I, K...)` | 1 if I lies in a uniform M-subset of 1..N named by K |
+| `@mallows(N, Phi, I, K...)` | the position of I in a Mallows ranking of 1..N with dispersion Phi/1000 |
+
+Every draw is a pure function of the seed, the attempt, the function's name and the key terms `K`,
+so the instance does not depend on the order of the rules (use different keys for independent
+draws). Parameters are constants of type `int` or `permille` (0..1000); a recipe's `params` override
+the generator's `defaults`. An instance is **exact** when its program has one model (the drawn facts
+follow the stated distribution, conditioned on acceptance) and **solver-completed** when it has
+more (clingo returns some model, not a uniform one). A bad argument (`@flip(a, 1)`) stops the
+generator with a message. The Instances tab has a generator list and editor, a parameter table, a
+seed and **Preview 6** (six instances from six seeds, with attempt and label); **Add as instance**
+stores the recipe. `tools/draw.py` is the Python twin used by `tools/cegarcheck.py --instance`; both
+give byte-identical facts. Library generators: `gnp`, `gnm` (`clique-colouring`, `arrowing`,
+`choosability`), `af-gnp` (`af-preferred`, `af-semi-stable`), `qbf-dnf` (`qbf`), `ballots-ic` and
+`ballots-mallows` (`kemeny-control`).
 
 `Project.load` errors (exact texts): `not a JSON file: ...`, `not a CegarPlay project: expected a
 JSON object`, `this is a logic-game file, not a CegarPlay project`, `not a CegarPlay project (format

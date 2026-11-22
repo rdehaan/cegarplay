@@ -3,12 +3,14 @@ import fs from 'node:fs';
 import factory from '../vendor/clingo-wasm/clingo.js';
 import { assemble, parseEvent, modulesFor } from '../js/driver.js';
 import { derive } from '../js/project.js';
+import { resolveProject } from '../js/instances.js';
 
 export const ROOT = new URL('..', import.meta.url);
 export const path = (p) => new URL(p, ROOT);
 export const read = (p) => fs.readFileSync(path(p), 'utf8');
 export const RUNTIME = read('lua/runtime.lua');
 export const SLOW = !!process.env.SLOW;
+export const GEN_LUA = { draw: read('lua/draw.lua'), generate: read('lua/generate.lua') };
 
 // One run on a fresh module instance. Returns { status, out, err, events }.
 export async function run(program, options = '--outf=3', { stdin } = {}) {
@@ -152,6 +154,7 @@ export const LUA = {
 import { compile } from '../js/compiler.js';
 export async function runProject(project, opts = {}) {
   const { instance, variant, ...rest } = opts;
+  project = await resolveProject(project, instance, engineRun, GEN_LUA);
   project = derive(project, { instance, variant });
   opts = rest;
   let compiled = null;

@@ -88,6 +88,7 @@ app.control = new Control(app);
 app.instancesTab = new InstancesTab(app);
 
 app.collect = () => app.editors.collect(app.project);
+app.genLua = () => ({ draw: app.modules.draw, generate: app.modules.generate });
 
 function showProjectInfo(p) {
   $('project-heading').textContent = p.title || 'Untitled';
@@ -514,14 +515,16 @@ addEventListener('keydown', (ev) => {
 // What a first visit opens with: small and fast (graph-coloring stays in the library).
 const DEFAULT_EXAMPLE = 'tutorial-first-run';
 async function start() {
-  const [runtime, audit, ground, version] = await Promise.all([
+  const [runtime, audit, ground, draw, generate, version] = await Promise.all([
     fetch('lua/runtime.lua').then((r) => r.text()),
     fetch('lua/audit.lua').then((r) => r.text()),
     fetch('lua/ground.lua').then((r) => r.text()),
+    fetch('lua/draw.lua').then((r) => r.text()),
+    fetch('lua/generate.lua').then((r) => r.text()),
     fetch('vendor/clingo-wasm/VERSION').then((r) => r.text()).catch(() => 'clingo-wasm'),
   ]);
   app.runtime = runtime;
-  app.modules = { audit, ground };
+  app.modules = { audit, ground, draw, generate };
   loadTutorial();
   app.engineVersion = version.split('\n')[0];
   // ?example=<id> (or the older ?file=<id>) loads an example of the library

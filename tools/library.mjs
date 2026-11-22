@@ -340,3 +340,108 @@ export const PROBLEMS = [
   { id: 'nash', summary: 'Weighted graphs whose colouring game has a Nash equilibrium.', shape: 'shape1', tags: [], expected: null },
   { id: 'voting-justification', summary: 'Explaining a voting outcome by axioms.', shape: 'shape1', tags: [], expected: null },
 ];
+
+// ---------------------------------------------------------------------------
+// Starter generators (docs/spec-instances.md section 4), attached to the examples they fit by
+// tools/make-examples.mjs. Each is ASP with seeded draws; its shown atoms are an instance.
+// ---------------------------------------------------------------------------
+const SYM = '% the example\'s check reads edges in both directions\nedge(Y,X) :- edge(X,Y).\n';
+const gnp = (sym = false) => ({
+  name: 'gnp',
+  description: 'A connected random graph G(n,p): each edge with probability p/1000; a disconnected draw is redrawn.',
+  params: { n: 'int', p: 'permille' }, defaults: { n: 7, p: 300 },
+  text: `% gnp: a connected random graph with n nodes; each edge is present with probability p/1000
+node(1..n).
+edge(X,Y) :- node(X), node(Y), X < Y, @flip(p, X, Y) = 1.
+
+reach(1).
+reach(Y) :- reach(X), edge(X,Y).
+reach(X) :- reach(Y), edge(X,Y).
+:- node(X), not reach(X).            % a disconnected draw is rejected and redrawn
+${sym ? SYM : ''}
+#show node/1.  #show edge/2.
+`,
+});
+const gnm = (sym = false) => ({
+  name: 'gnm',
+  description: 'A random graph G(n,m): exactly m of the n(n-1)/2 possible edges, chosen uniformly.',
+  params: { n: 'int', m: 'int' }, defaults: { n: 7, m: 10 },
+  text: `% gnm: m edges chosen uniformly among the pairs of n nodes (pair I is the I-th pair X < Y)
+node(1..n).
+pair(X,Y,(X-1)*n - (X-1)*X/2 + Y - X) :- node(X), node(Y), X < Y.
+edge(X,Y) :- pair(X,Y,I), @subset(m, n*(n-1)/2, I, edges) = 1.
+${sym ? SYM : ''}
+#show node/1.  #show edge/2.
+`,
+});
+const afGnp = (query) => ({
+  name: 'af-gnp',
+  description: `A random argumentation framework: n arguments, each attack X -> Y with probability p/1000${query ? ', and a random query argument' : ''}.`,
+  params: { n: 'int', p: 'permille' }, defaults: { n: 7, p: 250 },
+  text: `% af-gnp: arguments 1..n; each ordered pair (also X = Y) attacks with probability p/1000
+arg(1..n).
+att(X,Y) :- arg(X), arg(Y), @flip(p, X, Y) = 1.
+${query ? 'query(@int(1, n, query)).\n' : ''}
+#show arg/1.  #show att/2.${query ? '  #show query/1.' : ''}
+`,
+});
+const QBF_DNF = {
+  name: 'qbf-dnf',
+  description: 'A random exists-forall QBF with a DNF matrix: t terms of three literals over nx + ny variables.',
+  params: { nx: 'int', ny: 'int', t: 'int' }, defaults: { nx: 5, ny: 4, t: 10 },
+  text: `% qbf-dnf: exists x1..x_nx forall y1..y_ny : T1 v ... v Tt, three literals per term.
+% Each literal picks one of the nx + ny variables uniformly and a sign with probability 1/2.
+xvar(1..nx).  yvar(1..ny).
+term(1..t).  slot(1..3).
+var(T,J,@int(1, nx+ny, T, J)) :- term(T), slot(J).
+sign(T,J,@flip(500, T, J, sign)) :- term(T), slot(J).
+xlit(T,I,S) :- var(T,J,I), sign(T,J,S), I <= nx.
+ylit(T,I-nx,S) :- var(T,J,I), sign(T,J,S), I > nx.
+
+#show xvar/1.  #show yvar/1.  #show xlit/3.  #show ylit/3.
+`,
+};
+const BALLOTS_IC = {
+  name: 'ballots-ic',
+  description: 'An election under impartial culture: v voters, each ranks the four candidates a, b, c, d by a uniform permutation.',
+  params: { v: 'int' }, defaults: { v: 7 },
+  text: `% ballots-ic: v voters; voter V ranks the candidates by a uniform permutation named V
+cand(a;b;c;d).
+c(1,a). c(2,b). c(3,c). c(4,d).
+voter(1..v).
+ballot(V,(A,B,C,D)) :- voter(V), c(@perm(4,1,V),A), c(@perm(4,2,V),B), c(@perm(4,3,V),C), c(@perm(4,4,V),D).
+favourite(b).
+
+#show cand/1.  #show ballot/2.  #show favourite/1.
+`,
+};
+const BALLOTS_MALLOWS = {
+  name: 'ballots-mallows',
+  description: 'An election under the Mallows model: rankings near a, b, c, d with dispersion phi/1000 (1000 = impartial culture).',
+  params: { v: 'int', phi: 'permille' }, defaults: { v: 7, phi: 500 },
+  text: `% ballots-mallows: voter V places candidate I at position @mallows(4, phi, I, V)
+cand(a;b;c;d).
+c(1,a). c(2,b). c(3,c). c(4,d).
+voter(1..v).
+at(V,@mallows(4, phi, I, V),X) :- voter(V), c(I,X).
+ballot(V,(A,B,C,D)) :- at(V,1,A), at(V,2,B), at(V,3,C), at(V,4,D).
+favourite(b).
+
+#show cand/1.  #show ballot/2.  #show favourite/1.
+`,
+};
+
+// example id -> its generators
+export const GENERATORS = {
+  'clique-colouring': [gnp(true), gnm(true)],
+  arrowing: [gnp(), gnm()],
+  choosability: [gnp(), gnm()],
+  'af-preferred': [afGnp(true)],
+  'af-semi-stable': [afGnp(false)],
+  qbf: [QBF_DNF],
+  'kemeny-control': [BALLOTS_IC, BALLOTS_MALLOWS],
+};
+// recipe instances added to the library (their facts are generated on demand)
+export const RECIPES = {
+  qbf: [{ id: 'dnf-1', recipe: { generator: 'qbf-dnf', params: { nx: 5, ny: 4, t: 10 }, seed: 1 }, tags: ['generated'] }],
+};

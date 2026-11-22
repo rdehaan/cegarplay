@@ -5,3 +5,4 @@ spike/web/gc*_standalone.lp
 .DS_Store
 dist/
 test/screenshots/
+__pycache__/

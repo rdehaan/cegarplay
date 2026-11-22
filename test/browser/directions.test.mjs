@@ -148,3 +148,22 @@ test('S2: with certificates on, the Statistics tab counts refinements per level'
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('I2: Preview 6 shows six instances; Add as instance stores a recipe that a run generates', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf&tab=9');
+  assert.equal(await page.$eval('#generator-select', (s) => s.value), 'qbf-dnf');
+  await page.click('#preview-button');
+  await page.waitForSelector('#generator-preview .generator-card:nth-child(6)');
+  assert.equal(await page.$$eval('#generator-preview .generator-card', (c) => c.length), 6);
+  assert.match(await page.textContent('#generator-status'), /6 instances, 6 accepted of \d+ draws/);
+  assert.match(await page.textContent('#generator-preview .generator-card'), /Seed 1, attempt 0, exact/);
+  await page.click('#generator-preview .generator-card button');
+  assert.equal(await page.$eval('#instances-table', (t) => !!t.querySelector('tr[data-instance="qbf-dnf-s1"]')), true);
+  // a run of the recipe generates the facts first (dnf-1 has the same recipe: 8 solutions)
+  await page.selectOption('#instance-select', 'qbf-dnf-s1');
+  await page.click('#run-button');
+  await settled(page);
+  assert.equal(await page.evaluate(() => window.cegarplay.stats.S.solutions), 8);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

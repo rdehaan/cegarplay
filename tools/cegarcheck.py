@@ -366,6 +366,20 @@ def select_instance(project, want):
     raise CheckError(f"no instance named '{want}'")
 
 
+def recipe_facts(project, recipe):
+    """The facts of a recipe, generated with tools/draw.py (the twin of lua/draw.lua)."""
+    import os, sys as _sys
+    _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from draw import generate
+    gens = {g.get("name"): g for g in project.get("generators") or []}
+    g = gens.get(recipe.get("generator"))
+    if g is None:
+        raise CheckError(f"no generator named '{recipe.get('generator')}'")
+    params = dict(g.get("defaults") or {})
+    params.update(recipe.get("params") or {})
+    return generate(g["text"], params, int(recipe.get("seed") or 0), int(recipe.get("attempts") or 100))["facts"]
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Check a CegarPlay project with Python clingo.")
     ap.add_argument("project")
@@ -406,6 +420,9 @@ def main(argv=None):
         settings = project.get("settings") or {}
         consts = dict((settings.get("constants") or {}))
         inst = select_instance(project, o.instance)
+        if inst is not None and inst.get("facts") is None and inst.get("recipe"):
+            inst = dict(inst)
+            inst["facts"] = recipe_facts(project, inst["recipe"])
         if inst is not None:
             project = dict(project)
             project["fragments"] = [{"name": "instance", "text": inst.get("facts") or ""}] + \

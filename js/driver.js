@@ -301,6 +301,22 @@ export async function validate(project, engineRun) {
   return problems;
 }
 
+// A generator (docs/spec-instances.md section 4) checked by clingo --mode=gringo behind a
+// one-line stub script that defines every draw function (returning 0), so syntax errors and
+// unsafe variables are reported with their line and never reach ctl:add. params: ["n=7", ...].
+export const GENERATOR_STUB = '#script (lua) local clingo = require("clingo"); local function z() return clingo.Number(0) end; ' +
+  'flip, int, weighted, perm, subset, mallows = z, z, z, z, z, z #end.';
+export async function validateGenerator(generator, engineRun, params = []) {
+  const text = `${GENERATOR_STUB}\n${generator.text || ''}\n`;
+  const consts = params.flatMap((c) => ['-c', c]).join(' ');
+  const r = await engineRun(text, `--mode=gringo -Wnone ${consts}`.trim());
+  if (r.status === 0) return [];
+  const errs = parseClingoErrors(r.err || []).filter((e) => e.severity === 'error')
+    .map((e) => ({ line: e.line - 1, col: e.col, message: e.message }));
+  if (!errs.length) errs.push({ line: 1, col: 1, message: (r.err || []).join('\n').trim() || `clingo exited with status ${r.status}` });
+  return errs;
+}
+
 // ASP comments blanked out (strings kept).
 export function stripAspComments(text) {
   let out = '', i = 0;

@@ -1,6 +1,7 @@
 // Run bar and run flow (spec-app.md section 6).
 import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody, modulesFor } from './driver.js';
 import { TEMPLATES, template, derive } from './project.js';
+import { resolveProject } from './instances.js';
 import { hashText } from './stats.js';
 import { fmt } from './output.js';
 import { Recording } from './recording.js';
@@ -144,6 +145,8 @@ export class Control {
     app.editors.clearAnnotations();
     let problems, instanceId = null;
     try {
+      // an instance stored as a recipe gets its facts from its generator first
+      project = await resolveProject(project, instance, (p, o) => app.engine.exec(p, o), app.genLua());
       project = derive(project, { instance, variant });
       instanceId = project.instance || null;
     } catch (e) {
