@@ -5,9 +5,8 @@ programming, solved with clingo compiled to WebAssembly.
 
 ## Where things are
 
-- `PLAN.md`: the first implementation plan (done).
-- `PLAN2.md`: the current plan (three directions, loop-language generality). Follow it;
-  its phases point into `docs/directions/*.md` for tasks and checks.
+- Both implementation plans (PLAN.md, PLAN2.md) are done and were removed; they are in
+  the git history. `docs/directions/*.md` holds the design behind PLAN2's features.
 - `PROGRESS.md`: what is done and what is next. **Read it first after any
   context clear. Update it at every checkpoint.**
 - `docs/spec-*.md`: specifications. Read only the ones the current phase names.
@@ -55,6 +54,3 @@ python3 test/serve.py 8811                   # serve the site; add "coi" for iso
 - One phase at a time. Commit at each checkpoint: `Phase N: <title>`.
 - Keep output short: pipe long test output through `tail`; never print
   `js/ace.js`, `vendor/clingo-wasm/*.js` or the `.wasm` files.
-- PLAN2 checkpoints: commit and continue with the next phase without stopping (owner's request).
-- At a PLAN.md checkpoint print `CHECKPOINT N reached. Safe to /clear, then say: continue with PLAN.md` and stop,
-  unless the user said not to stop at checkpoints.
