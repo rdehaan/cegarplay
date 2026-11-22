@@ -61,6 +61,9 @@ export class Stats {
         <p class="note">Each refinement gets the cheapest certificate that holds: 0 a block, 1 an unsat core, 2 the
         three-valued evaluation of the check, 3 one solver call on the product of abstraction and check.
         Uncertified does not mean unsound; use Audit for a verdict.</p></div>
+      <div class="stats-block" id="lift-block" hidden><h3>Lifting coach</h3>
+        <div class="table-wrapper"><table class="internals-table" id="lift-table"></table></div>
+        <p class="note" id="lift-note"></p></div>
       <div class="stats-block"><h3>Solvers</h3><div class="table-wrapper"><table class="internals-table" id="solver-table"></table></div></div>
       <div class="stats-block"><h3>Refinements</h3><div class="table-wrapper"><table class="internals-table" id="refinement-table"></table></div></div>
       <div class="stats-block"><h3>Charts</h3>
@@ -166,6 +169,19 @@ export class Stats {
     if (c) {
       this.table('certificates-table', ['Level 0 (block)', 'Level 1 (core)', 'Level 2', 'Level 3', 'Uncertified', 'Outside levels 2-3', 'Time level 2', 'Time level 3'],
         [[fmt(c.l0), fmt(c.l1), fmt(c.l2), fmt(c.l3), fmt(c.none), fmt(c.outside), secs(c.t2), secs(c.t3)]], [0, 1, 2, 3, 4, 5, 6, 7]);
+    }
+    // the coach of a lift link (phase S3): per interface predicate, atoms marked by relevant/1 and kept by lifting
+    const L = s && s.lift;
+    const lb = this.root.querySelector('#lift-block');
+    lb.hidden = !L;
+    if (L) {
+      const preds = Object.entries(L.preds || {}).sort((a, b) => a[0].localeCompare(b[0]));
+      const per = (x) => (L.clauses ? (x / L.clauses).toFixed(2) : '–');
+      this.table('lift-table', ['Interface predicate', 'Marked by relevant/1', 'Kept by lifting', 'Per refinement (marked)', 'Per refinement (kept)'],
+        preds.map(([name, p]) => [name, fmt(p.hand), fmt(p.kept), per(p.hand), per(p.kept)]), [1, 2, 3, 4]);
+      this.root.querySelector('#lift-note').textContent = `${fmt(L.clauses)} lifted refinements` +
+        (L.uncertified ? `; ${fmt(L.uncertified)} hand-written sets were not certified (lifting started from the whole interface)` : '') +
+        (L.fallbacks ? `; ${fmt(L.fallbacks)} fallbacks to a block (the counterexample could not be certified)` : '') + '.';
     }
   }
 

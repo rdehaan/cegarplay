@@ -74,7 +74,7 @@ export async function runProject(project, { onEvent, backstop = false, audit = n
   const errors = problems.filter((p) => p.severity === 'error');
   if (errors.length) return { problems: errors, events: [] };
   const runtime = lua('runtime.lua');
-  let opts = { modules: modulesFor(project.settings).map((m) => lua(`${m}.lua`)) };
+  let opts = { modules: modulesFor(project.settings, { compiled: problems.compiled, loop: project.loop }).map((m) => lua(`${m}.lua`)) };
   if (audit) {
     const plan = auditPlan(problems.compiled, audit.link);
     if (plan.error) return { problems: [{ severity: 'error', message: plan.error, where: { kind: 'loop' } }], events: [] };

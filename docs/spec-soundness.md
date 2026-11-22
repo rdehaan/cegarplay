@@ -133,3 +133,34 @@ Measured: `tutorial-first-run` 46 of 46 at level 2; `tutorial-weak-relevant` non
 query; `fewest-clues` 1.3 ms per level-2 certificate. Over 35+ fast single-link clause examples,
 no refinement that removes an audited solution is certified at level 2 or 3
 (`test/ground.test.mjs`). `strong-nash` keeps 38 sound refinements uncertified (level 4, S4).
+
+## 4. `lift` links (phase S3)
+
+Compiler: the link keyword `lift` (`{ lift = true }` in `rt.link`), the member `G.lift(M, X)`
+(two arguments), the error `'lift' and 'compat' cannot be combined`. `modulesFor(settings,
+{ compiled, loop })` adds `lua/ground.lua` when a link has `lift` or the script uses `G.lift`
+(raw Lua: `lift = true` in the text). The Link field is `lifting` (`L.lift` is the method).
+
+`LIFT.lift(L, M, X)` (`lua/ground.lua` section 5):
+
+1. Start set: the candidate's values on the `relevant/1` atoms of X when that set is certified
+   (`certified` = level 2, else level 3), else on the whole interface; if the whole interface is not
+   certified either, fall back.
+2. Deletion: atoms in order of rising blame (per link: how often an atom could not be dropped),
+   ties by index; `drop(lo, hi)` removes the group, keeps it removed when the smaller set is still
+   certified, otherwise splits it in halves; a single atom that cannot go is kept and blamed. Every
+   accepted drop is certified on the set as it then is, so the final set is certified.
+3. The clause: the kept atoms with the opposite of the candidate's values (`c.lifted` = the highest
+   level used). An empty clause means no candidate escapes.
+4. Fallback: `G.block(M)`, counter `lift fallbacks`, and (without `certify: report`, which emits its
+   own) a `K` event `{ level: 0, verdict: "certified", reason: "lift fallback: ..." }`.
+
+The level-2 heads of a counterexample are cached on X per link. The S event gains
+`lift = { clauses, fallbacks, uncertified, kept, hand, preds = { "p/n": { hand, kept } } }`,
+shown as the "Lifting coach" in the Statistics tab.
+
+Measured (`test/lift.test.mjs`): row 23 (61 on `tutorial-weak-relevant`, also with `relevant/1`
+deleted; 3 on `guide-04-one-node`); row 25 (graph-coloring n = 5: 101 solutions, 1,103 lifted
+refinements of 7.38 literals against 1,320 of 13.0 hand-written, about 8 s against 0.1 s);
+43 fast clause examples (51 with `SLOW=1`) reach the count of their loop (the audited count for
+the unsound ones) with `relevant/1` deleted, without a fallback.

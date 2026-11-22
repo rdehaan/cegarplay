@@ -501,7 +501,8 @@ function rt.link(name, from, to, glue, opts)
   end
   from:ground()
   local L = setmetatable({ name = name, from = from, to = to, n = 0, src = {}, slit = {}, dst = {}, ind = {}, sym = {},
-    str = {}, jof = {}, jstr = {}, vbuf = {}, legacy = opts.legacy, compat = opts.compat, facts = 0 }, Link)
+    str = {}, jof = {}, jstr = {}, vbuf = {}, legacy = opts.legacy, compat = opts.compat, lifting = opts.lift, facts = 0 }, Link)
+  if opts.lift and not rt.LIFT then fail("link " .. name .. ": lift needs lua/ground.lua (it is loaded for scripts with a lift link)") end
   local b = to.ctl:backend()
   for atom in from.ctl.symbolic_atoms:iter() do
     local sym = atom.symbol
@@ -558,12 +559,14 @@ end
 local function new_clause(L, lazy, m, x)
   return { link = L, lazy = lazy, m = m, x = x, j = {} }
 end
+rt.new_clause = new_clause
 
 local candidate_text   -- defined below, with the trace helpers
 
 function Link:clause(M, X)
   check_model(self, M, "clause", "from")
   check_model(self, X, "clause", "to")
+  if self.lifting then return rt.LIFT.lift(self, M, X) end
   local v, r = M[self], X[self]
   local lits = M.lazy and self.slit or self.src
   local c = new_clause(self, M.lazy, M, X)
@@ -585,6 +588,14 @@ function Link:clause(M, X)
     fail("relevant/1 derived nothing for link " .. self.name)
   end
   return c
+end
+
+-- G.lift(M, X): a clause computed from the ground programs (lua/ground.lua), on any link.
+function Link:lift(M, X)
+  check_model(self, M, "lift", "from")
+  check_model(self, X, "lift", "to")
+  if not rt.LIFT then fail(self.name .. ".lift needs lua/ground.lua") end
+  return rt.LIFT.lift(self, M, X)
 end
 
 function Link:block(M)

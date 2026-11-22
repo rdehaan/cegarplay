@@ -18,7 +18,7 @@ export const GRAPH = {
 
 // ---- highlighting -------------------------------------------------------------------------
 // The keywords of the loop language (the same list as KEYWORDS in js/compiler.js).
-export const LOOP_KEYWORDS = new Set(('solver link via options legacy compat if elif else loop while repeat until for in ' +
+export const LOOP_KEYWORDS = new Set(('solver link via options legacy compat lift if elif else loop while repeat until for in ' +
   'search on candidate reject with accept restart stop break continue count by log assume limit optimal and or not ' +
   'true false none').split(' '));
 const SPECIAL = new Set(['glue', 'relevant', 'cex', 'clause']);

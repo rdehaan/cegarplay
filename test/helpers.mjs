@@ -162,7 +162,7 @@ export async function runProject(project, opts = {}) {
     compiled = compile(project.loop.text, { fragments: project.fragments.map((f) => f.name) });
     if (!compiled.ok) throw new Error('compile errors: ' + JSON.stringify(compiled.errors));
   }
-  if (!opts.modules) opts = { ...opts, modules: modulesFor(project.settings).map((m) => read(`lua/${m}.lua`)) };
+  if (!opts.modules) opts = { ...opts, modules: modulesFor(project.settings, { compiled, loop: project.loop }).map((m) => read(`lua/${m}.lua`)) };
   const a = assemble(project, compiled, RUNTIME, opts);
   const r = await run(a.program);
   r.assembled = a; r.compiled = compiled;

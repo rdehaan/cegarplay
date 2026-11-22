@@ -5,7 +5,7 @@ ace.define("ace/mode/loop_highlight_rules", ["require", "exports", "module", "ac
   var TextHighlightRules = require("./text_highlight_rules").TextHighlightRules;
   var LoopHighlightRules = function () {
     var keywordMapper = this.createKeywordMapper({
-      "keyword": "solver|link|via|options|legacy|compat|if|elif|else|loop|while|repeat|until|for|in|search|on|candidate|" +
+      "keyword": "solver|link|via|options|legacy|compat|lift|if|elif|else|loop|while|repeat|until|for|in|search|on|candidate|" +
         "reject|with|accept|restart|stop|break|continue|count|by|log|assume|limit|optimal|and|or|not",
       "constant.language": "true|false|none",
       "support.function": "solve|models|add|expand|exhausted|step|clause|block|core|clauses|atoms|push|clear|size"

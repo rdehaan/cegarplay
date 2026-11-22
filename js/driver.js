@@ -35,10 +35,20 @@ export function recordSetting(r) {
 // settings.certify (docs/spec-soundness.md): off (default), report, exact (phase S4).
 export const CERTIFY = ['off', 'report', 'exact'];
 
+// Whether a loop uses `lift` on a link (then lua/ground.lua is needed): the compiler's result,
+// or for raw Lua the text (`lift = true` in an rt.link call).
+export function usesLift(compiled, loop) {
+  if (compiled && Array.isArray(compiled.links)) {
+    return compiled.links.some((L) => L.lift) || Object.values(compiled.linkUses || {}).some((u) => u.includes('lift'));
+  }
+  return !!(loop && loop.language === 'lua' && /\blift\s*=\s*true\b/.test(loop.text || ''));
+}
+
 // The Lua modules (lua/<name>.lua) a project's settings need after the runtime, in order.
-export function modulesFor(settings = {}, { mode = 'run' } = {}) {
+// compiled / loop: the loop (for `lift` links).
+export function modulesFor(settings = {}, { mode = 'run', compiled = null, loop = null } = {}) {
   const out = [];
-  if (CERTIFY.includes(settings.certify) && settings.certify !== 'off') out.push('ground');
+  if ((CERTIFY.includes(settings.certify) && settings.certify !== 'off') || usesLift(compiled, loop)) out.push('ground');
   if (mode === 'audit') out.push('audit');
   return out;
 }

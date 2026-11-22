@@ -191,7 +191,11 @@ function LIFT.level2(L, X, vals)
     for j = 1, L.n do isint[L.dst[j]] = true end
     L.isint = isint
   end
-  local H = heads_for(st, tv, isint)
+  -- the heads depend on the counterexample and the link only: kept with the counterexample
+  local hk = X.heads
+  if not hk then hk = {}; X.heads = hk end
+  local H = hk[L]
+  if not H then H = heads_for(st, tv, isint); hk[L] = H end
   local inK, inPT = {}, {}
   for j = 1, L.n do
     local a, v = L.dst[j], vals[j]
@@ -412,6 +416,135 @@ function LIFT.certify_clause(c)
   return nil, "none", why .. "; " .. tostring(why3)
 end
 
+-------------------------------------------------------------------------------
+-- 5. Lifting (phase S3): a clause computed from the ground programs
+-------------------------------------------------------------------------------
+-- certified(L, X, vals) -> level (2 or 3) or nil
+local function certified(L, X, vals)
+  local t0 = clock()
+  local ok = LIFT.level2(L, X, vals)
+  LIFT.stats.t2 = LIFT.stats.t2 + (clock() - t0)
+  if ok then return 2 end
+  local t1 = clock()
+  local ok3 = LIFT.level3(L, X, vals)
+  LIFT.stats.t3 = LIFT.stats.t3 + (clock() - t1)
+  if ok3 then return 3 end
+  return nil
+end
+LIFT.certified = certified
+
+-- coach data: per interface predicate, atoms marked by relevant/1, atoms kept by lifting
+LIFT.coach = { clauses = 0, fallbacks = 0, uncertified = 0, kept = 0, hand = 0, preds = {} }
+local function pred_of(L, j)
+  local p = L.pred and L.pred[j]
+  if p then return p end
+  L.pred = L.pred or {}
+  local sym = L.sym[j]
+  local ok, name = pcall(function() return sym.name .. "/" .. #sym.arguments end)
+  p = ok and name or "?"
+  L.pred[j] = p
+  return p
+end
+local function coach_pred(name)
+  local c = LIFT.coach.preds[name]
+  if not c then c = { hand = 0, kept = 0 }; LIFT.coach.preds[name] = c end
+  return c
+end
+
+local function lift(L, M, X)
+  local v = M[L]
+  local r = X[L]
+  local co = LIFT.coach
+  L.blame = L.blame or {}
+  local blame = L.blame
+  -- the start set: the relevant/1 atoms when they are certified, else the whole interface
+  local hand, nh = {}, 0
+  for j = 1, L.n do if r[j] then hand[j] = v[j]; nh = nh + 1 end end
+  for j = 1, L.n do if r[j] then local c = coach_pred(pred_of(L, j)); c.hand = c.hand + 1 end end
+  co.hand = co.hand + nh
+  local vals, level = nil, nil
+  if nh > 0 then
+    level = certified(L, X, hand)
+    if level then vals = hand else co.uncertified = co.uncertified + 1 end
+  end
+  if not vals then
+    local full = {}
+    for j = 1, L.n do full[j] = v[j] end
+    level = certified(L, X, full)
+    if not level then return nil end
+    vals = full
+  end
+  -- deletion, atoms in order of rising blame count
+  local order = {}
+  for j in pairs(vals) do order[#order + 1] = j end
+  table.sort(order, function(a, b)
+    local ba, bb = blame[a] or 0, blame[b] or 0
+    if ba ~= bb then return ba < bb end
+    return a < b
+  end)
+  -- try to drop a group at once; on failure split it (a single atom that cannot go is kept
+  -- and blamed). Every accepted drop is certified on the set as it is at that moment.
+  local function drop(lo, hi)
+    if lo > hi then return end
+    local saved = {}
+    for i = lo, hi do local j = order[i]; saved[i] = vals[j]; vals[j] = nil end
+    local lv = certified(L, X, vals)
+    if lv then
+      if lv > level then level = lv end
+      return
+    end
+    for i = lo, hi do vals[order[i]] = saved[i] end
+    if lo == hi then
+      local j = order[lo]
+      blame[j] = (blame[j] or 0) + 1
+      return
+    end
+    local mid = (lo + hi) // 2
+    drop(lo, mid)
+    drop(mid + 1, hi)
+  end
+  drop(1, #order)
+  return vals, level
+end
+
+-- G.clause(M, X) on a lift link, and G.lift(M, X).
+function LIFT.lift(L, M, X)
+  local ok, vals, level = pcall(lift, L, M, X)
+  if not ok then vals, level = nil, nil end
+  local co = LIFT.coach
+  if not vals then
+    co.fallbacks = co.fallbacks + 1
+    rt.count("lift fallbacks")
+    local c = L:block(M)
+    c.x = nil
+    if CERT ~= "report" then
+      LIFT.stats[0] = LIFT.stats[0] + 1
+      rt.emit("K", { c = rt.clauses + 1, i = rt.NULL, l = L.index, level = 0, verdict = "certified",
+        reason = ok and "lift fallback: the counterexample is not certified" or ("lift fallback: " .. tostring(vals)) })
+    end
+    return c
+  end
+  local lits = M.lazy and L.slit or L.src
+  local c = rt.new_clause(L, M.lazy, M, X)
+  local v = M[L]
+  for j = 1, L.n do
+    if vals[j] ~= nil then
+      local k = #c + 1
+      c[k] = v[j] and -lits[j] or lits[j]
+      c.j[k] = j
+      local cp = coach_pred(pred_of(L, j)); cp.kept = cp.kept + 1
+    end
+  end
+  co.clauses = co.clauses + 1
+  co.kept = co.kept + #c
+  c.lifted = level
+  if #c == 0 then
+    -- every candidate fails: the empty clause (the abstraction becomes unsatisfiable)
+    c.empty = true
+  end
+  return c
+end
+
 -- Hook called by the runtime for every clause that refines (reject and S.add).
 rt.certify = function(s, c)
   if CERT ~= "report" then return end
@@ -426,7 +559,15 @@ end
 -- The certificate counts in the S event (only with SETTINGS.certify).
 rt.stats_extra = function(e)
   local s = LIFT.stats
-  e.certificates = { l0 = s[0], l1 = s[1], l2 = s[2], l3 = s[3], none = s.none, outside = s.outside, t2 = s.t2, t3 = s.t3 }
+  if CERT then
+    e.certificates = { l0 = s[0], l1 = s[1], l2 = s[2], l3 = s[3], none = s.none, outside = s.outside, t2 = s.t2, t3 = s.t3 }
+  end
+  local co = LIFT.coach
+  if co.clauses > 0 or co.fallbacks > 0 then
+    local preds = {}
+    for name, p in pairs(co.preds) do preds[name] = { hand = p.hand, kept = p.kept } end
+    e.lift = { clauses = co.clauses, fallbacks = co.fallbacks, uncertified = co.uncertified, kept = co.kept, hand = co.hand, preds = preds }
+  end
 end
 
 return LIFT

@@ -149,6 +149,15 @@ relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
             row marked &#x26A0; in the run history means stop and look.</p>
         </aside>
 
+        <aside class="theory">
+          <span class="aside-title">Letting the playground find the relevant atoms</span>
+          <p>Write <code>lift</code> after a link's fragments (<code>link G = A -&gt; C via shared + glue lift</code>)
+            and <code>G.clause(M, X)</code> computes its set from the ground programs instead of from
+            <code>relevant/1</code>, keeping only atoms it can prove necessary. It is slower, but it never
+            removes a solution, so it is a good check of a hand-written set: the Statistics tab compares
+            the two. See "Refinement variants" in the manual.</p>
+        </aside>
+
         <section class="exercise" id="exercise-1">
           <h2>Exercise 1</h2>
           <p>Name both solutions that the loop marking one node loses, and the refinement that

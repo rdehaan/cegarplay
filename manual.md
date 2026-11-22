@@ -546,6 +546,21 @@ loop's count with it to find a `relevant/1` that is too weak.
 | Refinement computed by its own solver | `Y = R.solve(assume GA(M), GC(X))` then `reject M with GA.clause(M, Y)` | [lang-second-solver](?example=lang-second-solver) |
 | Explicit clauses from ASP | `reject M with G.clauses(X)` | [lang-clauses](?example=lang-clauses) |
 | Files from `cegar.py` | `link G = A -> C via shared + glue legacy` | [lang-legacy](?example=lang-legacy) |
+| Clauses lifted from the ground programs (no `relevant/1` needed) | `link G = A -> C via shared + glue lift`; or `reject M with G.lift(M, X)` on any link | [tutorial-weak-relevant](?example=tutorial-weak-relevant) with `lift` |
+
+**`lift`** (phase S3, `docs/spec-soundness.md` section 4). With the keyword on a link,
+`G.clause(M, X)` computes the clause from the ground programs of both ends: it starts from the
+`relevant/1` atoms when that set is certified (level 2 or 3 of the certificates), else from the
+whole interface, and drops groups of atoms (least blamed first; a group that cannot go is split)
+while the smaller set stays certified. The result removes only candidates that X also refutes.
+When the counterexample itself cannot be certified (for instance a check with negation on a cycle
+through its guess), the clause falls back to `G.block(M)`, with a `K` event at level 0 and the
+counter `lift fallbacks`. `G.lift(M, X)` does the same on a link without the keyword. `lift` and
+`compat` cannot be combined. Lifting costs time: one evaluation of the check per tried group, and
+a solver call on the product of the two programs where level 2 fails (graph-coloring at n = 5:
+8 s instead of 0.1 s, but 1,103 refinements of 7.4 literals instead of 1,320 of 13). The
+Statistics tab shows a **Lifting coach**: per interface predicate, the atoms `relevant/1` marked
+and the atoms lifting kept, and how many hand-written sets were not certified.
 
 In the second-solver variant, `R` has two incoming links: `GA` from `A` (the candidate) and `GC`
 from `C` (the counterexample). `GA.clause(M, Y)` reads `relevant/1` from `R`'s model `Y`.

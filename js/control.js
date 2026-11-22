@@ -190,7 +190,7 @@ export class Control {
     const iso = app.engine.isolated && !!app.engine.control;
     const run = mode === 'audit'
       ? { ...project, settings: { ...project.settings, solutions: 0, candidates: 0, trace: 0 } } : project;
-    const modules = modulesFor(run.settings, { mode }).map((m) => app.modules[m]);
+    const modules = modulesFor(run.settings, { mode, compiled, loop: run.loop }).map((m) => app.modules[m]);
     const assembled = assemble(run, compiled, app.runtime, mode === 'audit'
       ? { poll: iso, modules, body: auditBody(compiled, plan) } : { poll: iso, modules });
     this.assembled = assembled;

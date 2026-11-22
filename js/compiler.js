@@ -1,7 +1,7 @@
 // The loop language: script in, Lua out. See docs/spec-loop-language.md.
 // No DOM, no Node APIs: used by the page and by the tests.
 
-export const KEYWORDS = new Set(('solver link via options legacy compat if elif else loop while repeat until for in ' +
+export const KEYWORDS = new Set(('solver link via options legacy compat lift if elif else loop while repeat until for in ' +
   'search on candidate reject with accept restart stop break continue count by log assume limit optimal and or not ' +
   'true false none').split(' '));
 const LUA_RESERVED = new Set(('and break do else elseif end false for function goto if in local nil not or repeat return ' +
@@ -10,7 +10,7 @@ const RESERVED = new Set([...LUA_RESERVED, 'rt', 'clingo', 'FRAGMENTS', 'CONSTS'
 const COMPOUND = new Set(['if', 'elif', 'else', 'loop', 'while', 'repeat', 'for', 'search', 'on']);
 
 export const SOLVER_MEMBERS = ['solve', 'models', 'add', 'expand', 'exhausted', 'step'];
-export const LINK_MEMBERS = ['clause', 'block', 'core', 'clauses'];
+export const LINK_MEMBERS = ['clause', 'block', 'core', 'clauses', 'lift'];
 export const VALUE_MEMBERS = ['atoms', 'push', 'clear', 'size'];
 
 class CompileError extends Error {
@@ -149,12 +149,13 @@ class Parser {
     const to = this.name('a solver name');
     this.expect('kw', 'via');
     const frags = this.frags();
-    let legacy = false, compat = false;
-    while (this.isKw('legacy') || this.isKw('compat')) {
-      if (this.next().value === 'legacy') legacy = true; else compat = true;
+    let legacy = false, compat = false, lift = false, liftTok = null;
+    while (this.isKw('legacy') || this.isKw('compat') || this.isKw('lift')) {
+      const t = this.next();
+      if (t.value === 'legacy') legacy = true; else if (t.value === 'compat') compat = true; else { lift = true; liftTok = t; }
     }
     this.expect('NEWLINE', undefined, 'end of line');
-    return { t: 'link', line: kw.line, col: kw.col, name, from, to, frags, legacy, compat };
+    return { t: 'link', line: kw.line, col: kw.col, name, from, to, frags, legacy, compat, lift, liftTok };
   }
 
   block() {
@@ -307,7 +308,8 @@ class Parser {
     for (;;) {
       if (this.isOp('.')) {
         this.next();
-        const n = this.name('a member name');
+        // a keyword that is also a member name (G.lift) reads as a name after the dot
+        const n = this.isKw('lift') ? { ...this.next(), type: 'name' } : this.name('a member name');
         if (this.isOp('(')) { const args = this.args(); e = { t: 'method', obj: e, name: n.value, args, line: n.line, col: n.col }; }
         else e = { t: 'attr', obj: e, name: n.value, line: n.line, col: n.col };
       } else if (this.isOp('(')) {
@@ -421,8 +423,10 @@ export function compile(source, { fragments = [] } = {}) {
       for (const end of [d.from, d.to]) if (!solvers.has(end.value)) err(end, `'${end.value}' is not a declared solver`);
       if (d.from.value === d.to.value) err(d.to, 'a link needs two different solvers');
       links.set(d.name.value, d);
-      outLinks.push({ name: d.name.value, from: d.from.value, to: d.to.value, fragments: d.frags.map((f) => f.value), legacy: d.legacy, compat: d.compat });
-      const o = [d.legacy && 'legacy = true', d.compat && 'compat = true'].filter(Boolean).join(', ');
+      if (d.lift && d.compat) err(d.liftTok, "'lift' and 'compat' cannot be combined");
+      outLinks.push({ name: d.name.value, from: d.from.value, to: d.to.value, fragments: d.frags.map((f) => f.value), legacy: d.legacy, compat: d.compat,
+        ...(d.lift ? { lift: true } : {}) });
+      const o = [d.legacy && 'legacy = true', d.compat && 'compat = true', d.lift && 'lift = true'].filter(Boolean).join(', ');
       emit(`local ${d.name.value} = rt.link(${luaString(d.name.value)}, ${d.from.value}, ${d.to.value}, {${fr}}, {${o}})`, d.line, 0);
     }
   }
@@ -588,7 +592,7 @@ export function compile(source, { fragments = [] } = {}) {
       if (!LINK_MEMBERS.includes(name)) { err(e, `unknown member '${name}' of link ${G}; valid: ${LINK_MEMBERS.join(', ')}, and ${G}(M)`); return 'nil'; }
       if (!args) { err(e, `${G}.${name} must be called`); return 'nil'; }
       const pos = positional(args, e, `${G}.${name}`);
-      const want = { clause: 2, block: 1, core: 1, clauses: 1 }[name];
+      const want = { clause: 2, block: 1, core: 1, clauses: 1, lift: 2 }[name];
       if (pos.length !== want) err(e, `${G}.${name} takes ${want === 1 ? 'one argument' : 'two arguments'}`);
       if (name === 'core' && pos[0] && !(pos[0].t === 'name' && solvers.has(pos[0].name))) err(pos[0], `${G}.core takes the check solver, as in ${G}.core(C)`);
       use(G, name);

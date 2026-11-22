@@ -376,7 +376,7 @@ commit at each checkpoint, no stops.
 - [x] S2 Capture, level 2, level 3
 - [x] I2 Generators
 - [x] V2 Loop anatomy
-- [ ] S3 `lift` links
+- [x] S3 `lift` links
 - [ ] I3 Campaigns
 - [ ] V3 Domain views
 - [ ] S4 Rule refinements, exact level
@@ -499,8 +499,34 @@ Notes per phase:
   - Searches are recognised as calls that enclose others (`C.p`), since C events carry no kind.
   - Fix of I2: an unknown `--instance` exited 1 instead of 2 (`resolveProject` threw first).
 
-**Next step (PLAN2):** review of wave 2 (S2, I2, V2) by a background agent, then S3 `lift` links
-(`docs/directions/soundness.md`, phase S3).
+- **S3 (done):** keyword `lift` and member `G.lift(M, X)` (compiler, `mode-loop.js`, `guide.js`
+  keyword list; `lift` after a dot reads as a member name), `usesLift`/`modulesFor(settings,
+  { compiled, loop })` loads `lua/ground.lua`, `Link:clause` on a lift link and `Link:lift` call
+  `LIFT.lift` (start set: certified `relevant/1` set else the whole interface; group deletion by
+  rising blame with halving; fallback to a block with `K` level 0 and counter `lift fallbacks`),
+  `rt.new_clause` exported, level-2 heads cached per counterexample, S event `lift`, Statistics
+  "Lifting coach", manual (Refinement variants), guide/04 theory box, spec-soundness section 4.
+  Rows 23 and 25 hold (graph-coloring n = 5: 1,103 lifted refinements against 1,320
+  hand-written). 43 fast clause examples (51 with SLOW) reach their loop's count with
+  `relevant/1` deleted and no fallback.
+  - Deviation: "the 27 examples of the S2 list" is not a list in the repo; the test takes every
+    fast single-link clause example the audit can check, compares with the library count of the
+    loop (the audited count for unsound examples: the audit counts per interface assignment, so
+    for sound examples like `subset-sum-game` it differs from the loop's 11), skips
+    `guide-08-forgot-block` (fails by design). Eight slow ones (gc-shape1/2, fewest-clues 17 s,
+    ...) run only with SLOW=1.
+  - Deviation: deletion drops groups (halving) instead of one atom at a time: same guarantee,
+    fewer certificate calls. Lifting is slow where level 2 fails (one product solve per tried
+    group): graph-coloring n = 5 8 s against 0.1 s.
+  - The Link field is `lifting`: a field `lift` would be shadowed by the method `Link:lift`
+    when absent (cost a confusing "index nil LIFT" error).
+
+**Next step (PLAN2):** fix the confirmed findings of the wave-2 review (commit separately):
+(1) `heads_for` drops interface-atom heads of normal check rules, so level 2/3 certify unsound
+clauses (a rule `a :- g.` with `a` an interface atom acts as a constraint); (2) the level-3 product
+is cached per link and never rebuilt after `S:expand`; (3) `recipeKey` ignores generator
+`defaults`; (4) `tools/draw.py` lacks the argument checks of `lua/draw.lua`, and `recipe_facts`
+passes unknown/empty params. Then I3 Campaigns.
 
 ## Next step (PLAN.md, guide, TODO)
 
