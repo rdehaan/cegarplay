@@ -387,7 +387,7 @@ commit at each checkpoint, no stops.
 - [x] V5 Cursor, compare, export, lecture
 - [x] L1 Values (G1–G3)
 - [x] L2 Control (G4, G5, G8)
-- [ ] L3 Dynamics (G6)
+- [x] L3 Dynamics (G6)
 - [ ] L4 Structure (G7)
 - [ ] Final review
 
@@ -691,7 +691,19 @@ Notes per phase:
     candidate`), so G8 is tested on the spec's knapsack-interdiction case. Golden fixture
     `qbf-three-blocks.lua` rewritten (the example changed).
 
-**Next step (PLAN2):** L3 Dynamics (G6: ground_part, extend, guard, externals).
+- **L3 (done):** `S.ground(part, n)` (`Solver:ground_part`), `G.extend(part, n)` (the glue control
+  is kept; new glue atoms become interface atoms; a glue with a parameterised part may start
+  empty), `S.set(a, v)` / `S.release(a)` for `#external` atoms, `S.add(c, while a)` (guard
+  literal). New library example `conformant-growing` (no bound constant: shortest horizon 8, the
+  same 3 plans as `conformant-planning` with t = 8; none at t = 7). `lua/ground.lua` refuses
+  level-2/3 certificates for programs with `#external` atoms (the observer's `external` hook;
+  the product would read them as false). `test/dynamics.test.mjs`.
+  - Deviation: `conformant-planning` itself is kept (its counts, rows and S4 certificates are
+    pinned); the growing loop is a new example. `G.extend` takes the part and its number, as
+    `A.ground` does (the spec wrote `G.extend()`).
+
+**Next step (PLAN2):** L4 Structure (G7: `def`/`return`, solver families) and the 18-family
+coverage tests; then the final review.
 
 ## Next step (PLAN.md, guide, TODO)
 

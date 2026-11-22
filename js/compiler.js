@@ -9,8 +9,8 @@ const LUA_RESERVED = new Set(('and break do else elseif end false for function g
 const RESERVED = new Set([...LUA_RESERVED, 'rt', 'clingo', 'FRAGMENTS', 'CONSTS', 'SETTINGS', 'main', 'LOOP_LINES', 'ipairs', '_']);
 const COMPOUND = new Set(['if', 'elif', 'else', 'loop', 'while', 'repeat', 'for', 'search', 'on']);
 
-export const SOLVER_MEMBERS = ['solve', 'models', 'add', 'expand', 'exhausted', 'step', 'core', 'atom'];
-export const LINK_MEMBERS = ['clause', 'block', 'core', 'clauses', 'lift', 'above', 'below'];
+export const SOLVER_MEMBERS = ['solve', 'models', 'add', 'expand', 'exhausted', 'step', 'core', 'atom', 'ground', 'set', 'release'];
+export const LINK_MEMBERS = ['clause', 'block', 'core', 'clauses', 'lift', 'above', 'below', 'extend'];
 export const VALUE_MEMBERS = ['atoms', 'push', 'clear', 'size', 'on', 'flip', 'without', 'true', 'value', 'count', 'cost', 'arg'];
 
 class CompileError extends Error {
@@ -346,6 +346,7 @@ class Parser {
     if (this.isKw('assume')) { this.next(); return { k: 'assume', e: this.expr(), ...at }; }
     if (this.isKw('limit')) { this.next(); return { k: 'limit', e: this.expr(), ...at }; }
     if (this.isKw('optimal')) { this.next(); return { k: 'optimal', ...at }; }
+    if (this.isKw('while')) { this.next(); return { k: 'while', e: this.expr(), ...at }; }
     const n1 = this.peek(1), n2 = this.peek(2), n3 = this.peek(3);
     if (t.type === 'name' && n1.type === 'op' && n1.value === '=') {
       this.next(); this.next();
@@ -556,6 +557,17 @@ export function compile(source, { fragments = [] } = {}) {
         case 'exhausted': if (args) err(e, `${S}.exhausted is not a method`); return `${S}.exhausted`;
         case 'step': if (args) err(e, `${S}.step is not a method`); return `${S}.k`;
         case 'core': if (args) err(e, `${S}.core is not a method: write ${S}.core.on(G)`); return `${S}:core()`;
+        case 'ground': {
+          const pos = args ? positional(args, e, `${S}.ground`) : [];
+          if (!args || pos.length !== 2 || pos[0].t !== 'name') { err(e, `${S}.ground takes a program part and a number, as in ${S}.ground(step, t)`); return 'nil'; }
+          return `${S}:ground_part(${luaString(pos[0].name)}, ${ex(pos[1])})`;
+        }
+        case 'set': case 'release': {
+          const pos = args ? positional(args, e, `${S}.${name}`) : [];
+          const want = name === 'set' ? 2 : 1;
+          if (!args || pos.length !== want) { err(e, name === 'set' ? `${S}.set takes an atom and true or false, as in ${S}.set(${S}.atom("frame", t), false)` : `${S}.release takes an atom`); return 'nil'; }
+          return `${S}:${name}(${pos.map((a) => ex(a)).join(', ')})`;
+        }
         case 'atom': {
           const pos = args ? positional(args, e, `${S}.atom`) : [];
           if (!args || !pos.length) { err(e, `${S}.atom takes a predicate name and its arguments, as in ${S}.atom("bound", n)`); return 'nil'; }
@@ -581,9 +593,10 @@ export function compile(source, { fragments = [] } = {}) {
         case 'add': {
           if (!args) { err(e, `${S}.add must be called: ${S}.add(clause)`); return 'nil'; }
           if (ctx.cand && ctx.cand.solver === S) err(e, `${S}.add cannot be used inside 'on candidate' of ${S}; use reject`);
-          const pos = positional(args, e, `${S}.add`);
+          const guard = args.find((a) => a.k === 'while');
+          const pos = positional(args.filter((a) => a.k !== 'while'), e, `${S}.add`);
           if (pos.length !== 1) err(e, `${S}.add takes one clause or a list of clauses`);
-          return `${S}:add(${pos.map((a) => ex(a)).join(', ')})`;
+          return `${S}:add(${pos.map((a) => ex(a)).join(', ')}${guard ? `, { guard = ${ex(guard.e)} }` : ''})`;
         }
         case 'expand': {
           if (!args) { err(e, `${S}.expand must be called: ${S}.expand(part, name = atoms)`); return 'nil'; }
@@ -616,6 +629,11 @@ export function compile(source, { fragments = [] } = {}) {
       if (!args) { err(e, `${G}.${name} must be called`); return 'nil'; }
       const pos = positional(args, e, `${G}.${name}`);
       const want = { clause: 2, block: 1, core: 1, clauses: 1, lift: 2, above: 1, below: 1 }[name];
+      if (name === 'extend') {
+        if (pos.length !== 2 || pos[0].t !== 'name') { err(e, `${G}.extend takes a program part and a number, as in ${G}.extend(step, t)`); return 'nil'; }
+        use(G, name);
+        return `${G}:extend(${luaString(pos[0].name)}, ${ex(pos[1])})`;
+      }
       // G.clause(X): the clause from the counterexample alone (its own interface values)
       if (name === 'clause' && pos.length === 1) { use(G, name); return `${G}:clause(nil, ${ex(pos[0])})`; }
       if (pos.length !== want) err(e, `${G}.${name} takes ${want === 1 ? 'one argument' : 'two arguments'}`);

@@ -65,6 +65,11 @@ function LIFT.capture(s)
       local ok, e = pcall(capture, st, choice, head, body, lower)
       if not ok and not st.error then st.error = tostring(e) end
     end,
+    -- an #external atom has no rule but may be set true: the evaluators would read it as
+    -- false, so a program with externals gets no level-2/3 certificate
+    external = function(_, atom, value)
+      pcall(function() st.error = st.error or "the program has #external atoms" end)
+    end,
   })
   -- the truth of every store atom in a model of this solver (snapshot calls it)
   s.truth = function(m)

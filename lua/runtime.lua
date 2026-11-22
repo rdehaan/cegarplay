@@ -514,12 +514,17 @@ function rt.link(name, from, to, glue, opts)
   end
   h:close()
   if not found then
-    fail("link " .. name .. ": the glue fragments derive no " .. (opts.legacy and "shown atom" or "glue/1 atom"))
+    -- a glue with a parameterised part may start empty: G.extend adds its atoms later
+    local grows = false
+    for _, f in ipairs(glue) do if (FRAGMENTS[f] or ""):match("#program%s+[%a_][%w_]*%s*%(") then grows = true end end
+    if not grows then fail("link " .. name .. ": the glue fragments derive no " .. (opts.legacy and "shown atom" or "glue/1 atom")) end
   end
   from:ground()
+  local glue_ctl, glue_set = g, set
   local L = setmetatable({ name = name, from = from, to = to, n = 0, src = {}, slit = {}, dst = {}, ind = {}, sym = {},
     str = {}, jof = {}, jstr = {}, vbuf = {}, legacy = opts.legacy, compat = opts.compat, lifting = opts.lift, facts = 0 }, Link)
   if opts.lift and not rt.LIFT then fail("link " .. name .. ": lift needs lua/ground.lua (it is loaded for scripts with a lift link)") end
+  L.glue_ctl, L.glue_set = glue_ctl, glue_set
   local b = to.ctl:backend()
   for atom in from.ctl.symbolic_atoms:iter() do
     local sym = atom.symbol
@@ -621,6 +626,87 @@ function Link:clause(M, X)
     fail("relevant/1 derived nothing for link " .. self.name)
   end
   return c
+end
+
+-- Growing programs (phase L3) ------------------------------------------------------------
+-- S.ground(part, n): grounds #program part(t). of S with t = n.
+local function idle(S, what)
+  if not rt.prepared then fail(S.name .. "." .. what .. ": call rt.prepare() first") end
+  if S.busy then fail(S.name .. "." .. what .. ": the solver is busy (searching or solving)") end
+end
+function Solver:ground_part(part, n)
+  idle(self, "ground")
+  if type(part) ~= "string" or not part:match("^[a-z_][A-Za-z0-9_]*$") then fail(self.name .. ".ground: the first argument is the name of a program part") end
+  if math.type(n) ~= "integer" then fail(self.name .. ".ground: the parameter must be a whole number") end
+  self:ground()
+  local t0 = clock()
+  self.ctl:ground({ { part, { clingo.Number(n) } } })
+  self:resolve()
+  self.n.ground = self.n.ground + (clock() - t0)
+end
+-- G.extend(part, n): grounds the same part in the glue; each new glue(T) atom becomes an
+-- interface atom of G (a choice of the target with its relevant atom, or a fact when T is a
+-- fact of the source). Ground the source's part first and the target's after.
+function Link:extend(part, n)
+  local A, C = self.from, self.to
+  if A.busy or C.busy then fail(self.name .. ".extend: a solver of the link is busy") end
+  if type(part) ~= "string" or not part:match("^[a-z_][A-Za-z0-9_]*$") then fail(self.name .. ".extend: the first argument is the name of a program part") end
+  if math.type(n) ~= "integer" then fail(self.name .. ".extend: the parameter must be a whole number") end
+  local g, set = self.glue_ctl, self.glue_set
+  g:ground({ { part, { clingo.Number(n) } } })
+  local h = g:solve{ yield = true }
+  local new = {}
+  for m in h:iter() do
+    for _, a in ipairs(m:symbols{ shown = true }) do
+      local key
+      if a.name == "glue" and #a.arguments == 1 and a.positive ~= false then key = tostring(a.arguments[1]) elseif self.legacy then key = tostring(a) end
+      if key and not set[key] then set[key] = true; new[key] = true end
+    end
+    break
+  end
+  h:close()
+  local b = C.ctl:backend()
+  local added = 0
+  for atom in A.ctl.symbolic_atoms:iter() do
+    local sym = atom.symbol
+    local key = tostring(sym)
+    if new[key] then
+      local d = b:add_atom(sym)
+      if atom.is_fact then
+        b:add_rule{ head = { d }, body = {} }
+        self.facts = self.facts + 1
+      else
+        local i = b:add_atom(clingo.Function("relevant", { sym }, true))
+        b:add_rule{ head = { d }, body = {}, choice = true }
+        if self.compat then b:add_rule{ head = { i }, body = {}, choice = true } end
+        local j = self.n + 1; self.n = j
+        self.src[j] = atom.literal; self.dst[j] = d; self.ind[j] = i; self.sym[j] = sym; self.str[j] = key
+        self.jof[d] = j; self.jstr[key] = j
+        added = added + 1
+      end
+    end
+  end
+  b:close()
+  return added
+end
+-- Externals: S.set(a, true | false), S.release(a); a is S.atom(...) or a literal.
+local function external_of(S, a, what)
+  local l = type(a) == "table" and a[1] or a
+  if math.type(l) ~= "integer" then fail(S.name .. "." .. what .. ": expected an atom such as " .. S.name .. ".atom(\"frame\", t)") end
+  local ok = false
+  for x in S.ctl.symbolic_atoms:iter() do if x.literal == l then ok = x.is_external; break end end
+  if not ok then fail(S.name .. "." .. what .. ": the atom is not an #external atom of " .. S.name) end
+  return l
+end
+function Solver:set(a, v)
+  idle(self, "set")
+  local l = external_of(self, a, "set")
+  self.ctl:assign_external(l, v and true or false)
+end
+function Solver:release(a)
+  idle(self, "release")
+  local l = external_of(self, a, "release")
+  self.ctl:release_external(l)
 end
 
 -- The values of a model of the source, or of a list G(M) (literals of the target).
@@ -1212,9 +1298,22 @@ local function queue_clause(s, c)
   if rt.certify then rt.certify(s, c) end
 end
 
-function Solver:add(c)
+function Solver:add(c, o)
   if getmetatable(self) ~= Solver then fail("add: not a solver") end
   if self.busy then fail(self.name .. ".add: the solver is searching; use reject inside on candidate") end
+  -- A.add(c, while a): the clause holds only while the atom a is true (one more literal, not a)
+  if o and o.guard ~= nil then
+    local g = type(o.guard) == "table" and o.guard[1] or o.guard
+    if math.type(g) ~= "integer" then fail(self.name .. ".add(c, while a): the guard must be an atom such as " .. self.name .. ".atom(\"frame\", t)") end
+    local function guarded_copy(x)
+      if type(x) ~= "table" then return x end
+      local q = { link = x.link, lazy = x.lazy, m = x.m, x = x.x, j = {} }
+      for k = 1, #x do q[k] = x[k]; q.j[k] = x.j and x.j[k] end
+      q[#q + 1] = -g
+      return q
+    end
+    if is_clause_list(c) then local out = {}; for i, x in ipairs(c) do out[i] = guarded_copy(x) end; c = out else c = guarded_copy(c) end
+  end
   if is_clause_list(c) then for _, x in ipairs(c) do queue_clause(self, x) end else queue_clause(self, c) end
 end
 

@@ -1376,6 +1376,17 @@
       }
     },
     {
+      "id": "conformant-growing",
+      "title": "Conformant planning, growing horizon",
+      "group": "several-solvers",
+      "summary": "Conformant planning without a bound constant: the horizon grows (A.ground, G.extend, externals) until the first plans appear, which are the shortest.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": null
+    },
+    {
       "id": "knapsack-bounds",
       "title": "Knapsack bounds in Lua",
       "group": "several-solvers",

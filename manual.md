@@ -610,6 +610,19 @@ search A:
   proven (`knapsack-interdiction` with `#minimize { 1,I : lock(I) }`: one solution).
 - `keep` is a keyword. `qbf-three-blocks` uses an inner search: 12 solves of B instead of 30.
 
+## Dynamics: growing programs and externals (phase L3)
+
+| Script | Meaning |
+| --- | --- |
+| `A.ground(step, t)` | Grounds `#program step(t).` of A with the number t. |
+| `G.extend(step, t)` | Grounds the same part in G's glue; each new `glue(T)` atom becomes an interface atom (a choice of the target with its `relevant` atom, or a fact when T is a fact of the source). Ground the source's part before and the target's part after. A glue with a parameterised part may derive no atom at first. |
+| `A.set(A.atom("query", t), true)`, `A.release(...)` | Assign or release an `#external` atom (an error names an atom that is not external). |
+| `A.add(c, while a)` | The clause holds only while the atom a is true (it gets the literal "not a"). |
+
+The library example `conformant-growing` finds the shortest conformant plans by growing the
+horizon until plans exist (8 steps, the same 3 plans as `conformant-planning` with `t = 8`).
+Certificates are refused for programs with `#external` atoms.
+
 ## Refinement variants
 
 | Variant | Script | Example |
@@ -1069,7 +1082,7 @@ with the example's own settings, checked by `test/library.test.mjs` for every ex
 | `guide` | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
 | `problems` | `graph-coloring`, `graph-coloring-original`, `nash`, `voting-justification` |
 | `exists-forall` | `qbf`, `qbf-optimal`, `qbf-expansion`, `smallest-mus`, `min-dnf`, `integer-expressions`, `strategic-companies`, `diagnosis`, `stable-models`, `abduction`, `default-extensions`, `belief-update`, `af-preferred`, `af-semi-stable`, `conformant-planning`, `sufficient-reason`, `actual-cause`, `clique-interdiction`, `clique-colouring`, `arrowing`, `choosability`, `subset-sum-game`, `knapsack-interdiction`, `fewest-clues`, `fair-division`, `hedonic-core`, `boolean-game`, `strong-nash`, `kemeny-control`, `agenda-safety` |
-| `several-solvers` | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking`, `knapsack-fortification`, `qbf-three-blocks` |
+| `several-solvers` | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking`, `knapsack-fortification`, `qbf-three-blocks`, `conformant-growing` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.
 

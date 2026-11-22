@@ -1,0 +1,46 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Conformant planning, growing horizon",
+  "description": "The conformant planning loop without a bound constant: the horizon grows by one step at a time (A.ground, G.extend, C.ground), an external query(t) asks for the goal at the current horizon, and the first horizon with a plan gives the shortest plans.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The room, the moves and the horizon. Added to every solver.",
+      "text": "% A robot in a 4 x 4 room with one pillar. It does not know where it starts.\ncell(1..4,1..4).\npillar(2,3).\nfree(X,Y) :- cell(X,Y), not pillar(X,Y).\ngoal(2,2).\n% The four moves.\ndir(e,1,0). dir(w,-1,0). dir(n,0,1). dir(s,0,-1).\n% to(X,Y,D,X2,Y2): moving in direction D from (X,Y) leads to (X2,Y2). A move against\n% a wall or the pillar leaves the robot where it is.\nto(X,Y,D,X+DX,Y+DY) :- free(X,Y), dir(D,DX,DY), free(X+DX,Y+DY).\nto(X,Y,D,X,Y)       :- free(X,Y), dir(D,DX,DY), not free(X+DX,Y+DY).\n\n#program step(t).\n% Step t exists once the horizon reaches it.\nstep(t).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): any sequence of t moves.",
+      "text": "% A candidate: one move per step, for the steps grounded so far.\n#show do/2.\n#program step(t).\n1 { do(t,D) : dir(D,_,_) } 1.\n% query(t): the plan has to reach the goal at step t (true for the current horizon only).\n#external query(t).\n"
+    },
+    {
+      "name": "refine",
+      "description": "Grounded once per counterexample: the plan must also work from that start cell.",
+      "text": "#program refine(k).\n% cex(k,start(X,Y)): the k-th counterexample is a start cell. Follow the plan from there ...\nat(k,X,Y,0) :- cex(k,start(X,Y)).\nat(k,X2,Y2,T) :- at(k,X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).\n% ... it has to end in the goal at the horizon being queried.\n:- goal(X,Y), query(T), not at(k,X,Y,T).\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the moves of the plan.",
+      "text": "#program step(t).\nglue(do(t,D)) :- dir(D,_,_).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for a start cell from which the plan does not reach the goal (solver C).",
+      "text": "% A counterexample: a start cell from which the plan ends somewhere else at the horizon.\n1 { start(X,Y) : free(X,Y) } 1.\nat(X,Y,0) :- start(X,Y).\n#program step(t).\nat(X2,Y2,t) :- at(X,Y,t-1), do(t,D), to(X,Y,D,X2,Y2).\n#external query(t).\n:- goal(X,Y), at(X,Y,T), query(T).\n#show start/2.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# No bound constant: the horizon t grows until a plan exists. Each round grounds step t in\n# A, makes the new do(t,D) atoms interface atoms (G.extend, before C grounds the step that\n# reads them), grounds step t in C, and moves the external query from t - 1 to t.\n# Refinements of shorter horizons stay: a start cell refutes a plan prefix only through\n# query(T), so they are inactive at the new horizon (sound, only weaker).\nt = 0\nfound = false\nwhile not found:\n    t = t + 1\n    A.ground(step, t)\n    G.extend(step, t)\n    C.ground(step, t)\n    if t > 1:\n        A.set(A.atom(\"query\", t - 1), false)\n        C.set(C.atom(\"query\", t - 1), false)\n    A.set(A.atom(\"query\", t), true)\n    C.set(C.atom(\"query\", t), true)\n    loop:\n        M = A.solve()\n        if not M: break\n        X = C.solve(assume G(M))\n        if X:\n            A.expand(refine, cex = X.atoms(start/2))\n        else:\n            accept M\n            A.add(G.block(M))\n            found = true\nlog \"shortest horizon:\", t\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}
