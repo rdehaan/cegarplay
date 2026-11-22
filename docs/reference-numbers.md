@@ -48,6 +48,43 @@ per-solver propagator do not change them (the spike has both).
 | 12 | Graph colouring: `legacy` import of the original file vs. `examples/graph-coloring-original.json`, n=6, Shape 1, all | Identical statistics; 9,270 solutions |
 | 13 | Any compiled template vs. the hand-written Lua in `spike/js/shapes.mjs` | Identical statistics |
 
+## Directions (PLAN2): rows 14–30
+
+From `docs/directions/implementation.md`, measured by the planning spikes on clingo-wasm 0.6.0 under Node 22.
+
+These extend `docs/reference-numbers.md`. All were measured by the spikes on clingo-wasm 0.6.0 under Node 22.
+
+| # | Project | Action | Expected |
+| --- | --- | --- | --- |
+| 14 | `tutorial-weak-relevant`, n = 8 | Audit | 256 candidates, 61 solutions, 640 counterexamples, 499 pairs, 499 unsound, 59 solutions at risk |
+| 15 | `tutorial-weak-relevant`, n = 2 | Audit | 4 candidates, 3 solutions, 1 pair, 1 unsound; n = 1 is sound |
+| 16 | `tutorial-first-run`, n = 8 | Audit | 640 pairs, 0 unsound |
+| 17 | `graph-coloring`, n = 5 | Audit | 3,373 candidates, 101 solutions, 13,950 counterexamples, 13,950 pairs, 0 unsound |
+| 18 | `graph-coloring-original`, n = 5 | Audit | 3,272 pairs, 0 unsound |
+| 19 | `graph-coloring-original`, n = 6 | Audit (slow, 54 s) | 102,508 candidates, 10,698 solutions, 606,030 counterexamples, 91,810 pairs, 44,125 unsound, 1,440 at risk |
+| 20 | `guide-04-one-node` | Audit | 176 candidates, 3 solutions, 290 pairs, 64 unsound, 2 at risk |
+| 21 | `tutorial-first-run` | Level 2 on each refinement | All certified |
+| 22 | `tutorial-weak-relevant` | Levels 2 and 3 on each refinement | None certified |
+| 23 | `tutorial-weak-relevant` | `lift` link | 61 solutions |
+| 24 | `graph-coloring`, n = 5 | Level 2, then level 3 | Level 2 certifies none, level 3 certifies all |
+| 25 | `graph-coloring`, n = 5 | `lift` link | 101 solutions, with fewer refinements than without `lift` |
+| 26 | `gnp` generator, n = 7, p = 300, seed 1 | Generate | `edge(1,5) edge(1,6) edge(2,3) edge(2,4) edge(3,5) edge(3,6) edge(4,6) edge(4,7) edge(5,7)` at attempt 0 |
+| 27 | `graph-coloring`, n = 6, Shape 1, every step recorded | Run | 21,078 `R` events; run time within 10% of the unrecorded run |
+
+Audit counts and solution counts hold for any search order. Counts of refinements depend on the search order, so rows 21 to 25 assert relations, not the spike's exact figures (14, 6, 1,190 and 838).
+
+Row 26 holds only if `lua/draw.lua` copies the mixer of `spike2/probe3.lua` unchanged.
+
+Three fixtures from the later prototypes are independent of the search order as well:
+
+| # | Project | Action | Expected |
+| --- | --- | --- | --- |
+| 28 | `guide-04-one-node` on the triangle 1, 2, 4 | Audit | 8 candidates, 7 solutions, 1 pair, 1 unsound |
+| 29 | `guide-03-hit-clique`, the step with candidate {1, 2} and counterexample {4, 5, 6} | The view of phase V3 | 38 marks, with `emph` on the nodes 4, 5 and 6 |
+| 30 | `gnp` generator, n = 7, p = 300, seeds 1 to 5 | Generate | The facts that `spike2/probe3.lua` prints, at attempts 0, 2, 0, 0 and 0 |
+
+Row 26 and 30: `spike2/probe3.lua` was not delivered; `spike2/gen/draws.lua` holds its mixer unchanged.
+
 ## Timings (for orientation only; do not assert)
 
 | Run | Time |

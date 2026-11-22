@@ -1,0 +1,51 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "3QBF",
+  "description": "Assignments to the x-variables of an exists-forall-exists formula in conjunctive normal form that make it true: the standard Sigma-3-complete problem (Stockmeyer; Wrathall). Three solvers in a chain. The innermost solver reads the x-atoms too, so the link from B to C passes them on, and a second link from A to C turns the x-part of an unsat core into a clause for A.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The formula, as facts. Added to every solver.",
+      "text": "% exists x1..x4  forall y1..y3  exists z1..z3 :  C1 & ... & C10  (clauses of three literals)\n% xlit(C,I,S): clause C contains x_I (S = 1) or its negation (S = 0); ylit/3, zlit/3 likewise.\nxvar(1..4).  yvar(1..3).  zvar(1..3).  clause(1..10).\nxlit(1,4,0). zlit(1,3,0). ylit(1,1,1).      % ~x4 v ~z3 v y1\nzlit(2,2,1). ylit(2,1,0). xlit(2,1,1).      % z2 v ~y1 v x1\nxlit(3,4,0). zlit(3,1,1). ylit(3,2,0).      % ~x4 v z1 v ~y2\nylit(4,2,0). zlit(4,3,1). xlit(4,4,1).      % ~y2 v z3 v x4\nylit(5,1,0). zlit(5,2,0). xlit(5,4,1).      % ~y1 v ~z2 v x4\nylit(6,1,1). zlit(6,3,0). xlit(6,3,1).      % y1 v ~z3 v x3\nzlit(7,2,1). ylit(7,2,0). xlit(7,1,1).      % z2 v ~y2 v x1\nylit(8,2,1). zlit(8,3,1). xlit(8,3,1).      % y2 v z3 v x3\nzlit(9,1,1). ylit(9,2,1). xlit(9,2,0).      % z1 v y2 v ~x2\nylit(10,3,0). zlit(10,3,1). xlit(10,2,1).   % ~y3 v z3 v x2\n"
+    },
+    {
+      "name": "outer",
+      "description": "Proposes candidates (solver A): assignments to the x-variables.",
+      "text": "{ x(I) } :- xvar(I).\n#show x/1.\n% 'always' is true in every candidate; see the inner fragment.\n{ always }.\n:- not always.\n"
+    },
+    {
+      "name": "glue_x",
+      "description": "The interface atoms from A: the x-variables.",
+      "text": "glue(x(I)) :- xvar(I).\nglue(always).\n"
+    },
+    {
+      "name": "middle",
+      "description": "Proposes a y-assignment (solver B); refined by the z-assignments that C finds.",
+      "text": "{ y(J) } :- yvar(J).\n#show y/1.\n"
+    },
+    {
+      "name": "glue_xy",
+      "description": "The interface atoms from B to C: the y-variables and the x-variables that B received.",
+      "text": "glue(x(I)) :- xvar(I).\nglue(y(J)) :- yvar(J).\nglue(always).\n"
+    },
+    {
+      "name": "inner",
+      "description": "Looks for a z-assignment that satisfies every clause under x and y (solver C).",
+      "text": "{ z(K) } :- zvar(K).\nzsat(C) :- zlit(C,K,1), z(K).\nzsat(C) :- zlit(C,K,0), not z(K).\n% good(C,T): the interface atom T has the value that satisfies clause C.\ngood(C,x(I)) :- xlit(C,I,1), x(I).\ngood(C,x(I)) :- xlit(C,I,0), not x(I).\ngood(C,y(J)) :- ylit(C,J,1), y(J).\ngood(C,y(J)) :- ylit(C,J,0), not y(J).\nok(C) :- zsat(C).\nok(C) :- good(C,_).\n% Every constraint reads 'always', so every unsat core contains it and is never empty.\n:- clause(C), not ok(C), always.\n#show z/1.\n\n% z stays a witness while the clauses it does not satisfy itself keep their true\n% x- and y-literals.\nrelevant(T) :- good(C,T), not zsat(C).\n% If z satisfies every clause on its own, every candidate is a solution: blame 'always',\n% and B has no y-assignment left.\nopen :- clause(C), not zsat(C).\nrelevant(always) :- not open.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + outer\nsolver B = shared + middle\nsolver C = shared + inner\nlink   GX  = A -> B via shared + glue_x\nlink   GXY = B -> C via shared + glue_xy\nlink   GXC = A -> C via shared + glue_x\n\n# Three blocks: A proposes the x-assignment, B a y-assignment that might refute it, C a\n# z-assignment that satisfies the clauses.\n#   C finds z      -> y does not refute x; B learns a clause over the x- and y-atoms that\n#                     z relies on (valid for every x, because the x-atoms are in it).\n#   C finds none   -> y refutes x; A learns the x-part of the unsat core of C.\n#   B has no y     -> every y has a z: the candidate is a solution.\n# GXY passes on the x-atoms that B received over GX, next to its own y-atoms. GXC is never\n# used for assumptions: it lets GXC.core(C) state the x-part of the core as a clause for A.\nsearch A:\n    on candidate M:\n        loop:\n            Y = B.solve(assume GX(M))\n            if not Y: break\n            W = C.solve(assume GXY(Y))\n            if W:\n                B.add(GXY.clause(Y, W))\n            else:\n                reject M with GXC.core(C)\n                break\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

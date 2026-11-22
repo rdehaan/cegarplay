@@ -907,11 +907,14 @@ function Solver:search(h)
       emit_solution(tostring(m), cost and #cost > 0 and cost or nil)
       found = found + 1
       if block then
+        -- one clause over the interface atoms of all outgoing links: a later model has to
+        -- differ on at least one of them (a clause per link would ask for a difference on each)
+        local c = {}
         for _, L in ipairs(s.out) do
-          local c, src = {}, L.src
-          for j = 1, L.n do c[j] = m:is_true(src[j]) and -src[j] or src[j] end
-          s.blocks[#s.blocks + 1] = c
+          local src = L.src
+          for j = 1, L.n do c[#c + 1] = m:is_true(src[j]) and -src[j] or src[j] end
         end
+        if #c > 0 then s.blocks[#s.blocks + 1] = c end
       end
     end)
     return ok

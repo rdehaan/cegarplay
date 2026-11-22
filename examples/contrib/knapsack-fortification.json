@@ -1,0 +1,65 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Knapsack interdiction with fortification",
+  "description": "A trilevel knapsack: the defender fortifies up to fbudget items, the attacker then removes up to abudget unfortified items, and the defender packs what is left within the capacity. The solutions are the fortifications for which every attack leaves a packing that reaches the goal (Sigma-3-complete with unit fortification and attack costs; Boggio Tomasaz, Carvalho, Cordone and Hosteins). Three solvers in a chain: a packing found by C refutes an attack and tells B to attack one of its items; an attack without a reply refutes the candidate and tells A to fortify one of its items. 2 of the 37 candidates are solutions, found after 7 candidates.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The items. Added to every solver.",
+      "text": "% item(I,Weight,Profit): the defender can pack item I with this weight and profit.\n% Fortifying or attacking an item costs one unit (the unitary problem).\nitem(1,4,9).  item(2,3,7).  item(3,5,12). item(4,2,4).\nitem(5,6,13). item(6,4,8).  item(7,7,16). item(8,3,5).\n"
+    },
+    {
+      "name": "fortify",
+      "description": "Proposes candidates (solver A): fortified items within the budget.",
+      "text": "% A candidate: at most fbudget fortified items.\n{ fortify(I) : item(I,_,_) } fbudget.\n#show fortify/1.\n"
+    },
+    {
+      "name": "glue_fortify",
+      "description": "The interface atoms from A to B: the fortified items.",
+      "text": "glue(fortify(I)) :- item(I,_,_).\n"
+    },
+    {
+      "name": "attack",
+      "description": "Looks for an attack on the candidate (solver B); refined by the packings that C finds.",
+      "text": "% An attack: at most abudget items, none of them fortified.\n{ attack(I) : item(I,_,_) } abudget.\n:- attack(I), fortify(I).\n#show attack/1.\n\n% The attack stays possible as long as none of its items is fortified.\nrelevant(fortify(I)) :- attack(I).\n"
+    },
+    {
+      "name": "glue_attack",
+      "description": "The interface atoms from B to C: the attacked items.",
+      "text": "glue(attack(I)) :- item(I,_,_).\n"
+    },
+    {
+      "name": "pack",
+      "description": "Looks for a packing that survives the attack and reaches the goal (solver C).",
+      "text": "% A reply: items that are not attacked, within the capacity, with a profit of at least\n% the goal. It does not matter which items are fortified.\n{ pack(I) : item(I,_,_) }.\n:- pack(I), attack(I).\n:- #sum { W,I : pack(I), item(I,W,_) } > capacity.\n:- #sum { P,I : pack(I), item(I,_,P) } < goal.\n#show pack/1.\n\n% The reply stays possible as long as none of its items is attacked.\nrelevant(attack(I)) :- pack(I).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + fortify\nsolver B = shared + attack\nsolver C = shared + pack           options \"--heuristic=Domain\"\nlink   GF = A -> B via shared + glue_fortify\nlink   GA = B -> C via shared + glue_attack\n\n# Three levels: A proposes fortified items, B looks for an attack that beats them,\n# C looks for a packing that survives the attack.\n#   C finds a packing  -> the attack fails; B learns \"attack one of the packed items\".\n#   C finds none       -> the attack stands; A learns \"fortify one of the attacked items\".\n#   B has no attack    -> every attack has a reply: the candidate is a solution.\n# The clauses of B do not mention the fortified items, so they stay valid for every\n# later candidate of A.\n\n# Without any attack the goal must be within reach, or no candidate is a solution.\nif not C.solve(): stop \"the goal is out of reach even without an attack\"\n\nsearch A:\n    on candidate M:\n        loop:\n            Y = B.solve(assume GF(M))\n            if not Y: break\n            K = C.solve(assume GA(Y))\n            if K:\n                B.add(GA.clause(Y, K))\n            else:\n                reject M with GF.clause(M, Y)\n                break\n\n# The reference run blocks instead of learning (sound here because a reply does not\n# depend on the fortified items):\n#             if K:\n#                 B.add(GA.block(Y))\n#             else:\n#                 reject M with GF.block(M)\n#                 break\n"
+  },
+  "settings": {
+    "constants": {
+      "fbudget": "2",
+      "abudget": "2",
+      "capacity": "12",
+      "goal": "27"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "knapsack-fortification",
+    "group": "several-solvers",
+    "summary": "A trilevel knapsack (Sigma-3-complete): three solvers in a chain, with hitting-set clauses learned at both levels (2 solutions of 37 candidates).",
+    "shape": "custom",
+    "tags": [
+      "fast"
+    ],
+    "expected": 2
+  }
+}

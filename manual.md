@@ -467,6 +467,41 @@ contains assumptions that atoms are false, so supersets satisfy the clause. To r
 of a solution, state the clause with a helper solver and `clause/3` (example `reasons-by-size`) or
 build it in Lua (example `reasons-by-shrinking`).
 
+### Chains of solvers
+
+A candidate can be checked by a solver that is itself refined by a third one, `A -> B -> C`, as
+problems with three quantifier blocks need. Two properties of links make this work.
+
+- A link's glue may name atoms that its source only received over another link. With
+  `link GX = A -> B` and `link GXY = B -> C`, the glue of `GXY` can list the atoms of `GX` next to
+  B's own atoms. `GXY.clause(Y, W)` is then a clause for `B` over both, and it stays valid for
+  every later candidate of `A`.
+- Links with the same target share atoms by name. A further link `GXC = A -> C` over the atoms of
+  `GX` is never used for assumptions; `GXC.core(C)` states the part of an unsat core of `C` that
+  lies on those atoms as a clause for `A`.
+
+Declare the links in the order of the chain: a link grounds its source, and its target must not be
+grounded yet. The inner loop uses `solve` and `add`, since a `search` cannot be nested:
+
+```loop
+search A:
+    on candidate M:
+        loop:
+            Y = B.solve(assume GX(M))
+            if not Y: break                    # B has no counterexample left: M is a solution
+            W = C.solve(assume GXY(Y))
+            if W:
+                B.add(GXY.clause(Y, W))        # Y is refuted: valid for every candidate of A
+            else:
+                reject M with GXC.core(C)      # Y stands: the candidate is refuted
+                break
+```
+
+Examples: [knapsack-fortification](?example=knapsack-fortification) (the innermost solver does
+not read the outer candidate, so two links suffice) and
+[qbf-three-blocks](?example=qbf-three-blocks). The counter *counterexamples* then counts the
+satisfiable solves of both `B` and `C`.
+
 ## Raw Lua projects
 
 With `loop.language = "lua"` the compiler is skipped. The text runs as the body of
@@ -724,7 +759,7 @@ with the example's own settings, checked by `test/library.test.mjs` for every ex
 | `guide` | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
 | `problems` | `graph-coloring`, `graph-coloring-original`, `nash`, `voting-justification` |
 | `exists-forall` | `qbf`, `qbf-optimal`, `qbf-expansion`, `smallest-mus`, `min-dnf`, `integer-expressions`, `strategic-companies`, `diagnosis`, `stable-models`, `abduction`, `default-extensions`, `belief-update`, `af-preferred`, `af-semi-stable`, `conformant-planning`, `sufficient-reason`, `actual-cause`, `clique-interdiction`, `clique-colouring`, `arrowing`, `choosability`, `subset-sum-game`, `knapsack-interdiction`, `fewest-clues`, `fair-division`, `hedonic-core`, `boolean-game`, `strong-nash`, `kemeny-control`, `agenda-safety` |
-| `several-solvers` | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking` |
+| `several-solvers` | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking`, `knapsack-fortification`, `qbf-three-blocks` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.
 

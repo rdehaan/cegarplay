@@ -238,3 +238,30 @@ test('A4: the time limit ends a loop without solver calls', async () => {
   const r = await H.runProject(withLoop('loop:\n    x = 1\n', { seconds: 1 }));
   assert.equal(H.done(r).outcome, 'limit');
 });
+
+test('accepted solutions are blocked by one clause over all outgoing links (two links, restarts)', async () => {
+  // A has two outgoing links with different atoms and no candidate is ever rejected: all 16
+  // assignments are solutions. A restart every third candidate makes later searches depend on
+  // the queued blocks; a block per link would ask for a difference on each link (6 solutions).
+  const project = {
+    format: 'cegarplay', version: 1, title: 'two links',
+    fragments: [
+      { name: 'shared', text: 'i(1..2).\n' },
+      { name: 'abstraction', text: '{ p(I) : i(I) }.\n{ q(I) : i(I) }.\n#show p/1.\n#show q/1.\n' },
+      { name: 'gluep', text: 'glue(p(I)) :- i(I).\n' },
+      { name: 'glueq', text: 'glue(q(I)) :- i(I).\n' },
+      { name: 'never', text: ':- not impossible.\n' },
+    ],
+    loop: { language: 'loop', text: [
+      'solver A = shared + abstraction', 'solver C1 = shared + never', 'solver C2 = shared + never',
+      'link G1 = A -> C1 via shared + gluep', 'link G2 = A -> C2 via shared + glueq', '',
+      'n = []', 'repeat:', '    search A:', '        on candidate M:', '            n.push(1)',
+      '            if n.size >= 3:', '                n.clear()', '                restart', 'until A.exhausted', ''].join('\n') },
+    settings: { solutions: 0, seconds: 30 },
+  };
+  const r = await H.runProject(project);
+  endsWithOneD(r);
+  assert.equal(H.finalStats(r).solutions, 16);
+  assert.equal(new Set(H.ofKind(r, 'M').map((m) => m.atoms)).size, 16);
+  assert.deepEqual(H.done(r), { outcome: 'finished', exhausted: true, detail: '' });
+});

@@ -364,7 +364,44 @@ Notes for the guide phases (checked against the code before G0a):
   `unreachable`, a bad literal in add_clause with `memory access out of bounds`) and the draft
   `docs/upstream-trap-report.md` for clingo-wasm. Not filed.
 
-## Next step
+## Directions and generality (PLAN2, started 2026-11-22)
+
+Plan: `PLAN2.md`; design docs in `docs/directions/`; prototypes in `spike2/`. One long session,
+commit at each checkpoint, no stops.
+
+- [x] L0 Repair (blocking clause over all outgoing links; `knapsack-fortification`, `qbf-three-blocks`)
+- [ ] S1 Audit
+- [ ] I1 Instances
+- [ ] V1 Recording
+- [ ] S2 Capture, level 2, level 3
+- [ ] I2 Generators
+- [ ] V2 Loop anatomy
+- [ ] S3 `lift` links
+- [ ] I3 Campaigns
+- [ ] V3 Domain views
+- [ ] S4 Rule refinements, exact level
+- [ ] I4 Fuzz and shrink
+- [ ] V4 Candidate space
+- [ ] S5 Certified counts
+- [ ] I5 Mining, pools, importers
+- [ ] V5 Cursor, compare, export, lecture
+- [ ] L1 Values (G1–G3)
+- [ ] L2 Control (G4, G5, G8)
+- [ ] L3 Dynamics (G6)
+- [ ] L4 Structure (G7)
+- [ ] Final review
+
+Notes per phase:
+
+- **L0 (done):** `cegarplay-phase0.patch` applied as delivered (runtime fix in `Solver:search`,
+  test in `test/runtime.test.mjs`, manual "Chains of solvers", two contrib examples); the library
+  rebuilt by `tools/make-examples.mjs` equals the patch's. `test/assemble-golden.test.mjs` with
+  `test/fixtures/assemble/*.lua` (stub runtime) guards "no new keys -> same program text".
+  Reference rows 14–30 added to `docs/reference-numbers.md`.
+
+**Next step (PLAN2):** S1 Audit.
+
+## Next step (PLAN.md, guide, TODO)
 
 All phases of PLAN.md, of the guide and of TODO.md are done. Open items for the user: deployment
 to GitHub Pages; filing the drafted trap report (`docs/upstream-trap-report.md`); a first CI run on

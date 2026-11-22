@@ -5,12 +5,15 @@ programming, solved with clingo compiled to WebAssembly.
 
 ## Where things are
 
-- `PLAN.md`: the implementation plan, in phases with checkpoints. Follow it.
+- `PLAN.md`: the first implementation plan (done).
+- `PLAN2.md`: the current plan (three directions, loop-language generality). Follow it;
+  its phases point into `docs/directions/*.md` for tasks and checks.
 - `PROGRESS.md`: what is done and what is next. **Read it first after any
   context clear. Update it at every checkpoint.**
 - `docs/spec-*.md`: specifications. Read only the ones the current phase names.
 - `docs/reference-numbers.md`: numbers the implementation must reproduce.
 - `spike/`: verified prototype code. Read-only; copy from it.
+- `spike2/`: prototypes behind `docs/directions/` (audit, lift, draws, views, deep loops). Read-only.
 - `reference/`: clones of logic-game and declarative-cegar. Read-only, git-ignored.
 - `guide/`: the design guide (static pages, `chapters.js`, `numbers.json`).
   Its examples are built by `tools/guide.mjs`; `tools/guide-numbers.mjs`
@@ -50,5 +53,6 @@ python3 test/serve.py 8811                   # serve the site; add "coi" for iso
 - One phase at a time. Commit at each checkpoint: `Phase N: <title>`.
 - Keep output short: pipe long test output through `tail`; never print
   `js/ace.js`, `vendor/clingo-wasm/*.js` or the `.wasm` files.
-- At a checkpoint print `CHECKPOINT N reached. Safe to /clear, then say: continue with PLAN.md` and stop,
+- PLAN2 checkpoints: commit and continue with the next phase without stopping (owner's request).
+- At a PLAN.md checkpoint print `CHECKPOINT N reached. Safe to /clear, then say: continue with PLAN.md` and stop,
   unless the user said not to stop at checkpoints.
