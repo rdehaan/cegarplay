@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Fair and efficient division",
   "description": "Allocations of indivisible goods that are envy-free and Pareto-efficient; existence is Sigma-2-complete even for additive values (de Keijzer, Bouveret, Klos and Zhang). The abstraction guesses an envy-free allocation and the check one that dominates it. Being dominated depends on sums, which a clause cannot say, so the refinement is a rule (Shape 3): no later candidate may be dominated by this counterexample.",
   "fragments": [
     {
       "name": "shared",
       "description": "Agents, goods and values. Added to every solver.",
-      "text": "% Three agents divide seven goods. value(A,G,V): good G is worth V to agent A;\n% a bundle is worth the sum of its goods.\nagent(1..3).\ngood(1..7).\nvalue(1,1,1). value(1,2,2). value(1,3,2). value(1,4,6). value(1,5,3). value(1,6,5). value(1,7,5).\nvalue(2,1,4). value(2,2,1). value(2,3,3). value(2,4,7). value(2,5,7). value(2,6,9). value(2,7,6).\nvalue(3,1,9). value(3,2,8). value(3,3,9). value(3,4,5). value(3,5,1). value(3,6,1). value(3,7,6).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\n"
     },
     {
       "name": "abstraction",
@@ -42,5 +42,45 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Three agents divide seven goods. value(A,G,V): good G is worth V to agent A;\n% a bundle is worth the sum of its goods.\nagent(1..3).\ngood(1..7).\nvalue(1,1,1). value(1,2,2). value(1,3,2). value(1,4,6). value(1,5,3). value(1,6,5). value(1,7,5).\nvalue(2,1,4). value(2,2,1). value(2,3,3). value(2,4,7). value(2,5,7). value(2,6,9). value(2,7,6).\nvalue(3,1,9). value(3,2,8). value(3,3,9). value(3,4,5). value(3,5,1). value(3,6,1). value(3,7,6).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "two-alike",
+      "facts": "% Two agents who value three goods alike: whoever gets fewer goods envies the\n% other, so no allocation is envy-free.\nagent(1..2).\ngood(1..3).\nvalue(A,G,1) :- agent(A), good(G).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "opposite-tastes",
+      "facts": "% Two agents with opposite tastes: each prefers the goods the other cares little\n% about, so there is one fair and efficient allocation.\nagent(1..2).\ngood(1..4).\nvalue(1,1,5). value(1,2,5). value(1,3,1). value(1,4,1).\nvalue(2,1,1). value(2,2,1). value(2,3,5). value(2,4,5).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "four-agents",
+      "facts": "% Four agents divide six goods.\nagent(1..4).\ngood(1..6).\nvalue(1,1,6). value(1,2,3). value(1,3,7). value(1,4,1). value(1,5,2). value(1,6,9).\nvalue(2,1,2). value(2,2,6). value(2,3,1). value(2,4,9). value(2,5,4). value(2,6,1).\nvalue(3,1,2). value(3,2,7). value(3,3,7). value(3,4,2). value(3,5,4). value(3,6,2).\nvalue(4,1,9). value(4,2,7). value(4,3,1). value(4,4,2). value(4,5,4). value(4,6,1).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }

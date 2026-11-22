@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Agenda safety",
   "description": "Majority voting on an agenda is always consistent exactly if every minimally inconsistent subset has at most two formulas; checking this is Pi-2-complete (Endriss, Grandi and Porello). The solutions are the witnesses of unsafety: the abstraction guesses a subset of three or more formulas with, for each member, a model of the others, and the check looks for a model of the whole subset. The sample is the agenda of the doctrinal paradox.",
   "fragments": [
     {
       "name": "shared",
       "description": "The agenda, as formulas in clause form. Added to every solver.",
-      "text": "% An agenda for judgment aggregation: the premises p and q, the conclusion r, the\n% doctrine \"r holds exactly if p and q hold\", and the negation of each.\n% cl(F,C): clause C belongs to formula F; pos(C,V) / neg(C,V): its literals.\nvar(p;q;r).\ncl(p,1).   pos(1,p).                              % p\ncl(np,2).  neg(2,p).                              % not p\ncl(q,3).   pos(3,q).                              % q\ncl(nq,4).  neg(4,q).                              % not q\ncl(r,5).   pos(5,r).                              % r\ncl(nr,6).  neg(6,r).                              % not r\ncl(d,7).   neg(7,r). pos(7,p).                    % doctrine: r implies p,\ncl(d,8).   neg(8,r). pos(8,q).                    %           r implies q,\ncl(d,9).   pos(9,r). neg(9,p). neg(9,q).          %           p and q imply r\ncl(nd,10). pos(10,r). pos(10,p).                  % its negation: r or p,\ncl(nd,11). pos(11,r). pos(11,q).                  %               r or q,\ncl(nd,12). neg(12,r). neg(12,p). neg(12,q).       %               not all three\nformula(F) :- cl(F,_).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\nformula(F) :- cl(F,_).\n"
     },
     {
       "name": "abstraction",
@@ -46,5 +46,34 @@
       "fast"
     ],
     "expected": 6
-  }
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% An agenda for judgment aggregation: the premises p and q, the conclusion r, the\n% doctrine \"r holds exactly if p and q hold\", and the negation of each.\n% cl(F,C): clause C belongs to formula F; pos(C,V) / neg(C,V): its literals.\nvar(p;q;r).\ncl(p,1).   pos(1,p).                              % p\ncl(np,2).  neg(2,p).                              % not p\ncl(q,3).   pos(3,q).                              % q\ncl(nq,4).  neg(4,q).                              % not q\ncl(r,5).   pos(5,r).                              % r\ncl(nr,6).  neg(6,r).                              % not r\ncl(d,7).   neg(7,r). pos(7,p).                    % doctrine: r implies p,\ncl(d,8).   neg(8,r). pos(8,q).                    %           r implies q,\ncl(d,9).   pos(9,r). neg(9,p). neg(9,q).          %           p and q imply r\ncl(nd,10). pos(10,r). pos(10,p).                  % its negation: r or p,\ncl(nd,11). pos(11,r). pos(11,q).                  %               r or q,\ncl(nd,12). neg(12,r). neg(12,p). neg(12,q).       %               not all three\n",
+      "constants": {},
+      "expected": {
+        "solutions": 6
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "premises-only",
+      "facts": "% Only two independent premises and their negations: every inconsistent subset\n% is a premise with its negation, so none has three formulas.\nvar(p;q).\ncl(p,1).   pos(1,p).                              % p\ncl(np,2).  neg(2,p).                              % not p\ncl(q,3).   pos(3,q).                              % q\ncl(nq,4).  neg(4,q).                              % not q\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      }
+    },
+    {
+      "id": "disjunction",
+      "facts": "% The premises p and q, the conclusion r, the rule \"r holds exactly if p or q\n% holds\", and the negation of each.\nvar(p;q;r).\ncl(p,1).   pos(1,p).                              % p\ncl(np,2).  neg(2,p).                              % not p\ncl(q,3).   pos(3,q).                              % q\ncl(nq,4).  neg(4,q).                              % not q\ncl(r,5).   pos(5,r).                              % r\ncl(nr,6).  neg(6,r).                              % not r\ncl(d,7).   neg(7,r). pos(7,p). pos(7,q).          % rule: r implies p or q,\ncl(d,8).   neg(8,p). pos(8,r).                    %       p implies r,\ncl(d,9).   neg(9,q). pos(9,r).                    %       q implies r\ncl(nd,10). pos(10,r). pos(10,p). pos(10,q).       % its negation: r or p or q,\ncl(nd,11). neg(11,r). neg(11,p).                  %   not both r and p,\ncl(nd,12). neg(12,r). neg(12,q).                  %   not both r and q\n",
+      "constants": {},
+      "expected": {
+        "solutions": 6
+      }
+    }
+  ]
 }

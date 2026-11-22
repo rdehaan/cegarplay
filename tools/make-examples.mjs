@@ -123,6 +123,72 @@ function make(file, title, description, edit, settings) {
 }
 const frag = (p, n) => p.fragments.find((f) => f.name === n);
 
+
+// voting-justification: explain1.lp keeps its questions as commented-out blocks of facts and
+// #const lines (one active). Each block becomes an instance: its facts, its constants, and an
+// id from its axioms. VOTE_INFO adds expected counts and tags (measured, see PROGRESS.md).
+const VOTE_AXIOMS = `%%% The axioms. An instance switches axioms on with facts use_axiom(A), for A in
+%%% pareto, faithfulness, unanimity, cancellation, reinforcement, condorcet,
+%%% neutrality2, pos_responsiveness. It also gives the target profile
+%%% target_profile(Voter,Candidate,Position) (in lexicographic order), the target
+%%% outcome target_outcome(C), optionally requires_polarity_axiom, and the constants
+%%% num_candidates, num_voters, num_profiles and num_axiom_instances.
+`;
+const VOTE_SHORT = { pareto: 'pareto', faithfulness: 'faith', unanimity: 'unanimity', cancellation: 'cancel',
+  reinforcement: 'reinf', condorcet: 'condorcet', neutrality2: 'neutral', pos_responsiveness: 'posresp' };
+const VOTE_DEFAULT = 'cancel-reinf-posresp-k4';
+const VOTE_NOTES = {
+  UNSAT: 'No justification exists with these bounds: the run ends without a solution.',
+  'FOR EFFICIENCY, NEEDS 2-STEP PROCEDURE (FIRST FINDING PROFILES)': 'Hard: the original file notes that it needs a two-step procedure (first finding the profiles).',
+};
+// Measured with node tools/run.mjs voting-justification --instance ID --solutions all.
+export const VOTE_INFO = {
+  'faith-k1': { expected: 1 }, 'condorcet-k1': { expected: 1 }, 'unanimity-k1': { expected: 1 },
+  'cancel-k1': { expected: 1 }, 'pareto-k2-v1': { expected: 1 }, 'pareto-k2': { expected: 1 },
+  'pareto-neutral-k2': { expected: 1 }, 'faith-reinf-k2': { expected: 1 }, 'cancel-posresp-k2': { expected: 2 },
+  'faith-reinf-k3': { expected: 2 }, 'faith-cancel-reinf-k3': { expected: 1 },
+  'faith-cancel-reinf-pareto-condorcet-k3': { expected: 0, tags: ['no-solution'] },
+  'faith-cancel-reinf-pareto-k3': { expected: 1 }, 'faith-pareto-neutral-reinf-k4': { expected: 1 },
+  'pareto-neutral-reinf-k5': { expected: 1 },
+  // the question the original file has switched on: the first solution in a second, all of
+  // them not within a minute
+  'cancel-reinf-posresp-k4': { tags: ['original'] },
+  'pareto-neutral-cancel-reinf-k8': { tags: ['hard'] },
+};
+function voteInstances(blocks) {
+  const out = [];
+  for (const block of blocks) {
+    const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
+    const comment = lines.filter((l) => /^% %/.test(l)).map((l) => l.replace(/^% %\s*/, '')).join(' ');
+    const body = lines.filter((l) => !/^% %/.test(l)).map((l) => l.replace(/^%\s*/, ''));
+    if (!body.length) continue;
+    const constants = {}, facts = [];
+    for (const l of body) {
+      const m = l.match(/^#const\s+(\w+)\s*=\s*(\w+)\s*\.$/);
+      if (m) constants[m[1]] = m[2];
+      else if (/^[a-z_]+(\(.*\))?\.$/.test(l)) facts.push(l);
+      else throw new Error(`make-examples: unexpected line in a voting block: ${l}`);
+    }
+    const axioms = facts.map((f) => (f.match(/^use_axiom\((\w+)\)\.$/) || [])[1]).filter(Boolean);
+    const outcome = facts.map((f) => (f.match(/^target_outcome\((\d+)\)\.$/) || [])[1]).filter(Boolean);
+    let id = `${axioms.map((a) => VOTE_SHORT[a]).join('-')}-k${constants.num_axiom_instances}`;
+    if (out.some((x) => x.id === id)) id += `-v${constants.num_voters}`;
+    const voters = new Set(facts.map((f) => (f.match(/^target_profile\((\d+),/) || [])[1]).filter(Boolean)).size;
+    const s = (n, w) => `${n} ${w}${n === '1' || n === 1 ? '' : 's'}`;
+    const note = VOTE_NOTES[comment.toUpperCase()];
+    if (comment && !note) throw new Error(`make-examples: no note for the voting comment ${comment}`);
+    const head = `% Axioms: ${axioms.join(', ')}. Target: a profile of ${s(voters, 'voter')} with outcome ` +
+      `{${outcome.join(', ')}}. Up to ${s(constants.num_voters, 'voter')} per profile, ` +
+      `${s(constants.num_profiles, 'profile')}, exactly ${s(constants.num_axiom_instances, 'axiom instance')}.\n` +
+      (note ? `% ${note}\n` : '');
+    const info = VOTE_INFO[id] || {};
+    out.push({ id, facts: head + facts.join('\n') + '\n', constants,
+      ...(info.expected !== undefined ? { expected: { solutions: info.expected } } : {}), tags: info.tags || [] });
+  }
+  const key = (x) => [+x.constants.num_axiom_instances, +x.constants.num_profiles, +x.constants.num_voters];
+  return out.sort((a, b) => { const p = key(a), q = key(b); return p[0] - q[0] || p[1] - q[1] || p[2] - q[2]; });
+}
+
 export function buildExamples() {
   const gc = make('graph-coloring.lp', 'Graph colouring',
     'Connected graphs with a leaf colouring that no proper 3-colouring extends. The check rules include the ' +
@@ -177,8 +243,40 @@ export function buildExamples() {
     { solutions: 1 });
   const vote = make('explain1.lp', 'Voting: justifications',
     'Explaining a voting outcome by axioms: the abstraction guesses axiom instances and profiles, the check ' +
-    'looks for a profile where they fail.',
-    (p) => { p.loop.text = template('shape1'); }, { solutions: 1 });
+    'looks for outcomes that satisfy them but differ from the target outcome. Each instance is one question: ' +
+    'a set of axioms, a target profile and its outcome (Instances tab).',
+    (p) => {
+      const sh = frag(p, 'shared');
+      sh.text = cut(sh.text, `%%% Declare axioms
+% #external use_axiom(pareto).
+% #external use_axiom(faithfulness).
+% #external use_axiom(cancellation).
+% #external use_axiom(reinforcement).
+% #external use_axiom(condorcet).
+% #external use_axiom(neutrality2).
+% #external use_axiom(pos_responsiveness).
+
+% use_axiom(pareto).
+% use_axiom(faithfulness).
+% use_axiom(cancellation).
+% use_axiom(reinforcement).
+% use_axiom(condorcet).
+% use_axiom(neutrality2).
+% use_axiom(pos_responsiveness).
+`, VOTE_AXIOMS);
+      const at = sh.text.indexOf('%* *******************************\n*** Target profile');
+      if (at < 0) throw new Error('make-examples: voting target section not found');
+      const blocks = sh.text.slice(at).split(/\n\s*\n/).slice(1);
+      sh.text = sh.text.slice(0, at).replace(/\s*$/, '\n');
+      for (const c of ['num_candidates', 'num_voters', 'num_profiles', 'num_axiom_instances'])
+        sh.text = cut(sh.text, `% #const ${c}=3.\n`, '');
+      p.instances = voteInstances(blocks);
+      p.settings.instance = VOTE_DEFAULT;
+      p.version = 2;
+      p.loop.text = template('shape1');
+    }, { solutions: 1 });
+  vote.settings.constants = { ...vote.instances.find((i) => i.id === VOTE_DEFAULT).constants };
+  vote.suites = [{ name: 'questions', instances: { ids: 'all' }, limits: { seconds: 20 } }];
   return { 'graph-coloring': gc, nash, 'voting-justification': vote };
 }
 
@@ -221,6 +319,13 @@ export function loadContrib(dir = new URL('examples/contrib/', root), taken = ne
   return out;
 }
 
+// What a project has beyond fragments and a loop, for the library list: { has: { instances: 3, ... } }.
+function features(p) {
+  const has = {};
+  for (const k of ['instances', 'generators', 'suites', 'views']) if ((p[k] || []).length) has[k] = p[k].length;
+  return Object.keys(has).length ? { has } : {};
+}
+
 // All examples and the manifest: { files: { id: project }, manifest }.
 export function buildAll({ contribDir } = {}) {
   const problems = buildExamples();
@@ -254,7 +359,7 @@ export function buildAll({ contribDir } = {}) {
         tags: e.tags, expected: e.expected == null ? null : { solutions: e.expected },
         ...(e.page ? { page: e.page, status: e.status } : {}), ...(e.baseline ? { baseline: e.baseline } : {}),
         ...(e.variants ? { variants: e.variants } : {}), ...(e.outcome ? { outcome: e.outcome } : {}),
-        ...(e.exhausted === false ? { exhausted: false } : {}) });
+        ...(e.exhausted === false ? { exhausted: false } : {}), ...features(e.project) });
     }
   }
   return { files, manifest: { format: 'cegarplay-library', version: 1, groups: GROUPS, examples } };

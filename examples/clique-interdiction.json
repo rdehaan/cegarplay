@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Clique interdiction",
   "description": "Delete at most k nodes of a graph so that no clique of c nodes is left; with k and c in the input this is Sigma-2-complete (Rutenburg). The check finds a surviving clique and the refinement says that one of its nodes has to be deleted; the loop takes up to three cliques per candidate. Try n = 17 with k = 9 (51 solutions).",
   "fragments": [
@@ -39,7 +39,64 @@
     "seconds": 60,
     "candidates": 0,
     "trace": 200,
-    "seed": 0
+    "seed": 0,
+    "instance": ""
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "",
+      "constants": {
+        "n": "13",
+        "k": "6",
+        "c": "3"
+      },
+      "expected": {
+        "solutions": 39
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "n13-k5",
+      "facts": "",
+      "constants": {
+        "n": "13",
+        "k": "5",
+        "c": "3"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "n5-edges",
+      "facts": "",
+      "constants": {
+        "n": "5",
+        "k": "3",
+        "c": "2"
+      },
+      "expected": {
+        "solutions": 5
+      },
+      "tags": []
+    },
+    {
+      "id": "n17-k9",
+      "facts": "",
+      "constants": {
+        "n": "17",
+        "k": "9",
+        "c": "3"
+      },
+      "expected": {
+        "solutions": 51
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }

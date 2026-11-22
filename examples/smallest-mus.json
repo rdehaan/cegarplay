@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Smallest unsatisfiable subsets",
   "description": "Sets of at most k clauses of a formula that are unsatisfiable together; existence is Sigma-2-complete (Liberatore). The check finds an assignment that satisfies the picked clauses, and the refinement says that a clause it falsifies has to be picked, so the abstraction collects hitting-set constraints. With k = 4 the two smallest cores come out; try k = 5 (23 solutions).",
   "fragments": [
     {
       "name": "shared",
       "description": "The formula, as facts. Added to every solver.",
-      "text": "% An unsatisfiable formula in conjunctive normal form over v1..v5.\n% pos(C,V): clause C contains variable V, neg(C,V): its negation.\nneg(1,1).                             % ~v1\npos(2,1). neg(2,2).                   % v1 | ~v2\nneg(3,2). neg(3,4).                   % ~v2 | ~v4\npos(4,2). neg(4,3).                   % v2 | ~v3\npos(5,2). pos(5,3).                   % v2 | v3\npos(6,2). neg(6,4).                   % v2 | ~v4\nneg(7,3). pos(7,5).                   % ~v3 | v5\npos(8,3). neg(8,4).                   % v3 | ~v4\npos(9,3). pos(9,4).                   % v3 | v4\npos(10,3). pos(10,5).                 % v3 | v5\npos(11,1). pos(11,2). pos(11,4).      % v1 | v2 | v4\npos(12,1). pos(12,3). pos(12,4).      % v1 | v3 | v4\nclause(C) :- pos(C,_).\nclause(C) :- neg(C,_).\nvar(V) :- pos(_,V).\nvar(V) :- neg(_,V).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\nclause(C) :- pos(C,_).\nclause(C) :- neg(C,_).\nvar(V) :- pos(_,V).\nvar(V) :- neg(_,V).\n"
     },
     {
       "name": "abstraction",
@@ -39,5 +39,36 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% An unsatisfiable formula in conjunctive normal form over v1..v5.\n% pos(C,V): clause C contains variable V, neg(C,V): its negation.\nneg(1,1).                             % ~v1\npos(2,1). neg(2,2).                   % v1 | ~v2\nneg(3,2). neg(3,4).                   % ~v2 | ~v4\npos(4,2). neg(4,3).                   % v2 | ~v3\npos(5,2). pos(5,3).                   % v2 | v3\npos(6,2). neg(6,4).                   % v2 | ~v4\nneg(7,3). pos(7,5).                   % ~v3 | v5\npos(8,3). neg(8,4).                   % v3 | ~v4\npos(9,3). pos(9,4).                   % v3 | v4\npos(10,3). pos(10,5).                 % v3 | v5\npos(11,1). pos(11,2). pos(11,4).      % v1 | v2 | v4\npos(12,1). pos(12,3). pos(12,4).      % v1 | v3 | v4\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "satisfiable",
+      "facts": "% A satisfiable formula: it has no unsatisfiable subset at all.\npos(1,1). pos(1,2).                   % v1 | v2\nneg(2,1). pos(2,3).                   % ~v1 | v3\nneg(3,2). neg(3,3).                   % ~v2 | ~v3\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "chains",
+      "facts": "% Two chains of implications from v1 to ~v1: v1, v1 -> v2 -> ~v1 and v1 -> v3 -> v4 -> ~v1.\npos(1,1).                             % v1\nneg(2,1). pos(2,2).                   % ~v1 | v2\nneg(3,2). neg(3,1).                   % ~v2 | ~v1\nneg(4,1). pos(4,3).                   % ~v1 | v3\nneg(5,3). pos(5,4).                   % ~v3 | v4\nneg(6,4). neg(6,1).                   % ~v4 | ~v1\npos(7,2). pos(7,4).                   % v2 | v4\n",
+      "constants": {},
+      "expected": {
+        "solutions": 7
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }

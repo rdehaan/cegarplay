@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Default extensions",
   "description": "Default reasoning with defaults that have no prerequisites (Poole systems): an extension is a maximal set of defaults consistent with the facts, and asking whether a query follows in some extension is Sigma-2-complete. The check has two ways to refute a candidate, a model in which the query is false or a model that satisfies one more default, each with its own relevant/1 rule. The sample is the Nixon diamond with a few more defaults.",
   "fragments": [
     {
       "name": "shared",
       "description": "Facts, defaults and the query. Added to every solver.",
-      "text": "% Facts and defaults in clause form: pos(C,A) / neg(C,A) as in a CNF.\n% Hard knowledge: Nixon is a quaker and a republican; nobody is both a hawk and a pacifist.\npos(1,quaker).\npos(2,republican).\nneg(3,hawk).  neg(3,pacifist).\nhard(1..3).\n% Defaults, each a clause that is assumed as long as this is consistent:\nneg(d1,quaker).      pos(d1,pacifist).     % quakers are pacifists\nneg(d2,republican).  pos(d2,hawk).         % republicans are hawks\nneg(d3,hawk).        pos(d3,army).         % hawks support the army\nneg(d4,pacifist).    neg(d4,army).         % pacifists do not\nneg(d5,republican).  pos(d5,rich).         % republicans are rich\nneg(d6,quaker).      neg(d6,rich).         % quakers are not\nneg(d7,rich).        pos(d7,army).         % the rich support the army\ndefault(d1;d2;d3;d4;d5;d6;d7).\nclause(C) :- hard(C).\nclause(C) :- default(C).\natom(A) :- pos(_,A).\natom(A) :- neg(_,A).\n% Does this follow in some extension?\nquery(army).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\nclause(C) :- hard(C).\nclause(C) :- default(C).\natom(A) :- pos(_,A).\natom(A) :- neg(_,A).\n"
     },
     {
       "name": "abstraction",
@@ -37,5 +37,36 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Facts and defaults in clause form: pos(C,A) / neg(C,A) as in a CNF.\n% Hard knowledge: Nixon is a quaker and a republican; nobody is both a hawk and a pacifist.\npos(1,quaker).\npos(2,republican).\nneg(3,hawk).  neg(3,pacifist).\nhard(1..3).\n% Defaults, each a clause that is assumed as long as this is consistent:\nneg(d1,quaker).      pos(d1,pacifist).     % quakers are pacifists\nneg(d2,republican).  pos(d2,hawk).         % republicans are hawks\nneg(d3,hawk).        pos(d3,army).         % hawks support the army\nneg(d4,pacifist).    neg(d4,army).         % pacifists do not\nneg(d5,republican).  pos(d5,rich).         % republicans are rich\nneg(d6,quaker).      neg(d6,rich).         % quakers are not\nneg(d7,rich).        pos(d7,army).         % the rich support the army\ndefault(d1;d2;d3;d4;d5;d6;d7).\n% Does this follow in some extension?\nquery(army).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "tweety",
+      "facts": "% Tweety is a penguin, penguins are birds and do not fly; birds fly by default.\n% No extension makes Tweety fly.\npos(1,penguin).\nneg(2,penguin). pos(2,bird).\nneg(3,penguin). neg(3,flies).\nhard(1..3).\nneg(d1,bird). pos(d1,flies).               % birds fly\ndefault(d1).\nquery(flies).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "two-extensions",
+      "facts": "% Two defaults that exclude each other; each leads to the query by another default.\npos(1,student).\nhard(1).\nneg(d1,student). pos(d1,young).            % students are young\nneg(d2,student). pos(d2,employed).         % students are employed\nneg(d3,young).   neg(d3,employed).         % the young are not employed\nneg(d4,employed). pos(d4,tax).             % the employed pay tax\nneg(d5,young).   pos(d5,discount).         % the young get a discount\ndefault(d1;d2;d3;d4;d5).\nquery(tax).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }

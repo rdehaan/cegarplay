@@ -172,9 +172,14 @@ const contrib = (id) => JSON.parse(fs.readFileSync(new URL(`../examples/contrib/
 // (return null to drop the fragment).
 const fromContrib = (id, title, description, loop, settings, edit = (n, t) => t) => {
   const src = contrib(id);
+  // The guide's projects are self-contained: the facts of the source's instance 'example' go
+  // back to the top of its shared fragment, in place of the note that points to the instance.
+  const ex = (src.instances || []).find((x) => x.id === 'example');
   const frags = {}, desc = {};
   for (const f of src.fragments) {
-    const t = edit(f.name, f.text);
+    const text = ex && f.name === 'shared'
+      ? ex.facts + f.text.replace('% The instance (its facts) is in the Instances tab.\n', '') : f.text;
+    const t = edit(f.name, text);
     if (t === null) continue;
     frags[f.name] = t;
     desc[f.name] = f.description || 'Part of the library example ' + id + '.';

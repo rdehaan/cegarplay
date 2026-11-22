@@ -6,7 +6,7 @@
   "fragments": [
     {
       "name": "shared",
-      "text": "% A robot in a 3 x 3 room. It does not know where it starts.\ncell(1..3,1..3).\npillar(0,0).   % no pillar\nfree(X,Y) :- cell(X,Y), not pillar(X,Y).\ngoal(2,2).\n% The four moves; t steps.\ndir(e,1,0). dir(w,-1,0). dir(n,0,1). dir(s,0,-1).\nstep(1..t).\n% to(X,Y,D,X2,Y2): moving in direction D from (X,Y) leads to (X2,Y2). A move against\n% a wall or the pillar leaves the robot where it is.\nto(X,Y,D,X+DX,Y+DY) :- free(X,Y), dir(D,DX,DY), free(X+DX,Y+DY).\nto(X,Y,D,X,Y)       :- free(X,Y), dir(D,DX,DY), not free(X+DX,Y+DY).\n",
+      "text": "% A robot in a 3 x 3 room. It does not know where it starts.\ncell(1..3,1..3).\npillar(0,0).   % no pillar\ngoal(2,2).\nfree(X,Y) :- cell(X,Y), not pillar(X,Y).\n% The four moves; t steps.\ndir(e,1,0). dir(w,-1,0). dir(n,0,1). dir(s,0,-1).\nstep(1..t).\n% to(X,Y,D,X2,Y2): moving in direction D from (X,Y) leads to (X2,Y2). A move against\n% a wall or the pillar leaves the robot where it is.\nto(X,Y,D,X+DX,Y+DY) :- free(X,Y), dir(D,DX,DY), free(X+DX,Y+DY).\nto(X,Y,D,X,Y)       :- free(X,Y), dir(D,DX,DY), not free(X+DX,Y+DY).\n",
       "description": "The room, the moves and the horizon. Added to every solver."
     },
     {

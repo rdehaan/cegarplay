@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "2QBF, blame by a third solver",
   "description": "The 2QBF example with a refinement solver. The check returns any y-assignment that falsifies the formula and has no relevant/1 rules; a third solver R receives the candidate and the counterexample over two links and chooses a smallest set of x-variables to blame. Compare the clause lengths with 2QBF and with 2QBF, smallest refinement, where one solver does both jobs.",
   "fragments": [
     {
       "name": "shared",
       "description": "The formula, as facts. Added to every solver.",
-      "text": "% A quantified Boolean formula  exists x1..x6  forall y1..y5 : T1 v ... v T12,\n% where each term T is a conjunction of literals.\n% xlit(T,I,S): term T contains x_I (S = 1) or its negation (S = 0); ylit/3 likewise.\nxvar(1..6).  yvar(1..5).\nxlit(1,2,0). xlit(1,5,1). ylit(1,3,0).      % ~x2 & x5 & ~y3\nxlit(2,6,0). ylit(2,2,1). ylit(2,5,1).      % ~x6 & y2 & y5\nxlit(3,2,1). xlit(3,5,0). ylit(3,4,1).      % x2 & ~x5 & y4\nxlit(4,4,0). ylit(4,1,1). ylit(4,4,0).      % ~x4 & y1 & ~y4\nxlit(5,4,1). xlit(5,5,0). ylit(5,3,1).      % x4 & ~x5 & y3\nxlit(6,4,1). ylit(6,2,0). ylit(6,3,1).      % x4 & ~y2 & y3\nxlit(7,5,0). ylit(7,1,1). ylit(7,5,1).      % ~x5 & y1 & y5\nxlit(8,3,0). ylit(8,2,0). ylit(8,4,1).      % ~x3 & ~y2 & y4\nxlit(9,1,0). ylit(9,3,0). ylit(9,4,0).      % ~x1 & ~y3 & ~y4\nxlit(10,6,0). ylit(10,1,1). ylit(10,3,1).   % ~x6 & y1 & y3\nxlit(11,5,1). xlit(11,6,0). ylit(11,2,0).   % x5 & ~x6 & ~y2\nxlit(12,6,1). ylit(12,2,1). ylit(12,4,1).   % x6 & y2 & y4\nterm(T) :- xlit(T,_,_).\nterm(T) :- ylit(T,_,_).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\nterm(T) :- xlit(T,_,_).\nterm(T) :- ylit(T,_,_).\n"
     },
     {
       "name": "abstraction",
@@ -56,5 +56,45 @@
       "fast"
     ],
     "expected": 5
-  }
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% A quantified Boolean formula  exists x1..x6  forall y1..y5 : T1 v ... v T12,\n% where each term T is a conjunction of literals.\n% xlit(T,I,S): term T contains x_I (S = 1) or its negation (S = 0); ylit/3 likewise.\nxvar(1..6).  yvar(1..5).\nxlit(1,2,0). xlit(1,5,1). ylit(1,3,0).      % ~x2 & x5 & ~y3\nxlit(2,6,0). ylit(2,2,1). ylit(2,5,1).      % ~x6 & y2 & y5\nxlit(3,2,1). xlit(3,5,0). ylit(3,4,1).      % x2 & ~x5 & y4\nxlit(4,4,0). ylit(4,1,1). ylit(4,4,0).      % ~x4 & y1 & ~y4\nxlit(5,4,1). xlit(5,5,0). ylit(5,3,1).      % x4 & ~x5 & y3\nxlit(6,4,1). ylit(6,2,0). ylit(6,3,1).      % x4 & ~y2 & y3\nxlit(7,5,0). ylit(7,1,1). ylit(7,5,1).      % ~x5 & y1 & y5\nxlit(8,3,0). ylit(8,2,0). ylit(8,4,1).      % ~x3 & ~y2 & y4\nxlit(9,1,0). ylit(9,3,0). ylit(9,4,0).      % ~x1 & ~y3 & ~y4\nxlit(10,6,0). ylit(10,1,1). ylit(10,3,1).   % ~x6 & y1 & y3\nxlit(11,5,1). xlit(11,6,0). ylit(11,2,0).   % x5 & ~x6 & ~y2\nxlit(12,6,1). ylit(12,2,1). ylit(12,4,1).   % x6 & y2 & y4\n",
+      "constants": {},
+      "expected": {
+        "solutions": 5
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "one-solution",
+      "facts": "% A small true formula with one solution:\n% exists x1 x2  forall y1 : (x1 & y1) v (x2 & ~y1).\nxvar(1..2).  yvar(1).\nxlit(1,1,1). ylit(1,1,1).\nxlit(2,2,1). ylit(2,1,0).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "false-formula",
+      "facts": "% A false formula: y1 = y2 = 0 makes every term false, whatever the x-variables are.\n% exists x1 x2  forall y1 y2 : (x1 & y1) v (x2 & y1) v (~x2 & y2).\nxvar(1..2).  yvar(1..2).\nxlit(1,1,1). ylit(1,1,1).\nxlit(2,2,1). ylit(2,1,1).\nxlit(3,2,0). ylit(3,2,1).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "random-5x4",
+      "facts": "% A random formula with 5 x-variables, 4 y-variables and 10 terms (random-3 of qbf).\nxvar(1..5).  yvar(1..4).\nxlit(1,4,0). ylit(1,1,0).\nxlit(2,1,0). ylit(2,1,0).\nxlit(3,3,0). ylit(3,1,0).\nxlit(4,3,0). ylit(4,1,0).\nxlit(5,2,0). ylit(5,1,1).\nxlit(6,1,0). ylit(6,1,0).\nxlit(7,1,0). ylit(7,1,0).\nxlit(8,3,0). ylit(8,1,0).\nxlit(9,3,0). ylit(9,1,0).\nxlit(10,4,0). xlit(10,5,0). ylit(10,1,0).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 14
+      },
+      "tags": []
+    }
+  ]
 }

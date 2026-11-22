@@ -10,7 +10,7 @@
     {
       "id": "guide",
       "title": "Guide",
-      "description": "the examples of the design guide, in reading order"
+      "description": "The examples of the design guide, in reading order."
     },
     {
       "id": "language",
@@ -63,6 +63,9 @@
       ],
       "expected": {
         "solutions": 61
+      },
+      "has": {
+        "views": 1
       }
     },
     {
@@ -76,6 +79,10 @@
       ],
       "expected": {
         "solutions": 11
+      },
+      "has": {
+        "suites": 1,
+        "views": 1
       }
     },
     {
@@ -199,7 +206,10 @@
       },
       "page": "guide/03-learning.html#relevant-all",
       "status": "sound",
-      "baseline": "guide-02-block"
+      "baseline": "guide-02-block",
+      "has": {
+        "views": 1
+      }
     },
     {
       "id": "guide-03-hit-clique",
@@ -223,7 +233,10 @@
         {
           "k": "5"
         }
-      ]
+      ],
+      "has": {
+        "views": 1
+      }
     },
     {
       "id": "guide-04-one-node",
@@ -239,7 +252,10 @@
       },
       "page": "guide/04-soundness.html#one-node",
       "status": "unsound",
-      "baseline": "guide-02-block"
+      "baseline": "guide-02-block",
+      "has": {
+        "views": 1
+      }
     },
     {
       "id": "guide-05-paley-block",
@@ -941,6 +957,9 @@
       "tags": [],
       "expected": {
         "solutions": 10698
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
@@ -956,10 +975,14 @@
       "id": "voting-justification",
       "title": "Voting: justifications",
       "group": "problems",
-      "summary": "Explaining a voting outcome by axioms.",
+      "summary": "Explaining a voting outcome by axioms: 17 questions as instances, from one axiom to five, one with no justification.",
       "shape": "shape1",
       "tags": [],
-      "expected": null
+      "expected": null,
+      "has": {
+        "instances": 17,
+        "suites": 1
+      }
     },
     {
       "id": "abduction",
@@ -972,6 +995,9 @@
       ],
       "expected": {
         "solutions": 17
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
@@ -985,6 +1011,9 @@
       ],
       "expected": {
         "solutions": 4
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
@@ -998,6 +1027,11 @@
       ],
       "expected": {
         "solutions": 3
+      },
+      "has": {
+        "instances": 4,
+        "generators": 1,
+        "views": 1
       }
     },
     {
@@ -1011,6 +1045,10 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 1,
+        "generators": 1
       }
     },
     {
@@ -1024,6 +1062,9 @@
       ],
       "expected": {
         "solutions": 6
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
@@ -1037,6 +1078,11 @@
       ],
       "expected": {
         "solutions": 100
+      },
+      "has": {
+        "instances": 1,
+        "generators": 2,
+        "views": 1
       }
     },
     {
@@ -1050,6 +1096,9 @@
       ],
       "expected": {
         "solutions": 8
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1063,6 +1112,9 @@
       ],
       "expected": {
         "solutions": 6
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1076,6 +1128,11 @@
       ],
       "expected": {
         "solutions": 36
+      },
+      "has": {
+        "instances": 1,
+        "generators": 2,
+        "views": 1
       }
     },
     {
@@ -1089,6 +1146,11 @@
       ],
       "expected": {
         "solutions": 44
+      },
+      "has": {
+        "instances": 1,
+        "generators": 2,
+        "views": 1
       }
     },
     {
@@ -1102,6 +1164,9 @@
       ],
       "expected": {
         "solutions": 39
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1115,6 +1180,9 @@
       ],
       "expected": {
         "solutions": 3
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1128,6 +1196,9 @@
       ],
       "expected": {
         "solutions": 3
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
@@ -1141,6 +1212,9 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
@@ -1154,6 +1228,9 @@
       ],
       "expected": {
         "solutions": 3
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1167,6 +1244,9 @@
       ],
       "expected": {
         "solutions": 64
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1180,6 +1260,9 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1193,6 +1276,9 @@
       ],
       "expected": {
         "solutions": 22
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
@@ -1206,6 +1292,10 @@
       ],
       "expected": {
         "solutions": 3
+      },
+      "has": {
+        "instances": 1,
+        "generators": 2
       }
     },
     {
@@ -1219,6 +1309,9 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1232,6 +1325,9 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1245,6 +1341,9 @@
       ],
       "expected": {
         "solutions": 5
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1258,6 +1357,9 @@
       ],
       "expected": {
         "solutions": 5
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1271,6 +1373,12 @@
       ],
       "expected": {
         "solutions": 5
+      },
+      "has": {
+        "instances": 5,
+        "generators": 1,
+        "suites": 1,
+        "views": 1
       }
     },
     {
@@ -1284,6 +1392,9 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
@@ -1297,6 +1408,9 @@
       ],
       "expected": {
         "solutions": 3
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1310,6 +1424,9 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
@@ -1323,6 +1440,9 @@
       ],
       "expected": {
         "solutions": 1
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1336,6 +1456,9 @@
       ],
       "expected": {
         "solutions": 11
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1349,6 +1472,9 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
@@ -1362,6 +1488,9 @@
       ],
       "expected": {
         "solutions": 17
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
@@ -1373,7 +1502,10 @@
       "tags": [
         "fast"
       ],
-      "expected": null
+      "expected": null,
+      "has": {
+        "instances": 3
+      }
     },
     {
       "id": "knapsack-bounds",
@@ -1386,6 +1518,9 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1399,6 +1534,9 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1412,6 +1550,9 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1425,6 +1566,9 @@
       ],
       "expected": {
         "solutions": 4
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
@@ -1438,6 +1582,9 @@
       ],
       "expected": {
         "solutions": 5
+      },
+      "has": {
+        "instances": 4
       }
     },
     {
@@ -1488,6 +1635,9 @@
       ],
       "expected": {
         "solutions": 4
+      },
+      "has": {
+        "instances": 3
       }
     }
   ]

@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Stable models by hand",
   "description": "The answer sets of a disjunctive logic program given as facts; deciding whether one exists is Sigma-2-complete (Eiter and Gottlob). The abstraction guesses a classical model of the rules, the check looks for a smaller model of the reduct, and relevant/1 names the atoms that make this smaller model work. The sample program is itself a guess-and-saturate encoding of an exists-forall formula.",
   "fragments": [
     {
       "name": "shared",
       "description": "The object program, as facts. Added to every solver.",
-      "text": "% A disjunctive logic program, as facts. head(R,A): atom A is in the head of rule R;\n% pos(R,A): A is in the body; neg(R,A): \"not A\" is in the body.\n% The program guesses p, q and r and then tests them by saturation:\n%  1: p :- not np.          2: np :- not p.\n%  3: q :- not nq.          4: nq :- not q.\n%  5: r :- not nr.          6: nr :- not r.\nhead(1,p). neg(1,np).       head(2,np). neg(2,p).\nhead(3,q). neg(3,nq).       head(4,nq). neg(4,q).\nhead(5,r). neg(5,nr).       head(6,nr). neg(6,r).\n%  7: a ; b.      8: c ; d.      9: e ; f.\nhead(7,a). head(7,b).       head(8,c). head(8,d).       head(9,e). head(9,f).\n% 10: w :- a, c, p.        11: w :- a, c, r.\n% 12: w :- a, d.           13: w :- b, c, e, q.\n% 14: w :- b, c, f.        15: w :- b, d.\nhead(10,w). pos(10,a). pos(10,c). pos(10,p).\nhead(11,w). pos(11,a). pos(11,c). pos(11,r).\nhead(12,w). pos(12,a). pos(12,d).\nhead(13,w). pos(13,b). pos(13,c). pos(13,e). pos(13,q).\nhead(14,w). pos(14,b). pos(14,c). pos(14,f).\nhead(15,w). pos(15,b). pos(15,d).\n% 16..21: a :- w.  b :- w.  c :- w.  d :- w.  e :- w.  f :- w.\nhead(16,a). head(17,b). head(18,c). head(19,d). head(20,e). head(21,f).\npos(16..21,w).\n% 22: :- not w.\nrule(22). neg(22,w).\nrule(R) :- head(R,_).\natom(A) :- head(_,A).\natom(A) :- pos(_,A).\natom(A) :- neg(_,A).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\nrule(R) :- head(R,_).\natom(A) :- head(_,A).\natom(A) :- pos(_,A).\natom(A) :- neg(_,A).\n"
     },
     {
       "name": "abstraction",
@@ -46,5 +46,42 @@
       "fast"
     ],
     "expected": 3
-  }
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% A disjunctive logic program, as facts. head(R,A): atom A is in the head of rule R;\n% pos(R,A): A is in the body; neg(R,A): \"not A\" is in the body.\n% The program guesses p, q and r and then tests them by saturation:\n%  1: p :- not np.          2: np :- not p.\n%  3: q :- not nq.          4: nq :- not q.\n%  5: r :- not nr.          6: nr :- not r.\nhead(1,p). neg(1,np).       head(2,np). neg(2,p).\nhead(3,q). neg(3,nq).       head(4,nq). neg(4,q).\nhead(5,r). neg(5,nr).       head(6,nr). neg(6,r).\n%  7: a ; b.      8: c ; d.      9: e ; f.\nhead(7,a). head(7,b).       head(8,c). head(8,d).       head(9,e). head(9,f).\n% 10: w :- a, c, p.        11: w :- a, c, r.\n% 12: w :- a, d.           13: w :- b, c, e, q.\n% 14: w :- b, c, f.        15: w :- b, d.\nhead(10,w). pos(10,a). pos(10,c). pos(10,p).\nhead(11,w). pos(11,a). pos(11,c). pos(11,r).\nhead(12,w). pos(12,a). pos(12,d).\nhead(13,w). pos(13,b). pos(13,c). pos(13,e). pos(13,q).\nhead(14,w). pos(14,b). pos(14,c). pos(14,f).\nhead(15,w). pos(15,b). pos(15,d).\n% 16..21: a :- w.  b :- w.  c :- w.  d :- w.  e :- w.  f :- w.\nhead(16,a). head(17,b). head(18,c). head(19,d). head(20,e). head(21,f).\npos(16..21,w).\n% 22: :- not w.\nrule(22). neg(22,w).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "even-loop",
+      "facts": "% 1: p :- not q.   2: q :- not p.   3: r :- p.   Two stable models, {p, r} and {q}.\nhead(1,p). neg(1,q).\nhead(2,q). neg(2,p).\nhead(3,r). pos(3,p).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      }
+    },
+    {
+      "id": "odd-loop",
+      "facts": "% 1: p :- not p.   2: q.   3: r :- q.   No stable model.\nhead(1,p). neg(1,p).\nhead(2,q).\nhead(3,r). pos(3,q).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      }
+    },
+    {
+      "id": "disjunction",
+      "facts": "% 1: a ; b.   2: c :- a, not d.   Many classical models (d may be true in them);\n% the stable ones are {a, c} and {b}.\nhead(1,a). head(1,b).\nhead(2,c). pos(2,a). neg(2,d).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      }
+    }
+  ]
 }

@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Knapsack interdiction, optimum",
   "description": "The bilevel knapsack as an optimisation problem: the smallest profit the leader can hold the follower to, and every set of locked items that achieves it. The abstraction proposes locked items with a claimed value, smallest claim first; the follower's best packing refutes a claim and is grounded as a rule that later claims have to cover. The first candidate that survives has the optimal value (25); a second program part then forbids larger claims, and the loop lists the other optimal choices.",
   "fragments": [
     {
       "name": "shared",
       "description": "The items. Added to every solver.",
-      "text": "% item(I,Cost,Weight,Profit): the leader can lock item I at the given cost; the\n% follower can pack it (if it is not locked) with the given weight and profit.\nitem(1,3,4,9).  item(2,2,3,7).  item(3,4,5,12). item(4,1,2,4).\nitem(5,3,6,13). item(6,2,4,8).  item(7,5,7,16). item(8,1,3,5).\n% top(T): no packing is worth more than T.\ntop(T) :- T = #sum { P,I : item(I,_,_,P) }.\n"
+      "text": "% The instance (its facts) is in the Instances tab.\n% top(T): no packing is worth more than T.\ntop(T) :- T = #sum { P,I : item(I,_,_,P) }.\n"
     },
     {
       "name": "abstraction",
@@ -45,5 +45,57 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% item(I,Cost,Weight,Profit): the leader can lock item I at the given cost; the\n% follower can pack it (if it is not locked) with the given weight and profit.\nitem(1,3,4,9).  item(2,2,3,7).  item(3,4,5,12). item(4,1,2,4).\nitem(5,3,6,13). item(6,2,4,8).  item(7,5,7,16). item(8,1,3,5).\n",
+      "constants": {
+        "budget": "6",
+        "capacity": "12"
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "six-items",
+      "facts": "% Six items: budget 3, capacity 8 (optimum 14).\nitem(1,2,3,6). item(2,1,2,3). item(3,3,4,8).\nitem(4,2,5,9). item(5,1,1,2). item(6,2,3,5).\n",
+      "constants": {
+        "budget": "3",
+        "capacity": "8"
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "six-items-ties",
+      "facts": "% The six items with capacity 6: the optimum 11 has many optimal choices.\nitem(1,2,3,6). item(2,1,2,3). item(3,3,4,8).\nitem(4,2,5,9). item(5,1,1,2). item(6,2,3,5).\n",
+      "constants": {
+        "budget": "3",
+        "capacity": "6"
+      },
+      "expected": {
+        "solutions": 14
+      },
+      "tags": []
+    },
+    {
+      "id": "twelve-items",
+      "facts": "% Twelve items (the example items and four more): budget 7, capacity 16\n% (optimum 36).\nitem(1,3,4,9).  item(2,2,3,7).  item(3,4,5,12).  item(4,1,2,4).\nitem(5,3,6,13). item(6,2,4,8).  item(7,5,7,16).  item(8,1,3,5).\nitem(9,2,5,10). item(10,4,6,14). item(11,1,1,3). item(12,3,5,11).\n",
+      "constants": {
+        "budget": "7",
+        "capacity": "16"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }

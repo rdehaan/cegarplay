@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Fewest clues",
   "description": "Add k clues to a partly filled 4 x 4 Sudoku so that it has exactly one solution; the fewest clues problem is Sigma-2-complete (Demaine, Ma, Schvartzman, Waingarten and Aaronson). The abstraction guesses a solved grid and the cells to reveal; the check looks for two different grids that agree with all clues, and the refinement adds a clue that rules out one of them. Delete the printed clues and raise k for larger runs.",
   "fragments": [
     {
       "name": "shared",
       "description": "The size of the puzzle and the printed clues. Added to every solver.",
-      "text": "% A 4 x 4 Sudoku: every row, every column and each of the four 2 x 2 boxes contains the\n% values 1..4 once.\nrow(1..4). col(1..4). val(1..4).\nbox(R,C,(R-1)/2*2+(C-1)/2) :- row(R), col(C).\n% Clues that are already printed in the grid.\npre(1,1,1). pre(2,2,2).\nprinted(R,C) :- pre(R,C,_).\n"
+      "text": "% A 4 x 4 Sudoku: every row, every column and each of the four 2 x 2 boxes contains the\n% values 1..4 once. The printed clues pre(R,C,V) are in the Instances tab.\nrow(1..4). col(1..4). val(1..4).\nbox(R,C,(R-1)/2*2+(C-1)/2) :- row(R), col(C).\nprinted(R,C) :- pre(R,C,_).\n"
     },
     {
       "name": "sudoku",
@@ -44,5 +44,51 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Clues that are already printed in the grid.\npre(1,1,1). pre(2,2,2).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 64
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "one-clue",
+      "facts": "% The same printed clues with k = 1: one more clue never makes the solution\n% unique.\npre(1,1,1). pre(2,2,2).\n",
+      "constants": {
+        "k": "1"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "diagonal-three",
+      "facts": "% Three printed clues on the diagonal, and one more clue (k = 1).\npre(1,1,1). pre(2,2,2). pre(3,3,3).\n",
+      "constants": {
+        "k": "1"
+      },
+      "expected": {
+        "solutions": 4
+      },
+      "tags": []
+    },
+    {
+      "id": "first-row",
+      "facts": "% The first row is printed; two more clues (k = 2).\npre(1,1,1). pre(1,2,2). pre(1,3,3). pre(1,4,4).\n",
+      "constants": {
+        "k": "2"
+      },
+      "expected": {
+        "solutions": 112
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }

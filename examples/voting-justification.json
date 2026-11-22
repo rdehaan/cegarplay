@@ -1,12 +1,12 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Voting: justifications",
-  "description": "Explaining a voting outcome by axioms: the abstraction guesses axiom instances and profiles, the check looks for a profile where they fail.",
+  "description": "Explaining a voting outcome by axioms: the abstraction guesses axiom instances and profiles, the check looks for outcomes that satisfy them but differ from the target outcome. Each instance is one question: a set of axioms, a target profile and its outcome (Instances tab).",
   "fragments": [
     {
       "name": "shared",
-      "text": "%%% The voting/justification setting\n% #const num_candidates=3.\ncandidate(1..num_candidates).\nposition(1..num_candidates).\n\n% #const num_voters=3.\nvoter(1..num_voters).\n\n% #const num_profiles=3.\nprofile_num(1..num_profiles).\n\n% #const num_axiom_instances=3.\n\n% Auxiliary\nswap(C1,C2,C1,C2) :-\n    candidate(C1), candidate(C2), C1 < C2.\nswap(C1,C2,C2,C1) :-\n    candidate(C1), candidate(C2), C1 < C2.\nswap(C1,C2,C3,C3) :-\n    candidate(C1), candidate(C2), C1 < C2,\n    candidate(C3), C3 != C1, C3 != C2.\n\n%%% Declare axioms\n% #external use_axiom(pareto).\n% #external use_axiom(faithfulness).\n% #external use_axiom(cancellation).\n% #external use_axiom(reinforcement).\n% #external use_axiom(condorcet).\n% #external use_axiom(neutrality2).\n% #external use_axiom(pos_responsiveness).\n\n% use_axiom(pareto).\n% use_axiom(faithfulness).\n% use_axiom(cancellation).\n% use_axiom(reinforcement).\n% use_axiom(condorcet).\n% use_axiom(neutrality2).\n% use_axiom(pos_responsiveness).\n\naxiom(pareto(C)) :- candidate(C),\n    use_axiom(pareto).\npos_axiom_instance(single(Prof),pareto(C)) :-\n    use_axiom(pareto),\n    profile_num(Prof), axiom(pareto(C)).\n\naxiom(faithfulness) :-\n    use_axiom(faithfulness).\npos_axiom_instance(single(Prof),faithfulness) :-\n    use_axiom(faithfulness),\n    profile_num(Prof), axiom(faithfulness).\n\naxiom(unanimity) :-\n    use_axiom(unanimity).\npos_axiom_instance(single(Prof),unanimity) :-\n    use_axiom(unanimity),\n    profile_num(Prof), axiom(unanimity).\n\naxiom(cancellation) :-\n    use_axiom(cancellation).\npos_axiom_instance(single(Prof),cancellation) :-\n    use_axiom(cancellation),\n    profile_num(Prof), axiom(cancellation).\n\naxiom(reinforcement) :-\n    use_axiom(reinforcement).\nreinforcement_triple(Prof1,Prof2,Prof3) :-\n    use_axiom(reinforcement),\n    profile_num(Prof1), profile_num(Prof2), Prof1 <= Prof2,\n    profile_num(Prof3),\n    Prof1 < Prof3, Prof2 < Prof3. % only allowed due to symmetry breaking\nreinforcement_triple(Prof1,Prof2,1) :-\n    use_axiom(reinforcement),\n    profile_num(Prof1), profile_num(Prof2), Prof1 <= Prof2.\npos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement) :-\n    use_axiom(reinforcement),\n    reinforcement_triple(Prof1,Prof2,Prof3),\n    axiom(reinforcement).\n\naxiom(condorcet(C)) :- candidate(C),\n    use_axiom(condorcet).\npos_axiom_instance(single(Prof),condorcet(C)) :-\n    use_axiom(condorcet),\n    profile_num(Prof), axiom(condorcet(C)).\n\naxiom(neutrality2(C1,C2)) :- candidate(C1), candidate(C2), C1 < C2,\n    use_axiom(neutrality2).\npos_axiom_instance(double(Prof1,Prof2),neutrality2(C1,C2)) :-\n    use_axiom(neutrality2),\n    profile_num(Prof1), profile_num(Prof2), Prof1 <= Prof2,\n    axiom(neutrality2(C1,C2)).\n\npos_response_pair(C,P) :-\n    use_axiom(pos_responsiveness),\n    candidate(C), position(P), P < num_candidates.\naxiom(pos_responsiveness(V,C,P)) :-\n    use_axiom(pos_responsiveness),\n    voter(V), pos_response_pair(C,P).\npos_axiom_instance(double(Prof1,Prof2),pos_responsiveness(V,C,P)) :-\n    use_axiom(pos_responsiveness),\n    profile_num(Prof1), profile_num(Prof2),\n    axiom(pos_responsiveness(V,C,P)).\n\n%* *******************************\n*** Target profile and outcome ***\n*** CAREFUL: put the profile   ***\n*** in lexicographic order :-) ***\n******************************* *%\n\n% use_axiom(pareto).\n% #const num_candidates=3.\n% #const num_voters=2.\n% #const num_profiles=1.\n% #const num_axiom_instances=2.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,1,1).\n% target_profile(2,3,2).\n% target_profile(2,2,3).\n% target_outcome(1).\n% requires_polarity_axiom.\n\n% use_axiom(condorcet).\n% #const num_candidates=3.\n% #const num_voters=2.\n% #const num_profiles=1.\n% #const num_axiom_instances=1.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,1,1).\n% target_profile(2,3,2).\n% target_profile(2,2,3).\n% target_outcome(1).\n% requires_polarity_axiom.\n\n% use_axiom(faithfulness).\n% use_axiom(reinforcement).\n% #const num_candidates=3.\n% #const num_voters=2.\n% #const num_profiles=3.\n% #const num_axiom_instances=3.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,1,1).\n% target_profile(2,3,2).\n% target_profile(2,2,3).\n% target_outcome(1).\n% requires_polarity_axiom.\n\n% use_axiom(unanimity).\n% #const num_candidates=3.\n% #const num_voters=2.\n% #const num_profiles=1.\n% #const num_axiom_instances=1.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,1,1).\n% target_profile(2,3,2).\n% target_profile(2,2,3).\n% target_outcome(1).\n% requires_polarity_axiom.\n\n% use_axiom(faithfulness).\n% #const num_candidates=3.\n% #const num_voters=1.\n% #const num_profiles=1.\n% #const num_axiom_instances=1.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_outcome(1).\n% requires_polarity_axiom.\n\n% use_axiom(pareto).\n% #const num_candidates=3.\n% #const num_voters=1.\n% #const num_profiles=1.\n% #const num_axiom_instances=2.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_outcome(1).\n% requires_polarity_axiom.\n\n% use_axiom(cancellation).\n% #const num_candidates=3.\n% #const num_voters=2.\n% #const num_profiles=1.\n% #const num_axiom_instances=1.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,3,1).\n% target_profile(2,2,2).\n% target_profile(2,1,3).\n% target_outcome(1).\n% target_outcome(2).\n% target_outcome(3).\n\n% use_axiom(faithfulness).\n% use_axiom(reinforcement).\n% #const num_candidates=3.\n% #const num_voters=2.\n% #const num_profiles=2.\n% #const num_axiom_instances=2.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,1,1).\n% target_profile(2,2,2).\n% target_profile(2,3,3).\n% target_outcome(1).\n% requires_polarity_axiom.\n\n% use_axiom(faithfulness).\n% use_axiom(cancellation).\n% use_axiom(reinforcement).\n% #const num_candidates=3.\n% #const num_voters=3.\n% #const num_profiles=3.\n% #const num_axiom_instances=3.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,1,1).\n% target_profile(2,2,2).\n% target_profile(2,3,3).\n% target_profile(3,3,1).\n% target_profile(3,2,2).\n% target_profile(3,1,3).\n% target_outcome(1).\n% requires_polarity_axiom.\n\n% use_axiom(pareto).\n% use_axiom(neutrality2).\n% #const num_candidates=3.\n% #const num_voters=2.\n% #const num_profiles=1.\n% #const num_axiom_instances=2.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,2,1).\n% target_profile(2,1,2).\n% target_profile(2,3,3).\n% target_outcome(1).\n% target_outcome(2).\n% requires_polarity_axiom.\n\n% use_axiom(faithfulness).\n% use_axiom(cancellation).\n% use_axiom(reinforcement).\n% use_axiom(pareto).\n% #const num_candidates=3.\n% #const num_voters=3.\n% #const num_profiles=6.\n% #const num_axiom_instances=3.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,1,1).\n% target_profile(2,2,2).\n% target_profile(2,3,3).\n% target_profile(3,3,1).\n% target_profile(3,2,2).\n% target_profile(3,1,3).\n% target_outcome(1).\n% requires_polarity_axiom.\n\n% % UNSAT\n% use_axiom(faithfulness).\n% use_axiom(cancellation).\n% use_axiom(reinforcement).\n% use_axiom(pareto).\n% use_axiom(condorcet).\n% #const num_candidates=3.\n% #const num_voters=3.\n% #const num_profiles=5.\n% #const num_axiom_instances=3.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,1,1).\n% target_profile(2,2,2).\n% target_profile(2,3,3).\n% target_profile(3,3,1).\n% target_profile(3,2,2).\n% target_profile(3,1,3).\n% target_outcome(2).\n% requires_polarity_axiom.\n\n% use_axiom(pareto).\n% use_axiom(neutrality2).\n% use_axiom(reinforcement).\n% #const num_candidates=3.\n% #const num_voters=3.\n% #const num_profiles=3.\n% #const num_axiom_instances=5.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,1,1).\n% target_profile(2,3,2).\n% target_profile(2,2,3).\n% target_profile(3,2,1).\n% target_profile(3,1,2).\n% target_profile(3,3,3).\n% target_outcome(1).\n% requires_polarity_axiom.\n\n% use_axiom(faithfulness).\n% use_axiom(pareto).\n% use_axiom(neutrality2).\n% use_axiom(reinforcement).\n% #const num_candidates=3.\n% #const num_voters=3.\n% #const num_profiles=3.\n% #const num_axiom_instances=4.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,1,1).\n% target_profile(2,3,2).\n% target_profile(2,2,3).\n% target_profile(3,2,1).\n% target_profile(3,1,2).\n% target_profile(3,3,3).\n% target_outcome(1).\n% requires_polarity_axiom.\n\n% use_axiom(cancellation).\n% use_axiom(pos_responsiveness).\n% #const num_candidates=3.\n% #const num_voters=2.\n% #const num_profiles=2.\n% #const num_axiom_instances=2.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,2,1).\n% target_profile(2,3,2).\n% target_profile(2,1,3).\n% target_outcome(2).\n% requires_polarity_axiom.\n\nuse_axiom(cancellation).\nuse_axiom(reinforcement).\nuse_axiom(pos_responsiveness).\n#const num_candidates=3.\n#const num_voters=4.\n#const num_profiles=4.\n#const num_axiom_instances=4.\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,3,2).\ntarget_profile(2,2,3).\ntarget_profile(3,2,1).\ntarget_profile(3,3,2).\ntarget_profile(3,1,3).\ntarget_profile(4,3,1).\ntarget_profile(4,1,2).\ntarget_profile(4,2,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n\n% % FOR EFFICIENCY, NEEDS 2-STEP PROCEDURE\n% % (FIRST FINDING PROFILES)\n% use_axiom(pareto).\n% use_axiom(neutrality2).\n% use_axiom(cancellation).\n% use_axiom(reinforcement).\n% #const num_candidates=3.\n% #const num_voters=5.\n% #const num_profiles=6.\n% #const num_axiom_instances=8.\n% target_profile(1,1,1).\n% target_profile(1,2,2).\n% target_profile(1,3,3).\n% target_profile(2,3,1).\n% target_profile(2,1,2).\n% target_profile(2,2,3).\n% target_profile(3,3,1).\n% target_profile(3,1,2).\n% target_profile(3,2,3).\n% target_outcome(1).\n% target_outcome(3).\n% requires_polarity_axiom.\n",
+      "text": "%%% The voting/justification setting\ncandidate(1..num_candidates).\nposition(1..num_candidates).\n\nvoter(1..num_voters).\n\nprofile_num(1..num_profiles).\n\n\n% Auxiliary\nswap(C1,C2,C1,C2) :-\n    candidate(C1), candidate(C2), C1 < C2.\nswap(C1,C2,C2,C1) :-\n    candidate(C1), candidate(C2), C1 < C2.\nswap(C1,C2,C3,C3) :-\n    candidate(C1), candidate(C2), C1 < C2,\n    candidate(C3), C3 != C1, C3 != C2.\n\n%%% The axioms. An instance switches axioms on with facts use_axiom(A), for A in\n%%% pareto, faithfulness, unanimity, cancellation, reinforcement, condorcet,\n%%% neutrality2, pos_responsiveness. It also gives the target profile\n%%% target_profile(Voter,Candidate,Position) (in lexicographic order), the target\n%%% outcome target_outcome(C), optionally requires_polarity_axiom, and the constants\n%%% num_candidates, num_voters, num_profiles and num_axiom_instances.\n\naxiom(pareto(C)) :- candidate(C),\n    use_axiom(pareto).\npos_axiom_instance(single(Prof),pareto(C)) :-\n    use_axiom(pareto),\n    profile_num(Prof), axiom(pareto(C)).\n\naxiom(faithfulness) :-\n    use_axiom(faithfulness).\npos_axiom_instance(single(Prof),faithfulness) :-\n    use_axiom(faithfulness),\n    profile_num(Prof), axiom(faithfulness).\n\naxiom(unanimity) :-\n    use_axiom(unanimity).\npos_axiom_instance(single(Prof),unanimity) :-\n    use_axiom(unanimity),\n    profile_num(Prof), axiom(unanimity).\n\naxiom(cancellation) :-\n    use_axiom(cancellation).\npos_axiom_instance(single(Prof),cancellation) :-\n    use_axiom(cancellation),\n    profile_num(Prof), axiom(cancellation).\n\naxiom(reinforcement) :-\n    use_axiom(reinforcement).\nreinforcement_triple(Prof1,Prof2,Prof3) :-\n    use_axiom(reinforcement),\n    profile_num(Prof1), profile_num(Prof2), Prof1 <= Prof2,\n    profile_num(Prof3),\n    Prof1 < Prof3, Prof2 < Prof3. % only allowed due to symmetry breaking\nreinforcement_triple(Prof1,Prof2,1) :-\n    use_axiom(reinforcement),\n    profile_num(Prof1), profile_num(Prof2), Prof1 <= Prof2.\npos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement) :-\n    use_axiom(reinforcement),\n    reinforcement_triple(Prof1,Prof2,Prof3),\n    axiom(reinforcement).\n\naxiom(condorcet(C)) :- candidate(C),\n    use_axiom(condorcet).\npos_axiom_instance(single(Prof),condorcet(C)) :-\n    use_axiom(condorcet),\n    profile_num(Prof), axiom(condorcet(C)).\n\naxiom(neutrality2(C1,C2)) :- candidate(C1), candidate(C2), C1 < C2,\n    use_axiom(neutrality2).\npos_axiom_instance(double(Prof1,Prof2),neutrality2(C1,C2)) :-\n    use_axiom(neutrality2),\n    profile_num(Prof1), profile_num(Prof2), Prof1 <= Prof2,\n    axiom(neutrality2(C1,C2)).\n\npos_response_pair(C,P) :-\n    use_axiom(pos_responsiveness),\n    candidate(C), position(P), P < num_candidates.\naxiom(pos_responsiveness(V,C,P)) :-\n    use_axiom(pos_responsiveness),\n    voter(V), pos_response_pair(C,P).\npos_axiom_instance(double(Prof1,Prof2),pos_responsiveness(V,C,P)) :-\n    use_axiom(pos_responsiveness),\n    profile_num(Prof1), profile_num(Prof2),\n    axiom(pos_responsiveness(V,C,P)).\n",
       "description": "Added to every solver."
     },
     {
@@ -30,12 +30,269 @@
     "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
   },
   "settings": {
-    "constants": {},
+    "constants": {
+      "num_candidates": "3",
+      "num_voters": "4",
+      "num_profiles": "4",
+      "num_axiom_instances": "4"
+    },
     "solutions": 1,
     "seconds": 60,
     "candidates": 0,
     "trace": 200,
-    "seed": 0
+    "seed": 0,
+    "instance": "cancel-reinf-posresp-k4"
   },
-  "runs": []
+  "runs": [],
+  "instances": [
+    {
+      "id": "faith-k1",
+      "facts": "% Axioms: faithfulness. Target: a profile of 1 voter with outcome {1}. Up to 1 voter per profile, 1 profile, exactly 1 axiom instance.\nuse_axiom(faithfulness).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "1",
+        "num_profiles": "1",
+        "num_axiom_instances": "1"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "condorcet-k1",
+      "facts": "% Axioms: condorcet. Target: a profile of 2 voters with outcome {1}. Up to 2 voters per profile, 1 profile, exactly 1 axiom instance.\nuse_axiom(condorcet).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,3,2).\ntarget_profile(2,2,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "2",
+        "num_profiles": "1",
+        "num_axiom_instances": "1"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "unanimity-k1",
+      "facts": "% Axioms: unanimity. Target: a profile of 2 voters with outcome {1}. Up to 2 voters per profile, 1 profile, exactly 1 axiom instance.\nuse_axiom(unanimity).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,3,2).\ntarget_profile(2,2,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "2",
+        "num_profiles": "1",
+        "num_axiom_instances": "1"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "cancel-k1",
+      "facts": "% Axioms: cancellation. Target: a profile of 2 voters with outcome {1, 2, 3}. Up to 2 voters per profile, 1 profile, exactly 1 axiom instance.\nuse_axiom(cancellation).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,3,1).\ntarget_profile(2,2,2).\ntarget_profile(2,1,3).\ntarget_outcome(1).\ntarget_outcome(2).\ntarget_outcome(3).\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "2",
+        "num_profiles": "1",
+        "num_axiom_instances": "1"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "pareto-k2-v1",
+      "facts": "% Axioms: pareto. Target: a profile of 1 voter with outcome {1}. Up to 1 voter per profile, 1 profile, exactly 2 axiom instances.\nuse_axiom(pareto).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "1",
+        "num_profiles": "1",
+        "num_axiom_instances": "2"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "pareto-k2",
+      "facts": "% Axioms: pareto. Target: a profile of 2 voters with outcome {1}. Up to 2 voters per profile, 1 profile, exactly 2 axiom instances.\nuse_axiom(pareto).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,3,2).\ntarget_profile(2,2,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "2",
+        "num_profiles": "1",
+        "num_axiom_instances": "2"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "pareto-neutral-k2",
+      "facts": "% Axioms: pareto, neutrality2. Target: a profile of 2 voters with outcome {1, 2}. Up to 2 voters per profile, 1 profile, exactly 2 axiom instances.\nuse_axiom(pareto).\nuse_axiom(neutrality2).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,2,1).\ntarget_profile(2,1,2).\ntarget_profile(2,3,3).\ntarget_outcome(1).\ntarget_outcome(2).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "2",
+        "num_profiles": "1",
+        "num_axiom_instances": "2"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "faith-reinf-k2",
+      "facts": "% Axioms: faithfulness, reinforcement. Target: a profile of 2 voters with outcome {1}. Up to 2 voters per profile, 2 profiles, exactly 2 axiom instances.\nuse_axiom(faithfulness).\nuse_axiom(reinforcement).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,2,2).\ntarget_profile(2,3,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "2",
+        "num_profiles": "2",
+        "num_axiom_instances": "2"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "cancel-posresp-k2",
+      "facts": "% Axioms: cancellation, pos_responsiveness. Target: a profile of 2 voters with outcome {2}. Up to 2 voters per profile, 2 profiles, exactly 2 axiom instances.\nuse_axiom(cancellation).\nuse_axiom(pos_responsiveness).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,2,1).\ntarget_profile(2,3,2).\ntarget_profile(2,1,3).\ntarget_outcome(2).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "2",
+        "num_profiles": "2",
+        "num_axiom_instances": "2"
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "faith-reinf-k3",
+      "facts": "% Axioms: faithfulness, reinforcement. Target: a profile of 2 voters with outcome {1}. Up to 2 voters per profile, 3 profiles, exactly 3 axiom instances.\nuse_axiom(faithfulness).\nuse_axiom(reinforcement).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,3,2).\ntarget_profile(2,2,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "2",
+        "num_profiles": "3",
+        "num_axiom_instances": "3"
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "faith-cancel-reinf-k3",
+      "facts": "% Axioms: faithfulness, cancellation, reinforcement. Target: a profile of 3 voters with outcome {1}. Up to 3 voters per profile, 3 profiles, exactly 3 axiom instances.\nuse_axiom(faithfulness).\nuse_axiom(cancellation).\nuse_axiom(reinforcement).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,2,2).\ntarget_profile(2,3,3).\ntarget_profile(3,3,1).\ntarget_profile(3,2,2).\ntarget_profile(3,1,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "3",
+        "num_profiles": "3",
+        "num_axiom_instances": "3"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "faith-cancel-reinf-pareto-condorcet-k3",
+      "facts": "% Axioms: faithfulness, cancellation, reinforcement, pareto, condorcet. Target: a profile of 3 voters with outcome {2}. Up to 3 voters per profile, 5 profiles, exactly 3 axiom instances.\n% No justification exists with these bounds: the run ends without a solution.\nuse_axiom(faithfulness).\nuse_axiom(cancellation).\nuse_axiom(reinforcement).\nuse_axiom(pareto).\nuse_axiom(condorcet).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,2,2).\ntarget_profile(2,3,3).\ntarget_profile(3,3,1).\ntarget_profile(3,2,2).\ntarget_profile(3,1,3).\ntarget_outcome(2).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "3",
+        "num_profiles": "5",
+        "num_axiom_instances": "3"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": [
+        "no-solution"
+      ]
+    },
+    {
+      "id": "faith-cancel-reinf-pareto-k3",
+      "facts": "% Axioms: faithfulness, cancellation, reinforcement, pareto. Target: a profile of 3 voters with outcome {1}. Up to 3 voters per profile, 6 profiles, exactly 3 axiom instances.\nuse_axiom(faithfulness).\nuse_axiom(cancellation).\nuse_axiom(reinforcement).\nuse_axiom(pareto).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,2,2).\ntarget_profile(2,3,3).\ntarget_profile(3,3,1).\ntarget_profile(3,2,2).\ntarget_profile(3,1,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "3",
+        "num_profiles": "6",
+        "num_axiom_instances": "3"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "faith-pareto-neutral-reinf-k4",
+      "facts": "% Axioms: faithfulness, pareto, neutrality2, reinforcement. Target: a profile of 3 voters with outcome {1}. Up to 3 voters per profile, 3 profiles, exactly 4 axiom instances.\nuse_axiom(faithfulness).\nuse_axiom(pareto).\nuse_axiom(neutrality2).\nuse_axiom(reinforcement).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,3,2).\ntarget_profile(2,2,3).\ntarget_profile(3,2,1).\ntarget_profile(3,1,2).\ntarget_profile(3,3,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "3",
+        "num_profiles": "3",
+        "num_axiom_instances": "4"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "cancel-reinf-posresp-k4",
+      "facts": "% Axioms: cancellation, reinforcement, pos_responsiveness. Target: a profile of 4 voters with outcome {1}. Up to 4 voters per profile, 4 profiles, exactly 4 axiom instances.\nuse_axiom(cancellation).\nuse_axiom(reinforcement).\nuse_axiom(pos_responsiveness).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,3,2).\ntarget_profile(2,2,3).\ntarget_profile(3,2,1).\ntarget_profile(3,3,2).\ntarget_profile(3,1,3).\ntarget_profile(4,3,1).\ntarget_profile(4,1,2).\ntarget_profile(4,2,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "4",
+        "num_profiles": "4",
+        "num_axiom_instances": "4"
+      },
+      "tags": [
+        "original"
+      ]
+    },
+    {
+      "id": "pareto-neutral-reinf-k5",
+      "facts": "% Axioms: pareto, neutrality2, reinforcement. Target: a profile of 3 voters with outcome {1}. Up to 3 voters per profile, 3 profiles, exactly 5 axiom instances.\nuse_axiom(pareto).\nuse_axiom(neutrality2).\nuse_axiom(reinforcement).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,3,2).\ntarget_profile(2,2,3).\ntarget_profile(3,2,1).\ntarget_profile(3,1,2).\ntarget_profile(3,3,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "3",
+        "num_profiles": "3",
+        "num_axiom_instances": "5"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "pareto-neutral-cancel-reinf-k8",
+      "facts": "% Axioms: pareto, neutrality2, cancellation, reinforcement. Target: a profile of 3 voters with outcome {1, 3}. Up to 5 voters per profile, 6 profiles, exactly 8 axiom instances.\n% Hard: the original file notes that it needs a two-step procedure (first finding the profiles).\nuse_axiom(pareto).\nuse_axiom(neutrality2).\nuse_axiom(cancellation).\nuse_axiom(reinforcement).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,3,1).\ntarget_profile(2,1,2).\ntarget_profile(2,2,3).\ntarget_profile(3,3,1).\ntarget_profile(3,1,2).\ntarget_profile(3,2,3).\ntarget_outcome(1).\ntarget_outcome(3).\nrequires_polarity_axiom.\n",
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "5",
+        "num_profiles": "6",
+        "num_axiom_instances": "8"
+      },
+      "tags": [
+        "hard"
+      ]
+    }
+  ],
+  "suites": [
+    {
+      "name": "questions",
+      "instances": {
+        "ids": "all"
+      },
+      "limits": {
+        "seconds": 20
+      }
+    }
+  ]
 }

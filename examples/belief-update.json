@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Belief update",
   "description": "Winslett's possible-models approach to updating beliefs: each old world moves to the worlds of the new information that differ from it in a minimal set of atoms, and asking whether a query holds after the update is Pi-2-complete (Eiter and Gottlob). The solutions are the pairs of an old and a new world in which the query fails; the check looks for a world of the new information that is strictly closer to the old one. relevant/1 mixes atoms of both worlds: the old values where the closer world agrees with the old one, the new values where it does not.",
   "fragments": [
     {
       "name": "shared",
       "description": "The old beliefs, the new information and the query. Added to every solver.",
-      "text": "% Beliefs over the atoms a..g, in clause form: pos(C,A) / neg(C,A) are the literals\n% of clause C.\natom(a;b;c;d;e;f;g).\n% What was believed before the change:\nneg(1,b). pos(1,c). neg(1,f).         % ~b | c | ~f\nneg(2,d). neg(2,g).                   % ~d | ~g\npos(3,c). pos(3,d).                   % c | d\nold(1..3).\n% What is learnt about the world after the change:\npos(4,b). pos(4,c).                   % b | c\npos(5,a). pos(5,f).                   % a | f\nneg(6,b). neg(6,e).                   % ~b | ~e\nneg(7,a). pos(7,g).                   % ~a | g\nnew(4..7).\n% The query: does this clause hold after the update?\npos(8,c). pos(8,f).                   % c | f\nquery(8).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\n"
     },
     {
       "name": "abstraction",
@@ -37,5 +37,45 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Beliefs over the atoms a..g, in clause form: pos(C,A) / neg(C,A) are the literals\n% of clause C.\natom(a;b;c;d;e;f;g).\n% What was believed before the change:\nneg(1,b). pos(1,c). neg(1,f).         % ~b | c | ~f\nneg(2,d). neg(2,g).                   % ~d | ~g\npos(3,c). pos(3,d).                   % c | d\nold(1..3).\n% What is learnt about the world after the change:\npos(4,b). pos(4,c).                   % b | c\npos(5,a). pos(5,f).                   % a | f\nneg(6,b). neg(6,e).                   % ~b | ~e\nneg(7,a). pos(7,g).                   % ~a | g\nnew(4..7).\n% The query: does this clause hold after the update?\npos(8,c). pos(8,f).                   % c | f\nquery(8).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 8
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "query-holds",
+      "facts": "% The book was on the table (a) and not on the shelf (b); now it is learnt that it is on\n% the shelf or on the table. Minimal change keeps it on the table: the query a holds.\natom(a;b).\npos(1,a). old(1).                     % a\nneg(2,b). old(2).                     % ~b\npos(3,a). pos(3,b). new(3).           % a | b\npos(4,a). query(4).                   % a\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "door-or-window",
+      "facts": "% Door (d) and window (w) were both closed; now one of them is open. Does the door\n% stay closed? Not after every minimal change.\natom(d;w).\nneg(1,d). old(1).                     % ~d\nneg(2,w). old(2).                     % ~w\npos(3,d). pos(3,w). new(3).           % d | w\nneg(4,d). query(4).                   % ~d\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "switch",
+      "facts": "% It was believed that the light (c) is on if the switch (a) is on; now the switch is\n% on. Does the light come on? Not by minimal change: a world with switch and light off\n% becomes one with only the switch on.\natom(a;c).\nneg(1,a). pos(1,c). old(1).           % ~a | c\npos(2,a). new(2).                     % a\npos(3,c). query(3).                   % c\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }

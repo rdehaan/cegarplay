@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Strategic companies",
   "description": "A set of companies is strategic if it makes every good, is closed under control, and no proper subset has both properties; deciding whether a given company is strategic is Sigma-2-complete (Cadoli, Eiter and Gottlob). The abstraction guesses a closed producing set with company b, and the check looks for a smaller one. The check writes the refinement itself as clause/3 atoms, one clause per company it could drop.",
   "fragments": [
     {
       "name": "shared",
       "description": "The holding: who makes what, who controls whom. Added to every solver.",
-      "text": "% A holding owns the companies a..h, which make the goods 1..6.\ncompany(a;b;c;d;e;f;g;h).\ngood(1..6).\n% makes(C,G): company C makes good G.\nmakes(a,1). makes(e,1).\nmakes(b,2). makes(d,2). makes(g,2).\nmakes(a,3). makes(b,3).\nmakes(e,4). makes(g,4).\nmakes(d,5). makes(e,5).\nmakes(b,6). makes(c,6). makes(f,6).\n% owner(T,K,O): O belongs to the K-th group of companies that together control company T.\nowner(b,1,a). owner(b,1,c).\nowner(e,1,b). owner(e,1,h).\nowner(e,2,g). owner(e,2,h).\nowner(f,1,h).\nowner(f,2,b). owner(f,2,e). owner(f,2,g).\ngroup(T,K) :- owner(T,K,_).\n% Is this company strategic, that is, in some strategic set?\nquery(b).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\ngroup(T,K) :- owner(T,K,_).\n"
     },
     {
       "name": "abstraction",
@@ -37,5 +37,36 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% A holding owns the companies a..h, which make the goods 1..6.\ncompany(a;b;c;d;e;f;g;h).\ngood(1..6).\n% makes(C,G): company C makes good G.\nmakes(a,1). makes(e,1).\nmakes(b,2). makes(d,2). makes(g,2).\nmakes(a,3). makes(b,3).\nmakes(e,4). makes(g,4).\nmakes(d,5). makes(e,5).\nmakes(b,6). makes(c,6). makes(f,6).\n% owner(T,K,O): O belongs to the K-th group of companies that together control company T.\nowner(b,1,a). owner(b,1,c).\nowner(e,1,b). owner(e,1,h).\nowner(e,2,g). owner(e,2,h).\nowner(f,1,h).\nowner(f,2,b). owner(f,2,e). owner(f,2,g).\n% Is this company strategic, that is, in some strategic set?\nquery(b).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "not-strategic",
+      "facts": "% Three companies, two goods; a and b each make both, c only the first, and b\n% controls a. Every producing, closed set with c has a smaller one without it: c is\n% in no strategic set.\ncompany(a;b;c).\ngood(1;2).\nmakes(a,1). makes(a,2).\nmakes(b,1). makes(b,2).\nmakes(c,1).\nowner(a,1,b).                         % b controls a\nquery(c).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "control",
+      "facts": "% Four companies, three goods; a and b together control d.\ncompany(a;b;c;d).\ngood(1..3).\nmakes(a,1). makes(b,1).\nmakes(c,2). makes(d,2).\nmakes(a,3). makes(d,3).\nowner(d,1,a). owner(d,1,b).\nquery(d).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }
