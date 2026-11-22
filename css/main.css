@@ -1035,3 +1035,14 @@ tr.mismatch td {
 .view-stroke-8 { stroke: var(--view-8); }
 
 .space-map { display: block; margin: 6px 0; image-rendering: pixelated; }
+
+/* Lecture mode (?lecture=1): the domain view alone, notes as captions */
+body.lecture header, body.lecture footer, body.lecture .run-bar, body.lecture .tab-label, body.lecture #anatomy,
+body.lecture #candidate-space, body.lecture #live-line, body.lecture #run-status { display: none !important; }
+body.lecture #section-observatory { display: block !important; }
+body.lecture main > section:not(#section-observatory) { display: none !important; }
+body.lecture .view-svg { max-width: none; width: min(96vw, 80vh); margin: 0 auto; }
+body.lecture .view-notes { font-size: 28px; text-align: center; list-style: none; padding: 0; }
+.view-pair { display: flex; flex-wrap: wrap; gap: 8px; }
+.view-pair > .view-svg { flex: 1 1 300px; }
+#view-svg-b svg { width: 100%; height: auto; border: 1px solid var(--border-faint); }

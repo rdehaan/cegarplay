@@ -384,7 +384,7 @@ commit at each checkpoint, no stops.
 - [x] V4 Candidate space
 - [x] S5 Certified counts
 - [x] I5 Mining, pools, importers
-- [ ] V5 Cursor, compare, export, lecture
+- [x] V5 Cursor, compare, export, lecture
 - [ ] L1 Values (G1–G3)
 - [ ] L2 Control (G4, G5, G8)
 - [ ] L3 Dynamics (G6)
@@ -639,8 +639,20 @@ Notes per phase:
   - Not done: campaign variants that name a pool (a variant may set `loop`, so a warm loop can
     be a variant already); stage 2 of mining only removes facts (adding needs a fact pool).
 
-**Next step (PLAN2):** V5 Cursor, compare, export, lecture (`docs/directions/observatory.md`,
-phase V5; end of wave 5: review S5, I5, V5).
+- **V5 (done):** `js/cursor.js` (model, ticks, range, follow, keys), `js/observatory.js` (cursor
+  bar, SVG/PNG/storyboard export, data tables, lecture mode), every view reads the cursor (domain
+  view and map sliders write it; timeline cursor and range; line table restricted to the range;
+  the Output trace follows), `align` in `js/recording.js`, comparison of two recordings (map,
+  curves, second domain view), `frameSVG`/`svgFile` (pure export) with
+  `test/fixtures/view-fixture.svg`, `?step=`/`?view=`/`?lecture=1`, precomputed frames
+  `examples/views/<id>.json` from `tools/make-replays.mjs` (a replay shows its picture with the
+  wasm blocked). `test/cursor.test.mjs` and five browser tests.
+  - Fixed on the way: view programs did not get the project's constants in the page (now
+    `#const` lines); replays now record the instance they used.
+  - A new run starts the cursor on its first step (as the trace did); "follow" keeps the last.
+
+**Next step (PLAN2):** review of wave 5 (S5, I5, V5) by a background agent, then L1 Values
+(`docs/directions/generality.md`, G1-G3).
 
 ## Next step (PLAN.md, guide, TODO)
 

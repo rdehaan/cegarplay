@@ -1,7 +1,8 @@
 // The domain view region of the Observatory (docs/spec-views.md): pick a view and a step, draw
 // the view's marks as SVG. Scene layout once per scene; a frame only changes attributes.
 import { Engine } from './engine.js';
-import { frameFacts, viewProgram, sceneProgram, parseMarks, layoutScene, suggestView, Palette, FrameSource, VIEW_OPTIONS } from './views.js';
+import { viewAtoms as viewAtomsOf, frameSVG, svgFile } from './views.js';
+import { frameFacts, viewProgram, sceneProgram, parseMarks, layoutScene, suggestView, Palette, FrameSource, VIEW_OPTIONS, viewProject, hashText } from './views.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const h = (tag, attrs = {}, ...kids) => {
@@ -29,6 +30,8 @@ export class ViewPanel {
     this.source = null;
     this.palette = new Palette();
     this.build();
+    // the step comes from the linked cursor (js/cursor.js); the panel keeps none of its own
+    if (app.cursor) app.cursor.subscribe(() => this.show());
   }
 
   build() {
@@ -37,10 +40,14 @@ export class ViewPanel {
     this.select = h('select', { id: 'view-select', 'aria-label': 'View' });
     this.select.addEventListener('change', () => { this.current = this.select.value; this.resetScene(); this.show(); });
     this.slider = h('input', { type: 'range', id: 'view-step', min: 1, max: 1, value: 1, 'aria-label': 'Step' });
-    this.slider.addEventListener('input', () => this.show());
+    this.slider.addEventListener('input', () => {
+      const st = this.steps[Number(this.slider.value) - 1];
+      if (st && this.app.cursor) this.app.cursor.setByStep(st.t ? st.t.i : st.r.i);
+    });
     this.stepLabel = h('span', { id: 'view-step-label', class: 'note' });
     this.svgBox = h('div', { id: 'view-svg', class: 'view-svg' });
     this.notes = h('ul', { id: 'view-notes', class: 'view-notes' });
+    this.svgBoxB = h('div', { id: 'view-svg-b', class: 'view-svg', hidden: true });
     this.msg = h('p', { id: 'view-message', class: 'note', role: 'status' });
     this.root.append(
       h('h3', {}, 'Domain view'),
@@ -49,7 +56,7 @@ export class ViewPanel {
       h('div', { class: 'instances-bar' }, this.select,
         h('button', { class: 'control-button small-button', id: 'view-suggest', onclick: () => this.suggest() }, 'Suggest a view'),
         h('label', {}, 'Step ', this.slider), this.stepLabel),
-      this.msg, this.svgBox, this.notes);
+      this.msg, h('div', { class: 'view-pair' }, this.svgBox, this.svgBoxB), this.notes);
   }
 
   get views() { return this.app.project.views || []; }
@@ -79,20 +86,36 @@ export class ViewPanel {
     this.slider.disabled = !this.steps.length;
   }
 
+  // frames come from a FrameSource; its engine starts only when a frame is not cached
   ensureEngine() {
-    if (!this.engine) {
-      this.engine = new Engine({ threads: false });
-      this.source = new FrameSource((p, o) => this.engine.exec(p, o));
+    if (!this.source) {
+      this.source = new FrameSource((p, o) => {
+        if (!this.engine) this.engine = new Engine({ threads: false });
+        return this.engine.exec(p, o);
+      });
     }
+  }
+
+  // precomputed frames of an example (examples/views/<id>.json: program hash -> marks)
+  prefill(map) {
+    this.ensureEngine();
+    for (const [k, atoms] of Object.entries(map || {})) this.source.cache.set(k, { atoms, error: null });
   }
 
   project() {
     // the facts of the instance the last run used reach the view too
-    const p = this.app.collect();
     const id = this.app.recording && this.app.recording.header && this.app.recording.header.instance;
-    const x = id && (p.instances || []).find((i) => i.id === id);
-    if (x && typeof x.facts === 'string') return { ...p, fragments: [{ name: 'instance', text: x.facts }, ...p.fragments.filter((f) => f.name !== 'instance')] };
-    return p;
+    return viewProject(this.app.collect(), id);
+  }
+
+  // the index (1-based) of the view step at the cursor: the last step at or before it
+  cursorIndex() {
+    const c = this.app.cursor;
+    if (!c || !c.ticks.length) return Math.min(this.steps.length, Number(this.slider.value) || 1);
+    if (c.index === 0) return 0;
+    let k = 0;
+    this.steps.forEach((st, j) => { if ((st.t ? st.t.i : st.r.i) <= c.step) k = j + 1; });
+    return k;
   }
 
   iface(step) {
@@ -101,8 +124,10 @@ export class ViewPanel {
     return [];
   }
 
-  async show(index = Number(this.slider.value)) {
+  async show() {
     const v = this.view;
+    const index = this.cursorIndex();
+    this.slider.value = String(Math.max(1, index));
     if (!v || !this.root.offsetParent && !this.forceShow) return;
     this.ensureEngine();
     const p = this.project();
@@ -117,7 +142,7 @@ export class ViewPanel {
       this.drawScene();
     }
     const st = this.steps[index - 1];
-    if (!st) { this.stepLabel.textContent = 'no recorded step (run first)'; this.applyFrame(parseMarks([], v.name)); return; }
+    if (!st) { this.stepLabel.textContent = this.steps.length ? 'before the first step' : 'no recorded step (run first)'; this.applyFrame(parseMarks([], v.name)); return; }
     const facts = st.t ? frameFacts(st.t) : frameFacts(st.r, this.iface(st));
     this.stepLabel.textContent = `step ${st.t ? st.t.i : st.r.i} of ${this.steps.length} (${st.t ? st.t.kind : st.r.k})`;
     const r = await this.source.frame(viewProgram(p, v, facts));
@@ -165,7 +190,44 @@ export class ViewPanel {
     this.root.dataset.sceneElements = String(this.els.size);
   }
 
+  // the marks of the frame at view step k (for the storyboard), without drawing
+  async frameAt(k) {
+    const v = this.view, st = this.steps[k - 1];
+    if (!v || !st) return null;
+    this.ensureEngine();
+    const p = this.project();
+    const facts = st.t ? frameFacts(st.t) : frameFacts(st.r, this.iface(st));
+    const prog = viewProgram(p, v, facts);
+    const hit = this.source.cache.get(hashText(prog));
+    const r = hit || viewAtomsOf(await (this.engine || (this.engine = new Engine({ threads: false }))).exec(prog, VIEW_OPTIONS));
+    if (!hit && !r.error) this.source.cache.set(hashText(prog), r);
+    return r.error ? null : parseMarks(r.atoms, v.name);
+  }
+
+  // a second recording of the same instance: its frame at the cursor's step, beside the first
+  compareWith(rec) { this.compare = rec; this.svgBoxB.hidden = false; this.show(); }
+
+  async showCompare() {
+    const rec = this.compare, v = this.view;
+    if (!rec || !v || !this.scene) return;
+    const c = this.app.cursor, i = c ? c.step : 0;
+    const T = rec.traces.length ? rec.traces : null;
+    let facts = null;
+    if (T) { const t = [...T].reverse().find((x) => x.i <= i); if (t) facts = frameFacts(t); }
+    else { const r = [...rec.steps].reverse().find((x) => x.i <= i); if (r) facts = frameFacts(r, (rec.I.links[(r.l || 1) - 1] || { atoms: [] }).atoms); }
+    let m = parseMarks([], v.name);
+    if (facts) {
+      const prog = viewProgram(this.project(), v, facts);
+      const res = await this.source.frame(prog);
+      if (!res) return;
+      if (!res.error) m = parseMarks(res.atoms, v.name);
+    }
+    this.svgBoxB.innerHTML = svgFile(frameSVG(this.scene, m, this.pos, { palette: new Palette() }), 1000, 1000, 'second recording');
+  }
+
   applyFrame(m) {
+    this.lastFrame = m;
+    if (this.compare) setTimeout(() => this.showCompare(), 0);
     for (const [key, x] of this.els) {
       const a = m.attrs.get(key) || {};
       const cls = [`view-shape`];

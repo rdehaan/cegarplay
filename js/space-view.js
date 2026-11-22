@@ -2,6 +2,7 @@
 // every candidate coloured by its fate at the cursor's refinement, the alive curve and the blame
 // matrix, from the audit's vectors and the last run's recorded steps.
 import { Space, fates, mapOrder, blameMatrix, redundancy } from './space.js';
+import { Recording } from './recording.js';
 import { auditPlan, auditBody, assemble, modulesFor, validate } from './driver.js';
 import { derive } from './project.js';
 import { fmt } from './output.js';
@@ -25,6 +26,7 @@ export class SpaceView {
     this.root = root;
     this.F = null;
     this.build();
+    if (app.cursor) app.cursor.subscribe(() => { if (this.F) { this.draw(); this.drawCurve(); } });
   }
 
   build() {
@@ -34,7 +36,10 @@ export class SpaceView {
       h('option', { value: 'blame' }, 'atoms by blame, interleaved'), h('option', { value: 'size' }, 'rows by number of true atoms'));
     this.order.addEventListener('change', () => { if (this.space) { this.layout(); this.draw(); } });
     this.slider = h('input', { type: 'range', id: 'space-step', min: 0, max: 0, value: 0, 'aria-label': 'Refinement' });
-    this.slider.addEventListener('input', () => this.draw());
+    this.slider.addEventListener('input', () => {
+      const r = Number(this.slider.value), c = this.app.cursor;
+      if (c && c.ticks.length) { if (r === 0) c.set(0); else c.setByStep(this.F.rows[r - 1].i); } else this.draw();
+    });
     this.label = h('span', { id: 'space-label', class: 'note' });
     this.msg = h('p', { id: 'space-message', class: 'note', role: 'status' });
     this.canvas = h('canvas', { id: 'space-map', class: 'space-map', 'aria-label': 'Every candidate, coloured by its fate' });
@@ -47,6 +52,8 @@ export class SpaceView {
       h('p', { class: 'note' }, 'Every candidate of the unrefined abstraction (from the audit), coloured by what the run\'s refinements did to it up to the chosen refinement: ',
         'alive, removed earlier, removed now, a lost solution, an accepted solution. Needs a run recorded with every step (Loop tab).'),
       h('div', { class: 'instances-bar' }, h('button', { class: 'control-button small-button', id: 'space-compute', onclick: () => this.compute() }, 'Compute'),
+        h('button', { class: 'control-button small-button', id: 'space-compare', onclick: () => this.compareFile.click(), title: 'A second recording of the same project and instance' }, 'Compare with a recording'),
+        this.compareFile = h('input', { type: 'file', id: 'space-compare-file', hidden: true, accept: '.cprec,.jsonl,.txt', onchange: () => this.openCompare() }),
         this.order, h('label', {}, 'Refinement ', this.slider), this.label),
       this.msg, this.summary, this.canvas, this.tip, this.curve, h('h4', {}, 'Blame matrix'), this.matrix);
     this.canvas.addEventListener('mousemove', (e) => this.hover(e));
@@ -90,15 +97,42 @@ export class SpaceView {
     this.computeMs = performance.now() - t0;
     this.slider.max = String(this.F.rows.length);
     this.slider.value = String(this.F.firstUnsound ? this.F.firstUnsound.ref : this.F.rows.length);
+
     const red = redundancy(this.steps);
     this.summary.textContent = `${fmt(this.space.count)} candidates, ${fmt(this.truth.size)} solutions, ${fmt(this.F.rows.length)} refinements; ` +
       `alive at the end ${fmt(this.F.alive)}; ${fmt(this.F.already)} of ${fmt(this.F.total)} removals hit a candidate already removed; ` +
       `${fmt(red.length)} clauses contain an earlier one.` + (this.F.firstUnsound ? ` First unsound refinement: ${this.F.firstUnsound.ref} (it removes ${fmt(this.F.firstUnsound.lost)} solutions).` : ' No refinement removes a solution.');
     this.msg.textContent = '';
     this.layout();
+    const c = this.app.cursor;
+    if (c && c.ticks.length) c.setByStep(this.F.firstUnsound ? this.F.firstUnsound.i : this.F.rows.length ? this.F.rows[this.F.rows.length - 1].i : 0);
     this.draw();
     this.drawCurve();
     this.drawMatrix();
+  }
+
+  async openCompare() {
+    const f = this.compareFile.files[0];
+    this.compareFile.value = '';
+    if (!f) return;
+    try { this.compareWith(await Recording.fromBlob(f)); } catch (e) { this.msg.textContent = `${f.name}: ${e.message || e}`; }
+  }
+
+  // a second recording of the same instance: both alive curves, and the map shows which run
+  // removed each candidate (by the cursor's step number in each run)
+  compareWith(rec) {
+    if (!this.F) { this.msg.textContent = 'Compute the candidate space first.'; return false; }
+    const L = rec.I && rec.I.links.find((x) => x.atoms.join(' ') === this.atoms.join(' '));
+    if (!L) { this.msg.textContent = 'The second recording has other interface atoms: no comparison.'; return false; }
+    const li = rec.I.links.indexOf(L) + 1;
+    this.B = { rec, steps: rec.steps.filter((s) => s.l === li || s.k === 's') };
+    this.B.F = fates(this.space, this.B.steps, { truth: this.truth });
+    if (this.app.views) this.app.views.compareWith(rec);
+    this.msg.textContent = `Compared with a second recording: ${fmt(this.B.F.rows.length)} refinements, alive at the end ${fmt(this.B.F.alive)}` +
+      (this.B.F.firstUnsound ? `, first unsound refinement ${this.B.F.firstUnsound.ref}.` : ', no refinement removes a solution.');
+    this.draw();
+    this.drawCurve();
+    return true;
   }
 
   layout() {
@@ -113,7 +147,8 @@ export class SpaceView {
     this.canvas.style.width = W + 'px'; this.canvas.style.height = H + 'px';
     this.ctx = this.canvas.getContext('2d');
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.colors = { alive: css('--panel'), aliveSol: css('--call-sat'), gone: css('--chart-ground'), now: css('--accent'), lost: css('--error'), accepted: css('--ok'), border: css('--border') };
+    this.colors = { alive: css('--panel'), aliveSol: css('--call-sat'), gone: css('--chart-ground'), now: css('--accent'), lost: css('--error'), accepted: css('--ok'), border: css('--border'),
+      onlyA: css('--chart-2'), onlyB: css('--chart-1'), both: css('--chart-ground') };
   }
 
   // the colour of candidate i at refinement r (1-based; 0 = before any)
@@ -126,15 +161,33 @@ export class SpaceView {
     return this.truth.has(i) ? 'aliveSol' : 'alive';
   }
 
+  // the refinement at the cursor: the number of refinements at or before its step
+  refinementAtCursor() {
+    const c = this.app.cursor;
+    if (!c || !c.ticks.length) return Number(this.slider.value);
+    if (c.index === 0) return 0;
+    let r = 0;
+    for (const row of this.F.rows) { if (row.i <= c.step) r = row.ref; else break; }
+    return r;
+  }
+
   draw() {
     if (!this.F) return;
     const t0 = performance.now();
-    const r = Number(this.slider.value);
+    const r = this.refinementAtCursor();
+    this.slider.value = String(r);
     const c = this.cell, ctx = this.ctx, M = this.M, col = this.colors;
     ctx.fillStyle = col.border;
     ctx.fillRect(0, 0, M.width * c, M.height * c);
-    const by = { alive: [], aliveSol: [], gone: [], now: [], lost: [], accepted: [] };
-    for (let i = 0; i < this.space.count; i++) by[this.fateAt(i, r)].push(i);
+    const by = { alive: [], aliveSol: [], gone: [], now: [], lost: [], accepted: [], onlyA: [], onlyB: [], both: [] };
+    if (this.B) {
+      // removed by this run only, by the second run only, by both (up to the cursor's step number)
+      const step = this.app.cursor && this.app.cursor.ticks.length ? this.app.cursor.step : (r > 0 ? this.F.rows[r - 1].i : 0);
+      for (let i = 0; i < this.space.count; i++) {
+        const a = this.F.fate[i] && this.F.fate[i] <= step, b = this.B.F.fate[i] && this.B.F.fate[i] <= step;
+        by[a && b ? 'both' : a ? 'onlyA' : b ? 'onlyB' : (this.truth.has(i) ? 'aliveSol' : 'alive')].push(i);
+      }
+    } else for (let i = 0; i < this.space.count; i++) by[this.fateAt(i, r)].push(i);
     const gap = c > 3 ? 1 : 0;
     for (const [k, list] of Object.entries(by)) {
       ctx.fillStyle = col[k];
@@ -168,8 +221,8 @@ export class SpaceView {
     const i = this.cellAt(e);
     if (i < 0 || !this.F.fate[i]) return;
     const row = this.F.rows.find((x) => x.i === this.F.fate[i]);
-    this.slider.value = String(row.ref);
-    this.draw();
+    const c = this.app.cursor;
+    if (c && c.ticks.length) c.setByStep(row.i); else { this.slider.value = String(row.ref); this.draw(); }
   }
 
   drawCurve() {
@@ -182,6 +235,32 @@ export class SpaceView {
     pl.setAttribute('points', F.aliveSeries.map((v, k) => `${X(k)},${Y(v)}`).join(' '));
     pl.setAttribute('fill', 'none'); pl.setAttribute('stroke', css('--chart-2')); pl.setAttribute('stroke-width', 2);
     s.append(pl);
+    if (this.B) {
+      const m = this.B.F.aliveSeries.length;
+      const XB = (k) => 30 + (m > 1 ? k / (m - 1) : 0) * (W - 40);
+      const pb = document.createElementNS(SVGNS, 'polyline');
+      pb.setAttribute('points', this.B.F.aliveSeries.map((v, k) => `${XB(k)},${Y(v)}`).join(' '));
+      pb.setAttribute('fill', 'none'); pb.setAttribute('stroke', css('--chart-1')); pb.setAttribute('stroke-width', 2); pb.setAttribute('class', 'space-curve-b');
+      s.append(pb);
+    }
+    const sr = this.app.cursor && this.app.cursor.stepRange();
+    if (sr) {
+      const inR = F.rows.filter((row) => row.i >= sr[0] && row.i <= sr[1]);
+      if (inR.length) {
+        const rect = document.createElementNS(SVGNS, 'rect');
+        const xa = X(inR[0].ref - 1), xb = X(inR[inR.length - 1].ref - 1);
+        rect.setAttribute('x', xa); rect.setAttribute('y', 8); rect.setAttribute('width', Math.max(1, xb - xa)); rect.setAttribute('height', H - 28);
+        rect.setAttribute('fill', css('--chart-2')); rect.setAttribute('fill-opacity', 0.12);
+        s.append(rect);
+        this.rangeText = `In the range: ${inR.length} refinements remove ${fmt(inR.reduce((a, x) => a + x.fresh, 0))} candidates, ${fmt(inR.reduce((a, x) => a + x.lost, 0))} solutions.`;
+      }
+    } else this.rangeText = '';
+    const rc = this.app.cursor && this.app.cursor.index ? this.refinementAtCursor() : 0;
+    if (rc > 0) {
+      const l = document.createElementNS(SVGNS, 'line');
+      l.setAttribute('x1', X(rc - 1)); l.setAttribute('x2', X(rc - 1)); l.setAttribute('y1', 8); l.setAttribute('y2', H - 20); l.setAttribute('stroke', css('--text-muted')); l.setAttribute('stroke-dasharray', '3 3');
+      s.append(l);
+    }
     if (F.firstUnsound) {
       const l = document.createElementNS(SVGNS, 'line');
       const x = X(F.firstUnsound.ref - 1);
@@ -194,6 +273,7 @@ export class SpaceView {
     s.append(t);
     this.curve.textContent = '';
     this.curve.append(s);
+    if (this.rangeText) this.curve.append(h('p', { class: 'note', id: 'space-range' }, this.rangeText));
   }
 
   drawMatrix() {

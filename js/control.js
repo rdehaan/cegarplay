@@ -285,7 +285,9 @@ export class Control {
     app.editors.setReadOnly(false);
     if (this.marks.length) app.editors.annotate(this.marks);
     if (app.anatomy) app.anatomy.done();
-    if (app.views) { app.views.updateSteps(); app.views.show(); }
+    if (app.views) app.views.updateSteps();
+    if (app.observatory) app.observatory.update();
+    if (app.views) app.views.show();
     if (state === 'error') {
       const line = this.E && this.assembled ? mapLine(this.assembled, this.E.line) : null;
       this.runMessage(this.E ? `Error: ${this.E.message}${line ? ` (loop script, line ${line})` : ''}` : app.output.resultEl.textContent);
@@ -339,7 +341,9 @@ export class Control {
     app.stats.done(this.D, null);
     if (app.anatomy) app.anatomy.done();
     app.recording = rec;
-    if (app.views) { app.views.updateSteps(); app.views.show(); }
+    if (app.views) app.views.updateSteps();
+    if (app.observatory) app.observatory.update();
+    if (app.views) app.views.show();
     const what = this.D ? this.describe(this.D) : 'the recording has no final event';
     app.output.result(`Replayed: ${what}`);
     this.setState('replayed');

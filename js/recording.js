@@ -17,6 +17,24 @@ export function hexBits(hex, n) {
   return out;
 }
 
+// Pair the steps of two recordings: by step number (equal i) or by elapsed time (the last step
+// of b at or before each step of a). Returns [[stepA, stepB | null], ...] over a's steps.
+export function align(a, b, by = 'step') {
+  const A = a.steps.length ? a.steps : a.traces, B = b.steps.length ? b.steps : b.traces;
+  const out = [];
+  if (by === 'time') {
+    let k = -1;
+    for (const s of A) {
+      while (k + 1 < B.length && (B[k + 1].t ?? 0) <= (s.t ?? 0)) k++;
+      out.push([s, k >= 0 ? B[k] : null]);
+    }
+    return out;
+  }
+  const byI = new Map(B.map((s) => [s.i, s]));
+  for (const s of A) out.push([s, byI.get(s.i) || null]);
+  return out;
+}
+
 export class Recording {
   constructor(header = {}) {
     this.header = { format: RECORDING_FORMAT, version: RECORDING_VERSION, ...header };

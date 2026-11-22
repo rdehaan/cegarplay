@@ -130,8 +130,22 @@ function hexToBits(hex, n) {
 }
 
 // ---- programs -----------------------------------------------------------------------------
+// The project a view of a recorded run reads: the facts of the instance the run used first.
+export function viewProject(project, instanceId) {
+  const x = instanceId && (project.instances || []).find((i) => i.id === instanceId);
+  const inst = x ? (typeof x.facts === 'string' ? x.facts : null) : null;
+  const consts = { ...((project.settings && project.settings.constants) || {}), ...((x && x.constants) || {}) };
+  const fragments = inst !== null ? [{ name: 'instance', text: inst }, ...project.fragments.filter((f) => f.name !== 'instance')] : project.fragments;
+  return { ...project, fragments, settings: { ...(project.settings || {}), constants: consts } };
+}
+
 const viewText = (project, view) => {
   const parts = [];
+  // the project's constants as #const lines, so the text alone decides the frame (and its hash)
+  for (const [k, v] of Object.entries((project.settings && project.settings.constants) || {})) {
+    const own = (project.fragments || []).some((f) => new RegExp(`#const\\s+${k}\\b`).test(f.text || ''));
+    if (!own && /^[a-z][A-Za-z0-9_]*$/.test(k) && /^[^\s"']+$/.test(String(v))) parts.push(`#const ${k} = ${v}.`);
+  }
   const inst = project.fragments.find((f) => f.name === 'instance');
   if (inst && !(view.fragments || []).includes('instance')) parts.push(inst.text);
   for (const n of view.fragments || []) {
@@ -413,4 +427,43 @@ export class FrameSource {
       return ticket === this.latest ? r : null;
     } finally { this.busy = null; }
   }
+}
+
+// ---- export ---------------------------------------------------------------------------------
+// The SVG of one frame as a standalone file: no DOM, fixed light colours (the eight palette slots
+// in the order of first use), elements in scene order. Deterministic: the same marks and
+// positions give the same text.
+export const EXPORT_PALETTE = ['#2980b9', '#e67e22', '#27ae60', '#8e44ad', '#c0392b', '#16a085', '#d4ac0d', '#7f8c8d'];
+const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const r1 = (x) => Math.round(x * 10) / 10;
+export function frameSVG(scene, frame, pos, { palette = new Palette(), title = 'view', x0 = 0 } = {}) {
+  const out = [];
+  const size = pos.cellSize || 0;
+  const fillOf = (k) => { const a = frame.attrs.get(k) || {}; return a.fill ? EXPORT_PALETTE[palette.slot(a.fill) - 1] : '#ffffff'; };
+  const strokeOf = (k, d) => { const a = frame.attrs.get(k) || {}; return a.stroke ? EXPORT_PALETTE[palette.slot(a.stroke) - 1] : d; };
+  const widthOf = (k, d) => { const a = frame.attrs.get(k) || {}; return a.weight !== undefined ? a.weight : frame.emph.has(k) ? 8 : d; };
+  const op = (k) => (frame.ghost.has(k) ? ' opacity="0.25"' : '');
+  const els = [...scene.elements.values()];
+  for (const e of els.filter((x) => x.kind === 'edge')) {
+    const a = pos.get(e.from), b = pos.get(e.to);
+    if (!a || !b) continue;
+    out.push(`<line x1="${r1(a[0] + x0)}" y1="${r1(a[1])}" x2="${r1(b[0] + x0)}" y2="${r1(b[1])}" stroke="${strokeOf(e.key, '#bbbbbb')}" stroke-width="${widthOf(e.key, 4)}"${op(e.key)}><title>${esc(e.key)}</title></line>`);
+  }
+  for (const e of els.filter((x) => x.kind !== 'edge')) {
+    const p = pos.get(e.key);
+    if (!p) continue;
+    const a = frame.attrs.get(e.key) || {};
+    const label = a.label !== undefined ? a.label : e.label || '';
+    const common = `fill="${fillOf(e.key)}" stroke="${strokeOf(e.key, frame.emph.has(e.key) ? '#222222' : '#777777')}" stroke-width="${widthOf(e.key, 3)}"${op(e.key)}`;
+    const x = r1(p[0] + x0), y = r1(p[1]);
+    if (e.kind === 'cell') out.push(`<rect x="${r1(x - size / 2 + 2)}" y="${r1(y - size / 2 + 2)}" width="${r1(size - 4)}" height="${r1(size - 4)}" ${common}><title>${esc(e.key)}</title></rect>`);
+    else if (e.kind === 'item' || e.kind === 'rank') out.push(`<rect x="${r1(x - 60)}" y="${r1(y - 20)}" width="120" height="40" rx="6" ${common}><title>${esc(e.key)}</title></rect>`);
+    else out.push(`<circle cx="${x}" cy="${y}" r="28" ${common}><title>${esc(e.key)}</title></circle>`);
+    if (label) out.push(`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="24" fill="#222222">${esc(label)}</text>`);
+  }
+  frame.notes.forEach((n, k) => out.push(`<text x="${x0}" y="${1060 + 30 * k}" font-family="sans-serif" font-size="26" fill="#222222">${esc(n)}</text>`));
+  return out.join('\n');
+}
+export function svgFile(body, width = 1000, height = 1000, title = 'view') {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -40 ${width + 80} ${height + 160}" width="${width + 80}" height="${height + 160}">\n<title>${esc(title)}</title>\n<rect x="-40" y="-40" width="${width + 80}" height="${height + 160}" fill="#ffffff"/>\n${body}\n</svg>\n`;
 }

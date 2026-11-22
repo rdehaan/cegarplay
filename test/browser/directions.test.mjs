@@ -376,3 +376,96 @@ test('V4: tutorial-weak-relevant: the first unsound refinement is 6', async () =
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('V5: one cursor drives the trace, the domain view, the map and the timeline; the arrow keys move it', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=guide-03-hit-clique&tab=11');
+  await page.evaluate(() => { window.cegarplay.project.settings.record = { steps: 'all', n: 0, calls: true }; });
+  await page.click('#run-button');
+  await settled(page);
+  await page.click('#space-compute');
+  await page.waitForFunction(() => /candidates/.test(document.getElementById('space-summary').textContent));
+  const state = () => page.evaluate(() => {
+    const a = window.cegarplay;
+    return { step: a.cursor.step, label: document.getElementById('cursor-label').textContent, view: Number(document.getElementById('view-step').value),
+      viewStep: a.views.steps[Number(document.getElementById('view-step').value) - 1]?.t?.i, space: Number(document.getElementById('space-step').value),
+      spaceStep: a.space.F.rows[Number(document.getElementById('space-step').value) - 1]?.i, trace: a.output.trace.events[a.output.trace.pos]?.i };
+  });
+  await page.evaluate(() => window.cegarplay.cursor.setByStep(3));
+  await page.waitForFunction(() => document.querySelectorAll('#view-svg .view-emph').length === 3);
+  let s = await state();
+  assert.equal(s.step, 3);
+  assert.equal(s.viewStep, 3);
+  assert.ok(s.spaceStep <= 3);
+  assert.equal(s.trace, 3);
+  await page.focus('body');
+  await page.keyboard.press('ArrowRight');
+  s = await state();
+  assert.equal(s.step, 4);
+  assert.match(s.label, /^step 4/);
+  await page.keyboard.press('Shift+ArrowLeft');
+  assert.equal((await state()).step, 0);
+  // a range restricts the line table
+  const all = await page.evaluate(() => window.cegarplay.anatomy.rows().reduce((x, r) => x + r.calls, 0));
+  await page.fill('#cursor-from', '1'); await page.fill('#cursor-to', '2'); await page.click('#cursor-range');
+  const some = await page.evaluate(() => window.cegarplay.anatomy.rows().reduce((x, r) => x + r.calls, 0));
+  assert.ok(some < all, `${some} < ${all}`);
+  // exports
+  const svg = await page.evaluate(async () => { window.cegarplay.cursor.setByStep(3); await window.cegarplay.views.show(); return window.cegarplay.observatory.viewSVG(); });
+  assert.match(svg, /^<svg xmlns/);
+  assert.equal((svg.match(/stroke-width="8"/g) || []).length, 3);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('V5: a link with replay, step and view opens on that step and view; lecture mode shows the notes', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?replay=examples/replays/guide-03-hit-clique.cprec&step=3&view=view&lecture=1');
+  await page.waitForFunction(() => document.querySelectorAll('#view-svg .view-emph').length === 3);
+  assert.equal(await page.evaluate(() => window.cegarplay.cursor.step), 3);
+  assert.equal(await page.evaluate(() => document.body.classList.contains('lecture')), true);
+  assert.match(await page.textContent('#view-notes'), /A triangle survives/);
+  assert.equal(await page.isVisible('#anatomy'), false);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('V5: every library example with a replay and a view opens with a picture before the engine has loaded', async () => {
+  const lib = JSON.parse(await (await fetch(server.url + 'examples/library.json')).text());
+  const ids = [];
+  for (const e of lib.examples) {
+    const p = await (await fetch(server.url + `examples/${e.id}.json`)).json();
+    if ((p.views || []).length && (e.tags || []).includes('fast')) ids.push(e.id);
+  }
+  assert.ok(ids.length >= 10, ids.join(' '));
+  const context = await browser.newContext();
+  await context.route(/clingo(-mt)?\.wasm$/, (route) => route.abort());
+  for (const id of ids) {
+    const page = await context.newPage();
+    await page.goto(server.url + `index.html?nocoi=1&replay=examples/replays/${id}.cprec&tab=11`);
+    await page.waitForSelector('#view-svg .view-root', { timeout: 20000 });
+    const n = await page.evaluate(() => document.querySelectorAll('#view-svg .view-root g, #view-svg .view-root line').length);
+    assert.ok(n > 0, id);
+    assert.notEqual(await page.evaluate(() => document.body.dataset.ready), 'true', `${id}: the engine must not be ready`);
+    await page.close();
+  }
+  await context.close();
+});
+
+test('V5: comparing two recordings: two alive curves, the second domain view beside the first', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=11');
+  await page.evaluate(() => { window.cegarplay.project.settings.record = { steps: 'all', n: 0, calls: false }; });
+  await page.click('#run-button');
+  await settled(page);
+  await page.click('#space-compute');
+  await page.waitForFunction(() => /candidates/.test(document.getElementById('space-summary').textContent));
+  const ok = await page.evaluate(async () => {
+    const { Recording } = await import('./js/recording.js');
+    const r = await fetch('examples/replays/tutorial-first-run.cprec');
+    return window.cegarplay.space.compareWith(await Recording.fromBlob(await r.blob()));
+  });
+  assert.equal(ok, true);
+  assert.match(await page.textContent('#space-message'), /alive at the end 61, no refinement removes a solution/);
+  assert.equal(await page.$$eval('#space-curve .space-curve-b', (x) => x.length), 1);
+  await page.waitForSelector('#view-svg-b svg');
+  assert.deepEqual(errors, []);
+  await context.close();
+});

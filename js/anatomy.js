@@ -103,6 +103,7 @@ export class Anatomy {
     this.root = root;
     this.reset();
     this.build();
+    if (app.cursor) app.cursor.subscribe(() => { if (this.visible) { this.drawTimeline(); this.drawTable(); } });
   }
 
   reset() {
@@ -366,6 +367,13 @@ export class Anatomy {
       const top = s.k === 's' ? 2 : s.k === 'e' ? 6 : 10;
       ctx.fillRect(x, top, 1, 6);
     }
+    // the linked cursor and its range
+    const cur = this.app.cursor;
+    if (cur) {
+      const tr = cur.timeRange();
+      if (tr) { ctx.fillStyle = css('--chart-2'); ctx.globalAlpha = 0.12; ctx.fillRect((tr[0] - v0) * scale, 0, Math.max(1, (tr[1] - tr[0]) * scale), height); ctx.globalAlpha = 1; }
+      if (cur.tick) { ctx.fillStyle = css('--text'); ctx.fillRect(Math.floor((cur.tick.t - v0) * scale), 0, 1, height - 14); }
+    }
     ctx.restore();
     ctx.fillStyle = css('--text-muted');
     ctx.fillText(`${secs(v0)} s`, LABEL, height - 3);
@@ -413,7 +421,13 @@ export class Anatomy {
     return this.assembled ? mapLine(this.assembled, n) : n;
   }
 
-  rows() { return lineTable(this.calls, (n) => this.lineOf(n)); }
+  // the calls of the cursor's brushed range (elapsed time), or all
+  rangeCalls() {
+    const tr = this.app.cursor && this.app.cursor.timeRange();
+    return tr ? this.calls.filter((c) => c.t0 + (c.dt || 0) >= tr[0] && c.t0 <= tr[1]) : this.calls;
+  }
+
+  rows() { return lineTable(this.rangeCalls(), (n) => this.lineOf(n)); }
 
   drawTable() {
     const rows = this.rows();

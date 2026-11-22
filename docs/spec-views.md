@@ -105,3 +105,37 @@ Measured from `test/fixtures/recordings/` (copies of the stored replays): `tutor
 removed, 13 lost, alive 11; `tutorial-first-run` alive 61, 2,013 of 2,208 removals overlap;
 `gc-shape1` 3,373 candidates, 1,320 refinements, alive 101, 4,636 of 7,908 overlap. The map of
 gc-shape1 redraws in about 1 ms.
+
+## 6. The linked cursor, comparison, export, lecture mode (phase V5)
+
+`js/cursor.js`: `Cursor { ticks, index, range, follow }` with `subscribe`; `ticksOf(recording)` = the
+`R` steps (else the `T` events) as `{ i, t, k }`; `setByStep(i)` moves to the last tick at or
+before step i; `setRange(a, b)` with `timeRange()` and `stepRange()`; `bindKeys` (left/right one
+step, Shift ten, Home/End; only on the Observatory tab or in lecture mode, not inside an input).
+The cursor bar (`js/observatory.js`, region `#cursor-region`) shows the slider, "follow the run",
+the range and the exports. Every view reads the cursor and keeps no step of its own: the domain
+view shows the last view step at or before the cursor's step (its slider writes the cursor), the
+map the number of refinements at or before it (its slider too), the call timeline draws the
+cursor and the range, the line table counts the calls of the range, the alive curve marks both,
+and the Output tab's trace moves to the same step.
+
+`js/recording.js align(a, b, by)`: the steps of `a` paired with those of `b` of the same step
+number (`by = "step"`) or the last step of `b` at or before the same elapsed time (`"time"`).
+Comparison: "Compare with a recording" (map region; `app.space.compareWith(rec)`) needs the same
+interface atoms; it computes the second run's fates on the same candidates, draws its alive curve
+on the same axis, colours the map by which run removed a candidate by the cursor's step number
+(this run, the other, both), and draws the second run's domain view beside the first (with the
+export renderer).
+
+Export (`views.js frameSVG`, `svgFile`; pure, no DOM, fixed light palette, coordinates rounded to
+0.1): "Export view (SVG)", "Storyboard (SVG)" (the frames of chosen steps side by side, 1,100 units
+apart), "Export map (PNG)" (`canvas.toBlob`), "Data as table" (the frame's marks per element; the
+fates per refinement). `test/fixtures/view-fixture.svg` is the export of the V3 fixture frame.
+
+URL: `?replay=examples/replays/<id>.cprec&step=N&view=<name>` opens the recording on step N (the
+last tick at or before it) and that view; `?lecture=1` shows the domain view alone, the notes as
+large captions, the arrow keys moving the cursor. `tools/make-replays.mjs` also writes
+`examples/views/<id>.json` (program hash -> marks of the scene and of the frames of the replay's
+steps, at most 200) for the examples with a view; the page loads them with the example, so a
+replay shows its picture before the engine has loaded (the frame engine starts only on a miss).
+View programs now carry the project's constants as `#const` lines (the page did not pass them).

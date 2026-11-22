@@ -893,6 +893,17 @@ exclusive time (nested calls subtracted) and time with nested calls, sorted by t
 selects the line and filters the timeline; after a run the loop editor shows the same figures as
 info annotations. The domain view (V3) and candidate space (V4) regions follow.
 
+### The linked cursor
+
+One cursor (the bar at the top of the Observatory) drives every view: the domain view, the
+candidate map, the call timeline, the line table and the trace of the Output tab. The left and
+right arrow keys move it one step (Shift: ten); "follow the run" keeps it on the last step; a range
+restricts the line table and the alive curve. Exports: the view as SVG, a storyboard strip of
+chosen steps, the map as PNG, and the data as tables. "Compare with a recording" lays a second run
+of the same instance over the map and beside the domain view. A link with `replay=` (a file of
+`examples/replays/`), `step=N` and `view=<name>` opens a recording on a step and view;
+`lecture=1` shows the view alone with its notes as captions.
+
 ### Writing views
 
 A **view** draws a step of the loop in the problem's own terms (Observatory tab, "Domain view").
@@ -960,6 +971,8 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
 | `#p=<data>` | A share link (**Copy share link** in the Control tab): the whole project without its run history, in the URL fragment, which never reaches the server. `<data>` is `z` + base64url of the deflate-raw compressed project JSON (`u` + base64url of the plain JSON in a browser without `CompressionStream`). Takes precedence over the kept project and, like `?example`, does not replace it until you edit. A damaged link opens the default example with an error in the status line. Links over 8,000 characters get a warning. |
 | `?replay=examples/replays/<id>.cprec` | Replay a library recording without the engine (it loads its example first). Only paths of that form are accepted. |
+| `&step=N`, `&view=<name>` | Open the Observatory with the linked cursor on step N and that domain view. |
+| `?lecture=1` | Lecture mode: the domain view alone, its notes as captions, the arrow keys move the cursor. |
 | `?nocoi=1` | Do not use the isolation service worker (and remove it). Pause, Step, Stop and threads are then unavailable. |
 
 The address bar follows the page (without new history entries): loading an example from the library

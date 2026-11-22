@@ -6,6 +6,31 @@ import fs from 'node:fs';
 import zlib from 'node:zlib';
 import { load } from '../js/project.js';
 import { runProject, recordingOf } from './run.mjs';
+import factory from '../vendor/clingo-wasm/clingo.js';
+import { viewProject, sceneProgram, viewProgram, frameFacts, viewAtoms, hashText, VIEW_OPTIONS } from '../js/views.js';
+
+// precomputed frames of an example's first view: program hash -> marks (examples/views/<id>.json)
+async function engineRun(program, options) {
+  const out = [], err = [];
+  const m = await factory({ print: (l) => out.push(l), printErr: (l) => err.push(l) });
+  let status;
+  try { status = m.ccall('run', 'number', ['string', 'string'], [program, options]); } catch (e) { status = 'trap'; }
+  return { status, out, err };
+}
+async function viewFrames(project, rec) {
+  const v = (project.views || [])[0];
+  if (!v) return null;
+  const p = viewProject(project, rec.header.instance);
+  const progs = [sceneProgram(p, v)];
+  const steps = rec.traces.length ? rec.traces.map((t) => frameFacts(t)) : rec.steps.map((r) => frameFacts(r, (rec.I.links[(r.l || 1) - 1] || { atoms: [] }).atoms));
+  for (const f of steps.slice(0, 200)) progs.push(viewProgram(p, v, f));
+  const out = {};
+  for (const prog of progs) {
+    const a = viewAtoms(await engineRun(prog, VIEW_OPTIONS));
+    if (!a.error) out[hashText(prog)] = a.atoms;
+  }
+  return out;
+}
 
 const root = new URL('..', import.meta.url);
 const dir = new URL('examples/replays/', root);
@@ -19,7 +44,7 @@ for (const e of lib.examples) {
   p.settings = { ...p.settings, record: { steps: 'all', n: 0, calls: true } };
   const r = await runProject(p, { backstop: true });
   if (r.problems && r.problems.length) { console.error(`${e.id}: ${r.problems[0].message}`); continue; }
-  const rec = recordingOf(p, r.events, { example: e.id });
+  const rec = recordingOf(p, r.events, { example: e.id, instance: r.project ? r.project.instance || null : null });
   const buf = Buffer.from(await (await rec.toBlob()).arrayBuffer());
   // keep the old file when only times differ (smaller commits)
   const file = new URL(`${e.id}.cprec`, dir);
@@ -29,5 +54,10 @@ for (const e of lib.examples) {
   try { same = timeless(fs.readFileSync(file)) === timeless(buf); } catch { same = false; }
   if (!same) { fs.writeFileSync(file, buf); changed++; }
   total += buf.length; n++;
+  const frames = await viewFrames(load(fs.readFileSync(new URL(`examples/${e.id}.json`, root), 'utf8')), rec);
+  if (frames) {
+    fs.mkdirSync(new URL('examples/views/', root), { recursive: true });
+    fs.writeFileSync(new URL(`examples/views/${e.id}.json`, root), JSON.stringify(frames) + '\n');
+  }
 }
 console.log(`${n} replays (${changed} rewritten), ${(total / 1024).toFixed(0)} KB in examples/replays/`);

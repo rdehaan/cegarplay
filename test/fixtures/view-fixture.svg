@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -40 1080 1160" width="1080" height="1160">
+<title>view</title>
+<rect x="-40" y="-40" width="1080" height="1160" fill="#ffffff"/>
+<line x1="554.7" y1="845" x2="530.2" y2="940" stroke="#bbbbbb" stroke-width="4"><title>edge(1,2)</title></line>
+<line x1="554.7" y1="845" x2="433.2" y2="927" stroke="#bbbbbb" stroke-width="4"><title>edge(1,3)</title></line>
+<line x1="554.7" y1="845" x2="408.5" y2="756.8" stroke="#bbbbbb" stroke-width="4"><title>edge(1,4)</title></line>
+<line x1="530.2" y1="940" x2="433.2" y2="927" stroke="#bbbbbb" stroke-width="4"><title>edge(2,3)</title></line>
+<line x1="530.2" y1="940" x2="408.5" y2="756.8" stroke="#bbbbbb" stroke-width="4"><title>edge(2,4)</title></line>
+<line x1="433.2" y1="927" x2="408.5" y2="756.8" stroke="#bbbbbb" stroke-width="4"><title>edge(3,4)</title></line>
+<line x1="408.5" y1="756.8" x2="284" y2="664.1" stroke="#2980b9" stroke-width="4"><title>edge(4,5)</title></line>
+<line x1="408.5" y1="756.8" x2="266.8" y2="508.7" stroke="#2980b9" stroke-width="4"><title>edge(4,6)</title></line>
+<line x1="284" y1="664.1" x2="266.8" y2="508.7" stroke="#2980b9" stroke-width="4"><title>edge(5,6)</title></line>
+<line x1="266.8" y1="508.7" x2="146" y2="394.3" stroke="#bbbbbb" stroke-width="4"><title>edge(6,7)</title></line>
+<line x1="266.8" y1="508.7" x2="171.5" y2="255.4" stroke="#bbbbbb" stroke-width="4"><title>edge(6,8)</title></line>
+<line x1="146" y1="394.3" x2="171.5" y2="255.4" stroke="#bbbbbb" stroke-width="4"><title>edge(7,8)</title></line>
+<line x1="171.5" y1="255.4" x2="60" y2="93.7" stroke="#bbbbbb" stroke-width="4"><title>edge(8,9)</title></line>
+<line x1="171.5" y1="255.4" x2="173.2" y2="60" stroke="#bbbbbb" stroke-width="4"><title>edge(8,10)</title></line>
+<line x1="60" y1="93.7" x2="173.2" y2="60" stroke="#bbbbbb" stroke-width="4"><title>edge(9,10)</title></line>
+<circle cx="554.7" cy="845" r="28" fill="#e67e22" stroke="#777777" stroke-width="3"><title>node(1)</title></circle>
+<text x="554.7" y="845" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="24" fill="#222222">1</text>
+<circle cx="530.2" cy="940" r="28" fill="#e67e22" stroke="#777777" stroke-width="3"><title>node(2)</title></circle>
+<text x="530.2" y="940" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="24" fill="#222222">2</text>
+<circle cx="433.2" cy="927" r="28" fill="#ffffff" stroke="#777777" stroke-width="3"><title>node(3)</title></circle>
+<text x="433.2" y="927" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="24" fill="#222222">3</text>
+<circle cx="408.5" cy="756.8" r="28" fill="#2980b9" stroke="#222222" stroke-width="8"><title>node(4)</title></circle>
+<text x="408.5" y="756.8" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="24" fill="#222222">4</text>
+<circle cx="284" cy="664.1" r="28" fill="#2980b9" stroke="#222222" stroke-width="8"><title>node(5)</title></circle>
+<text x="284" y="664.1" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="24" fill="#222222">5</text>
+<circle cx="266.8" cy="508.7" r="28" fill="#2980b9" stroke="#222222" stroke-width="8"><title>node(6)</title></circle>
+<text x="266.8" y="508.7" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="24" fill="#222222">6</text>
+<circle cx="146" cy="394.3" r="28" fill="#ffffff" stroke="#777777" stroke-width="3"><title>node(7)</title></circle>
+<text x="146" y="394.3" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="24" fill="#222222">7</text>
+<circle cx="171.5" cy="255.4" r="28" fill="#ffffff" stroke="#777777" stroke-width="3"><title>node(8)</title></circle>
+<text x="171.5" y="255.4" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="24" fill="#222222">8</text>
+<circle cx="60" cy="93.7" r="28" fill="#ffffff" stroke="#777777" stroke-width="3"><title>node(9)</title></circle>
+<text x="60" y="93.7" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="24" fill="#222222">9</text>
+<circle cx="173.2" cy="60" r="28" fill="#ffffff" stroke="#777777" stroke-width="3"><title>node(10)</title></circle>
+<text x="173.2" y="60" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="24" fill="#222222">10</text>
+<text x="0" y="1060" font-family="sans-serif" font-size="26" fill="#222222">A triangle survives. One of its ringed nodes must be deleted.</text>
+</svg>

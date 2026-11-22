@@ -14,6 +14,8 @@ import { Anatomy } from './anatomy.js';
 import { CampaignTab } from './campaign-tab.js';
 import { ViewPanel } from './view-panel.js';
 import { SpaceView } from './space-view.js';
+import { Cursor, bindKeys } from './cursor.js';
+import { ObservatoryBar, lectureMode } from './observatory.js';
 import { renderMarkdown } from './markdown.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
 
@@ -23,7 +25,7 @@ const app = { ready: false, project: Project.newProject() };
 window.cegarplay = app;
 
 // ---- the address bar: ?example=<id> and ?tab=N follow the page (replaceState, no history entries)
-const KEEP_PARAMS = ['nocoi', 'manual', 'internals', 'from', 'tab', 'instance', 'replay'];
+const KEEP_PARAMS = ['nocoi', 'manual', 'internals', 'from', 'tab', 'instance', 'replay', 'view', 'step', 'lecture'];
 function setUrl({ example, tab, keepHash = false } = {}) {
   const now = new URLSearchParams(location.search);
   const next = new URLSearchParams();
@@ -90,10 +92,13 @@ app.loopTab = new LoopTab(app);
 app.internals = new Internals(app);
 app.control = new Control(app);
 app.instancesTab = new InstancesTab(app);
+app.cursor = new Cursor();
+bindKeys(app.cursor, () => $('tab11').checked || document.body.classList.contains('lecture'));
 app.anatomy = new Anatomy(app, $('anatomy'));
 app.campaign = new CampaignTab(app);
 app.views = new ViewPanel(app, $('domain-view'));
 app.space = new SpaceView(app, $('candidate-space'));
+app.observatory = new ObservatoryBar(app, $('cursor-region'));
 
 app.collect = () => app.editors.collect(app.project);
 app.genLua = () => ({ draw: app.modules.draw, generate: app.modules.generate });
@@ -221,6 +226,11 @@ async function loadExample(name, opts, { url = false } = {}) {
   }
   app.setProject(Project.load(await r.text()), opts);
   app.exampleId = name;
+  // precomputed frames of its views (tools/make-replays.mjs): a replay shows a picture before
+  // the engine has loaded
+  if ((app.project.views || []).length) {
+    try { const v = await fetch(`examples/views/${name}.json`); if (v.ok) app.views.prefill(await v.json()); } catch { /* computed on demand */ }
+  }
   markLoadedExample();
   if (url) setUrl({ example: name });
 }
@@ -587,6 +597,12 @@ async function start() {
   // ?replay=examples/replays/<id>.cprec: its example (when the recording names one) and the replay
   const replay = params.get('replay');
   if (replay !== null) await openReplay(replay);
+  // ?view=<name>&step=N: that view at that step (after a replay or a run); ?lecture=1
+  if (params.get('lecture') === '1') lectureMode(app);
+  const wantView = params.get('view'), wantStep = params.get('step');
+  if (wantView && (app.project.views || []).some((v) => v.name === wantView)) { app.views.select.value = wantView; app.views.current = wantView; app.views.resetScene(); }
+  if (wantStep !== null && /^\d+$/.test(wantStep)) app.cursor.setByStep(Number(wantStep));
+  if (wantView || wantStep !== null) { $('tab11').checked = true; requestAnimationFrame(() => app.views.show()); }
   app.restoredOrLoaded = true;
   // nothing kept in this browser: show the library open
   if (!stored && !named && shared === null) $('library-section').open = true;
