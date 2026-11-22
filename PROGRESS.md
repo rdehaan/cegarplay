@@ -462,7 +462,13 @@ Notes per phase:
   - Not done: comparing the store with `clingo --mode=gringo` text (aspif numbering differs from
     the observer's; a smaller structural test checks the capture instead).
 
-**Next step (PLAN2):** I2 Generators.
+**Next step (PLAN2):** I2 Generators (not started; session paused here by the owner on 2026-11-22).
+Starting points: `spike2/gen/draws.lua` (mixer of the missing probe3.lua, unchanged: copy it into
+`lua/draw.lua` as a context table passed to `ctl:ground(parts, context)`, not as globals; every
+function body in `xpcall`), `spike2/gen/draws.py` (Python twin -> `tools/draw.py`),
+`spike2/gen/test_draws.py` (the checks: 30 seeds identical, six functions, rule order, row 26/30).
+Tasks and checks: `docs/directions/instance-lab.md`, phase I2. After V2 (end of wave 2), run an
+independent review of the wave's diff as was done for wave 1.
 
 ## Next step (PLAN.md, guide, TODO)
 
