@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Sum-free sets (too weak relevant/1)",
   "description": "The check marks only the sum X + Y as relevant, not X and Y. A refinement then forbids the sum for every candidate, also for sets that do not contain X or Y, so the loop finds 11 solutions instead of 61. Switch the loop to the Reference run template to see the true count.",
   "fragments": [
@@ -39,5 +39,39 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "runs": [],
+  "variants": [
+    {
+      "swap": {},
+      "constants": {},
+      "name": "reference",
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "scaling",
+      "instances": {
+        "constants": {
+          "n": [
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        }
+      },
+      "variants": [
+        "default",
+        "reference"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ]
 }

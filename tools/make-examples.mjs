@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { importLp, load, save, template } from '../js/project.js';
 import { stripAspComments } from '../js/driver.js';
-import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES } from './library.mjs';
+import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES } from './library.mjs';
 import { buildGuide } from './guide.mjs';
 
 const root = new URL('..', import.meta.url);
@@ -236,6 +236,13 @@ export function buildAll({ contribDir } = {}) {
   entries.push(...loadContrib(contribDir, new Set(entries.map((e) => e.id))));
   for (const e of entries) {
     if (GENERATORS[e.id]) { e.project.generators = structuredClone(GENERATORS[e.id]); e.project.version = 2; }
+    if (SUITES[e.id]) {
+      const x = structuredClone(SUITES[e.id]);
+      for (const v of x.variants || []) if (v.loop && v.loop.text === 'REFERENCE') v.loop.text = template('reference');
+      if (x.variants) e.project.variants = [...(e.project.variants || []), ...x.variants.map((v) => ({ swap: {}, constants: {}, ...v }))];
+      e.project.suites = [...(e.project.suites || []), ...x.suites];
+      e.project.version = 2;
+    }
     if (RECIPES[e.id]) e.project.instances = [...(e.project.instances || []), ...structuredClone(RECIPES[e.id]).map((x) => ({ constants: {}, ...x }))];
   }
   const files = {};

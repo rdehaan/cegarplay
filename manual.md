@@ -141,6 +141,25 @@ the instance is added. **Run all** runs every instance and marks a count other t
 with ✗ in red. The run bar's **Instance** picker (shown only for a project with instances) chooses
 the instance of the next run; the run history names it in brackets.
 
+### Campaigns
+
+The **Campaign** tab (tab 10) runs a suite: a grid of instances (instance ids, a generator grid
+with seeds, or a grid over constants) × variants × solver seeds, every cell with all solutions,
+several engines at a time. Rows are kept in this browser (IndexedDB), so **Start** after a reload
+runs only the missing cells; an edit of a fragment, the loop or a constant changes the keys of
+exactly the cells it touches. Instances whose exhausted variants disagree are marked red (the run
+history's ⚠, for a whole grid). Plots: time against a parameter (median and interquartile band),
+a heat map over two parameters, one variant against another, solved within time; a growth factor
+per variant with a 90% interval. `node tools/bench.mjs <project> --suite NAME [--jobs N]
+[--shard i/n] [--out rows.jsonl] [--resume]` runs the same suite headless; **Import rows** reads
+its file. Format: `docs/spec-instances.md` section 5.
+
+```json
+"suites": [ { "name": "scaling", "instances": { "constants": { "n": [4, 5, 6, 7, 8] } },
+              "variants": ["default", "reference"], "limits": { "seconds": 30 },
+              "where": ["solutions(reference) >= 1"] } ]
+```
+
 ### Generators
 
 A **generator** is an ASP program whose shown atoms are an instance. Randomness enters through six

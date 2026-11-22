@@ -158,6 +158,7 @@ label[for='tab7']:before { content: '\f0e8'; }
 label[for='tab8']:before { content: '\f02d'; }
 label[for='tab9']:before { content: '\f03a'; }
 label[for='tab11']:before { content: '\f06e'; }
+label[for='tab10']:before { content: '\f0ce'; }
 
 label:hover {
   color: var(--tab-hover);
@@ -184,6 +185,7 @@ label[for="tab2"] {
 #tab7:checked ~ #section-internals,
 #tab8:checked ~ #section-manual,
 #tab9:checked ~ #section-instances,
+#tab10:checked ~ #section-campaign,
 #tab11:checked ~ #section-observatory {
   display: block;
 }
@@ -994,3 +996,12 @@ tr.mismatch td {
 .anatomy-timeline { display: block; cursor: grab; border: 1px solid var(--border); }
 #anatomy-lines tr.selected td { background: var(--selected-bg); }
 .anatomy-src { color: var(--text-muted); }
+
+/* Campaign tab (js/campaign-tab.js) */
+#suite-text { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 13px; background: var(--code-bg); color: var(--text); border: 1px solid var(--border); }
+.campaign-grid { display: block; margin: 8px 0; }
+.campaign-plots { display: flex; flex-wrap: wrap; gap: 12px; }
+.campaign-plots figure { margin: 0; max-width: 100%; }
+.campaign-plot { max-width: 100%; height: auto; border: 1px solid var(--border-faint); }
+.plot-label { fill: var(--text-muted); font-size: 10px; }
+#campaign-status.error, #campaign-consistency.error { color: var(--error); }

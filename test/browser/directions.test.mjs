@@ -224,3 +224,70 @@ test('V2: the line table sums to the final S calls; 100,000 synthetic calls redr
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+const campaignDone = (page) => page.waitForFunction(() => !window.cegarplay.campaign.running && /cells:|Aborted|Not started/.test(document.getElementById('campaign-status').textContent), null, { timeout: 120000 });
+
+test('I3: a 1,000-cell suite finishes; after a reload, Start runs zero cells', { timeout: 240000 }, async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=10');
+  await page.evaluate(() => {
+    const app = window.cegarplay;
+    app.project.suites = [{ name: 'thousand', instances: { constants: { x: Array.from({ length: 1000 }, (_, i) => i) } }, limits: { seconds: 30 } }];
+    app.campaign.load();
+    app.dirty();
+  });
+  await page.evaluate(() => window.cegarplay.campaign.clearRows());
+  const t0 = Date.now();
+  await page.click('#campaign-start');
+  await campaignDone(page);
+  console.log(`# 1,000 cells in ${((Date.now() - t0) / 1000).toFixed(1)} s on ${await page.$eval('#campaign-jobs', (e) => e.value)} engines`);
+  assert.match(await page.textContent('#campaign-status'), /1,000 cells: 1,000 run, 0 from earlier/);
+  assert.equal(await page.$eval('#campaign-grid', (c) => c.dataset.done), '1000');
+  await page.reload();
+  await page.waitForSelector('body[data-ready="true"]');
+  assert.equal(await page.$eval('#suite-select', (s) => s.value), 'thousand');
+  await page.click('#campaign-start');
+  await campaignDone(page);
+  assert.match(await page.textContent('#campaign-status'), /1,000 cells: 0 run, 1,000 from earlier/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('I3: tutorial-weak-relevant with a reference variant marks n = 8 red; imported rows draw the plots', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=10');
+  await page.evaluate(() => window.cegarplay.campaign.clearRows());
+  await page.click('#campaign-start');
+  await campaignDone(page);
+  const text = await page.textContent('#campaign-consistency');
+  assert.match(text, /n8 \((default 11 vs reference 61|reference 61 vs default 11)\)/);
+  assert.match(await page.textContent('#label-campaign'), /Campaign \(5 ✗\)/);
+  for (const id of ['plot-scaling', 'plot-scatter', 'plot-solved']) assert.equal(await page.$$eval(`#${id} svg`, (x) => x.length), 1, id);
+  // rows written by tools/bench.mjs, imported: the same plots
+  const { spawnSync } = await import('node:child_process');
+  const rows = spawnSync('node', [new URL('../../tools/bench.mjs', import.meta.url).pathname, 'tutorial-weak-relevant', '--suite', 'scaling', '--jobs', '2', '--quiet'], { encoding: 'utf8' }).stdout;
+  await page.evaluate(() => window.cegarplay.campaign.clearRows());
+  await page.evaluate((t) => window.cegarplay.campaign.importText(t, 'bench.jsonl'), rows);
+  assert.match(await page.textContent('#campaign-status'), /Imported 10 rows/);
+  assert.match(await page.textContent('#campaign-consistency'), /n8/);
+  for (const id of ['plot-scaling', 'plot-scatter', 'plot-solved']) assert.equal(await page.$$eval(`#${id} svg`, (x) => x.length), 1, id);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('I3: Abort during a suite leaves no running worker', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring&tab=10');
+  await page.evaluate(() => {
+    const app = window.cegarplay;
+    app.project.suites = [{ name: 'slow', instances: { constants: { n: [6], x: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] } }, limits: { seconds: 60 } }];
+    app.campaign.load();
+    return app.campaign.clearRows();
+  });
+  await page.click('#campaign-start');
+  await page.waitForFunction(() => window.cegarplay.campaign.pool && window.cegarplay.campaign.pool.running > 0);
+  await page.click('#campaign-abort');
+  await campaignDone(page);
+  assert.match(await page.textContent('#campaign-status'), /Aborted/);
+  assert.equal(await page.evaluate(() => window.cegarplay.campaign.pool.running), 0);
+  assert.equal(await page.evaluate(() => window.cegarplay.campaign.running), null);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

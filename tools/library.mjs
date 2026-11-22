@@ -445,3 +445,14 @@ export const GENERATORS = {
 export const RECIPES = {
   qbf: [{ id: 'dnf-1', recipe: { generator: 'qbf-dnf', params: { nx: 5, ny: 4, t: 10 }, seed: 1 }, tags: ['generated'] }],
 };
+
+// suites and variants added to library examples (docs/spec-instances.md section 5)
+export const SUITES = {
+  'tutorial-weak-relevant': {
+    variants: [{ name: 'reference', loop: { language: 'loop', text: 'REFERENCE' } }],
+    suites: [{ name: 'scaling', instances: { constants: { n: [4, 5, 6, 7, 8] } }, variants: ['default', 'reference'], limits: { seconds: 30 } }],
+  },
+  qbf: {
+    suites: [{ name: 'random', instances: { generator: 'qbf-dnf', grid: { t: [6, 8, 10, 12] }, seeds: 5 }, limits: { seconds: 30 } }],
+  },
+};

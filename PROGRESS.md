@@ -377,7 +377,7 @@ commit at each checkpoint, no stops.
 - [x] I2 Generators
 - [x] V2 Loop anatomy
 - [x] S3 `lift` links
-- [ ] I3 Campaigns
+- [x] I3 Campaigns
 - [ ] V3 Domain views
 - [ ] S4 Rule refinements, exact level
 - [ ] I4 Fuzz and shrink
@@ -533,7 +533,24 @@ Notes per phase:
   fixed guesses; `#external`/`#minimize` are not observed; `#show 5.` gives facts `5.` (caught by
   the run's validation).
 
-**Next step (PLAN2):** I3 Campaigns (`docs/directions/instance-lab.md`, phase I3).
+- **I3 (done):** `js/campaign.js` (expandSuite, cellKey SHA-256, shards, where filters, Reducer,
+  runSuite with memoized validation/recipes and a serialized validation engine, inconsistencies,
+  scaling, growthFit, solvedCurves), `js/pool.js` (Engines), `js/store.js` (IndexedDB + memory,
+  JSON lines), `tools/bench.mjs` (worker-thread pool), Campaign tab `tab10` (`js/campaign-tab.js`:
+  suite JSON editor, Start/Pause/Abort, grid, summary with growth fit, four SVG plots, import/export),
+  `suites` in format v2, library suites (`tutorial-weak-relevant` scaling with a `reference` variant,
+  `qbf` random). Tests `test/campaign.test.mjs` and three browser tests: 1,000 cells in 1.8 s on 7
+  engines and 0 cells after reload; n = 8 red (11 vs 61, also from imported bench rows); abort
+  leaves no running engine.
+  - Pause is cooperative (cells already started finish), as an engine can only be paused on an
+    isolated page.
+  - `where` is evaluated per instance and solver seed; the named variants of all instances run
+    first (a phase barrier), then the rest.
+  - The page draws plots from the rows of the current suite (store rows whose keys are cells of
+    its expansion) or from imported rows.
+
+**Next step (PLAN2):** V3 Domain views (`docs/directions/observatory.md`, phase V3; then the
+review of wave 3: S3, I3, V3).
 
 ## Next step (PLAN.md, guide, TODO)
 

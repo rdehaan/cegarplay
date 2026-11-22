@@ -119,3 +119,52 @@ G(n,p), reference rows 26 and 30), `gnm`, `af-gnp`, `qbf-dnf`, `ballots-ic`, `ba
 `clique-colouring`, `arrowing`, `choosability` and `af-semi-stable` moved their graph into the
 instance `example`; `qbf` has the recipe instance `dnf-1` (8 solutions in its loop and in the
 Reference template).
+
+## 5. Suites and campaigns
+
+`suites[]` (format v2): `{ name, instances, variants, solver_seeds, limits, where }`.
+
+| Field | Meaning |
+| --- | --- |
+| `instances` | `{ ids: [...] }` or `{ ids: "all" }` (the default; a project without instances runs as written); `{ generator, grid: { param: [values] }, seeds: N, attempts }` (one recipe instance per grid point and seed 1..N, id `gen-n6-p300-s2`); `{ constants: { name: [values] }, base }` (one constants-only instance per grid point, id `n6-k3`, with the facts of instance `base` if given) |
+| `variants` | variant names, `default` = the project as it is (default `["default"]`) |
+| `solver_seeds` | N: settings.seed 0..N-1 (default 1) |
+| `limits` | `{ seconds, candidates }` (default `{ seconds: 30 }`); every cell runs with all solutions, no trace |
+| `where` | instance filters `solutions(v) <op> N`, `candidates(v) <op> N`, `outcome(v) == "..."` (`op` one of `== != >= <= > <`); the cells of the named variants run first, the other cells of an instance that fails a filter are stored as skipped |
+
+`js/campaign.js` (no DOM): `expandSuite(project, suite)` -> cells `{ instance, variant, seed,
+params, inst }`; `cellKey(project, cell, suite, engineVersion)` = SHA-256 (`crypto.subtle`) over the
+derived project's fragments, loop and constants (for a recipe: the recipe, generator text and
+defaults instead of the facts), the cell's settings (seed, limits, all solutions) and the engine
+version; `inShard(key, { i, n })` (the key as a number, modulo n); `runSuite(project, suite,
+{ runJob, store, onProgress, engineRun, luaTexts, runtime, modules, engineVersion, shard, jobs,
+signal })` validates each variant once, resolves each recipe once, skips cells whose key is in the
+store, runs `jobs` cells at a time; `Reducer` (last S, D, solution count, order-independent hash =
+sum mod 2^32 of FNV-1a of each solution's sorted atoms); `inconsistencies(rows)` (exhausted
+finished rows of one instance and seed with different hashes or counts); `scaling`, `growthFit`
+(least squares of log median on x; factor per step, 90% bootstrap interval from 200 resamples),
+`solvedCurves`.
+
+Row (one JSON line each): `{ key, suite, instance, variant, seed, params, engine, outcome,
+exhausted, detail, solutions, candidates, refinements, time, hash }`; a filtered cell:
+`{ ..., skipped: "where", outcome: "skipped" }`; a variant that does not validate: `outcome:
+"invalid"`.
+
+`js/pool.js`: `Pool(size)` (default `hardwareConcurrency - 1`, at most 8), one `Engine` per slot,
+`run(job)` with `job = { program, seconds }` (the normal backstop), `abortAll()`, `terminate()`.
+`js/store.js`: `IdbStore` (database `cegarplay`, store `cells`, keyPath `key`), `MemoryStore`,
+`exportRows`, `importRows`. `tools/bench.mjs <project> --suite NAME [--jobs N] [--shard i/n]
+[--out file.jsonl] [--resume]`: worker threads with the same job interface; a job past its limit
++ 2 s terminates its thread.
+
+Campaign tab (tab 10): suite list and JSON editor, Engines, Start (resumes: stored cells are
+skipped), Pause (cells already started finish), Abort (aborts every engine of the pool), Export /
+Import rows, Forget rows; a progress grid (one square per cell, coloured by outcome, red frame on
+a disagreeing instance), a table per variant (cells, exhausted, median time and candidates, growth
+fit), the disagreeing instances (also counted in the tab label "Campaign (k ✗)"), and four plots:
+time against the first parameter that varies (median, interquartile band, log axis), a heat map
+over two varying parameters, one variant against another per instance, solved within time.
+
+Library: `tutorial-weak-relevant` has the variant `reference` (the Reference template) and the
+suite `scaling` (n = 4..8; every n disagrees, n = 8: 11 against 61); `qbf` has the suite `random`
+(qbf-dnf, t = 6, 8, 10, 12, five seeds each).

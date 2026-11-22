@@ -192,6 +192,16 @@ export function load(json) {
   if ('instances' in p) out.instances = loadInstances(p.instances);
   if ('variants' in p) out.variants = loadVariants(p.variants, names);
   if ('generators' in p) out.generators = loadGenerators(p.generators);
+  if ('suites' in p) {
+    if (!Array.isArray(p.suites)) throw new ProjectError('suites must be a list');
+    const seen = new Set();
+    out.suites = p.suites.map((x, i) => {
+      if (!isObj(x) || typeof x.name !== 'string' || !INSTANCE_ID.test(x.name)) throw new ProjectError(`suite ${i + 1}: name must match [A-Za-z0-9_-]+`);
+      if (seen.has(x.name)) throw new ProjectError(`duplicate suite name '${x.name}'`);
+      seen.add(x.name);
+      return { ...x };
+    });
+  }
   if ('instance' in st && st.instance !== null && st.instance !== '' && typeof st.instance !== 'string') throw new ProjectError('settings.instance must be an instance id or ""');
   out.version = usesV2(out) ? 2 : 1;
   return out;

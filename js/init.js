@@ -11,6 +11,7 @@ import { InstancesTab } from './instances-tab.js';
 import { Recording, REPLAY_PATTERN } from './recording.js';
 import { makeEditor } from './editors.js';
 import { Anatomy } from './anatomy.js';
+import { CampaignTab } from './campaign-tab.js';
 import { renderMarkdown } from './markdown.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
 
@@ -88,6 +89,7 @@ app.internals = new Internals(app);
 app.control = new Control(app);
 app.instancesTab = new InstancesTab(app);
 app.anatomy = new Anatomy(app, $('anatomy'));
+app.campaign = new CampaignTab(app);
 
 app.collect = () => app.editors.collect(app.project);
 app.genLua = () => ({ draw: app.modules.draw, generate: app.modules.generate });
@@ -134,6 +136,7 @@ app.setProject = (p, { save = true } = {}) => {
   app.loopTab.load(p);
   app.instancesTab.load();
   app.anatomy.load();
+  app.campaign.load();
   app.stats.history = Array.isArray(p.runs) ? p.runs.map((r) => ({ ...r })) : [];
   app.stats.renderHistory();
   showProjectInfo(p);
@@ -501,6 +504,7 @@ function resizeVisibleEditors() {
 for (const r of document.querySelectorAll('input[name="tabs"]')) {
   r.addEventListener('change', () => {
     requestAnimationFrame(resizeVisibleEditors);
+    if (r.checked && r.id === 'tab10') requestAnimationFrame(() => app.campaign.draw());
     if (r.checked && r.id === 'tab11') requestAnimationFrame(() => { app.anatomy.dirty = { diagram: true, timeline: true, table: true }; app.anatomy.render(); });
     if (r.checked) setUrl({ example: new URLSearchParams(location.search).get('example'), tab: r.id === 'tab1' ? '' : r.id.slice(3), keepHash: true });
   });
