@@ -623,6 +623,32 @@ The library example `conformant-growing` finds the shortest conformant plans by 
 horizon until plans exist (8 steps, the same 3 plans as `conformant-planning` with `t = 8`).
 Certificates are refused for programs with `#external` atoms.
 
+## Structure: procedures and solver families (phase L4)
+
+```loop
+solver S[i in 1..depth] = shared + level + inner     # members S1, S2, ... grounded with -c level=i
+link   G[i in 1..depth-1] = S[i] -> S[i+1] via shared + glue
+
+def refute(i, M):                                     # a clause that removes M, or none
+    loop:
+        Y = S[i].solve(assume G[i-1](M))
+        if not Y: return none
+        if i == S.size: return G[i-1].clause(Y)
+        c = refute(i + 1, Y)
+        if not c: return G[i-1].clause(Y) + S[i+1].core.on(G[i-1])
+        S[i].add(c)
+```
+
+- A family `solver S[i in lo..hi]` or `link G[i in lo..hi] = S[i] -> S[i+1]` builds one member per
+  index; each member is grounded (a link: its glue) with the constant `level` = i. The range is
+  made of numbers and project constants. `S[i]` is a member, `S.size` the number of members.
+- `def name(a, b):` defines a procedure (between the declarations and the first statement);
+  `return [e]` returns from it (an error outside `def`). Procedures may call themselves.
+- `c + d` joins two clauses of one link (numbers are added). `core.on(G)` keeps the atoms of a core
+  that G knows by name, also along a chain (the core of S[i+1] as a clause for S[i-1]).
+- `def`, `return` and `keep` are keywords. The library example `qbf-deep` solves quantified Boolean
+  formulas with any number of blocks; 120 formulas at depths 2 to 4 agree with brute force.
+
 ## Refinement variants
 
 | Variant | Script | Example |
@@ -1082,7 +1108,7 @@ with the example's own settings, checked by `test/library.test.mjs` for every ex
 | `guide` | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
 | `problems` | `graph-coloring`, `graph-coloring-original`, `nash`, `voting-justification` |
 | `exists-forall` | `qbf`, `qbf-optimal`, `qbf-expansion`, `smallest-mus`, `min-dnf`, `integer-expressions`, `strategic-companies`, `diagnosis`, `stable-models`, `abduction`, `default-extensions`, `belief-update`, `af-preferred`, `af-semi-stable`, `conformant-planning`, `sufficient-reason`, `actual-cause`, `clique-interdiction`, `clique-colouring`, `arrowing`, `choosability`, `subset-sum-game`, `knapsack-interdiction`, `fewest-clues`, `fair-division`, `hedonic-core`, `boolean-game`, `strong-nash`, `kemeny-control`, `agenda-safety` |
-| `several-solvers` | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking`, `knapsack-fortification`, `qbf-three-blocks`, `conformant-growing` |
+| `several-solvers` | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking`, `knapsack-fortification`, `qbf-three-blocks`, `conformant-growing`, `qbf-deep` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.
 

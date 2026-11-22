@@ -501,7 +501,9 @@ function rt.link(name, from, to, glue, opts)
   glue = with_instance(glue)
   if to.grounded then fail("link " .. name .. ": solver " .. to.name .. " was already grounded; declare links before using it") end
   local set, found = {}, false
-  local g = new_control({ "1" }, name, glue)
+  local gargs = { "1" }
+  for _, c in ipairs(opts.consts or {}) do gargs[#gargs + 1] = "-c"; gargs[#gargs + 1] = c end
+  local g = new_control(gargs, name, glue)
   g:add("base", {}, join(glue))
   g:ground({ { "base", {} } })
   local h = g:solve{ yield = true }
@@ -746,7 +748,33 @@ end
 -- C.core: the whole core of the last solve of C; core.on(G) keeps the atoms of link G.
 local Core = {}
 Core.__index = Core
-function Core:on(G) return G:core(self.solver) end
+-- core.on(G): the atoms of the core that G knows, by name (also when G does not end at the
+-- core's solver: a core along a chain, phase L4), as a clause for G's source.
+function Core:on(G)
+  if getmetatable(G) ~= Link then fail("core.on: expected a link") end
+  if G.to == self.solver then return G:core(self.solver) end
+  local lazy = G.from.searching and true or false
+  local lits = lazy and G.slit or G.src
+  local c = new_clause(G, lazy, nil, nil)
+  local seen = {}
+  for _, l in ipairs(self.lits) do
+    for _, L in ipairs(self.solver.inn) do
+      local j0 = L.jof[abs(l)]
+      if j0 then
+        local j = G.jstr[L.str[j0]]
+        if j and not seen[j] then
+          seen[j] = true
+          local k = #c + 1
+          c[k] = l > 0 and -lits[j] or lits[j]
+          c.j[k] = j
+        end
+        break
+      end
+    end
+  end
+  c.empty_ok = true
+  return c
+end
 function Solver:core()
   if not self.last_core then fail(self.name .. ".core: the last solve of " .. self.name .. " was not unsatisfiable") end
   return setmetatable({ solver = self, lits = self.last_core }, Core)
@@ -1597,6 +1625,34 @@ function rt.log(...)
   local t = {}
   for i = 1, select("#", ...) do t[i] = fmt((select(i, ...))) end
   emit("L", { text = concat(t, " ") })
+end
+
+-- c + d (phase L4): numbers are added, clauses of one link are joined.
+function rt.plus(a, b)
+  if type(a) == "number" and type(b) == "number" then return a + b end
+  if type(a) == "string" or type(b) == "string" then return tostring(a) .. tostring(b) end
+  if a == nil or b == nil then fail("attempt to perform arithmetic on a nil value (an operand of + is none)") end
+  if type(a) ~= "table" or type(b) ~= "table" or not a.link and #a > 0 or not b.link and #b > 0 then fail("+: expected two numbers or two clauses") end
+  local L = a.link or b.link
+  if a.link and b.link and a.link ~= b.link then fail("+: the clauses belong to different links (" .. a.link.name .. ", " .. b.link.name .. ")") end
+  if (#a > 0 and #b > 0) and a.lazy ~= b.lazy then fail("+: one clause was built inside a search, the other outside") end
+  local c = new_clause(L, a.lazy or b.lazy or false, a.m or b.m, a.x or b.x)
+  local seen = {}
+  for _, x in ipairs({ a, b }) do
+    for k = 1, #x do
+      if not seen[x[k]] then seen[x[k]] = true; local n = #c + 1; c[n] = x[k]; c.j[n] = x.j and x.j[k] end
+    end
+  end
+  c.empty_ok = true
+  return c
+end
+-- A project constant as a value (the ranges of families): a number when it reads as one.
+function rt.const(name)
+  for _, kv in ipairs(CONSTS) do
+    local k, v = kv:match("^([^=]+)=(.*)$")
+    if k == name then return tonumber(v) or v end
+  end
+  fail("the constant " .. tostring(name) .. " is not set (Loop tab: constants)")
 end
 
 function rt.size(l) if type(l) ~= "table" then fail("size: not a list") end return #l end

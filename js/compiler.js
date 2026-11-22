@@ -1,7 +1,7 @@
 // The loop language: script in, Lua out. See docs/spec-loop-language.md.
 // No DOM, no Node APIs: used by the page and by the tests.
 
-export const KEYWORDS = new Set(('solver link via options legacy compat lift keep if elif else loop while repeat until for in ' +
+export const KEYWORDS = new Set(('solver link via options legacy compat lift keep def return if elif else loop while repeat until for in ' +
   'search on candidate reject with accept restart stop break continue count by log assume limit optimal and or not ' +
   'true false none').split(' '));
 const LUA_RESERVED = new Set(('and break do else elseif end false for function goto if in local nil not or repeat return ' +
@@ -20,7 +20,7 @@ class CompileError extends Error {
 // ---------------------------------------------------------------------------
 // Lexer
 // ---------------------------------------------------------------------------
-const OPS = ['->', '==', '!=', '<=', '>=', '=', '<', '>', '+', '-', '*', '/', '(', ')', '[', ']', ',', '.', ':'];
+const OPS = ['->', '==', '!=', '<=', '>=', '=', '<', '>', '+', '-', '*', '/', '(', ')', '[', ']', ',', '..', '.', ':'];
 
 export function lex(source) {
   const toks = [], errors = [];
@@ -119,12 +119,47 @@ class Parser {
     const decls = [], stmts = [];
     while (this.is('NEWLINE')) this.next();
     while (this.isKw('solver') || this.isKw('link')) decls.push(this.decl());
+    const defs = [];
+    while (this.isKw('def')) defs.push(this.def());
     while (!this.is('EOF')) {
       if (this.isKw('solver') || this.isKw('link')) this.fail(this.peek(), 'declarations must come before the first statement');
+      if (this.isKw('def')) this.fail(this.peek(), "'def' must come before the first statement");
       if (this.is('INDENT')) this.fail(this.peek(), 'unexpected indentation');
       stmts.push(this.stmt());
     }
-    return { decls, stmts };
+    return { decls, defs, stmts };
+  }
+
+  // def NAME(a, b): block (phase L4)
+  def() {
+    const kw = this.next();
+    const name = this.name('a procedure name');
+    this.expect('op', '(');
+    const params = [];
+    if (!this.isOp(')')) {
+      params.push(this.name('a parameter name'));
+      while (this.isOp(',')) { this.next(); params.push(this.name('a parameter name')); }
+    }
+    this.expect('op', ')');
+    return { t: 'def', line: kw.line, col: kw.col, name, params, body: this.block() };
+  }
+
+  // [i in lo..hi] after a family name (phase L4)
+  family() {
+    if (!this.isOp('[')) return null;
+    const open = this.next();
+    const v = this.name('the index variable of a family');
+    this.expect('kw', 'in');
+    const lo = this.sum();
+    this.expect('op', '..', "'..'");
+    const hi = this.sum();
+    this.expect('op', ']');
+    return { v, lo, hi, line: open.line, col: open.col };
+  }
+  member() {
+    const name = this.name('a solver name');
+    if (this.isOp('[')) { this.next(); const idx = this.expr(); this.expect('op', ']'); return { name, idx }; }
+    return { name, idx: null };
   }
 
   frags() {
@@ -136,17 +171,19 @@ class Parser {
   decl() {
     const kw = this.next();
     const name = this.name(`a ${kw.value} name`);
+    const family = this.family();
     this.expect('op', '=');
     if (kw.value === 'solver') {
       const frags = this.frags();
       let options = null;
       if (this.isKw('options')) { this.next(); options = this.expect('str', undefined, 'an option string'); }
       this.expect('NEWLINE', undefined, 'end of line');
-      return { t: 'solver', line: kw.line, col: kw.col, name, frags, options };
+      return { t: 'solver', line: kw.line, col: kw.col, name, frags, options, family };
     }
-    const from = this.name('a solver name');
+    const fromM = this.member();
     this.expect('op', '->');
-    const to = this.name('a solver name');
+    const toM = this.member();
+    const from = fromM.name, to = toM.name;
     this.expect('kw', 'via');
     const frags = this.frags();
     let legacy = false, compat = false, lift = false, liftTok = null;
@@ -155,7 +192,7 @@ class Parser {
       if (t.value === 'legacy') legacy = true; else if (t.value === 'compat') compat = true; else { lift = true; liftTok = t; }
     }
     this.expect('NEWLINE', undefined, 'end of line');
-    return { t: 'link', line: kw.line, col: kw.col, name, from, to, frags, legacy, compat, lift, liftTok };
+    return { t: 'link', line: kw.line, col: kw.col, name, from, to, frags, legacy, compat, lift, liftTok, family, fromIdx: fromM.idx, toIdx: toM.idx };
   }
 
   block() {
@@ -210,6 +247,8 @@ class Parser {
         case 'search': {
           this.next();
           const s = this.name('a solver name');
+          let sidx = null;
+          if (this.isOp('[')) { this.next(); sidx = this.expr(); this.expect('op', ']'); }
           // phase L2: search S [assume e, ...] [optimal] [keep Y]:
           const assume = [];
           let optimal = false, keep = null;
@@ -229,7 +268,13 @@ class Parser {
           const body = this.block();
           if (!this.is('DEDENT')) this.fail(this.peek(), "only one 'on candidate' block is allowed inside 'search'");
           this.next();
-          return { t: 'search', ...at, solver: s, v, body, onLine: on.line, assume, optimal, keep };
+          return { t: 'search', ...at, solver: s, sidx, v, body, onLine: on.line, assume, optimal, keep };
+        }
+        case 'return': {
+          this.next();
+          const e = this.is('NEWLINE') ? null : this.expr();
+          this.endLine();
+          return { t: 'return', ...at, e };
         }
         case 'reject': {
           this.next();
@@ -326,6 +371,11 @@ class Parser {
         const p = this.peek();
         const args = this.args();
         e = { t: 'call', fn: e, args, line: p.line, col: p.col };
+      } else if (this.isOp('[') && e.t === 'name') {
+        const p = this.next();
+        const idx = this.expr();
+        this.expect('op', ']');
+        e = { t: 'index', obj: e, idx, line: p.line, col: p.col };
       } else return e;
     }
   }
@@ -421,25 +471,54 @@ export function compile(source, { fragments = [] } = {}) {
   };
 
   // declarations
+  // the range of a family and the indices of its link ends: numbers, project constants (rt.const)
+  // and the family's index variable
+  function rangeEx(e, v) {
+    switch (e.t) {
+      case 'num': return String(e.v);
+      case 'name': return e.name === v ? v : `rt.const(${luaString(e.name)})`;
+      case 'paren': return `(${rangeEx(e.e, v)})`;
+      case 'neg': return `(-${rangeEx(e.e, v)})`;
+      case 'bin': if (['+', '-', '*', '/'].includes(e.op)) return `(${rangeEx(e.a, v)} ${e.op === '/' ? '//' : e.op} ${rangeEx(e.b, v)})`; break;
+      default: break;
+    }
+    err(e, 'the range of a family must be made of numbers and project constants');
+    return '0';
+  }
   for (const d of ast.decls) {
     checkName(d.name, `a ${d.t} name`);
     if (solvers.has(d.name.value) || links.has(d.name.value)) err(d.name, `duplicate declaration of '${d.name.value}'`);
     for (const f of d.frags) if (!fragSet.has(f.value)) err(f, `unknown fragment '${f.value}'` + (fragments.length ? ` (fragments: ${fragments.join(', ')})` : ''));
     const fr = d.frags.map((f) => luaString(f.value)).join(', ');
+    const fam = d.family;
+    if (fam) checkName(fam.v, 'an index variable');
     if (d.t === 'solver') {
       const opts = d.options ? d.options.value.split(/\s+/).filter(Boolean) : [];
       solvers.set(d.name.value, d);
-      outSolvers.push({ name: d.name.value, fragments: d.frags.map((f) => f.value), options: opts });
-      emit(`local ${d.name.value} = rt.solver(${luaString(d.name.value)}, {${fr}}, {${opts.map(luaString).join(', ')}})`, d.line, 0);
+      outSolvers.push({ name: d.name.value, fragments: d.frags.map((f) => f.value), options: opts, ...(fam ? { family: true } : {}) });
+      if (fam) {
+        // solver S[i in lo..hi]: members S1, S2, ... each grounded with -c level=i
+        const v = fam.v.value;
+        emit(`local ${d.name.value} = {}; for ${v} = ${rangeEx(fam.lo, null)}, ${rangeEx(fam.hi, null)} do ${d.name.value}[${v}] = rt.solver(${luaString(d.name.value)} .. ${v}, {${fr}}, {${[...opts.map(luaString), '"-c"'].join(', ')}, "level=" .. ${v}}) end`, d.line, 0);
+      } else emit(`local ${d.name.value} = rt.solver(${luaString(d.name.value)}, {${fr}}, {${opts.map(luaString).join(', ')}})`, d.line, 0);
     } else {
       for (const end of [d.from, d.to]) if (!solvers.has(end.value)) err(end, `'${end.value}' is not a declared solver`);
-      if (d.from.value === d.to.value) err(d.to, 'a link needs two different solvers');
+      const famOf = (n) => solvers.get(n.value) && solvers.get(n.value).family;
+      if (!fam && d.from.value === d.to.value) err(d.to, 'a link needs two different solvers');
+      if (famOf(d.from) && !d.fromIdx) err(d.from, `'${d.from.value}' is a solver family: write ${d.from.value}[i]`);
+      if (famOf(d.to) && !d.toIdx) err(d.to, `'${d.to.value}' is a solver family: write ${d.to.value}[i]`);
+      if (d.fromIdx && solvers.has(d.from.value) && !famOf(d.from)) err(d.from, `'${d.from.value}' is not a solver family`);
+      if (d.toIdx && solvers.has(d.to.value) && !famOf(d.to)) err(d.to, `'${d.to.value}' is not a solver family`);
       links.set(d.name.value, d);
       if (d.lift && d.compat) err(d.liftTok, "'lift' and 'compat' cannot be combined");
       outLinks.push({ name: d.name.value, from: d.from.value, to: d.to.value, fragments: d.frags.map((f) => f.value), legacy: d.legacy, compat: d.compat,
-        ...(d.lift ? { lift: true } : {}) });
-      const o = [d.legacy && 'legacy = true', d.compat && 'compat = true', d.lift && 'lift = true'].filter(Boolean).join(', ');
-      emit(`local ${d.name.value} = rt.link(${luaString(d.name.value)}, ${d.from.value}, ${d.to.value}, {${fr}}, {${o}})`, d.line, 0);
+        ...(d.lift ? { lift: true } : {}), ...(fam ? { family: true } : {}) });
+      const o = [d.legacy && 'legacy = true', d.compat && 'compat = true', d.lift && 'lift = true'].filter(Boolean);
+      if (fam) {
+        const v = fam.v.value;
+        const end = (n, idx) => (idx ? `${n.value}[${rangeEx(idx, v)}]` : n.value);
+        emit(`local ${d.name.value} = {}; for ${v} = ${rangeEx(fam.lo, null)}, ${rangeEx(fam.hi, null)} do ${d.name.value}[${v}] = rt.link(${luaString(d.name.value)} .. ${v}, ${end(d.from, d.fromIdx)}, ${end(d.to, d.toIdx)}, {${fr}}, {${[...o, `consts = { "level=" .. ${v} }`].join(', ')}}) end`, d.line, 0);
+      } else emit(`local ${d.name.value} = rt.link(${luaString(d.name.value)}, ${d.from.value}, ${d.to.value}, {${fr}}, {${o.join(', ')}})`, d.line, 0);
     }
   }
   const isDecl = (n) => solvers.has(n) || links.has(n);
@@ -458,7 +537,24 @@ export function compile(source, { fragments = [] } = {}) {
 
   // context
   let labelN = 0;
-  const ctx = { cand: null, loops: [] };
+  const ctx = { cand: null, loops: [], def: null };
+  // procedures: name -> number of parameters; their parameters and locals are known names
+  const procs = new Map();
+  for (const df of ast.defs || []) {
+    checkName(df.name, 'a procedure name');
+    if (isDecl(df.name.value) || procs.has(df.name.value)) err(df.name, `duplicate declaration of '${df.name.value}'`);
+    procs.set(df.name.value, df.params.length);
+    known.add(df.name.value);
+    for (const x of df.params) { checkName(x, 'a parameter name'); known.add(x.value); }
+    collectAssigned(df.body, known, { intoCandidates: true });
+    (function walk(list) {
+      for (const st of list) {
+        if (st.t === 'for' || st.t === 'search') known.add(st.v.value);
+        if (st.t === 'if') { for (const b of st.branches) walk(b.body); if (st.orelse) walk(st.orelse.body); }
+        if (['loop', 'while', 'repeat', 'for', 'search'].includes(st.t)) walk(st.body);
+      }
+    })(df.body);
+  }
 
   // which members of each link the script uses (the audit decides what to audit from it)
   const linkUses = {};
@@ -505,13 +601,34 @@ export function compile(source, { fragments = [] } = {}) {
         return s;
       }
       case 'bin': {
+        // c + d joins two clauses of one link; on numbers it stays addition (rt.plus)
+        if (e.op === '+') return `rt.plus(${ex(e.a)}, ${ex(e.b)})`;
         const p = PREC[e.op];
         const s = `${ex(e.a, p)} ${LUA_OP[e.op] || e.op} ${ex(e.b, p + 1)}`;
         return p < parentPrec ? `(${s})` : s;
       }
+      case 'index': {
+        if (e.obj.t === 'name' && ((solvers.get(e.obj.name) || {}).family || (links.get(e.obj.name) || {}).family)) return `${e.obj.name}[${ex(e.idx)}]`;
+        err(e, 'only a solver or link family can be indexed, as in S[i]');
+        return 'nil';
+      }
       case 'attr': return member(e, null);
       case 'method': return member(e, e.args);
       case 'call': {
+        if (e.fn.t === 'index' && e.fn.obj.t === 'name' && links.has(e.fn.obj.name)) {
+          const G = e.fn.obj.name;
+          if (!links.get(G).family) err(e.fn, `'${G}' is not a link family`);
+          use(G, 'of');
+          const pos = positional(e.args, e, `${G}[i](M)`);
+          if (pos.length !== 1) err(e, `${G}[i](M) takes exactly one model`);
+          return `${G}[${ex(e.fn.idx)}]:of(${pos.map((a) => ex(a)).join(', ')})`;
+        }
+        if (e.fn.t === 'name' && procs.has(e.fn.name)) {
+          const pos = positional(e.args, e, `${e.fn.name}(...)`);
+          const want = procs.get(e.fn.name);
+          if (pos.length !== want) err(e, `${e.fn.name} takes ${want} argument${want === 1 ? '' : 's'}`);
+          return `${e.fn.name}(${pos.map((a) => ex(a)).join(', ')})`;
+        }
         // pool(name): the items of a stored pool (lists of atoms), as rt.pool("name")
         if (e.fn.t === 'name' && e.fn.name === 'pool' && !links.has('pool') && !solvers.has('pool')) {
           const pos = positional(e.args, e, 'pool(name)');
@@ -549,29 +666,41 @@ export function compile(source, { fragments = [] } = {}) {
 
   function member(e, args) {
     const obj = e.obj, name = e.name;
-    const recvName = obj.t === 'name' ? obj.name : null;
+    let recvName = obj.t === 'name' ? obj.name : null;
+    let recvLua = recvName;
+    // a member of a family: S[i].solve(...), G[i-1].clause(...) (phase L4)
+    if (obj.t === 'index' && obj.obj.t === 'name' && (solvers.has(obj.obj.name) || links.has(obj.obj.name))) {
+      recvName = obj.obj.name;
+      const d = solvers.get(recvName) || links.get(recvName);
+      if (!d.family) err(obj, `'${recvName}' is not a ${solvers.has(recvName) ? 'solver' : 'link'} family`);
+      recvLua = `${recvName}[${ex(obj.idx)}]`;
+    } else if (recvName && ((solvers.get(recvName) || {}).family || (links.get(recvName) || {}).family)) {
+      if (name === 'size' && !args) return `#${recvName}`;
+      err(obj, `'${recvName}' is a ${solvers.has(recvName) ? 'solver' : 'link'} family: write ${recvName}[i]`);
+      return 'nil';
+    }
     // solver
     if (recvName && solvers.has(recvName)) {
-      const S = recvName;
+      const S = recvName, SR = recvLua;
       switch (name) {
-        case 'exhausted': if (args) err(e, `${S}.exhausted is not a method`); return `${S}.exhausted`;
-        case 'step': if (args) err(e, `${S}.step is not a method`); return `${S}.k`;
-        case 'core': if (args) err(e, `${S}.core is not a method: write ${S}.core.on(G)`); return `${S}:core()`;
+        case 'exhausted': if (args) err(e, `${S}.exhausted is not a method`); return `${SR}.exhausted`;
+        case 'step': if (args) err(e, `${S}.step is not a method`); return `${SR}.k`;
+        case 'core': if (args) err(e, `${S}.core is not a method: write ${S}.core.on(G)`); return `${SR}:core()`;
         case 'ground': {
           const pos = args ? positional(args, e, `${S}.ground`) : [];
           if (!args || pos.length !== 2 || pos[0].t !== 'name') { err(e, `${S}.ground takes a program part and a number, as in ${S}.ground(step, t)`); return 'nil'; }
-          return `${S}:ground_part(${luaString(pos[0].name)}, ${ex(pos[1])})`;
+          return `${SR}:ground_part(${luaString(pos[0].name)}, ${ex(pos[1])})`;
         }
         case 'set': case 'release': {
           const pos = args ? positional(args, e, `${S}.${name}`) : [];
           const want = name === 'set' ? 2 : 1;
           if (!args || pos.length !== want) { err(e, name === 'set' ? `${S}.set takes an atom and true or false, as in ${S}.set(${S}.atom("frame", t), false)` : `${S}.release takes an atom`); return 'nil'; }
-          return `${S}:${name}(${pos.map((a) => ex(a)).join(', ')})`;
+          return `${SR}:${name}(${pos.map((a) => ex(a)).join(', ')})`;
         }
         case 'atom': {
           const pos = args ? positional(args, e, `${S}.atom`) : [];
           if (!args || !pos.length) { err(e, `${S}.atom takes a predicate name and its arguments, as in ${S}.atom("bound", n)`); return 'nil'; }
-          return `${S}:atom(${pos.map((a) => ex(a)).join(', ')})`;
+          return `${SR}:atom(${pos.map((a) => ex(a)).join(', ')})`;
         }
         case 'solve': case 'models': {
           if (!args) { err(e, `${S}.${name} must be called: ${S}.${name}(...)`); return 'nil'; }
@@ -588,7 +717,7 @@ export function compile(source, { fragments = [] } = {}) {
           if (assume) f.push(`assume = ${extra.length ? `rt.concat(${[assume, ...extra].map((x) => ex(x)).join(', ')})` : ex(assume)}`);
           if (limit) f.push(`limit = ${ex(limit)}`);
           if (optimal) f.push('optimal = true');
-          return `${S}:${name}{${f.length ? ' ' + f.join(', ') + ' ' : ''}}`;
+          return `${SR}:${name}{${f.length ? ' ' + f.join(', ') + ' ' : ''}}`;
         }
         case 'add': {
           if (!args) { err(e, `${S}.add must be called: ${S}.add(clause)`); return 'nil'; }
@@ -596,7 +725,7 @@ export function compile(source, { fragments = [] } = {}) {
           const guard = args.find((a) => a.k === 'while');
           const pos = positional(args.filter((a) => a.k !== 'while'), e, `${S}.add`);
           if (pos.length !== 1) err(e, `${S}.add takes one clause or a list of clauses`);
-          return `${S}:add(${pos.map((a) => ex(a)).join(', ')}${guard ? `, { guard = ${ex(guard.e)} }` : ''})`;
+          return `${SR}:add(${pos.map((a) => ex(a)).join(', ')}${guard ? `, { guard = ${ex(guard.e)} }` : ''})`;
         }
         case 'expand': {
           if (!args) { err(e, `${S}.expand must be called: ${S}.expand(part, name = atoms)`); return 'nil'; }
@@ -615,7 +744,7 @@ export function compile(source, { fragments = [] } = {}) {
             else err(a, `${S}.expand: facts are given as name = atoms`);
           }
           if (partRec) partRec.facts = factInfo;
-          return `${S}:expand(${luaString(part || '')}, { ${facts.join(', ')} })`.replace('{  }', '{}');
+          return `${SR}:expand(${luaString(part || '')}, { ${facts.join(', ')} })`.replace('{  }', '{}');
         }
         default:
           err(e, `unknown member '${name}' of solver ${S}; valid: ${SOLVER_MEMBERS.join(', ')}`);
@@ -624,7 +753,7 @@ export function compile(source, { fragments = [] } = {}) {
     }
     // link
     if (recvName && links.has(recvName)) {
-      const G = recvName;
+      const G = recvName, GR = recvLua;
       if (!LINK_MEMBERS.includes(name)) { err(e, `unknown member '${name}' of link ${G}; valid: ${LINK_MEMBERS.join(', ')}, and ${G}(M)`); return 'nil'; }
       if (!args) { err(e, `${G}.${name} must be called`); return 'nil'; }
       const pos = positional(args, e, `${G}.${name}`);
@@ -632,14 +761,14 @@ export function compile(source, { fragments = [] } = {}) {
       if (name === 'extend') {
         if (pos.length !== 2 || pos[0].t !== 'name') { err(e, `${G}.extend takes a program part and a number, as in ${G}.extend(step, t)`); return 'nil'; }
         use(G, name);
-        return `${G}:extend(${luaString(pos[0].name)}, ${ex(pos[1])})`;
+        return `${GR}:extend(${luaString(pos[0].name)}, ${ex(pos[1])})`;
       }
       // G.clause(X): the clause from the counterexample alone (its own interface values)
-      if (name === 'clause' && pos.length === 1) { use(G, name); return `${G}:clause(nil, ${ex(pos[0])})`; }
+      if (name === 'clause' && pos.length === 1) { use(G, name); return `${GR}:clause(nil, ${ex(pos[0])})`; }
       if (pos.length !== want) err(e, `${G}.${name} takes ${want === 1 ? 'one argument' : 'two arguments'}`);
       if (name === 'core' && pos[0] && !(pos[0].t === 'name' && solvers.has(pos[0].name))) err(pos[0], `${G}.core takes the check solver, as in ${G}.core(C)`);
       use(G, name);
-      return `${G}:${name}(${pos.map((a) => ex(a)).join(', ')})`;
+      return `${GR}:${name}(${pos.map((a) => ex(a)).join(', ')})`;
     }
     // a value: model or list
     if (SOLVER_MEMBERS.includes(name) && !VALUE_MEMBERS.includes(name) && recvName && !known.has(recvName)) {
@@ -671,9 +800,10 @@ export function compile(source, { fragments = [] } = {}) {
       }
       case 'on': {
         const pos = args ? positional(args, e, 'on') : [];
-        if (!args || pos.length !== 1 || pos[0].t !== 'name' || !links.has(pos[0].name)) { err(e, 'on takes a link, as in C.core.on(G)'); return 'nil'; }
-        use(pos[0].name, 'core');
-        return `${r}:on(${pos[0].name})`;
+        const L = pos[0] && (pos[0].t === 'name' ? pos[0].name : pos[0].t === 'index' && pos[0].obj.t === 'name' ? pos[0].obj.name : null);
+        if (!args || pos.length !== 1 || !L || !links.has(L)) { err(e, 'on takes a link, as in C.core.on(G)'); return 'nil'; }
+        use(L, 'core');
+        return `${r}:on(${ex(pos[0])})`;
       }
       case 'flip': case 'without': {
         const pos = args ? positional(args, e, name) : [];
@@ -749,6 +879,10 @@ export function compile(source, { fragments = [] } = {}) {
       case 'search': {
         const S = s.solver.value;
         if (!solvers.has(S)) err(s.solver, `'${S}' is not a declared solver`);
+        const fam = (solvers.get(S) || {}).family;
+        if (fam && !s.sidx) err(s.solver, `'${S}' is a solver family: write search ${S}[i]:`);
+        if (!fam && s.sidx) err(s.solver, `'${S}' is not a solver family`);
+        const SR = s.sidx ? `${S}[${ex(s.sidx)}]` : S;
         // a search may run inside 'on candidate' of another solver's search (phase L2)
         for (let c = ctx.cand; c; c = c.outer) if (c.solver === S) err(s, `search ${S}: solver ${S} is already searching`);
         checkName(s.v, 'a candidate variable');
@@ -758,7 +892,7 @@ export function compile(source, { fragments = [] } = {}) {
         if (s.assume && s.assume.length) opts.push(`assume = ${s.assume.length > 1 ? `rt.concat(${s.assume.map((x) => ex(x)).join(', ')})` : ex(s.assume[0])}`);
         if (s.optimal) opts.push('optimal = true');
         if (s.keep) opts.push('keep = true');
-        emit(`${s.keep ? `${s.keep.value} = ` : ''}${S}:search{ ${opts.map((o) => o + ', ').join('')}on_candidate = function(${s.v.value})`, s.line, depth);
+        emit(`${s.keep ? `${s.keep.value} = ` : ''}${SR}:search{ ${opts.map((o) => o + ', ').join('')}on_candidate = function(${s.v.value})`, s.line, depth);
         const saved = { cand: ctx.cand, loops: ctx.loops };
         ctx.cand = { solver: S, v: s.v.value, outer: saved.cand };
         ctx.loops = [];
@@ -770,6 +904,11 @@ export function compile(source, { fragments = [] } = {}) {
         stmts(s.body, depth + 1);
         ctx.cand = saved.cand; ctx.loops = saved.loops;
         emit('end }', null, depth);
+        break;
+      }
+      case 'return': {
+        if (!ctx.def) err(s, "'return' outside 'def'");
+        emit(`do return${s.e ? ' ' + ex(s.e) : ''} end`, s.line, depth);
         break;
       }
       case 'reject': {
@@ -807,6 +946,20 @@ export function compile(source, { fragments = [] } = {}) {
 
   // body first (to collect captures), then splice the prepare line in front of it
   const declCount = out.length;
+  // procedures (phase L4): local functions after the prepare line, before the statements
+  for (const df of ast.defs || []) {
+    const params = df.params.map((x) => x.value);
+    emit(`local function ${df.name.value}(${params.join(', ')})`, df.line, 0);
+    const locals = new Set();
+    collectAssigned(df.body, locals, { intoCandidates: false });
+    for (const x of params) locals.delete(x);
+    if (locals.size) emit(`local ${[...locals].join(', ')}`, null, 1);
+    const saved = { cand: ctx.cand, loops: ctx.loops, def: ctx.def };
+    ctx.cand = null; ctx.loops = []; ctx.def = df.name.value;
+    stmts(df.body, 1);
+    ctx.cand = saved.cand; ctx.loops = saved.loops; ctx.def = saved.def;
+    emit('end', null, 0);
+  }
   stmts(ast.stmts, 0);
   const lastDeclLine = ast.decls.length ? ast.decls.at(-1).line : null;
   const prep = [...captures.map((c) => `rt.capture(${luaString(c.pred)}, ${c.arity})`), 'rt.prepare()'];

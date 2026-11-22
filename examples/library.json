@@ -1452,6 +1452,17 @@
       }
     },
     {
+      "id": "qbf-deep",
+      "title": "QBF with any number of blocks",
+      "group": "several-solvers",
+      "summary": "A QBF with any number of quantifier blocks: a solver family, a link family and a recursive procedure (def refute) answer each level (depth = 3 here).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": null
+    },
+    {
       "id": "qbf-three-blocks",
       "title": "3QBF",
       "group": "several-solvers",

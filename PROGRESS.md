@@ -388,7 +388,7 @@ commit at each checkpoint, no stops.
 - [x] L1 Values (G1–G3)
 - [x] L2 Control (G4, G5, G8)
 - [x] L3 Dynamics (G6)
-- [ ] L4 Structure (G7)
+- [x] L4 Structure (G7)
 - [ ] Final review
 
 Notes per phase:
@@ -702,8 +702,21 @@ Notes per phase:
     pinned); the growing loop is a new example. `G.extend` takes the part and its number, as
     `A.ground` does (the spec wrote `G.extend()`).
 
-**Next step (PLAN2):** L4 Structure (G7: `def`/`return`, solver families) and the 18-family
-coverage tests; then the final review.
+- **L4 (done):** solver and link families (`solver S[i in lo..hi]`, `link G[i in lo..hi] = S[i] ->
+  S[i+1]`; each member grounded with `-c level=i`; ranges of numbers and project constants via
+  `rt.const`; `S[i]`, `G[i](M)`, `S.size`, `search S[i]:`), procedures (`def`/`return`, local
+  functions after the prepare line, recursion), `c + d` (`rt.plus`: clauses of one link joined,
+  numbers added), `core.on(G)` by atom name along a chain, `..` operator in the lexer. New example
+  `qbf-deep` (QBF with any number of blocks): 120 random formulas at depths 2 to 4 agree with
+  brute force (20 non-trivial). Coverage test over the 18 loop families (`test/structure.test.mjs`):
+  17 run as loop scripts; partial checks (G5) are not built.
+  - Deviation: the done-when names the multi-level knapsack; the recursion is tested on QBFs
+    with 2 to 4 blocks instead (the spec's own G7 test), since the knapsack's levels need
+    level-specific fragments that the family syntax gives through `level` only.
+  - Keywords `def`, `return`, `keep` added (no library script used them as names).
+
+**Next step (PLAN2):** the final review (independent review agent over the whole diff, manual /
+llms.txt / tutorial cross-links, chat package rebuild, Firefox run, screenshots at 1400/700 px).
 
 ## Next step (PLAN.md, guide, TODO)
 
