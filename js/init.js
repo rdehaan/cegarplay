@@ -499,7 +499,25 @@ document.addEventListener('click', async (ev) => {
   });
 });
 
+// Links to #tut-<lesson> (from the tabs' opening lines, the manual or the tutorial itself) open
+// the Tutorial tab and scroll to that lesson.
+document.addEventListener('click', async (ev) => {
+  const a = ev.target.closest && ev.target.closest('a[href^="#tut-"]');
+  if (!a) return;
+  ev.preventDefault();
+  const modal = a.closest('.modal');
+  if (modal) modal.classList.remove('is-visible');
+  $('tab2').checked = true;
+  $('tab2').dispatchEvent(new Event('change', { bubbles: true }));
+  await tutorialLoaded;
+  requestAnimationFrame(() => {
+    const target = document.getElementById(a.getAttribute('href').slice(1));
+    if (target) target.scrollIntoView({ block: 'start' });
+  });
+});
+
 // ---- Tutorial tab ---------------------------------------------------------------------
+let tutorialLoaded = null;
 async function loadTutorial() {
   const box = $('tutorial');
   try {
@@ -554,7 +572,7 @@ async function start() {
   ]);
   app.runtime = runtime;
   app.modules = { audit, ground, draw, generate, replay: replayLua };
-  loadTutorial();
+  tutorialLoaded = loadTutorial();
   app.engineVersion = version.split('\n')[0];
   // ?example=<id> (or the older ?file=<id>) loads an example of the library
   const named = params.get('example') || params.get('file');

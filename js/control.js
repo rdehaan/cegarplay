@@ -201,6 +201,7 @@ export class Control {
     app.stats.start({});
     app.output.result(mode === 'audit' ? 'Auditing…' : 'Running…');
     this.mode = mode;
+    document.body.dataset.lastMode = mode;   // shows the audit notes in Statistics and Observatory
     this.audit = null;
     app.recording = new Recording({ title: project.title || '', instance: instanceId, mode, engine: app.engineVersion || '',
       example: app.exampleId || null, fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])) });
@@ -325,6 +326,7 @@ export class Control {
     this.replaying = true;
     this.assembled = null;
     this.mode = rec.header.mode || 'run';
+    document.body.dataset.lastMode = this.mode;
     this.audit = null;
     this.D = null;
     this.E = null;

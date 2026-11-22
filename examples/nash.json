@@ -1,8 +1,8 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Nash equilibria",
-  "description": "Weighted graphs whose colouring game has a Nash equilibrium (guessed by the abstraction) that the check tries to refute.",
+  "description": "Weighted graphs whose colouring game has a Nash equilibrium (guessed by the abstraction) that the check tries to refute. The check corrects two relevant/1 rules of the original file (edge/3 for edge/2), without which the loop loses solutions (Audit at n = 3, w = 1: 576 solutions, 81 of them lost).",
   "fragments": [
     {
       "name": "shared",
@@ -21,7 +21,7 @@
     },
     {
       "name": "check",
-      "text": "% Guess a(nother) Nash equilibrium\n1 { plays_alt(P,C) : color_available(P,C) } 1 :- player(P).\nscore_alt(P,C,S) :- player(P), color_available(P,C),\n    S = #sum { W,Q : edge(P,Q,W), plays_alt(Q,C) }.\n:- score_alt(P,C1,S1), score_alt(P,C2,S2),\n    color(C1), color(C2), C1 != C2,\n    plays_alt(P,C1), S2 > S1.\n\n% Try to make the difference small (gives a stronger refinement)\n#heuristic plays_alt(P,C) : plays(P,C). [10,true]\n\n% Check that the two equilibria are different\nplayer_differs(P) :- player(P), plays(P,C1), plays_alt(P,C2), C1 != C2.\nequilibrium_differs :- player_differs(P).\n:- not equilibrium_differs.\n\n% Refinement: only the neighbourhood of the difference is relevant\n% - either an edge between a differing player and another player has to change\nrelevant(edge(P,Q,W)) :- player(P), player(Q), weight(W), player_differs(P).\n% - or a color set has to change for a differing player\n% (i. on what they play in one of the two equilibria)\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    plays(P,C).\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    plays_alt(P,C).\n% (ii. or on what they don't play, but what a neighbor plays)\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    not color_available(P,C), player(Q), edge(P,Q), plays(Q,C).\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    not color_available(P,C), player(Q), edge(P,Q), plays_alt(Q,C).\n% - or the played move (in the guessed equilibrium)\n% for a non-differing player has to change\nadjacent_to_differing_player(P) :- player(P),\n    player(Q), edge(P,Q,_), player_differs(Q).\nrelevant(plays(P,C)) :- player(P), color(C), adjacent_to_differing_player(P).\n",
+      "text": "% Guess a(nother) Nash equilibrium\n1 { plays_alt(P,C) : color_available(P,C) } 1 :- player(P).\nscore_alt(P,C,S) :- player(P), color_available(P,C),\n    S = #sum { W,Q : edge(P,Q,W), plays_alt(Q,C) }.\n:- score_alt(P,C1,S1), score_alt(P,C2,S2),\n    color(C1), color(C2), C1 != C2,\n    plays_alt(P,C1), S2 > S1.\n\n% Try to make the difference small (gives a stronger refinement)\n#heuristic plays_alt(P,C) : plays(P,C). [10,true]\n\n% Check that the two equilibria are different\nplayer_differs(P) :- player(P), plays(P,C1), plays_alt(P,C2), C1 != C2.\nequilibrium_differs :- player_differs(P).\n:- not equilibrium_differs.\n\n% Refinement: only the neighbourhood of the difference is relevant\n% - either an edge between a differing player and another player has to change\nrelevant(edge(P,Q,W)) :- player(P), player(Q), weight(W), player_differs(P).\n% - or a color set has to change for a differing player\n% (i. on what they play in one of the two equilibria)\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    plays(P,C).\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    plays_alt(P,C).\n% (ii. or on what they don't play, but what a neighbor plays)\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    not color_available(P,C), player(Q), edge(P,Q,_), plays(Q,C).\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    not color_available(P,C), player(Q), edge(P,Q,_), plays_alt(Q,C).\n% - or the played move (in the guessed equilibrium)\n% for a non-differing player has to change\nadjacent_to_differing_player(P) :- player(P),\n    player(Q), edge(P,Q,_), player_differs(Q).\nrelevant(plays(P,C)) :- player(P), color(C), adjacent_to_differing_player(P).\n",
       "description": "Looks for a counterexample to a candidate (solver C). relevant(T) marks the interface atoms the counterexample depends on."
     }
   ],
@@ -35,7 +35,61 @@
     "seconds": 60,
     "candidates": 0,
     "trace": 200,
-    "seed": 0
+    "seed": 0,
+    "instance": ""
   },
-  "runs": []
+  "runs": [],
+  "instances": [
+    {
+      "id": "n2-w1",
+      "facts": "",
+      "constants": {
+        "n": "2",
+        "w": "1"
+      },
+      "expected": {
+        "solutions": 12
+      },
+      "tags": [
+        "small"
+      ]
+    },
+    {
+      "id": "n2",
+      "facts": "",
+      "constants": {
+        "n": "2"
+      },
+      "expected": {
+        "solutions": 36
+      },
+      "tags": []
+    },
+    {
+      "id": "n3-w1",
+      "facts": "",
+      "constants": {
+        "n": "3",
+        "w": "1"
+      },
+      "expected": {
+        "solutions": 576
+      },
+      "tags": []
+    },
+    {
+      "id": "n3-w2",
+      "facts": "",
+      "constants": {
+        "n": "3",
+        "w": "2"
+      },
+      "expected": {
+        "solutions": 4080
+      },
+      "tags": [
+        "slow"
+      ]
+    }
+  ]
 }

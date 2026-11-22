@@ -174,13 +174,15 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
 <h3 id="tut-reference">The reference run</h3>
 <p>
   A second way to find out, which works for any loop: <code>G.block(M)</code> removes only the candidate itself, so a
-  loop that refines with <code>G.block</code> is always sound. In the Loop tab, choose the template <b>Reference run</b>,
+  loop that refines with <code>G.block</code> is always sound (the design guide calls it the <i>blocking loop</i>). In the
+  Loop tab, choose the template <b>Reference run</b>,
   press <b>Insert</b>, and run again: 61 solutions (and 256 candidates, one per set). Both runs are in the run
   history of the Statistics tab, and since both ran to the end with different counts, they are marked ⚠.
 </p>
 <h3 id="tut-space">Which refinement went wrong</h3>
-<p>Go back to the project's own loop (Load it again), and in the Loop tab set <b>Recording</b> to <b>every step</b>.
-  Run, open the Observatory, and press <b>Compute</b> under <b>Candidate space</b>. Each square is one of the 256
+<p>Go back to the project's own loop (Load it again), open the Observatory and press <b>Compute</b> under
+  <b>Candidate space</b>. The map needs a run with every step recorded; the button <b>Record every step, run,
+  compute</b> sets Recording to every step in the Loop tab, runs and draws the map. Each square is one of the 256
   sets, coloured by what the run's refinements have done to it so far; move the <b>Refinement</b> slider through
   the run. The summary names the first unsound refinement: number 6, which removes 13 solutions at once. Click a
   square to jump to the step that removed it. The blame matrix below shows which atoms the refinements relied on.</p>

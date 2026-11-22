@@ -966,10 +966,13 @@
       "id": "nash",
       "title": "Nash equilibria",
       "group": "problems",
-      "summary": "Weighted graphs whose colouring game has a Nash equilibrium.",
+      "summary": "Weighted graphs whose colouring game has a Nash equilibrium; two relevant/1 rules of the original corrected (four size instances).",
       "shape": "shape1",
       "tags": [],
-      "expected": null
+      "expected": null,
+      "has": {
+        "instances": 4
+      }
     },
     {
       "id": "voting-justification",

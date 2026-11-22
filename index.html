@@ -193,9 +193,10 @@
 
     <!-- 3. Programs -->
     <section id="section-programs">
-      <p>
+      <p class="tab-intro">
         The ASP fragments of the project. A solver is built from fragments (see the <b>Loop</b>
         tab). Problems found before a run are marked in the editors.
+        <span class="tab-help">Tutorial: <a href="#tut-fragments">Fragments, solvers and links</a>. Manual: <a href="#manual-asp-conventions">ASP conventions</a>.</span>
       </p>
       <div id="fragments"></div>
       <p class="inline-controls">
@@ -205,6 +206,11 @@
 
     <!-- 4. Loop -->
     <section id="section-loop">
+      <p class="tab-intro">
+        The loop script declares the solvers and the links between them and says how they call
+        each other; below it are the constants and the settings of a run.
+        <span class="tab-help">Tutorial: <a href="#tut-language">Writing loop scripts</a> · <a href="#tut-shapes">Choosing a loop shape</a>. Manual: <a href="#manual-the-loop-language">The loop language</a> · <a href="#manual-settings">Settings</a>.</span>
+      </p>
       <div class="inline-controls">
         <label class="inline-label" for="template-select">Template:</label>
         <select id="template-select"></select>
@@ -265,14 +271,33 @@
     <!-- 5. Output -->
     <!-- 9. Instances -->
     <section id="section-instances">
+      <p class="tab-intro">
+        An instance is a set of facts and constant values that a run applies on top of the project:
+        the problem's input, kept apart from its encoding. The run bar picks the instance a run uses;
+        <b>Run all</b> runs each one and compares its count with the expected one; <b>Fuzz</b> looks
+        for an instance on which the loop is unsound.
+        <span class="tab-help">Tutorial: <a href="#tut-instances">One project, many instances</a>. Manual: <a href="#manual-instances">Instances</a> · <a href="#manual-generators">Generators</a> · <a href="#manual-fuzz">Fuzz</a>.</span>
+      </p>
       <div id="instances"></div>
     </section>
 
     <section id="section-campaign">
+      <p class="tab-intro">
+        A suite is a grid of instances × variants × solver seeds; each cell is one run with all
+        solutions. Rows are kept in this browser: <b>Start</b> again resumes and skips the cells
+        already run. Exhausted variants that disagree on an instance are marked red;
+        <code>tools/bench.mjs</code> runs the same suite headless.
+        <span class="tab-help">Tutorial: <a href="#tut-campaign">Campaigns</a>. Manual: <a href="#manual-campaigns">Campaigns</a>.</span>
+      </p>
       <div id="campaign"></div>
     </section>
 
     <section id="section-output">
+      <p class="tab-intro">
+        The last run or audit: its result, the solutions, the trace one step at a time, and the
+        messages.
+        <span class="tab-help">Tutorial: <a href="#tut-reading">Reading the trace and the statistics</a> · <a href="#tut-audit">The audit</a>. Manual: <a href="#manual-output-tab">Output tab</a> · <a href="#manual-audit">Audit</a>.</span>
+      </p>
       <div id="result-line" class="result-line">No run yet.</div>
       <div id="audit-panel" class="audit-panel" hidden></div>
       <h3>Solutions <span id="solutions-count" class="note"></span>
@@ -287,10 +312,26 @@
 
     <!-- 6. Statistics -->
     <section id="section-statistics">
+      <p class="tab-intro">
+        Counts, solver tables and charts of the last run, certificates when asked for, and the run
+        history of this session, which marks runs whose counts disagree.
+        <span class="tab-help">Tutorial: <a href="#tut-reading">Reading the trace and the statistics</a>. Manual: <a href="#manual-statistics-tab">Statistics tab</a> · <a href="#manual-certificates">Certificates</a>.</span>
+      </p>
+      <p class="audit-only audit-note">The last action was an <b>audit</b>: the figures below are those of the
+        audit's own solving (every candidate of the unrefined abstraction and its counterexamples), not of
+        the loop. Its verdict is in the Output tab; press <b>Run</b> to see the loop again.</p>
       <div id="statistics"></div>
     </section>
 
     <section id="section-observatory">
+      <p class="tab-intro">
+        The last run, or an opened recording, as pictures: the loop's anatomy and its calls, each
+        step in the problem's own terms, and every candidate at once. One cursor moves them all.
+        <span class="tab-help">Tutorial: <a href="#tut-observatory">Watching a run</a> · <a href="#tut-space">Which refinement went wrong</a>. Manual: <a href="#manual-observatory-tab">Observatory tab</a> · <a href="#manual-writing-views">Writing views</a> · <a href="#manual-candidate-space">Candidate space</a>.</span>
+      </p>
+      <p class="audit-only audit-note">The last action was an <b>audit</b>: the figures below are those of the
+        audit's own solving (every candidate of the unrefined abstraction and its counterexamples), not of
+        the loop. Its verdict is in the Output tab; press <b>Run</b> to see the loop again.</p>
       <div id="cursor-region" class="observatory-region"></div>
       <div id="anatomy" class="observatory-region"></div>
       <div id="domain-view" class="observatory-region" hidden></div>

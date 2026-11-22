@@ -50,8 +50,8 @@ export class SpaceView {
     this.summary = h('p', { id: 'space-summary' });
     this.root.append(
       h('h3', {}, 'Candidate space'),
-      h('p', { class: 'note' }, 'Every candidate of the unrefined abstraction (from the audit), coloured by what the run\'s refinements did to it up to the chosen refinement: ',
-        'alive, removed earlier, removed now, a lost solution, an accepted solution. Needs a run recorded with every step (Loop tab).'),
+      h('p', { class: 'note' }, 'Every candidate of the unrefined abstraction (from the audit), coloured by what the run\'s refinements did to it up to the chosen refinement. ',
+        'Needs a run recorded with every step (Loop tab).'),
       h('div', { class: 'instances-bar' }, h('button', { class: 'control-button small-button', id: 'space-compute', onclick: () => this.compute() }, 'Compute'),
         h('button', { class: 'control-button small-button', id: 'space-compare', onclick: () => this.compareFile.click(), title: 'A second recording of the same project and instance' }, 'Compare with a recording'),
         this.compareFile = h('input', { type: 'file', id: 'space-compare-file', hidden: true, accept: '.cprec,.jsonl,.txt', onchange: () => this.openCompare() }),
@@ -61,11 +61,26 @@ export class SpaceView {
     this.canvas.addEventListener('click', (e) => this.click(e));
   }
 
+  // One click instead of a trip to the Loop tab: switch Recording to every step, run, compute.
+  async recordAndRun() {
+    const app = this.app;
+    const sel = document.getElementById('record-select');
+    if (sel.value !== 'all') { sel.value = 'all'; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+    this.msg.textContent = 'Running with every step recorded…';
+    const r = await app.control.run();
+    if (r && r.state === 'finished') await this.compute();
+    else this.msg.textContent = 'The run did not finish; see the Output tab.';
+  }
+
   // Audit vectors of the current project (instance of the last run) and the recorded steps.
   async compute() {
     const app = this.app;
     const rec = app.recording;
-    if (!rec || !rec.I || !rec.steps.length) { this.msg.textContent = 'Run the project with Recording "every step" (Loop tab) first.'; return; }
+    if (!rec || !rec.I || !rec.steps.length || (rec.header && rec.header.mode === 'audit')) {
+      this.msg.textContent = 'The map needs a run recorded with every step. ';
+      this.msg.append(h('button', { class: 'control-button small-button', id: 'space-record-run', onclick: () => this.recordAndRun() }, 'Record every step, run, compute'));
+      return;
+    }
     if (!app.ready || app.engine.active) return;
     this.msg.textContent = 'Auditing for the candidate vectors…';
     const p = structuredClone(app.collect());
@@ -176,13 +191,14 @@ export class SpaceView {
     const names = { alive: 'alive', aliveSol: 'alive, a solution', gone: 'removed earlier', now: 'removed now',
       lost: 'a lost solution', accepted: 'an accepted solution', onlyA: 'removed by this run only',
       onlyB: 'removed by the second run only', both: 'removed by both' };
-    const want = keys.map((k) => `${k}:${this.colors[k]}`).join(' ');
+    const want = keys.map((k) => `${k}:${this.colors[k]}`).join(' ') + ` ${this.cell >= 6}`;
     if (this.legend.dataset.keys === want) return;
     this.legend.dataset.keys = want;
     this.legend.textContent = '';
     for (const k of keys) {
       this.legend.append(h('span', { class: 'space-legend-item' },
-        h('span', { class: 'space-swatch', style: `background:${this.colors[k]}` }), names[k]));
+        h('span', { class: 'space-swatch', style: k === 'aliveSol' && this.cell >= 6
+          ? `background:${this.colors.alive};border:2px solid ${this.colors[k]}` : `background:${this.colors[k]}` }), names[k]));
     }
   }
 
@@ -205,8 +221,16 @@ export class SpaceView {
     } else for (let i = 0; i < this.space.count; i++) by[this.fateAt(i, r)].push(i);
     const gap = c > 3 ? 1 : 0;
     for (const [k, list] of Object.entries(by)) {
-      ctx.fillStyle = col[k];
+      // a solution still alive: outlined (filled when the cells are too small for an outline),
+      // so that it reads apart from an accepted solution, which is filled
+      const outline = k === 'aliveSol' && c >= 6;
+      ctx.fillStyle = outline ? col.alive : col[k];
       for (const i of list) ctx.fillRect(M.xs[i] * c, M.ys[i] * c, c - gap, c - gap);
+      if (outline) {
+        ctx.strokeStyle = col[k];
+        ctx.lineWidth = 2;
+        for (const i of list) ctx.strokeRect(M.xs[i] * c + 1, M.ys[i] * c + 1, c - gap - 2, c - gap - 2);
+      }
     }
     this.drawLegend(Object.keys(by).filter((k) => (this.B ? ['onlyA', 'onlyB', 'both', 'alive', 'aliveSol'] : ['alive', 'aliveSol', 'gone', 'now', 'lost', 'accepted']).includes(k)));
     const row = r > 0 ? this.F.rows[r - 1] : null;

@@ -89,8 +89,6 @@ export class InstancesTab {
       inp.addEventListener('change', () => this[fn](inp.value));
     }
     this.root.append(
-      el('p', {}, 'An instance is a set of facts and constant values that a run applies on top of the project. ',
-        'The run bar picks the instance a run uses. "Run all" runs each instance and compares its solution count with the expected one.'),
       bar, this.status, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table), this.form);
     this.buildGenerators();
     this.editor = makeEditor(editorBox, 'ace/mode/gringo');

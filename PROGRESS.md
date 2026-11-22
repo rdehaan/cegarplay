@@ -799,6 +799,33 @@ Goal: the app, library, tutorial, manual and guide as one whole with the PLAN2 f
   installed, so browser tests hung in `launch()`. A symlink `chromium_headless_shell-1255 ->
   -1243` in `/opt/pw-browsers` fixed it (outside the repo).
 
+## Coherence pass 2 (2026-11-22)
+
+- **nash was unsound.** Found while adding instances: at n = 3, w = 1 the loop gave 495 solutions,
+  the block-only reference 576. `tools/audit.mjs` confirmed it (8,232 of 58,848 refinements
+  remove a solution). Cause: nash.lp's rules (ii) name `edge(P,Q)`, but edges are `edge/3`, so
+  they never fire. `nashFix` in `tools/make-examples.mjs` corrects them (as `graph-coloring` adds
+  its rule); the audit is then sound at n = 2, n = 3 w = 1 and n = 3 w = 2. Row 11 applies the same
+  fix to the legacy import. nash gained four constants-only instances (12, 36, 576, 4,080).
+- Every working tab opens with the same kind of line: what it is for, with links to its tutorial
+  lesson(s) and manual section(s). `#tut-<lesson>` links open the Tutorial at the lesson, as
+  `#manual-` links open the manual. The intros of Instances and Campaign moved from JS to
+  `index.html`.
+- After an Audit, Statistics and the Observatory show a note that their figures are the audit's
+  (`body[data-last-mode="audit"]`).
+- Candidate space: "alive, a solution" is outlined, "accepted" filled; a button "Record every step,
+  run, compute" replaces the trip to the Loop tab.
+- "Reference run" (tutorial, manual, Loop tab) and "blocking loop" (guide) are tied together in
+  both directions.
+- Audit sweep after the fix: every library example on every instance (except tags slow, hard,
+  original), `tools/audit.mjs --seconds 60`: 155 pairs sound; unsound exactly
+  `tutorial-weak-relevant` and `guide-04-one-node` (they teach it); the others are not auditable
+  (blocks, cores, `G.clauses`, chains, several top links, raw Lua) or hit the time limit
+  (`conformant-planning/example`, two voting instances, `lang-second-solver`, two twelve-item
+  knapsacks).
+- Manual "For agents" workflow: input in instances, expected counts checked with `--instance all`,
+  suites for scaling.
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.

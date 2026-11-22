@@ -13,6 +13,13 @@ export const FIX = `
 % than its colour in the counterexample also breaks the counterexample.
 relevant(leaf_color(N,C)) :- node(N), not leaf(N), color(C), not color(N,C).
 `;
+// nash.lp's rules (ii) name edge(P,Q), but edges are edge/3: the rules never fire, and the
+// loop loses solutions (the audit finds them from n = 3). The example corrects them.
+export function nashFix(text) {
+  const bad = 'player(Q), edge(P,Q), plays';
+  if (text.split(bad).length !== 3) throw new Error('make-examples: nash rules (ii) not found');
+  return text.split(bad).join('player(Q), edge(P,Q,_), plays');
+}
 export const REFINE_PART = `
 #program refine(k).
 % cex(k,color(N,C)): the k-th counterexample colours node N with C. It stops
@@ -210,9 +217,11 @@ export function buildExamples() {
   gc.version = 2;
   const nash = make('nash.lp', 'Nash equilibria',
     'Weighted graphs whose colouring game has a Nash equilibrium (guessed by the abstraction) that the check ' +
-    'tries to refute.',
+    'tries to refute. The check corrects two relevant/1 rules of the original file (edge/3 for edge/2), ' +
+    'without which the loop loses solutions (Audit at n = 3, w = 1: 576 solutions, 81 of them lost).',
     (p) => {
       frag(p, 'glue').text = wrapGlue(frag(p, 'glue').text);
+      frag(p, 'check').text = nashFix(frag(p, 'check').text);
       const a = frag(p, 'abstraction'), c = frag(p, 'check');
       a.text = cut(a.text, `% Optional: require that cumulative size of color sets is large
 %:- not #count { P,C : color_available(P,C) } >= 10.
@@ -277,6 +286,16 @@ export function buildExamples() {
     }, { solutions: 1 });
   vote.settings.constants = { ...vote.instances.find((i) => i.id === VOTE_DEFAULT).constants };
   vote.suites = [{ name: 'questions', instances: { ids: 'all' }, limits: { seconds: 20 } }];
+  // constants-only instances; "" = the project as written (n = 5, w = 3). Counts agree with the
+  // Reference loop (cegarcheck --mode block) and the audit is sound on each.
+  nash.instances = [
+    { id: 'n2-w1', facts: '', constants: { n: '2', w: '1' }, expected: { solutions: 12 }, tags: ['small'] },
+    { id: 'n2', facts: '', constants: { n: '2' }, expected: { solutions: 36 }, tags: [] },
+    { id: 'n3-w1', facts: '', constants: { n: '3', w: '1' }, expected: { solutions: 576 }, tags: [] },
+    { id: 'n3-w2', facts: '', constants: { n: '3', w: '2' }, expected: { solutions: 4080 }, tags: ['slow'] },
+  ];
+  nash.settings.instance = '';
+  nash.version = 2;
   return { 'graph-coloring': gc, nash, 'voting-justification': vote };
 }
 

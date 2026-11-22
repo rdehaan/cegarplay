@@ -578,7 +578,8 @@ grounded in batches of 20 between searches. Each bad candidate is blocked at onc
 
 Shape 1 with `reject M with G.block(M)` as the only refinement. Each bad candidate is ruled out on
 its own, so it is always sound: its solution count is the truth on small instances. Compare a
-loop's count with it to find a `relevant/1` that is too weak.
+loop's count with it to find a `relevant/1` that is too weak (or press Audit). The design guide
+calls it the *blocking loop*.
 
 ## Values: clauses, lists and model reads
 
@@ -935,6 +936,10 @@ library example has a replay in `examples/replays/`. Details: `docs/spec-recordi
 
 ## Output and statistics
 
+After an **Audit**, the Output tab shows its verdict, and the Statistics tab and the Observatory show
+the audit's own solving (one check per candidate of the unrefined abstraction), with a note saying
+so; the next Run replaces them. The run history keeps both.
+
 ### Output tab
 
 - **Result line**: outcome, time, solution count, whether the search was exhausted.
@@ -982,7 +987,8 @@ info annotations. The **Domain view** (see [Writing views](#manual-writing-views
 
 The **Candidate space** region (Observatory) shows every candidate of the unrefined abstraction at
 once, one square each, from the audit's enumeration (so the same limit of 200,000 applies).
-**Compute** needs a run recorded with every step (Recording "every step", Loop tab). The colour of a
+**Compute** needs a run recorded with every step (Recording "every step", Loop tab); without one it
+offers **Record every step, run, compute**, which sets that recording, runs and computes. The colour of a
 square is its fate up to the refinement chosen with the slider or the cursor: alive, alive and a
 solution, removed earlier, removed by this refinement, a lost solution (a solution some refinement
 removed: the run is unsound), an accepted solution; a legend under the map names them. The summary
@@ -1176,10 +1182,11 @@ without the repository.
 ### Workflow
 
 1. Start from a library example close to the problem (`examples/<id>.json`), or from `starter`.
-2. Write the four fragments: domains in `shared`; the candidate guess and `#show` in
-   `abstraction`; `glue(T)` for every atom the check reads; in `check`, rules that have an answer
-   set exactly when the candidate is wrong, plus `relevant(T)` for the atoms each counterexample
-   depends on.
+2. Write the four fragments: domains and derived rules in `shared`; the candidate guess and
+   `#show` in `abstraction`; `glue(T)` for every atom the check reads; in `check`, rules that have
+   an answer set exactly when the candidate is wrong, plus `relevant(T)` for the atoms each
+   counterexample depends on. Put the problem's input in instances (`example` plus a few small
+   ones), not in `shared`.
 3. Pick a template (Shape 1 unless rule refinements are needed); set constants small.
 4. Run it headless (below) or in the page. Fix validation problems first (they name fragment, line
    and column).
@@ -1189,7 +1196,10 @@ without the repository.
 6. Audit the project on small instances (`node tools/audit.mjs <project> --json`). An unsound
    verdict names a lost solution and the atoms it differs on from the candidate; mark one of them
    relevant (or fix the refine part) and audit again.
-7. Only then increase the constants.
+7. Give every instance its `expected.solutions` and check them all:
+   `node tools/run.mjs <project> --instance all --solutions all`.
+8. Only then increase the constants or add larger instances (a suite in `suites` measures how the
+   run time grows: `node tools/bench.mjs <project> --suite NAME`).
 
 ### Headless runner
 

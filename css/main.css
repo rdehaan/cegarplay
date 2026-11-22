@@ -1037,7 +1037,7 @@ tr.mismatch td {
 .space-map { display: block; margin: 6px 0; image-rendering: pixelated; }
 .space-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.85em; margin: 2px 0 6px; }
 .space-legend-item { display: inline-flex; align-items: center; gap: 5px; }
-.space-swatch { display: inline-block; width: 12px; height: 12px; border: 1px solid var(--border); }
+.space-swatch { display: inline-block; box-sizing: border-box; width: 12px; height: 12px; border: 1px solid var(--border); }
 
 /* Lecture mode (?lecture=1): the domain view alone, notes as captions */
 body.lecture header, body.lecture footer, body.lecture .run-bar, body.lecture .tab-label, body.lecture #anatomy,
@@ -1049,3 +1049,12 @@ body.lecture .view-notes { font-size: 28px; text-align: center; list-style: none
 .view-pair { display: flex; flex-wrap: wrap; gap: 8px; }
 .view-pair > .view-svg { flex: 1 1 300px; }
 #view-svg-b svg { width: 100%; height: auto; border: 1px solid var(--border-faint); }
+
+/* the opening line of a tab: what it is for, and where the tutorial and the manual say more */
+.tab-intro { margin-top: 0; }
+.tab-help { display: block; margin-top: 4px; font-size: 0.85em; color: var(--text-muted); }
+
+/* notes shown only while the last action was an audit (body[data-last-mode]) */
+.audit-only { display: none; }
+body[data-last-mode="audit"] .audit-only { display: block; }
+.audit-note { border-left: 3px solid var(--accent); padding: 4px 10px; background: var(--panel); }

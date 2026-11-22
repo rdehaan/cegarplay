@@ -7,7 +7,7 @@ import os from 'node:os';
 import nodePath from 'node:path';
 import * as H from './helpers.mjs';
 import * as P from '../js/project.js';
-import { buildExamples } from '../tools/make-examples.mjs';
+import { buildExamples, nashFix } from '../tools/make-examples.mjs';
 
 const lp = (f) => H.read(`reference/declarative-cegar/${f}`);
 const withSettings = (p, s) => ({ ...p, settings: { ...p.settings, seconds: 0, trace: 0, ...s } });
@@ -72,8 +72,11 @@ test('the example files are up to date', () => {
   }
 });
 
-test('row 11: nash.lp legacy import equals examples/nash.json', async () => {
-  const a = await H.runProject(withSettings(P.importLp(lp('nash.lp')), { solutions: 1 }));
+test('row 11: nash.lp legacy import (with the edge/3 fix) equals examples/nash.json', async () => {
+  const imported = P.importLp(lp('nash.lp'));
+  const check = imported.fragments.find((f) => f.name === 'check');
+  check.text = nashFix(check.text);
+  const a = await H.runProject(withSettings(imported, { solutions: 1 }));
   const b = await H.runProject(withSettings(H.example('nash'), { solutions: 1 }));
   assert.equal(H.last(b, 'E'), undefined);
   assert.equal(H.stripTimes(H.finalStats(a)), H.stripTimes(H.finalStats(b)));

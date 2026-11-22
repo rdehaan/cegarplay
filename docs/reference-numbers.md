@@ -44,7 +44,7 @@ per-solver propagator do not change them (the spike has both).
 | # | Check | Expected |
 | --- | --- | --- |
 | 10 | Graph colouring n=6, original rules, Shape 2, all | Between 9,270 and 10,697 solutions (the original rules lose solutions; how many depends on the search order; observed 9,277). Slow: about 7 s. |
-| 11 | `nash.lp` imported with `legacy` vs. `examples/nash.json` (glue wrapped), Shape 1, solutions = 1 | Identical statistics in both runs |
+| 11 | `nash.lp` imported with `legacy`, with the `edge/3` fix of its rules (ii), vs. `examples/nash.json` (glue wrapped), Shape 1, solutions = 1 | Identical statistics in both runs. (Without the fix the loop is unsound from n = 3: the audit at n = 3, w = 1 finds 8,232 of 58,848 refinements removing a solution; 495 of 576 solutions found.) |
 | 12 | Graph colouring: `legacy` import of the original file (original rules), n=6, Shape 1, all | 9,270 solutions (the example `graph-coloring-original` that row 12 used to compare with was removed) |
 | 13 | Any compiled template vs. the hand-written Lua in `spike/js/shapes.mjs` | Identical statistics |
 
