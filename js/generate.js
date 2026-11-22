@@ -76,5 +76,7 @@ export function hashText(s) {
 
 export function recipeKey(project, recipe) {
   const g = (project.generators || []).find((x) => x.name === recipe.generator);
-  return hashText(JSON.stringify([g ? g.text : '', g ? g.params : null, recipe.params || {}, recipe.seed || 0, recipe.attempts || 100]));
+  // the parameter values as the run sees them (recipe params over the generator's defaults)
+  const values = g ? paramList(g, recipe.params || {}).list : [];
+  return hashText(JSON.stringify([g ? g.text : '', values, recipe.params || {}, recipe.seed || 0, recipe.attempts || 100]));
 }

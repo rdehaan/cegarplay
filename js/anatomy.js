@@ -422,7 +422,8 @@ export class Anatomy {
     if (!rows.length) { this.table.append(h('tr', {}, h('td', { colspan: 6 }, 'No calls recorded.'))); return; }
     const text = this.app.editors && this.app.editors.loop ? this.app.editors.loop.session.getDocument().getAllLines() : [];
     for (const r of rows) {
-      const src = r.line && text[r.line - 1] ? text[r.line - 1].trim() : '';
+      // the loop source beside a row only when the line is a loop line (not in a replay)
+      const src = this.assembled && r.line && text[r.line - 1] ? text[r.line - 1].trim() : '';
       const tr = h('tr', { 'data-line': r.line ?? '', class: r.line !== null && r.line === this.filterLine ? 'selected' : '' },
         h('td', {}, r.line === null ? '(outside the script)' : h('a', { href: '#', onclick: (e) => { e.preventDefault(); this.pickLine(r.line); } }, `${this.assembled ? '' : 'program '}${r.line}`), src ? h('code', { class: 'anatomy-src' }, ' ' + (src.length > 50 ? src.slice(0, 49) + '…' : src)) : null),
         h('td', { class: 'num' }, fmt(r.calls)), h('td', { class: 'num' }, fmt(r.sat)), h('td', { class: 'num' }, fmt(r.unsat)),

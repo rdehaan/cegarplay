@@ -521,12 +521,19 @@ Notes per phase:
   - The Link field is `lifting`: a field `lift` would be shadowed by the method `Link:lift`
     when absent (cost a confusing "index nil LIFT" error).
 
-**Next step (PLAN2):** fix the confirmed findings of the wave-2 review (commit separately):
-(1) `heads_for` drops interface-atom heads of normal check rules, so level 2/3 certify unsound
-clauses (a rule `a :- g.` with `a` an interface atom acts as a constraint); (2) the level-3 product
-is cached per link and never rebuilt after `S:expand`; (3) `recipeKey` ignores generator
-`defaults`; (4) `tools/draw.py` lacks the argument checks of `lua/draw.lua`, and `recipe_facts`
-passes unknown/empty params. Then I3 Campaigns.
+- **Review of wave 2 (S2, I2, V2):** an agent confirmed four bugs, all fixed with tests:
+  (1) `heads_for` dropped interface-atom heads of normal check rules, so levels 2 and 3 certified
+  unsound clauses; such a rule is now the constraint `:- body, not a` in level 2 (`guard`) and in
+  the product (`violated :- body, not A(a)`); (2) the level-3 product was cached per link for
+  good; it is rebuilt when a store grows (`st.version`), and the cached level-2 heads too;
+  (3) `recipeKey` now hashes the parameter values as the run sees them (defaults included);
+  (4) `tools/draw.py` has the argument checks of `lua/draw.lua`, `recipe_facts` uses the declared
+  parameters only, as `paramList`. Also: the anatomy line table shows no loop source in a replay.
+  Not fixed (plausible only): checks with two incoming links treat the other link's atoms as
+  fixed guesses; `#external`/`#minimize` are not observed; `#show 5.` gives facts `5.` (caught by
+  the run's validation).
+
+**Next step (PLAN2):** I3 Campaigns (`docs/directions/instance-lab.md`, phase I3).
 
 ## Next step (PLAN.md, guide, TODO)
 

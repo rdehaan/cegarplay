@@ -375,8 +375,26 @@ def recipe_facts(project, recipe):
     g = gens.get(recipe.get("generator"))
     if g is None:
         raise CheckError(f"no generator named '{recipe.get('generator')}'")
-    params = dict(g.get("defaults") or {})
-    params.update(recipe.get("params") or {})
+    # as js/generate.js paramList: the declared parameters only, a recipe value over the default
+    types = g.get("params") or {}
+    given, defaults = recipe.get("params") or {}, g.get("defaults") or {}
+    params = {}
+    for k, t in types.items():
+        v = given.get(k)
+        if v is None or v == "":
+            v = defaults.get(k)
+        if v is None or v == "":
+            raise CheckError(f"generator {g['name']}: parameter {k} has no value")
+        try:
+            x = int(v)
+        except (TypeError, ValueError):
+            raise CheckError(f"generator {g['name']}: parameter {k} must be a whole number, got {v}")
+        if t == "permille" and not 0 <= x <= 1000:
+            raise CheckError(f"generator {g['name']}: parameter {k} is a permille value (0..1000), got {v}")
+        params[k] = x
+    unknown = [k for k in given if k not in types]
+    if unknown:
+        raise CheckError(f"generator {g['name']}: unknown parameter {unknown[0]}")
     return generate(g["text"], params, int(recipe.get("seed") or 0), int(recipe.get("attempts") or 100))["facts"]
 
 

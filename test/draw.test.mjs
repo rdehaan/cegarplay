@@ -133,3 +133,18 @@ test('cegarcheck.py --instance with a recipe gives the same count', { skip: !HAV
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, new RegExp(`Solutions: ${H.finalStats(own).solutions};`));
 });
+
+test('review fixes: the recipe cache sees a changed default; the Python twin refuses what Lua refuses', async () => {
+  const { recipeKey } = await import('../js/generate.js');
+  const p = { generators: [{ ...GNP, defaults: { n: 7, p: 300 } }] };
+  const a = recipeKey(p, { generator: 'gnp', params: { n: 7 }, seed: 1 });
+  p.generators[0].defaults = { n: 7, p: 400 };
+  assert.notEqual(recipeKey(p, { generator: 'gnp', params: { n: 7 }, seed: 1 }), a);
+  const r = py(`from draw import Draws, DrawError
+bad = 0
+for f in (lambda d: d.perm(5, 0), lambda d: d.weighted([5, -2, 3]), lambda d: d.mallows(3, 2000, 1), lambda d: d.subset(2, 4, 9)):
+    try: f(Draws(1, 0))
+    except DrawError: bad += 1
+print(bad)`);
+  assert.equal(r.stdout.trim(), '4', r.stderr);
+});

@@ -44,6 +44,7 @@ local function capture(st, choice, head, body, lower)
   if not choice and #head > 1 then st.disjunctive = true end
   st.rules[#st.rules + 1] = r
   st.posocc = nil
+  st.version = (st.version or 0) + 1
 end
 
 function LIFT.capture(s)
@@ -90,10 +91,16 @@ end
 -------------------------------------------------------------------------------
 -- The heads each rule has in P[X]: a choice rule keeps a head atom that is true in X (as a normal
 -- rule) and loses it otherwise; the link's interface atoms are inputs, never heads.
+-- A normal rule whose head is an interface atom (`a :- g.` with `a` an input) derives nothing in
+-- the check; it acts as the constraint `:- body, not a`: H[ri] = { guard = { a } } (no heads).
 local function heads_for(st, tv, isint)
   local H = {}
   for ri, r in ipairs(st.rules) do
     if #r.head == 0 then H[ri] = false            -- a constraint
+    elseif not r.choice and isint[r.head[1]] then
+      local g = {}
+      for _, h in ipairs(r.head) do if isint[h] then g[#g + 1] = h end end
+      H[ri] = { guard = g }
     else
       local hs = {}
       for _, h in ipairs(r.head) do
@@ -195,7 +202,7 @@ function LIFT.level2(L, X, vals)
   local hk = X.heads
   if not hk then hk = {}; X.heads = hk end
   local H = hk[L]
-  if not H then H = heads_for(st, tv, isint); hk[L] = H end
+  if not H or hk[L.name] ~= st.version then H = heads_for(st, tv, isint); hk[L] = H; hk[L.name] = st.version end
   local inK, inPT = {}, {}
   for j = 1, L.n do
     local a, v = L.dst[j], vals[j]
@@ -217,6 +224,11 @@ function LIFT.level2(L, X, vals)
     local hs = H[ri]
     if hs == false then
       if holds(r, PT, K) then return false, "constraint" end             -- (a)
+    elseif hs.guard then
+      -- `:- body, not a` for an interface head a: fine only when a is certainly true
+      local safe = false
+      for _, a in ipairs(hs.guard) do if K[a] then safe = true end end
+      if not safe and holds(r, PT, K) then return false, "an interface atom as a rule head" end
     elseif #hs > 0 and holds(r, PT, K) then
       for _, h in ipairs(hs) do
         if PT[h] and not K[h] then
@@ -277,9 +289,12 @@ end
 -- Build Q: A's rules, C's rules with C's interface atoms (of link L) identified with A's, each
 -- guess of C switched by a sel atom, and each constraint of C deriving `violated`.
 function LIFT.product(L)
-  if L.product ~= nil then return L.product end
   local A, C = L.from, L.to
   local sa, sc = A.store, C.store
+  -- rebuilt when either program grew (an expansion) since the last build
+  local key = tostring(sa and sa.version) .. ":" .. tostring(sc and sc.version)
+  if L.product ~= nil and L.product_key == key then return L.product end
+  L.product_key = key
   L.product = false
   if not sa or not sc or sa.error or sc.error then L.product_reason = "no ground program"; return false end
   if sc.disjunctive or sa.disjunctive then L.product_reason = "disjunctive"; return false end
@@ -337,6 +352,20 @@ function LIFT.product(L)
               b:add_rule{ head = { cm(h) }, body = bb }
             end
           end
+        end
+      elseif isint[r.head[1]] then
+        -- an interface atom as the head of a normal rule: the constraint `:- body, not a`
+        local j = isint[r.head[1]]
+        local na = -am(L.src[j])
+        if r.w then
+          local aux = b:add_atom()
+          add({ aux }, body, r, false)
+          b:add_rule{ head = { violated }, body = { aux, na } }
+        else
+          local bb = {}
+          for i, l in ipairs(body) do bb[i] = l end
+          bb[#bb + 1] = na
+          b:add_rule{ head = { violated }, body = bb }
         end
       else
         local hs = {}

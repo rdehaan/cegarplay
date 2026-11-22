@@ -53,6 +53,8 @@ class Draws:
         return lo + self.draw(hi - lo + 1, "int", keys)
 
     def weighted(self, ws, *keys):
+        if any(w < 0 for w in ws):
+            raise DrawError("weighted: a weight is negative")
         t = self.draw(sum(ws), "weighted", keys)
         for i, w in enumerate(ws, 1):
             if t < w:
@@ -69,13 +71,31 @@ class Draws:
             self._perms[ident] = p
         return self._perms[ident]
 
+    @staticmethod
+    def _size(n, what):
+        if n < 1 or n > 100000:
+            raise DrawError(f"{what} must be in 1..100000")
+        return n
+
+    @staticmethod
+    def _index(i, n, what):
+        if i < 1 or i > n:
+            raise DrawError(f"{what} {i} is outside 1..{n}")
+        return i
+
     def perm(self, n, i, *keys):
-        return self._perm(n, keys)[i - 1]
+        self._size(n, "perm: n")
+        return self._perm(n, keys)[self._index(i, n, "perm: i") - 1]
 
     def subset(self, m, n, i, *keys):
-        return 1 if self._perm(n, keys)[i - 1] <= m else 0
+        self._size(n, "subset: n")
+        return 1 if self._perm(n, keys)[self._index(i, n, "subset: i") - 1] <= m else 0
 
     def mallows(self, n, phi, i, *keys):
+        self._size(n, "mallows: n")
+        self._index(i, n, "mallows: i")
+        if phi < 0 or phi > 1000:
+            raise DrawError("mallows: phi must be in 0..1000")
         ident = self._key(f"mallows{n}/{phi}", keys)
         if ident not in self._rank:
             order = []

@@ -134,3 +134,58 @@ test('safety: over the fast single-link clause examples, no unsound refinement i
   assert.ok(checked >= 35, `checked ${checked} examples`);
   assert.ok(certified > 1000, `${certified} certified refinements`);
 });
+
+// Review of wave 2: an interface atom as the head of a check rule, and a product built before
+// an expansion of the check.
+test('an interface atom as the head of a check rule acts as a constraint (levels 2 and 3)', async () => {
+  const p = H.projectOf({
+    shared: '',
+    abstraction: '{a;b}. #heuristic a. [10,true] #heuristic b. [10,true]',
+    glue: 'glue(a). glue(b).',
+    check: '{g}. a :- g. ok :- g. :- not ok. relevant(b).',
+  }, { certify: 'report', solutions: 0 });
+  const lua = `
+    local A = rt.solver("A", {"shared", "abstraction"}, {"--heuristic=Domain"})
+    local C = rt.solver("C", {"shared", "check"}, {})
+    local G = rt.link("G", A, C, {"shared", "glue"}, {})
+    rt.prepare()
+    while true do
+      local M = A:solve{}
+      if not M then rt.stop() end
+      local X = C:solve{ assume = G:of(M) }
+      if X then A:add(G:clause(M, X)) else rt.accept(M); A:add(G:block(M)) end
+    end
+`;
+  const r = await H.runLua(p, lua, { modules: [H.read('lua/ground.lua')] });
+  const K = H.ofKind(r, 'K');
+  assert.ok(K.length > 0);
+  // the clause from {a, b} (relevant b only) removes the solution {b}: it must not be certified
+  assert.ok(K.every((k) => k.level !== 2 && k.level !== 3), JSON.stringify(K));
+});
+
+test('the level-3 product is rebuilt after the check is expanded', async () => {
+  const p = H.projectOf({
+    shared: '',
+    abstraction: '{a;b;c}. :- a, b. #heuristic a. [10,false] #heuristic b. [10,true] #heuristic c. [10,true]',
+    glue: 'glue(a). glue(b). glue(c).',
+    check: '{g}. :- not g. :- a, b. relevant(b) :- not e. relevant(c) :- e.\n#program more(k).\ne. :- a.',
+  }, { certify: 'report', solutions: 0 });
+  const lua = `
+    local A = rt.solver("A", {"shared", "abstraction"}, {"--heuristic=Domain"})
+    local C = rt.solver("C", {"shared", "check"}, {})
+    local G = rt.link("G", A, C, {"shared", "glue"}, {})
+    rt.prepare()
+    local M1 = A:solve{}
+    local X1 = C:solve{ assume = G:of(M1) }
+    A:add(G:clause(M1, X1))
+    C:expand("more", {})
+    local M2 = A:solve{}
+    local X2 = C:solve{ assume = G:of(M2) }
+    A:add(G:clause(M2, X2))
+`;
+  const r = await H.runLua(p, lua, { modules: [H.read('lua/ground.lua')] });
+  const K = H.ofKind(r, 'K');
+  assert.equal(K.length, 2, JSON.stringify(H.ofKind(r, 'E')));
+  // the second clause (b) removes {a} and {a, c}, which have no counterexample after the expansion
+  assert.ok(K[1].level !== 3 && K[1].level !== 2, JSON.stringify(K[1]));
+});
