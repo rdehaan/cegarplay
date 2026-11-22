@@ -103,3 +103,24 @@ test('tools/bench.mjs: two shards together give the rows of an unsharded run; --
   assert.match(again.stderr, /20 cells: 0 run, 20 from earlier/);
   fs.copyFileSync(`${dir}/all.jsonl`, `${SCRATCH}/cegarplay-bench-qbf.jsonl`);
 });
+
+test('review of wave 3: run settings and the engine tag change the key; skipped and invalid rows are decided again', async () => {
+  const { engineTag } = await import('../js/campaign.js');
+  const p = ex('tutorial-weak-relevant');
+  const suite = p.suites[0];
+  const c = expandSuite(p, suite)[0];
+  const k0 = await cellKey(p, c, suite, 'v');
+  const q = structuredClone(p); q.settings.certify = 'exact';
+  assert.notEqual(await cellKey(q, c, suite, 'v'), k0);
+  assert.notEqual(engineTag('v', 'runtime a'), engineTag('v', 'runtime b'));
+  const store = new MemoryStore();
+  const s1 = { ...suite, where: ['solutions(reference) >= 100'] };
+  const a = await runSuite(p, s1, opts({ store }));
+  assert.ok(a.rows.filter((r) => r.skipped).length === 5);
+  const b = await runSuite(p, { ...suite, where: ['solutions(reference) >= 1'] }, opts({ store }));
+  assert.equal(b.rows.filter((r) => r.skipped).length, 0);
+  assert.equal(b.ran, 5);
+  await store.put({ ...b.all[0], outcome: 'invalid' });
+  const d = await runSuite(p, suite, opts({ store }));
+  assert.equal(d.ran, 1);
+});

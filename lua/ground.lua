@@ -700,8 +700,12 @@ function LIFT.lift(L, M, X)
   co.kept = co.kept + #c
   c.lifted = level
   if #c == 0 then
-    -- every candidate fails: the empty clause (the abstraction becomes unsatisfiable)
-    c.empty = true
+    -- every candidate fails, but the runtime adds no empty clause: keep one atom (a clause with
+    -- more literals removes fewer candidates, so it stays certified)
+    local j = 1
+    c[1] = v[j] and -lits[j] or lits[j]
+    c.j[1] = j
+    co.kept = co.kept + 1
   end
   return c
 end

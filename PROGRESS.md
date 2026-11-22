@@ -572,10 +572,19 @@ Notes per phase:
     expansion), not extended in place. subset-sum-game and integer-expressions need no level 4
     (level 3 certifies all their clauses).
 
-**Next step (PLAN2):** fix the confirmed findings of the wave-3 review (separate commit): empty
-lifted clause errors; standalone export lacks modules (lift/certify); `where` and run settings
-(certify, record, runtime/module texts) missing from cell keys; bench --resume keeps invalid
-rows; frameFacts on expansion T events and deeply nested atoms. Then I4 Fuzz and shrink.
+- **Review of wave 3 (S3, I3, V3):** six confirmed bugs, fixed with tests: an empty lifted clause
+  stopped the run (now one atom is kept: a superset of a certified set stays sound); the
+  standalone export lacked `lua/ground.lua` for lift/certify projects (`exportStandalone(p,
+  runtime, modules)`); stored skipped rows outlived a changed `where` and invalid rows were never
+  retried (both are now decided again, skipped rows are not stored); run settings (certify,
+  record, ...) and the runtime/module texts (`engineTag`) are in the cell key; `frameFacts` read
+  expansion T events as R events and split deeply nested atoms (now a scanner).
+  Not fixed (plausible only): raw Lua `G:lift` without `lift = true` does not load ground.lua;
+  `where` filters have little effect under shards; `-p(1)` interface atoms in frameFacts;
+  `ViewPanel.suggest` may meet a busy frame engine; no timeout for view frames; ThreadPool has no
+  error listener.
+
+**Next step (PLAN2):** I4 Fuzz and shrink (`docs/directions/instance-lab.md`, phase I4).
 
 ## Next step (PLAN.md, guide, TODO)
 

@@ -131,3 +131,26 @@ test('a counterexample that cannot be certified falls back to a block, with a K 
   const k = H.ofKind(r, 'K');
   assert.ok(k.length > 0 && k.every((x) => x.level === 0 && /lift fallback/.test(x.reason)), JSON.stringify(k[0]));
 });
+
+test('review of wave 3: a lift clause that would be empty keeps one atom; the standalone export of a lift project runs', async () => {
+  const p = {
+    fragments: [
+      { name: 'shared', text: 'item(1..3).\n' },
+      { name: 'abstraction', text: '{ pick(I) : item(I) }.\n#show pick/1.\n' },
+      { name: 'glue', text: 'glue(pick(I)) :- item(I).\n' },
+      { name: 'check', text: 'cx.\n' },
+    ],
+    loop: { language: 'loop', text: 'solver A = shared + abstraction\nsolver C = shared + check\nlink G = A -> C via shared + glue lift\n' +
+      'search A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n' },
+    settings: { constants: {}, solutions: 0, seconds: 0, candidates: 0, trace: 0, seed: 0 },
+  };
+  const r = await H.runProject(p);
+  assert.equal(H.done(r).outcome, 'finished', JSON.stringify(H.ofKind(r, 'E')));
+  assert.equal(H.finalStats(r).solutions, 0);
+  const { exportStandalone } = await import('../js/project.js');
+  const q = lifted(ex('tutorial-weak-relevant'));
+  const text = exportStandalone(load(JSON.stringify({ format: 'cegarplay', ...q })), H.RUNTIME, { ground: H.read('lua/ground.lua') });
+  const out = await H.run(text, '--outf=3');
+  assert.ok(out.out.some((l) => /^Solutions\s*:\s*61\b/.test(l) || /"solutions":61/.test(l)) || out.out.join('\n').includes('61'), out.out.slice(-5).join('\n'));
+  assert.ok(!out.out.join('\n').includes('lift needs lua/ground.lua'));
+});

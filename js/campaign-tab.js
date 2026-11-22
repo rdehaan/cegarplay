@@ -1,6 +1,6 @@
 // Campaign tab (tab 10, docs/spec-instances.md section 5): a suite editor, Start / Pause /
 // Resume / Abort, a progress grid, four plots and a growth fit, on rows kept in IndexedDB.
-import { runSuite, expandSuite, cellKey, inconsistencies, scaling, growthFit, solvedCurves, SuiteError } from './campaign.js';
+import { runSuite, expandSuite, cellKey, inconsistencies, scaling, growthFit, solvedCurves, SuiteError, engineTag } from './campaign.js';
 import { Pool, defaultPoolSize } from './pool.js';
 import { IdbStore, MemoryStore, exportRows, importRows } from './store.js';
 import { fmt } from './output.js';
@@ -110,6 +110,8 @@ export class CampaignTab {
     this.app.dirty();
   }
 
+  tag() { return engineTag(this.app.engineVersion || '', this.app.runtime || '', { ground: (this.app.modules || {}).ground || '' }); }
+
   say(text, error = false) { this.status.textContent = text; this.status.classList.toggle('error', error); }
 
   setRunning(on) {
@@ -126,7 +128,7 @@ export class CampaignTab {
     let cells;
     try { cells = expandSuite(this.app.project, s); } catch { return []; }
     const keys = new Set();
-    for (const c of cells) keys.add(await cellKey(this.app.project, c, s, this.app.engineVersion || ''));
+    for (const c of cells) keys.add(await cellKey(this.app.project, c, s, this.tag()));
     const store = await this.storeP;
     return (await store.all()).filter((r) => keys.has(r.key));
   }
@@ -155,7 +157,7 @@ export class CampaignTab {
     try {
       const res = await runSuite(this.app.project, s, {
         runJob: async (job) => { if (this.gate) await this.gate.promise; if (signal.aborted) return { outcome: 'aborted' }; return pool.run(job); },
-        store, signal, jobs: size, engineVersion: this.app.engineVersion || '',
+        store, signal, jobs: size, engineVersion: this.tag(),
         engineRun: (p, o) => this.app.engine.exec(p, o), luaTexts: this.app.genLua(), runtime: this.app.runtime, modules: this.app.modules,
         onProgress: (row, done, total) => {
           this.rows.push(row);

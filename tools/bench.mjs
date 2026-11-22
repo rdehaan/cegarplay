@@ -10,7 +10,7 @@ import os from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import factory from '../vendor/clingo-wasm/clingo.js';
 import { load } from '../js/project.js';
-import { runSuite, parseShard, inconsistencies, Reducer } from '../js/campaign.js';
+import { runSuite, parseShard, inconsistencies, Reducer, engineTag } from '../js/campaign.js';
 import { MemoryStore, importRows } from '../js/store.js';
 import { parseEvent } from '../js/driver.js';
 
@@ -83,7 +83,7 @@ export async function bench(project, suiteName, { jobs = 1, shard = null, store 
   try {
     return await runSuite(project, suite, {
       runJob: (job) => pool.run(job), store, engineRun, luaTexts: { draw: lua('draw.lua'), generate: lua('generate.lua') },
-      runtime: lua('runtime.lua'), modules: { ground: lua('ground.lua') }, engineVersion: engineVersion(), shard, jobs,
+      runtime: lua('runtime.lua'), modules: { ground: lua('ground.lua') }, engineVersion: engineTag(engineVersion(), lua('runtime.lua'), { ground: lua('ground.lua') }), shard, jobs,
       onProgress: (row, done, total, old) => { if (!old) onRow(row, done, total); },
     });
   } finally { pool.close(); }

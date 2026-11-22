@@ -74,14 +74,29 @@ const plainText = (t) => (t.str !== undefined ? t.str : termText(t));
 
 // ---- step facts ---------------------------------------------------------------------------
 const KIND = { r: 'reject', a: 'add', e: 'expand', s: 'solution', x: 'error' };
-const atomsOf = (text) => (String(text || '').match(/-?[a-z_][A-Za-z0-9_']*(\((?:[^()"]|"(?:[^"\\]|\\.)*"|\((?:[^()"]|"(?:[^"\\]|\\.)*")*\))*\))?/g) || []);
+// The atoms of a space-separated atom text (any nesting of parentheses, strings with spaces).
+function atomsOf(text) {
+  const s = String(text || ''), out = [];
+  let depth = 0, inStr = false, cur = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) { cur += c; if (c === '\\') { cur += s[++i] || ''; } else if (c === '"') inStr = false; continue; }
+    if (c === '"') { inStr = true; cur += c; continue; }
+    if (c === '(') depth++;
+    else if (c === ')') depth--;
+    if (/\s/.test(c) && depth === 0) { if (cur) out.push(cur); cur = ''; continue; }
+    cur += c;
+  }
+  if (cur) out.push(cur);
+  return out;
+}
 
 // The facts of one step: step/1, kind/1, cand/1, cex/1 (T events only) and lit/2 (an atom and
 // true or false: the value the clause asks for). step: a T event, or an R event with the
 // interface atoms of its link (iface: atom texts, index j - 1 = atom j).
 export function frameFacts(step, iface = []) {
   const out = [];
-  if (step.kind !== undefined && step.literals !== undefined) {           // a T event
+  if (typeof step.kind === 'string' && step.k === undefined) {           // a T event (also an expansion: facts, no literals)
     out.push(`step(${step.i}).`, `kind(${step.kind}).`);
     for (const a of atomsOf(step.candidate)) out.push(`cand(${a}).`);
     for (const a of atomsOf(step.counterexample)) out.push(`cex(${a}).`);

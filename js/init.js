@@ -411,7 +411,7 @@ $('share-button').addEventListener('click', async () => {
 
 $('export-standalone-button').addEventListener('click', () => {
   const p = app.collect();
-  try { download(slug(p.title) + '-standalone.lp', Project.exportStandalone(p, app.runtime), 'text/plain'); status('export-status', 'Exported the standalone program (run it with: clingo file.lp --outf=3).'); }
+  try { download(slug(p.title) + '-standalone.lp', Project.exportStandalone(p, app.runtime, app.modules), 'text/plain'); status('export-status', 'Exported the standalone program (run it with: clingo file.lp --outf=3).'); }
   catch (e) { status('export-status', e.message || String(e), true); }
 });
 

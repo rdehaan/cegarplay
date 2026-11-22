@@ -1,6 +1,6 @@
 // Project model, load/save, import of cegar.py files, standalone export. No DOM, no Node APIs.
 import { compile } from './compiler.js';
-import { assemble, DEFAULT_SETTINGS, stripAspComments } from './driver.js';
+import { assemble, DEFAULT_SETTINGS, stripAspComments, modulesFor } from './driver.js';
 
 export const FORMAT = 'cegarplay';
 export const VERSION = 2;
@@ -446,7 +446,8 @@ export function importLp(text, title = 'Imported') {
   return p;
 }
 
-export function exportStandalone(project, runtimeLua) {
+// modules: { ground, ... } the Lua module texts (lua/<name>.lua) a project may need (lift, certify).
+export function exportStandalone(project, runtimeLua, modules = {}) {
   project = derive(project);                // the instance the run bar picks
   let compiled = null;
   if (project.loop.language === 'loop') {
@@ -454,7 +455,9 @@ export function exportStandalone(project, runtimeLua) {
     if (!c.ok) throw new ProjectError('the loop script has errors: ' + c.errors.map((e) => `line ${e.line}: ${e.message}`).join('; '));
     compiled = c;
   }
-  const { program } = assemble(project, compiled, runtimeLua, { plain: true });
+  const need = modulesFor(project.settings, { compiled, loop: project.loop });
+  for (const m of need) if (!modules[m]) throw new ProjectError(`the export needs lua/${m}.lua`);
+  const { program } = assemble(project, compiled, runtimeLua, { plain: true, modules: need.map((m) => modules[m]) });
   const header = [
     `% ${project.title || 'CegarPlay project'}: standalone program exported from CegarPlay.`,
     '%',

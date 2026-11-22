@@ -123,12 +123,24 @@ export async function cellKey(project, cell, suite, engineVersion = '') {
   } else {
     d = derive(c.project, { instance: c.instance, variant: c.variant });
   }
-  const text = JSON.stringify([d.fragments.map((f) => [f.name, f.text]), d.loop, d.settings.constants, d.recipe || null,
-    c.settings, engineVersion]);
+  // every setting that changes a run (certify, record, ...) with the cell's own settings over them
+  const { constants, ...rest } = d.settings;
+  const settings = Object.fromEntries(Object.entries({ ...rest, ...c.settings }).sort(([a], [b]) => a.localeCompare(b)));
+  const text = JSON.stringify([d.fragments.map((f) => [f.name, f.text]), d.loop, constants, d.recipe || null,
+    settings, engineVersion]);
   return sha256(text);
 }
 
 // Shard i of n (0-based): the cells whose key, read as a number, is i modulo n.
+// The engine tag of the keys: the engine version and a hash of the runtime and module texts, so
+// a changed runtime does not reuse stale rows.
+export function engineTag(version, runtime = '', modules = {}) {
+  const parts = [runtime, ...Object.keys(modules).sort().map((k) => `${k}:${modules[k] || ''}`)].join('\n');
+  let h = 0x811c9dc5;
+  for (let i = 0; i < parts.length; i++) { h ^= parts.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return `${version}|${h.toString(16)}`;
+}
+
 export function inShard(key, shard) {
   if (!shard) return true;
   const n = BigInt(shard.n), i = BigInt(shard.i);
@@ -238,14 +250,15 @@ export async function runSuite(project, suite, opts) {
     return { program: assemble(d, compiled, runtime, { modules: mods }).program, seconds: d.settings.seconds };
   }
   async function one(c) {
-    const old = store && await store.get(c.key);
+    // a stored row counts unless it was skipped by a filter or invalid (both are decided again)
+    const old0 = store && await store.get(c.key);
+    const old = old0 && !old0.skipped && old0.outcome !== 'invalid' ? old0 : null;
     if (old) { done.set(c.key, old); skipped++; count++; onProgress(old, count, total, true); return; }
     if (filters.length && !named.has(c.variant)) {
       const w = evalWhere(filters, instRows(c));
       if (w === false) {
         const row = { key: c.key, suite: suite.name, instance: c.instance, variant: c.variant, seed: c.seed, params: c.params, skipped: 'where', outcome: 'skipped' };
         done.set(c.key, row); rows.push(row); count++;
-        if (store) await store.put(row);
         onProgress(row, count, total, false);
         return;
       }

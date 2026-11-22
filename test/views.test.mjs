@@ -128,3 +128,8 @@ test('suggestView output parses for every clause-based fast example', async () =
   console.log(`# suggestView parses for ${n} clause-based fast examples`);
   assert.ok(n >= 40, `${n}`);
 });
+
+test('review of wave 3: frameFacts on expansion steps and deeply nested atoms', () => {
+  const f = frameFacts({ i: 3, kind: 'expand', solver: 'A', candidate: 'p(f(g(1))) q((1,(2,3))) s("a b")', counterexample: 'c(1)', facts: ['cex(1,color(1,2))'] });
+  assert.deepEqual(f, ['step(3).', 'kind(expand).', 'cand(p(f(g(1)))).', 'cand(q((1,(2,3)))).', 'cand(s("a b")).', 'cex(c(1)).', 'fact(cex(1,color(1,2))).']);
+});
