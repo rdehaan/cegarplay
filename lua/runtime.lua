@@ -171,9 +171,11 @@ local function stats_event()
   for k, v in pairs(rt.counters) do counters[k] = v end
   local hist = array({})
   for i = 1, 8 do hist[i] = rt.hist[i] end
-  return { t = clock() - rt.t0, candidates = rt.candidates, counterexamples = rt.counterexamples,
+  local e = { t = clock() - rt.t0, candidates = rt.candidates, counterexamples = rt.counterexamples,
     solutions = rt.solutions, clauses = rt.clauses, literals = rt.literals, maxlen = rt.maxlen, hist = hist,
     expansions = rt.expansions, restarts = rt.restarts, blocks = rt.blocks, solvers = sv, counters = counters }
+  if rt.stats_extra then rt.stats_extra(e) end
+  return e
 end
 
 local function send_stats()
@@ -212,6 +214,8 @@ end
 
 -- Timing with exclusive times: nested solve time is subtracted from the enclosing one.
 local REC = nil           -- SETTINGS.record when recording (docs/spec-recording.md), set in rt.prepare
+local record             -- defined with the recording helpers below (used earlier, in Link:clause)
+local rng = 0            -- the state of the sample policy's generator (seeded in rt.prepare)
 rt.calls = 0
 local function timer_start(s)
   local fr = { s = s, t0 = clock(), child = 0 }
@@ -398,6 +402,7 @@ function rt.solver(name, frags, options)
   for _, c in ipairs(rt.captures) do s.caps[c.key] = { name = c.name, arity = c.arity } end
   rt.solvers[#rt.solvers + 1] = s
   s.index = #rt.solvers
+  if rt.on_solver then rt.on_solver(s) end       -- lua/ground.lua: capture the ground program
   return s
 end
 
@@ -656,6 +661,7 @@ local function snapshot(s, m)
     owner[t] = M
   end
   if #s.inn == 0 or tracing() then M.shown = tostring(m) end
+  if s.truth and #s.inn > 0 then M.tv = s.truth(m) end
   local cost = m.cost
   if cost and #cost > 0 then M.cost = cost end
   return M
@@ -761,7 +767,6 @@ rt.hexvec = hexvec
 
 rt.recorded = 0          -- R events seen (the step number i)
 local ring, ring_n = {}, 0
-local rng = 0
 local function rec_rand(n)          -- a small LCG: the sample is the same for the same seed
   rng = (rng * 1103515245 + 12345) % 2147483648
   return rng % n + 1
@@ -805,7 +810,7 @@ local function rec_flush()
 end
 
 -- kind: r (reject), a (add), e (expand), s (solution), x (error)
-local function record(kind, s, c, M, facts)
+record = function(kind, s, c, M, facts)
   if not REC or REC.steps == "off" then return end
   local L = c and c.link or (M and M.solver.out[1]) or (s and s.out[1])
   local obj = { k = kind, s = s and s.index or NULL, l = L and L.index or NULL, n = loop_line(),
@@ -842,6 +847,7 @@ function Model:reject(c)
     count_clause(cl)
     trace("reject", s, cl, self)
     if REC then record("r", s, cl, self) end
+    if rt.certify then rt.certify(s, cl) end
     if not self.rejected and i == 1 then
       local ass = self.control.assignment
       for k = 1, #cl do
@@ -976,6 +982,7 @@ local function queue_clause(s, c)
   count_clause(c)
   trace("add", s, c, c.m)
   if REC then record("a", s, c, c.m) end
+  if rt.certify then rt.certify(s, c) end
 end
 
 function Solver:add(c)

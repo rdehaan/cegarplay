@@ -1,5 +1,5 @@
 // Run bar and run flow (spec-app.md section 6).
-import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody } from './driver.js';
+import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody, modulesFor } from './driver.js';
 import { TEMPLATES, template, derive } from './project.js';
 import { hashText } from './stats.js';
 import { fmt } from './output.js';
@@ -187,8 +187,9 @@ export class Control {
     const iso = app.engine.isolated && !!app.engine.control;
     const run = mode === 'audit'
       ? { ...project, settings: { ...project.settings, solutions: 0, candidates: 0, trace: 0 } } : project;
+    const modules = modulesFor(run.settings, { mode }).map((m) => app.modules[m]);
     const assembled = assemble(run, compiled, app.runtime, mode === 'audit'
-      ? { poll: iso, modules: [app.modules.audit], body: auditBody(compiled, plan) } : { poll: iso });
+      ? { poll: iso, modules, body: auditBody(compiled, plan) } : { poll: iso, modules });
     this.assembled = assembled;
     app.internals && app.internals.program(project, compiled, assembled);
     app.editors.setReadOnly(true);

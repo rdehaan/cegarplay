@@ -29,13 +29,15 @@ export function loadTarget(target) {
 }
 
 // Audit a project; returns { verdict, events, problems }.
-export async function auditProject(project, { link, limit, seconds = 0, instance, variant, constants } = {}) {
+export async function auditProject(project, { link, limit, seconds = 0, instance, variant, constants, vectors = false } = {}) {
   const r = await runProject({ ...project, settings: { ...project.settings, seconds } },
-    { audit: { link, limit }, instance, variant, constants, backstop: seconds > 0 });
+    { audit: { link, limit, vectors }, instance, variant, constants, backstop: seconds > 0 });
   const A = (r.events || []).filter((e) => e.kind === 'A' && e.data.verdict).map((e) => e.data).at(-1) || null;
   const D = (r.events || []).filter((e) => e.kind === 'D').map((e) => e.data).at(-1) || null;
   const E = (r.events || []).filter((e) => e.kind === 'E').map((e) => e.data).at(-1) || null;
-  return { verdict: A, done: D, error: E, problems: r.problems || [], status: r.status };
+  const P = { candidates: [], solutions: [] };
+  for (const e of r.events || []) if (e.kind === 'P') P[e.data.set].push(...e.data.v);
+  return { verdict: A, done: D, error: E, problems: r.problems || [], status: r.status, vectors: vectors ? P : null, events: r.events || [] };
 }
 
 function names(list) { return `{${(list || []).join(' ')}}`; }

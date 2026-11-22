@@ -1,7 +1,7 @@
 // Shared test helpers: run a program on a fresh engine instance, load example files.
 import fs from 'node:fs';
 import factory from '../vendor/clingo-wasm/clingo.js';
-import { assemble, parseEvent } from '../js/driver.js';
+import { assemble, parseEvent, modulesFor } from '../js/driver.js';
 import { derive } from '../js/project.js';
 
 export const ROOT = new URL('..', import.meta.url);
@@ -159,6 +159,7 @@ export async function runProject(project, opts = {}) {
     compiled = compile(project.loop.text, { fragments: project.fragments.map((f) => f.name) });
     if (!compiled.ok) throw new Error('compile errors: ' + JSON.stringify(compiled.errors));
   }
+  if (!opts.modules) opts = { ...opts, modules: modulesFor(project.settings).map((m) => read(`lua/${m}.lua`)) };
   const a = assemble(project, compiled, RUNTIME, opts);
   const r = await run(a.program);
   r.assembled = a; r.compiled = compiled;

@@ -22,7 +22,7 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import factory from '../vendor/clingo-wasm/clingo.js';
 import { load, derive } from '../js/project.js';
 import { Recording } from '../js/recording.js';
-import { assemble, parseEvent, validate, auditPlan, auditBody } from '../js/driver.js';
+import { assemble, parseEvent, validate, auditPlan, auditBody, modulesFor } from '../js/driver.js';
 
 const root = new URL('..', import.meta.url);
 
@@ -67,11 +67,11 @@ export async function runProject(project, { onEvent, backstop = false, audit = n
   const errors = problems.filter((p) => p.severity === 'error');
   if (errors.length) return { problems: errors, events: [] };
   const runtime = lua('runtime.lua');
-  let opts = {};
+  let opts = { modules: modulesFor(project.settings).map((m) => lua(`${m}.lua`)) };
   if (audit) {
     const plan = auditPlan(problems.compiled, audit.link);
     if (plan.error) return { problems: [{ severity: 'error', message: plan.error, where: { kind: 'loop' } }], events: [] };
-    opts = { modules: [lua('audit.lua')], body: auditBody(problems.compiled, plan, { limit: audit.limit }) };
+    opts = { modules: [...opts.modules, lua('audit.lua')], body: auditBody(problems.compiled, plan, { limit: audit.limit, vectors: audit.vectors }) };
     project = { ...project, settings: { ...project.settings, solutions: 0, candidates: 0, trace: 0 } };
   }
   const a = assemble(project, problems.compiled, runtime, opts);

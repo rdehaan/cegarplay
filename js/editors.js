@@ -1,6 +1,6 @@
 // ACE editors built from the project: one per fragment, plus the loop editor.
 /* global ace */
-import { FRAGMENT_NAME, DEFAULT_FRAGMENTS } from './project.js';
+import { FRAGMENT_NAME, DEFAULT_FRAGMENTS, INSTANCE_FRAGMENT } from './project.js';
 
 // The ACE theme follows the colour theme (js/theme.js); every editor made here switches with it.
 const LIVE = new Set();
@@ -199,6 +199,7 @@ export class Editors {
     const n = (window.prompt(question, current) || '').trim();
     if (!n) return null;
     if (!FRAGMENT_NAME.test(n)) { window.alert('A fragment name starts with a lower case letter and contains only lower case letters, digits and _.'); return null; }
+    if (n === INSTANCE_FRAGMENT) { window.alert(`The name ${n} is reserved for the facts of an instance (Instances tab).`); return null; }
     if (this.app.project.fragments.some((f) => f.name === n)) { window.alert(`There is already a fragment called ${n}.`); return null; }
     return n;
   }

@@ -32,6 +32,17 @@ export function recordSetting(r) {
   return { steps, n, calls, proof };
 }
 
+// settings.certify (docs/spec-soundness.md): off (default), report, exact (phase S4).
+export const CERTIFY = ['off', 'report', 'exact'];
+
+// The Lua modules (lua/<name>.lua) a project's settings need after the runtime, in order.
+export function modulesFor(settings = {}, { mode = 'run' } = {}) {
+  const out = [];
+  if (CERTIFY.includes(settings.certify) && settings.certify !== 'off') out.push('ground');
+  if (mode === 'audit') out.push('audit');
+  return out;
+}
+
 // Build the program (spec-runtime.md section 2).
 //   compiled: the compiler's result ({ lua, map }), or null/undefined for a raw Lua project,
 //             or a string of Lua.
@@ -55,6 +66,7 @@ export function assemble(project, compiled, runtimeLua, { poll = false, plain = 
   lines.push(`SETTINGS = { solutions = ${int(st.solutions, 1)}, seconds = ${Number(st.seconds) > 0 ? Number(st.seconds) : 0}, ` +
     `candidates = ${int(st.candidates, 0)}, trace = ${int(st.trace, 0)}, seed = ${int(st.seed, 0)}, ` +
     `poll = ${poll ? 'true' : 'false'}, plain = ${plain ? 'true' : 'false'} }`);
+  if (CERTIFY.includes(st.certify) && st.certify !== 'off') lines.push(`SETTINGS.certify = ${luaStr(st.certify)}`);
   const rec = recordSetting(st.record);
   if (rec) {
     lines.push(`SETTINGS.record = { steps = ${luaStr(rec.steps)}, n = ${rec.n}, calls = ${rec.calls ? 'true' : 'false'}` +
@@ -130,12 +142,13 @@ export function auditPlan(compiled, linkName) {
 }
 
 // The Lua body of the audit mode.
-export function auditBody(compiled, plan, { limit = 200000 } = {}) {
+export function auditBody(compiled, plan, { limit = 200000, vectors = false } = {}) {
   const lua = (v) => Array.isArray(v) ? `{ ${v.map(lua).join(', ')} }`
     : typeof v === 'object' && v ? `{ ${Object.entries(v).map(([k, x]) => `${k} = ${lua(x)}`).join(', ')} }`
     : typeof v === 'string' ? luaQ(v) : String(v);
   const lines = declarationLines(compiled);
-  lines.push(`rt.audit{ link = ${plan.link}, limit = ${Number(limit) | 0}, clause = ${plan.clause ? 'true' : 'false'}, expand = ${lua(plan.expand)} }`);
+  lines.push(`rt.audit{ link = ${plan.link}, limit = ${Number(limit) | 0}, clause = ${plan.clause ? 'true' : 'false'}, ` +
+    `expand = ${lua(plan.expand)}${vectors ? ', vectors = true' : ''} }`);
   return lines.map((l) => '    ' + l).join('\n') + '\n';
 }
 

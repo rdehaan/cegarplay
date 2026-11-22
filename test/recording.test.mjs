@@ -71,6 +71,8 @@ test('policies: first, every, last, sample', async () => {
   assert.equal(sample.length, 10);
   assert.deepEqual(sample, [...sample].sort((a, b) => a - b));
   assert.deepEqual(await run('sample', 10), sample, 'the same sample for the same seed');
+  const other = recOf(await H.runProject(ex('tutorial-first-run', { seed: 7, record: { steps: 'sample', n: 10, calls: false } }))).steps.map((s) => s.i);
+  assert.notDeepEqual(other, sample, 'another seed, another sample');
 });
 
 test('toBlob and fromBlob keep steps, calls and solutions', async () => {
@@ -120,4 +122,15 @@ test('every fast example has a replay file whose final S equals a live run (time
     assert.equal(H.stripTimes(rec.stats), H.stripTimes(H.finalStats(r)), `${id}: run node tools/make-replays.mjs`);
     assert.equal(rec.done.outcome, H.done(r).outcome, id);
   }
+});
+
+test('an x step is recorded when relevant/1 derives nothing', async () => {
+  const p = ex('tutorial-first-run', { record: { steps: 'all', n: 0, calls: false } });
+  const c = p.fragments.find((f) => f.name === 'check');
+  c.text = c.text.replace(/^relevant.*$/gm, '');
+  const r = await H.runProject(p);
+  assert.equal(H.done(r).outcome, 'error');
+  const x = recOf(r).steps.filter((s) => s.k === 'x');
+  assert.equal(x.length, 1);
+  assert.deepEqual(x[0].q, []);
 });

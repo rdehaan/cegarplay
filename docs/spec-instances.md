@@ -11,8 +11,11 @@ Keys (all optional; see the manual, "Instances", for the field table):
 - `variants[]`: `{ name, loop, swap, constants, settings }`.
 - `settings.instance`: the instance a run uses; absent = the first, `""` = none.
 
-`load` accepts versions 1 and 2 (`VERSION = 2`), validates these keys, and rejects a user
-fragment named `instance`. The loaded project's `version` is 2 exactly when `usesV2` holds (a
+`load` accepts versions 1 and 2 (`VERSION = 2`) and validates these keys. A user fragment named
+`instance` (possible before version 2) is renamed to `instance_facts`, also in the `solver`/`link`
+lines of a loop script; the editor refuses the name. An instance with a `recipe` and no `facts`
+keeps `facts` undefined, and `applyInstance` refuses it until the facts are generated. A
+`settings.instance` naming no instance falls back to the first; an id passed explicitly must exist. The loaded project's `version` is 2 exactly when `usesV2` holds (a
 non-empty list of `instances`, `generators`, `variants`, `suites`, `views` or `pools`, or a
 `settings.instance`); `save` writes that version and drops empty lists, so a project that uses
 none of them is byte-identical to a version 1 file.

@@ -161,11 +161,22 @@ export function load(json) {
     if (!f || typeof f !== 'object') throw new ProjectError(`fragment ${i + 1} is not an object`);
     if (typeof f.name !== 'string' || !FRAGMENT_NAME.test(f.name)) throw new ProjectError(`fragment ${i + 1}: invalid name ${JSON.stringify(f.name)} (use lower case letters, digits and _)`);
     if (names.has(f.name)) throw new ProjectError(`duplicate fragment name '${f.name}'`);
-    if (f.name === INSTANCE_FRAGMENT) throw new ProjectError(`the fragment name '${INSTANCE_FRAGMENT}' is reserved for the facts of an instance`);
+
     names.add(f.name);
     return { ...f, text: typeof f.text === 'string' ? f.text : '' };
   });
-  const loop = p.loop && typeof p.loop === 'object' ? p.loop : {};
+  let loop = p.loop && typeof p.loop === 'object' ? p.loop : {};
+  // The name "instance" is reserved for the facts of an instance. A fragment of an older project
+  // with that name is renamed, and so are its uses in the declarations of a loop script.
+  if (names.has(INSTANCE_FRAGMENT)) {
+    let alt = 'instance_facts';
+    for (let i = 2; names.has(alt); i++) alt = `instance_facts${i}`;
+    out.fragments = out.fragments.map((f) => (f.name === INSTANCE_FRAGMENT ? { ...f, name: alt } : f));
+    names.delete(INSTANCE_FRAGMENT); names.add(alt);
+    if (typeof loop.text === 'string' && loop.language !== 'lua') {
+      loop = { ...loop, text: loop.text.replace(/^(\s*(?:solver|link)\b.*)$/gm, (l) => l.replace(/\binstance\b/g, alt)) };
+    }
+  }
   const language = loop.language === 'lua' ? 'lua' : 'loop';
   if (loop.language !== undefined && loop.language !== 'lua' && loop.language !== 'loop') throw new ProjectError(`loop.language must be "loop" or "lua"`);
   out.loop = { ...loop, language, text: typeof loop.text === 'string' ? loop.text : template('shape1') };
@@ -201,7 +212,8 @@ function loadInstances(list) {
     if (typeof x.id !== 'string' || !INSTANCE_ID.test(x.id)) throw new ProjectError(`${where}: id must match [A-Za-z0-9_-]+`);
     if (ids.has(x.id)) throw new ProjectError(`duplicate instance id '${x.id}'`);
     ids.add(x.id);
-    const out = { ...x, id: x.id, facts: typeof x.facts === 'string' ? x.facts : '' };
+    const out = { ...x, id: x.id, facts: typeof x.facts === 'string' ? x.facts : x.recipe ? undefined : '' };
+    if (out.facts === undefined) delete out.facts;
     if (x.facts !== undefined && typeof x.facts !== 'string') throw new ProjectError(`instance ${x.id}: facts must be a string`);
     out.constants = strMap(x.constants, `instance ${x.id}: constants`);
     if (x.expected !== undefined) {
@@ -288,8 +300,10 @@ export function selectedInstance(project, id) {
   if (want === '') return null;
   if (want === undefined || want === null) return list[0];
   const x = list.find((i) => i.id === want);
-  if (!x) throw new ProjectError(`no instance named '${want}'`);
-  return x;
+  if (x) return x;
+  // an id given explicitly must exist; a stale settings.instance falls back to the first
+  if (id !== undefined && id !== null) throw new ProjectError(`no instance named '${want}'`);
+  return list[0];
 }
 
 export function applyInstance(project, id) {

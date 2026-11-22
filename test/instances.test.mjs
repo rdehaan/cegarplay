@@ -21,7 +21,10 @@ test('format: version 1 without new keys, version 2 with instances; the name "in
   assert.equal(q.version, 2);
   assert.deepEqual(q.instances, [{ id: 'a', facts: 'x.', constants: {}, tags: [] }]);
   assert.throws(() => P.load({ format: 'cegarplay', version: 3, fragments: [] }), /newer/);
-  assert.throws(() => P.load({ format: 'cegarplay', fragments: [{ name: 'instance' }] }), /reserved/);
+  // an older fragment named "instance" is renamed, with its uses in the declarations
+  const old = P.load({ format: 'cegarplay', fragments: [{ name: 'instance', text: 'a.' }], loop: { text: 'solver A = instance\nloop:\n    stop' } });
+  assert.deepEqual(old.fragments.map((f) => f.name), ['instance_facts']);
+  assert.match(old.loop.text, /^solver A = instance_facts$/m);
   assert.throws(() => P.load({ format: 'cegarplay', fragments: [], instances: [{ id: 'a b' }] }), /id must match/);
   assert.throws(() => P.load({ format: 'cegarplay', fragments: [], instances: [{ id: 'a' }, { id: 'a' }] }), /duplicate/);
   assert.throws(() => P.load({ format: 'cegarplay', fragments: [], instances: [{ id: 'a', expected: { solutions: -1 } }] }), /whole number/);
@@ -40,6 +43,11 @@ test('applyInstance and applyVariant return new plain projects', () => {
   assert.equal(p.fragments.length, 3, 'the stored project is not touched');
   assert.equal(P.applyInstance(p, 'two').fragments[0].text, 'f(2).');
   assert.throws(() => P.applyInstance(p, 'three'), /no instance named/);
+  p.settings.instance = 'gone';
+  assert.equal(P.derive(p).instance, 'one', 'a stale settings.instance falls back to the first');
+  const r = P.load({ format: 'cegarplay', fragments: [], instances: [{ id: 'g', recipe: { generator: 'x' } }] });
+  assert.equal('facts' in r.instances[0], false);
+  assert.throws(() => P.applyInstance(r, 'g'), /not generated yet/);
   p.settings.instance = 'two';
   assert.equal(P.derive(p).instance, 'two');
   p.settings.instance = '';

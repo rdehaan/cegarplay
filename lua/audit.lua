@@ -253,7 +253,7 @@ local function audit_expand(A, C, L, cands, sols, spec, st)
     progress("counterexamples", st)
   end
   for _, c in ipairs(cands) do c.M = nil end
-  if need_sols then st.solutions = #sols end
+  if need_sols then st.solutions = #sols; AUDIT.solutions = sols end
   st.pairs = st.pairs + #order
   -- all refinements at once: a solution with a model there is removed by none of them
   local all = scratch(A)
@@ -297,6 +297,21 @@ local function audit_expand(A, C, L, cands, sols, spec, st)
   end
 end
 
+-- P events: packed vectors as hex, 1,024 per event (docs/spec-soundness.md; V4 reads them).
+local function emit_vectors(set, L, list)
+  local chunk, from = rt.array({}), 1
+  for i, c in ipairs(list) do
+    chunk[#chunk + 1] = AUDIT.hex(c.p, L.n)
+    if #chunk == 1024 or i == #list then
+      rt.emit("P", { set = set, link = L.name, from = from, v = chunk })
+      from = i + 1
+      chunk = rt.array({})
+    end
+  end
+  if #list == 0 then rt.emit("P", { set = set, link = L.name, from = 1, v = rt.array({}) }) end
+end
+AUDIT.emit_vectors = emit_vectors
+
 function rt.audit(o)
   o = o or {}
   local L = o.link
@@ -319,6 +334,7 @@ function rt.audit(o)
   AUDIT.candidates = cands
   AUDIT.link = L
   progress("counterexamples", st, true)
+  if o.vectors then emit_vectors("candidates", L, cands) end
   local sols
   if o.clause ~= false then sols = audit_clauses(A, C, L, cands, st) end
   if #spec > 0 then
@@ -330,6 +346,7 @@ function rt.audit(o)
       audit_expand(A, C, L, cands, nil, spec, st)
     end
   end
+  if o.vectors then emit_vectors("solutions", L, AUDIT.solutions or {}) end
   local kinds = array({})
   if o.clause ~= false then kinds[#kinds + 1] = "clause" end
   if #spec > 0 then kinds[#kinds + 1] = "expand" end

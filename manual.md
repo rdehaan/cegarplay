@@ -97,7 +97,9 @@ two-space indentation.
 
 An **instance** is a set of facts plus constant values that a run applies on top of the project.
 The facts reach every solver and every link's glue control as a fragment named `instance` (put
-first; the name is reserved), and the instance's constants override the project's. Messages from
+first; the name is reserved: a fragment of an older project called `instance` is renamed to
+`instance_facts` on load, with its uses in the script's declarations), and the instance's constants
+override the project's. A `settings.instance` that names no instance falls back to the first. Messages from
 clingo about an instance fact name `instance:<line>`. The loop language does not change.
 
 ```json
@@ -142,7 +144,7 @@ the instance of the next run; the run history names it in brackets.
 `Project.load` errors (exact texts): `not a JSON file: ...`, `not a CegarPlay project: expected a
 JSON object`, `this is a logic-game file, not a CegarPlay project`, `not a CegarPlay project (format
 is ..., expected "cegarplay")`, `project version N is newer than this CegarPlay (2)`, `fragments must
-be a list`, `the fragment name 'instance' is reserved for the facts of an instance`, `instance N: id
+be a list`, `instance N: id
 must match [A-Za-z0-9_-]+`, `duplicate instance id '...'`, `variant ...: swap names an unknown
 fragment (... -> ...)`, `fragment N is not an object`, `fragment N: invalid name "..." (use lower case letters,
 digits and _)`, `duplicate fragment name '...'`, `loop.language must be "loop" or "lua"`.
