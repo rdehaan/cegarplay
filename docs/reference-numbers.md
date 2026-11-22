@@ -83,7 +83,7 @@ Three fixtures from the later prototypes are independent of the search order as 
 | 29 | `guide-03-hit-clique`, the step with candidate {1, 2} and counterexample {4, 5, 6} | The view of phase V3 | 38 marks, with `emph` on the nodes 4, 5 and 6 |
 | 30 | `gnp` generator, n = 7, p = 300, seeds 1 to 5 | Generate | The facts that `spike2/probe3.lua` prints, at attempts 0, 2, 0, 0 and 0 |
 
-Row 26 and 30: `spike2/probe3.lua` was not delivered; `spike2/gen/draws.lua` holds its mixer unchanged.
+Row 26 and 30: `spike2/probe3.lua` was not delivered; `spike2/gen/draws.lua` held its mixer unchanged (`spike2/` was removed later; see git history).
 
 ## Timings (for orientation only; do not assert)
 

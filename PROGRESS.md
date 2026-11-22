@@ -366,7 +366,7 @@ Notes for the guide phases (checked against the code before G0a):
 
 ## Directions and generality (PLAN2, started 2026-11-22)
 
-Plan: `PLAN2.md` (removed after completion; see git history); design docs in `docs/directions/`; prototypes in `spike2/`. One long session,
+Plan: `PLAN2.md` (removed after completion; see git history); design docs in `docs/directions/`; prototypes in `spike2/` (also removed; see git history). One long session,
 commit at each checkpoint, no stops.
 
 - [x] L0 Repair (blocking clause over all outgoing links; `knapsack-fortification`, `qbf-three-blocks`)

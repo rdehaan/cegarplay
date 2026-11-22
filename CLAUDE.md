@@ -6,13 +6,13 @@ programming, solved with clingo compiled to WebAssembly.
 ## Where things are
 
 - Both implementation plans (PLAN.md, PLAN2.md) are done and were removed; they are in
-  the git history. `docs/directions/*.md` holds the design behind PLAN2's features.
+  the git history. `docs/directions/*.md` holds the design behind PLAN2's features; the `spike2/`
+  prototypes it cites were removed too (git history).
 - `PROGRESS.md`: what is done and what is next. **Read it first after any
   context clear. Update it at every checkpoint.**
 - `docs/spec-*.md`: specifications. Read only the ones the current phase names.
 - `docs/reference-numbers.md`: numbers the implementation must reproduce.
 - `spike/`: verified prototype code. Read-only; copy from it.
-- `spike2/`: prototypes behind `docs/directions/` (audit, lift, draws, views, deep loops). Read-only.
 - `reference/`: clones of logic-game and declarative-cegar. Read-only, git-ignored.
 - `guide/`: the design guide (static pages, `chapters.js`, `numbers.json`).
   Its examples are built by `tools/guide.mjs`; `tools/guide-numbers.mjs`
