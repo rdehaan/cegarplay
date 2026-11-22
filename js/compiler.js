@@ -499,7 +499,7 @@ export function compile(source, { fragments = [] } = {}) {
       if (fam) {
         // solver S[i in lo..hi]: members S1, S2, ... each grounded with -c level=i
         const v = fam.v.value;
-        emit(`local ${d.name.value} = {}; for ${v} = ${rangeEx(fam.lo, null)}, ${rangeEx(fam.hi, null)} do ${d.name.value}[${v}] = rt.solver(${luaString(d.name.value)} .. ${v}, {${fr}}, {${[...opts.map(luaString), '"-c"'].join(', ')}, "level=" .. ${v}}) end`, d.line, 0);
+        emit(`local ${d.name.value} = {}; for ${v} = ${rangeEx(fam.lo, null)}, ${rangeEx(fam.hi, null)} do ${d.name.value}[${v}] = rt.solver(${luaString(d.name.value)} .. ${v}, {${fr}}, {${[...opts.map(luaString), '"-c"'].join(', ')}, "level=" .. ${v}}) end; ${d.name.value}.size = math.max(0, ${rangeEx(fam.hi, null)} - ${rangeEx(fam.lo, null)} + 1)`, d.line, 0);
       } else emit(`local ${d.name.value} = rt.solver(${luaString(d.name.value)}, {${fr}}, {${opts.map(luaString).join(', ')}})`, d.line, 0);
     } else {
       for (const end of [d.from, d.to]) if (!solvers.has(end.value)) err(end, `'${end.value}' is not a declared solver`);
@@ -517,7 +517,7 @@ export function compile(source, { fragments = [] } = {}) {
       if (fam) {
         const v = fam.v.value;
         const end = (n, idx) => (idx ? `${n.value}[${rangeEx(idx, v)}]` : n.value);
-        emit(`local ${d.name.value} = {}; for ${v} = ${rangeEx(fam.lo, null)}, ${rangeEx(fam.hi, null)} do ${d.name.value}[${v}] = rt.link(${luaString(d.name.value)} .. ${v}, ${end(d.from, d.fromIdx)}, ${end(d.to, d.toIdx)}, {${fr}}, {${[...o, `consts = { "level=" .. ${v} }`].join(', ')}}) end`, d.line, 0);
+        emit(`local ${d.name.value} = {}; ${d.name.value}.size = math.max(0, ${rangeEx(fam.hi, null)} - ${rangeEx(fam.lo, null)} + 1); for ${v} = ${rangeEx(fam.lo, null)}, ${rangeEx(fam.hi, null)} do ${d.name.value}[${v}] = rt.link(${luaString(d.name.value)} .. ${v}, ${end(d.from, d.fromIdx)}, ${end(d.to, d.toIdx)}, {${fr}}, {${[...o, `consts = { "level=" .. ${v} }`].join(', ')}}) end`, d.line, 0);
       } else emit(`local ${d.name.value} = rt.link(${luaString(d.name.value)}, ${d.from.value}, ${d.to.value}, {${fr}}, {${o.join(', ')}})`, d.line, 0);
     }
   }
@@ -675,7 +675,7 @@ export function compile(source, { fragments = [] } = {}) {
       if (!d.family) err(obj, `'${recvName}' is not a ${solvers.has(recvName) ? 'solver' : 'link'} family`);
       recvLua = `${recvName}[${ex(obj.idx)}]`;
     } else if (recvName && ((solvers.get(recvName) || {}).family || (links.get(recvName) || {}).family)) {
-      if (name === 'size' && !args) return `#${recvName}`;
+      if (name === 'size' && !args) return `${recvName}.size`;
       err(obj, `'${recvName}' is a ${solvers.has(recvName) ? 'solver' : 'link'} family: write ${recvName}[i]`);
       return 'nil';
     }
@@ -896,18 +896,21 @@ export function compile(source, { fragments = [] } = {}) {
         const saved = { cand: ctx.cand, loops: ctx.loops };
         ctx.cand = { solver: S, v: s.v.value, outer: saved.cand };
         ctx.loops = [];
+        // 'return' inside 'on candidate' would return from the callback, not from the procedure
+        saved.def = ctx.def;
+        ctx.def = null;
         const locals = new Set();
         collectAssigned(s.body, locals, { intoCandidates: false });
         for (const n of mainLocals) locals.delete(n);
         locals.delete(s.v.value);
         emit(locals.size ? `local ${[...locals].join(', ')}` : '', s.onLine, depth + 1);
         stmts(s.body, depth + 1);
-        ctx.cand = saved.cand; ctx.loops = saved.loops;
+        ctx.cand = saved.cand; ctx.loops = saved.loops; ctx.def = saved.def;
         emit('end }', null, depth);
         break;
       }
       case 'return': {
-        if (!ctx.def) err(s, "'return' outside 'def'");
+        if (!ctx.def) err(s, ctx.cand ? "'return' cannot stand inside 'on candidate'" : "'return' outside 'def'");
         emit(`do return${s.e ? ' ' + ex(s.e) : ''} end`, s.line, depth);
         break;
       }

@@ -128,3 +128,14 @@ test('coverage: every one of the 18 loop families runs as a loop script (one fam
     if (want !== null) assert.equal(H.finalStats(r).solutions, want, `${family}: ${id}`);
   }
 });
+
+test('final review: return inside on candidate is an error; S.size for a family that does not start at 1', async () => {
+  const FR = { fragments: ['a', 'b', 'c'] };
+  const D = 'solver S[i in 2..4] = a\nsolver P = b\nlink G = P -> S[2] via c\n';
+  const c = compile(D + 'def first():\n    search P:\n        on candidate M:\n            return 7\n    return 0\nlog first()\n', FR);
+  assert.ok(c.errors.some((e) => /'return' cannot stand inside 'on candidate'/.test(e.message)), JSON.stringify(c.errors));
+  const ok = compile(D + 'log S.size\n', FR);
+  assert.ok(ok.ok, JSON.stringify(ok.errors));
+  assert.match(ok.lua, /S\.size = math\.max\(0, 4 - 2 \+ 1\)/);
+  assert.match(ok.lua, /log\(S\.size\)|S\.size/);
+});

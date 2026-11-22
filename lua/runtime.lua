@@ -677,6 +677,8 @@ function Link:extend(part, n)
       if atom.is_fact then
         b:add_rule{ head = { d }, body = {} }
         self.facts = self.facts + 1
+        self.fsym = self.fsym or {}
+        self.fsym[#self.fsym + 1] = sym
       else
         local i = b:add_atom(clingo.Function("relevant", { sym }, true))
         b:add_rule{ head = { d }, body = {}, choice = true }
@@ -689,6 +691,19 @@ function Link:extend(part, n)
     end
   end
   b:close()
+  self.exact = nil                       -- level 4's scratch controls are for the old interface
+  -- recordings: the interface atoms changed, so the I event is sent again (the last one counts)
+  if REC and added > 0 then
+    local links = array({})
+    for _, L in ipairs(rt.links) do
+      local atoms = array({})
+      for j = 1, L.n do atoms[j] = L.str[j] end
+      links[#links + 1] = { link = L.name, from = L.from.name, to = L.to.name, atoms = atoms }
+    end
+    local solvers = array({})
+    for _, x in ipairs(rt.solvers) do solvers[#solvers + 1] = x.name end
+    emit("I", { links = links, solvers = solvers, record = REC })
+  end
   return added
 end
 -- Externals: S.set(a, true | false), S.release(a); a is S.atom(...) or a literal.
@@ -1095,12 +1110,14 @@ record = function(kind, s, c, M, facts, domain)
     t = clock() - rt.t0 }
   if L and M and not (M.lazy and M.done) and M[L] then obj.c = hexvec(M[L], L.n) end
   if c and c.link then
-    local lits, q = c.lazy and L.slit or L.src, array({})
+    local lits, q, extra = c.lazy and L.slit or L.src, array({}), false
     for k = 1, #c do
       local j = c.j[k]
-      if j then q[#q + 1] = (c[k] == lits[j]) and j or -j end
+      if j then q[#q + 1] = (c[k] == lits[j]) and j or -j else extra = true end
     end
-    obj.q = q
+    -- a clause with a literal outside the link (a guard: A.add(c, while a)) is not a clause of
+    -- the interface: the step is recorded without q
+    if not extra then obj.q = q end
   elseif kind == "x" then obj.q = array({}) end
   if facts then obj.f = facts end
   if domain then obj.d = domain end
@@ -1153,8 +1170,10 @@ function Model:reject(c)
       count_clause(cl)
       trace("reject", s, cl, self)
       if REC then record("r", s, cl, self) end
+      -- an earlier clause of this reject already conflicted (add_clause returned false, rule 3):
+      -- add nothing more now; the next check of the dead solver ends the search
+      if not self.rejected then kill_search(s, self.control) end
       self.rejected = true
-      kill_search(s, self.control)
       return
     end
     if type(cl) ~= "table" or #cl == 0 then fail("reject: an empty clause cannot refine the candidate") end
@@ -1232,7 +1251,11 @@ end
 local function run_solve(s, o, limit, optimal, what)
   check_idle(s, what)
   o = o or {}
-  if s.dead then s.n.calls = s.n.calls + 1; s.n.unsat = s.n.unsat + 1; s.last_core = {}; return {} end
+  if s.dead then
+    s.n.calls = s.n.calls + 1; s.n.unsat = s.n.unsat + 1; s.last_core = {}
+    if not (o.assume and #o.assume > 0) then rt.exhausted = true end
+    return {}
+  end
   local assume = convert_assumptions(o.assume, s, what)
   tick(rt.searching == nil)
   local fr = timer_start(s)
@@ -1500,7 +1523,7 @@ function Solver:search(h)
       local L = c.link
       if L and #c > 0 then
         local q = {}
-        for k = 1, #c do local j = c.j[k]; q[k] = c[k] < 0 and -L.src[j] or L.src[j] end
+        local lits = c.lazy and L.slit or L.src; for k = 1, #c do local j = c.j[k]; q[k] = (c[k] == lits[j]) and L.src[j] or -L.src[j] end
         s.queue[#s.queue + 1] = q
       end
     end
@@ -1515,7 +1538,7 @@ function Solver:search(h)
         local L = c.link
         if L then
           local q = {}
-          for k = 1, #c do local j = c.j[k]; q[k] = c[k] < 0 and -L.src[j] or L.src[j] end
+          local lits = c.lazy and L.slit or L.src; for k = 1, #c do local j = c.j[k]; q[k] = (c[k] == lits[j]) and L.src[j] or -L.src[j] end
           s.queue[#s.queue + 1] = q
         end
       end

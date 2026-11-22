@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import zlib from 'node:zlib';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -96,7 +97,7 @@ test('row 27: the proof log stays under twice the size of the plain recording', 
   const p = proof('graph-coloring', ['--instance', 'n6']);
   const rec = path.join(dir, 'gc6.cprec');
   assert.equal(run('graph-coloring', '--instance', 'n6', '--solutions', 'all', '--quiet', '--record', rec, '--record-steps', 'all').status, 0);
-  const plain = spawnSync('gunzip', ['-c', rec]).stdout.length;
+  const plain = zlib.gunzipSync(fs.readFileSync(rec)).length;   // (spawnSync's 1 MB buffer would cut it)
   const size = fs.statSync(p).size;
   console.log(`# row 27: proof log ${size} bytes, plain recording ${plain} bytes (${(size / plain).toFixed(2)}x)`);
   assert.ok(size < 2 * plain);

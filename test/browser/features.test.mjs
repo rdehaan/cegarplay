@@ -10,7 +10,7 @@ after(async () => { await browser.close(); server.close(); });
 const collect = (page) => page.evaluate(() => JSON.parse(JSON.stringify({ ...window.cegarplay.collect(), runs: [] })));
 
 for (const id of ['graph-coloring', 'lang-raw-lua']) {
-  test(`C1: a share link opens the same project in a fresh context (${id})`, async () => {
+  test(`C1: a share link opens the same project in a fresh context (${id})`, { skip: process.env.BROWSER === 'firefox' && 'Firefox: Playwright cannot grant clipboard-read' }, async () => {
     const ctx = { contextOptions: { permissions: ['clipboard-read', 'clipboard-write'] } };
     const { page, context } = await B.openPage(browser, server, `?example=${id}`, ctx);
     await page.click('#share-button');

@@ -76,3 +76,28 @@ test('G3: X.value, X.count, X.cost, a.arg, with the messages of the spec', async
   const kb = await H.runProject(all(ex('knapsack-bounds')));
   assert.equal(H.finalStats(kb).solutions, 2);
 });
+
+test('final review: an empty clause after an earlier reject (no trap); a dead solver ends exhausted; nested-search clauses keep their signs', async () => {
+  const r1 = await H.runProject(withLoop('search A:\n    on candidate M:\n        reject M with G.block(M)\n        reject M with G.above(M)\n'));
+  assert.equal(H.done(r1).outcome, 'finished', JSON.stringify({ E: H.ofKind(r1, 'E'), status: r1.status }));
+  const r2 = await H.runProject(withLoop('loop:\n    M = A.solve()\n    if not M: break\n    A.add(G.above(M))\n'));
+  assert.equal(H.done(r2).exhausted, true);
+  // negative solver literals: q(X) is the choice, p(X) its complement
+  const p = H.projectOf({ shared: '', abstraction: '{ q(1..2) }.\np(X) :- X = 1..2, not q(X).\n#show p/1.', glue: 'glue(p(1..2)).', check: 'x.\n:- x, p(1), not p(2).' });
+  p.loop = { language: 'loop', text: `solver A = shared + abstraction
+solver C = shared + check
+link G = A -> C via shared + glue
+solver D = shared + check
+link H = C -> D via shared + glue
+Y = none
+search A keep Y:
+    on candidate M:
+        if M.count(p/1) == 2: reject M with G.block(M)
+for M in A.models():
+    log M.count(p/1)
+` };
+  const r3 = await H.runProject(p);
+  assert.equal(H.done(r3).outcome, 'finished', JSON.stringify(H.ofKind(r3, 'E')));
+  const counts = H.ofKind(r3, 'L').map((l) => l.text).sort();
+  assert.deepEqual(counts, ['0', '1', '1'], 'only {p1,p2} is removed (the empty set stays)');
+});

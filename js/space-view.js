@@ -33,7 +33,7 @@ export class SpaceView {
     this.root.hidden = false;
     this.root.textContent = '';
     this.order = h('select', { id: 'space-order', 'aria-label': 'Map order' },
-      h('option', { value: 'blame' }, 'atoms by blame, interleaved'), h('option', { value: 'size' }, 'rows by number of true atoms'));
+      h('option', { value: 'blame' }, 'by the most blamed atoms (Z-order)'), h('option', { value: 'size' }, 'rows by number of true atoms'));
     this.order.addEventListener('change', () => { if (this.space) { this.layout(); this.draw(); } });
     this.slider = h('input', { type: 'range', id: 'space-step', min: 0, max: 0, value: 0, 'aria-label': 'Refinement' });
     this.slider.addEventListener('input', () => {

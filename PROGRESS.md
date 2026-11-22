@@ -389,7 +389,7 @@ commit at each checkpoint, no stops.
 - [x] L2 Control (G4, G5, G8)
 - [x] L3 Dynamics (G6)
 - [x] L4 Structure (G7)
-- [ ] Final review
+- [x] Final review
 
 Notes per phase:
 
@@ -715,8 +715,28 @@ Notes per phase:
     level-specific fragments that the family syntax gives through `level` only.
   - Keywords `def`, `return`, `keep` added (no library script used them as names).
 
-**Next step (PLAN2):** the final review (independent review agent over the whole diff, manual /
-llms.txt / tutorial cross-links, chat package rebuild, Firefox run, screenshots at 1400/700 px).
+- **Final review (done):** an independent agent reviewed L1-L4 and confirmed seven bugs, all
+  fixed with tests: an empty clause after an earlier reject of the same candidate trapped the
+  engine (rule 3: now nothing more is added in that check); a dead solver left the run "not
+  exhausted"; clauses of nested/kept searches (and the older restart stash) were queued with
+  signs read from solver literals that can be negative (now compared with the link's literals);
+  `return` inside `on candidate` in a `def` returned from the callback (now a static error);
+  `S.size` assumed families start at 1 (now a stored size); `G.extend` did not update recordings
+  (a new I event; facts go to `L.fsym`; level 4's scratch controls are reset); a guarded clause
+  was recorded as an unconditional clause (now without q). Also: `llms.txt` points to the new
+  specs and tools; the chat package rebuilds (105 files); `npm run test:slow` green after fixing
+  the row-27 test (it measured the plain recording through spawnSync's 1 MB buffer: the true
+  ratio is 1.03x); Firefox: 80 of 82 browser tests passed, the two share-link tests need the
+  `clipboard-read` permission that Playwright's Firefox lacks (now skipped there); screenshots
+  of the Observatory, Campaign and Instances tabs at 1400 and 700 px checked (node labels of
+  views got a halo, the map-order label was renamed).
+  Not fixed (plausible only, from this review): forward calls between procedures (`def a` calling
+  a later `def b`); `S.atom` literals carry no owner solver; a Shape-2 loop under fixed
+  assumptions that adds nothing new is no longer stopped by the no-progress guard.
+
+**PLAN2 is complete.** Open items for the owner: G5 (checks on partial candidates) is not built;
+the multi-level knapsack of G7 is replaced by the QBF family test; `c + d` works for clauses of
+one link only; the deviations above per phase; deployment and a read-through by a person.
 
 ## Next step (PLAN.md, guide, TODO)
 

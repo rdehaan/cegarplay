@@ -54,3 +54,16 @@ test('G6: certificates are refused for programs with #external atoms', async () 
   assert.ok(K.length > 0);
   assert.ok(K.every((k) => k.level !== 2 && k.level !== 3), JSON.stringify(K.find((k) => k.level === 2 || k.level === 3)));
 });
+
+test('final review: G.extend sends a new I event; a guarded clause is recorded without q', async () => {
+  const p = all(ex('conformant-growing'), { record: { steps: 'all', n: 0, calls: false } });
+  const r = await H.runProject(p);
+  const I = H.ofKind(r, 'I').at(-1);
+  assert.ok(I.links[0].atoms.length >= 32, `${I.links[0].atoms.length} atoms`);
+  const q = H.projectOf({ shared: '', abstraction: '{ p(1..2) }.\n#external g.\n#show p/1.', glue: 'glue(p(1..2)).', check: ':- p(1).' }, { record: { steps: 'all', n: 0, calls: false } });
+  q.loop = { language: 'loop', text: 'solver A = shared + abstraction\nsolver C = shared + check\nlink G = A -> C via shared + glue\nA.set(A.atom("g"), true)\nM = A.solve()\nA.add(G.block(M), while A.atom("g"))\n' };
+  const rq = await H.runProject(q);
+  const a = H.ofKind(rq, 'R').filter((x) => x.k === 'a');
+  assert.equal(a.length, 1);
+  assert.equal(a[0].q, undefined);
+});
