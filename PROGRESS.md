@@ -881,6 +881,16 @@ the picked variant (its `reference` variant stays available for compare mode); r
 manual (Python checker, export, Fuzz, Candidate space), llms.txt, chat package (alternatives as
 variants, all correct), README. Tests added to `test/variants.test.mjs`.
 
+## Clear in the run bar (2026-11-22, on request)
+
+**Clear** (`clear-button`, run bar after Stop) removes the last run's results: output, statistics,
+trace, run message, annotations and the recording (Observatory, Views, download), and sets the status
+back to `idle`. The run history stays (it has its own Clear run history). Disabled while a run is
+active or when nothing is shown. `Control.clearResults()`; `app.setProject` uses it with
+`keepRecording: true`, because resetting the cursor during a project load makes the view panel ask
+the engine for a frame before the precomputed frames are in (V5 test in directions.test.mjs).
+Test in `test/browser/stats.test.mjs`; row in docs/spec-app.md §5.1.
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.

@@ -46,6 +46,7 @@ export class Control {
     this.pauseButton = $('pause-button');
     this.stepButton = $('step-button');
     this.stopButton = $('stop-button');
+    this.clearButton = $('clear-button');
     this.statusEl = $('run-status');
     this.auditButton = $('audit-button');
     this.runButton.addEventListener('click', () => this.run());
@@ -54,6 +55,7 @@ export class Control {
     this.pauseButton.addEventListener('click', () => this.togglePause());
     this.stepButton.addEventListener('click', () => this.step());
     this.stopButton.addEventListener('click', () => this.stop());
+    this.clearButton.addEventListener('click', () => this.clearResults());
     const iso = app.engine.isolated && !!app.engine.control;
     for (const b of [this.pauseButton, this.stepButton, this.stopButton]) b.hidden = !iso;
     $('run-message-link').addEventListener('click', (e) => { e.preventDefault(); $('tab5').checked = true; $('tab5').dispatchEvent(new Event('change')); });
@@ -80,9 +82,33 @@ export class Control {
     // pauses after the next candidate; while paused it advances by one candidate.
     this.stepButton.disabled = !(active || !this.runButton.disabled);
     this.stopButton.disabled = !active;
+    // Clear: something of an earlier run is on screen and no run is active
+    this.clearButton.disabled = active || state === 'validating' || (state === 'idle' && !this.app.recording);
     const dl = document.getElementById('download-recording-button');
     if (dl) dl.disabled = active || state === 'validating' || !this.app.recording;
     document.body.dataset.runState = state;
+  }
+
+  // Remove the results of the last run (output, statistics, trace, annotations, recording) and
+  // go back to idle, as on a fresh load. The run history and the project stay.
+  //   keepRecording: for a project load (app.setProject). Resetting the cursor there would make the
+  //   view panel ask the engine for a frame before an example's precomputed frames are in.
+  clearResults({ keepRecording = false } = {}) {
+    const app = this.app;
+    if (this.busy && !keepRecording) return false;
+    app.output.clear();
+    app.stats.reset();
+    this.runMessage('');
+    app.editors.clearAnnotations();
+    if (keepRecording) { this.setState('idle'); return true; }
+    app.recording = null;
+    this.assembled = null;
+    this.audit = null;
+    delete document.body.dataset.lastMode;
+    if (app.views) app.views.updateSteps();
+    if (app.observatory) app.observatory.update();
+    this.setState('idle');
+    return true;
   }
 
   get busy() { return ['validating', 'running', 'paused'].includes(this.state); }

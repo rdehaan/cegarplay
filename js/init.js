@@ -173,11 +173,7 @@ app.setProject = (p, { save = true } = {}) => {
   app.exampleId = null;         // set by loadExample
   markLoadedExample();
   // the results of an earlier run belong to the earlier project
-  app.output.clear();
-  app.stats.reset();
-  app.control.runMessage('');
-  app.control.setState('idle');
-  app.editors.clearAnnotations();
+  app.control.clearResults({ keepRecording: true });
   app.editors.build(p);
   app.loopTab.load(p);
   app.instancesTab.load();

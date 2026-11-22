@@ -184,6 +184,7 @@ Title: `CegarPlay`. Subtitle line under it: `Play with CEGAR loops in answer set
 | Pause / Resume | `pause-button` | Hidden unless the page is isolated. |
 | Step | `step-button` | Hidden unless isolated; enabled while paused. |
 | Stop | `stop-button` | Hidden unless isolated. Soft stop with full statistics. |
+| Clear | `clear-button` | Removes the last run's results (output, statistics, trace, recording); status back to `idle`. The run history stays. Disabled while a run is active or nothing is shown. |
 | Solutions | `solutions-select` | Options: `1`, `10`, `100`, `all`; bound to `settings.solutions`. |
 | Status | `run-status` | `idle`, `validating`, `running`, `paused`, `finished`, `aborted`, `error` (also as `data-state` for tests). |
 | Live line | `live-line` | `12.3 s · 16,577 candidates · 7,307 counterexamples · 7,307 refinements · 9,270 solutions`, updated on each `S` event. |

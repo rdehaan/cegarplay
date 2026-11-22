@@ -166,3 +166,34 @@ test('Clear run history asks first; dismissing keeps the rows, accepting removes
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('Clear removes the last run\'s results and keeps the run history', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring&tab=6');
+  const disabled = () => page.$eval('#clear-button', (b) => b.disabled);
+  assert.equal(await disabled(), true, 'nothing to clear yet');
+  await page.evaluate(() => { window.cegarplay.project.settings.constants.n = '7'; });
+  await page.click('#run-button');
+  await B.waitState(page, ['running']);
+  assert.equal(await disabled(), true, 'disabled while running');
+  await page.click('#abort-button');
+  await B.waitState(page, ['aborted']);
+  await page.evaluate(() => { window.cegarplay.project.settings.constants.n = '3'; });
+  await page.click('#run-button');
+  assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
+  assert.equal(await disabled(), false);
+  assert.notEqual((await page.textContent('#result-line')).trim(), '');
+  assert.equal(await page.$eval('#download-recording-button', (b) => b.disabled), false);
+  const before = await historyRows(page);
+  assert.ok(before >= 1);
+  await page.click('#clear-button');
+  assert.equal(await page.textContent('#run-status'), 'idle');
+  assert.match((await page.textContent('#result-line')).trim(), /^(No run yet\.)?$/, 'as on a fresh load');
+  assert.equal(await page.textContent('#solutions'), '');
+  assert.equal((await page.textContent('#live-line')).trim(), '');
+  assert.equal(await page.$eval('#download-recording-button', (b) => b.disabled), true);
+  assert.equal(await page.evaluate(() => window.cegarplay.recording), null);
+  assert.equal(await historyRows(page), before, 'run history kept');
+  assert.equal(await disabled(), true, 'nothing left to clear');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
