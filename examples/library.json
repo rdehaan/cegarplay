@@ -944,17 +944,6 @@
       }
     },
     {
-      "id": "graph-coloring-original",
-      "title": "Graph colouring (original rules)",
-      "group": "problems",
-      "summary": "The same with the original, too weak relevant/1 rules: 9,270 instead of 10,698.",
-      "shape": "shape1",
-      "tags": [],
-      "expected": {
-        "solutions": 9270
-      }
-    },
-    {
       "id": "nash",
       "title": "Nash equilibria",
       "group": "problems",

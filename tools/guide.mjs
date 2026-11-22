@@ -215,10 +215,7 @@ const CHECK_FOR_RULES = CLIQUE + `
 // they are run with. tools/guide-numbers.mjs measures them under the key ID or ID@name=value.
 export const QUOTED = [
   { id: 'gc-reference' },
-  { id: 'gc-shape1' },
-  { id: 'graph-coloring-original', constants: { n: '5' } },
   { id: 'graph-coloring' },
-  { id: 'graph-coloring-original' },
   { id: 'clique-interdiction' },
   { id: 'clique-interdiction', constants: { n: '17', k: '9' } },
   { id: 'fair-division' },

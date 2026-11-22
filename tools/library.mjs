@@ -333,10 +333,9 @@ clause(1, pick(X+Y), false) :- sum(X,Y).
 }
 const TEMPLATE_TITLE = { shape1: 'Shape 1', shape2: 'Shape 2', shape3: 'Shape 3', shape4: 'Shape 4', reference: 'Reference run' };
 
-// Problems group: the four examples built from declarative-cegar.
+// Problems group: the three examples built from declarative-cegar.
 export const PROBLEMS = [
   { id: 'graph-coloring', summary: 'Graphs with a leaf colouring that no 3-colouring extends (n = 6, all 10,698 solutions).', shape: 'shape1', tags: [], expected: 10698 },
-  { id: 'graph-coloring-original', summary: 'The same with the original, too weak relevant/1 rules: 9,270 instead of 10,698.', shape: 'shape1', tags: [], expected: 9270 },
   { id: 'nash', summary: 'Weighted graphs whose colouring game has a Nash equilibrium.', shape: 'shape1', tags: [], expected: null },
   { id: 'voting-justification', summary: 'Explaining a voting outcome by axioms.', shape: 'shape1', tags: [], expected: null },
 ];

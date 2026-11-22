@@ -142,12 +142,6 @@ export function buildExamples() {
   ];
   gc.settings.instance = '';
   gc.version = 2;
-  const gco = make('graph-coloring.lp', 'Graph colouring (original rules)',
-    'The graph colouring example with the relevant/1 rules of the original prototype. These rules are too ' +
-    'weak: a refinement can exclude candidates that are solutions, so Shape 1 reports 9,270 solutions at n = 6 ' +
-    'instead of 10,698. Compare with the Reference run template, which blocks one candidate at a time.',
-    (p) => { frag(p, 'glue').text = wrapGlue(frag(p, 'glue').text); p.loop.text = template('shape1'); },
-    { constants: { n: '6' }, solutions: 0 });
   const nash = make('nash.lp', 'Nash equilibria',
     'Weighted graphs whose colouring game has a Nash equilibrium (guessed by the abstraction) that the check ' +
     'tries to refute.',
@@ -185,7 +179,7 @@ export function buildExamples() {
     'Explaining a voting outcome by axioms: the abstraction guesses axiom instances and profiles, the check ' +
     'looks for a profile where they fail.',
     (p) => { p.loop.text = template('shape1'); }, { solutions: 1 });
-  return { 'graph-coloring': gc, 'graph-coloring-original': gco, nash, 'voting-justification': vote };
+  return { 'graph-coloring': gc, nash, 'voting-justification': vote };
 }
 
 // Contributed examples: examples/contrib/*.json, each a project with a top-level

@@ -797,34 +797,6 @@
     "restarts": 0,
     "rulesA": 249
   },
-  "gc-shape1": {
-    "solutions": 101,
-    "candidates": 1421,
-    "counterexamples": 1320,
-    "refinements": 1320,
-    "clauses": 1320,
-    "expansions": 0,
-    "literals": 17161,
-    "meanClause": 13,
-    "maxClause": 14,
-    "checkCalls": 1421,
-    "restarts": 0,
-    "rulesA": 249
-  },
-  "graph-coloring-original@n=5": {
-    "solutions": 101,
-    "candidates": 276,
-    "counterexamples": 175,
-    "refinements": 175,
-    "clauses": 175,
-    "expansions": 0,
-    "literals": 810,
-    "meanClause": 4.6,
-    "maxClause": 9,
-    "checkCalls": 276,
-    "restarts": 0,
-    "rulesA": 249
-  },
   "graph-coloring": {
     "solutions": 10698,
     "candidates": 31776,
@@ -836,20 +808,6 @@
     "meanClause": 18,
     "maxClause": 20,
     "checkCalls": 31776,
-    "restarts": 0,
-    "rulesA": 403
-  },
-  "graph-coloring-original": {
-    "solutions": 9270,
-    "candidates": 16577,
-    "counterexamples": 7307,
-    "refinements": 7307,
-    "clauses": 7307,
-    "expansions": 0,
-    "literals": 55007,
-    "meanClause": 7.5,
-    "maxClause": 14,
-    "checkCalls": 16577,
     "restarts": 0,
     "rulesA": 403
   },

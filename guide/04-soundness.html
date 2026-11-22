@@ -116,30 +116,22 @@ relevant(del(V)) :- q(V), not busier(V).</pre>
           agrees with the leaf colours. The abstraction guesses the graph and the leaf colours; the
           check looks for a proper 3-colouring that agrees, which is the counterexample. The example
           comes from an earlier prototype of the same loop, and its check marked these atoms:</p>
-        <pre class="code" data-lang="asp" data-from="graph-coloring-original:check">relevant(edge(N,M)) :- node(N), node(M), N &lt; M, not edge(N,M).
+        <pre class="code" data-lang="asp" data-from="graph-coloring:check">relevant(edge(N,M)) :- node(N), node(M), N &lt; M, not edge(N,M).
 relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
-        <p class="listing-source">From the fragment <code>check</code> of <code>graph-coloring-original</code>.</p>
+        <p class="listing-source">The first two <code>relevant/1</code> rules of the fragment <code>check</code> of <code>graph-coloring</code>.</p>
         <p>Missing edges are relevant, because adding one can break the colouring. Leaf colours are
           relevant, because changing one can too. It looks complete. It is not: removing an edge can
           turn a node into a leaf, and if its new leaf colour differs from its colour in the
           counterexample, the counterexample breaks. The fix marks those atoms too:</p>
         <pre class="code" data-lang="asp" data-from="graph-coloring:check">relevant(leaf_color(N,C)) :- node(N), not leaf(N), color(C), not color(N,C).</pre>
         <p class="listing-source">From the fragment <code>check</code> of <code>graph-coloring</code>.</p>
-        <p id="story-numbers">With the original rules, n = 5 gives
-          <span data-stat="graph-coloring-original@n=5:solutions">101</span> solutions, the same as
-          the blocking loop's <span data-stat="gc-reference:solutions">101</span>. Nothing to see.
-          At n = 6 the original rules give
-          <span data-stat="graph-coloring-original:solutions">9,270</span> solutions, the fixed rules
+        <p id="story-numbers">Without the fix, n = 5 gives the same count as the blocking loop's
+          <span data-stat="gc-reference:solutions">101</span>. Nothing to see. At n = 6 the rules
+          without the fix give 9,270 solutions, the fixed rules
           <span data-stat="graph-coloring:solutions">10,698</span>, and so does the blocking loop.
           The mistake shows from n = 6 on.
-          <a class="play" href="../?example=graph-coloring-original&amp;fragment=check&amp;from=guide/04-soundness.html%23story-numbers" target="cegarplay">Open the original rules (n = 6)</a>
           <a class="play" href="../?example=graph-coloring&amp;fragment=check&amp;from=guide/04-soundness.html%23story-numbers" target="cegarplay">Open the fixed rules (n = 6)</a>
           <a class="play" href="../?example=gc-reference&amp;fragment=loop&amp;from=guide/04-soundness.html%23story-numbers" target="cegarplay">Open the blocking loop (n = 5)</a></p>
-        <p>The too-strong rules were also fast. At n = 5 they needed
-          <span data-stat="graph-coloring-original@n=5:candidates">276</span> candidates, the fixed
-          rules <span data-stat="gc-shape1:candidates">1,421</span>, the blocking loop
-          <span data-stat="gc-reference:candidates">3,373</span>. A loop that is suspiciously fast is
-          worth a soundness test.</p>
 
         <aside class="pitfall">
           <span class="aside-title">Pitfall: skipping the soundness test</span>

@@ -91,8 +91,3 @@ test('a rule refinement: the replay names the expansion that removes the lost so
   assert.equal(dg.culprit, 1);
   assert.ok(Number.isInteger(dg.culprit) && dg.culprit >= 1, JSON.stringify({ culprit: dg.culprit, w: a.verdict.witness }));
 });
-
-test('fuzz on graph-coloring-original over n = 3 to 6 stops at n = 6', { skip: !H.SLOW && 'slow (SLOW=1)' }, async () => {
-  const r = await fuzz(ex('graph-coloring-original'), { env, source: { constants: { n: [3, 4, 5, 6] } } });
-  assert.equal(r.found && r.found.instance.id, 'n6');
-});

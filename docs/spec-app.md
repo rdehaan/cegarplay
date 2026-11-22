@@ -250,7 +250,6 @@ Build them from `reference/declarative-cegar` with a small Node script kept in
 | File | Source | Changes |
 | --- | --- | --- |
 | `graph-coloring.json` | `graph-coloring.lp` | Glue rules wrapped as `glue(...)`. The added `relevant/1` rule (below). `#program refine(k).` part appended to the abstraction fragment. Constant `n` = 6 in settings. Shape 1. |
-| `graph-coloring-original.json` | `graph-coloring.lp` | Glue wrapped only. Description explains that these rules lose solutions and invites a comparison with the reference run. |
 | `nash.json` | `nash.lp` | Glue rules wrapped as `glue(...)`. |
 | `voting-justification.json` | `explain1.lp` | None (it already uses `glue(...)`). |
 

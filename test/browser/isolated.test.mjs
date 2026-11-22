@@ -59,8 +59,8 @@ test('pause freezes the counters, step advances, resume continues, stop ends wit
   await context.close();
 });
 
-test('threads: a solver with -t 2 gives 9,270 on reference row 2', async () => {
-  const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&file=graph-coloring-original&tab=4', { coi: true });
+test('threads: a solver with -t 2 gives 10,698 on graph-coloring', async () => {
+  const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&file=graph-coloring&tab=4', { coi: true });
   const loop = await B.getEditor(page, 'loop-editor');
   await B.setEditor(page, 'loop-editor', loop.replace('solver A = shared + abstraction', 'solver A = shared + abstraction options "-t 2"'));
   await page.click('#run-button');
@@ -70,7 +70,7 @@ test('threads: a solver with -t 2 gives 9,270 on reference row 2', async () => {
   await page.waitForFunction(() => window.cegarplay.engine.threads === true);
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error'], 120000), 'finished');
-  assert.match(await page.textContent('#live-line'), /9,270 solutions/);
+  assert.match(await page.textContent('#live-line'), /10,698 solutions/);
   assert.deepEqual(errors, []);
   await context.close();
 });

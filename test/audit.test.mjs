@@ -49,17 +49,6 @@ test('row 17: graph-coloring at n = 5', async () => {
   assert.deepEqual(pick(v), { candidates: 3373, solutions: 101, counterexamples: 13950, pairs: 13950, unsound: 0, at_risk: 0 });
 });
 
-test('row 18: graph-coloring-original at n = 5 is sound', async () => {
-  const v = await audit('graph-coloring-original', { n: '5' });
-  assert.equal(v.verdict, 'sound');
-  assert.equal(v.pairs, 3272);
-});
-
-test('row 19: graph-coloring-original at n = 6 (slow)', { skip: !SLOW && 'set SLOW=1' }, async () => {
-  const v = await audit('graph-coloring-original', { n: '6' });
-  assert.deepEqual(pick(v), { candidates: 102508, solutions: 10698, counterexamples: 606030, pairs: 91810, unsound: 44125, at_risk: 1440 });
-});
-
 test('row 20: guide-04-one-node', async () => {
   const v = await audit('guide-04-one-node');
   assert.equal(v.verdict, 'unsound');

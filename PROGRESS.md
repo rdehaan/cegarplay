@@ -744,6 +744,25 @@ All phases of PLAN.md, of the guide and of TODO.md are done. Open items for the 
 to GitHub Pages; filing the drafted trap report (`docs/upstream-trap-report.md`); a first CI run on
 GitHub; a read of the guide by a person; Firefox and Safari checks of the TODO changes.
 
+## Removed: graph-coloring-original (2026-11-22)
+
+The example `graph-coloring-original` (graph colouring with the too-weak original
+`relevant/1` rules) was removed on request. Follow-ups:
+- `tools/make-examples.mjs`, `tools/library.mjs`, `examples/library.json`: gone from the
+  `problems` group (now three examples).
+- Guide page 4, "A true story": the first listing now quotes the first two rules of
+  `graph-coloring:check`; 9,270 is plain text (still tested by row 12); the n = 5 speed
+  paragraph (276 candidates) and the link to the original rules are gone. `gc-shape1` and both
+  `graph-coloring-original` keys left `QUOTED` and `guide/numbers.json`.
+- Tutorial lesson 5: the "same story at a larger scale" paragraph and its button are gone.
+- Tests: audit rows 18 and 19 removed; row 12 now checks only that the legacy import of
+  `graph-coloring.lp` gives 9,270; the slow fuzz test on it is removed (the fuzz test on
+  `tutorial-weak-relevant` covers the same path); the threads test (isolated) runs
+  `graph-coloring` (10,698); the run-history mismatch test (stats) uses `tutorial-weak-relevant`
+  (11 vs 61).
+- `docs/reference-numbers.md` rows 18 and 19 marked removed; `docs/directions/*.md` keep the
+  historical numbers.
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.

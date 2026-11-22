@@ -108,8 +108,7 @@ breaks as `\n`. After the block, give two or three sentences on what the example
    check's meaning.
 4. **`relevant/1` marks every interface atom the counterexample depends on**: the atoms whose
    values make it a counterexample, both true ones and false ones. Too few is unsound: the
-   clause can cut real solutions (see `example-tutorial-weak-relevant.json` and
-   `example-graph-coloring-original.json`). Too many is safe but slow.
+   clause can cut real solutions (see `example-tutorial-weak-relevant.json`). Too many is safe but slow.
 5. In a `#program refine(k).` part, every head contains `k`.
 6. `relevant/1` derives at least one atom in every counterexample (else the run fails with
    `relevant/1 derived nothing for link G`).
