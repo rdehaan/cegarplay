@@ -202,3 +202,36 @@ Measured: `tutorial-weak-relevant` over n = 1..8 stops at n = 2 (candidate `pick
 at n = 8 the run loses 50 of 61 and `firstViolated` names a step for each); the fixture with
 `num/1` as eight facts shrinks to `num(1). num(2).` and n = 2 in 15 audits; `tutorial-first-run`
 over n = 1..8 is sound; gc-shape3 with `:- cex(k,color(1,C)).` added: culprit expansion 1.
+
+## 7. Pools and mining
+
+**Pools** (`pools[]`, format v2): `{ name, domain, items }`, items = lists of atom texts (one list
+per recorded counterexample). `validate` passes every item through `clingo --mode=gringo` as facts
+(a bad item is an error before the run). `assemble` writes `POOLS[name] = { domain, items }` only
+for a project with pools, and `SETTINGS.pools = "any"` with `settings.pools = "any"`.
+
+- The loop language: `pool(name)` compiles to `rt.pool("name")`, a list of lists of symbols:
+  `for P in pool(cex):` / `A.expand(refine, cex = P)`.
+- The domain: `rt.pool_key(S, pred, arity)` = FNV-1a (32 bits) of the sorted texts of the atoms of
+  pred/arity in solver S; `rt.domain_of(S, pred, arity)` = `"S:pred/arity:key"`. An expansion's `R`
+  event carries it as `d` (the solver of the counterexample whose atoms were the facts, the
+  predicate of the first fact). `rt.pool` compares a pool's domain with the run's and skips a
+  pool recorded on another domain with a `W` message (a colouring of six nodes replayed on seven
+  nodes would demand too much), unless `settings.pools = "any"`. Counter `pool items`.
+- "Save counterexamples as pool" (Statistics tab, run history) turns the recorded expansions of
+  the last run into one pool per fact name.
+
+**Mining** (`js/mine.js`, `mine(project, { source, objective, budget, keep, seconds, rounds,
+mutations, env })`): stage 1 successive halving over the instances of a generator grid (run all
+under a short time limit, keep the best third, triple the limit, repeat); stage 2 removes single
+facts of the best three, kept when `schema` holds and the objective rises. Objectives:
+`candidates-per-solution`, `clauses`, `time`, or `{ ratio, of, over }` (two variants). Results:
+instances `hard-<id>` with tag `hard`, the recipe and its `mutations` (`- fact.` removes a
+generated fact, `+ fact.` adds one; applied by `resolveInstance`), the score and the median score
+of its grid cell.
+
+Measured (`test/pool.test.mjs`): gc-shape4 warm-started from a pool of 226 counterexamples
+recorded under seed 7: 101 solutions, 101 check calls against 327 cold; at n = 4 the pool is
+skipped; mining qbf (t = 6, 8, 10, 12, eight seeds, 60 runs): the best instance has 10 candidates
+per solution, 1.9 times the median of its cell. The importers apx, tgf, preflib and jagg were
+built in I1 (`test/instances.test.mjs`).

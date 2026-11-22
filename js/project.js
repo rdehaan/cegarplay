@@ -192,6 +192,17 @@ export function load(json) {
   if ('instances' in p) out.instances = loadInstances(p.instances);
   if ('variants' in p) out.variants = loadVariants(p.variants, names);
   if ('generators' in p) out.generators = loadGenerators(p.generators);
+  if ('pools' in p) {
+    if (!Array.isArray(p.pools)) throw new ProjectError('pools must be a list');
+    const seen = new Set();
+    out.pools = p.pools.map((x, i) => {
+      if (!isObj(x) || typeof x.name !== 'string' || !/^[a-z][A-Za-z0-9_]*$/.test(x.name)) throw new ProjectError(`pool ${i + 1}: name must start with a lower case letter`);
+      if (seen.has(x.name)) throw new ProjectError(`duplicate pool name '${x.name}'`);
+      seen.add(x.name);
+      if (!Array.isArray(x.items) || !x.items.every((it) => Array.isArray(it) && it.every((a) => typeof a === 'string'))) throw new ProjectError(`pool ${x.name}: items must be lists of atom texts`);
+      return { ...x, domain: typeof x.domain === 'string' ? x.domain : '' };
+    });
+  }
   if ('views' in p) {
     if (!Array.isArray(p.views)) throw new ProjectError('views must be a list');
     const seen = new Set();

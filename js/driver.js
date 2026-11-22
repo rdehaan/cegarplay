@@ -84,6 +84,15 @@ export function assemble(project, compiled, runtimeLua, { poll = false, plain = 
     lines.push(`SETTINGS.record = { steps = ${luaStr(rec.steps)}, n = ${rec.n}, calls = ${rec.calls ? 'true' : 'false'}` +
       `${rec.proof ? ', proof = true' : ''} }`);
   }
+  // pools (docs/spec-instances.md section 7): only with the key, so other programs are unchanged
+  if (Array.isArray(project.pools) && project.pools.length) {
+    lines.push('POOLS = {}');
+    for (const p of project.pools) {
+      const items = (p.items || []).map((it) => `{ ${it.map(luaStr).join(', ')} }`).join(', ');
+      lines.push(`POOLS[${luaStr(p.name)}] = { domain = ${luaStr(p.domain || '')}, items = { ${items} } }`);
+    }
+    if (st.pools === 'any') lines.push('SETTINGS.pools = "any"');
+  }
   lines.push(...runtimeLua.replace(/\n?return rt\s*$/, '').split('\n'));
   for (const m of modules) lines.push(...m.replace(/\n?return [A-Za-z_][A-Za-z0-9_]*\s*$/, '').split('\n'));
   lines.push('function main(prg)');
@@ -271,6 +280,17 @@ export async function validate(project, engineRun) {
     groups = [...compiled.solvers.map((s) => s.fragments), ...compiled.links.map((l) => l.fragments)];
   } else {
     groups = names.map((n) => [n]);       // raw Lua: check every fragment on its own
+  }
+  if (problems.length) return problems;
+  // every pool item must be facts (a list of ground terms): checked here, so that parse_term in
+  // the runtime never sees bad text
+  for (const pl of project.pools || []) {
+    for (const [i, it] of (pl.items || []).entries()) {
+      const text = it.map((a) => `${a}.`).join('\n') + '\n';
+      const bad = it.find((a) => /[.:;]\s*$|:-/.test(a) || /^\s*$/.test(a));
+      const r = bad === undefined ? await engineRun(text, '--mode=gringo -Wnone') : { status: 65 };
+      if (r.status !== 0) problems.push({ where: { kind: 'settings', name: `pool ${pl.name}` }, severity: 'error', message: `pool ${pl.name}, item ${i + 1}: not a list of atoms (${bad !== undefined ? bad : (r.err || []).join(' ').trim()})` });
+    }
   }
   if (problems.length) return problems;
   // the facts of an instance reach every solver and every glue control (lua/runtime.lua)

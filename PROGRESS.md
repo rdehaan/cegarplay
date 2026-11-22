@@ -383,7 +383,7 @@ commit at each checkpoint, no stops.
 - [x] I4 Fuzz and shrink
 - [x] V4 Candidate space
 - [x] S5 Certified counts
-- [ ] I5 Mining, pools, importers
+- [x] I5 Mining, pools, importers
 - [ ] V5 Cursor, compare, export, lecture
 - [ ] L1 Values (G1–G3)
 - [ ] L2 Control (G4, G5, G8)
@@ -629,8 +629,18 @@ Notes per phase:
   fixed: accepted cells of the map ignored the slider. Not fixed (plausible): replay of loops that
   expand several parts, `lostInRun` with several links, acceptance across links.
 
-**Next step (PLAN2):** I5 Mining, pools, importers (`docs/directions/instance-lab.md`, phase I5;
-`js/mine.js` is started, not committed).
+- **I5 (done):** pools (`pools[]` validated in `load` and item by item in `validate`; `POOLS` in
+  `assemble`; `rt.pool`, `rt.pool_key`, `rt.domain_of`; R `e` events carry the domain `d`;
+  `pool(name)` in the loop language; "Save counterexamples as pool" in the run history), mining
+  (`js/mine.js`: successive halving, single-fact removal; `hard` instances with recipe and
+  `mutations`, applied by `resolveInstance`). `test/pool.test.mjs`: gc-shape4 warm 101 solutions
+  with 101 check calls against 327 cold; other domain skipped with a message; bad items rejected;
+  mining qbf best 1.9x its cell median. Importers were done in I1.
+  - Not done: campaign variants that name a pool (a variant may set `loop`, so a warm loop can
+    be a variant already); stage 2 of mining only removes facts (adding needs a fact pool).
+
+**Next step (PLAN2):** V5 Cursor, compare, export, lecture (`docs/directions/observatory.md`,
+phase V5; end of wave 5: review S5, I5, V5).
 
 ## Next step (PLAN.md, guide, TODO)
 

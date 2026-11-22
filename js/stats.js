@@ -86,6 +86,7 @@ export class Stats {
         <p class="inline-controls">
           <button class="control-button" id="rerun-seeds-button">Rerun with 5 seeds</button>
           <button class="control-button" id="clear-history-button">Clear</button>
+          <button class="control-button" id="save-pool-button" title="Store the counterexamples of the last run's expansions as pools (needs Recording: every step)">Save counterexamples as pool</button>
           <button class="control-button" id="import-verdict-button" title="The --json output of tools/certcheck.py for a proof log of one of these runs">Import certcheck verdict</button>
           <input type="file" id="verdict-file" accept=".json,.txt" hidden>
         </p>
@@ -97,6 +98,7 @@ export class Stats {
     r.querySelector('#copy-json-button').addEventListener('click', () => this.copy('json'));
     r.querySelector('#clear-history-button').addEventListener('click', () => { this.history = []; this.renderHistory(); });
     r.querySelector('#rerun-seeds-button').addEventListener('click', () => this.app.control && this.app.control.rerunSeeds());
+    r.querySelector('#save-pool-button').addEventListener('click', () => this.savePools());
     const vf = r.querySelector('#verdict-file');
     r.querySelector('#import-verdict-button').addEventListener('click', () => vf.click());
     vf.addEventListener('change', async () => { const f = vf.files[0]; vf.value = ''; if (f) this.importVerdict(await f.text()); });
@@ -353,6 +355,36 @@ export class Stats {
     if (!a) return '–';
     if (a.verdict === 'unsound') return `unsound (${fmt(a.unsound)})`;
     return a.verdict;
+  }
+
+  // Pools from the expansions of the last run (R events of kind e): one pool per fact name, an
+  // item per expansion (the atoms inside name(k, atom)), keyed by the domain the run reported.
+  savePools() {
+    const rec = this.app.recording;
+    const E = rec ? rec.steps.filter((s) => s.k === 'e' && s.f && s.f.length) : [];
+    const note = this.root.querySelector('#history-note');
+    if (!E.length) { note.hidden = false; note.textContent = 'No recorded expansions: run with Recording "every step" first.'; return 0; }
+    const by = new Map();
+    for (const s of E) {
+      const items = new Map();
+      for (const f of s.f) {
+        const m = /^([a-z][A-Za-z0-9_]*)\(\d+,(.*)\)$/.exec(f);
+        if (!m) continue;
+        (items.get(m[1]) || items.set(m[1], []).get(m[1])).push(m[2]);
+      }
+      for (const [name, atoms] of items) {
+        const p = by.get(name) || { name, domain: s.d || '', items: [] };
+        p.items.push(atoms);
+        by.set(name, p);
+      }
+    }
+    const project = this.app.project;
+    const pools = (project.pools || []).filter((p) => !by.has(p.name));
+    project.pools = [...pools, ...by.values()];
+    this.app.dirty();
+    note.hidden = false;
+    note.textContent = `Saved ${[...by.values()].map((p) => `pool ${p.name} (${p.items.length} items)`).join(', ')}. Use it in the loop with: for P in pool(name): A.expand(part, name = P)`;
+    return by.size;
   }
 
   // A certcheck verdict ({ verdict, fragmentsHash, solutions }): the runs of the same fragments,

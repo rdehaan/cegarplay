@@ -809,6 +809,7 @@ local function rline(o)
   if o.c then t[#t + 1] = ',"c":"'; t[#t + 1] = o.c; t[#t + 1] = '"' end
   if o.q then t[#t + 1] = ',"q":['; t[#t + 1] = concat(o.q, ","); t[#t + 1] = "]" end
   if o.f then t[#t + 1] = ',"f":'; t[#t + 1] = json(o.f) end
+  if o.d then t[#t + 1] = ',"d":'; t[#t + 1] = json(o.d) end
   if o.x then t[#t + 1] = ',"x":"'; t[#t + 1] = o.x; t[#t + 1] = '"' end
   if o.v ~= nil then t[#t + 1] = ',"v":'; t[#t + 1] = json(o.v) end
   t[#t + 1] = "}"
@@ -842,7 +843,7 @@ local function rec_flush()
 end
 
 -- kind: r (reject), a (add), e (expand), s (solution), x (error)
-record = function(kind, s, c, M, facts)
+record = function(kind, s, c, M, facts, domain)
   if not REC or REC.steps == "off" then return end
   local L = c and c.link or (M and M.solver.out[1]) or (s and s.out[1])
   local obj = { k = kind, s = s and s.index or NULL, l = L and L.index or NULL, n = loop_line(),
@@ -857,6 +858,7 @@ record = function(kind, s, c, M, facts)
     obj.q = q
   elseif kind == "x" then obj.q = array({}) end
   if facts then obj.f = facts end
+  if domain then obj.d = domain end
   if REC.proof and c and c.link then
     local X = c.x
     local Q = X and X.solver and X.solver.qtable
@@ -1067,7 +1069,19 @@ function Solver:expand(part, facts)
   self:resolve()
   rt.expansions = rt.expansions + 1
   self.n.ground = self.n.ground + (clock() - t0)
-  if REC then record("e", self, nil, self.last_model, all_facts) end
+  if REC then
+    -- the check domain of the facts (docs/spec-instances.md section 7): pools are keyed by it
+    local domain
+    pcall(function()
+      local src
+      for _, name in ipairs(names) do src = src or owner[facts[name]] end
+      for _, name in ipairs(names) do
+        local a = facts[name][1]
+        if a and src then domain = rt.domain_of(src.solver, a.name, #a.arguments); break end
+      end
+    end)
+    record("e", self, nil, self.last_model, all_facts, domain)
+  end
   if rt.certify_expand then
     local src
     for _, name in ipairs(names) do src = src or owner[facts[name]] end
@@ -1196,6 +1210,53 @@ end
 function rt.stop(message)
   if message == nil then rt.finish("finished", "", rt.exhausted) end
   rt.finish("stopped", tostring(message), false)
+end
+
+-- Pools of recorded counterexamples (docs/spec-instances.md section 7).
+-- rt.pool_key(S, pred, arity): FNV-1a (32 bits, hex) of the sorted texts of the atoms of pred/arity
+-- in solver S, the check domain. rt.domain_of gives "S:pred/arity:key", the pool's domain.
+local domain_cache = {}
+function rt.pool_key(S, pred, arity)
+  S:ground()
+  local t = {}
+  for a in S.ctl.symbolic_atoms:by_signature(pred, arity) do t[#t + 1] = tostring(a.symbol) end
+  table.sort(t)
+  local h = 2166136261
+  local s = concat(t, "\n")
+  for i = 1, #s do h = ((h ~ s:byte(i)) * 16777619) & 0xffffffff end
+  return string.format("%08x", h)
+end
+function rt.domain_of(S, pred, arity)
+  local k = S.name .. ":" .. pred .. "/" .. arity
+  local d = domain_cache[k]
+  if not d then d = k .. ":" .. rt.pool_key(S, pred, arity); domain_cache[k] = d end
+  return d
+end
+-- rt.pool(name): the items of a pool as lists of symbols (validated as facts before the run, so
+-- parse_term sees terms). A pool whose domain differs from this run's is skipped with a message,
+-- unless settings.pools is "any".
+function rt.pool(name)
+  local P = POOLS and POOLS[name]
+  if not P then fail("pool " .. tostring(name) .. ": the project has no pool of that name") end
+  if SETTINGS.pools ~= "any" and P.domain and P.domain ~= "" then
+    local sname, pred, ar = P.domain:match("^([^:]+):([^/]+)/(%d+):")
+    local S
+    for _, x in ipairs(rt.solvers) do if x.name == sname then S = x end end
+    local now = S and rt.domain_of(S, pred, tonumber(ar))
+    if now ~= P.domain then
+      emit("W", { solver = sname or "?", code = "pool", message = "pool " .. name .. " skipped: it was recorded on another domain (" ..
+        P.domain .. ", this run " .. tostring(now) .. "); settings.pools = \"any\" uses it anyway" })
+      return array({})
+    end
+  end
+  local out = array({})
+  for _, item in ipairs(P.items) do
+    local l = array({})
+    for _, t in ipairs(item) do l[#l + 1] = clingo.parse_term(t) end
+    out[#out + 1] = l
+  end
+  rt.count("pool items", #out)
+  return out
 end
 
 function rt.count(name, n)

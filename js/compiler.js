@@ -500,6 +500,12 @@ export function compile(source, { fragments = [] } = {}) {
       case 'attr': return member(e, null);
       case 'method': return member(e, e.args);
       case 'call': {
+        // pool(name): the items of a stored pool (lists of atoms), as rt.pool("name")
+        if (e.fn.t === 'name' && e.fn.name === 'pool' && !links.has('pool') && !solvers.has('pool')) {
+          const pos = positional(e.args, e, 'pool(name)');
+          if (pos.length !== 1 || pos[0].t !== 'name') { err(e, 'pool takes the name of a pool, as in pool(cex)'); return 'nil'; }
+          return `rt.pool(${luaString(pos[0].name)})`;
+        }
         if (e.fn.t === 'name' && links.has(e.fn.name)) {
           use(e.fn.name, 'of');
           const pos = positional(e.args, e, `${e.fn.name}(M)`);

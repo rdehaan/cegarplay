@@ -245,7 +245,17 @@ export async function resolveInstance(project, id, engineRun, luaTexts) {
     r = await runRecipe(project, x.recipe, luaTexts, engineRun);
     recipeCache.set(key, r);
   }
-  return { ...x, facts: r.facts, generated: { attempt: r.attempt, exact: r.exact } };
+  // mining stores a recipe plus mutations ("- fact." removes a generated fact, "+ fact." adds one)
+  let facts = r.facts;
+  if (Array.isArray(x.mutations) && x.mutations.length) {
+    const atoms = facts.split(/(?<=\.)\s+/).filter(Boolean);
+    for (const m of x.mutations) {
+      const f = String(m).slice(2).trim();
+      if (m.startsWith('- ')) { const i = atoms.indexOf(f); if (i >= 0) atoms.splice(i, 1); } else if (m.startsWith('+ ') && !atoms.includes(f)) atoms.push(f);
+    }
+    facts = atoms.join(' ');
+  }
+  return { ...x, facts, generated: { attempt: r.attempt, exact: r.exact } };
 }
 
 // A copy of the project whose selected (or given) instance has facts; other instances unchanged.

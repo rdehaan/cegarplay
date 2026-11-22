@@ -169,6 +169,15 @@ audit's witness, and the step of the loop's own run whose refinement removes the
 `expand` loops, a replay of the recorded expansions). The card saves the instance as a regression
 instance with its true count. Details: `docs/spec-instances.md` section 6.
 
+### Pools and mining
+
+A **pool** stores counterexamples of a run as lists of atoms ("Save counterexamples as pool" in
+the run history, after a run with expansions recorded); `for P in pool(cex): A.expand(refine, cex
+= P)` replays them as a warm start. A pool is keyed by its check domain: on an instance with
+another domain it is skipped with a message (`settings.pools = "any"` uses it anyway, at your own
+risk: check with Audit). `js/mine.js` searches a generator grid for hard instances (successive
+halving, then single-fact mutations) and returns them as `hard` instances with their recipe.
+
 ### Generators
 
 A **generator** is an ASP program whose shown atoms are an instance. Randomness enters through six
