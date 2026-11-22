@@ -101,6 +101,7 @@ class Programs:
         self.a.register_observer(self.astore)
         self.a.add("base", [], join(frags, A["frags"], "solver " + A["name"]))
         self.a.ground([("base", [])])
+        self.a.configuration.solve.models = "0"          # level 4 walks every candidate
         self.c = clingo.Control(cargs + ["--opt-mode=ignore"], logger=lambda c, m: None)
         self.c.register_observer(self.cstore)
         self.src, self.dst, self.index = [], [], {}
@@ -426,8 +427,28 @@ def check(project, log_path):
 
     stats = {"counterexamples": 0, "certificates": {}, "solutions": 0, "refinements": 0}
     clauses, solutions = [], []
+    reported = {x.get("c") for x in steps if x["k"] == "s"}
+    # a copy of A that gets the refinements in order: a solution must be a candidate that the
+    # refinements before it left (else a fake solution would raise the count)
+    frags = {f["name"]: f["text"] for f in project["fragments"]}
+    a2 = clingo.Control(consts_args(consts) + ["--opt-mode=ignore"], logger=lambda c, m: None)
+    a2.add("base", [], join(frags, info["A"]["frags"], "solver " + info["A"]["name"]))
+    a2.ground([("base", [])])
+    a2lit = {}
+    for atom in a2.symbolic_atoms:
+        a2lit[str(atom.symbol)] = atom.literal
+    def a2_assume(c):
+        b = bits(c, n)
+        return [a2lit[t] if b[j] else -a2lit[t] for j, t in enumerate(L["atoms"], 1)]
+    def a2_add(q):
+        with a2.backend() as bk:
+            bk.add_rule([], [-(a2lit[L["atoms"][abs(x) - 1]] if x > 0 else -a2lit[L["atoms"][abs(x) - 1]]) for x in q])
     for s in steps:
         if s["k"] == "s":
+            if any(t not in a2lit for t in L["atoms"]):
+                raise Reject(3, "an interface atom is not an atom of the abstraction")
+            if P.sat(a2, a2_assume(s.get("c") or "")) is None:
+                raise Reject(3, f"step {s['i']}: the solution is not a candidate left by the refinements before it")
             solutions.append(s.get("c"))
             continue
         if s["k"] not in ("r", "a") or "q" not in s:
@@ -435,6 +456,8 @@ def check(project, log_path):
         stats["refinements"] += 1
         q = s["q"]
         clauses.append(q)
+        if all(t in a2lit for t in L["atoms"]):
+            a2_add(q)
         vals = {jmap[abs(x) - 1]: x < 0 for x in q}       # the values the clause removes
         tv = None
         if s.get("x") is not None:
@@ -459,8 +482,14 @@ def check(project, log_path):
         stats["certificates"][str(level)] = stats["certificates"].get(str(level), 0) + 1
         if level == 0:
             cb = bits(s.get("c") or "", n)
-            if len(q) != n or not all((x > 0) != cb[abs(x)] for x in q):
+            if len({abs(x) for x in q}) != n or len(q) != n or not all((x > 0) != cb[abs(x)] for x in q):
                 raise Reject(2, f"step {s['i']}: a level-0 certificate needs a full block of the candidate")
+            # the block removes only its candidate: an accepted (reported) solution, or a
+            # candidate that has a counterexample
+            if s.get("c") not in reported:
+                ca, _ = cand_assume(s.get("c") or "")
+                if P.model_c(ca) is None:
+                    raise Reject(2, f"step {s['i']}: a level-0 block removes a candidate that is neither a reported solution nor refuted")
         elif level == 1:
             if P.model_c([P.dst[k] if v else -P.dst[k] for k, v in vals.items()]) is not None:
                 raise Reject(2, f"step {s['i']}: level 1: the check has a model under the kept values")

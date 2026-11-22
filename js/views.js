@@ -407,24 +407,28 @@ export function hashText(s) {
 // Frames on one engine: a request for a step the cursor has left is dropped; cached frames
 // make no engine call. run(program, options) -> { status, out, err }.
 export class FrameSource {
-  constructor(run) { this.run = run; this.cache = new FrameCache(200); this.calls = 0; this.latest = 0; this.busy = null; this.queued = null; }
-  async frame(program) {
+  constructor(run) { this.run = run; this.cache = new FrameCache(200); this.calls = 0; this.tickets = new Map(); this.busy = null; }
+  get latest() { return this.tickets.get('main') || 0; }
+  // channel: requests of one channel replace each other (the main view, the compare view);
+  // channels do not cancel each other. One engine call at a time.
+  async frame(program, channel = 'main') {
     const key = hashText(program);
     const hit = this.cache.get(key);
-    const ticket = ++this.latest;
+    const ticket = (this.tickets.get(channel) || 0) + 1;
+    this.tickets.set(channel, ticket);
     if (hit) return hit;
-    // one call at a time; a newer request replaces a queued one
+    const current = () => this.tickets.get(channel) === ticket;
     while (this.busy) {
       await this.busy.catch(() => {});
-      if (ticket !== this.latest) return null;
+      if (!current()) return null;
     }
-    if (ticket !== this.latest) return null;
+    if (!current()) return null;
     const p = (async () => { this.calls++; return viewAtoms(await this.run(program, VIEW_OPTIONS)); })();
     this.busy = p;
     try {
       const r = await p;
       if (!r.error) this.cache.set(key, r);
-      return ticket === this.latest ? r : null;
+      return current() ? r : null;
     } finally { this.busy = null; }
   }
 }

@@ -387,7 +387,7 @@ test('V5: one cursor drives the trace, the domain view, the map and the timeline
   const state = () => page.evaluate(() => {
     const a = window.cegarplay;
     return { step: a.cursor.step, label: document.getElementById('cursor-label').textContent, view: Number(document.getElementById('view-step').value),
-      viewStep: a.views.steps[Number(document.getElementById('view-step').value) - 1]?.t?.i, space: Number(document.getElementById('space-step').value),
+      viewStep: a.views.steps[Number(document.getElementById('view-step').value) - 1]?.i, space: Number(document.getElementById('space-step').value),
       spaceStep: a.space.F.rows[Number(document.getElementById('space-step').value) - 1]?.i, trace: a.output.trace.events[a.output.trace.pos]?.i };
   });
   await page.evaluate(() => window.cegarplay.cursor.setByStep(3));

@@ -667,11 +667,20 @@ Notes per phase:
     error). Golden fixture `reasons-by-shrinking.lua` rewritten (the example changed).
   - The lift sweep skips loops with `G.clause(X)` (no candidate to lift from).
 
-**Next step (PLAN2):** fix the confirmed findings of the wave-5 review (separate commit):
-certcheck level 0 accepts a block of an unreported solution, level 4 looks at one candidate,
-solutions are not checked to be candidates; pool validation lets trap-causing text through;
-view/trace match T events against R step numbers; compare-view requests cancel the main frame;
-mining compares scores under different time limits. Then L2 Control.
+- **Review of wave 5 (S5, I5, V5):** seven confirmed bugs, fixed with tests: certcheck level 0
+  accepted a full block of an unreported, unrefuted candidate (now it must be a reported solution
+  or have a counterexample); level 4 looked at one candidate (models = 0); solutions were not
+  checked to be candidates left by the earlier refinements (a copy of A gets the clauses in
+  order); pool validation let trap-causing text reach `parse_term` (now `groundTerm`, a strict
+  ground-term grammar, before the gringo check); the domain view, compare view and trace matched
+  T events against R step numbers (now `pairSteps`: R steps with their T events in order; the
+  precomputed frames follow); compare-view requests cancelled the main frame (FrameSource
+  channels; the storyboard goes through the source too); mining compared scores measured under
+  different time limits (each score keeps its limit; survivors rescored at one limit; mutations
+  judged at their base's limit). Not fixed (plausible): the history mark ignores the loop text;
+  hash mismatches that only cause wrongful rejections; compat links in certcheck.
+
+**Next step (PLAN2):** L2 Control (G4 inner/assumed searches, G5 partial checks, G8 optimal).
 
 ## Next step (PLAN.md, guide, TODO)
 

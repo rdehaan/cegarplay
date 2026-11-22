@@ -89,3 +89,15 @@ test('mining qbf with qbf-dnf: the ten best instances, and the ratio of the best
   assert.ok(b.score / b.cellMedian >= 1);
   assert.ok(r.runs <= 60);
 });
+
+test('review of wave 5: pool items that are not ground terms never reach parse_term', async () => {
+  const { groundTerm } = await import('../js/driver.js');
+  for (const bad of ['a;b', 'a|b', '#const k=1', '#show', 'not a', 'p(1..3)', 'p(1;2)', 'a, b', 'a:b', 'p(X):q(X)', '{a}', '1 {a} 1', 'a %* c *%', 'X', '_x'])
+    assert.equal(groundTerm(bad), false, bad);
+  for (const good of ['color(1,2)', '"a b"', '(1,2)', '-p(3)', 'f((1,),x)', 'a'])
+    assert.equal(groundTerm(good), true, good);
+  const p = ex('gc-shape4');
+  p.pools = [{ name: 'cex', domain: '', items: [['p(1..3)'], ['not a']] }];
+  const problems = (await validate(p, H.engineRun)).filter((x) => x.severity === 'error');
+  assert.equal(problems.length, 2);
+});

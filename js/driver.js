@@ -287,7 +287,7 @@ export async function validate(project, engineRun) {
   for (const pl of project.pools || []) {
     for (const [i, it] of (pl.items || []).entries()) {
       const text = it.map((a) => `${a}.`).join('\n') + '\n';
-      const bad = it.find((a) => /[.:;]\s*$|:-/.test(a) || /^\s*$/.test(a));
+      const bad = it.find((a) => !groundTerm(a));
       const r = bad === undefined ? await engineRun(text, '--mode=gringo -Wnone') : { status: 65 };
       if (r.status !== 0) problems.push({ where: { kind: 'settings', name: `pool ${pl.name}` }, severity: 'error', message: `pool ${pl.name}, item ${i + 1}: not a list of atoms (${bad !== undefined ? bad : (r.err || []).join(' ').trim()})` });
     }
@@ -331,6 +331,42 @@ export async function validate(project, engineRun) {
     }
   }
   return problems;
+}
+
+// A ground term as clingo prints one (pool items): constants, numbers, strings, functions and
+// tuples; no variables, intervals, pools, aggregates, directives or comments. parse_term in the
+// runtime only ever sees text that passes (a clingo error there traps the engine).
+export function groundTerm(text) {
+  const s = String(text).trim();
+  let i = 0;
+  const ws = () => { while (i < s.length && s[i] === ' ') i++; };
+  function term() {
+    ws();
+    if (s[i] === '"') { i++; while (i < s.length && s[i] !== '"') { if (s[i] === '\\') i++; i++; } if (s[i] !== '"') return false; i++; return true; }
+    if (s[i] === '-') { i++; ws(); }
+    let m = /^[0-9]+/.exec(s.slice(i));
+    if (m) { i += m[0].length; return true; }
+    if (s[i] === '(') { i++; if (!list(')')) return false; return true; }
+    m = /^[a-z][A-Za-z0-9_']*/.exec(s.slice(i));
+    if (!m) return false;
+    i += m[0].length;
+    if (s[i] === '(') { i++; return list(')'); }
+    return true;
+  }
+  function list(close) {
+    ws();
+    if (s[i] === close) { i++; return true; }
+    for (;;) {
+      if (!term()) return false;
+      ws();
+      if (s[i] === ',') { i++; ws(); if (s[i] === close) { i++; return true; } continue; }
+      if (s[i] === close) { i++; return true; }
+      return false;
+    }
+  }
+  if (!s || !term()) return false;
+  ws();
+  return i === s.length;
 }
 
 // A generator (docs/spec-instances.md section 4) checked by clingo --mode=gringo behind a

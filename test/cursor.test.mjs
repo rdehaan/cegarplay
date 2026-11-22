@@ -63,3 +63,19 @@ test('the exported SVG of the V3 fixture frame equals the stored file', async ()
   assert.equal((svg.match(/<circle /g) || []).length, 10);
   assert.equal((svg.match(/stroke-width="8"/g) || []).length, 3);   // the three ringed nodes
 });
+
+test('review of wave 5: R steps and T events paired (R counts solutions, T does not); frame channels do not cancel each other', async () => {
+  const { pairSteps } = await import('../js/recording.js');
+  const { FrameSource } = await import('../js/views.js');
+  const rec = recOf('af-preferred');
+  const P = pairSteps(rec);
+  assert.equal(P.length, rec.steps.length);
+  assert.ok(P.every((x) => (x.r.k === 's') === (x.t === null) || x.t === null));
+  const paired = P.filter((x) => x.t);
+  assert.ok(paired.every((x) => ({ r: 'reject', a: 'add', e: 'expand', x: 'error' })[x.r.k] === x.t.kind), 'kinds agree');
+  assert.ok(paired.some((x) => x.i !== x.t.i), 'the numberings differ once a solution has occurred');
+  let calls = 0;
+  const src = new FrameSource(async () => { calls++; await new Promise((r) => setTimeout(r, 5)); return { status: 30, out: ['{"Result":"SATISFIABLE","Call":[{"Witnesses":[{"Value":["draw(node(1))"]}]}]}'] }; });
+  const [a, b] = await Promise.all([src.frame('main program'), src.frame('compare program', 'compare')]);
+  assert.ok(a && b, 'both channels get their frame');
+});

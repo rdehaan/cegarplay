@@ -47,22 +47,26 @@ export async function mine(project, { source, objective = 'candidates-per-soluti
   const list = fuzzInstances(project, source);
   let runs = 0;
   // stage 1: successive halving over the seeds and grid points
-  let pool = list.map((x) => ({ x, score: -Infinity, mutations: [] }));
-  let limit = seconds;
+  let pool = list.map((x) => ({ x, score: -Infinity, mutations: [], limit: 0 }));
+  let limit = seconds, last = seconds;
   for (let r = 0; r < rounds && pool.length > keep && runs < budget; r++) {
     for (const c of pool) {
       if (runs >= budget) break;
       const e = await evaluate(project, c.x, env, objective, limit);
       runs++;
-      c.score = e.score; c.res = e.res;
+      c.score = e.score; c.res = e.res; c.limit = limit;
       onProgress({ stage: 1, round: r + 1, runs, instance: c.x.id, score: c.score });
     }
-    pool.sort((a, b) => b.score - a.score);
-    pool = pool.slice(0, Math.max(keep, Math.ceil(pool.length / 3)));
+    // a round cut by the budget compares only the scores measured at this round's limit
+    const fresh = pool.filter((c) => c.limit === limit), stale = pool.filter((c) => c.limit !== limit);
+    fresh.sort((a, b) => b.score - a.score);
+    pool = [...fresh, ...stale].slice(0, Math.max(keep, Math.ceil(pool.length / 3)));
+    last = limit;
     limit *= 3;
   }
-  for (const c of pool) if (c.score === -Infinity && runs < budget) { const e = await evaluate(project, c.x, env, objective, limit); runs++; c.score = e.score; c.res = e.res; }
-  pool.sort((a, b) => b.score - a.score);
+  // every survivor scored at one limit (the last one used), budget permitting
+  for (const c of pool) if (c.limit !== last && runs < budget) { const e = await evaluate(project, c.x, env, objective, last); runs++; c.score = e.score; c.res = e.res; c.limit = last; }
+  pool.sort((a, b) => (b.limit === last) - (a.limit === last) || b.score - a.score);
   // per grid cell: the median score of the stage-1 runs (for the report)
   const byCell = new Map();
   for (const c of pool) { const k = cellOf(c.x.params); (byCell.get(k) || byCell.set(k, []).get(k)).push(c.score); }
@@ -71,7 +75,7 @@ export async function mine(project, { source, objective = 'candidates-per-soluti
   const schema = project.fragments.find((f) => f.name === 'schema');
   for (const c of pool.slice(0, 3)) {
     if (runs >= budget) break;
-    const d = await plain(project, c.x, env, undefined, limit);
+    const d = await plain(project, c.x, env, undefined, last);
     const inst = d.fragments.find((f) => f.name === 'instance');
     const norm = await normaliseFacts(inst ? inst.text : '', env.engineRun, d.settings.constants);
     if (norm.error) continue;
@@ -86,7 +90,8 @@ export async function mine(project, { source, objective = 'candidates-per-soluti
         const r = await env.engineRun(`${next.join('\n')}\n${schema.text}\n`, '--outf=3');
         if (r.status !== 10 && r.status !== 30) continue;
       }
-      const e = await evaluate(project, xi, env, objective, limit);
+      // the same limit as the score it is compared with (a cut run counts what it reached)
+      const e = await evaluate(project, xi, env, objective, c.limit || last);
       runs++;
       onProgress({ stage: 2, runs, instance: c.x.id, score: e.score });
       if (e.score > best) { best = e.score; c.mutations.push(`- ${facts[k]}`); facts = next; c.res = e.res; }

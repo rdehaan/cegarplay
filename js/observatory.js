@@ -2,6 +2,7 @@
 // a brushed range, exports (SVG of the view, PNG of the map, a storyboard strip), data tables,
 // and lecture mode.
 import { ticksOf } from './cursor.js';
+import { pairSteps } from './recording.js';
 import { frameSVG, svgFile, Palette, layoutScene } from './views.js';
 
 const $ = (id) => document.getElementById(id);
@@ -77,8 +78,9 @@ export class ObservatoryBar {
     // the trace of the Output tab follows the cursor too
     const tr = this.app.output && this.app.output.trace;
     if (tr && tr.events && tr.events.length && t) {
-      let k = -1;
-      tr.events.forEach((e, j) => { if (e.i <= t.i) k = j; });
+      // the T event paired with the last step at or before the cursor (R and T number apart)
+      const pair = [...pairSteps(this.app.recording)].reverse().find((x) => x.i <= t.i && x.t);
+      const k = pair ? tr.events.findIndex((e) => e.i === pair.t.i) : -1;
       if (k >= 0 && k !== tr.pos) tr.go(k);
     }
   }
@@ -107,12 +109,12 @@ export class ObservatoryBar {
     const v = this.app.views;
     if (!v.scene) { v.msg.textContent = 'No view drawn yet.'; return null; }
     const want = String(this.stepsIn.value || '').split(/[,\s]+/).map(Number).filter((n) => Number.isFinite(n) && n > 0);
-    const steps = want.length ? want : v.steps.slice(0, 4).map((s) => (s.t ? s.t.i : s.r.i));
+    const steps = want.length ? want : v.steps.slice(0, 4).map((s) => s.i);
     const pal = new Palette();
     const parts = [];
     let k = 0;
     for (const i of steps) {
-      const idx = v.steps.findIndex((s) => (s.t ? s.t.i : s.r.i) === i) + 1;
+      const idx = v.steps.findIndex((s) => s.i === i) + 1;
       if (idx < 1) continue;
       const m = await v.frameAt(idx);
       if (!m) continue;

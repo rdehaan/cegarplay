@@ -1,6 +1,7 @@
 // The domain view region of the Observatory (docs/spec-views.md): pick a view and a step, draw
 // the view's marks as SVG. Scene layout once per scene; a frame only changes attributes.
 import { Engine } from './engine.js';
+import { pairSteps } from './recording.js';
 import { viewAtoms as viewAtomsOf, frameSVG, svgFile } from './views.js';
 import { frameFacts, viewProgram, sceneProgram, parseMarks, layoutScene, suggestView, Palette, FrameSource, VIEW_OPTIONS, viewProject, hashText } from './views.js';
 
@@ -42,7 +43,7 @@ export class ViewPanel {
     this.slider = h('input', { type: 'range', id: 'view-step', min: 1, max: 1, value: 1, 'aria-label': 'Step' });
     this.slider.addEventListener('input', () => {
       const st = this.steps[Number(this.slider.value) - 1];
-      if (st && this.app.cursor) this.app.cursor.setByStep(st.t ? st.t.i : st.r.i);
+      if (st && this.app.cursor) this.app.cursor.setByStep(st.i);
     });
     this.stepLabel = h('span', { id: 'view-step-label', class: 'note' });
     this.svgBox = h('div', { id: 'view-svg', class: 'view-svg' });
@@ -77,10 +78,7 @@ export class ViewPanel {
 
   // the steps of the last run or replay: T events, else R events
   updateSteps() {
-    const rec = this.app.recording;
-    const T = rec ? rec.traces : [];
-    const R = rec ? rec.steps : [];
-    this.steps = T.length ? T.map((t) => ({ t })) : R.map((r) => ({ r }));
+    this.steps = pairSteps(this.app.recording);
     this.slider.max = Math.max(1, this.steps.length);
     if (Number(this.slider.value) > this.steps.length) this.slider.value = 1;
     this.slider.disabled = !this.steps.length;
@@ -114,7 +112,7 @@ export class ViewPanel {
     if (!c || !c.ticks.length) return Math.min(this.steps.length, Number(this.slider.value) || 1);
     if (c.index === 0) return 0;
     let k = 0;
-    this.steps.forEach((st, j) => { if ((st.t ? st.t.i : st.r.i) <= c.step) k = j + 1; });
+    this.steps.forEach((st, j) => { if (st.i <= c.step) k = j + 1; });
     return k;
   }
 
@@ -144,7 +142,7 @@ export class ViewPanel {
     const st = this.steps[index - 1];
     if (!st) { this.stepLabel.textContent = this.steps.length ? 'before the first step' : 'no recorded step (run first)'; this.applyFrame(parseMarks([], v.name)); return; }
     const facts = st.t ? frameFacts(st.t) : frameFacts(st.r, this.iface(st));
-    this.stepLabel.textContent = `step ${st.t ? st.t.i : st.r.i} of ${this.steps.length} (${st.t ? st.t.kind : st.r.k})`;
+    this.stepLabel.textContent = `step ${st.i} of ${this.steps.length} (${st.t ? st.t.kind : st.r.k})`;
     const r = await this.source.frame(viewProgram(p, v, facts));
     if (!r) return;                                    // the cursor has moved on
     if (r.error) { this.msg.textContent = `The frame: ${r.error}`; return; }
@@ -197,11 +195,8 @@ export class ViewPanel {
     this.ensureEngine();
     const p = this.project();
     const facts = st.t ? frameFacts(st.t) : frameFacts(st.r, this.iface(st));
-    const prog = viewProgram(p, v, facts);
-    const hit = this.source.cache.get(hashText(prog));
-    const r = hit || viewAtomsOf(await (this.engine || (this.engine = new Engine({ threads: false }))).exec(prog, VIEW_OPTIONS));
-    if (!hit && !r.error) this.source.cache.set(hashText(prog), r);
-    return r.error ? null : parseMarks(r.atoms, v.name);
+    const r = await this.source.frame(viewProgram(p, v, facts), `storyboard-${k}`);
+    return !r || r.error ? null : parseMarks(r.atoms, v.name);
   }
 
   // a second recording of the same instance: its frame at the cursor's step, beside the first
@@ -211,14 +206,13 @@ export class ViewPanel {
     const rec = this.compare, v = this.view;
     if (!rec || !v || !this.scene) return;
     const c = this.app.cursor, i = c ? c.step : 0;
-    const T = rec.traces.length ? rec.traces : null;
     let facts = null;
-    if (T) { const t = [...T].reverse().find((x) => x.i <= i); if (t) facts = frameFacts(t); }
-    else { const r = [...rec.steps].reverse().find((x) => x.i <= i); if (r) facts = frameFacts(r, (rec.I.links[(r.l || 1) - 1] || { atoms: [] }).atoms); }
+    const st = [...pairSteps(rec)].reverse().find((x) => x.i <= i);
+    if (st) facts = st.t ? frameFacts(st.t) : frameFacts(st.r, ((rec.I && rec.I.links[(st.r.l || 1) - 1]) || { atoms: [] }).atoms);
     let m = parseMarks([], v.name);
     if (facts) {
       const prog = viewProgram(this.project(), v, facts);
-      const res = await this.source.frame(prog);
+      const res = await this.source.frame(prog, 'compare');
       if (!res) return;
       if (!res.error) m = parseMarks(res.atoms, v.name);
     }

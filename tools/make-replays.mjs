@@ -8,6 +8,7 @@ import { load } from '../js/project.js';
 import { runProject, recordingOf } from './run.mjs';
 import factory from '../vendor/clingo-wasm/clingo.js';
 import { viewProject, sceneProgram, viewProgram, frameFacts, viewAtoms, hashText, VIEW_OPTIONS } from '../js/views.js';
+import { pairSteps } from '../js/recording.js';
 
 // precomputed frames of an example's first view: program hash -> marks (examples/views/<id>.json)
 async function engineRun(program, options) {
@@ -22,7 +23,8 @@ async function viewFrames(project, rec) {
   if (!v) return null;
   const p = viewProject(project, rec.header.instance);
   const progs = [sceneProgram(p, v)];
-  const steps = rec.traces.length ? rec.traces.map((t) => frameFacts(t)) : rec.steps.map((r) => frameFacts(r, (rec.I.links[(r.l || 1) - 1] || { atoms: [] }).atoms));
+  // the frames the page asks for: every step of pairSteps (T facts where a T event exists)
+  const steps = pairSteps(rec).map((st) => (st.t ? frameFacts(st.t) : frameFacts(st.r, ((rec.I && rec.I.links[(st.r.l || 1) - 1]) || { atoms: [] }).atoms)));
   for (const f of steps.slice(0, 200)) progs.push(viewProgram(p, v, f));
   const out = {};
   for (const prog of progs) {

@@ -35,6 +35,21 @@ export function align(a, b, by = 'step') {
   return out;
 }
 
+// The steps of a recording with one numbering: the R steps (i = R step number; solutions count),
+// each non-solution step paired in order with its T event (the trace has the counterexample);
+// without R events, the T events alone (i = T step number). [{ i, r, t }]
+export function pairSteps(rec) {
+  if (!rec) return [];
+  const T = rec.traces || [];
+  if (!rec.steps || !rec.steps.length) return T.map((t) => ({ i: t.i, r: null, t }));
+  let k = 0;
+  return rec.steps.map((r) => {
+    if (r.k === 's') return { i: r.i, r, t: null };
+    const t = k < T.length ? T[k++] : null;
+    return { i: r.i, r, t };
+  });
+}
+
 export class Recording {
   constructor(header = {}) {
     this.header = { format: RECORDING_FORMAT, version: RECORDING_VERSION, ...header };
