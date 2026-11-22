@@ -228,10 +228,10 @@ test('A2: M.atoms(p/n) of a candidate agrees with the solution it becomes', asyn
   assert.deepEqual(logs.map((l) => l.slice(1, -1).split(', ').filter(Boolean).sort().join(', ')), sols);
 });
 
-test('A3: assumptions for another solver are an error', async () => {
-  const r = await H.runProject(withLoop('M = A.solve()\nX = A.solve(assume G(M))\nlog X\n'));
-  assert.equal(H.done(r).outcome, 'error');
-  assert.equal(H.last(r, 'E').message, 'A.solve: the assumptions of G are for solver C');
+test('A3: G(M) given to the source of G means the same values (phase L1; it was an error before)', async () => {
+  const r = await H.runProject(withLoop('M = A.solve()\nX = A.solve(assume G(M))\nif X.atoms(pick/1).size == M.atoms(pick/1).size: log "same"\n'));
+  assert.equal(H.done(r).outcome, 'finished', JSON.stringify(H.ofKind(r, 'E')));
+  assert.deepEqual(H.ofKind(r, 'L').map((l) => l.text), ['same']);
 });
 
 test('A4: the time limit ends a loop without solver calls', async () => {

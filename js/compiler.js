@@ -9,9 +9,9 @@ const LUA_RESERVED = new Set(('and break do else elseif end false for function g
 const RESERVED = new Set([...LUA_RESERVED, 'rt', 'clingo', 'FRAGMENTS', 'CONSTS', 'SETTINGS', 'main', 'LOOP_LINES', 'ipairs', '_']);
 const COMPOUND = new Set(['if', 'elif', 'else', 'loop', 'while', 'repeat', 'for', 'search', 'on']);
 
-export const SOLVER_MEMBERS = ['solve', 'models', 'add', 'expand', 'exhausted', 'step'];
-export const LINK_MEMBERS = ['clause', 'block', 'core', 'clauses', 'lift'];
-export const VALUE_MEMBERS = ['atoms', 'push', 'clear', 'size'];
+export const SOLVER_MEMBERS = ['solve', 'models', 'add', 'expand', 'exhausted', 'step', 'core', 'atom'];
+export const LINK_MEMBERS = ['clause', 'block', 'core', 'clauses', 'lift', 'above', 'below'];
+export const VALUE_MEMBERS = ['atoms', 'push', 'clear', 'size', 'on', 'flip', 'without', 'true', 'value', 'count', 'cost', 'arg'];
 
 class CompileError extends Error {
   constructor(line, col, message) { super(message); this.line = line; this.col = col; }
@@ -309,7 +309,7 @@ class Parser {
       if (this.isOp('.')) {
         this.next();
         // a keyword that is also a member name (G.lift) reads as a name after the dot
-        const n = this.isKw('lift') ? { ...this.next(), type: 'name' } : this.name('a member name');
+        const n = this.peek().type === 'kw' ? { ...this.next(), type: 'name' } : this.name('a member name');
         if (this.isOp('(')) { const args = this.args(); e = { t: 'method', obj: e, name: n.value, args, line: n.line, col: n.col }; }
         else e = { t: 'attr', obj: e, name: n.value, line: n.line, col: n.col };
       } else if (this.isOp('(')) {
@@ -544,6 +544,12 @@ export function compile(source, { fragments = [] } = {}) {
       switch (name) {
         case 'exhausted': if (args) err(e, `${S}.exhausted is not a method`); return `${S}.exhausted`;
         case 'step': if (args) err(e, `${S}.step is not a method`); return `${S}.k`;
+        case 'core': if (args) err(e, `${S}.core is not a method: write ${S}.core.on(G)`); return `${S}:core()`;
+        case 'atom': {
+          const pos = args ? positional(args, e, `${S}.atom`) : [];
+          if (!args || !pos.length) { err(e, `${S}.atom takes a predicate name and its arguments, as in ${S}.atom("bound", n)`); return 'nil'; }
+          return `${S}:atom(${pos.map((a) => ex(a)).join(', ')})`;
+        }
         case 'solve': case 'models': {
           if (!args) { err(e, `${S}.${name} must be called: ${S}.${name}(...)`); return 'nil'; }
           let assume = null, limit = null, optimal = false;
@@ -598,7 +604,9 @@ export function compile(source, { fragments = [] } = {}) {
       if (!LINK_MEMBERS.includes(name)) { err(e, `unknown member '${name}' of link ${G}; valid: ${LINK_MEMBERS.join(', ')}, and ${G}(M)`); return 'nil'; }
       if (!args) { err(e, `${G}.${name} must be called`); return 'nil'; }
       const pos = positional(args, e, `${G}.${name}`);
-      const want = { clause: 2, block: 1, core: 1, clauses: 1, lift: 2 }[name];
+      const want = { clause: 2, block: 1, core: 1, clauses: 1, lift: 2, above: 1, below: 1 }[name];
+      // G.clause(X): the clause from the counterexample alone (its own interface values)
+      if (name === 'clause' && pos.length === 1) { use(G, name); return `${G}:clause(nil, ${ex(pos[0])})`; }
       if (pos.length !== want) err(e, `${G}.${name} takes ${want === 1 ? 'one argument' : 'two arguments'}`);
       if (name === 'core' && pos[0] && !(pos[0].t === 'name' && solvers.has(pos[0].name))) err(pos[0], `${G}.core takes the check solver, as in ${G}.core(C)`);
       use(G, name);
@@ -631,6 +639,29 @@ export function compile(source, { fragments = [] } = {}) {
       case 'clear': {
         if (!args || args.length) err(e, "'clear' takes no arguments: l.clear()");
         return `rt.clear(${ex(obj)})`;
+      }
+      case 'on': {
+        const pos = args ? positional(args, e, 'on') : [];
+        if (!args || pos.length !== 1 || pos[0].t !== 'name' || !links.has(pos[0].name)) { err(e, 'on takes a link, as in C.core.on(G)'); return 'nil'; }
+        use(pos[0].name, 'core');
+        return `${r}:on(${pos[0].name})`;
+      }
+      case 'flip': case 'without': {
+        const pos = args ? positional(args, e, name) : [];
+        if (!args || pos.length !== 1) { err(e, `${name} takes one atom of the list, as in E.${name}(a)`); return 'nil'; }
+        return `rt.${name}(${ex(obj)}, ${ex(pos[0])})`;
+      }
+      case 'true': if (args) err(e, "'true' is not a method: write a.true"); return `rt.atrue(${ex(obj)})`;
+      case 'cost': if (args) err(e, "'cost' is not a method: write X.cost"); return `rt.cost(${ex(obj)})`;
+      case 'value': case 'count': {
+        if (!args || args.length !== 1 || args[0].k !== 'pred') { err(e, `${name} takes one predicate, as in X.${name}(gain/1)`); return 'nil'; }
+        capture(args[0].name, args[0].arity);
+        return `${r}:${name}(${luaString(args[0].name)}, ${args[0].arity})`;
+      }
+      case 'arg': {
+        const pos = args ? positional(args, e, 'arg') : [];
+        if (!args || pos.length !== 1) { err(e, 'arg takes a position, as in a.arg(1)'); return 'nil'; }
+        return `rt.arg(${ex(obj)}, ${ex(pos[0])})`;
       }
       default:
         err(e, `unknown member '${name}'; valid for models and lists: ${VALUE_MEMBERS.join(', ')}`);

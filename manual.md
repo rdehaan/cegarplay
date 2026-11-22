@@ -572,6 +572,23 @@ Shape 1 with `reject M with G.block(M)` as the only refinement. Each bad candida
 its own, so it is always sound: its solution count is the truth on small instances. Compare a
 loop's count with it to find a `relevant/1` that is too weak.
 
+## Values: clauses, lists and model reads (phase L1)
+
+| Script | Meaning |
+| --- | --- |
+| `G.above(M)`, `G.below(M)` | A clause for the source of G that removes M and all its supersets (subsets) on G's atoms; M is a model or a list `G(M)`. |
+| `G.clause(X)` | The clause from the counterexample alone: its `relevant/1` atoms with the values X saw. It may be empty: rejecting with an empty clause ends the search, adding it leaves the solver without models. (`G.clause(M, X)` still stops with "relevant/1 derived nothing" on an empty set.) |
+| `C.core` and `core.on(G)` | The whole unsat core of C's last solve; `.on(G)` keeps the atoms of link G (`G.core(C)` is short for `C.core.on(G)`). |
+| `for a in E:`, `a.true`, `E.flip(a)`, `E.without(a)` | Walk and edit a list of assumptions such as `G(M)`; flip and without return new lists. |
+| `S.atom("bound", n)` | The atom `bound(n)` of S as a one-element assumption list (an error names a missing atom). |
+| `A.solve(assume G(M))` | A list of link G given to G's source means the same values on the source's atoms. |
+| `X.value(p/1)`, `X.count(p/n)`, `X.cost`, `a.arg(i)` | The argument of the one true `p` atom (an error when there are none or several), the number of true atoms, the cost, the i-th argument of an atom. |
+
+A solve under assumptions no longer counts for the "no progress" guard (it may return the same
+candidate on purpose). `reasons-by-shrinking` and `knapsack-bounds` are loop scripts now,
+`reasons-by-size` needs no helper solver (`G.above`), and `qbf` has no `always` atom
+(`G.clause(X)`).
+
 ## Refinement variants
 
 | Variant | Script | Example |

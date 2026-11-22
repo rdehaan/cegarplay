@@ -23,16 +23,11 @@
       "name": "check",
       "description": "Looks for an input that agrees on the kept features and gets the other answer (solver C).",
       "text": "% A counterexample: another input x/1 that agrees with the given one on the kept\n% features ...\n{ x(F) } :- feature(F).\n:- keep(F), is(F,1), not x(F).\n:- keep(F), is(F,0), x(F).\n% ... but gets the other answer from the network.\nfires(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), x(F) } >= T.\nyes :- #sum { V,U : vote(U,V), fires(U) } >= 3.\n:- yes, yes0.\n:- not yes, not yes0.\ndiffers(F) :- is(F,1), not x(F).\ndiffers(F) :- is(F,0), x(F).\n#show x/1.\n#show differs/1.\n\n% The input refutes every set of kept features on which it agrees with the given\n% input. So one of the features on which it differs has to be kept.\nrelevant(keep(F)) :- differs(F).\n"
-    },
-    {
-      "name": "supersets",
-      "description": "Solver B: writes the clause that removes an accepted candidate and its supersets.",
-      "text": "% Solver B sees an accepted candidate (through link GB) and writes, as clause/3 atoms,\n% the clause \"not all of its features\": it removes the candidate and all its supersets.\nclause(0, keep(F), false) :- keep(F).\n"
     }
   ],
   "loop": {
     "language": "loop",
-    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nsolver B = shared + supersets\nlink   G  = A -> C via shared + glue\nlink   GB = A -> B via shared + glue\n\n# Smallest candidates first: A.solve(optimal) returns a smallest set that is still\n# possible. If the check finds no counterexample, the set is a sufficient reason, and\n# all its supersets are sufficient too. There is no counterexample to read a clause\n# from, so a helper solver B gets the accepted candidate and writes the clause that\n# removes the supersets. Because candidates come smallest first, each accepted set is\n# minimal.\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        Y = B.solve(assume GB(M))\n        A.add(GB.clauses(Y))\n"
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G  = A -> C via shared + glue\n\n# Smallest candidates first: A.solve(optimal) returns a smallest set that is still\n# possible. If the check finds no counterexample, the set is a sufficient reason, and\n# all its supersets are sufficient too: G.above(M) removes M and its supersets. Because\n# candidates come smallest first, each accepted set is minimal.\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.above(M))\n"
   },
   "settings": {
     "constants": {},

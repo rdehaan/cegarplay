@@ -53,76 +53,36 @@ local rt = {}
 -- runtime stub
 function main(prg)
   rt.run(function()
--- Minimal sufficient reasons by shrinking: take any candidate; if the check finds no
--- counterexample, drop kept features one at a time as long as the check still fails,
--- report what is left, and exclude every superset of it.
-local A = rt.solver("A", {"shared", "abstraction"}, {})
-local C = rt.solver("C", {"shared", "check"}, {"--heuristic=Domain"})
-local G = rt.link("G", A, C, {"shared", "glue"}, {})
-rt.prepare()
-
--- G:of(M) lists, for each interface atom j, the literal of the atom in C, positive if
--- the atom is true in M. G:block(M) lists the literal of the same atom in A, negated if
--- it is true in M. Together they give the literals of the interface atoms in A.
-local srcA = nil
-local function learn_literals(M)
-  local a, b = G:of(M), G:block(M)
-  srcA = {}
-  for j = 1, #a do srcA[j] = a[j] > 0 and -b[j] or b[j] end
-end
-
-local function copy(a)
-  local b = {}
-  for i = 1, #a do b[i] = a[i] end
-  return b
-end
-
--- Entry i assumes its feature kept.
-local function is_kept(a, i) return a[i] > 0 end
-
--- A copy of a in which feature i is dropped.
-local function dropped(a, i)
-  local b = copy(a)
-  b[i] = -b[i]
-  return b
-end
-
--- The clause for A "not all features that a keeps": removes a and all its supersets.
-local function superset_block(a)
-  local c = {}
-  for j = 1, #a do if a[j] > 0 then c[#c + 1] = -srcA[j] end end
-  return c
-end
-
--- A model of A with exactly the features that a keeps, for rt.accept.
-local function model_of(a)
-  local assume = {}
-  for j = 1, #a do assume[j] = a[j] > 0 and srcA[j] or -srcA[j] end
-  return A:solve{ assume = assume }
-end
-
-while true do
-  local M = A:solve{}
-  if not M then break end
-  if not srcA then learn_literals(M) end
-  local X = C:solve{ assume = G:of(M) }
-  if X then
-    A:add(G:clause(M, X))
-  else
-    local a, shrunk = copy(G:of(M)), false
-    for i = 1, #a do
-      if is_kept(a, i) then
-        local b = dropped(a, i)
-        if not C:solve{ assume = b } then a, shrunk = b, true end   -- still no counterexample: drop it
+    local A = rt.solver("A", {"shared", "abstraction"}, {})
+    local C = rt.solver("C", {"shared", "check"}, {"--heuristic=Domain"})
+    local G = rt.link("G", A, C, {"shared", "glue"}, {})
+    rt.prepare(); local M, X, E, shrunk
+    while true do rt.tick()
+      M = A:solve{}
+      if not M then
+        rt.stop()
+      end
+      X = C:solve{ assume = G:of(M) }
+      if X then
+        A:add(G:clause(M, X))
+      else
+        E = G:of(M)
+        shrunk = false
+        for _, a in ipairs(E) do rt.tick()
+          if rt.atrue(a) and (not C:solve{ assume = rt.flip(E, a) }) then
+            E = rt.flip(E, a)
+            shrunk = true
+          end
+        end
+        if shrunk then
+          rt.accept(A:solve{ assume = E })
+        else
+          rt.accept(M)
+        end
+        A:add(G:above(E))
       end
     end
-    -- If nothing was dropped, M itself is the solution (solving A again for the same
-    -- values would trip the guard against a refinement that makes no progress).
-    rt.accept(shrunk and model_of(a) or M)
-    A:add(superset_block(a))
-  end
-end
   end)
 end
-LOOP_LINES = { 56, 124 }
+LOOP_LINES = { 56, 84 }
 #end.

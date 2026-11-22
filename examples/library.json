@@ -1379,7 +1379,7 @@
       "id": "knapsack-bounds",
       "title": "Knapsack bounds in Lua",
       "group": "several-solvers",
-      "summary": "The bilevel knapsack optimisation in raw Lua: numbers read from models give lower and upper bounds that are logged until they meet (optimum 25, 2 solutions).",
+      "summary": "The bilevel knapsack optimisation with numeric bounds: M.value(value/1) and X.value(gain/1) give lower and upper bounds that are logged until they meet (optimum 25, 2 solutions).",
       "shape": "custom",
       "tags": [
         "fast"
@@ -1457,7 +1457,7 @@
       "id": "reasons-by-shrinking",
       "title": "Reasons by shrinking",
       "group": "several-solvers",
-      "summary": "Minimal sufficient reasons by shrinking accepted candidates with hand-made assumption lists, in raw Lua (8 features, 4 solutions).",
+      "summary": "Minimal sufficient reasons by shrinking accepted candidates: the assumption list G(M) is walked and edited (a.true, E.flip(a)), and G.above removes the supersets (8 features, 4 solutions).",
       "shape": "custom",
       "tags": [
         "fast"
@@ -1470,7 +1470,7 @@
       "id": "reasons-by-size",
       "title": "Reasons by size",
       "group": "several-solvers",
-      "summary": "Minimal sufficient reasons in order of size: an optimal abstraction, and a helper solver that removes the supersets of each solution (8 features, 4 solutions).",
+      "summary": "Minimal sufficient reasons in order of size: an optimal abstraction, and G.above removes the supersets of each solution (8 features, 4 solutions).",
       "shape": "custom",
       "tags": [
         "fast"

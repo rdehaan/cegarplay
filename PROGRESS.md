@@ -385,7 +385,7 @@ commit at each checkpoint, no stops.
 - [x] S5 Certified counts
 - [x] I5 Mining, pools, importers
 - [x] V5 Cursor, compare, export, lecture
-- [ ] L1 Values (G1–G3)
+- [x] L1 Values (G1–G3)
 - [ ] L2 Control (G4, G5, G8)
 - [ ] L3 Dynamics (G6)
 - [ ] L4 Structure (G7)
@@ -651,8 +651,27 @@ Notes per phase:
     `#const` lines); replays now record the instance they used.
   - A new run starts the cursor on its first step (as the trace did); "follow" keeps the last.
 
-**Next step (PLAN2):** review of wave 5 (S5, I5, V5) by a background agent, then L1 Values
-(`docs/directions/generality.md`, G1-G3).
+- **L1 (done):** compiler: `G.above/below`, `G.clause(X)`, `C.core` + `.on(G)`, `S.atom`, value
+  members `on flip without true value count cost arg` (keywords allowed after a dot); runtime:
+  incoming interface values kept in snapshots (`M.ival`), `Link:clause(nil, X)`, `Link:above/below`,
+  `Solver:core()`, `Solver:atom`, `rt.flip/without/atrue/cost/arg`, `Model:value/count`, a G-list
+  given to G's source is translated, empty clauses (`empty_ok`): added -> solver dead, rejected ->
+  `kill_search` (two contradicting unit clauses on a solver literal). Examples:
+  `reasons-by-shrinking` and `knapsack-bounds` are loop scripts (same counts and logs),
+  `reasons-by-size` has no helper solver, `qbf` has no `always` (`G.clause(X)`). `test/values.test.mjs`.
+  - Deviations: `c + d` (joining clauses) and `C.solve(assume E, minimal)` not done; clauses
+    across several links of a solver not translated (each constructor builds a clause of one
+    link, the fast path). `G.clause(M, X)` keeps its error on an empty relevant set (the tutorial
+    teaches it); `G.clause(X)` allows the empty clause. The no-progress guard ignores solves under
+    assumptions; test A3 now checks that `A.solve(assume G(M))` gives the same values (was an
+    error). Golden fixture `reasons-by-shrinking.lua` rewritten (the example changed).
+  - The lift sweep skips loops with `G.clause(X)` (no candidate to lift from).
+
+**Next step (PLAN2):** fix the confirmed findings of the wave-5 review (separate commit):
+certcheck level 0 accepts a block of an unreported solution, level 4 looks at one candidate,
+solutions are not checked to be candidates; pool validation lets trap-causing text through;
+view/trace match T events against R step numbers; compare-view requests cancel the main frame;
+mining compares scores under different time limits. Then L2 Control.
 
 ## Next step (PLAN.md, guide, TODO)
 

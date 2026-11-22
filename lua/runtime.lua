@@ -112,6 +112,7 @@ local function errinfo(e)
 end
 
 -- Run a callback body; never let an error escape into clingo.
+local kill_search   -- defined with Model:reject; used by the check hook of every solver
 local function guarded(s, f, ...)
   local ok, err = xpcall(f, errinfo, ...)
   if ok then return true, err end
@@ -378,6 +379,7 @@ function rt.solver(name, frags, options)
       -- clasp may call check on a partial assignment after clauses were added in an earlier
       -- check; candidates are total assignments only
       if not control.assignment.is_total then return end
+      if s.dead then guarded(s, kill_search, s, control); return end
       -- stashed clauses: the 2nd, 3rd, ... clause of one reject
       if #s.stash > 0 then
         local conflict = false
@@ -581,6 +583,20 @@ rt.new_clause = new_clause
 local candidate_text   -- defined below, with the trace helpers
 
 function Link:clause(M, X)
+  if M == nil then
+    -- G.clause(X): the relevant atoms of X with the values X saw; an empty clause is legal
+    check_model(self, X, "clause", "to")
+    local r, val = X[self], X.ival and X.ival[self]
+    if not val then fail(self.name .. ".clause(X): the model has no interface values of link " .. self.name) end
+    local lazy = self.from.searching and true or false
+    local lits = lazy and self.slit or self.src
+    local c = new_clause(self, lazy, nil, X)
+    for j = 1, self.n do
+      if r[j] then local k = #c + 1; c[k] = val[j] and -lits[j] or lits[j]; c.j[k] = j end
+    end
+    c.empty_ok = true
+    return c
+  end
   check_model(self, M, "clause", "from")
   check_model(self, X, "clause", "to")
   if self.lifting then return rt.LIFT.lift(self, M, X) end
@@ -605,6 +621,118 @@ function Link:clause(M, X)
     fail("relevant/1 derived nothing for link " .. self.name)
   end
   return c
+end
+
+-- The values of a model of the source, or of a list G(M) (literals of the target).
+local function values_of(L, x, what)
+  if getmetatable(x) == Model then
+    check_model(L, x, what, "from")
+    return x[L], x.lazy and true or false, x
+  end
+  if type(x) ~= "table" then fail(L.name .. "." .. what .. ": expected a model or a list " .. L.name .. "(M)") end
+  local v = {}
+  for _, l in ipairs(x) do
+    local j = L.jof[abs(l)]
+    if not j then fail(L.name .. "." .. what .. ": the list has a literal that is not an atom of link " .. L.name) end
+    v[j] = l > 0
+  end
+  for j = 1, L.n do if v[j] == nil then fail(L.name .. "." .. what .. ": the list does not give every atom of link " .. L.name) end end
+  return v, L.from.searching and true or false, nil
+end
+-- G.above(M): removes M and every superset of its true atoms; G.below(M): M and every subset.
+function Link:above(x)
+  local v, lazy, M = values_of(self, x, "above")
+  local lits = lazy and self.slit or self.src
+  local c = new_clause(self, lazy, M, nil)
+  for j = 1, self.n do if v[j] then local k = #c + 1; c[k] = -lits[j]; c.j[k] = j end end
+  c.empty_ok = true
+  return c
+end
+function Link:below(x)
+  local v, lazy, M = values_of(self, x, "below")
+  local lits = lazy and self.slit or self.src
+  local c = new_clause(self, lazy, M, nil)
+  for j = 1, self.n do if not v[j] then local k = #c + 1; c[k] = lits[j]; c.j[k] = j end end
+  c.empty_ok = true
+  return c
+end
+
+-- C.core: the whole core of the last solve of C; core.on(G) keeps the atoms of link G.
+local Core = {}
+Core.__index = Core
+function Core:on(G) return G:core(self.solver) end
+function Solver:core()
+  if not self.last_core then fail(self.name .. ".core: the last solve of " .. self.name .. " was not unsatisfiable") end
+  return setmetatable({ solver = self, lits = self.last_core }, Core)
+end
+
+-- S.atom(name, args...): the literal of an atom of S, as a one-element list of assumptions.
+function Solver:atom(name, ...)
+  if type(name) ~= "string" or not name:match("^[a-z_][A-Za-z0-9_']*$") then fail(self.name .. ".atom: the first argument is a predicate name") end
+  local args = {}
+  for i, a in ipairs({ ... }) do
+    if math.type(a) == "integer" then args[i] = clingo.Number(a)
+    elseif type(a) == "string" and a:match("^[a-z_][A-Za-z0-9_']*$") then args[i] = clingo.Function(a, {}, true)
+    elseif type(a) == "string" then args[i] = clingo.String(a)
+    elseif type(a) == "userdata" then args[i] = a
+    else fail(self.name .. ".atom: argument " .. i .. " must be a number, a name or an atom") end
+  end
+  self:ground()
+  local sym = clingo.Function(name, args, true)
+  local at = self.ctl.symbolic_atoms:lookup(sym)
+  if not at then fail(self.name .. ".atom: solver " .. self.name .. " has no atom " .. tostring(sym)) end
+  return array({ at.literal })
+end
+
+-- Lists of assumptions as values: a.true, E.flip(a), E.without(a).
+function rt.atrue(a)
+  if type(a) ~= "number" then fail("a.true: expected an atom of a list such as G(M)") end
+  return a > 0
+end
+local function list_copy(E, what)
+  if type(E) ~= "table" then fail(what .. ": expected a list such as G(M)") end
+  local out = {}
+  for i = 1, #E do out[i] = E[i] end
+  list_links[out] = list_links[E]
+  return out
+end
+function rt.flip(E, a)
+  local out = list_copy(E, "flip")
+  for i = 1, #out do if out[i] == a then out[i] = -a; return out end end
+  fail("flip: the atom is not in the list")
+end
+function rt.without(E, a)
+  local out = list_copy(E, "without")
+  for i = 1, #out do if out[i] == a then table.remove(out, i); return out end end
+  fail("without: the atom is not in the list")
+end
+
+-- Model reads: X.value(p/1) (the argument of the one true atom), X.count(p/n), X.cost, a.arg(i).
+local function plain_value(sym)
+  if sym.type == clingo.SymbolType.Number then return sym.number end
+  if sym.type == clingo.SymbolType.String then return sym.string end
+  return tostring(sym)
+end
+function Model:value(pred, arity)
+  local t = self:atoms(pred, arity)
+  if #t ~= 1 then fail("X.value(" .. pred .. "/" .. arity .. "): expected one true atom, found " .. #t) end
+  local a = t[1].arguments
+  if #a == 0 then return true end
+  return plain_value(a[1])
+end
+function Model:count(pred, arity) return #self:atoms(pred, arity) end
+function rt.cost(X)
+  if getmetatable(X) ~= Model then fail("X.cost: expected a model") end
+  local c = X.cost
+  if not c then return NULL end
+  if #c == 1 then return c[1] end
+  return array(c)
+end
+function rt.arg(a, i)
+  if type(a) ~= "userdata" then fail("a.arg(i): expected an atom") end
+  local args = a.arguments
+  if math.type(i) ~= "integer" or i < 1 or i > #args then fail("a.arg(" .. tostring(i) .. "): the atom " .. tostring(a) .. " has " .. #args .. " arguments") end
+  return plain_value(args[i])
 end
 
 -- G.lift(M, X): a clause computed from the ground programs (lua/ground.lua), on any link.
@@ -680,9 +808,12 @@ local function snapshot(s, m)
     M[L] = v
   end
   for _, L in ipairs(s.inn) do
-    local r, ind = {}, L.ind
-    for j = 1, L.n do r[j] = m:is_true(ind[j]) end
+    local r, ind, val, dst = {}, L.ind, {}, L.dst
+    for j = 1, L.n do r[j] = m:is_true(ind[j]); val[j] = m:is_true(dst[j]) end
     M[L] = r
+    -- the interface values the target saw (for G.clause(X) from the counterexample alone)
+    M.ival = M.ival or {}
+    M.ival[L] = val
   end
   for key, c in pairs(s.caps) do
     local t, lits, syms = array({}), c.lits, c.syms
@@ -882,6 +1013,19 @@ end
 
 local function is_clause_list(c) return type(c) == "table" and type(c[1]) == "table" end
 
+-- A dead solver inside its search: two contradicting unit clauses on one solver literal make the
+-- search unsatisfiable (the first conflicts with the current assignment, rule 3: then return).
+kill_search = function(s, control)
+  local a = s.dead_lit
+  if not a then
+    for _, L in ipairs(s.out) do if L.n > 0 then a = L.slit[1]; break end end
+    s.dead_lit = a
+  end
+  if not a then return end
+  local first = control.assignment:is_true(a) and -a or a
+  if control:add_clause{ { first }, lock = true } then control:add_clause{ { -first }, lock = true } end
+end
+
 function Model:reject(c)
   if not self.lazy then fail("reject works only on a candidate inside search; use S.add between solves") end
   if self.done then fail("reject: the candidate is no longer valid (it belongs to an earlier step)") end
@@ -889,6 +1033,16 @@ function Model:reject(c)
   if #list == 0 then fail("reject: the refinement is empty") end
   local s = self.solver
   for i, cl in ipairs(list) do
+    if type(cl) == "table" and #cl == 0 and cl.empty_ok then
+      -- the empty clause: the search ends (no candidate is left)
+      s.dead = true
+      count_clause(cl)
+      trace("reject", s, cl, self)
+      if REC then record("r", s, cl, self) end
+      self.rejected = true
+      kill_search(s, self.control)
+      return
+    end
     if type(cl) ~= "table" or #cl == 0 then fail("reject: an empty clause cannot refine the candidate") end
     if cl.lazy == false then fail("reject: the clause was built from a model outside the search; use S.add") end
     count_clause(cl)
@@ -928,6 +1082,16 @@ local function convert_assumptions(a, s, what)
   if type(a) ~= "table" then fail("assume: expected a list of literals") end
   local ls = list_links[a]
   if ls then
+    -- G(M) given to the source of G: the same values on the source's literals
+    if #ls == 1 and ls[1].from == s then
+      local L, out = ls[1], {}
+      for i, l in ipairs(a) do
+        local j = L.jof[abs(l)]
+        if not j then fail(s.name .. "." .. what .. ": the list has a literal that is not an atom of link " .. L.name) end
+        out[i] = l > 0 and L.src[j] or -L.src[j]
+      end
+      return out
+    end
     for _, L in ipairs(ls) do
       if L.to ~= s then fail(s.name .. "." .. what .. ": the assumptions of " .. L.name .. " are for solver " .. L.to.name) end
     end
@@ -953,6 +1117,7 @@ end
 local function run_solve(s, o, limit, optimal, what)
   check_idle(s, what)
   o = o or {}
+  if s.dead then s.n.calls = s.n.calls + 1; s.n.unsat = s.n.unsat + 1; s.last_core = {}; return {} end
   local assume = convert_assumptions(o.assume, s, what)
   tick(rt.searching == nil)
   local fr = timer_start(s)
@@ -993,7 +1158,12 @@ end
 function Solver:solve(o)
   local models = run_solve(self, o, 1, o and o.optimal, "solve")
   local X = models[1]
-  if X then progress_guard(self, X); self.last_model = X end
+  -- the guard watches refinement loops: a solve under assumptions (a check, or G(M) given back
+  -- to the source) may return the same candidate on purpose
+  if X then
+    if not (o and o.assume and #o.assume > 0) then progress_guard(self, X) end
+    self.last_model = X
+  end
   return X
 end
 
@@ -1020,6 +1190,15 @@ function rt.concat(...)
 end
 
 local function queue_clause(s, c)
+  if type(c) == "table" and #c == 0 and c.empty_ok then
+    -- the empty clause: no model of s is left; every later solve answers with none
+    if c.lazy then fail(s.name .. ".add: the clause was built from a candidate inside a search; use reject") end
+    s.dead = true
+    count_clause(c)
+    trace("add", s, c, c.m)
+    if REC then record("a", s, c, c.m) end
+    return
+  end
   if type(c) ~= "table" or #c == 0 then fail(s.name .. ".add: an empty clause") end
   if c.lazy then fail(s.name .. ".add: the clause was built from a candidate inside a search; use reject") end
   if c.link and c.link.from ~= s then fail(s.name .. ".add: the clause belongs to solver " .. c.link.from.name) end

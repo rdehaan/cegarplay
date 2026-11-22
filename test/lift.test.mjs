@@ -95,6 +95,8 @@ test('every fast clause example: relevant/1 deleted and lift on reaches the coun
     const c = compile(p.loop.text, { fragments: p.fragments.map((f) => f.name) });
     const plan = auditPlan(c);
     if (plan.error || !plan.clause) continue;
+    // G.clause(X) (phase L1) has no candidate to lift from: lift applies to G.clause(M, X)
+    if (new RegExp(`\\b${plan.link}\\.clause\\(\\s*\\w+\\s*\\)`).test(p.loop.text)) continue;
     const a = await auditProject(p, { limit: 20000, seconds: 10 });
     if (!a.verdict || a.verdict.verdict === 'limit') continue;
     const want = a.verdict.verdict === 'unsound' ? a.verdict.solutions : e.expected && e.expected.solutions;
