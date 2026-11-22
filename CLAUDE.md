@@ -34,6 +34,26 @@ programming, solved with clingo compiled to WebAssembly.
 9. Trust tests over the plan; record deviations in `PROGRESS.md`. Do not change
    reference numbers without finding the cause.
 
+## Setup (fresh clone, e.g. Claude Code cloud)
+
+Needs Node ≥ 22, Python 3 and git, plus network access to github.com, npm and
+PyPI. Run this from the repo root. It also works as a cloud environment's setup script.
+
+```
+git clone https://github.com/rdehaan/declarative-cegar reference/declarative-cegar  # required: tests + make-examples read its .lp files
+git clone https://github.com/rdehaan/logic-game reference/logic-game                # read-only reference (docs/spec-app.md)
+(cd test && npm ci && npx playwright install --with-deps chromium)  # browser tests; add firefox for BROWSER=firefox
+(cd spike && npm ci)
+pip install clingo                                                  # Python clingo 5.8.x
+```
+
+- Without Python clingo, `tools/cegarcheck.py` and `tools/certcheck.py` do not run, and
+  the draw and certcheck tests skip.
+- One test in `test/project.test.mjs` needs a native `clingo` built with Lua on the PATH.
+  It is optional and skips without one.
+- `test/serve.py` (the server for the browser tests) uses only the standard library.
+- `vendor/` is committed. Run `tools/vendor.mjs` only after an upgrade of clingo-wasm.
+
 ## Commands
 
 ```
