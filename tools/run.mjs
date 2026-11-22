@@ -9,6 +9,8 @@
 //   --instance ID     run one instance of the project (format version 2); "all" runs each
 //                     and prints one line per instance (exit 1 on an expected-count mismatch)
 //   --variant NAME    run a variant of the project
+//   --record FILE     write the run as a recording (.cprec, gzip): every step and call unless
+//                     --record-steps POLICY[:N] says otherwise (off|first|every|last|sample|all)
 //   --json            print every event as one JSON line ({kind, data}) instead of a summary
 //   --quiet           do not print the solutions
 //
@@ -19,6 +21,7 @@ import fs from 'node:fs';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import factory from '../vendor/clingo-wasm/clingo.js';
 import { load, derive } from '../js/project.js';
+import { Recording } from '../js/recording.js';
 import { assemble, parseEvent, validate, auditPlan, auditBody } from '../js/driver.js';
 
 const root = new URL('..', import.meta.url);
@@ -80,11 +83,18 @@ export async function runProject(project, { onEvent, backstop = false, audit = n
   return { problems: [], events: r.events, status: r.status, err: r.err, assembled: a };
 }
 
+// A recording of a finished headless run (the same file the page writes).
+export function recordingOf(project, events, extra = {}) {
+  const rec = new Recording({ title: project.title || '', instance: project.instance || null, engine: 'clingo-wasm (node)', ...extra });
+  for (const e of events) rec.add(e.kind, e.data);
+  return rec;
+}
+
 async function main(argv) {
   const args = [...argv];
   let target = null;
   const consts = {}, set = {};
-  let json = false, quiet = false, instance, variant;
+  let json = false, quiet = false, instance, variant, recordFile = null, recordSteps = null;
   while (args.length) {
     const a = args.shift();
     if (a === '-c') { const kv = args.shift() || usage('-c needs name=value'); const i = kv.indexOf('='); if (i < 1) usage(`bad constant ${kv}`); consts[kv.slice(0, i)] = kv.slice(i + 1); }
@@ -93,6 +103,8 @@ async function main(argv) {
     else if (a === '--trace') set.trace = Number(args.shift());
     else if (a === '--instance') instance = args.shift() || usage('--instance needs an id or all');
     else if (a === '--variant') variant = args.shift() || usage('--variant needs a name');
+    else if (a === '--record') recordFile = args.shift() || usage('--record needs a file');
+    else if (a === '--record-steps') recordSteps = args.shift() || usage('--record-steps needs a policy');
     else if (a === '--json') json = true;
     else if (a === '--quiet') quiet = true;
     else if (a === '-h' || a === '--help') usage();
@@ -108,6 +120,11 @@ async function main(argv) {
   project.settings = { ...project.settings, trace: 0, ...set };
   for (const k of Object.keys(set)) if (!Number.isFinite(project.settings[k]) || project.settings[k] < 0) usage(`bad value for --${k}`);
   const constants = Object.keys(consts).length ? consts : undefined;
+  if (recordFile || recordSteps) {
+    const [steps, n] = (recordSteps || 'all').split(':');
+    if (!['off', 'first', 'every', 'last', 'sample', 'all'].includes(steps)) usage(`bad --record-steps ${recordSteps}`);
+    project.settings.record = { steps, n: Number(n) || 0, calls: true };
+  }
 
   if (instance === 'all') {
     const list = project.instances || [];
@@ -144,6 +161,10 @@ async function main(argv) {
     console.log(`Outcome: limit (the run did not stop at the time limit of ${project.settings.seconds} s; ended after ${project.settings.seconds + 2} s)`);
     process.exitCode = 1;
     return;
+  }
+  if (recordFile) {
+    const rec = recordingOf(project, r.events);
+    fs.writeFileSync(recordFile, Buffer.from(await (await rec.toBlob()).arrayBuffer()));
   }
   if (json) {
     for (const e of r.events) console.log(JSON.stringify(e));

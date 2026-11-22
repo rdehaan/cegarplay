@@ -372,7 +372,7 @@ commit at each checkpoint, no stops.
 - [x] L0 Repair (blocking clause over all outgoing links; `knapsack-fortification`, `qbf-three-blocks`)
 - [x] S1 Audit
 - [x] I1 Instances
-- [ ] V1 Recording
+- [x] V1 Recording
 - [ ] S2 Capture, level 2, level 3
 - [ ] I2 Generators
 - [ ] V2 Loop anatomy
@@ -432,7 +432,21 @@ Notes per phase:
     parallel run (passes alone and in every subset tried).
   - Not done: `docs/chat-package` docs do not describe instances yet (the package builds).
 
-**Next step (PLAN2):** V1 Recording.
+- **V1 (done):** `settings.record` (`recordSetting` in the driver; one extra `SETTINGS.record`
+  line only when set). Runtime: `I` after `H`; `R` from reject/add/expand/error/solutions (with
+  candidate hex, signed clause indices, loop program line via `debug.getinfo`, uncapped facts);
+  `C` per solve/models/search with id/parent; policies first/every/last/sample/all (last and
+  sample flushed before the final S). `js/recording.js` (`Recording`, `hexBits`, `firstViolated`
+  already for I4, gzip via CompressionStream). Page: Recording select + N + calls in the Loop tab,
+  Download/Open recording in Control, `Control.replay` (state `replayed`), `?replay=` (pattern
+  only; loads the recording's example). `tools/run.mjs --record/--record-steps`,
+  `tools/make-replays.mjs` -> `examples/replays/*.cprec` (93 files, 1.1 MB). Rebuild them after a
+  runtime or example change (a test compares each with a live run).
+  - Deviation: row 27 counts 21,078 *reject* steps; the R stream also has 10,698 solution steps
+    (31,776). Overhead about 28% (2.4 -> 3.1 s), not 10%: encoding and printing 31k lines through
+    the WASM print path; hand-written R lines and integer hex helped little. The test guards < 60%.
+
+**Next step (PLAN2):** S2 Capture, level 2, level 3.
 
 ## Next step (PLAN.md, guide, TODO)
 

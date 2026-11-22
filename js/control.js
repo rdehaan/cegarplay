@@ -3,6 +3,7 @@ import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody } fro
 import { TEMPLATES, template, derive } from './project.js';
 import { hashText } from './stats.js';
 import { fmt } from './output.js';
+import { Recording } from './recording.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -76,6 +77,8 @@ export class Control {
     this.pauseButton.innerHTML = state === 'paused' ? '&#x23F5; Resume' : '&#x23F8; Pause';
     this.stepButton.disabled = state !== 'paused';
     this.stopButton.disabled = !active;
+    const dl = document.getElementById('download-recording-button');
+    if (dl) dl.disabled = active || state === 'validating' || !this.app.recording;
     document.body.dataset.runState = state;
   }
 
@@ -195,6 +198,8 @@ export class Control {
     app.output.result(mode === 'audit' ? 'Auditing…' : 'Running…');
     this.mode = mode;
     this.audit = null;
+    app.recording = new Recording({ title: project.title || '', instance: instanceId, mode, engine: app.engineVersion || '',
+      example: app.exampleId || null, fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])) });
     this.D = null;
     this.E = null;
     this.marks = [];
@@ -215,7 +220,8 @@ export class Control {
 
   onEvent(kind, data, raw) {
     const app = this.app;
-    app.internals && app.internals.raw(raw);
+    if (app.recording && !this.replaying) app.recording.add(kind, data);
+    app.internals && raw && app.internals.raw(raw);
     switch (kind) {
       case 'H': app.stats.header(data); app.internals && app.internals.header(data); break;
       case 'S': app.stats.update(data); break;
@@ -233,7 +239,7 @@ export class Control {
       case 'T': app.output.trace.add(data); app.output.schedule(); break;
       case 'E': {
         this.E = data;
-        const line = mapLine(this.assembled, data.line);
+        const line = this.assembled ? mapLine(this.assembled, data.line) : null;
         app.output.error(`Error: ${data.message}${line ? ` (loop script, line ${line})` : ''}`);
         const hint = errorHint(data.message);
         if (hint) app.output.message(hint, 'hint');
@@ -300,6 +306,33 @@ export class Control {
       case 'error': return `Error: ${D.detail}`;
       default: return D.outcome;
     }
+  }
+
+  // Feed a recording through the same event handling, without the engine (state 'replayed').
+  replay(rec) {
+    const app = this.app;
+    if (this.busy) return null;
+    this.replaying = true;
+    this.assembled = null;
+    this.mode = rec.header.mode || 'run';
+    this.audit = null;
+    this.D = null;
+    this.E = null;
+    this.marks = [];
+    this.runMessage('');
+    app.output.clear();
+    app.output.trace.clear(rec.traces.length || 0);
+    app.stats.start({});
+    try {
+      for (const e of rec.events) this.onEvent(e.kind, e.data, null);
+    } finally { this.replaying = false; }
+    app.output.flush();
+    app.stats.done(this.D, null);
+    app.recording = rec;
+    const what = this.D ? this.describe(this.D) : 'the recording has no final event';
+    app.output.result(`Replayed: ${what}`);
+    this.setState('replayed');
+    return { state: 'replayed', D: this.D };
   }
 
   abort() {

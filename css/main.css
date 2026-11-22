@@ -380,7 +380,7 @@ label.tab-label.has-problem:after {
 }
 #run-status[data-state="running"], #run-status[data-state="validating"] { color: var(--busy); background: var(--busy-bg); }
 #run-status[data-state="paused"] { color: var(--text); background: var(--paused-bg); }
-#run-status[data-state="finished"] { color: var(--ok); background: var(--ok-bg); }
+#run-status[data-state="finished"], #run-status[data-state="replayed"] { color: var(--ok); background: var(--ok-bg); }
 #run-status[data-state="aborted"] { color: var(--warn); background: var(--warn-bg); }
 #run-status[data-state="error"] { color: var(--error); background: var(--error-bg); }
 .run-message {

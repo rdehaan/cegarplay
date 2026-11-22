@@ -8,6 +8,7 @@ import { Control } from './control.js';
 import { LoopTab } from './loop-tab.js';
 import { Internals } from './internals.js';
 import { InstancesTab } from './instances-tab.js';
+import { Recording, REPLAY_PATTERN } from './recording.js';
 import { makeEditor } from './editors.js';
 import { renderMarkdown } from './markdown.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
@@ -18,7 +19,7 @@ const app = { ready: false, project: Project.newProject() };
 window.cegarplay = app;
 
 // ---- the address bar: ?example=<id> and ?tab=N follow the page (replaceState, no history entries)
-const KEEP_PARAMS = ['nocoi', 'manual', 'internals', 'from', 'tab', 'instance'];
+const KEEP_PARAMS = ['nocoi', 'manual', 'internals', 'from', 'tab', 'instance', 'replay'];
 function setUrl({ example, tab, keepHash = false } = {}) {
   const now = new URLSearchParams(location.search);
   const next = new URLSearchParams();
@@ -337,6 +338,41 @@ $('new-button').addEventListener('click', () => {
   status('new-status', 'Started a new project. See the Programs tab.');
 });
 
+// ---- recordings: download the last run, open one and replay it
+$('download-recording-button').addEventListener('click', async () => {
+  if (!app.recording) return;
+  const blob = await app.recording.toBlob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = slug(app.project.title) + '.cprec';
+  document.body.append(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+});
+$('open-recording-button').addEventListener('click', () => $('recording-input').click());
+$('recording-input').addEventListener('change', async (ev) => {
+  const f = ev.target.files[0];
+  ev.target.value = '';
+  if (!f) return;
+  try {
+    const rec = await Recording.fromBlob(f);
+    app.control.replay(rec);
+    status('recording-status', `Replayed ${f.name}: ${rec.steps.length} steps, ${rec.calls.length} calls, ${rec.solutions.length} solutions.`);
+  } catch (e) { status('recording-status', `${f.name}: ${e.message || e}`, true); }
+});
+async function openReplay(path) {
+  if (!REPLAY_PATTERN.test(path)) { status('load-status', `The replay "${path}" is not a file of examples/replays/; ignored.`, true); return; }
+  try {
+    const r = await fetch(path);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const rec = await Recording.fromBlob(await r.blob());
+    const ex = rec.header.example;
+    if (ex && app.exampleId !== ex && /^[A-Za-z0-9_-]+$/.test(ex)) await loadExample(ex, { save: false });
+    app.control.replay(rec);
+    status('load-status', `Replayed ${path} (${rec.steps.length} steps) without the engine.`);
+  } catch (e) { status('load-status', `The replay ${path} could not be opened: ${e.message || e}`, true); }
+}
+
 $('file-button').addEventListener('click', () => $('file-input').click());
 $('file-input').addEventListener('change', async (ev) => {
   const f = ev.target.files[0];
@@ -529,6 +565,9 @@ async function start() {
       app.instancesTab.load();
     } else status('load-status', `The project has no instance "${wantInstance}"; the link's instance= is ignored.`);
   }
+  // ?replay=examples/replays/<id>.cprec: its example (when the recording names one) and the replay
+  const replay = params.get('replay');
+  if (replay !== null) await openReplay(replay);
   app.restoredOrLoaded = true;
   // nothing kept in this browser: show the library open
   if (!stored && !named && shared === null) $('library-section').open = true;
@@ -543,7 +582,7 @@ async function start() {
   $('footer-engine').textContent = `clingo ${app.clingoVersion || ''} via ${app.engineVersion}`.replace('  ', ' ');
   app.ready = true;
   app.internals.facts();
-  app.control.setState('idle');
+  app.control.setState(app.control.state === 'replayed' ? 'replayed' : 'idle');
   document.body.dataset.ready = 'true';
 }
 // ?fragment=<name>: open the Programs tab on that fragment's editor; "loop" opens the Loop tab.

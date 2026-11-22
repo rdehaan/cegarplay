@@ -211,14 +211,24 @@ local function count_candidate()
 end
 
 -- Timing with exclusive times: nested solve time is subtracted from the enclosing one.
+local REC = nil           -- SETTINGS.record when recording (docs/spec-recording.md), set in rt.prepare
+rt.calls = 0
 local function timer_start(s)
   local fr = { s = s, t0 = clock(), child = 0 }
+  if REC and REC.calls then
+    rt.calls = rt.calls + 1
+    fr.id = rt.calls
+    local parent = rt.stack[#rt.stack]
+    fr.parent = parent and parent.id or 0
+  end
   rt.stack[#rt.stack + 1] = fr
   s.busy = true
   return fr
 end
-local function timer_stop(fr)
+local call_event
+local function timer_stop(fr, result)
   local el = clock() - fr.t0
+  if fr.id and call_event then call_event(fr, el, result) end
   rt.stack[#rt.stack] = nil
   fr.s.n.time = fr.s.n.time + (el - fr.child)
   fr.s.busy = false
@@ -387,6 +397,7 @@ function rt.solver(name, frags, options)
   s.ctl:register_propagator(s.hooks)
   for _, c in ipairs(rt.captures) do s.caps[c.key] = { name = c.name, arity = c.arity } end
   rt.solvers[#rt.solvers + 1] = s
+  s.index = #rt.solvers
   return s
 end
 
@@ -439,6 +450,19 @@ function rt.prepare()
   emit("H", { solvers = hs, links = hl, settings = { solutions = SETTINGS.solutions, seconds = SETTINGS.seconds,
     candidates = SETTINGS.candidates, trace = SETTINGS.trace, seed = SETTINGS.seed, poll = SETTINGS.poll,
     constants = array(CONSTS) } })
+  if type(SETTINGS.record) == "table" then
+    REC = SETTINGS.record
+    rng = (SETTINGS.seed or 0) % 2147483648
+    local links = array({})
+    for _, L in ipairs(rt.links) do
+      local atoms = array({})
+      for j = 1, L.n do atoms[j] = L.str[j] end
+      links[#links + 1] = { link = L.name, from = L.from.name, to = L.to.name, atoms = atoms }
+    end
+    local solvers = array({})
+    for _, x in ipairs(rt.solvers) do solvers[#solvers + 1] = x.name end
+    emit("I", { links = links, solvers = solvers, record = REC })
+  end
 end
 
 -------------------------------------------------------------------------------
@@ -494,6 +518,7 @@ function rt.link(name, from, to, glue, opts)
   from.out[#from.out + 1] = L
   to.inn[#to.inn + 1] = L
   rt.links[#rt.links + 1] = L
+  L.index = #rt.links
   return L
 end
 
@@ -548,6 +573,7 @@ function Link:clause(M, X)
     pcall(function()
       emit("T", { i = rt.traced + 1, kind = "error", solver = M.solver.name, candidate = candidate_text(M),
         counterexample = X.shown, literals = array({}) })
+      if REC then record("x", M.solver, nil, M) end
     end)
     fail("relevant/1 derived nothing for link " .. self.name)
   end
@@ -690,6 +716,118 @@ local function trace(kind, s, c, M, facts)
     counterexample = x and x.shown or nil, literals = c and literal_texts(c) or nil, facts = facts })
 end
 
+-------------------------------------------------------------------------------
+-- Recording: compact events I, R and C (docs/spec-recording.md). Only with SETTINGS.record.
+-------------------------------------------------------------------------------
+-- The program line of the innermost loop statement on the stack (mapped to the script by the page).
+local function loop_line()
+  local lo, hi = (LOOP_LINES or {})[1], (LOOP_LINES or {})[2]
+  if not lo then return NULL end
+  for level = 3, 40 do
+    local info = debug.getinfo(level, "l")
+    if not info then break end
+    local l = info.currentline
+    if l and l >= lo and l <= hi then return l end
+  end
+  return NULL
+end
+rt.loop_line = loop_line
+
+-- A boolean vector as hex: atom j is bit (j - 1) % 4 of digit (j - 1) // 4, digits written
+-- most significant first (so the last character holds atoms 1 to 4).
+local hexdigit = { [0] = "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f" }
+local fmt_hex = {}
+local function hexvec(v, n)
+  if n <= 60 then
+    local x = 0
+    for j = 1, n do if v[j] then x = x | (1 << (j - 1)) end end
+    local f = fmt_hex[n]
+    if not f then f = "%0" .. ((n + 3) // 4) .. "x"; fmt_hex[n] = f end
+    return string.format(f, x)
+  end
+  local t, k = {}, 0
+  for j = 1, n, 4 do
+    local d = 0
+    if v[j] then d = 1 end
+    if v[j + 1] and j + 1 <= n then d = d + 2 end
+    if v[j + 2] and j + 2 <= n then d = d + 4 end
+    if v[j + 3] and j + 3 <= n then d = d + 8 end
+    k = k + 1
+    t[k] = hexdigit[d]
+  end
+  return string.reverse(concat(t))
+end
+rt.hexvec = hexvec
+
+rt.recorded = 0          -- R events seen (the step number i)
+local ring, ring_n = {}, 0
+local rng = 0
+local function rec_rand(n)          -- a small LCG: the sample is the same for the same seed
+  rng = (rng * 1103515245 + 12345) % 2147483648
+  return rng % n + 1
+end
+-- Send or keep one R line according to the policy.
+-- The R line, written by hand (the generic encoder sorts keys: too slow for every step).
+local function rline(o)
+  local t = { '@@R {"i":', o.i, ',"k":"', o.k, '","s":', json(o.s), ',"l":', json(o.l), ',"n":', json(o.n),
+    ',"t":', jnum(o.t) }
+  if o.c then t[#t + 1] = ',"c":"'; t[#t + 1] = o.c; t[#t + 1] = '"' end
+  if o.q then t[#t + 1] = ',"q":['; t[#t + 1] = concat(o.q, ","); t[#t + 1] = "]" end
+  if o.f then t[#t + 1] = ',"f":'; t[#t + 1] = json(o.f) end
+  t[#t + 1] = "}"
+  return concat(t)
+end
+local function rec_emit(obj)
+  local i = rt.recorded + 1
+  rt.recorded = i
+  obj.i = i
+  local pol, n = REC.steps, REC.n or 0
+  if pol == "all" then print(rline(obj))
+  elseif pol == "first" then if i <= n then print(rline(obj)) end
+  elseif pol == "every" then if n <= 1 or (i - 1) % n == 0 then print(rline(obj)) end
+  elseif pol == "last" then
+    if n > 0 then ring_n = ring_n % n + 1; ring[ring_n] = rline(obj) end
+  elseif pol == "sample" then
+    if n > 0 then
+      if i <= n then ring[i] = rline(obj)
+      else local r = rec_rand(i); if r <= n then ring[r] = rline(obj) end end
+    end
+  end
+end
+-- Kept lines of the policies last and sample, in step order, before the final S event.
+local function rec_flush()
+  if not REC or (REC.steps ~= "last" and REC.steps ~= "sample") then return end
+  local lines = {}
+  for _, l in pairs(ring) do lines[#lines + 1] = l end
+  table.sort(lines, function(a, b) return tonumber(a:match('"i":(%d+)')) < tonumber(b:match('"i":(%d+)')) end)
+  for _, l in ipairs(lines) do print(l) end
+  ring, ring_n = {}, 0
+end
+
+-- kind: r (reject), a (add), e (expand), s (solution), x (error)
+local function record(kind, s, c, M, facts)
+  if not REC or REC.steps == "off" then return end
+  local L = c and c.link or (M and M.solver.out[1]) or (s and s.out[1])
+  local obj = { k = kind, s = s and s.index or NULL, l = L and L.index or NULL, n = loop_line(),
+    t = clock() - rt.t0 }
+  if L and M and not (M.lazy and M.done) and M[L] then obj.c = hexvec(M[L], L.n) end
+  if c and c.link then
+    local lits, q = c.lazy and L.slit or L.src, array({})
+    for k = 1, #c do
+      local j = c.j[k]
+      if j then q[#q + 1] = (c[k] == lits[j]) and j or -j end
+    end
+    obj.q = q
+  elseif kind == "x" then obj.q = array({}) end
+  if facts then obj.f = facts end
+  rec_emit(obj)
+end
+rt.record = record
+
+call_event = function(fr, el, result)
+  emit("C", { id = fr.id, s = fr.s.index, t0 = fr.t0 - rt.t0, dt = el, r = result or NULL, p = fr.parent, n = loop_line() })
+end
+
 local function is_clause_list(c) return type(c) == "table" and type(c[1]) == "table" end
 
 function Model:reject(c)
@@ -703,6 +841,7 @@ function Model:reject(c)
     if cl.lazy == false then fail("reject: the clause was built from a model outside the search; use S.add") end
     count_clause(cl)
     trace("reject", s, cl, self)
+    if REC then record("r", s, cl, self) end
     if not self.rejected and i == 1 then
       local ass = self.control.assignment
       for k = 1, #cl do
@@ -786,7 +925,7 @@ local function run_solve(s, o, limit, optimal, what)
   end
   h:close()
   if saved then conf.models = saved end
-  timer_stop(fr)
+  timer_stop(fr, not ok and "int" or #models > 0 and "sat" or "unsat")
   if not ok then error(err, 0) end
   reraise()
   if #models > 0 then s.n.sat = s.n.sat + 1 else s.n.unsat = s.n.unsat + 1 end
@@ -836,6 +975,7 @@ local function queue_clause(s, c)
   s.queue[#s.queue + 1] = q
   count_clause(c)
   trace("add", s, c, c.m)
+  if REC then record("a", s, c, c.m) end
 end
 
 function Solver:add(c)
@@ -855,6 +995,7 @@ function Solver:expand(part, facts)
   for name in pairs(facts) do names[#names + 1] = name end
   table.sort(names)
   local texts = array({})
+  local all_facts = array({})
   local b = self.ctl:backend()
   local ok, err = pcall(function()
     for _, name in ipairs(names) do
@@ -864,6 +1005,7 @@ function Solver:expand(part, facts)
         if type(a) ~= "userdata" then error(self.name .. ".expand: " .. name .. " must be a list of atoms", 0) end
         b:add_rule{ head = { b:add_atom(clingo.Function(name, { k, a }, true)) }, body = {} }
         if #texts < 50 and tracing() then texts[#texts + 1] = name .. "(" .. self.k .. "," .. tostring(a) .. ")" end
+        if REC then all_facts[#all_facts + 1] = name .. "(" .. self.k .. "," .. tostring(a) .. ")" end
       end
     end
   end)
@@ -873,6 +1015,7 @@ function Solver:expand(part, facts)
   self:resolve()
   rt.expansions = rt.expansions + 1
   self.n.ground = self.n.ground + (clock() - t0)
+  if REC then record("e", self, nil, self.last_model, all_facts) end
   if tracing() then
     local src
     for _, name in ipairs(names) do src = src or owner[facts[name]] end
@@ -883,9 +1026,10 @@ function Solver:expand(part, facts)
   end
 end
 
-local function emit_solution(atoms, cost)
+local function emit_solution(atoms, cost, s, M)
   rt.solutions = rt.solutions + 1
   emit("M", { n = rt.solutions, atoms = atoms, cost = cost and array(cost) or nil })
+  if REC and REC.steps ~= "off" then record("s", s, nil, M) end
 end
 
 function Solver:search(h)
@@ -918,7 +1062,16 @@ function Solver:search(h)
     if rt.fatal or rt.ending then return false end
     local ok = guarded(s, function()
       local cost = m.cost
-      emit_solution(tostring(m), cost and #cost > 0 and cost or nil)
+      local SM
+      if REC then
+        SM = setmetatable({ solver = s }, Model)
+        for _, L in ipairs(s.out) do
+          local v, src = {}, L.src
+          for j = 1, L.n do v[j] = m:is_true(src[j]) end
+          SM[L] = v
+        end
+      end
+      emit_solution(tostring(m), cost and #cost > 0 and cost or nil, s, SM)
       found = found + 1
       if block then
         -- one clause over the interface atoms of all outgoing links: a later model has to
@@ -938,7 +1091,7 @@ function Solver:search(h)
   local fr = timer_start(s)
   s.n.calls = s.n.calls + 1
   local res = s.ctl:solve{ on_model = on_model }
-  timer_stop(fr)
+  timer_stop(fr, res.interrupted and "int" or res.satisfiable and "sat" or res.unsatisfiable and "unsat" or "int")
   s.searching = false
   rt.searching = nil
   s.on_check = nil
@@ -979,7 +1132,7 @@ function rt.accept(M)
   if getmetatable(M) ~= Model then fail("accept: expected a model") end
   if M.lazy and M.done then stale("accept", "a counterexample or the model of a solve") end
   if M.lazy then return end
-  emit_solution(M.shown or candidate_text(M), M.cost)
+  emit_solution(M.shown or candidate_text(M), M.cost, M.solver, M)
   if SETTINGS.solutions ~= 0 and rt.solutions >= SETTINGS.solutions then rt.finish("solutions", "", false) end
 end
 
@@ -1068,6 +1221,7 @@ function rt.run(f)
       outcome, detail, exhausted = "error", msg, nil
     end
   end
+  pcall(rec_flush)
   if not SETTINGS.plain then send_stats() end
   if exhausted == nil then exhausted = NULL end
   emit("D", { outcome = outcome, exhausted = exhausted, detail = detail })

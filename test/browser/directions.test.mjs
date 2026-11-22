@@ -95,3 +95,42 @@ test('I1: a new instance is edited in the tab and used by the next run', async (
   assert.match(await page.$eval('#history-table', (t) => t.textContent), /\[instance\]/);
   await context.close();
 });
+
+test('V1: ?replay= replays a library recording without running the engine', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?replay=examples/replays/gc-shape1.cprec');
+  await page.waitForFunction(() => document.getElementById('run-status').dataset.state === 'replayed');
+  assert.equal(await page.evaluate(() => window.cegarplay.exampleId), 'gc-shape1');
+  assert.equal(await solutionsOf(page), 101);
+  assert.match(await page.textContent('#result-line'), /^Replayed: Finished: 101 solutions/);
+  assert.equal(await page.$$eval('#solutions li', (l) => l.length), 101);
+  // a path outside examples/replays/ is refused
+  await page.goto(server.url + 'index.html?nocoi=1&replay=../secret.cprec');
+  await page.waitForSelector('body[data-ready="true"]');
+  assert.match(await page.textContent('#load-status'), /not a file of examples\/replays/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('V1: the recording setting, a recorded run, Download and Open recording', async () => {
+  const { page, context } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=4');
+  assert.equal(await page.isDisabled('#download-recording-button'), true);
+  await page.selectOption('#record-select', 'all');
+  await page.check('#record-calls');
+  assert.deepEqual(await page.evaluate(() => window.cegarplay.collect().settings.record), { steps: 'all', n: 1000, calls: true });
+  await page.click('#run-button');
+  await settled(page);
+  assert.equal(await page.evaluate(() => window.cegarplay.recording.steps.length), 107);
+  await page.click('label[for="tab1"]');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#download-recording-button')]);
+  const file = await dl.path();
+  await page.setInputFiles('#recording-input', file);
+  await page.waitForFunction(() => document.getElementById('run-status').dataset.state === 'replayed');
+  assert.match(await page.textContent('#recording-status'), /107 steps/);
+  assert.equal(await solutionsOf(page), 61);
+  // off again: the setting disappears
+  await page.click('label[for="tab4"]');
+  await page.selectOption('#record-select', 'off');
+  await page.uncheck('#record-calls');
+  assert.equal(await page.evaluate(() => 'record' in window.cegarplay.collect().settings), false);
+  await context.close();
+});

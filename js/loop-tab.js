@@ -26,6 +26,16 @@ export class LoopTab {
       });
     }
     $('solutions-select').addEventListener('change', (e) => { this.app.project.settings.solutions = Number(e.target.value); });
+    // settings.record: absent when off (the program text is then unchanged)
+    const rec = () => {
+      const steps = $('record-select').value, calls = $('record-calls').checked;
+      const n = Math.max(0, Math.floor(Number($('record-n').value) || 0));
+      $('record-n').hidden = steps === 'off' || steps === 'all';
+      if (steps === 'off' && !calls) delete this.app.project.settings.record;
+      else this.app.project.settings.record = { steps, n, calls };
+      this.app.dirty && this.app.dirty();
+    };
+    for (const id of ['record-select', 'record-n', 'record-calls']) $(id).addEventListener('change', rec);
     const th = $('threads-checkbox');
     const iso = app.engine.isolated && !!app.engine.control;
     th.disabled = !iso;
@@ -52,6 +62,11 @@ export class LoopTab {
   load(project) {
     const st = project.settings;
     for (const [id, key] of Object.entries(NUMERIC)) $(id).value = st[key];
+    const r = st.record || {};
+    $('record-select').value = r.steps || 'off';
+    $('record-n').value = r.n || 1000;
+    $('record-n').hidden = !r.steps || r.steps === 'off' || r.steps === 'all';
+    $('record-calls').checked = !!r.calls;
     const sel = $('solutions-select');
     const v = String(st.solutions);
     if (![...sel.options].some((o) => o.value === v)) {

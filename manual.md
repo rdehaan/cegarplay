@@ -720,6 +720,15 @@ The audited link is the one that leaves the top solver; with several, the one th
 200,000 candidates the audit stops with outcome `limit`. Its run history row shows the verdict in
 the column **Audit**, and runs with the same fragments and constants show it too.
 
+### Recordings
+
+**Recording** (Loop tab, limits block) records the steps of a run as compact `R` events: every
+step, the first N, every N-th, the last N, or a sample of N; **solver calls** adds a `C` event per
+call. The setting is `settings.record` (absent when off). Every run's events are kept:
+**Download recording** (Control tab) saves them as a `.cprec` file (gzip; header line, then the event
+lines), **Open recording** replays one without the engine (run status `replayed`). Each `fast`
+library example has a replay in `examples/replays/`. Details: `docs/spec-recording.md`.
+
 ## Output and statistics
 
 ### Output tab
@@ -765,6 +774,9 @@ prints them as `{"kind": ..., "data": ...}`.
 | `L` | `log` | `text` |
 | `E` | runtime error | `message`, `line`, `traceback` |
 | `D` | last line of a run | `outcome`, `exhausted`, `detail` |
+| `I` | with `settings.record`, after `H` | `links` (`link`, `from`, `to`, `atoms`), `solvers`, `record` |
+| `R` | with `settings.record`: each recorded step | `i`, `k` (`r` reject, `a` add, `e` expand, `s` solution, `x` error), `s`, `l`, `n`, `t`, `c` (candidate, hex), `q` (clause, signed atom indices), `f` (facts) |
+| `C` | with `settings.record.calls`: each solver call | `id`, `s`, `t0`, `dt`, `r` (`sat`, `unsat`, `int`), `p` (enclosing call), `n` |
 | `A` | audit only: every 0.25 s, then the verdict | progress: `phase`, `candidates`, `pairs`, `unsound`; verdict: `verdict` (`sound`, `unsound`, `limit`), `link`, `kinds`, `candidates`, `solutions`, `counterexamples`, `pairs`, `unsound`, `at_risk`, `empty`, `atoms`, `t`, `witness` (`kind`, `candidate`, `counterexample`, `relevant` or `part` + `facts`, `solution`, `differ`) |
 
 ## URL parameters and browser storage
@@ -780,6 +792,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
 | `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
 | `#p=<data>` | A share link (**Copy share link** in the Control tab): the whole project without its run history, in the URL fragment, which never reaches the server. `<data>` is `z` + base64url of the deflate-raw compressed project JSON (`u` + base64url of the plain JSON in a browser without `CompressionStream`). Takes precedence over the kept project and, like `?example`, does not replace it until you edit. A damaged link opens the default example with an error in the status line. Links over 8,000 characters get a warning. |
+| `?replay=examples/replays/<id>.cprec` | Replay a library recording without the engine (it loads its example first). Only paths of that form are accepted. |
 | `?nocoi=1` | Do not use the isolation service worker (and remove it). Pause, Step, Stop and threads are then unavailable. |
 
 The address bar follows the page (without new history entries): loading an example from the library
@@ -884,7 +897,8 @@ without the repository.
 
 ```sh
 node tools/run.mjs <project.json | library id> [-c name=value] [--solutions N|all]
-                   [--seconds N] [--trace N] [--instance ID|all] [--variant NAME] [--json] [--quiet]
+                   [--seconds N] [--trace N] [--instance ID|all] [--variant NAME]
+                   [--record FILE] [--record-steps POLICY[:N]] [--json] [--quiet]
 ```
 
 It uses the same engine, validation and runtime as the page. Output: one `Solution n: atoms` line

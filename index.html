@@ -143,6 +143,13 @@
       &nbsp;
       <label class="inline-label"><input type="checkbox" id="include-history"> include run history</label>
 
+      <h3>Recordings</h3>
+      <button class="control-button" id="download-recording-button" disabled>Download recording</button>
+      <button type="button" class="control-button" id="open-recording-button">Open recording</button>
+      <input type="file" id="recording-input" accept=".cprec,application/gzip" tabindex="-1" aria-hidden="true" hidden>
+      <span class="note">the events of the last run; opening one replays it without the engine</span>
+      <p id="recording-status" class="status-line"></p>
+
       <h3>Share</h3>
       <button class="control-button" id="share-button">Copy share link</button>
       <span class="note">the project travels in the link itself (without the run history); nothing is uploaded</span>
@@ -219,6 +226,17 @@
         <input type="number" min="0" step="1" id="trace-input">
         <label for="seed-input">Seed (0 = clingo's default)</label>
         <input type="number" min="0" step="1" id="seed-input">
+        <label for="record-select">Recording</label>
+        <span class="record-controls"><select id="record-select">
+            <option value="off">off</option>
+            <option value="all">every step</option>
+            <option value="first">the first N steps</option>
+            <option value="every">every N-th step</option>
+            <option value="last">the last N steps</option>
+            <option value="sample">a sample of N steps</option>
+          </select>
+          <input type="number" min="0" step="1" id="record-n" aria-label="N, the number of steps" value="1000">
+          <label class="inline-label"><input type="checkbox" id="record-calls"> solver calls</label></span>
         <label for="threads-checkbox">Threads (clingo-mt)</label>
         <span><input type="checkbox" id="threads-checkbox" disabled>
           <span id="threads-note" class="note">needs a cross-origin isolated page</span></span>

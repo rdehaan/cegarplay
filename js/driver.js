@@ -20,6 +20,18 @@ export function constantList(settings) {
   return Object.entries((settings && settings.constants) || {}).map(([k, v]) => `${k}=${v}`);
 }
 
+// settings.record (docs/spec-recording.md): { steps, n, calls, proof }, or null when nothing is
+// recorded (then the program text is the same as without the key).
+export const RECORD_STEPS = ['off', 'first', 'every', 'last', 'sample', 'all'];
+export function recordSetting(r) {
+  if (!r || typeof r !== 'object') return null;
+  const steps = RECORD_STEPS.includes(r.steps) ? r.steps : 'off';
+  const calls = !!r.calls, proof = !!r.proof;
+  if (steps === 'off' && !calls && !proof) return null;
+  const n = Number.isInteger(Number(r.n)) && Number(r.n) >= 0 ? Number(r.n) : 0;
+  return { steps, n, calls, proof };
+}
+
 // Build the program (spec-runtime.md section 2).
 //   compiled: the compiler's result ({ lua, map }), or null/undefined for a raw Lua project,
 //             or a string of Lua.
@@ -43,6 +55,11 @@ export function assemble(project, compiled, runtimeLua, { poll = false, plain = 
   lines.push(`SETTINGS = { solutions = ${int(st.solutions, 1)}, seconds = ${Number(st.seconds) > 0 ? Number(st.seconds) : 0}, ` +
     `candidates = ${int(st.candidates, 0)}, trace = ${int(st.trace, 0)}, seed = ${int(st.seed, 0)}, ` +
     `poll = ${poll ? 'true' : 'false'}, plain = ${plain ? 'true' : 'false'} }`);
+  const rec = recordSetting(st.record);
+  if (rec) {
+    lines.push(`SETTINGS.record = { steps = ${luaStr(rec.steps)}, n = ${rec.n}, calls = ${rec.calls ? 'true' : 'false'}` +
+      `${rec.proof ? ', proof = true' : ''} }`);
+  }
   lines.push(...runtimeLua.replace(/\n?return rt\s*$/, '').split('\n'));
   for (const m of modules) lines.push(...m.replace(/\n?return [A-Za-z_][A-Za-z0-9_]*\s*$/, '').split('\n'));
   lines.push('function main(prg)');
