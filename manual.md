@@ -11,6 +11,18 @@ programming. The solver is clingo 5.8.1 with Lua 5.4, compiled to WebAssembly
 (`clingo-wasm` 0.6.0), running in a Web Worker. The site is static: no server code, no build step,
 no request to another origin.
 
+The page's tabs follow the work: **Control** (the library, files, recordings, share and export) and
+**Tutorial**; then the project: **Programs** (the ASP fragments), **Loop** (the loop script,
+constants, limits, recording and certificates) and **Instances** (inputs, generators, Run all,
+Fuzz); then a run: **Output**, **Statistics** and **Observatory**; and many runs: **Campaign**. The
+run bar above the tabs holds **Run**, **Audit**, Abort (and Pause, Step, Stop on an isolated page),
+the Solutions and Instance pickers and the live counts. **Manual** and **Internals** appear when
+asked for. The Control tab's **Tabs** block has three toggles, kept in this browser: **Tutorial**
+(shown by default), **Technical manual**, and **Advanced mode** (off by default), which adds the
+Observatory and Campaign tabs. A link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`,
+`?lecture=1`, `?view=`, `?step=`, `?advanced=1`, a link to a tutorial lesson) shows it for that
+visit without changing the stored choice.
+
 ## Model and terms
 
 | Term | Meaning |
@@ -92,6 +104,7 @@ two-space indentation.
 | `instances` | list | none | Format version 2. See [Instances](#manual-instances). |
 | `variants` | list | none | Format version 2. See [Instances](#manual-instances). |
 | `settings.instance` | string | the first instance | The instance a run uses; `""` = the project as written. |
+| `settings.variant` | string | none | The variant a run uses (the run bar's Variant picker); absent or `""` = the project as it is; a name that is no variant is ignored. Dropped on save when the project has no variants. |
 
 ### Instances
 
@@ -141,6 +154,26 @@ the instance is added. **Run all** runs every instance and marks a count other t
 with ✗ in red. The run bar's **Instance** picker (shown only for a project with instances) chooses
 the instance of the next run; the run history names it in brackets.
 
+### Variants
+
+A variant runs the same project with other fragments swapped in, its own loop script, or other
+constants (the table above). The **Variants** block at the foot of the Loop tab edits them: a name,
+**Swap** as `fragment=other fragment, ...` (the first fragment gets the text of the second; names
+are checked), **Constants** as `name=value, ...`, and **its own loop script** (a text box that
+starts as a copy of the project's loop). A renamed or deleted fragment is renamed in, or dropped
+from, every swap; a renamed or deleted variant also in the suites. The run bar's **Variant** picker
+(shown only for a project with variants) chooses the variant of a run, an audit and Run all, and
+is stored as `settings.variant`; the run history adds `(variant NAME)`. Alternative fragments
+that only a variant uses are not grounded by the project as it is. `tools/run.mjs` and
+`tools/audit.mjs` take `--variant NAME` (without it, `settings.variant`); a campaign suite names
+its variants (`default` = the project as it is) and ignores the picker.
+
+`voting-justification` is the worked example: its check solver reads the fragment `relevant`
+(refinement strategy 2), the fragments `relevant_s1`, `relevant_s3`, `relevant_s4` and
+`relevant_s5` hold the other strategies of the original file, the variants `s1` … `s5` swap them
+in, `shape2` and `reference` replace the loop, and the suite `strategies` runs all seven on the 15
+questions that finish.
+
 ### Campaigns
 
 The **Campaign** tab (tab 10) runs a suite: a grid of instances (instance ids, a generator grid
@@ -162,7 +195,7 @@ its file. Format: `docs/spec-instances.md` section 5.
 
 ### Fuzz
 
-**Fuzz** (Instances tab) audits instances from small to large (constants 1..v, or a suite's grid),
+**Fuzz** (Instances tab) audits instances from small to large (constants 1..v, or a suite's grid; with the variant picked in the run bar),
 stops at the first unsound one, shrinks its facts and constants (delta debugging, keeping the
 `schema` fragment satisfied and the audit unsound) and diagnoses it: the lost solution, the
 audit's witness, and the step of the loop's own run whose refinement removes the solution (for
@@ -570,9 +603,10 @@ grounded in batches of 20 between searches. Each bad candidate is blocked at onc
 
 Shape 1 with `reject M with G.block(M)` as the only refinement. Each bad candidate is ruled out on
 its own, so it is always sound: its solution count is the truth on small instances. Compare a
-loop's count with it to find a `relevant/1` that is too weak.
+loop's count with it to find a `relevant/1` that is too weak (or press Audit). The design guide
+calls it the *blocking loop*.
 
-## Values: clauses, lists and model reads (phase L1)
+## Values: clauses, lists and model reads
 
 | Script | Meaning |
 | --- | --- |
@@ -589,7 +623,7 @@ candidate on purpose). `reasons-by-shrinking` and `knapsack-bounds` are loop scr
 `reasons-by-size` needs no helper solver (`G.above`), and `qbf` has no `always` atom
 (`G.clause(X)`).
 
-## Control: inner and optimal searches (phase L2)
+## Inner and optimal searches
 
 ```loop
 search A:
@@ -610,7 +644,7 @@ search A:
   proven (`knapsack-interdiction` with `#minimize { 1,I : lock(I) }`: one solution).
 - `keep` is a keyword. `qbf-three-blocks` uses an inner search: 12 solves of B instead of 30.
 
-## Dynamics: growing programs and externals (phase L3)
+## Growing programs and externals
 
 | Script | Meaning |
 | --- | --- |
@@ -623,7 +657,7 @@ The library example `conformant-growing` finds the shortest conformant plans by 
 horizon until plans exist (8 steps, the same 3 plans as `conformant-planning` with `t = 8`).
 Certificates are refused for programs with `#external` atoms.
 
-## Structure: procedures and solver families (phase L4)
+## Procedures and solver families
 
 ```loop
 solver S[i in 1..depth] = shared + level + inner     # members S1, S2, ... grounded with -c level=i
@@ -853,7 +887,11 @@ script is compiled 0.5 s after each edit.
 
 **Abort** terminates the worker at once and starts a new one. On a cross-origin isolated page
 (see [URL parameters](#manual-url-parameters-and-browser-storage)) there are also **Pause** /
-**Resume**, **Step** (one candidate) and **Stop** (ends the run cleanly, with final statistics).
+**Resume**, **Step** and **Stop** (ends the run cleanly, with final statistics). Step is enabled
+whenever Run is: from idle it starts a run that waits after its first candidate (state `paused`);
+on a running run it pauses after the next candidate; on a paused run it moves on by one candidate.
+Resume runs on to the end. On a page that is not isolated these buttons are hidden: the worker
+cannot be paused there.
 A pause makes the runtime send fresh statistics before it waits, so the counters show the state at
 the pause; Step lets exactly one poll through (one candidate of a `search`; in a loop of `solve`
 calls the poll runs every 256 iterations of a loop body) and pauses again with fresh statistics.
@@ -927,6 +965,10 @@ library example has a replay in `examples/replays/`. Details: `docs/spec-recordi
 
 ## Output and statistics
 
+After an **Audit**, the Output tab shows its verdict, and the Statistics tab and the Observatory show
+the audit's own solving (one check per candidate of the unrefined abstraction), with a note saying
+so; the next Run replaces them. The run history keeps both.
+
 ### Output tab
 
 - **Result line**: outcome, time, solution count, whether the search was exhausted.
@@ -949,7 +991,7 @@ library example has a replay in `examples/replays/`. Details: `docs/spec-recordi
 | Refinements | Clauses, mean and largest length, expansions, restarts, automatic blocks (solutions blocked so that a later search does not report them again). |
 | Charts | Candidates and refinements over time; time split per solver; clause length distribution (1, 2, 3–4, 5–8, 9–16, 17–32, 33–64, 65+). |
 | Custom counters | The `count` statements. |
-| Run history | One row per run: time, loop, outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. **Rerun with 5 seeds**, **Clear**, copy as text or JSON. |
+| Run history | One row per run: time, loop, outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. **Rerun with 5 seeds**, **Clear run history** (asks first; disabled while empty), copy as text or JSON. |
 
 Counting rules: *candidates* are the assignments seen by `on candidate` plus models returned by
 `solve`/`models` of solvers without incoming links; *counterexamples* are satisfiable solves that
@@ -968,7 +1010,25 @@ narrower than a pixel share a column split by the share of sat and unsat calls. 
 pans, double click shows all. **Cost per line**: one row per loop line with calls, sat, unsat,
 exclusive time (nested calls subtracted) and time with nested calls, sorted by time; a click
 selects the line and filters the timeline; after a run the loop editor shows the same figures as
-info annotations. The domain view (V3) and candidate space (V4) regions follow.
+info annotations. The **Domain view** (see [Writing views](#manual-writing-views)) and the **Candidate space** follow.
+
+### Candidate space
+
+The **Candidate space** region (Observatory) shows every candidate of the unrefined abstraction at
+once, one square each, from the audit's enumeration (so the same limit of 200,000 applies).
+**Compute** audits the instance and variant the recorded run used, and needs a run recorded with every step (Recording "every step", Loop tab); without one it
+offers **Record every step, run, compute**, which sets that recording, runs and computes. The colour of a
+square is its fate up to the refinement chosen with the slider or the cursor: alive, alive and a
+solution, removed earlier, removed by this refinement, a lost solution (a solution some refinement
+removed: the run is unsound), an accepted solution; a legend under the map names them. The summary
+names the first unsound refinement and how many solutions it removes, and counts the removals that
+hit a candidate already removed (redundant refinements). Hover shows a candidate's atoms, a click
+moves the cursor to the step that removed it. Two orders: by the most blamed atoms (a Z-order over
+the atoms the refinements rely on most), or rows by the number of true atoms. Below the map: the
+number of alive candidates per refinement, and the **blame matrix** (refinements by atoms; a cell is
+coloured when the refinement's clause contains the atom, by its sign). **Compare with a recording**
+lays a second recording of the same project and instance over the map: removed by this run only, by
+the second only, or by both.
 
 ### The linked cursor
 
@@ -1041,9 +1101,10 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?example=<id>` | Load the library example `<id>` (also `?file=<id>`). It does not replace the project kept in the browser until you edit it. |
 | `&fragment=<name>` | With `?example`: open the Programs tab on that fragment's editor (`loop` opens the Loop tab). Overrides `?tab`. An unknown name is ignored with a note in the status line. |
 | `&from=guide/<page>.html#<anchor>` | Show a link "← Back to the guide" at the top left, to that guide page. Only a page of the guide is accepted. |
-| `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances. |
+| `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory. The numbers are fixed; they are not the order on screen. |
 | `&instance=<id>` | Pick that instance of the project in the run bar. An unknown id is ignored with a note. |
 | `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
+| `?advanced=1` | Advanced mode for this visit: the Observatory and Campaign tabs (without changing the remembered toggle). `?tab=10`, `?tab=11`, `?lecture=1`, `?view=` and `?step=` imply it. |
 | `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
 | `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
 | `#p=<data>` | A share link (**Copy share link** in the Control tab): the whole project without its run history, in the URL fragment, which never reaches the server. `<data>` is `z` + base64url of the deflate-raw compressed project JSON (`u` + base64url of the plain JSON in a browser without `CompressionStream`). Takes precedence over the kept project and, like `?example`, does not replace it until you edit. A damaged link opens the default example with an error in the status line. Links over 8,000 characters get a warning. |
@@ -1070,6 +1131,8 @@ Browser storage (`localStorage`, per browser and site):
   browser refuses (storage full or blocked), the project is kept without its run history, and if
   that fails too, the Control tab says "Not kept in this browser"; download the project then.
 - `cegarplay.manual`: `"1"` when "Show the technical manual" is ticked.
+- `cegarplay.advanced`: `"1"` when Advanced mode is on (absent when off).
+- `cegarplay.tutorial`: `"0"` when the Tutorial tab is hidden (absent when shown).
 - `cegarplay.theme`: `"light"` or `"dark"` when the colour theme was chosen by hand (absent for Auto).
 
 Keyboard: Ctrl+Enter or Cmd+Enter runs from anywhere, also inside an editor.
@@ -1084,7 +1147,7 @@ Pause, Step, Stop and threads works.
 | --- | --- |
 | Upload project from file | Loads a project JSON (`Project.load`). |
 | Download current project | The project JSON; "include run history" adds `runs`. |
-| Export for clingo | One `.lp` file with the fragments, the runtime and the loop: `clingo file.lp --outf=3` prints `Answer: n` lines and a summary. Needs a clingo built with Lua (conda-forge, Ubuntu's `gringo`; not the PyPI package). |
+| Export for clingo | One `.lp` file with the fragments, the runtime and the loop (with the instance and variant picked in the run bar applied): `clingo file.lp --outf=3` prints `Answer: n` lines and a summary. Needs a clingo built with Lua (conda-forge, Ubuntu's `gringo`; not the PyPI package). |
 
 ## Example library
 
@@ -1099,6 +1162,8 @@ Pause, Step, Stop and threads works.
 
 `shape` is a template key or `custom`; `expected.solutions` (when present) is the solution count
 with the example's own settings, checked by `test/library.test.mjs` for every example tagged `fast`.
+`has` (when present) counts the project's `instances`, `generators`, `suites` and `views`; the
+Library shows them as tags, and the filter matches them (type `view` or `suite`).
 
 | Group | Ids |
 | --- | --- |
@@ -1106,11 +1171,24 @@ with the example's own settings, checked by `test/library.test.mjs` for every ex
 | `language` | `lang-basics`, `lang-several-cex`, `lang-optimal`, `lang-two-stage`, `lang-clauses`, `lang-core`, `lang-second-solver`, `lang-legacy`, `lang-raw-lua` |
 | `shapes` | `gc-shape1`, `gc-shape2`, `gc-shape3`, `gc-shape4`, `gc-reference` |
 | `guide` | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
-| `problems` | `graph-coloring`, `graph-coloring-original`, `nash`, `voting-justification` |
+| `problems` | `graph-coloring`, `nash`, `voting-justification` |
 | `exists-forall` | `qbf`, `qbf-optimal`, `qbf-expansion`, `smallest-mus`, `min-dnf`, `integer-expressions`, `strategic-companies`, `diagnosis`, `stable-models`, `abduction`, `default-extensions`, `belief-update`, `af-preferred`, `af-semi-stable`, `conformant-planning`, `sufficient-reason`, `actual-cause`, `clique-interdiction`, `clique-colouring`, `arrowing`, `choosability`, `subset-sum-game`, `knapsack-interdiction`, `fewest-clues`, `fair-division`, `hedonic-core`, `boolean-game`, `strong-nash`, `kemeny-control`, `agenda-safety` |
 | `several-solvers` | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking`, `knapsack-fortification`, `qbf-three-blocks`, `conformant-growing`, `qbf-deep` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.
+
+Most problems keep their input in [instances](#manual-instances): an instance `example` (tag
+`library`, whose count is the entry's `expected`) and two or three more, each with a comment line
+and its expected count (a smaller one, one without solutions, a larger one); `test/instances.test.mjs`
+runs every instance with an expected count. Parametric problems (`graph-coloring`, `min-dnf`,
+`clique-interdiction`) use constants-only instances and `settings.instance: ""`, so that the
+project as written runs with its own constants. `voting-justification` has seventeen instances,
+one question each. Some examples also have generators (`qbf`, `af-preferred`, `kemeny-control`, the
+graph problems), a campaign suite (`tutorial-weak-relevant`, `qbf`, `voting-justification`) or a
+domain view (fragment `view`). Every `fast` example has a recording in `examples/replays/`
+(`node tools/make-replays.mjs` after a change of the runtime or an example). `reasons-by-shrinking`
+and `qbf-three-blocks` deliberately use no format-2 keys: `test/assemble-golden.test.mjs` checks
+that such projects assemble to the same program text as before.
 
 Entries of the group `guide` have three more fields: `page` (the guide page and anchor that link
 it), `status` (`baseline`, `sound` or `unsound`) and `baseline` (the id of the blocking run of the
@@ -1124,7 +1202,8 @@ count in `expected`.
 
 Without editing the tools: put a project file with a top-level `library` block
 (`{ "id", "group", "summary", "shape", "tags", "expected" }`, where `group` is `exists-forall` or
-`several-solvers` and `expected` is the solution count or `null`) in `examples/contrib/`; `node tools/make-examples.mjs` adds it to the
+`several-solvers` and `expected` is the solution count or `null`), with its input in instances, in
+`examples/contrib/`; `node tools/make-examples.mjs` adds it to the
 library (the block is dropped from `examples/<id>.json`). See `examples/contrib/README.md`.
 `node tools/make-chat-package.mjs` writes `dist/chat-package/`, a flat folder (this manual, the
 tutorial, every example, a template, the checker below, a guide) for writing examples in a chat
@@ -1135,10 +1214,11 @@ without the repository.
 ### Workflow
 
 1. Start from a library example close to the problem (`examples/<id>.json`), or from `starter`.
-2. Write the four fragments: domains in `shared`; the candidate guess and `#show` in
-   `abstraction`; `glue(T)` for every atom the check reads; in `check`, rules that have an answer
-   set exactly when the candidate is wrong, plus `relevant(T)` for the atoms each counterexample
-   depends on.
+2. Write the four fragments: domains and derived rules in `shared`; the candidate guess and
+   `#show` in `abstraction`; `glue(T)` for every atom the check reads; in `check`, rules that have
+   an answer set exactly when the candidate is wrong, plus `relevant(T)` for the atoms each
+   counterexample depends on. Put the problem's input in instances (`example` plus a few small
+   ones), not in `shared`.
 3. Pick a template (Shape 1 unless rule refinements are needed); set constants small.
 4. Run it headless (below) or in the page. Fix validation problems first (they name fragment, line
    and column).
@@ -1148,7 +1228,10 @@ without the repository.
 6. Audit the project on small instances (`node tools/audit.mjs <project> --json`). An unsound
    verdict names a lost solution and the atoms it differs on from the candidate; mark one of them
    relevant (or fix the refine part) and audit again.
-7. Only then increase the constants.
+7. Give every instance its `expected.solutions` and check them all:
+   `node tools/run.mjs <project> --instance all --solutions all`.
+8. Only then increase the constants or add larger instances (a suite in `suites` measures how the
+   run time grows: `node tools/bench.mjs <project> --suite NAME`).
 
 ### Headless runner
 
@@ -1184,14 +1267,16 @@ usage (also: nothing to audit), 3 candidate or time limit.
 
 ```sh
 python3 tools/cegarcheck.py <project.json> [--mode auto|block|clause|clauses|core|expand]
-        [--instance ID] [-c name=value] [--solutions N|all] [--optimal] [--cex NAME=pred/arity] [--show]
+        [--instance ID] [--variant NAME] [-c name=value] [--solutions N|all] [--optimal] [--cex NAME=pred/arity] [--show]
 ```
 
 Runs a project with Python clingo (`pip install clingo`) where the page's engine is not available.
 It copies the runtime's link semantics for one abstraction, one check and one link, in a
 solve-check-refine loop (Shape 2); the mode is read from the loop script, and `--mode block` is the
 reference run. Raw Lua and scripts with more solvers or links are refused. Only solution counts of
-exhausted runs compare with the page.
+exhausted runs compare with the page. `--variant` applies a variant first (without it,
+`settings.variant`); `tools/certcheck.py` takes the variant (and instance) from the proof log's
+header, so a log of a variant run is checked against that variant.
 
 ### Driving the page
 

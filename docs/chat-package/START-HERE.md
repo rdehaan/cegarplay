@@ -35,7 +35,11 @@ Write new examples for the `problems` group: problems that suit a CEGAR loop, th
 problems of the form "find X such that no Y exists with ...". The abstraction guesses X; the
 check guesses a Y that refutes X. Each example should teach something: a problem class, a
 modelling trick, a refinement variant, or a comparison (weak versus strong `relevant/1`,
-Shape 1 versus rule refinements).
+Shape 1 versus rule refinements). Put alternatives to compare in one project as **variants**: an
+extra fragment per alternative and a variant that swaps it in (`"variants": [{ "name": "s1",
+"swap": { "relevant": "relevant_s1" } }]`), or a variant with its own `loop`, plus a suite that runs
+them on the instances (`example-voting-justification.json`; manual, *Variants* and *Campaigns*).
+Every alternative must be correct; only the guide group shows wrong ones on purpose.
 
 Ideas (take one, or propose your own):
 
@@ -90,8 +94,16 @@ breaks as `\n`. After the block, give two or three sentences on what the example
   British spelling (colour, neighbour).
 - `title` short (2–5 words); `description` 1–3 sentences: the problem, what the loop does,
   and what to look at.
-- A small default instance through `settings.constants` (for example `{"n": "5"}`) so that the
-  run finishes in seconds. Say in the description which larger value is interesting.
+- The problem's input (a graph, a formula, an election, items) goes into **instances**, not into
+  `shared`: `"instances": [{ "id": "example", "facts": "% what it is\n...", "constants": {},
+  "expected": { "solutions": 3 }, "tags": ["library"] }, ...]` and `"version": 2` (manual,
+  *Instances*; `example-af-preferred.json`, `example-voting-justification.json`). `shared` then
+  keeps the encoding's domains and derived rules. Give two to four instances: the `example`
+  (its count is `library.expected`), a smaller one, one with no solution, a larger one; each
+  with a comment line and its `expected.solutions`. A parametric problem without data uses
+  constants-only instances (`"facts": ""`, `"constants": {"n": "5"}`, as in
+  `example-graph-coloring.json`). Keep `settings.constants` equal to the `example`'s values so
+  the project as written still runs in seconds.
 - Loop scripts: start from a template in the manual (*Templates*). In custom scripts, add
   `#` comments that explain each step, as in `example-lang-*.json`.
 - Settings: copy `settings` from the template (`solutions: 0, seconds: 60, candidates: 0,
@@ -108,8 +120,7 @@ breaks as `\n`. After the block, give two or three sentences on what the example
    check's meaning.
 4. **`relevant/1` marks every interface atom the counterexample depends on**: the atoms whose
    values make it a counterexample, both true ones and false ones. Too few is unsound: the
-   clause can cut real solutions (see `example-tutorial-weak-relevant.json` and
-   `example-graph-coloring-original.json`). Too many is safe but slow.
+   clause can cut real solutions (see `example-tutorial-weak-relevant.json`). Too many is safe but slow.
 5. In a `#program refine(k).` part, every head contains `k`.
 6. `relevant/1` derives at least one atom in every counterexample (else the run fails with
    `relevant/1 derived nothing for link G`).
@@ -126,6 +137,8 @@ pip install clingo                                    # Python clingo 5.8
 python3 cegarcheck.py my-problem.json --solutions all              # the loop's own refinement
 python3 cegarcheck.py my-problem.json --solutions all --mode block # reference run
 ```
+
+Add `--instance ID` for each instance (without it the first instance is used).
 
 Both runs must say `exhausted: yes` and report the same number of solutions; that number is
 your `expected`. A smaller count in the loop's mode means `relevant/1` (or the refine part) is
@@ -144,6 +157,8 @@ counterexample counts differ, because the page's Shape 1 checks inside one runni
 # save the file as examples/contrib/<id>.json, then:
 node tools/make-examples.mjs
 node tools/run.mjs <id> --solutions all --quiet
+node tools/run.mjs <id> --instance all --solutions all --quiet
+node tools/audit.mjs <id>
 cd test && npm test
 ```
 

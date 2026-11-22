@@ -43,9 +43,9 @@
         <button class="control-button" id="run-button" title="Run (Ctrl+Enter)" disabled>&#x23F5; Run</button>
         <button class="control-button" id="audit-button" title="Audit: check every candidate and every counterexample of this instance against the solutions" disabled>&#x2713; Audit</button>
         <button class="control-button" id="abort-button" disabled>&#x2717; Abort</button>
-        <button class="control-button isolated-only" id="pause-button" disabled hidden>&#x23F8; Pause</button>
-        <button class="control-button isolated-only" id="step-button" disabled hidden>&#x21E5; Step</button>
-        <button class="control-button isolated-only" id="stop-button" disabled hidden>&#x23F9; Stop</button>
+        <button class="control-button isolated-only" id="pause-button" title="Pause the run; Resume goes on" disabled hidden>&#x23F8; Pause</button>
+        <button class="control-button isolated-only" id="step-button" title="One candidate at a time: starts a run that waits after its first candidate, or moves a running or paused run on by one candidate" disabled hidden>&#x21E5; Step</button>
+        <button class="control-button isolated-only" id="stop-button" title="End the run now, keeping its statistics (Abort ends it without them)" disabled hidden>&#x23F9; Stop</button>
         <label class="inline-label" for="solutions-select">Solutions:</label>
         <select id="solutions-select">
           <option value="1">1</option>
@@ -55,6 +55,8 @@
         </select>
         <label class="inline-label" for="instance-select" id="instance-select-label" hidden>Instance:</label>
         <select id="instance-select" hidden></select>
+        <label class="inline-label" for="variant-select" id="variant-select-label" hidden>Variant:</label>
+        <select id="variant-select" hidden></select>
         <span class="status-label">Status:</span>
         <span id="run-status" data-state="idle" role="status" aria-live="polite">idle</span>
       </div>
@@ -75,14 +77,11 @@
     <input id="tab3" aria-controls="section-programs" type="radio" name="tabs">
     <label for="tab3" class="tab-label" id="label-programs" title="Programs"><span class="tab-text">Programs</span></label>
 
-    <input id="tab9" aria-controls="section-instances" type="radio" name="tabs">
-    <label for="tab9" class="tab-label" id="label-instances" title="Instances"><span class="tab-text">Instances</span></label>
-
-    <input id="tab10" aria-controls="section-campaign" type="radio" name="tabs">
-    <label for="tab10" class="tab-label" id="label-campaign" title="Campaign"><span class="tab-text">Campaign</span></label>
-
     <input id="tab4" aria-controls="section-loop" type="radio" name="tabs">
     <label for="tab4" class="tab-label" id="label-loop" title="Loop"><span class="tab-text">Loop</span></label>
+
+    <input id="tab9" aria-controls="section-instances" type="radio" name="tabs">
+    <label for="tab9" class="tab-label" id="label-instances" title="Instances"><span class="tab-text">Instances</span></label>
 
     <input id="tab5" aria-controls="section-output" type="radio" name="tabs">
     <label for="tab5" class="tab-label" id="label-output" title="Output"><span class="tab-text">Output</span></label>
@@ -93,6 +92,9 @@
     <input id="tab11" aria-controls="section-observatory" type="radio" name="tabs">
     <label for="tab11" class="tab-label" id="label-observatory" title="Observatory"><span class="tab-text">Observatory</span></label>
 
+    <input id="tab10" aria-controls="section-campaign" type="radio" name="tabs">
+    <label for="tab10" class="tab-label" id="label-campaign" title="Campaign"><span class="tab-text">Campaign</span></label>
+
     <input id="tab7" aria-controls="section-internals" type="radio" name="tabs">
     <label for="tab7" class="tab-label" title="Internals"><span class="tab-text">Internals</span></label>
 
@@ -101,8 +103,11 @@
       <p>
         CegarPlay runs CEGAR loops (counterexample-guided abstraction refinement) written in answer
         set programming, with clingo running in your browser. Load an example or a project file
-        here, then look at the <b>Programs</b> and <b>Loop</b> tabs, and press <b>Run</b>. New here?
-        Start with the <b>Tutorial</b> tab.
+        here. A project is written in the <b>Programs</b>, <b>Loop</b> and <b>Instances</b> tabs;
+        press <b>Run</b> (or <b>Audit</b>) and look at the run in <b>Output</b> and <b>Statistics</b>.
+        <b>Advanced mode</b> (under Tabs, below) adds the <b>Observatory</b>, which shows a run as
+        pictures, and the <b>Campaign</b> tab, which compares many runs. New here? Start with the
+        <b>Tutorial</b> tab.
       </p>
       <div class="project-box">
         <div id="project-info">
@@ -125,9 +130,9 @@
       <details id="library-section" class="library-section">
         <summary><h3>Example library</h3></summary>
         <p class="note">Load an example to look at it and run it. Each has a link of its own:
-          <code>?example=&lt;id&gt;</code>. The <b>Tutorial</b> tab uses the first group step by step.</p>
+          <code>?example=&lt;id&gt;</code>. The <b>Tutorial</b> tab loads them lesson by lesson; the tags say which have instances, generators, suites or a domain view.</p>
         <div class="library-filter">
-          <input type="search" id="library-filter" placeholder="Filter by word, id or shape" aria-label="Filter the library">
+          <input type="search" id="library-filter" placeholder="Filter by word, id, shape or tag" aria-label="Filter the library">
         </div>
         <div id="library" class="library"><p class="note">Loading the library…</p></div>
       </details>
@@ -169,15 +174,24 @@
       </p>
       <p id="export-status" class="status-line"></p>
 
-      <h3>Technical manual</h3>
+      <h3>Tabs</h3>
+      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="tutorial-checkbox" checked>
+        Tutorial</label> <span class="note">lessons with an example each; hide it once you know your way around</span></p>
       <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="manual-checkbox">
-        Show the technical manual</label> <span class="note">adds a Manual tab: the complete reference, for lookup and for AI agents</span></p>
+        Technical manual</label> <span class="note">the complete reference, for lookup and for AI agents</span></p>
+      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="advanced-checkbox">
+        Advanced mode</label> <span class="note">adds the <b>Observatory</b> (a run as pictures: anatomy, call
+        timeline, domain view, candidate space) and the <b>Campaign</b> tab (grids of runs on several engines)</span></p>
+      <p class="note">These choices are kept in this browser.</p>
     </section>
 
     <!-- 2. Tutorial -->
     <section id="section-tutorial">
-      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="manual-checkbox">
-        Show the technical manual</label> <span class="note">a reference for lookup and for AI agents, in its own tab</span></p>
+      <p class="manual-toggle tab-toggles">
+        <label class="inline-label" title="The complete reference, for lookup and for AI agents, in its own tab"><input type="checkbox" class="manual-checkbox"> Technical manual</label>
+        <label class="inline-label" title="The Observatory and Campaign tabs (lessons 5, 6 and 8)"><input type="checkbox" class="advanced-checkbox"> Advanced mode</label>
+        <label class="inline-label" title="Tabs in the Control tab brings it back"><input type="checkbox" class="tutorial-checkbox" checked> Show this tab</label>
+        <span class="note">Kept in this browser; also under Tabs in the Control tab.</span></p>
       <div id="tutorial"></div>
     </section>
 
@@ -191,9 +205,10 @@
 
     <!-- 3. Programs -->
     <section id="section-programs">
-      <p>
+      <p class="tab-intro">
         The ASP fragments of the project. A solver is built from fragments (see the <b>Loop</b>
         tab). Problems found before a run are marked in the editors.
+        <span class="tab-help">Tutorial: <a href="#tut-fragments">Fragments, solvers and links</a>. Manual: <a href="#manual-asp-conventions">ASP conventions</a>.</span>
       </p>
       <div id="fragments"></div>
       <p class="inline-controls">
@@ -203,6 +218,11 @@
 
     <!-- 4. Loop -->
     <section id="section-loop">
+      <p class="tab-intro">
+        The loop script declares the solvers and the links between them and says how they call
+        each other; below it are the constants and the settings of a run.
+        <span class="tab-help">Tutorial: <a href="#tut-language">Writing loop scripts</a> · <a href="#tut-shapes">Choosing a loop shape</a>. Manual: <a href="#manual-the-loop-language">The loop language</a> · <a href="#manual-settings">Settings</a>.</span>
+      </p>
       <div class="inline-controls">
         <label class="inline-label" for="template-select">Template:</label>
         <select id="template-select"></select>
@@ -258,19 +278,44 @@
         The seed changes the search only together with randomising solver options, such as
         <code>options "--rand-freq=0.05"</code>.
       </p>
+
+      <h3>Variants</h3>
+      <p class="note">The same project with other fragments swapped in, its own loop script or other
+        constants. The run bar's <b>Variant</b> picker chooses the variant of a run (also for Audit and
+        Run all); a campaign suite compares variants on the same instances.</p>
+      <div id="variants"></div>
     </section>
 
     <!-- 5. Output -->
     <!-- 9. Instances -->
     <section id="section-instances">
+      <p class="tab-intro">
+        An instance is a set of facts and constant values that a run applies on top of the project:
+        the problem's input, kept apart from its encoding. The run bar picks the instance a run uses;
+        <b>Run all</b> runs each one and compares its count with the expected one; <b>Fuzz</b> looks
+        for an instance on which the loop is unsound.
+        <span class="tab-help">Tutorial: <a href="#tut-instances">One project, many instances</a>. Manual: <a href="#manual-instances">Instances</a> · <a href="#manual-generators">Generators</a> · <a href="#manual-fuzz">Fuzz</a>.</span>
+      </p>
       <div id="instances"></div>
     </section>
 
     <section id="section-campaign">
+      <p class="tab-intro">
+        A suite is a grid of instances × variants × solver seeds; each cell is one run with all
+        solutions. Rows are kept in this browser: <b>Start</b> again resumes and skips the cells
+        already run. Exhausted variants that disagree on an instance are marked red;
+        <code>tools/bench.mjs</code> runs the same suite headless.
+        <span class="tab-help">Tutorial: <a href="#tut-campaign">Campaigns</a>. Manual: <a href="#manual-campaigns">Campaigns</a>.</span>
+      </p>
       <div id="campaign"></div>
     </section>
 
     <section id="section-output">
+      <p class="tab-intro">
+        The last run or audit: its result, the solutions, the trace one step at a time, and the
+        messages.
+        <span class="tab-help">Tutorial: <a href="#tut-reading">Reading the trace and the statistics</a> · <a href="#tut-audit">The audit</a>. Manual: <a href="#manual-output-tab">Output tab</a> · <a href="#manual-audit">Audit</a>.</span>
+      </p>
       <div id="result-line" class="result-line">No run yet.</div>
       <div id="audit-panel" class="audit-panel" hidden></div>
       <h3>Solutions <span id="solutions-count" class="note"></span>
@@ -285,10 +330,26 @@
 
     <!-- 6. Statistics -->
     <section id="section-statistics">
+      <p class="tab-intro">
+        Counts, solver tables and charts of the last run, certificates when asked for, and the run
+        history of this session, which marks runs whose counts disagree.
+        <span class="tab-help">Tutorial: <a href="#tut-reading">Reading the trace and the statistics</a>. Manual: <a href="#manual-statistics-tab">Statistics tab</a> · <a href="#manual-certificates">Certificates</a>.</span>
+      </p>
+      <p class="audit-only audit-note">The last action was an <b>audit</b>: the figures below are those of the
+        audit's own solving (every candidate of the unrefined abstraction and its counterexamples), not of
+        the loop. Its verdict is in the Output tab; press <b>Run</b> to see the loop again.</p>
       <div id="statistics"></div>
     </section>
 
     <section id="section-observatory">
+      <p class="tab-intro">
+        The last run, or an opened recording, as pictures: the loop's anatomy and its calls, each
+        step in the problem's own terms, and every candidate at once. One cursor moves them all.
+        <span class="tab-help">Tutorial: <a href="#tut-observatory">Watching a run</a> · <a href="#tut-space">Which refinement went wrong</a>. Manual: <a href="#manual-observatory-tab">Observatory tab</a> · <a href="#manual-writing-views">Writing views</a> · <a href="#manual-candidate-space">Candidate space</a>.</span>
+      </p>
+      <p class="audit-only audit-note">The last action was an <b>audit</b>: the figures below are those of the
+        audit's own solving (every candidate of the unrefined abstraction and its counterexamples), not of
+        the loop. Its verdict is in the Output tab; press <b>Run</b> to see the loop again.</p>
       <div id="cursor-region" class="observatory-region"></div>
       <div id="anatomy" class="observatory-region"></div>
       <div id="domain-view" class="observatory-region" hidden></div>
@@ -321,6 +382,9 @@
         <h3>The shared fragment</h3>
         <p>Rules that every solver needs: domains, constants, common definitions. In the default
           loop it is part of the abstraction solver, the check solver and the glue.</p>
+        <p>The problem's input (a graph, a formula, an election) belongs in an instance (Instances
+          tab): its facts reach every solver and the glue, ahead of all fragments, so one encoding
+          serves many inputs.</p>
       </div>
     </div>
   </div>
@@ -359,7 +423,8 @@
           If it finds one, it marks with <code>relevant(T)</code> the interface atoms the
           counterexample depends on. The refinement then says: one of these atoms must change.</p>
         <p>If <code>relevant/1</code> marks too few atoms, the refinement also removes good
-          candidates; compare with the Reference run template to find out.</p>
+          candidates. Press <b>Audit</b> to find out: it checks every refinement against every
+          solution of a small instance and names the atom that should have been relevant.</p>
       </div>
     </div>
   </div>
@@ -370,7 +435,7 @@
         <h3>The loop script</h3>
         <p>Declares the solvers (<code>solver A = shared + abstraction</code>), the links between
           them (<code>link G = A -&gt; C via shared + glue</code>) and how they call each other.
-          Start from a template; the Tutorial tab explains the language (lesson 7), and the
+          Start from a template; the Tutorial tab explains the language (lesson 10), and the
           <a href="#manual-the-loop-language">manual</a> has the full reference.</p>
       </div>
     </div>

@@ -32,8 +32,9 @@
 
 - `node tools/run.mjs <project.json | library id> [-c name=value] [--solutions N|all] [--json]`
   validates and runs a project with the same engine as the page (needs the repository and Node).
-- `python3 tools/cegarcheck.py <project.json> [--mode block] [--solutions all] [--instance id]` runs a project
+- `python3 tools/cegarcheck.py <project.json> [--mode block] [--solutions all] [--instance id] [--variant name]` runs a project
   with Python clingo (one abstraction, one check, one link); compare with `--mode block`.
+- `node tools/run.mjs` and `node tools/audit.mjs` take `--instance id` and `--variant name` too.
 - `node tools/audit.mjs <id>` audits a loop (sound / unsound with a witness); `node tools/run.mjs <id> --proof log.jsonl`
   then `python3 tools/certcheck.py <project.json> log.jsonl` certifies a solution count;
   `node tools/bench.mjs <id> --suite NAME` runs a campaign suite.

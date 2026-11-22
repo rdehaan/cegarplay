@@ -126,6 +126,7 @@ export class Editors {
     for (const x of document.querySelectorAll('.frag-tool, #add-fragment-button, #insert-template-button, #edit-as-lua-button')) x.disabled = b;
     if (!b) document.getElementById('edit-as-lua-button').disabled = this.loopLanguage === 'lua';
     if (this.app && this.app.instancesTab) this.app.instancesTab.setReadOnly(b);
+    if (this.app && this.app.variants) this.app.variants.setReadOnly(b);
   }
 
   // ---- annotations ---------------------------------------------------------
@@ -218,12 +219,14 @@ export class Editors {
     const n = this.askName(`New name for fragment ${name} (the loop script is not changed):`, name);
     if (!n) return;
     this.withProject((p) => { p.fragments.find((f) => f.name === name).name = n; });
+    if (this.app && this.app.variants) this.app.variants.fragmentRenamed(name, n);
   }
 
   remove(name) {
     if (this.readOnly) return;
     if (!window.confirm(`Delete fragment ${name}?`)) return;
     this.withProject((p) => { p.fragments = p.fragments.filter((f) => f.name !== name); });
+    if (this.app && this.app.variants) this.app.variants.fragmentDeleted(name);
   }
 
   move(name, d) {

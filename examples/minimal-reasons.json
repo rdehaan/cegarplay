@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Minimal sufficient reasons",
   "description": "Sufficient reasons for a small neural network's answer that have no redundant feature. One check looks for a counterexample (an input that agrees on the kept features and gets the other answer); a second one for a witness that every kept feature is needed, and is refined with its unsat core when there is none. clasp's cores are not minimal, so the loop still needs 67 candidates (256 when each candidate is only blocked); the 4 solutions are those of Reasons by size, found by a different loop.",
   "fragments": [
     {
       "name": "shared",
-      "description": "The network and the input to be explained. Added to every solver.",
-      "text": "% A small network over 8 binary features. A hidden unit fires when the weighted sum of\n% its inputs reaches its threshold; the answer is \"yes\" when the weighted sum of the\n% firing units reaches 3.\nfeature(1..8).\nunit(1..3).\n% weight(U,F,W): unit U sees feature F with weight W.\nweight(1,1,-2). weight(1,3,1). weight(1,4,-1). weight(1,6,-3). weight(1,7,-3). weight(1,8,-1).\nweight(2,1,-3). weight(2,3,2). weight(2,4,-2). weight(2,5,-3). weight(2,6,-2). weight(2,7,-1).\nweight(2,8,3).\nweight(3,1,-2). weight(3,2,3). weight(3,3,2).  weight(3,5,-3). weight(3,7,-1). weight(3,8,3).\nthreshold(1,2). threshold(2,1). threshold(3,2).\nvote(1,1). vote(2,1). vote(3,3).\n% The input to be explained: is(F,B) says that feature F has the value B.\nis(1,0). is(2,1). is(3,1). is(4,0). is(5,1). is(6,0). is(7,0). is(8,1).\n% The network's answer on this input.\nfires0(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), is(F,1) } >= T.\nyes0 :- #sum { V,U : vote(U,V), fires0(U) } >= 3.\n"
+      "description": "The network's answer on the input. Added to every solver.",
+      "text": "% The instance (its facts) is in the Instances tab.\n% feature(F), unit(U), weight(U,F,W), threshold(U,T), vote(U,V), and the input is(F,B).\n% The network's answer on this input.\nfires0(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), is(F,1) } >= T.\nyes0 :- #sum { V,U : vote(U,V), fires0(U) } >= 3.\n"
     },
     {
       "name": "abstraction",
@@ -42,5 +42,36 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% A small network over 8 binary features. A hidden unit fires when the weighted sum of\n% its inputs reaches its threshold; the answer is \"yes\" when the weighted sum of the\n% firing units reaches 3.\nfeature(1..8).\nunit(1..3).\n% weight(U,F,W): unit U sees feature F with weight W.\nweight(1,1,-2). weight(1,3,1). weight(1,4,-1). weight(1,6,-3). weight(1,7,-3). weight(1,8,-1).\nweight(2,1,-3). weight(2,3,2). weight(2,4,-2). weight(2,5,-3). weight(2,6,-2). weight(2,7,-1).\nweight(2,8,3).\nweight(3,1,-2). weight(3,2,3). weight(3,3,2).  weight(3,5,-3). weight(3,7,-1). weight(3,8,3).\nthreshold(1,2). threshold(2,1). threshold(3,2).\nvote(1,1). vote(2,1). vote(3,3).\n% The input to be explained: is(F,B) says that feature F has the value B.\nis(1,0). is(2,1). is(3,1). is(4,0). is(5,1). is(6,0). is(7,0). is(8,1).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 4
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "other-input",
+      "facts": "% The same network, another input (answer \"no\").\n% A small network over 8 binary features. A hidden unit fires when the weighted sum of\n% its inputs reaches its threshold; the answer is \"yes\" when the weighted sum of the\n% firing units reaches 3.\nfeature(1..8).\nunit(1..3).\n% weight(U,F,W): unit U sees feature F with weight W.\nweight(1,1,-2). weight(1,3,1). weight(1,4,-1). weight(1,6,-3). weight(1,7,-3). weight(1,8,-1).\nweight(2,1,-3). weight(2,3,2). weight(2,4,-2). weight(2,5,-3). weight(2,6,-2). weight(2,7,-1).\nweight(2,8,3).\nweight(3,1,-2). weight(3,2,3). weight(3,3,2).  weight(3,5,-3). weight(3,7,-1). weight(3,8,3).\nthreshold(1,2). threshold(2,1). threshold(3,2).\nvote(1,1). vote(2,1). vote(3,3).\n% Another input, on which the network answers \"no\".\nis(1,0). is(2,0). is(3,0). is(4,0). is(5,0). is(6,0). is(7,1). is(8,0).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "majority-of-three",
+      "facts": "% Majority of three: one unit fires when at least two features are 1, and its vote\n% of 3 decides. On the input 1 1 1 any two features force the answer \"yes\".\nfeature(1..3).\nunit(1).\nweight(1,F,1) :- feature(F).\nthreshold(1,2).\nvote(1,3).\nis(1,1). is(2,1). is(3,1).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }

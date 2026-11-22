@@ -80,7 +80,7 @@ relevant(del(V)) :- q(V), not busier(V).</pre>
           right. So run both on the same instance and compare the counts:</p>
         <ul>
           <li>the same fragments and constants;</li>
-          <li>all solutions (in the Control tab, Solutions: all);</li>
+          <li>all solutions (Solutions: all, in the run bar);</li>
           <li>both runs exhausted;</li>
           <li>the same number of solutions, or the faster loop is wrong.</li>
         </ul>
@@ -96,11 +96,31 @@ relevant(del(V)) :- q(V), not busier(V).</pre>
           rarely a limit: a mistake in <code>relevant/1</code> usually shows on small instances
           already.</p>
 
+        <h2 id="audit">The audit: every counterexample at once</h2>
+        <p>The comparison only sees the counterexamples that one run happens to meet. The
+          <b>Audit</b> button, next to Run, sees them all: it lists every candidate of the
+          abstraction and every counterexample of each, and asks of every refinement the loop
+          would make whether it removes a solution. Its verdict does not depend on the search
+          order, and when it is "unsound" it comes with a witness.</p>
+        <p id="audit-run">For the loop that marks one node the witness is a candidate that deletes 4 and
+          8, its counterexample the triangle 1, 2, 3, and the relevant set "delete 3". The solution
+          that deletes 1, 4 and 8 agrees with the candidate on node 3, so the clause removes it too.
+          The two differ on node 1 only: the node that should have been relevant.
+          <a class="play" href="../?example=guide-04-one-node&amp;from=guide/04-soundness.html%23audit-run" target="cegarplay">Open the loop and press Audit</a></p>
+        <p>The audit lists every candidate, so like the blocking loop it needs a small instance.
+          Blocks and cores need no audit (they are sound by construction), and clauses written in
+          ASP (<code>G.clauses</code>) are not audited: there, compare counts as above.</p>
+
         <h2 id="instances">One instance is not enough</h2>
         <p>Which solutions a too-strong refinement removes depends on which counterexamples the
           check happens to return, and so on the search order, the loop shape and the instance. A
           wrong loop can lose nothing on one instance and lose many on the next. Run the soundness
           test on several small instances, and on several values of the constants.</p>
+        <p>The playground keeps them together. The Instances tab holds the instances of one
+          project, each with its expected count; <b>Run all</b> marks every count that differs.
+          <b>Fuzz</b> audits instances from small to large, stops at the first unsound one and
+          shrinks it. A campaign (Campaign tab, in Advanced mode) runs your loop and the blocking loop, as a variant,
+          over a grid of instances, and marks in red every instance where the two disagree.</p>
 
         <h2 id="both-ways">Too weak and too strong</h2>
         <p>Marking too much is safe but slow: at the far end it is blocking. Marking too little is
@@ -116,30 +136,22 @@ relevant(del(V)) :- q(V), not busier(V).</pre>
           agrees with the leaf colours. The abstraction guesses the graph and the leaf colours; the
           check looks for a proper 3-colouring that agrees, which is the counterexample. The example
           comes from an earlier prototype of the same loop, and its check marked these atoms:</p>
-        <pre class="code" data-lang="asp" data-from="graph-coloring-original:check">relevant(edge(N,M)) :- node(N), node(M), N &lt; M, not edge(N,M).
+        <pre class="code" data-lang="asp" data-from="graph-coloring:check">relevant(edge(N,M)) :- node(N), node(M), N &lt; M, not edge(N,M).
 relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
-        <p class="listing-source">From the fragment <code>check</code> of <code>graph-coloring-original</code>.</p>
+        <p class="listing-source">The first two <code>relevant/1</code> rules of the fragment <code>check</code> of <code>graph-coloring</code>.</p>
         <p>Missing edges are relevant, because adding one can break the colouring. Leaf colours are
           relevant, because changing one can too. It looks complete. It is not: removing an edge can
           turn a node into a leaf, and if its new leaf colour differs from its colour in the
           counterexample, the counterexample breaks. The fix marks those atoms too:</p>
         <pre class="code" data-lang="asp" data-from="graph-coloring:check">relevant(leaf_color(N,C)) :- node(N), not leaf(N), color(C), not color(N,C).</pre>
         <p class="listing-source">From the fragment <code>check</code> of <code>graph-coloring</code>.</p>
-        <p id="story-numbers">With the original rules, n = 5 gives
-          <span data-stat="graph-coloring-original@n=5:solutions">101</span> solutions, the same as
-          the blocking loop's <span data-stat="gc-reference:solutions">101</span>. Nothing to see.
-          At n = 6 the original rules give
-          <span data-stat="graph-coloring-original:solutions">9,270</span> solutions, the fixed rules
+        <p id="story-numbers">Without the fix, n = 5 gives the same count as the blocking loop's
+          <span data-stat="gc-reference:solutions">101</span>. Nothing to see. At n = 6 the rules
+          without the fix give 9,270 solutions, the fixed rules
           <span data-stat="graph-coloring:solutions">10,698</span>, and so does the blocking loop.
           The mistake shows from n = 6 on.
-          <a class="play" href="../?example=graph-coloring-original&amp;fragment=check&amp;from=guide/04-soundness.html%23story-numbers" target="cegarplay">Open the original rules (n = 6)</a>
           <a class="play" href="../?example=graph-coloring&amp;fragment=check&amp;from=guide/04-soundness.html%23story-numbers" target="cegarplay">Open the fixed rules (n = 6)</a>
           <a class="play" href="../?example=gc-reference&amp;fragment=loop&amp;from=guide/04-soundness.html%23story-numbers" target="cegarplay">Open the blocking loop (n = 5)</a></p>
-        <p>The too-strong rules were also fast. At n = 5 they needed
-          <span data-stat="graph-coloring-original@n=5:candidates">276</span> candidates, the fixed
-          rules <span data-stat="gc-shape1:candidates">1,421</span>, the blocking loop
-          <span data-stat="gc-reference:candidates">3,373</span>. A loop that is suspiciously fast is
-          worth a soundness test.</p>
 
         <aside class="pitfall">
           <span class="aside-title">Pitfall: skipping the soundness test</span>
@@ -174,10 +186,11 @@ relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
 
         <section class="exercise" id="exercise-2">
           <h2>Exercise 2</h2>
-          <p>Open the original leaf-colouring rules and, before reading the fix above, write the
-            missing <code>relevant/1</code> rule yourself. Ask: which change of the candidate, not
-            covered by the two rules, breaks the counterexample? Then compare with the blocking loop
-            <code>gc-reference</code> at n = 6 (set n in its Control tab; that run takes a while).</p>
+          <p>Open the leaf-colouring example, delete its third <code>relevant/1</code> rule and,
+            without looking back at the fix above, write it again yourself. Ask: which change of the
+            candidate, not covered by the two rules, breaks the counterexample? Then compare with the
+            blocking loop <code>gc-reference</code> at n = 6 (set n in its Loop tab; that run takes a
+            while).</p>
           <details class="solution" id="exercise-2-solution">
             <summary>Solution</summary>
             <p>Removing an edge can make a node a leaf, and its leaf colour then has to match its
@@ -197,6 +210,8 @@ relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
               without any sign. The run still finishes, exhausted.</li>
             <li id="rule-soundness-test">Test soundness by comparison: the blocking loop and your
               loop, same fragments and constants, all solutions, both exhausted, same count.</li>
+            <li id="rule-audit">Press Audit on a small instance: it checks every refinement against
+              every solution, and its witness names the atom that should have been relevant.</li>
             <li id="rule-several-instances">Run the test on several small instances: a wrong loop
               can be right on one.</li>
             <li id="rule-both-polarities">A counterexample can depend on an atom being false. Mark

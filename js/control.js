@@ -1,6 +1,6 @@
 // Run bar and run flow (spec-app.md section 6).
 import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody, modulesFor } from './driver.js';
-import { TEMPLATES, template, derive } from './project.js';
+import { TEMPLATES, template, derive, pickedVariant } from './project.js';
 import { resolveProject } from './instances.js';
 import { hashText } from './stats.js';
 import { fmt } from './output.js';
@@ -76,7 +76,9 @@ export class Control {
     this.abortButton.disabled = !active;
     this.pauseButton.disabled = !active;
     this.pauseButton.innerHTML = state === 'paused' ? '&#x23F5; Resume' : '&#x23F8; Pause';
-    this.stepButton.disabled = state !== 'paused';
+    // Step: from idle it starts a run that pauses after its first candidate; while running it
+    // pauses after the next candidate; while paused it advances by one candidate.
+    this.stepButton.disabled = !(active || !this.runButton.disabled);
     this.stopButton.disabled = !active;
     const dl = document.getElementById('download-recording-button');
     if (dl) dl.disabled = active || state === 'validating' || !this.app.recording;
@@ -132,7 +134,7 @@ export class Control {
   //   mode 'audit': the audit of lua/audit.lua instead of the loop (docs/spec-soundness.md).
   //   instance, variant: the run uses the derived project (js/project.js derive); without
   //   instance, the one picked in the run bar.
-  async run({ seed, mode = 'run', instance, variant } = {}) {
+  async run({ seed, mode = 'run', instance, variant, stepping = false } = {}) {
     const app = this.app;
     if (this.busy || !app.ready) return null;
     this.setState('validating');
@@ -147,7 +149,8 @@ export class Control {
     try {
       // an instance stored as a recipe gets its facts from its generator first
       project = await resolveProject(project, instance, (p, o) => app.engine.exec(p, o), app.genLua());
-      project = derive(project, { instance, variant });
+      // without an explicit variant: the one picked in the run bar (a stale name is ignored)
+      project = derive(project, { instance, variant: variant !== undefined ? variant : pickedVariant(project) });
       instanceId = project.instance || null;
     } catch (e) {
       app.output.clear();
@@ -201,8 +204,9 @@ export class Control {
     app.stats.start({});
     app.output.result(mode === 'audit' ? 'Auditing…' : 'Running…');
     this.mode = mode;
+    document.body.dataset.lastMode = mode;   // shows the audit notes in Statistics and Observatory
     this.audit = null;
-    app.recording = new Recording({ title: project.title || '', instance: instanceId, mode, engine: app.engineVersion || '',
+    app.recording = new Recording({ title: project.title || '', instance: instanceId, variant: project.variant || null, mode, engine: app.engineVersion || '',
       example: app.exampleId || null, fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])) });
     this.D = null;
     this.E = null;
@@ -210,7 +214,8 @@ export class Control {
     if (app.anatomy) app.anatomy.start({ assembled, compiled });
     this.setState('running');
     const info = {
-      loopLabel: (mode === 'audit' ? 'audit: ' : '') + loopLabel(project.loop) + (instanceId ? ` [${instanceId}]` : ''), mode, instance: instanceId, settings: { ...project.settings, constants: { ...project.settings.constants } },
+      loopLabel: (mode === 'audit' ? 'audit: ' : '') + loopLabel(project.loop) + (instanceId ? ` [${instanceId}]` : '') +
+        (project.variant ? ` (variant ${project.variant})` : ''), mode, instance: instanceId, variant: project.variant || null, settings: { ...project.settings, constants: { ...project.settings.constants } },
       engine: app.engineVersion, solvers: compiled ? compiled.solvers : [],
       fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])),
     };
@@ -220,6 +225,8 @@ export class Control {
         onLine: (text, isErr) => { app.internals && app.internals.raw(text); app.output.line(text, isErr); },
         onDone: (d) => resolve(this.onDone(d, info)),
       }, { seconds: Number(project.settings.seconds) || 0 });
+      // started by Step: the first poll lets one candidate through, then the run waits
+      if (stepping && iso) { app.engine.step(); this.setState('paused'); }
     });
   }
 
@@ -325,6 +332,7 @@ export class Control {
     this.replaying = true;
     this.assembled = null;
     this.mode = rec.header.mode || 'run';
+    document.body.dataset.lastMode = this.mode;
     this.audit = null;
     this.D = null;
     this.E = null;
@@ -345,7 +353,9 @@ export class Control {
     if (app.observatory) app.observatory.update();
     if (app.views) app.views.show();
     const what = this.D ? this.describe(this.D) : 'the recording has no final event';
-    app.output.result(`Replayed: ${what}`);
+    const h = rec.header || {};
+    const of = [h.instance ? `instance ${h.instance}` : '', h.variant ? `variant ${h.variant}` : ''].filter(Boolean).join(', ');
+    app.output.result(`Replayed${of ? ` (${of})` : ''}: ${what}`);
     this.setState('replayed');
     return { state: 'replayed', D: this.D };
   }
@@ -360,7 +370,11 @@ export class Control {
     else if (this.state === 'paused') { this.app.engine.resume(); this.setState('running'); }
   }
 
-  step() { if (this.state === 'paused') this.app.engine.step(); }
+  step() {
+    if (this.state === 'paused') this.app.engine.step();
+    else if (this.state === 'running') { this.app.engine.step(); this.setState('paused'); }
+    else if (!this.busy && !this.runButton.disabled) this.run({ stepping: true });
+  }
 
   stop() {
     if (this.state !== 'running' && this.state !== 'paused') return;

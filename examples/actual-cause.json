@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Actual causes",
   "description": "Halpern and Pearl's actual causation on the rock-throwing story: is Suzy's throw a cause of the bottle shattering, although Billy's rock would have hit it otherwise (Sigma-2-complete for single-variable causes)? The abstraction guesses a witness, variables held at chosen values under which flipping the cause changes the effect; the check tries to change the effect with the cause in place, by applying part of the witness and freezing other variables. Set the constant cause to bt: no solution, Billy's throw is not a cause.",
   "fragments": [
     {
       "name": "shared",
       "description": "The variables of the story and the effect. Added to every solver.",
-      "text": "% Suzy and Billy both throw a rock at a bottle. Suzy's rock gets there first.\n% st, bt: Suzy / Billy throws.  sh, bh: Suzy's / Billy's rock hits.  bs: the bottle shatters.\nvar(st;bt;sh;bh;bs).\n% The effect to be explained.\neffect(bs).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\n"
     },
     {
       "name": "model",
@@ -44,5 +44,40 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Suzy and Billy both throw a rock at a bottle. Suzy's rock gets there first.\n% st, bt: Suzy / Billy throws.  sh, bh: Suzy's / Billy's rock hits.  bs: the bottle shatters.\nvar(st;bt;sh;bh;bs).\n% The effect to be explained.\neffect(bs).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 4
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "billy",
+      "facts": "% The same story, with Billy's throw as the candidate cause: it is not a cause.\nvar(st;bt;sh;bh;bs).\neffect(bs).\n",
+      "constants": {
+        "cause": "bt"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "billy-misses",
+      "facts": "% Is Suzy's throw a cause of Billy's rock not hitting?\nvar(st;bt;sh;bh;bs).\neffect(bh).\n",
+      "constants": {
+        "cause": "st"
+      },
+      "expected": {
+        "solutions": 6
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }

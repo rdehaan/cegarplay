@@ -124,7 +124,8 @@ export async function cellKey(project, cell, suite, engineVersion = '') {
     d = derive(c.project, { instance: c.instance, variant: c.variant });
   }
   // every setting that changes a run (certify, record, ...) with the cell's own settings over them
-  const { constants, ...rest } = d.settings;
+  // settings.instance and settings.variant are the run bar's picks, not part of a cell
+  const { constants, instance: _i, variant: _v, ...rest } = d.settings;
   const settings = Object.fromEntries(Object.entries({ ...rest, ...c.settings }).sort(([a], [b]) => a.localeCompare(b)));
   const text = JSON.stringify([d.fragments.map((f) => [f.name, f.text]), d.loop, constants, d.recipe || null,
     settings, engineVersion]);

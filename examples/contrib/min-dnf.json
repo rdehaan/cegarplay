@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Smallest equivalent DNF",
   "description": "Formulas in disjunctive normal form with at most k terms that are equivalent to a given one (here: not all of x1..xn are equal); existence is Sigma-2-complete (Umans). The abstraction picks terms from a pool, the check finds an assignment on which the two formulas differ, and the refinement depends on that assignment alone: use a term that covers it, or drop the terms that cover it. Try n = 4, k = 4 (6 solutions among more than a million candidates).",
   "fragments": [
@@ -38,7 +38,8 @@
     "seconds": 60,
     "candidates": 0,
     "trace": 200,
-    "seed": 0
+    "seed": 0,
+    "instance": ""
   },
   "library": {
     "id": "min-dnf",
@@ -49,5 +50,57 @@
       "fast"
     ],
     "expected": 2
-  }
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "",
+      "constants": {
+        "n": "3",
+        "k": "3"
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "n2-k2",
+      "facts": "",
+      "constants": {
+        "n": "2",
+        "k": "2"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "n3-k2",
+      "facts": "",
+      "constants": {
+        "n": "3",
+        "k": "2"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "n3-k4",
+      "facts": "",
+      "constants": {
+        "n": "3",
+        "k": "4"
+      },
+      "expected": {
+        "solutions": 44
+      },
+      "tags": []
+    }
+  ]
 }

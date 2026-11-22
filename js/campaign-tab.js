@@ -57,9 +57,6 @@ export class CampaignTab {
     this.plots = h('div', { id: 'campaign-plots', class: 'campaign-plots' });
     this.summary = h('div', { id: 'campaign-summary' });
     this.root.append(
-      h('p', {}, 'A suite is a grid of instances × variants × solver seeds; each cell is one run with all solutions. ',
-        'Rows are kept in this browser: Start again resumes and skips the cells already run. ',
-        'Exhausted variants that disagree on an instance are marked red. tools/bench.mjs runs the same suite headless.'),
       h('div', { class: 'instances-bar' }, this.select, b('campaign-new', 'New suite', () => this.addSuite()),
         h('label', {}, 'Engines ', this.jobs), this.startB, this.pauseB, this.abortB,
         b('campaign-export', 'Export rows', () => this.exportFile()), b('campaign-import', 'Import rows', () => this.fileInput.click()),

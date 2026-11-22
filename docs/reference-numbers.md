@@ -44,8 +44,8 @@ per-solver propagator do not change them (the spike has both).
 | # | Check | Expected |
 | --- | --- | --- |
 | 10 | Graph colouring n=6, original rules, Shape 2, all | Between 9,270 and 10,697 solutions (the original rules lose solutions; how many depends on the search order; observed 9,277). Slow: about 7 s. |
-| 11 | `nash.lp` imported with `legacy` vs. `examples/nash.json` (glue wrapped), Shape 1, solutions = 1 | Identical statistics in both runs |
-| 12 | Graph colouring: `legacy` import of the original file vs. `examples/graph-coloring-original.json`, n=6, Shape 1, all | Identical statistics; 9,270 solutions |
+| 11 | `nash.lp` imported with `legacy`, with the `edge/3` fix of its rules (ii), vs. `examples/nash.json` (glue wrapped), Shape 1, solutions = 1 | Identical statistics in both runs. (Without the fix the loop is unsound from n = 3: the audit at n = 3, w = 1 finds 8,232 of 58,848 refinements removing a solution; 495 of 576 solutions found.) |
+| 12 | Graph colouring: `legacy` import of the original file (original rules), n=6, Shape 1, all | 9,270 solutions (the example `graph-coloring-original` that row 12 used to compare with was removed) |
 | 13 | Any compiled template vs. the hand-written Lua in `spike/js/shapes.mjs` | Identical statistics |
 
 ## Directions (PLAN2): rows 14–30
@@ -60,8 +60,8 @@ These extend `docs/reference-numbers.md`. All were measured by the spikes on cli
 | 15 | `tutorial-weak-relevant`, n = 2 | Audit | 4 candidates, 3 solutions, 1 pair, 1 unsound; n = 1 is sound |
 | 16 | `tutorial-first-run`, n = 8 | Audit | 640 pairs, 0 unsound |
 | 17 | `graph-coloring`, n = 5 | Audit | 3,373 candidates, 101 solutions, 13,950 counterexamples, 13,950 pairs, 0 unsound |
-| 18 | `graph-coloring-original`, n = 5 | Audit | 3,272 pairs, 0 unsound |
-| 19 | `graph-coloring-original`, n = 6 | Audit (slow, 54 s) | 102,508 candidates, 10,698 solutions, 606,030 counterexamples, 91,810 pairs, 44,125 unsound, 1,440 at risk |
+| 18 | (removed with the example `graph-coloring-original`) | | |
+| 19 | (removed with the example `graph-coloring-original`) | | |
 | 20 | `guide-04-one-node` | Audit | 176 candidates, 3 solutions, 290 pairs, 64 unsound, 2 at risk |
 | 21 | `tutorial-first-run` | Level 2 on each refinement | All certified |
 | 22 | `tutorial-weak-relevant` | Levels 2 and 3 on each refinement | None certified |

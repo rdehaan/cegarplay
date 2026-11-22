@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Strong Nash equilibria",
   "description": "A profile of a graphical game is a strong Nash equilibrium if no coalition can change its members' actions so that every member gains; deciding whether one exists is Sigma-2-complete (Gottlob, Greco and Scarcello). The abstraction guesses a profile and the check a coalition with a joint deviation, which depends only on the actions of the members and of their neighbours. The sample game has 5 Nash equilibria, 1 of them strong.",
   "fragments": [
     {
       "name": "shared",
       "description": "The players, their neighbours and their payoffs. Added to every solver.",
-      "text": "% A graphical game: eight players, each chooses action 1 or 2.\nplayer(1..8).\naction(1..2).\n% w(P,Q,W): player P gets W for choosing the same action as neighbour Q (W may be\n% negative: P would rather differ from Q). Players only care about their neighbours.\nw(1,2,-1). w(1,5,2). w(1,8,-1).\nw(2,1,2). w(2,3,1).\nw(3,2,3). w(3,4,2). w(3,5,1). w(3,6,1).\nw(4,3,3). w(4,5,-2).\nw(5,1,3). w(5,3,2). w(5,4,1). w(5,6,2).\nw(6,3,-2). w(6,5,2). w(6,7,3).\nw(7,6,-1). w(7,8,3).\nw(8,1,-1). w(8,7,-1).\n% bonus(P,A,B): player P gets B on top for choosing action A.\nbonus(1,1,0). bonus(1,2,0).\nbonus(2,1,1). bonus(2,2,0).\nbonus(3,1,0). bonus(3,2,1).\nbonus(4,1,0). bonus(4,2,2).\nbonus(5,1,2). bonus(5,2,1).\nbonus(6,1,1). bonus(6,2,1).\nbonus(7,1,2). bonus(7,2,0).\nbonus(8,1,2). bonus(8,2,2).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\n% player(P), action(A), w(P,Q,W) and bonus(P,A,B), as explained there.\n"
     },
     {
       "name": "abstraction",
@@ -37,5 +37,45 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% A graphical game: eight players, each chooses action 1 or 2.\nplayer(1..8).\naction(1..2).\n% w(P,Q,W): player P gets W for choosing the same action as neighbour Q (W may be\n% negative: P would rather differ from Q). Players only care about their neighbours.\nw(1,2,-1). w(1,5,2). w(1,8,-1).\nw(2,1,2). w(2,3,1).\nw(3,2,3). w(3,4,2). w(3,5,1). w(3,6,1).\nw(4,3,3). w(4,5,-2).\nw(5,1,3). w(5,3,2). w(5,4,1). w(5,6,2).\nw(6,3,-2). w(6,5,2). w(6,7,3).\nw(7,6,-1). w(7,8,3).\nw(8,1,-1). w(8,7,-1).\n% bonus(P,A,B): player P gets B on top for choosing action A.\nbonus(1,1,0). bonus(1,2,0).\nbonus(2,1,1). bonus(2,2,0).\nbonus(3,1,0). bonus(3,2,1).\nbonus(4,1,0). bonus(4,2,2).\nbonus(5,1,2). bonus(5,2,1).\nbonus(6,1,1). bonus(6,2,1).\nbonus(7,1,2). bonus(7,2,0).\nbonus(8,1,2). bonus(8,2,2).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "coordination",
+      "facts": "% Three players who all want to choose the same action: both unanimous\n% profiles are strong equilibria.\nplayer(1..3).\naction(1..2).\nw(P,Q,1) :- player(P), player(Q), P != Q.\nbonus(P,A,0) :- player(P), action(A).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "matching-pennies",
+      "facts": "% Player 1 wants to match player 2, player 2 wants to differ: there is no\n% equilibrium at all.\nplayer(1..2).\naction(1..2).\nw(1,2,1). w(2,1,-1).\nbonus(P,A,0) :- player(P), action(A).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "nash-not-strong",
+      "facts": "% Five players: the game has two Nash equilibria, but a coalition can improve\n% on each of them, so there is no strong one.\nplayer(1..5).\naction(1..2).\nw(1,2,2). w(1,4,2). w(2,3,-2). w(2,4,-2). w(3,1,3). w(3,5,-1).\nw(4,1,3). w(4,2,2). w(5,3,-1). w(5,4,1).\nbonus(3,1,1). bonus(3,2,2). bonus(4,2,1). bonus(5,1,1). bonus(5,2,2).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }

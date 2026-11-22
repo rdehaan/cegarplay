@@ -71,23 +71,23 @@ test('trace: step 1 of the default example shows candidate, counterexample and r
   await context.close();
 });
 
-test('run history: original rules with shape 1 vs the reference run are marked as a mismatch', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?file=graph-coloring-original&tab=6');
+test('run history: a too weak relevant/1 vs the reference run are marked as a mismatch', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?file=tutorial-weak-relevant&tab=6');
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
-  assert.match(await page.textContent('#live-line'), /9,270 solutions/);
+  assert.match(await page.textContent('#live-line'), /11 solutions/);
   await page.click('label[for="tab4"]');
   await page.selectOption('#template-select', 'reference');
   await page.click('#insert-template-button');
   assert.match(await B.getEditor(page, 'loop-editor'), /reject M with G\.block\(M\)/);
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error'], 120000), 'finished');
-  assert.match(await page.textContent('#live-line'), /10,698 solutions/);
+  assert.match(await page.textContent('#live-line'), /61 solutions/);
   await page.click('label[for="tab6"]');
   const rows = await page.$$eval('#history-table tbody tr', (l) => l.map((r) => ({ m: r.dataset.mismatch === 'true', text: r.textContent })));
   assert.equal(rows.length, 2);
   assert.ok(rows.every((r) => r.m), JSON.stringify(rows));
-  assert.match(rows[0].text, /Shape 1/);
+  assert.doesNotMatch(rows[0].text, /Reference run/);
   assert.match(rows[1].text, /Reference run/);
   assert.equal(await page.isVisible('#history-note'), true);
   assert.deepEqual(errors, []);
@@ -143,6 +143,26 @@ test('the tutorial is shown with code blocks; internals show the generated Lua',
   await page.click('label[for="tab7"]');
   assert.match(await B.getEditor(page, 'generated-lua'), /rt\.prepare\(\)/);
   assert.match(await page.textContent('#raw-events'), /^@@H /);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('Clear run history asks first; dismissing keeps the rows, accepting removes them', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?fresh=1&tab=6');
+  assert.equal(await page.$eval('#clear-history-button', (b) => b.disabled), true, 'nothing to clear yet');
+  await page.click('#run-button');
+  assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
+  const rows = () => page.$$eval('#history-table tbody tr', (l) => l.filter((r) => !/no finished runs/.test(r.textContent)).length);
+  assert.equal(await rows(), 1);
+  let asked = '';
+  page.once('dialog', (d) => { asked = d.message(); d.dismiss(); });
+  await page.click('#clear-history-button');
+  assert.match(asked, /Remove all 1 row of the run history\?/);
+  assert.equal(await rows(), 1, 'dismissed: kept');
+  page.once('dialog', (d) => d.accept());
+  await page.click('#clear-history-button');
+  assert.equal(await rows(), 0, 'accepted: removed');
+  assert.equal(await page.$eval('#clear-history-button', (b) => b.disabled), true);
   assert.deepEqual(errors, []);
   await context.close();
 });

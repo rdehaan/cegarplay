@@ -3,7 +3,7 @@ import { makeEditor } from './editors.js';
 import { IMPORTERS, importerFor, freshId, checkFacts, ImportError } from './instances.js';
 import { generate, PARAM_TYPES } from './generate.js';
 import { fuzz, shrinkInstance, diagnose, defaultSource } from './fuzz.js';
-import { INSTANCE_ID } from './project.js';
+import { INSTANCE_ID, applyVariant } from './project.js';
 import { fmt } from './output.js';
 
 const $ = (id) => document.getElementById(id);
@@ -89,8 +89,6 @@ export class InstancesTab {
       inp.addEventListener('change', () => this[fn](inp.value));
     }
     this.root.append(
-      el('p', {}, 'An instance is a set of facts and constant values that a run applies on top of the project. ',
-        'The run bar picks the instance a run uses. "Run all" runs each instance and compares its solution count with the expected one.'),
       bar, this.status, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table), this.form);
     this.buildGenerators();
     this.editor = makeEditor(editorBox, 'ace/mode/gringo');
@@ -440,7 +438,8 @@ export class InstancesTab {
     if (!app.ready || app.control.busy || this.fuzzing) return;
     this.fuzzing = true;
     const env = { engineRun: (p, o) => app.engine.exec(p, o), runtime: app.runtime, modules: app.modules, luaTexts: app.genLua() };
-    const project = structuredClone(app.collect());
+    // the variant picked in the run bar (its 'reference' variant, if any, stays available)
+    const project = applyVariant(structuredClone(app.collect()), app.variants ? app.variants.selected() || undefined : undefined);
     const suite = (project.suites || []).find((s) => s.instances && (s.instances.generator || s.instances.constants));
     // smallest first: a grid 1..v over the numeric constants, else a suite's grid, else the instances
     const def = defaultSource(project);

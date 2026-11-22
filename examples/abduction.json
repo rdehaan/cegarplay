@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Abduction",
   "description": "Explanations of an observation: at most k hypotheses that are consistent with a theory and, together with it, entail the manifestations; existence is Sigma-2-complete (Eiter and Gottlob). The abstraction guesses the hypotheses with a hidden model that shows consistency; the check looks for a model in which a manifestation is false, and the refinement adds a hypothesis that is false there. Shape 2 counts each explanation once, whatever the hidden model.",
   "fragments": [
     {
       "name": "shared",
       "description": "The theory, the hypotheses and the manifestations. Added to every solver.",
-      "text": "% Why does the car not start? A theory in clause form:\n% pos(C,A): atom A occurs in clause C, neg(C,A): its negation does.\nneg(1,flat).    pos(1,nostart).                   % a flat battery: no start\nneg(2,flat).    pos(2,dim).                       % a flat battery: dim lights\nneg(3,empty).   pos(3,nostart).                   % an empty tank: no start\nneg(4,starter). pos(4,nostart).                   % a broken starter: no start\nneg(5,plugs).   neg(5,damp). pos(5,nostart).      % fouled plugs in a damp engine: no start\nneg(6,cold).    pos(6,flat). pos(6,damp).         % a cold night: flat battery or damp engine\nneg(7,lights).  pos(7,flat).                      % lights left on: flat battery\nneg(8,rain).    pos(8,damp).                      % rain: damp engine\npos(9,gauge).                                     % the fuel gauge shows fuel\nneg(10,gauge).  neg(10,empty).                    % ... so the tank is not empty\nclause(C) :- pos(C,_).\nclause(C) :- neg(C,_).\natom(A) :- pos(_,A).\natom(A) :- neg(_,A).\n% What may be assumed, and what has to be explained.\nhypothesis(flat; empty; starter; plugs; cold; lights; rain).\nmanifestation(nostart).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\nclause(C) :- pos(C,_).\nclause(C) :- neg(C,_).\natom(A) :- pos(_,A).\natom(A) :- neg(_,A).\n"
     },
     {
       "name": "abstraction",
@@ -39,5 +39,36 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Why does the car not start? A theory in clause form:\n% pos(C,A): atom A occurs in clause C, neg(C,A): its negation does.\nneg(1,flat).    pos(1,nostart).                   % a flat battery: no start\nneg(2,flat).    pos(2,dim).                       % a flat battery: dim lights\nneg(3,empty).   pos(3,nostart).                   % an empty tank: no start\nneg(4,starter). pos(4,nostart).                   % a broken starter: no start\nneg(5,plugs).   neg(5,damp). pos(5,nostart).      % fouled plugs in a damp engine: no start\nneg(6,cold).    pos(6,flat). pos(6,damp).         % a cold night: flat battery or damp engine\nneg(7,lights).  pos(7,flat).                      % lights left on: flat battery\nneg(8,rain).    pos(8,damp).                      % rain: damp engine\npos(9,gauge).                                     % the fuel gauge shows fuel\nneg(10,gauge).  neg(10,empty).                    % ... so the tank is not empty\n% What may be assumed, and what has to be explained.\nhypothesis(flat; empty; starter; plugs; cold; lights; rain).\nmanifestation(nostart).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 17
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "two-symptoms",
+      "facts": "% A patient with fever and a cough; which diseases explain both?\nneg(1,flu).       pos(1,fever).                   % flu: fever\nneg(2,flu).       pos(2,cough).                   % flu: cough\nneg(3,cold).      pos(3,cough).                   % a cold: cough\nneg(4,infection). pos(4,fever).                   % an infection: fever\nneg(5,allergy).   pos(5,cough).                   % an allergy: cough\nneg(6,allergy).   neg(6,infection).               % (the allergy test rules out an infection)\nneg(7,covid).     pos(7,fever). pos(7,cough).     % covid: fever and cough\npos(8,vaccinated).                                % the patient is vaccinated ...\nneg(9,vaccinated). neg(9,covid).                  % ... so it is not covid\nhypothesis(flu; cold; infection; allergy; covid).\nmanifestation(fever; cough).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 5
+      },
+      "tags": []
+    },
+    {
+      "id": "no-explanation",
+      "facts": "% The only hypothesis that would explain the symptom contradicts the theory.\nneg(1,leak).  pos(1,wet).                         % a leak: a wet floor\npos(2,dry).                                       % the pipes are dry ...\nneg(3,dry).   neg(3,leak).                        % ... so there is no leak\nneg(4,spill). pos(4,sticky).                      % a spill: a sticky floor\nhypothesis(leak; spill).\nmanifestation(wet).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }

@@ -7,6 +7,7 @@
 //   --limit N         stop above N candidates (default 200000; exit code 3)
 //   -c name=value     set a constant (repeatable)
 //   --instance id     audit one instance of the project (format version 2)
+//   --variant NAME    audit a variant of the project
 //   --seconds N       time limit (default 0 = none)
 //   --json            print the verdict as one JSON object
 //
@@ -19,7 +20,7 @@ const root = new URL('..', import.meta.url);
 
 function usage(msg) {
   if (msg) console.error(msg);
-  console.error('usage: node tools/audit.mjs <project.json | library id> [--link G] [--limit N] [-c name=value] [--instance id] [--seconds N] [--json]');
+  console.error('usage: node tools/audit.mjs <project.json | library id> [--link G] [--limit N] [-c name=value] [--instance id] [--variant NAME] [--seconds N] [--json]');
   process.exit(2);
 }
 
@@ -44,7 +45,7 @@ function names(list) { return `{${(list || []).join(' ')}}`; }
 
 async function main(argv) {
   const args = [...argv];
-  let target = null, json = false, link, limit, seconds = 0, instance;
+  let target = null, json = false, link, limit, seconds = 0, instance, variant;
   const consts = {};
   while (args.length) {
     const a = args.shift();
@@ -52,6 +53,7 @@ async function main(argv) {
     else if (a === '--limit') { limit = Number(args.shift()); if (!(limit > 0)) usage('bad --limit'); }
     else if (a === '--seconds') { seconds = Number(args.shift()); if (!(seconds >= 0)) usage('bad --seconds'); }
     else if (a === '--instance') instance = args.shift() || usage('--instance needs an id');
+    else if (a === '--variant') variant = args.shift() || usage('--variant needs a name');
     else if (a === '-c') { const kv = args.shift() || usage('-c needs name=value'); const i = kv.indexOf('='); if (i < 1) usage(`bad constant ${kv}`); consts[kv.slice(0, i)] = kv.slice(i + 1); }
     else if (a === '--json') json = true;
     else if (a === '-h' || a === '--help') usage();
@@ -63,7 +65,7 @@ async function main(argv) {
   let project;
   try { project = loadTarget(target); } catch (e) { console.error(`cannot load ${target}: ${e.message}`); process.exit(2); }
   let r;
-  try { r = await auditProject(project, { link, limit, seconds, instance, constants: Object.keys(consts).length ? consts : undefined }); }
+  try { r = await auditProject(project, { link, limit, seconds, instance, variant, constants: Object.keys(consts).length ? consts : undefined }); }
   catch (e) { console.error(e.message); process.exitCode = 2; return; }
   if (r.problems.length) {
     for (const p of r.problems) console.error(`${p.where?.name || p.where?.kind || 'project'}${p.where?.line ? ':' + p.where.line : ''}: ${p.severity}: ${p.message}`);

@@ -744,6 +744,143 @@ All phases of PLAN.md, of the guide and of TODO.md are done. Open items for the 
 to GitHub Pages; filing the drafted trap report (`docs/upstream-trap-report.md`); a first CI run on
 GitHub; a read of the guide by a person; Firefox and Safari checks of the TODO changes.
 
+## Removed: graph-coloring-original (2026-11-22)
+
+The example `graph-coloring-original` (graph colouring with the too-weak original
+`relevant/1` rules) was removed on request. Follow-ups:
+- `tools/make-examples.mjs`, `tools/library.mjs`, `examples/library.json`: gone from the
+  `problems` group (now three examples).
+- Guide page 4, "A true story": the first listing now quotes the first two rules of
+  `graph-coloring:check`; 9,270 is plain text (still tested by row 12); the n = 5 speed
+  paragraph (276 candidates) and the link to the original rules are gone. `gc-shape1` and both
+  `graph-coloring-original` keys left `QUOTED` and `guide/numbers.json`.
+- Tutorial lesson 5: the "same story at a larger scale" paragraph and its button are gone.
+- Tests: audit rows 18 and 19 removed; row 12 now checks only that the legacy import of
+  `graph-coloring.lp` gives 9,270; the slow fuzz test on it is removed (the fuzz test on
+  `tutorial-weak-relevant` covers the same path); the threads test (isolated) runs
+  `graph-coloring` (10,698); the run-history mismatch test (stats) uses `tutorial-weak-relevant`
+  (11 vs 61).
+- `docs/reference-numbers.md` rows 18 and 19 marked removed; `docs/directions/*.md` keep the
+  historical numbers.
+
+## Unification pass (2026-11-22, on request)
+
+Goal: the app, library, tutorial, manual and guide as one whole with the PLAN2 features.
+
+- **Library:** `voting-justification`'s commented-out questions became 17 instances
+  (`voteInstances` in `tools/make-examples.mjs`: ids from the axioms and k; counts measured with
+  `tools/run.mjs --instance ID --solutions all`; `faith-cancel-reinf-pareto-condorcet-k3` has 0,
+  tag `no-solution`; the originally active `cancel-reinf-posresp-k4` (tag `original`, first
+  solution in 0.6 s, all not within 60 s) and `pareto-neutral-cancel-reinf-k8` (tag `hard`) have no
+  expected count) plus a suite `questions`. 31 contrib examples moved their data into an instance
+  `example` (tag `library`, expected = library count) with 2-3 extra instances each, every count
+  checked by the loop and an independent check (cegarcheck `--mode block`, a block-only copy, or a
+  brute-force Python enumeration). Not converted: `reasons-by-shrinking` and `qbf-three-blocks`
+  (golden-test guards without format-2 keys), `nash` (from declarative-cegar, solutions = 1).
+  `min-dnf` and `clique-interdiction` use constants-only instances with `settings.instance: ""`;
+  `conformant-planning`'s `example` keeps empty constants (the dynamics test sets t = 7).
+  `tools/guide.mjs fromContrib` folds a source's `example` facts back into `shared`, so the guide's
+  projects stay self-contained (cosmetic diffs only; guide numbers unchanged).
+- **Tutorial:** 13 lessons: new 5 (Observatory), 6 extended (Audit, Reference run, candidate
+  space), 7 (instances, generators, Fuzz), 8 (campaigns), 10 gained values, inner searches, growing
+  programs and families, 11 (certificates, lift, proofs, recordings), 12 (own problem) uses
+  instances, Audit, Fuzz, suites and Suggest a view. Numbers in it were measured in the page.
+- **Page:** tab order Control, Tutorial, Programs, Loop, Instances, Output, Statistics,
+  Observatory, Campaign (tab numbers unchanged); the run bar after an Audit shows the audit's counts
+  (`auditLiveText`) instead of the raw model counts; the candidate-space map has a colour legend;
+  Control intro and the info dialogs mention instances and the Audit.
+- **Docs:** manual: tab overview, headings without phase labels, a Candidate space section, the
+  library's use of instances, `?tab=` lists 10 and 11; guide page 4: section "The audit", rule
+  `rule-audit` (also on page 12), Instances/Fuzz/Campaign paragraph, Exercise 2 no longer needs the
+  removed example; constants are in the Loop tab (pages 1, 2, 3, 5, 7), Solutions in the run bar
+  (4, 8). README, `examples/contrib/README.md` and the chat package describe instances.
+- Removed the stray `test/_p.mjs`.
+- Environment note: this container's Playwright 1.65.1 wanted Chromium build 1255; only 1243 was
+  installed, so browser tests hung in `launch()`. A symlink `chromium_headless_shell-1255 ->
+  -1243` in `/opt/pw-browsers` fixed it (outside the repo).
+
+## Coherence pass 2 (2026-11-22)
+
+- **nash was unsound.** Found while adding instances: at n = 3, w = 1 the loop gave 495 solutions,
+  the block-only reference 576. `tools/audit.mjs` confirmed it (8,232 of 58,848 refinements
+  remove a solution). Cause: nash.lp's rules (ii) name `edge(P,Q)`, but edges are `edge/3`, so
+  they never fire. `nashFix` in `tools/make-examples.mjs` corrects them (as `graph-coloring` adds
+  its rule); the audit is then sound at n = 2, n = 3 w = 1 and n = 3 w = 2. Row 11 applies the same
+  fix to the legacy import. nash gained four constants-only instances (12, 36, 576, 4,080).
+- Every working tab opens with the same kind of line: what it is for, with links to its tutorial
+  lesson(s) and manual section(s). `#tut-<lesson>` links open the Tutorial at the lesson, as
+  `#manual-` links open the manual. The intros of Instances and Campaign moved from JS to
+  `index.html`.
+- After an Audit, Statistics and the Observatory show a note that their figures are the audit's
+  (`body[data-last-mode="audit"]`).
+- Candidate space: "alive, a solution" is outlined, "accepted" filled; a button "Record every step,
+  run, compute" replaces the trip to the Loop tab.
+- "Reference run" (tutorial, manual, Loop tab) and "blocking loop" (guide) are tied together in
+  both directions.
+- Audit sweep after the fix: every library example on every instance (except tags slow, hard,
+  original), `tools/audit.mjs --seconds 60`: 155 pairs sound; unsound exactly
+  `tutorial-weak-relevant` and `guide-04-one-node` (they teach it); the others are not auditable
+  (blocks, cores, `G.clauses`, chains, several top links, raw Lua) or hit the time limit
+  (`conformant-planning/example`, two voting instances, `lang-second-solver`, two twelve-item
+  knapsacks).
+- Manual "For agents" workflow: input in instances, expected counts checked with `--instance all`,
+  suites for scaling.
+
+## Tabs and encodings (2026-11-22, on request)
+
+- Only correct encodings outside the guide: `nash`'s and `graph-coloring`'s descriptions no longer
+  mention the originals or the fixes (the fixes stay, explained in `tools/make-examples.mjs` and
+  above). `tutorial-weak-relevant` stays: lessons 6-8 teach the Audit, Fuzz and campaigns with it.
+  The guide's unsound examples stay (they make its points).
+- Control tab, block **Tabs**: Tutorial (default on, key `cegarplay.tutorial` = "0" when off),
+  Technical manual, Advanced mode (default off, key `cegarplay.advanced` = "1"): Observatory and
+  Campaign. Copies of the toggles at the top of the Tutorial tab. A visit opened by `?tab=2/10/11`,
+  `?lecture`, `?view`, `?step`, `?advanced=1` or a `#tut-` link shows the tab without storing;
+  the checkboxes show what is visible. `test/browser/tabs.test.mjs`; the browser harness opens
+  pages in Advanced mode unless `{ advanced: false }`.
+
+## Step and Clear (2026-11-22, on request)
+
+- **Step** (isolated pages only, like Pause and Stop) is enabled whenever Run is: from idle it
+  starts a run and sets the control word to "step" right after `engine.start`, so the first poll
+  lets one candidate through and the run waits (`run({ stepping: true })`, state `paused`); while
+  running it pauses after the next candidate; while paused it moves on by one. Tests in
+  `test/browser/isolated.test.mjs`.
+- **Clear run history** (was "Clear") asks with `window.confirm` (row count, "cannot be undone"),
+  is disabled while the history is empty; test in `test/browser/stats.test.mjs`.
+
+## Variants for comparing encodings (2026-11-22, on request)
+
+- **voting-justification:** the check's five refinement strategies (explain1.lp, strategy 2 active)
+  became the fragment `relevant` (strategy 2, in the check solver) and `relevant_s1/s3/s4/s5`;
+  variants `s1`, `s3`, `s4`, `s5` (swap), `shape2`, `reference` (own loops); suite `strategies`
+  (the 15 questions with an expected count × default + 6 variants, 30 s). Measured: every variant
+  gives the expected count on all 15; the audit is sound for every strategy on 13 of 15 (the two
+  largest run out of memory or time in the audit). `tools/bench.mjs ... --suite strategies --jobs
+  4`: 105 cells in 10 s, no disagreement; total candidates default 3,710, s1 1,277, s3 3,746, s4
+  3,689, s5 3,744, shape2 3,636, reference 3,744: strategies 2-5 prune about as little as blocking,
+  strategy 1 a third of that.
+- **Page:** run bar Variant picker (`settings.variant`, like `settings.instance`; a stale name is
+  ignored; used by Run, Audit and Run all; the run history label adds `(variant NAME)`); Loop tab
+  block **Variants** (`js/variants.js`): name, swap `a=b, ...` (checked against the fragments),
+  constants, its own loop script (starts as a copy), delete (asks); fragment renames and deletions
+  are carried into the swaps, variant renames and deletions into the suites.
+- **Tools:** `tools/audit.mjs --variant`; `tools/run.mjs` (and so the audit tool) uses
+  `settings.variant` when `--variant` is not given.
+- **Fix:** campaign cell keys hashed `settings.instance` (and would hash `settings.variant`): a
+  change of the run bar's pick made every stored row look stale. Both are left out of the key now.
+- Tests: `test/variants.test.mjs`, `test/browser/variants.test.mjs`.
+
+## Variants consolidated (2026-11-22)
+
+The variant now reaches every path that derives a project: `pickedVariant` (js/project.js) is
+used by Run/Audit/Run all, Export for clingo and `tools/run.mjs`/`tools/audit.mjs`; Fuzz applies
+the picked variant (its `reference` variant stays available for compare mode); recordings carry
+`variant` in their header (spec-recording.md), which the candidate space, the replay label and
+`tools/certcheck.py` use; `tools/cegarcheck.py --variant` (default `settings.variant`). Docs:
+manual (Python checker, export, Fuzz, Candidate space), llms.txt, chat package (alternatives as
+variants, all correct), README. Tests added to `test/variants.test.mjs`.
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.

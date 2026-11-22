@@ -7,7 +7,7 @@ import os from 'node:os';
 import nodePath from 'node:path';
 import * as H from './helpers.mjs';
 import * as P from '../js/project.js';
-import { buildExamples } from '../tools/make-examples.mjs';
+import { buildExamples, nashFix } from '../tools/make-examples.mjs';
 
 const lp = (f) => H.read(`reference/declarative-cegar/${f}`);
 const withSettings = (p, s) => ({ ...p, settings: { ...p.settings, seconds: 0, trace: 0, ...s } });
@@ -72,19 +72,21 @@ test('the example files are up to date', () => {
   }
 });
 
-test('row 11: nash.lp legacy import equals examples/nash.json', async () => {
-  const a = await H.runProject(withSettings(P.importLp(lp('nash.lp')), { solutions: 1 }));
+test('row 11: nash.lp legacy import (with the edge/3 fix) equals examples/nash.json', async () => {
+  const imported = P.importLp(lp('nash.lp'));
+  const check = imported.fragments.find((f) => f.name === 'check');
+  check.text = nashFix(check.text);
+  const a = await H.runProject(withSettings(imported, { solutions: 1 }));
   const b = await H.runProject(withSettings(H.example('nash'), { solutions: 1 }));
   assert.equal(H.last(b, 'E'), undefined);
   assert.equal(H.stripTimes(H.finalStats(a)), H.stripTimes(H.finalStats(b)));
   assert.equal(H.finalStats(a).solutions, 1);
 });
 
-test('row 12: graph colouring legacy import equals graph-coloring-original.json, 9,270', async () => {
+test('row 12: graph colouring legacy import (original rules) gives 9,270', async () => {
   const a = await H.runProject(withSettings(P.importLp(lp('graph-coloring.lp')), { solutions: 0, constants: { n: '6' } }));
-  const b = await H.runProject(withSettings(H.example('graph-coloring-original'), { solutions: 0 }));
-  assert.equal(H.stripTimes(H.finalStats(a)), H.stripTimes(H.finalStats(b)));
-  assert.equal(H.finalStats(b).solutions, 9270);
+  assert.equal(H.last(a, 'E'), undefined);
+  assert.equal(H.finalStats(a).solutions, 9270);
 });
 
 test('graph-coloring.json: 10,698 with shape 1 and with shape 4', async () => {

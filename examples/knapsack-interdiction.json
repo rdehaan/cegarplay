@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Knapsack interdiction",
   "description": "A bilevel knapsack: the leader locks items within a budget, then the follower packs the rest within a capacity; the solutions are the leader's choices that keep the follower's best profit at or below a bound (Sigma-2-complete; Caprara, Carvalho, Lodi and Woeginger). The check packs a knapsack that beats the bound, preferring few items ('optimal'), and the refinement locks one of them. With bound = 24 there is no solution: 25 is the best the leader can do.",
   "fragments": [
     {
       "name": "shared",
       "description": "The items. Added to every solver.",
-      "text": "% item(I,Cost,Weight,Profit): the leader can lock item I at the given cost; the\n% follower can pack it (if it is not locked) with the given weight and profit.\nitem(1,3,4,9).  item(2,2,3,7).  item(3,4,5,12). item(4,1,2,4).\nitem(5,3,6,13). item(6,2,4,8).  item(7,5,7,16). item(8,1,3,5).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\n"
     },
     {
       "name": "abstraction",
@@ -41,5 +41,61 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% item(I,Cost,Weight,Profit): the leader can lock item I at the given cost; the\n% follower can pack it (if it is not locked) with the given weight and profit.\nitem(1,3,4,9).  item(2,2,3,7).  item(3,4,5,12). item(4,1,2,4).\nitem(5,3,6,13). item(6,2,4,8).  item(7,5,7,16). item(8,1,3,5).\n",
+      "constants": {
+        "budget": "6",
+        "capacity": "12",
+        "bound": "25"
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "bound-24",
+      "facts": "% The example items with the bound 24, below the best the leader can do (25):\n% no solution.\nitem(1,3,4,9).  item(2,2,3,7).  item(3,4,5,12). item(4,1,2,4).\nitem(5,3,6,13). item(6,2,4,8).  item(7,5,7,16). item(8,1,3,5).\n",
+      "constants": {
+        "budget": "6",
+        "capacity": "12",
+        "bound": "24"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "six-items",
+      "facts": "% Six items: budget 3, capacity 8, bound 14.\nitem(1,2,3,6). item(2,1,2,3). item(3,3,4,8).\nitem(4,2,5,9). item(5,1,1,2). item(6,2,3,5).\n",
+      "constants": {
+        "budget": "3",
+        "capacity": "8",
+        "bound": "14"
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "twelve-items",
+      "facts": "% Twelve items (the example items and four more): budget 7, capacity 16,\n% bound 36.\nitem(1,3,4,9).  item(2,2,3,7).  item(3,4,5,12).  item(4,1,2,4).\nitem(5,3,6,13). item(6,2,4,8).  item(7,5,7,16).  item(8,1,3,5).\nitem(9,2,5,10). item(10,4,6,14). item(11,1,1,3). item(12,3,5,11).\n",
+      "constants": {
+        "budget": "7",
+        "capacity": "16",
+        "bound": "36"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    }
+  ],
   "runs": []
 }

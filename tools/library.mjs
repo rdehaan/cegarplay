@@ -231,7 +231,7 @@ search A:
 // ---- the manifest ----------------------------------------------------------------------
 export const GROUPS = [
   { id: 'tutorial', title: 'Tutorial', description: 'Small examples used step by step in the Tutorial tab.' },
-  { id: 'guide', title: 'Guide', description: 'the examples of the design guide, in reading order' },
+  { id: 'guide', title: 'Guide', description: 'The examples of the design guide, in reading order.' },
   { id: 'language', title: 'The loop language', description: 'One feature of the loop language each, with comments in the loop script.' },
   { id: 'shapes', title: 'Loop shapes', description: 'Graph colouring at n = 5 with each of the five templates; all give the same solutions.' },
   { id: 'problems', title: 'Problems', description: 'Larger problems from declarative-cegar.' },
@@ -333,12 +333,11 @@ clause(1, pick(X+Y), false) :- sum(X,Y).
 }
 const TEMPLATE_TITLE = { shape1: 'Shape 1', shape2: 'Shape 2', shape3: 'Shape 3', shape4: 'Shape 4', reference: 'Reference run' };
 
-// Problems group: the four examples built from declarative-cegar.
+// Problems group: the three examples built from declarative-cegar.
 export const PROBLEMS = [
   { id: 'graph-coloring', summary: 'Graphs with a leaf colouring that no 3-colouring extends (n = 6, all 10,698 solutions).', shape: 'shape1', tags: [], expected: 10698 },
-  { id: 'graph-coloring-original', summary: 'The same with the original, too weak relevant/1 rules: 9,270 instead of 10,698.', shape: 'shape1', tags: [], expected: 9270 },
-  { id: 'nash', summary: 'Weighted graphs whose colouring game has a Nash equilibrium.', shape: 'shape1', tags: [], expected: null },
-  { id: 'voting-justification', summary: 'Explaining a voting outcome by axioms.', shape: 'shape1', tags: [], expected: null },
+  { id: 'nash', summary: 'Weighted graphs whose colouring game has a Nash equilibrium (four size instances).', shape: 'shape1', tags: [], expected: null },
+  { id: 'voting-justification', summary: 'Explaining a voting outcome by axioms: 17 questions as instances, five refinement strategies and two loops as variants, a suite that compares them.', shape: 'shape1', tags: [], expected: null },
 ];
 
 // ---------------------------------------------------------------------------

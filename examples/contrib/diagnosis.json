@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Minimal diagnoses",
   "description": "Reiter's faulty full adder: sets of broken gates that explain the observed outputs while no proper subset does, that is, models of the circuit that are minimal in the broken gates with the wires varying (circumscription; Pi-2-complete in general, Eiter and Gottlob). The abstraction guesses broken gates and wire values with the suspect gate broken, and the check looks for an explanation with fewer broken gates. The circuit rules are written once, with a world argument, and used by both solvers.",
   "fragments": [
     {
       "name": "shared",
-      "description": "The circuit and the observations, as facts. Added to every solver.",
-      "text": "% A full adder: gate(Name, Kind, Input1, Input2, Output).\ngate(x1,xor,a,b,p).\ngate(x2,xor,p,c,s).\ngate(a1,and,a,b,q).\ngate(a2,and,p,c,r).\ngate(o1,or,q,r,co).\npart(G) :- gate(G,_,_,_,_).\nwire(a;b;c;p;q;r;s;co).\n% Observed: with inputs a = 1, b = 0, c = 1 the adder shows sum s = 1 and carry co = 0\n% (it should show s = 0 and co = 1).\nobs(a,1). obs(b,0). obs(c,1). obs(s,1). obs(co,0).\n"
+      "description": "Derived facts about the circuit. Added to every solver.",
+      "text": "% The instance (its facts) is in the Instances tab.\n% gate(Name, Kind, Input1, Input2, Output), wire(X), obs(X,Value); the constant\n% suspect names a gate.\npart(G) :- gate(G,_,_,_,_).\n"
     },
     {
       "name": "circuit",
@@ -17,7 +17,7 @@
     {
       "name": "abstraction",
       "description": "Proposes candidates (solver A): broken gates and wire values that fit the observations.",
-      "text": "% A candidate: a set of broken gates and a value for every wire that fit the\n% observations (the circuit fragment sees to that for the world \"now\").\nworld(now).\n{ broken(now,G) } :- part(G).\n{ on(now,X) } :- wire(X).\n% Is the suspect gate part of a minimal diagnosis? (Set the constant in the Loop tab.)\n:- not broken(now,suspect).\n#show.\n#show broken(G) : broken(now,G).\n#show on(X) : on(now,X).\n"
+      "text": "% A candidate: a set of broken gates and a value for every wire that fit the\n% observations (the circuit fragment sees to that for the world \"now\").\nworld(now).\n{ broken(now,G) } :- part(G).\n{ on(now,X) } :- wire(X).\n% Is the suspect gate part of a minimal diagnosis? (Each instance sets the constant.)\n:- not broken(now,suspect).\n#show.\n#show broken(G) : broken(now,G).\n#show on(X) : on(now,X).\n"
     },
     {
       "name": "glue",
@@ -53,5 +53,42 @@
       "fast"
     ],
     "expected": 2
-  }
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% A full adder: gate(Name, Kind, Input1, Input2, Output).\ngate(x1,xor,a,b,p).\ngate(x2,xor,p,c,s).\ngate(a1,and,a,b,q).\ngate(a2,and,p,c,r).\ngate(o1,or,q,r,co).\nwire(a;b;c;p;q;r;s;co).\n% Observed: with inputs a = 1, b = 0, c = 1 the adder shows sum s = 1 and carry co = 0\n% (it should show s = 0 and co = 1).\nobs(a,1). obs(b,0). obs(c,1). obs(s,1). obs(co,0).\n% Is gate x2 part of a minimal diagnosis?\n",
+      "constants": {
+        "suspect": "x2"
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "adder-correct",
+      "facts": "% The full adder showing the right answer (1 + 0 + 1 = 10): the only minimal\n% diagnosis is the empty one, so no minimal diagnosis blames x2.\n% A full adder: gate(Name, Kind, Input1, Input2, Output).\ngate(x1,xor,a,b,p).\ngate(x2,xor,p,c,s).\ngate(a1,and,a,b,q).\ngate(a2,and,p,c,r).\ngate(o1,or,q,r,co).\nwire(a;b;c;p;q;r;s;co).\nobs(a,1). obs(b,0). obs(c,1). obs(s,0). obs(co,1).\n",
+      "constants": {
+        "suspect": "x2"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "ripple-x4",
+      "facts": "% A 2-bit ripple-carry adder (two full adders; c1 carries from bit 0 to bit 1).\ngate(x1,xor,a0,b0,p0). gate(x2,xor,p0,c0,s0). gate(a1,and,a0,b0,q0).\ngate(a2,and,p0,c0,r0). gate(o1,or,q0,r0,c1).\ngate(x3,xor,a1,b1,p1). gate(x4,xor,p1,c1,s1). gate(a3,and,a1,b1,q1).\ngate(a4,and,p1,c1,r1). gate(o2,or,q1,r1,c2).\nwire(a0;b0;c0;p0;s0;q0;r0;c1;a1;b1;p1;s1;q1;r1;c2).\n% Observed: 01 + 11 with carry-in 0 shows s1 s0 = 10 and carry c2 = 0\n% (it should show 00 and carry 1).\nobs(a0,1). obs(b0,1). obs(c0,0). obs(a1,0). obs(b1,1). obs(s0,0). obs(s1,1). obs(c2,0).\n% Is gate x4 part of a minimal diagnosis?\n",
+      "constants": {
+        "suspect": "x4"
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    }
+  ]
 }

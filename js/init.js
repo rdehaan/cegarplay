@@ -8,6 +8,7 @@ import { Control } from './control.js';
 import { LoopTab } from './loop-tab.js';
 import { Internals } from './internals.js';
 import { InstancesTab } from './instances-tab.js';
+import { Variants } from './variants.js';
 import { Recording, REPLAY_PATTERN } from './recording.js';
 import { makeEditor } from './editors.js';
 import { Anatomy } from './anatomy.js';
@@ -62,12 +63,47 @@ function showManual(on, { store = true } = {}) {
   $('tab8').hidden = !visible;
   $('label-manual').hidden = !visible;
   for (const c of document.querySelectorAll('.manual-checkbox')) c.checked = visible;
-  if (!visible && $('tab8').checked) $('tab2').checked = true;
+  if (!visible && $('tab8').checked) $('tab1').checked = true;
   if (visible) loadManual();
 }
 showManual(manualStored(), { store: false });
 for (const c of document.querySelectorAll('.manual-checkbox')) {
   c.addEventListener('change', () => showManual(c.checked));
+}
+
+// ---- which tabs show: Advanced mode (Campaign, Observatory) and the Tutorial ----------------
+// Both are kept in this browser. A link that opens one of these tabs (?tab=, ?lecture=, ?view=,
+// ?step=, ?advanced=1, a #tut- link) shows it for this visit without changing the stored choice.
+const TAB_PREFS = {
+  advanced: { key: 'cegarplay.advanced', fallback: false, tabs: ['tab10', 'tab11'], box: '.advanced-checkbox' },
+  tutorial: { key: 'cegarplay.tutorial', fallback: true, tabs: ['tab2'], box: '.tutorial-checkbox' },
+};
+function prefStored(name) {
+  const p = TAB_PREFS[name];
+  try { const v = localStorage.getItem(p.key); return v === null ? p.fallback : v === '1'; } catch { return p.fallback; }
+}
+function showTabs(name, on, { store = true } = {}) {
+  const p = TAB_PREFS[name];
+  if (store) {
+    try { if (on === p.fallback) localStorage.removeItem(p.key); else localStorage.setItem(p.key, on ? '1' : '0'); } catch { /* no storage */ }
+  }
+  for (const id of p.tabs) {
+    $(id).hidden = !on;
+    document.querySelector(`label[for="${id}"]`).hidden = !on;
+    if (!on && $(id).checked) { $('tab1').checked = true; $('tab1').dispatchEvent(new Event('change', { bubbles: true })); }
+  }
+  for (const c of document.querySelectorAll(p.box)) c.checked = on;
+  document.body.classList.toggle(`no-${name}`, !on);
+}
+app.showTabs = showTabs;
+{
+  const visitAdvanced = params.get('advanced') === '1' || ['10', '11'].includes(params.get('tab')) ||
+    params.has('lecture') || params.has('view') || params.has('step');
+  showTabs('advanced', prefStored('advanced') || visitAdvanced, { store: false });
+  showTabs('tutorial', prefStored('tutorial') || params.get('tab') === '2', { store: false });
+}
+for (const name of Object.keys(TAB_PREFS)) {
+  for (const c of document.querySelectorAll(TAB_PREFS[name].box)) c.addEventListener('change', () => showTabs(name, c.checked));
 }
 
 // ?from=guide/<page>.html#<anchor>: a link back to the guide page that opened this example.
@@ -92,6 +128,7 @@ app.loopTab = new LoopTab(app);
 app.internals = new Internals(app);
 app.control = new Control(app);
 app.instancesTab = new InstancesTab(app);
+app.variants = new Variants(app);
 app.cursor = new Cursor();
 bindKeys(app.cursor, () => $('tab11').checked || document.body.classList.contains('lecture'));
 app.anatomy = new Anatomy(app, $('anatomy'));
@@ -144,6 +181,7 @@ app.setProject = (p, { save = true } = {}) => {
   app.editors.build(p);
   app.loopTab.load(p);
   app.instancesTab.load();
+  app.variants.load();
   app.anatomy.load();
   app.campaign.load();
   app.views.load();
@@ -263,9 +301,13 @@ async function buildLibrary() {
       make('span', { class: 'note' }, `${entries.length} · ${g.description}`)));
     const list = make('ul', { class: 'library-list' });
     for (const e of entries) {
-      const tags = [e.shape !== 'custom' ? e.shape : null, ...e.tags].filter(Boolean);
+      const has = e.has || {};
+      const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+      const tags = [e.shape !== 'custom' ? e.shape : null, ...e.tags,
+        has.instances ? plural(has.instances, 'instance') : null, has.generators ? plural(has.generators, 'generator') : null,
+        has.suites ? plural(has.suites, 'suite') : null, has.views ? 'view' : null].filter(Boolean);
       const li = make('li', { class: 'library-entry', 'data-example': e.id,
-        'data-search': [e.id, e.title, e.summary, e.shape, ...e.tags, g.title].join(' ').toLowerCase() });
+        'data-search': [e.id, e.title, e.summary, ...tags, g.title].join(' ').toLowerCase() });
       const text = make('div', { class: 'library-text' },
         make('span', { class: 'library-title' }, e.title), ' ',
         make('code', { class: 'library-id' }, e.id),
@@ -495,7 +537,26 @@ document.addEventListener('click', async (ev) => {
   });
 });
 
+// Links to #tut-<lesson> (from the tabs' opening lines, the manual or the tutorial itself) open
+// the Tutorial tab and scroll to that lesson.
+document.addEventListener('click', async (ev) => {
+  const a = ev.target.closest && ev.target.closest('a[href^="#tut-"]');
+  if (!a) return;
+  ev.preventDefault();
+  const modal = a.closest('.modal');
+  if (modal) modal.classList.remove('is-visible');
+  if ($('tab2').hidden) showTabs('tutorial', true, { store: false });
+  $('tab2').checked = true;
+  $('tab2').dispatchEvent(new Event('change', { bubbles: true }));
+  await tutorialLoaded;
+  requestAnimationFrame(() => {
+    const target = document.getElementById(a.getAttribute('href').slice(1));
+    if (target) target.scrollIntoView({ block: 'start' });
+  });
+});
+
 // ---- Tutorial tab ---------------------------------------------------------------------
+let tutorialLoaded = null;
 async function loadTutorial() {
   const box = $('tutorial');
   try {
@@ -550,7 +611,7 @@ async function start() {
   ]);
   app.runtime = runtime;
   app.modules = { audit, ground, draw, generate, replay: replayLua };
-  loadTutorial();
+  tutorialLoaded = loadTutorial();
   app.engineVersion = version.split('\n')[0];
   // ?example=<id> (or the older ?file=<id>) loads an example of the library
   const named = params.get('example') || params.get('file');

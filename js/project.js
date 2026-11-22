@@ -227,6 +227,7 @@ export function load(json) {
     });
   }
   if ('instance' in st && st.instance !== null && st.instance !== '' && typeof st.instance !== 'string') throw new ProjectError('settings.instance must be an instance id or ""');
+  if ('variant' in st && st.variant !== null && typeof st.variant !== 'string') throw new ProjectError('settings.variant must be a variant name or ""');
   out.version = usesV2(out) ? 2 : 1;
   return out;
 }
@@ -320,6 +321,7 @@ export function save(project, { runs = true } = {}) {
   p.version = usesV2(project) ? 2 : 1;
   for (const k of V2_KEYS) if (Array.isArray(p[k]) && p[k].length === 0) delete p[k];
   if (p.settings && 'instance' in p.settings && !usesV2(project)) { p.settings = { ...p.settings }; delete p.settings.instance; }
+  if (p.settings && 'variant' in p.settings && !(project.variants || []).length) { p.settings = { ...p.settings }; delete p.settings.variant; }
   return JSON.stringify(p, null, 2) + '\n';
 }
 
@@ -371,6 +373,12 @@ export function applyInstance(project, id) {
   p.settings = { ...p.settings, constants: { ...p.settings.constants, ...(x.constants || {}) } };
   p.instance = x.id;
   return p;
+}
+
+// The variant the run bar picked (settings.variant), if it names a variant; else undefined.
+export function pickedVariant(project) {
+  const v = project.settings && project.settings.variant;
+  return v && (project.variants || []).some((x) => x.name === v) ? v : undefined;
 }
 
 // The plain project of one run: variant first, then instance.
@@ -459,7 +467,7 @@ export function importLp(text, title = 'Imported') {
 
 // modules: { ground, ... } the Lua module texts (lua/<name>.lua) a project may need (lift, certify).
 export function exportStandalone(project, runtimeLua, modules = {}) {
-  project = derive(project);                // the instance the run bar picks
+  project = derive(project, { variant: pickedVariant(project) });   // the run bar's instance and variant
   let compiled = null;
   if (project.loop.language === 'loop') {
     const c = compile(project.loop.text, { fragments: project.fragments.map((f) => f.name) });
