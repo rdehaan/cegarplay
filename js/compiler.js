@@ -444,6 +444,23 @@ export function compile(source, { fragments = [] } = {}) {
   let labelN = 0;
   const ctx = { cand: null, loops: [] };
 
+  // which members of each link the script uses (the audit decides what to audit from it)
+  const linkUses = {};
+  function use(G, name) { (linkUses[G] = linkUses[G] || new Set()).add(name); }
+  // the solver a variable's model comes from, when the script says so directly
+  const varSolver = new Map();
+  (function walkVars(list) {
+    for (const s of list) {
+      if (s.t === 'search') { varSolver.set(s.v.value, s.solver.value); walkVars(s.body); continue; }
+      if (s.t === 'assign' && s.e.t === 'method' && s.e.obj.t === 'name' && solvers.has(s.e.obj.name) && ['solve', 'models'].includes(s.e.name)) {
+        const prev = varSolver.get(s.target.value);
+        varSolver.set(s.target.value, prev && prev !== s.e.obj.name ? '?' : s.e.obj.name);
+      }
+      if (s.t === 'if') { for (const b of s.branches) walkVars(b.body); if (s.orelse) walkVars(s.orelse.body); }
+      if (['loop', 'while', 'repeat', 'for'].includes(s.t)) walkVars(s.body);
+    }
+  })(ast.stmts);
+
   function capture(p, n) {
     const k = `${p}/${n}`;
     if (!capSeen.has(k)) { capSeen.add(k); captures.push({ pred: p, arity: n }); }
@@ -480,6 +497,7 @@ export function compile(source, { fragments = [] } = {}) {
       case 'method': return member(e, e.args);
       case 'call': {
         if (e.fn.t === 'name' && links.has(e.fn.name)) {
+          use(e.fn.name, 'of');
           const pos = positional(e.args, e, `${e.fn.name}(M)`);
           if (pos.length !== 1) err(e, `${e.fn.name}(M) takes exactly one model`);
           return `${e.fn.name}:of(${pos.map((a) => ex(a)).join(', ')})`;
@@ -544,14 +562,19 @@ export function compile(source, { fragments = [] } = {}) {
           if (!args) { err(e, `${S}.expand must be called: ${S}.expand(part, name = atoms)`); return 'nil'; }
           if (ctx.cand && ctx.cand.solver === S) err(e, `${S}.expand cannot be used inside 'on candidate' of ${S}; collect the counterexamples and expand after the search`);
           const [first, ...rest] = args;
-          let part = null;
+          let part = null, partRec = null;
           if (!first || first.k !== 'pos' || first.e.t !== 'name') err(first || e, `${S}.expand: the first argument is the name of a program part, as in ${S}.expand(refine, cex = X.atoms(color/2))`);
-          else { part = first.e.name; parts.push({ solver: S, part, line: first.line, col: first.col }); }
-          const facts = [];
+          else { part = first.e.name; parts.push(partRec = { solver: S, part, line: first.line, col: first.col, facts: [] }); }
+          const facts = [], factInfo = [];
           for (const a of rest) {
+            if (a.k === 'named' && a.e.t === 'method' && a.e.name === 'atoms' && a.e.args && a.e.args.length === 1 && a.e.args[0].k === 'pred') {
+              const rv = a.e.obj.t === 'name' ? varSolver.get(a.e.obj.name) : undefined;
+              factInfo.push({ name: a.name, pred: a.e.args[0].name, arity: a.e.args[0].arity, receiver: rv === S ? 'abstraction' : rv ? 'other' : 'unknown' });
+            }
             if (a.k === 'named') facts.push(`${a.name} = ${ex(a.e)}`);
             else err(a, `${S}.expand: facts are given as name = atoms`);
           }
+          if (partRec) partRec.facts = factInfo;
           return `${S}:expand(${luaString(part || '')}, { ${facts.join(', ')} })`.replace('{  }', '{}');
         }
         default:
@@ -568,6 +591,7 @@ export function compile(source, { fragments = [] } = {}) {
       const want = { clause: 2, block: 1, core: 1, clauses: 1 }[name];
       if (pos.length !== want) err(e, `${G}.${name} takes ${want === 1 ? 'one argument' : 'two arguments'}`);
       if (name === 'core' && pos[0] && !(pos[0].t === 'name' && solvers.has(pos[0].name))) err(pos[0], `${G}.core takes the check solver, as in ${G}.core(C)`);
+      use(G, name);
       return `${G}:${name}(${pos.map((a) => ex(a)).join(', ')})`;
     }
     // a value: model or list
@@ -715,7 +739,8 @@ export function compile(source, { fragments = [] } = {}) {
 
   if (errors.length) return finishErrors(errors);
   const map = [null, ...out.map((o) => o.line)];
-  return { ok: true, lua: out.map((o) => o.text).join('\n') + '\n', map, solvers: outSolvers, links: outLinks, parts, captures };
+  return { ok: true, lua: out.map((o) => o.text).join('\n') + '\n', map, solvers: outSolvers, links: outLinks, parts, captures,
+    linkUses: Object.fromEntries(Object.entries(linkUses).map(([k, v]) => [k, [...v].sort()])) };
 }
 
 function finishErrors(errors) {

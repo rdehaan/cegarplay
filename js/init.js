@@ -475,11 +475,13 @@ addEventListener('keydown', (ev) => {
 // What a first visit opens with: small and fast (graph-coloring stays in the library).
 const DEFAULT_EXAMPLE = 'tutorial-first-run';
 async function start() {
-  const [runtime, version] = await Promise.all([
+  const [runtime, audit, version] = await Promise.all([
     fetch('lua/runtime.lua').then((r) => r.text()),
+    fetch('lua/audit.lua').then((r) => r.text()),
     fetch('vendor/clingo-wasm/VERSION').then((r) => r.text()).catch(() => 'clingo-wasm'),
   ]);
   app.runtime = runtime;
+  app.modules = { audit };
   loadTutorial();
   app.engineVersion = version.split('\n')[0];
   // ?example=<id> (or the older ?file=<id>) loads an example of the library

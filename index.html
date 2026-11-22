@@ -41,6 +41,7 @@
     <div class="run-bar">
       <div class="run-buttons">
         <button class="control-button" id="run-button" title="Run (Ctrl+Enter)" disabled>&#x23F5; Run</button>
+        <button class="control-button" id="audit-button" title="Audit: check every candidate and every counterexample of this instance against the solutions" disabled>&#x2713; Audit</button>
         <button class="control-button" id="abort-button" disabled>&#x2717; Abort</button>
         <button class="control-button isolated-only" id="pause-button" disabled hidden>&#x23F8; Pause</button>
         <button class="control-button isolated-only" id="step-button" disabled hidden>&#x21E5; Step</button>
@@ -226,6 +227,7 @@
     <!-- 5. Output -->
     <section id="section-output">
       <div id="result-line" class="result-line">No run yet.</div>
+      <div id="audit-panel" class="audit-panel" hidden></div>
       <h3>Solutions <span id="solutions-count" class="note"></span>
         <button class="control-button small-button" id="download-solutions-button" hidden>Download</button></h3>
       <ol id="solutions" class="solutions"></ol>

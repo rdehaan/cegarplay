@@ -55,7 +55,7 @@ test('B2: the file control is in the Tab order and Enter opens the file dialog',
   const { page, context } = await B.openPage(browser, server);
   await page.waitForSelector('#library .library-group');
   await page.evaluate(() => document.activeElement && document.activeElement.blur());
-  const a = await tabUntil(page, (x) => x.id === 'file-button', 80);
+  const a = await tabUntil(page, (x) => x.id === 'file-button', 100);
   assert.ok(a, 'Select file is reachable with Tab');
   const [chooser] = await Promise.all([page.waitForEvent('filechooser', { timeout: 5000 }), page.keyboard.press('Enter')]);
   assert.ok(chooser);

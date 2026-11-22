@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import factory from '../vendor/clingo-wasm/clingo.js';
 import { load } from '../js/project.js';
-import { assemble, parseEvent, validate } from '../js/driver.js';
+import { assemble, parseEvent, validate, auditPlan, auditBody } from '../js/driver.js';
 
 const root = new URL('..', import.meta.url);
 
@@ -48,13 +48,23 @@ function usage(msg) {
   process.exit(2);
 }
 
-export async function runProject(project, { onEvent, backstop = false } = {}) {
+const lua = (name) => fs.readFileSync(new URL(`lua/${name}`, root), 'utf8');
+
+// audit: { link, limit } runs the audit mode (lua/audit.lua) instead of the loop.
+export async function runProject(project, { onEvent, backstop = false, audit = null } = {}) {
   const t0 = Date.now();
   const problems = await validate(project, engineRun);
   const errors = problems.filter((p) => p.severity === 'error');
   if (errors.length) return { problems: errors, events: [] };
-  const runtime = fs.readFileSync(new URL('lua/runtime.lua', root), 'utf8');
-  const a = assemble(project, problems.compiled, runtime);
+  const runtime = lua('runtime.lua');
+  let opts = {};
+  if (audit) {
+    const plan = auditPlan(problems.compiled, audit.link);
+    if (plan.error) return { problems: [{ severity: 'error', message: plan.error, where: { kind: 'loop' } }], events: [] };
+    opts = { modules: [lua('audit.lua')], body: auditBody(problems.compiled, plan, { limit: audit.limit }) };
+    project = { ...project, settings: { ...project.settings, solutions: 0, candidates: 0, trace: 0 } };
+  }
+  const a = assemble(project, problems.compiled, runtime, opts);
   const seconds = project.settings.seconds || 0;
   const r = backstop && seconds > 0
     ? await engineRunWithin(a.program, Math.max(0, (seconds + 2) * 1000 - (Date.now() - t0)))

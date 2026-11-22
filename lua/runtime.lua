@@ -300,6 +300,8 @@ local function new_control(args, name, frags)
   end, 20)
 end
 
+rt.join, rt.new_control = join, new_control
+
 local function plain(c)
   local t = {}
   for k = 1, #c do t[k] = c[k] end

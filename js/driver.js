@@ -23,10 +23,14 @@ export function constantList(settings) {
 // Build the program (spec-runtime.md section 2).
 //   compiled: the compiler's result ({ lua, map }), or null/undefined for a raw Lua project,
 //             or a string of Lua.
-export function assemble(project, compiled, runtimeLua, { poll = false, plain = false } = {}) {
+//   opts.modules: Lua texts appended after the runtime (lua/audit.lua, ...), each without its
+//             final `return X`; opts.body: Lua that replaces the loop (a mode such as audit).
+//   With neither, the program text is the same as before modes existed.
+export function assemble(project, compiled, runtimeLua, { poll = false, plain = false, modules = [], body = null } = {}) {
   const st = { ...DEFAULT_SETTINGS, ...(project.settings || {}) };
   let loop, map = null;
-  if (typeof compiled === 'string') loop = compiled;
+  if (body != null) loop = body;
+  else if (typeof compiled === 'string') loop = compiled;
   else if (compiled && typeof compiled.lua === 'string') { loop = compiled.lua; map = compiled.map || null; }
   else loop = (project.loop && project.loop.text) || '';
   const lines = [];
@@ -40,6 +44,7 @@ export function assemble(project, compiled, runtimeLua, { poll = false, plain = 
     `candidates = ${int(st.candidates, 0)}, trace = ${int(st.trace, 0)}, seed = ${int(st.seed, 0)}, ` +
     `poll = ${poll ? 'true' : 'false'}, plain = ${plain ? 'true' : 'false'} }`);
   lines.push(...runtimeLua.replace(/\n?return rt\s*$/, '').split('\n'));
+  for (const m of modules) lines.push(...m.replace(/\n?return [A-Za-z_][A-Za-z0-9_]*\s*$/, '').split('\n'));
   lines.push('function main(prg)');
   lines.push('  rt.run(function()');
   const loopStartLine = lines.length + 1;
@@ -51,6 +56,70 @@ export function assemble(project, compiled, runtimeLua, { poll = false, plain = 
   lines.push(`LOOP_LINES = { ${loopStartLine}, ${loopEndLine} }`);
   lines.push('#end.');
   return { program: lines.join('\n') + '\n', loopStartLine, loopEndLine, map };
+}
+
+const luaQ = (s) => JSON.stringify(String(s));
+
+// The declarations of a compiled loop script, without its statements (for modes that replace
+// the loop body): one rt.solver / rt.link line per declaration, in script order.
+export function declarationLines(compiled) {
+  const out = [];
+  const list = (a) => `{${a.map(luaQ).join(', ')}}`;
+  // the compiler keeps solvers and links apart; the order of declarations matters (a link
+  // must come before its target is grounded), and every solver comes before every link that
+  // uses it, so solvers first, then links in order, is a valid order.
+  for (const s of compiled.solvers) out.push(`local ${s.name} = rt.solver(${luaQ(s.name)}, ${list(s.fragments)}, ${list(s.options)})`);
+  for (const L of compiled.links) {
+    const o = [L.legacy && 'legacy = true', L.compat && 'compat = true', L.lift && 'lift = true'].filter(Boolean).join(', ');
+    out.push(`local ${L.name} = rt.link(${luaQ(L.name)}, ${L.from}, ${L.to}, ${list(L.fragments)}, {${o}})`);
+  }
+  return out;
+}
+
+// Which link an audit looks at, and what it audits. Returns { link, clause, expand } or
+// { error }. expand lists the parts the abstraction is expanded with from counterexamples.
+export function auditPlan(compiled, linkName) {
+  if (!compiled || !compiled.ok) return { error: 'the audit needs a loop script without errors' };
+  const incoming = new Set(compiled.links.map((L) => L.to));
+  let cands = compiled.links.filter((L) => !incoming.has(L.from));
+  if (linkName) {
+    const L = compiled.links.find((x) => x.name === linkName);
+    if (!L) return { error: `no link named ${linkName}` };
+    if (incoming.has(L.from)) return { error: `link ${linkName} does not leave a top solver (${L.from} has incoming links)` };
+    cands = [L];
+  }
+  if (cands.length === 0) return { error: 'the script declares no link that leaves a top solver' };
+  const what = (L) => {
+    const uses = (compiled.linkUses && compiled.linkUses[L.name]) || [];
+    const expand = (compiled.parts || [])
+      .filter((p) => p.solver === L.from && p.facts && p.facts.length && p.facts.every((f) => f.receiver !== 'abstraction'))
+      .map((p) => ({ part: p.part, facts: p.facts.map(({ name, pred, arity }) => ({ name, pred, arity })) }));
+    const seen = new Set();
+    const parts = expand.filter((p) => { const k = JSON.stringify(p); if (seen.has(k)) return false; seen.add(k); return true; });
+    return { link: L.name, clause: uses.includes('clause'), expand: parts, L };
+  };
+  let plans = cands.map(what);
+  if (plans.length > 1) {
+    const useful = plans.filter((p) => p.clause || p.expand.length);
+    if (useful.length !== 1) return { error: `several links leave a top solver (${cands.map((L) => L.name).join(', ')}); name one with --link` };
+    plans = useful;
+  }
+  const plan = plans[0];
+  if (compiled.links.some((x) => x.from === plan.L.to)) {
+    return { error: `solver ${plan.L.to} passes models on to another solver (a chain); the audit covers a top solver and a check` };
+  }
+  if (!plan.clause && plan.expand.length === 0) return { error: `the script refines link ${plan.link} with neither ${plan.link}.clause nor an expand from a counterexample: nothing to audit` };
+  return { link: plan.link, clause: plan.clause, expand: plan.expand };
+}
+
+// The Lua body of the audit mode.
+export function auditBody(compiled, plan, { limit = 200000 } = {}) {
+  const lua = (v) => Array.isArray(v) ? `{ ${v.map(lua).join(', ')} }`
+    : typeof v === 'object' && v ? `{ ${Object.entries(v).map(([k, x]) => `${k} = ${lua(x)}`).join(', ')} }`
+    : typeof v === 'string' ? luaQ(v) : String(v);
+  const lines = declarationLines(compiled);
+  lines.push(`rt.audit{ link = ${plan.link}, limit = ${Number(limit) | 0}, clause = ${plan.clause ? 'true' : 'false'}, expand = ${lua(plan.expand)} }`);
+  return lines.map((l) => '    ' + l).join('\n') + '\n';
 }
 
 // Map a line of the assembled program to a line of the loop script (1-based), or null.

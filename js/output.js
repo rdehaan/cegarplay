@@ -16,6 +16,7 @@ export class Output {
     this.msgEl = document.getElementById('messages');
     this.dlButton = document.getElementById('download-solutions-button');
     this.dlButton.addEventListener('click', () => this.downloadSolutions());
+    this.auditEl = document.getElementById('audit-panel');
     this.trace = new TraceView(document.getElementById('trace'));
     this.clear();
   }
@@ -33,6 +34,51 @@ export class Output {
     this.solNote.textContent = '';
     this.trace.clear();
     this.result('', '');
+    if (this.auditEl) { this.auditEl.hidden = true; this.auditEl.textContent = ''; }
+  }
+
+  // The verdict of an audit (A event with a verdict), with its witness.
+  auditVerdict(a) {
+    const el = this.auditEl;
+    if (!el) return;
+    el.textContent = '';
+    el.hidden = false;
+    el.dataset.verdict = a.verdict;
+    const h = document.createElement('h3');
+    h.textContent = a.verdict === 'sound' ? 'Audit: sound' : a.verdict === 'unsound' ? 'Audit: unsound' : 'Audit: limit';
+    el.append(h);
+    const p = document.createElement('p');
+    p.textContent = a.verdict === 'limit' ? `More than ${fmt(a.limit)} candidates.`
+      : `Link ${a.link} (${a.kinds.join(' and ')} refinements): ${fmt(a.candidates)} candidates, ${fmt(a.solutions)} solutions, ` +
+        `${fmt(a.counterexamples)} counterexamples, ${fmt(a.pairs)} distinct refinements. ` +
+        (a.verdict === 'sound' ? 'No refinement removes a solution of this instance.'
+          : `${fmt(a.unsound)} refinements remove a solution; ${fmt(a.at_risk)} solutions are at risk.`);
+    el.append(p);
+    const w = a.witness;
+    if (w) {
+      const dl = document.createElement('dl');
+      const row = (k, v) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; dl.append(dt, dd); };
+      const set = (l) => `{${(l || []).join(' ')}}`;
+      row('Candidate', set(w.candidate));
+      row('Counterexample', w.counterexample || '(no shown atoms)');
+      if (w.kind === 'clause') row('Relevant', set(w.relevant));
+      else row(`Facts of ${w.part}`, (w.facts || []).join(' '));
+      row('Lost solution', set(w.solution));
+      row('They differ on', set(w.differ));
+      el.append(dl);
+      const n = document.createElement('p');
+      n.className = 'note';
+      n.textContent = w.kind === 'clause'
+        ? 'The lost solution agrees with the candidate on every relevant atom, so the clause removes it too. An atom on which they differ should have been relevant.'
+        : 'Grounding the refine part with these facts leaves the lost solution without a model.';
+      el.append(n);
+    }
+    if (a.empty) {
+      const e = document.createElement('p');
+      e.className = 'note';
+      e.textContent = `${fmt(a.empty)} counterexamples have no relevant atom (a run stops there with an error).`;
+      el.append(e);
+    }
   }
 
   result(text, kind = '') {

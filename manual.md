@@ -643,6 +643,32 @@ for infos, yellow for warnings). Common runtime errors get a hint sentence. "cli
 unexpectedly" means the engine trapped (see [Hard rules for raw Lua](#manual-hard-rules-for-raw-lua));
 the Output tab then shows the last lines received.
 
+### Audit
+
+**Audit** (next to Run) checks the refinements of a loop script against every candidate and every
+counterexample of the instance, instead of the pairs one run happens to visit.
+
+1. Every candidate: the models of the abstraction without refinements, one per assignment of the
+   interface atoms of the audited link (a `#minimize` is ignored here).
+2. Every counterexample of each candidate (all models of the check under the candidate).
+3. A candidate without a counterexample is a solution.
+4. Clause refinements (`G.clause`): each distinct relevant set R of a candidate M is one pair. The
+   pair is unsound when some solution agrees with M on every atom of R: the clause would remove it.
+5. Rule refinements (`A.expand(part, name = X.atoms(p/n))` with X a counterexample): each distinct
+   set of facts is one refinement. It is unsound when grounding the part with these facts leaves a
+   solution without a model.
+
+The verdict is "sound for every candidate and counterexample of this instance", or `unsound` with a
+witness: candidate, counterexample, relevant set (or facts), the lost solution and the atoms on
+which candidate and lost solution differ. The witness with the fewest such atoms is chosen; one of
+them should usually have been relevant. Blocks and cores need no audit (they are sound by
+construction); `G.clauses` is not audited.
+
+The audited link is the one that leaves the top solver; with several, the one the script refines
+(or name it with `--link`). A check solver that passes models on (a chain) is refused. Above
+200,000 candidates the audit stops with outcome `limit`. Its run history row shows the verdict in
+the column **Audit**, and runs with the same fragments and constants show it too.
+
 ## Output and statistics
 
 ### Output tab
@@ -688,6 +714,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | `L` | `log` | `text` |
 | `E` | runtime error | `message`, `line`, `traceback` |
 | `D` | last line of a run | `outcome`, `exhausted`, `detail` |
+| `A` | audit only: every 0.25 s, then the verdict | progress: `phase`, `candidates`, `pairs`, `unsound`; verdict: `verdict` (`sound`, `unsound`, `limit`), `link`, `kinds`, `candidates`, `solutions`, `counterexamples`, `pairs`, `unsound`, `at_risk`, `empty`, `atoms`, `t`, `witness` (`kind`, `candidate`, `counterexample`, `relevant` or `part` + `facts`, `solution`, `differ`) |
 
 ## URL parameters and browser storage
 
@@ -796,7 +823,10 @@ without the repository.
 5. Run the same project with the Reference run template. Equal solution counts on small instances
    (with `--solutions all`, both exhausted) are the soundness check. Fewer solutions than the
    reference means `relevant/1` marks too few atoms.
-6. Only then increase the constants.
+6. Audit the project on small instances (`node tools/audit.mjs <project> --json`). An unsound
+   verdict names a lost solution and the atoms it differs on from the candidate; mark one of them
+   relevant (or fix the refine part) and audit again.
+7. Only then increase the constants.
 
 ### Headless runner
 
@@ -812,6 +842,17 @@ as `fragment:line:col: error: message`. Exit code 0 when the run ends without an
 problem or error, 2 on bad usage. With a time limit above 0, a run that does not stop by itself (a
 raw Lua loop without `rt.tick()`) is ended `N + 2` s after the start with `Outcome: limit (the run
 did not stop ...)` and exit code 1, like the page's backstop. Example: `node tools/run.mjs tutorial-first-run --quiet`.
+
+### Audit tool
+
+```sh
+node tools/audit.mjs <project.json | library id> [--link G] [--limit N] [-c name=value]
+                     [--seconds N] [--json]
+```
+
+Runs the [audit](#manual-audit) headless. Prints the counts and the verdict, with the witness when
+it is unsound; `--json` prints the verdict event. Exit code 0 sound, 1 unsound or error, 2 bad
+usage (also: nothing to audit), 3 candidate or time limit.
 
 ### Python checker
 

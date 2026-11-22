@@ -1,5 +1,5 @@
 // Run bar and run flow (spec-app.md section 6).
-import { validate, assemble, mapLine, oneLineMessage } from './driver.js';
+import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody } from './driver.js';
 import { TEMPLATES, template } from './project.js';
 import { hashText } from './stats.js';
 import { fmt } from './output.js';
@@ -45,7 +45,9 @@ export class Control {
     this.stepButton = $('step-button');
     this.stopButton = $('stop-button');
     this.statusEl = $('run-status');
+    this.auditButton = $('audit-button');
     this.runButton.addEventListener('click', () => this.run());
+    this.auditButton.addEventListener('click', () => this.run({ mode: 'audit' }));
     this.abortButton.addEventListener('click', () => this.abort());
     this.pauseButton.addEventListener('click', () => this.togglePause());
     this.stepButton.addEventListener('click', () => this.step());
@@ -68,6 +70,7 @@ export class Control {
     this.statusEl.dataset.state = state;
     const active = state === 'running' || state === 'paused';
     this.runButton.disabled = active || state === 'validating' || !this.app.ready;
+    this.auditButton.disabled = this.runButton.disabled;
     this.abortButton.disabled = !active;
     this.pauseButton.disabled = !active;
     this.pauseButton.innerHTML = state === 'paused' ? '&#x23F5; Resume' : '&#x23F8; Pause';
@@ -122,7 +125,8 @@ export class Control {
   }
 
   // Validate, assemble and start. Resolves when the run is over.
-  async run({ seed } = {}) {
+  //   mode 'audit': the audit of lua/audit.lua instead of the loop (docs/spec-soundness.md).
+  async run({ seed, mode = 'run' } = {}) {
     const app = this.app;
     if (this.busy || !app.ready) return null;
     this.setState('validating');
@@ -148,6 +152,11 @@ export class Control {
         }
       }
     }
+    let plan = null;
+    if (mode === 'audit' && !problems.some((p) => p.severity === 'error')) {
+      plan = auditPlan(compiled);
+      if (plan.error) problems.push({ where: { kind: 'loop', name: 'loop', line: 1, col: 1 }, severity: 'error', message: `audit: ${plan.error}` });
+    }
     if (problems.some((p) => p.severity === 'error')) {
       app.output.clear();
       app.output.result(`Not started: ${problems.filter((p) => p.severity === 'error').length} problem(s) found before the run.`, 'error');
@@ -161,20 +170,25 @@ export class Control {
       return { state: 'error', problems };
     }
     const iso = app.engine.isolated && !!app.engine.control;
-    const assembled = assemble(project, compiled, app.runtime, { poll: iso });
+    const run = mode === 'audit'
+      ? { ...project, settings: { ...project.settings, solutions: 0, candidates: 0, trace: 0 } } : project;
+    const assembled = assemble(run, compiled, app.runtime, mode === 'audit'
+      ? { poll: iso, modules: [app.modules.audit], body: auditBody(compiled, plan) } : { poll: iso });
     this.assembled = assembled;
     app.internals && app.internals.program(project, compiled, assembled);
     app.editors.setReadOnly(true);
     app.output.clear();
     app.output.trace.clear(project.settings.trace);
     app.stats.start({});
-    app.output.result('Running…');
+    app.output.result(mode === 'audit' ? 'Auditing…' : 'Running…');
+    this.mode = mode;
+    this.audit = null;
     this.D = null;
     this.E = null;
     this.marks = [];
     this.setState('running');
     const info = {
-      loopLabel: loopLabel(project.loop), settings: { ...project.settings, constants: { ...project.settings.constants } },
+      loopLabel: (mode === 'audit' ? 'audit: ' : '') + loopLabel(project.loop), mode, settings: { ...project.settings, constants: { ...project.settings.constants } },
       engine: app.engineVersion, solvers: compiled ? compiled.solvers : [],
       fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])),
     };
@@ -215,6 +229,10 @@ export class Control {
         if (line) this.marks.push({ where: { kind: 'loop', line, col: 1 }, severity: 'error', message: data.message });
         break;
       }
+      case 'A':
+        if (data.verdict) { this.audit = data; app.output.auditVerdict(data); }
+        else app.output.result(`Auditing: ${fmt(data.candidates)} candidates, ${fmt(data.pairs)} pairs, ${fmt(data.unsound)} unsound so far…`);
+        break;
       case 'D': this.D = data; break;
       default: break;
     }
@@ -237,6 +255,7 @@ export class Control {
       app.output.error('clingo stopped unexpectedly' + (d.message ? ` (${d.message})` : '') + '. The last output lines:');
       for (const l of app.output.lastLines) app.output.message(l, 'error');
     }
+    if (this.audit) info.audit = this.audit;
     app.stats.done(this.D, this.D ? info : null);
     app.editors.setReadOnly(false);
     if (this.marks.length) app.editors.annotate(this.marks);
@@ -250,6 +269,14 @@ export class Control {
 
   describe(D) {
     const S = this.app.stats.S;
+    const A = this.audit;
+    if (this.mode === 'audit' && D.outcome !== 'error') {
+      if (!A) return `Audit ended without a verdict: ${D.outcome}${D.detail ? ` (${D.detail})` : ''}.`;
+      if (A.verdict === 'limit') return `Audit stopped: more than ${fmt(A.limit)} candidates. Audit a smaller instance.`;
+      return A.verdict === 'sound'
+        ? `Audit: sound for every candidate and counterexample of this instance (${fmt(A.candidates)} candidates, ${fmt(A.pairs)} pairs).`
+        : `Audit: unsound. ${fmt(A.unsound)} of ${fmt(A.pairs)} refinements would remove a solution; ${fmt(A.at_risk)} solutions at risk.`;
+    }
     const n = S ? fmt(S.solutions) : '?';
     const sol = S && S.solutions === 1 ? 'solution' : 'solutions';
     switch (D.outcome) {

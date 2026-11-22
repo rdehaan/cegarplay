@@ -370,7 +370,7 @@ Plan: `PLAN2.md`; design docs in `docs/directions/`; prototypes in `spike2/`. On
 commit at each checkpoint, no stops.
 
 - [x] L0 Repair (blocking clause over all outgoing links; `knapsack-fortification`, `qbf-three-blocks`)
-- [ ] S1 Audit
+- [x] S1 Audit
 - [ ] I1 Instances
 - [ ] V1 Recording
 - [ ] S2 Capture, level 2, level 3
@@ -399,7 +399,24 @@ Notes per phase:
   `test/fixtures/assemble/*.lua` (stub runtime) guards "no new keys -> same program text".
   Reference rows 14–30 added to `docs/reference-numbers.md`.
 
-**Next step (PLAN2):** S1 Audit.
+- **S1 (done):** `lua/audit.lua` (`rt.audit`), `js/driver.js` (`assemble` options `modules` and
+  `body`; `declarationLines`, `auditPlan`, `auditBody`), compiler result gains `linkUses` and
+  `parts[].facts` (receiver), runtime exports `rt.join`/`rt.new_control`. `tools/audit.mjs`
+  (exit 0/1/2/3), `runProject(..., { audit })`. Page: Audit button, `#audit-panel`, history column
+  "Audit" (audit rows are left out of the ⚠ comparison). Rows 14–18, 20 exact; row 19 exact in
+  40 s under SLOW (spike 54 s). Sweep: 52 fast loop-script examples audited, exactly
+  `tutorial-weak-relevant` and `guide-04-one-node` unsound; `gc-shape3/4`, `qbf-expansion`,
+  `kemeny-control` etc. sound through the rule audit.
+  - Deviation: `opt_mode = ignore` on both solvers (else a `#minimize` abstraction enumerates only
+    improving models: `guide-11-fewest-deletions` showed 1 candidate). The audit thus checks all
+    counterexamples, also non-optimal ones a loop with `optimal` never uses (stronger, still exact
+    for the reference rows).
+  - Deviation: chains (check solver with outgoing links, e.g. `knapsack-fortification`) are refused.
+  - The doc's "gc-shape3 with leaf rules removed" is not unsound at n = 5; the unsound rule test
+    adds `:- cex(k,color(1,C)).` instead.
+  - `test/browser/a11y.test.mjs` B2: Tab cap 80 -> 100 (one more button in the run bar).
+
+**Next step (PLAN2):** I1 Instances.
 
 ## Next step (PLAN.md, guide, TODO)
 

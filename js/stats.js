@@ -282,12 +282,14 @@ export class Stats {
       candidates: s.candidates,
       refinements: refinements(s),
       meanLength: meanLen(s),
-      solutions: s.solutions,
+      solutions: info.audit && info.audit.verdict !== 'limit' ? info.audit.solutions : s.solutions,
       seed: info.settings.seed,
       engine: info.engine,
       solvers: (info.solvers || []).map((x) => ({ name: x.name, options: x.options })),
       settings: info.settings,
       fragmentsHash: info.fragmentsHash,
+      mode: info.mode || 'run',
+      audit: info.audit ? { verdict: info.audit.verdict, unsound: info.audit.unsound, pairs: info.audit.pairs } : null,
     });
     this.renderHistory();
   }
@@ -298,6 +300,7 @@ export class Stats {
     for (let i = 0; i < h.length; i++) {
       for (let j = i + 1; j < h.length; j++) {
         const a = h[i], b = h[j];
+        if (a.mode === 'audit' || b.mode === 'audit') continue;
         if (a.fragmentsHash && a.fragmentsHash === b.fragmentsHash && a.settings && b.settings &&
             Number(a.settings.solutions) === 0 && Number(b.settings.solutions) === 0 &&
             a.outcome === 'finished' && b.outcome === 'finished' && a.exhausted && b.exhausted && a.solutions !== b.solutions) {
@@ -308,15 +311,24 @@ export class Stats {
     return bad;
   }
 
+  // The audit column: an audit row shows its verdict; a run shows the verdict of the last
+  // audit of the same fragments and constants, if there is one.
+  auditText(r) {
+    const a = r.audit || (r.mode !== 'audit' && [...this.history].reverse().find((x) => x.audit && x.fragmentsHash === r.fragmentsHash)?.audit);
+    if (!a) return '–';
+    if (a.verdict === 'unsound') return `unsound (${fmt(a.unsound)})`;
+    return a.verdict;
+  }
+
   renderHistory() {
     const bad = this.mismatches();
     const rows = this.history.map((r, i) => ({
-      attrs: bad.has(i) ? { class: 'mismatch', 'data-mismatch': 'true' } : {},
+      attrs: { ...(bad.has(i) ? { class: 'mismatch', 'data-mismatch': 'true' } : {}), ...(r.audit ? { 'data-audit': r.audit.verdict } : {}) },
       cells: [(bad.has(i) ? '⚠ ' : '') + r.time, r.loop, r.outcome + (r.exhausted ? ' (exhausted)' : ''), secs(r.elapsed), fmt(r.candidates),
-        fmt(r.refinements), typeof r.meanLength !== 'number' ? '–' : r.meanLength.toFixed(2), fmt(r.solutions), String(r.seed ?? 0)],
+        fmt(r.refinements), typeof r.meanLength !== 'number' ? '–' : r.meanLength.toFixed(2), fmt(r.solutions), String(r.seed ?? 0), this.auditText(r)],
     }));
-    this.table('history-table', ['Time', 'Loop', 'Outcome', 'Elapsed', 'Candidates', 'Refinements', 'Mean clause', 'Solutions', 'Seed'],
-      rows.length ? rows : [['(no finished runs yet)', '', '', '', '', '', '', '', '']], [3, 4, 5, 6, 7, 8]);
+    this.table('history-table', ['Time', 'Loop', 'Outcome', 'Elapsed', 'Candidates', 'Refinements', 'Mean clause', 'Solutions', 'Seed', 'Audit'],
+      rows.length ? rows : [['(no finished runs yet)', '', '', '', '', '', '', '', '', '']], [3, 4, 5, 6, 7, 8]);
     this.root.querySelector('#history-note').hidden = bad.size === 0;
     if (this.app.dirty) this.app.dirty(false);
   }
