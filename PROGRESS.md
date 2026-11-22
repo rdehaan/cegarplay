@@ -379,7 +379,7 @@ commit at each checkpoint, no stops.
 - [x] S3 `lift` links
 - [x] I3 Campaigns
 - [x] V3 Domain views
-- [ ] S4 Rule refinements, exact level
+- [x] S4 Rule refinements, exact level
 - [ ] I4 Fuzz and shrink
 - [ ] V4 Candidate space
 - [ ] S5 Certified counts
@@ -561,8 +561,21 @@ Notes per phase:
     (the doc's three-line Lua `main` would trap the engine on a grounding error in a view).
   - The cache is keyed by a hash of the frame program text, so editing a view invalidates it.
 
-**Next step (PLAN2):** review of wave 3 (S3, I3, V3) by a background agent, then S4 Rule
-refinements and the exact level (`docs/directions/soundness.md`, phase S4).
+- **S4 (done):** rules tagged with their expansion step; `LIFT.level3_rules` (removed ∧ violated
+  under X's guesses; step must define new atoms by stratified rules), `rt.certify_expand` hook in
+  `Solver:expand` (X found through `rt.owner`), K events with `e`; `LIFT.exact` (level 4, scratch
+  controls, guarded blocks, budget `settings.exact_seconds`), `certify: "exact"` (Loop-tab select,
+  driver line), Certificates table columns for level 4, unsound and expansions. Every expansion of
+  gc-shape3 (121), gc-shape4 (226), qbf-expansion (5), conformant-planning (8) certified at level 3;
+  level 4 gives {pick(4)} for the audit witness of tutorial-weak-relevant.
+  - Deviation: the product is rebuilt (clause product on store growth; one rule query per
+    expansion), not extended in place. subset-sum-game and integer-expressions need no level 4
+    (level 3 certifies all their clauses).
+
+**Next step (PLAN2):** fix the confirmed findings of the wave-3 review (separate commit): empty
+lifted clause errors; standalone export lacks modules (lift/certify); `where` and run settings
+(certify, record, runtime/module texts) missing from cell keys; bench --resume keeps invalid
+rows; frameFacts on expansion T events and deeply nested atoms. Then I4 Fuzz and shrink.
 
 ## Next step (PLAN.md, guide, TODO)
 

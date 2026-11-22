@@ -164,3 +164,42 @@ deleted; 3 on `guide-04-one-node`); row 25 (graph-coloring n = 5: 101 solutions,
 refinements of 7.38 literals against 1,320 of 13.0 hand-written, about 8 s against 0.1 s);
 43 fast clause examples (51 with `SLOW=1`) reach the count of their loop (the audited count for
 the unsound ones) with `relevant/1` deleted, without a fallback.
+
+## 5. Rule refinements and the exact level (phase S4)
+
+**Steps.** The store tags each captured rule with the expansion step of its solver (`s.k` at
+capture time; 0 = the base program) and remembers the largest atom before each step
+(`st.before[k]`).
+
+**Level 3 for rules** (`LIFT.level3_rules(L, k, X)`, called by `Solver:expand` through
+`rt.certify_expand(s, k, X)`; X is the model whose atom list gave the facts). The query program:
+A's rules of steps below k; the rules of step k with each constraint deriving `removed`; C's rules
+as in the clause product (guesses switched by `sel`, constraints and interface-headed rules
+deriving `violated`). Assumptions: `removed`, `violated`, and every `sel` as in X. A model is a
+candidate that the step removes while X is no counterexample of it; unsatisfiable means
+certified. Preconditions (else not certified, with the reason): step k defines only atoms created
+in the step (no head at or below `st.before[k]`), its non-constraint rules are stratified, the
+check is stratified, nothing is disjunctive. Then a candidate (an answer set of the earlier steps)
+has exactly one extension by the step's rules, and it is removed exactly when a constraint of the
+step fires in it; choices in the step only let the query find more escapes. A K event
+`{ e: k, solver, l, level: 3 | null, verdict, reason }` reports each expansion; the S event's
+`certificates` gain `expansions` and `expansions_certified`.
+
+**Level 4** (`LIFT.exact(L, M, vals, budget)`, with `settings.certify = "exact"` for every clause
+that levels 2 and 3 leave open, `settings.exact_seconds` per clause, default 2): on scratch
+controls of A's and C's fragments (C with the interface atoms as free choices), search a
+candidate that agrees with the clause's removed values and has no counterexample; candidates
+with a counterexample are blocked by clauses guarded with a fresh choice atom per query. Returns
+`lost` with the solution (K verdict `unsound`, reason `lost solution {...}`), `none` (level 4,
+certified) or `budget`.
+
+Measured: every expansion of `gc-shape3` (121), `gc-shape4` (226), `qbf-expansion` (5) and
+`conformant-planning` (8) is certified at level 3; a refine part with an extra
+`:- cex(k,color(1,C)).` is not. Level 4 returns `{pick(4)}` for the audit witness of
+`tutorial-weak-relevant` (candidate {2, 4}, relevant set {pick(4)}) and names 6 unsound
+refinements in its run; `subset-sum-game` and `integer-expressions` are certified at level 3
+already (levels 2 fails there, level 3 holds), so level 4 has nothing left to do.
+
+Deviation from the design: the product is not extended in place; the clause product is rebuilt
+when either store grows (wave-2 review fix) and the rule query builds its own program per
+expansion (gc-shape4: 226 queries, 1.2 s for the run).

@@ -77,6 +77,7 @@ export function assemble(project, compiled, runtimeLua, { poll = false, plain = 
     `candidates = ${int(st.candidates, 0)}, trace = ${int(st.trace, 0)}, seed = ${int(st.seed, 0)}, ` +
     `poll = ${poll ? 'true' : 'false'}, plain = ${plain ? 'true' : 'false'} }`);
   if (CERTIFY.includes(st.certify) && st.certify !== 'off') lines.push(`SETTINGS.certify = ${luaStr(st.certify)}`);
+  if (st.certify === 'exact' && Number(st.exact_seconds) > 0) lines.push(`SETTINGS.exact_seconds = ${Number(st.exact_seconds)}`);
   const rec = recordSetting(st.record);
   if (rec) {
     lines.push(`SETTINGS.record = { steps = ${luaStr(rec.steps)}, n = ${rec.n}, calls = ${rec.calls ? 'true' : 'false'}` +

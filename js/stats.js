@@ -59,7 +59,8 @@ export class Stats {
       <div class="stats-block" id="certificates-block" hidden><h3>Certificates</h3>
         <div class="table-wrapper"><table class="internals-table" id="certificates-table"></table></div>
         <p class="note">Each refinement gets the cheapest certificate that holds: 0 a block, 1 an unsat core, 2 the
-        three-valued evaluation of the check, 3 one solver call on the product of abstraction and check.
+        three-valued evaluation of the check, 3 one solver call on the product of abstraction and check (also for
+        the rules an expansion grounds), 4 a search for a lost solution (Certificates: exact).
         Uncertified does not mean unsound; use Audit for a verdict.</p></div>
       <div class="stats-block" id="lift-block" hidden><h3>Lifting coach</h3>
         <div class="table-wrapper"><table class="internals-table" id="lift-table"></table></div>
@@ -167,8 +168,9 @@ export class Stats {
     const box = this.root.querySelector('#certificates-block');
     box.hidden = !c;
     if (c) {
-      this.table('certificates-table', ['Level 0 (block)', 'Level 1 (core)', 'Level 2', 'Level 3', 'Uncertified', 'Outside levels 2-3', 'Time level 2', 'Time level 3'],
-        [[fmt(c.l0), fmt(c.l1), fmt(c.l2), fmt(c.l3), fmt(c.none), fmt(c.outside), secs(c.t2), secs(c.t3)]], [0, 1, 2, 3, 4, 5, 6, 7]);
+      this.table('certificates-table', ['Level 0 (block)', 'Level 1 (core)', 'Level 2', 'Level 3', 'Level 4', 'Uncertified', 'Unsound (level 4)', 'Outside levels 2-3', 'Expansions certified', 'Time levels 2 / 3 / 4'],
+        [[fmt(c.l0), fmt(c.l1), fmt(c.l2), fmt(c.l3), fmt(c.l4 || 0), fmt(c.none), fmt(c.unsound || 0), fmt(c.outside),
+          c.expansions ? `${fmt(c.expansions_certified)} of ${fmt(c.expansions)}` : '–', `${secs(c.t2)} / ${secs(c.t3)} / ${secs(c.t4 || 0)}`]], [0, 1, 2, 3, 4, 5, 6, 7]);
     }
     // the coach of a lift link (phase S3): per interface predicate, atoms marked by relevant/1 and kept by lifting
     const L = s && s.lift;

@@ -14,7 +14,7 @@ rt.LIFT = LIFT
 local abs, clock, concat = math.abs, os.clock, table.concat
 local CERT = SETTINGS.certify
 
-LIFT.stats = { [0] = 0, [1] = 0, [2] = 0, [3] = 0, none = 0, outside = 0, t2 = 0, t3 = 0 }
+LIFT.stats = { [0] = 0, [1] = 0, [2] = 0, [3] = 0, [4] = 0, none = 0, outside = 0, unsound = 0, t2 = 0, t3 = 0, t4 = 0, expansions = 0, expansions_certified = 0 }
 
 -------------------------------------------------------------------------------
 -- 1. Capture
@@ -26,7 +26,9 @@ local function new_store()
 end
 
 local function capture(st, choice, head, body, lower)
-  local r = { choice = choice, head = {}, body = {} }
+  local step = st.solver and st.solver.k or 0
+  if step ~= st.step then st.step = step; st.before = st.before or {}; st.before[step] = st.maxatom end
+  local r = { choice = choice, head = {}, body = {}, step = step }
   local m = st.maxatom
   for i, a in ipairs(head) do r.head[i] = a; if a > m then m = a end end
   if lower then
@@ -50,6 +52,9 @@ end
 function LIFT.capture(s)
   if s.store then return s.store end
   local st = new_store()
+  st.solver = s
+  st.step = 0
+  st.before = { [0] = 0 }
   s.store = st
   s.ctl:register_observer({
     rule = function(_, choice, head, body)
@@ -407,6 +412,124 @@ function LIFT.level3(L, X, vals)
 end
 
 -------------------------------------------------------------------------------
+-- 3b. Level 3 for rule refinements (phase S4): the rules of expansion step k
+-------------------------------------------------------------------------------
+-- Q_k: A's rules of steps below k; the rules of step k, with each constraint deriving `removed`;
+-- C's rules as in LIFT.product. A model with removed and violated, under X's guesses, is a
+-- candidate that step k removes although X is no counterexample of it. Unsatisfiable means
+-- certified.
+-- Step k must define new atoms only (no head that existed before the step) by stratified rules,
+-- so that a candidate is removed exactly when a constraint of the step fires in its one
+-- extension (choices only make the query find more escapes: conservative).
+function LIFT.level3_rules(L, k, X)
+  local A, C = L.from, L.to
+  local sa, sc = A.store, C.store
+  if not sa or not sc or sa.error or sc.error then return false, "no ground program" end
+  if sa.disjunctive or sc.disjunctive then return false, "disjunctive" end
+  local tv = X and X.tv
+  if not tv then return false, "no truth values" end
+  local isint = {}
+  for j = 1, L.n do isint[L.dst[j]] = j end
+  if not stratified(sc, isint) then return false, "the check is not stratified" end
+  local bound = sa.before and sa.before[k] or 0
+  local stepk, any = {}, false
+  for _, r in ipairs(sa.rules) do
+    if r.step == k then
+      any = true
+      for _, h in ipairs(r.head) do if h <= bound then return false, "step " .. k .. " defines an atom of an earlier step" end end
+      if #r.head > 0 then stepk[#stepk + 1] = r end
+    end
+  end
+  if not any then return true end                      -- nothing grounded: nothing removed
+  if not stratified({ rules = stepk }, {}) then return false, "the rules of step " .. k .. " are not stratified" end
+  local ctl = rt.new_control({}, "rules " .. L.name, {})
+  local result, why = false, nil
+  local ok, err = pcall(function()
+    local b = ctl:backend()
+    local amap, cmap, sel = {}, {}, {}
+    local function am(a) local x = amap[a]; if not x then x = b:add_atom(); amap[a] = x end; return x end
+    local function cm(a)
+      local j = isint[a]
+      if j then return am(L.src[j]) end
+      local x = cmap[a]; if not x then x = b:add_atom(); cmap[a] = x end; return x
+    end
+    local function lits(body, map)
+      local t = {}
+      for i, l in ipairs(body) do t[i] = l > 0 and map(l) or -map(-l) end
+      return t
+    end
+    local function add(head, body, r, choice)
+      if r.w then
+        local wb = {}
+        for i, l in ipairs(body) do wb[i] = { l, r.w[i] } end
+        b:add_weight_rule{ head = head, lower = r.lower, body = wb, choice = choice }
+      else
+        b:add_rule{ head = head, body = body, choice = choice }
+      end
+    end
+    local removed, violated = b:add_atom(), b:add_atom()
+    for _, r in ipairs(sa.rules) do
+      if r.step < k or (r.step == k and #r.head > 0) then
+        local hs = {}
+        for i, h in ipairs(r.head) do hs[i] = am(h) end
+        add(hs, lits(r.body, am), r, r.choice)
+      elseif r.step == k then
+        add({ removed }, lits(r.body, am), r, false)
+      end
+    end
+    for _, r in ipairs(sc.rules) do
+      local body = lits(r.body, cm)
+      if #r.head == 0 then add({ violated }, body, r, false)
+      elseif r.choice then
+        for _, h in ipairs(r.head) do
+          if not isint[h] then
+            local s = sel[h]
+            if not s then s = b:add_atom(); sel[h] = s; b:add_rule{ head = { s }, body = {}, choice = true } end
+            if r.w then
+              local aux = b:add_atom()
+              add({ aux }, body, r, false)
+              b:add_rule{ head = { cm(h) }, body = { aux, s } }
+            else
+              local bb = {}
+              for i, l in ipairs(body) do bb[i] = l end
+              bb[#bb + 1] = s
+              b:add_rule{ head = { cm(h) }, body = bb }
+            end
+          end
+        end
+      elseif isint[r.head[1]] then
+        local na = -am(L.src[isint[r.head[1]]])
+        if r.w then
+          local aux = b:add_atom()
+          add({ aux }, body, r, false)
+          b:add_rule{ head = { violated }, body = { aux, na } }
+        else
+          local bb = {}
+          for i, l in ipairs(body) do bb[i] = l end
+          bb[#bb + 1] = na
+          b:add_rule{ head = { violated }, body = bb }
+        end
+      else
+        local hs = {}
+        for i, h in ipairs(r.head) do hs[i] = cm(h) end
+        add(hs, body, r, false)
+      end
+    end
+    b:close()
+    ctl:ground({ { "base", {} } })
+    local assume = { removed, violated }
+    for h, s in pairs(sel) do assume[#assume + 1] = tv[h] and s or -s end
+    local hd = ctl:solve{ assumptions = assume, yield = true }
+    local sat = false
+    for _ in hd:iter() do sat = true; break end
+    hd:close()
+    if sat then result, why = false, "a removed candidate escapes" else result = true end
+  end)
+  if not ok then return false, tostring(err) end
+  return result, why
+end
+
+-------------------------------------------------------------------------------
 -- 4. Certifying one refinement
 -------------------------------------------------------------------------------
 -- The values a clause fixes: the removed candidates falsify every literal, so atom j has the
@@ -441,6 +564,15 @@ function LIFT.certify_clause(c)
   local ok3, why3 = LIFT.level3(L, c.x, vals)
   LIFT.stats.t3 = LIFT.stats.t3 + (clock() - t1)
   if ok3 then return 3, "certified" end
+  if CERT == "exact" and c.m then
+    local t4 = clock()
+    local ok4, r, atoms = pcall(LIFT.exact, L, c.m, vals, SETTINGS.exact_seconds or 2)
+    LIFT.stats.t4 = (LIFT.stats.t4 or 0) + (clock() - t4)
+    if ok4 and r == "none" then return 4, "certified" end
+    if ok4 and r == "lost" then return nil, "unsound", "lost solution {" .. concat(atoms, ", ") .. "}" end
+    if ok4 then return nil, "none", "level 4: budget of " .. (SETTINGS.exact_seconds or 2) .. " s" end
+    return nil, "none", "level 4: " .. tostring(r)
+  end
   if not L.product and L.product_reason then return nil, "outside", why .. "; " .. L.product_reason end
   return nil, "none", why .. "; " .. tostring(why3)
 end
@@ -574,14 +706,118 @@ function LIFT.lift(L, M, X)
   return c
 end
 
+-------------------------------------------------------------------------------
+-- 6. Level 4, the exact level (phase S4): a search on scratch controls
+-------------------------------------------------------------------------------
+-- Is there a candidate of A's unrefined program that agrees with M on the kept atoms (vals) and
+-- has no counterexample? Candidates with a counterexample are blocked, as the reference run
+-- does. Returns "lost", the solution's interface atoms | "none" | "budget".
+local function scratch(s)
+  local ctl = rt.new_control({}, "exact " .. s.name, s.frags)
+  ctl:add("base", {}, rt.join(s.frags))
+  ctl:ground({ { "base", {} } })
+  return ctl
+end
+function LIFT.exact(L, M, vals, budget)
+  budget = budget or 2
+  local t0 = clock()
+  local v = M[L]
+  if not L.exact then
+    local A2, C2 = scratch(L.from), nil
+    local alit = {}
+    for j = 1, L.n do
+      local a = A2.symbolic_atoms:lookup(L.sym[j])
+      alit[j] = a and a.literal or nil
+    end
+    -- the check with the interface atoms as free choices (the link's glue, as rt.link does)
+    C2 = rt.new_control({}, "exact " .. L.to.name, L.to.frags)
+    local b = C2:backend()
+    local clit = {}
+    for j = 1, L.n do
+      local d = b:add_atom(L.sym[j])
+      b:add_rule{ head = { d }, body = {}, choice = true }
+      clit[j] = d
+    end
+    b:close()
+    C2:add("base", {}, rt.join(L.to.frags))
+    C2:ground({ { "base", {} } })
+    L.exact = { A = A2, C = C2, alit = alit, clit = clit }
+  end
+  local E = L.exact
+  -- fresh blocks for every query: a block is added as an assumption-guarded clause
+  local guard = E.A:backend()
+  local g = guard:add_atom()
+  guard:add_rule{ head = { g }, body = {}, choice = true }
+  guard:close()
+  local assume = { g }
+  for j = 1, L.n do
+    if vals[j] ~= nil then
+      local a = E.alit[j]
+      if a then assume[#assume + 1] = vals[j] and a or -a
+      elseif vals[j] then return "none" end              -- an atom A cannot make true: nothing removed
+    end
+  end
+  while true do
+    if clock() - t0 > budget then return "budget" end
+    local cand = nil
+    local h = E.A:solve{ assumptions = assume, yield = true }
+    for m in h:iter() do
+      cand = {}
+      for j = 1, L.n do cand[j] = E.alit[j] ~= nil and m:is_true(E.alit[j]) or false end
+      break
+    end
+    h:close()
+    if not cand then return "none" end
+    local ca = {}
+    for j = 1, L.n do ca[#ca + 1] = cand[j] and E.clit[j] or -E.clit[j] end
+    local hc = E.C:solve{ assumptions = ca, yield = true }
+    local cex = false
+    for _ in hc:iter() do cex = true; break end
+    hc:close()
+    if not cex then
+      local atoms = {}
+      for j = 1, L.n do if cand[j] then atoms[#atoms + 1] = L.str[j] end end
+      return "lost", atoms
+    end
+    -- block this candidate under the guard
+    local bb = E.A:backend()
+    local body = { g }
+    for j = 1, L.n do local a = E.alit[j]; if a then body[#body + 1] = cand[j] and a or -a end end
+    bb:add_rule{ head = {}, body = body }
+    bb:close()
+  end
+end
+
 -- Hook called by the runtime for every clause that refines (reject and S.add).
 rt.certify = function(s, c)
-  if CERT ~= "report" then return end
+  if CERT ~= "report" and CERT ~= "exact" then return end
   local ok, level, verdict, reason = pcall(LIFT.certify_clause, c)
   if not ok then level, verdict, reason = nil, "none", "error: " .. tostring(level) end
-  local key = level or (verdict == "outside" and "outside" or "none")
+  local key = level or ((verdict == "outside" or verdict == "unsound") and verdict or "none")
   LIFT.stats[key] = (LIFT.stats[key] or 0) + 1
   rt.emit("K", { c = rt.clauses, i = rt.recorded > 0 and rt.recorded or rt.NULL, l = c.link and c.link.index or rt.NULL,
+    level = level or rt.NULL, verdict = verdict, reason = reason or rt.NULL })
+end
+
+-- Hook called by Solver:expand: certify the rules of expansion step k (level 3), X the
+-- counterexample whose atoms were the facts (nil when unknown).
+rt.certify_expand = function(s, k, X)
+  if CERT ~= "report" and CERT ~= "exact" then return end
+  local level, verdict, reason = nil, "none", nil
+  local L
+  if X then for _, l in ipairs(s.out) do if l.to == X.solver then L = l end end end
+  if not L then reason = "the facts do not come from a counterexample of a check of " .. s.name
+  else
+    local t0 = clock()
+    local ok, r, why = pcall(LIFT.level3_rules, L, k, X)
+    LIFT.stats.t3 = LIFT.stats.t3 + (clock() - t0)
+    if ok and r then level, verdict = 3, "certified" else reason = ok and why or tostring(r) end
+  end
+  local key = level or "none"
+  LIFT.stats[key] = (LIFT.stats[key] or 0) + 1
+  LIFT.stats.expansions = (LIFT.stats.expansions or 0) + 1
+  if level then LIFT.stats.expansions_certified = (LIFT.stats.expansions_certified or 0) + 1 end
+  rt.emit("K", { e = k, solver = s.name, c = rt.NULL, i = rt.recorded > 0 and rt.recorded or rt.NULL, l = L and L.index or rt.NULL,
     level = level or rt.NULL, verdict = verdict, reason = reason or rt.NULL })
 end
 
@@ -589,7 +825,8 @@ end
 rt.stats_extra = function(e)
   local s = LIFT.stats
   if CERT then
-    e.certificates = { l0 = s[0], l1 = s[1], l2 = s[2], l3 = s[3], none = s.none, outside = s.outside, t2 = s.t2, t3 = s.t3 }
+    e.certificates = { l0 = s[0], l1 = s[1], l2 = s[2], l3 = s[3], l4 = s[4], none = s.none, outside = s.outside, unsound = s.unsound, t2 = s.t2, t3 = s.t3, t4 = s.t4,
+      expansions = s.expansions, expansions_certified = s.expansions_certified }
   end
   local co = LIFT.coach
   if co.clauses > 0 or co.fallbacks > 0 then

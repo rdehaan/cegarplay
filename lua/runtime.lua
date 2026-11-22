@@ -327,6 +327,7 @@ local function new_control(args, name, frags)
 end
 
 rt.join, rt.new_control = join, new_control
+rt.owner = owner
 
 local function plain(c)
   local t = {}
@@ -1036,6 +1037,11 @@ function Solver:expand(part, facts)
   rt.expansions = rt.expansions + 1
   self.n.ground = self.n.ground + (clock() - t0)
   if REC then record("e", self, nil, self.last_model, all_facts) end
+  if rt.certify_expand then
+    local src
+    for _, name in ipairs(names) do src = src or owner[facts[name]] end
+    rt.certify_expand(self, self.k, src)
+  end
   if tracing() then
     local src
     for _, name in ipairs(names) do src = src or owner[facts[name]] end

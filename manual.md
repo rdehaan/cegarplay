@@ -806,6 +806,13 @@ are. Uncertified does not mean unsound (use Audit). Each clause gets a `K` event
 (`c`, `i`, `l`, `level`, `verdict`, `reason`), and the final `S` event a `certificates` object.
 Details and the proof: `docs/spec-soundness.md`.
 
+Expansions are certified too: the rules that `S.expand` grounds get level 3 when no candidate
+they remove escapes the counterexample whose atoms were the facts (the step must define new atoms
+by stratified rules). With `settings.certify = "exact"` (the third choice of the select) a clause
+that levels 2 and 3 leave open goes to **level 4**: a search on scratch copies of the two programs
+for a candidate the clause removes that has no counterexample. It reports the lost solution
+(verdict `unsound`), certifies (level 4), or stops after `settings.exact_seconds` (default 2 s).
+
 ### Recordings
 
 **Recording** (Loop tab, limits block) records the steps of a run as compact `R` events: every

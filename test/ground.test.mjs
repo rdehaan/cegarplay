@@ -184,8 +184,60 @@ test('the level-3 product is rebuilt after the check is expanded', async () => {
     A:add(G:clause(M2, X2))
 `;
   const r = await H.runLua(p, lua, { modules: [H.read('lua/ground.lua')] });
-  const K = H.ofKind(r, 'K');
+  const K = H.ofKind(r, 'K').filter((k) => k.e === undefined);          // the clauses (not the expansion)
   assert.equal(K.length, 2, JSON.stringify(H.ofKind(r, 'E')));
   // the second clause (b) removes {a} and {a, c}, which have no counterexample after the expansion
   assert.ok(K[1].level !== 3 && K[1].level !== 2, JSON.stringify(K[1]));
+});
+
+// Phase S4: rule refinements at level 3, the exact level.
+test('S4: every expansion of gc-shape3, gc-shape4 and qbf-expansion is certified at level 3', async () => {
+  for (const id of ['gc-shape3', 'gc-shape4', 'qbf-expansion', 'conformant-planning']) {
+    const r = await certRun(id);
+    const E = H.ofKind(r, 'K').filter((k) => k.e !== undefined);
+    assert.ok(E.length > 0, id);
+    assert.ok(E.every((k) => k.level === 3 && k.verdict === 'certified'), `${id}: ${JSON.stringify(E.find((k) => k.level !== 3))}`);
+    assert.equal(H.finalStats(r).certificates.expansions_certified, E.length, id);
+  }
+});
+
+test('S4: a rule refinement that removes a solution is not certified', async () => {
+  // gc-shape3 with a refine part that also forbids a colour the counterexample does not use
+  const p = ex('gc-shape3', { certify: 'report' });
+  p.settings.constants = { ...p.settings.constants, n: '5' };
+  const f = p.fragments.find((x) => /#program refine/.test(x.text));
+  f.text += '\n:- cex(k,color(1,C)).\n';
+  const r = await H.runProject(p);
+  const E = H.ofKind(r, 'K').filter((k) => k.e !== undefined);
+  assert.ok(E.some((k) => k.level === null), JSON.stringify(E.slice(0, 3)));
+});
+
+test('S4: level 4 returns the lost solution {pick(4)} for the audit witness of tutorial-weak-relevant', async () => {
+  const p = ex('tutorial-weak-relevant', { certify: 'exact' });
+  const lua = `
+    local A = rt.solver("A", {"shared", "abstraction"}, {})
+    local C = rt.solver("C", {"shared", "check"}, {})
+    local G = rt.link("G", A, C, {"shared", "glue"}, {})
+    rt.prepare()
+    local r, atoms = rt.LIFT.exact(G, {}, { [G.jstr["pick(4)"]] = true }, 5)
+    rt.log(r .. " " .. table.concat(atoms or {}, " "))
+    r = rt.LIFT.exact(G, {}, { [G.jstr["pick(4)"]] = true, [G.jstr["pick(2)"]] = true }, 5)
+    rt.log(r)
+`;
+  const r = await H.runLua(p, lua, { modules: [H.read('lua/ground.lua')] });
+  assert.deepEqual(H.ofKind(r, 'L').map((l) => l.text), ['lost pick(4)', 'none']);
+  // and in a run with certify: exact the unsound refinements are named
+  const run = await certRun('tutorial-weak-relevant', {}, { certify: 'exact' });
+  const K = H.ofKind(run, 'K');
+  assert.ok(K.some((k) => k.verdict === 'unsound' && /lost solution \{pick\(\d\)/.test(k.reason)));
+  assert.ok(K.every((k) => k.level !== 4 || k.verdict === 'certified'));
+});
+
+test('S4: level 4 on subset-sum-game and integer-expressions certifies or reports a budget, never unsound', async () => {
+  for (const id of ['subset-sum-game', 'integer-expressions']) {
+    const r = await certRun(id, {}, { certify: 'exact', exact_seconds: 2 });
+    const K = H.ofKind(r, 'K');
+    assert.ok(K.length > 0, id);
+    assert.ok(K.every((k) => k.verdict === 'certified' || /budget/.test(k.reason || '')), `${id}: ${JSON.stringify(K.find((k) => k.verdict !== 'certified'))}`);
+  }
 });
