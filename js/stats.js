@@ -94,7 +94,7 @@ export class Stats {
         <h3>Run history</h3>
         <p class="inline-controls">
           <button class="control-button" id="rerun-seeds-button">Rerun with 5 seeds</button>
-          <button class="control-button" id="clear-history-button">Clear</button>
+          <button class="control-button" id="clear-history-button" title="Remove every row of the run history (asks first)">Clear run history</button>
           <button class="control-button" id="save-pool-button" title="Store the counterexamples of the last run's expansions as pools (needs Recording: every step)">Save counterexamples as pool</button>
           <button class="control-button" id="import-verdict-button" title="The --json output of tools/certcheck.py for a proof log of one of these runs">Import certcheck verdict</button>
           <input type="file" id="verdict-file" accept=".json,.txt" hidden>
@@ -105,7 +105,7 @@ export class Stats {
       </div>`;
     r.querySelector('#copy-tsv-button').addEventListener('click', () => this.copy('tsv'));
     r.querySelector('#copy-json-button').addEventListener('click', () => this.copy('json'));
-    r.querySelector('#clear-history-button').addEventListener('click', () => { this.history = []; this.renderHistory(); });
+    r.querySelector('#clear-history-button').addEventListener('click', () => this.clearHistory());
     r.querySelector('#rerun-seeds-button').addEventListener('click', () => this.app.control && this.app.control.rerunSeeds());
     r.querySelector('#save-pool-button').addEventListener('click', () => this.savePools());
     const vf = r.querySelector('#verdict-file');
@@ -421,7 +421,19 @@ export class Stats {
     this.table('history-table', ['Time', 'Loop', 'Outcome', 'Elapsed', 'Candidates', 'Refinements', 'Mean clause', 'Solutions', 'Seed', 'Audit'],
       rows.length ? rows : [['(no finished runs yet)', '', '', '', '', '', '', '', '', '']], [3, 4, 5, 6, 7, 8]);
     this.root.querySelector('#history-note').hidden = bad.size === 0;
+    this.root.querySelector('#clear-history-button').disabled = this.history.length === 0;
     if (this.app.dirty) this.app.dirty(false);
+  }
+
+  // Remove every row, after a question: the rows are the only record of earlier runs (the
+  // project kept in this browser loses them too).
+  clearHistory() {
+    const n = this.history.length;
+    if (!n) return false;
+    if (!window.confirm(`Remove all ${n} row${n === 1 ? '' : 's'} of the run history? This cannot be undone.`)) return false;
+    this.history = [];
+    this.renderHistory();
+    return true;
   }
 
   // ---- copy ---------------------------------------------------------------------

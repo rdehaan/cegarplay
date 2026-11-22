@@ -866,7 +866,11 @@ script is compiled 0.5 s after each edit.
 
 **Abort** terminates the worker at once and starts a new one. On a cross-origin isolated page
 (see [URL parameters](#manual-url-parameters-and-browser-storage)) there are also **Pause** /
-**Resume**, **Step** (one candidate) and **Stop** (ends the run cleanly, with final statistics).
+**Resume**, **Step** and **Stop** (ends the run cleanly, with final statistics). Step is enabled
+whenever Run is: from idle it starts a run that waits after its first candidate (state `paused`);
+on a running run it pauses after the next candidate; on a paused run it moves on by one candidate.
+Resume runs on to the end. On a page that is not isolated these buttons are hidden: the worker
+cannot be paused there.
 A pause makes the runtime send fresh statistics before it waits, so the counters show the state at
 the pause; Step lets exactly one poll through (one candidate of a `search`; in a loop of `solve`
 calls the poll runs every 256 iterations of a loop body) and pauses again with fresh statistics.
@@ -966,7 +970,7 @@ so; the next Run replaces them. The run history keeps both.
 | Refinements | Clauses, mean and largest length, expansions, restarts, automatic blocks (solutions blocked so that a later search does not report them again). |
 | Charts | Candidates and refinements over time; time split per solver; clause length distribution (1, 2, 3–4, 5–8, 9–16, 17–32, 33–64, 65+). |
 | Custom counters | The `count` statements. |
-| Run history | One row per run: time, loop, outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. **Rerun with 5 seeds**, **Clear**, copy as text or JSON. |
+| Run history | One row per run: time, loop, outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. **Rerun with 5 seeds**, **Clear run history** (asks first; disabled while empty), copy as text or JSON. |
 
 Counting rules: *candidates* are the assignments seen by `on candidate` plus models returned by
 `solve`/`models` of solvers without incoming links; *counterexamples* are satisfiable solves that

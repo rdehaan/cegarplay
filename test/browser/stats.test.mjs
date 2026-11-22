@@ -146,3 +146,23 @@ test('the tutorial is shown with code blocks; internals show the generated Lua',
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('Clear run history asks first; dismissing keeps the rows, accepting removes them', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?fresh=1&tab=6');
+  assert.equal(await page.$eval('#clear-history-button', (b) => b.disabled), true, 'nothing to clear yet');
+  await page.click('#run-button');
+  assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
+  const rows = () => page.$$eval('#history-table tbody tr', (l) => l.filter((r) => !/no finished runs/.test(r.textContent)).length);
+  assert.equal(await rows(), 1);
+  let asked = '';
+  page.once('dialog', (d) => { asked = d.message(); d.dismiss(); });
+  await page.click('#clear-history-button');
+  assert.match(asked, /Remove all 1 row of the run history\?/);
+  assert.equal(await rows(), 1, 'dismissed: kept');
+  page.once('dialog', (d) => d.accept());
+  await page.click('#clear-history-button');
+  assert.equal(await rows(), 0, 'accepted: removed');
+  assert.equal(await page.$eval('#clear-history-button', (b) => b.disabled), true);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

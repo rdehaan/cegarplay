@@ -90,6 +90,44 @@ test('abort works on the isolated page too', async () => {
   await context.close();
 });
 
+test('Step from idle starts a run that waits after its first candidate; Step while running pauses', async () => {
+  const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&example=tutorial-first-run&tab=5', { coi: true });
+  assert.equal(await page.$eval('#step-button', (b) => b.disabled), false, 'enabled whenever Run is');
+  await page.click('#step-button');
+  await B.waitState(page, ['paused']);
+  await page.waitForTimeout(500);
+  const c0 = await candidates(page);
+  assert.ok(c0 >= 1 && c0 <= 2, `first candidate only, got ${c0}`);
+  await page.click('#step-button');
+  await page.waitForTimeout(400);
+  assert.equal(await B.runState(page), 'paused');
+  assert.ok(await candidates(page) >= c0, 'a step moves on');
+  await page.click('#pause-button');                 // resume to the end
+  assert.equal(await B.waitState(page, ['finished', 'error', 'aborted']), 'finished');
+  assert.match(await page.textContent('#live-line'), /61 solutions/);
+  assert.equal(await page.$eval('#step-button', (b) => b.disabled), false, 'enabled again after the run');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('Step while a run is going pauses it after the next candidate', async () => {
+  const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&example=graph-coloring&tab=6', { coi: true });
+  await setN7(page);
+  await page.click('#run-button');
+  await B.waitState(page, ['running']);
+  await page.waitForTimeout(500);
+  await page.click('#step-button');
+  assert.equal(await B.runState(page), 'paused');
+  await page.waitForTimeout(400);
+  const c = await candidates(page);
+  await page.waitForTimeout(600);
+  assert.equal(await candidates(page), c, 'frozen after the step');
+  await page.click('#stop-button');
+  assert.equal(await B.waitState(page, ['finished', 'error', 'aborted']), 'finished');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
 test('V2: pausing freezes the Observatory counters; Step moves them by one candidate', async () => {
   const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&example=graph-coloring&tab=11', { coi: true });
   await setN7(page);

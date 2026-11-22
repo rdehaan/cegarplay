@@ -839,6 +839,16 @@ Goal: the app, library, tutorial, manual and guide as one whole with the PLAN2 f
   the checkboxes show what is visible. `test/browser/tabs.test.mjs`; the browser harness opens
   pages in Advanced mode unless `{ advanced: false }`.
 
+## Step and Clear (2026-11-22, on request)
+
+- **Step** (isolated pages only, like Pause and Stop) is enabled whenever Run is: from idle it
+  starts a run and sets the control word to "step" right after `engine.start`, so the first poll
+  lets one candidate through and the run waits (`run({ stepping: true })`, state `paused`); while
+  running it pauses after the next candidate; while paused it moves on by one. Tests in
+  `test/browser/isolated.test.mjs`.
+- **Clear run history** (was "Clear") asks with `window.confirm` (row count, "cannot be undone"),
+  is disabled while the history is empty; test in `test/browser/stats.test.mjs`.
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.

@@ -76,7 +76,9 @@ export class Control {
     this.abortButton.disabled = !active;
     this.pauseButton.disabled = !active;
     this.pauseButton.innerHTML = state === 'paused' ? '&#x23F5; Resume' : '&#x23F8; Pause';
-    this.stepButton.disabled = state !== 'paused';
+    // Step: from idle it starts a run that pauses after its first candidate; while running it
+    // pauses after the next candidate; while paused it advances by one candidate.
+    this.stepButton.disabled = !(active || !this.runButton.disabled);
     this.stopButton.disabled = !active;
     const dl = document.getElementById('download-recording-button');
     if (dl) dl.disabled = active || state === 'validating' || !this.app.recording;
@@ -132,7 +134,7 @@ export class Control {
   //   mode 'audit': the audit of lua/audit.lua instead of the loop (docs/spec-soundness.md).
   //   instance, variant: the run uses the derived project (js/project.js derive); without
   //   instance, the one picked in the run bar.
-  async run({ seed, mode = 'run', instance, variant } = {}) {
+  async run({ seed, mode = 'run', instance, variant, stepping = false } = {}) {
     const app = this.app;
     if (this.busy || !app.ready) return null;
     this.setState('validating');
@@ -221,6 +223,8 @@ export class Control {
         onLine: (text, isErr) => { app.internals && app.internals.raw(text); app.output.line(text, isErr); },
         onDone: (d) => resolve(this.onDone(d, info)),
       }, { seconds: Number(project.settings.seconds) || 0 });
+      // started by Step: the first poll lets one candidate through, then the run waits
+      if (stepping && iso) { app.engine.step(); this.setState('paused'); }
     });
   }
 
@@ -362,7 +366,11 @@ export class Control {
     else if (this.state === 'paused') { this.app.engine.resume(); this.setState('running'); }
   }
 
-  step() { if (this.state === 'paused') this.app.engine.step(); }
+  step() {
+    if (this.state === 'paused') this.app.engine.step();
+    else if (this.state === 'running') { this.app.engine.step(); this.setState('paused'); }
+    else if (!this.busy && !this.runButton.disabled) this.run({ stepping: true });
+  }
 
   stop() {
     if (this.state !== 'running' && this.state !== 'paused') return;
