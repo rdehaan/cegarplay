@@ -69,6 +69,28 @@ python3 tools/cegarcheck.py <project.json>   # check a project with Python cling
 python3 test/serve.py 8811                   # serve the site; add "coi" for isolation headers
 ```
 
+## Integrate from cloud session
+
+Use this when the user asks to "integrate from the cloud session" (a Claude Code
+cloud session that pushed its work to a branch on origin).
+
+1. `git fetch origin --prune`, then list remote branches newest first:
+   `git for-each-ref --sort=-committerdate refs/remotes/origin --format='%(refname:short)  %(committerdate:relative)  %(subject)'`.
+   The cloud branch is usually `origin/claude/...`. If there is more than one
+   candidate, or none, ask the user which branch (or say nothing has been pushed yet).
+2. Present a summary of the changes on that branch relative to `main`: commits
+   (`git log main..<branch>`), files changed (`git diff --stat main...<branch>`),
+   and a short prose summary of what changed and why, read from the diff. Say
+   whether `main` has moved since the branch was made. Don't run the tests unless
+   the user asks (the cloud session runs them).
+3. Ask the user whether to integrate into `main`, or whether they want changes
+   first. If they want changes, make them on a local copy of the branch and summarize again.
+4. On approval, integrate with a linear history: fast-forward if possible,
+   otherwise rebase the branch onto `main` and then fast-forward. Never create a
+   merge commit or squash. On rebase conflicts, stop and ask.
+5. Then, without asking again: `git push origin main`, and delete the cloud
+   branch on origin (`git push origin --delete <name>`) and any local copy of it.
+
 ## Working style
 
 - One phase at a time. Commit at each checkpoint: `Phase N: <title>`.
