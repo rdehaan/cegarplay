@@ -72,22 +72,19 @@ function main(prg)
     local GXC = rt.link("GXC", A, C, {"shared", "glue_x"}, {})
     rt.prepare()
     A:search{ on_candidate = function(M)
-      local Y, W
-      while true do rt.tick()
-        Y = B:solve{ assume = GX:of(M) }
-        if not Y then
-          break
-        end
+      local Y
+      Y = B:search{ assume = GX:of(M), keep = true, on_candidate = function(Y)
+        local W
         W = C:solve{ assume = GXY:of(Y) }
         if W then
-          B:add(GXY:clause(Y, W))
-        else
-          M:reject(GXC:core(C))
-          break
+          Y:reject(GXY:clause(Y, W))
         end
+      end }
+      if Y then
+        M:reject(GXC:core(C))
       end
     end }
   end)
 end
-LOOP_LINES = { 67, 89 }
+LOOP_LINES = { 67, 86 }
 #end.

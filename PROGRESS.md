@@ -386,7 +386,7 @@ commit at each checkpoint, no stops.
 - [x] I5 Mining, pools, importers
 - [x] V5 Cursor, compare, export, lecture
 - [x] L1 Values (G1–G3)
-- [ ] L2 Control (G4, G5, G8)
+- [x] L2 Control (G4, G5, G8)
 - [ ] L3 Dynamics (G6)
 - [ ] L4 Structure (G7)
 - [ ] Final review
@@ -680,7 +680,18 @@ Notes per phase:
   judged at their base's limit). Not fixed (plausible): the history mark ignores the loop text;
   hash mismatches that only cause wrongful rejections; compat links in certcheck.
 
-**Next step (PLAN2):** L2 Control (G4 inner/assumed searches, G5 partial checks, G8 optimal).
+- **L2 (done):** `search S [assume e, ...] [optimal] [keep Y]:` (keyword `keep`), nested searches of
+  other solvers (`rt.search_stack`), `keep` (first unrejected candidate, snapshot, no solution),
+  `optimal` (`optN`, only `optimality_proven` models), clauses of nested/kept searches queued for
+  the next solve (`s.rejlog`). `qbf-three-blocks` uses an inner search (12 solves of B against 30,
+  4 solutions); the G8 test of the spec holds (one solution, twice with plain optN).
+  `test/control.test.mjs`; compiler test "nested search" now checks the same-solver error.
+  - Deviations: G5 (`on partial ... every n`) not done; "knapsack-optimum as one search" not
+    possible as written (it expands rule refinements, which a search cannot do inside `on
+    candidate`), so G8 is tested on the spec's knapsack-interdiction case. Golden fixture
+    `qbf-three-blocks.lua` rewritten (the example changed).
+
+**Next step (PLAN2):** L3 Dynamics (G6: ground_part, extend, guard, externals).
 
 ## Next step (PLAN.md, guide, TODO)
 

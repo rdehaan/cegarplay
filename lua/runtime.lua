@@ -1049,6 +1049,7 @@ function Model:reject(c)
     trace("reject", s, cl, self)
     if REC then record("r", s, cl, self) end
     if rt.certify then rt.certify(s, cl) end
+    if s.rejlog then s.rejlog[#s.rejlog + 1] = cl end
     if not self.rejected and i == 1 then
       local ass = self.control.assignment
       for k = 1, #cl do
@@ -1282,14 +1283,28 @@ local function emit_solution(atoms, cost, s, M)
   if REC and REC.steps ~= "off" then record("s", s, nil, M) end
 end
 
+-- h: { on_candidate, assume, keep, optimal } (phase L2). Searches nest: a search may run inside
+-- on candidate of another solver's search (rt.search_stack). keep: the search ends at the first
+-- candidate that is not rejected and returns its snapshot (nil when the solver is exhausted);
+-- it reports no solution. optimal: with --opt-mode=optN, only models whose optimality is proven
+-- are solutions.
 function Solver:search(h)
+  if self.searching then fail("search " .. self.name .. ": solver " .. self.name .. " is already searching") end
   check_idle(self, "search")
-  if rt.searching then fail(self.name .. ".search: a search is already running (" .. rt.searching.name .. ")") end
   if type(h) ~= "table" or type(h.on_candidate) ~= "function" then fail(self.name .. ".search: on_candidate is missing") end
   local s, f = self, h.on_candidate
-  local want = wanted_left()
-  if SETTINGS.solutions ~= 0 and want <= 0 then rt.finish("solutions", "", false) end
+  local keep, optimal = h.keep and true or false, h.optimal and true or false
+  local outer = rt.searching
+  local assume = convert_assumptions(h.assume, s, "search")
+  local want = keep and 0 or wanted_left()
+  if not keep and SETTINGS.solutions ~= 0 and want <= 0 then rt.finish("solutions", "", false) end
   s.ctl.configuration.solve.models = tostring(want)
+  local saved_opt
+  if optimal then saved_opt = s.ctl.configuration.solve.opt_mode; s.ctl.configuration.solve.opt_mode = "optN" end
+  local kept = nil
+  -- clauses rejected in a nested or kept search are queued too: the next solve of this solver
+  -- keeps them (clasp may drop clauses added in a check between solves)
+  s.rejlog = (outer or keep) and {} or nil
   s.restart_requested = false
   local found = 0
   local block = SETTINGS.solutions ~= 1
@@ -1310,6 +1325,11 @@ function Solver:search(h)
   end
   local on_model = function(m)
     if rt.fatal or rt.ending then return false end
+    if keep then
+      local okk = guarded(s, function() kept = snapshot(s, m) end)
+      return false
+    end
+    if optimal and not m.optimality_proven then return true end
     local ok = guarded(s, function()
       local cost = m.cost
       local SM
@@ -1337,13 +1357,28 @@ function Solver:search(h)
     return ok
   end
   s.searching = true
+  rt.search_stack = rt.search_stack or {}
+  rt.search_stack[#rt.search_stack + 1] = s
   rt.searching = s
   local fr = timer_start(s)
   s.n.calls = s.n.calls + 1
-  local res = s.ctl:solve{ on_model = on_model }
+  local res = s.ctl:solve{ on_model = on_model, assumptions = assume }
   timer_stop(fr, res.interrupted and "int" or res.satisfiable and "sat" or res.unsatisfiable and "unsat" or "int")
   s.searching = false
-  rt.searching = nil
+  rt.search_stack[#rt.search_stack] = nil
+  rt.searching = outer
+  if optimal then s.ctl.configuration.solve.opt_mode = saved_opt end
+  if s.rejlog then
+    for _, c in ipairs(s.rejlog) do
+      local L = c.link
+      if L and #c > 0 then
+        local q = {}
+        for k = 1, #c do local j = c.j[k]; q[k] = c[k] < 0 and -L.src[j] or L.src[j] end
+        s.queue[#s.queue + 1] = q
+      end
+    end
+    s.rejlog = nil
+  end
   s.on_check = nil
   if cur then cur.done = true end
   -- clauses still stashed hold solver literals: keep them as program literals for the next solve
@@ -1364,8 +1399,12 @@ function Solver:search(h)
   -- search of the same solver (shape 4 after a final expand) must not report them again
   reraise()
   if res.satisfiable then s.n.sat = s.n.sat + 1 elseif res.unsatisfiable then s.n.unsat = s.n.unsat + 1 end
+  if keep then
+    s.exhausted = kept == nil and not res.interrupted
+    return kept
+  end
   s.exhausted = (not res.interrupted) and not (want > 0 and found >= want)
-  rt.exhausted = s.exhausted
+  if not outer then rt.exhausted = s.exhausted end
   if SETTINGS.solutions ~= 0 and rt.solutions >= SETTINGS.solutions then rt.finish("solutions", "", false) end
   return s.exhausted
 end

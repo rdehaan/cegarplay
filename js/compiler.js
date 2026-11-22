@@ -1,7 +1,7 @@
 // The loop language: script in, Lua out. See docs/spec-loop-language.md.
 // No DOM, no Node APIs: used by the page and by the tests.
 
-export const KEYWORDS = new Set(('solver link via options legacy compat lift if elif else loop while repeat until for in ' +
+export const KEYWORDS = new Set(('solver link via options legacy compat lift keep if elif else loop while repeat until for in ' +
   'search on candidate reject with accept restart stop break continue count by log assume limit optimal and or not ' +
   'true false none').split(' '));
 const LUA_RESERVED = new Set(('and break do else elseif end false for function goto if in local nil not or repeat return ' +
@@ -210,6 +210,16 @@ class Parser {
         case 'search': {
           this.next();
           const s = this.name('a solver name');
+          // phase L2: search S [assume e, ...] [optimal] [keep Y]:
+          const assume = [];
+          let optimal = false, keep = null;
+          if (this.isKw('assume')) { this.next(); assume.push(this.expr()); while (this.isOp(',')) { this.next(); assume.push(this.expr()); } }
+          if (this.isKw('optimal')) { this.next(); optimal = true; }
+          if (this.isKw('keep')) {
+            const kt = this.next();
+            if (!this.is('name')) this.fail(kt, "'keep' needs a name, as in: search B assume E keep Y:");
+            keep = this.name('a name');
+          }
           this.expect('op', ':');
           this.expect('NEWLINE', undefined, "end of line after 'search S:'");
           this.expect('INDENT', undefined, "an indented 'on candidate M:' line");
@@ -219,7 +229,7 @@ class Parser {
           const body = this.block();
           if (!this.is('DEDENT')) this.fail(this.peek(), "only one 'on candidate' block is allowed inside 'search'");
           this.next();
-          return { t: 'search', ...at, solver: s, v, body, onLine: on.line };
+          return { t: 'search', ...at, solver: s, v, body, onLine: on.line, assume, optimal, keep };
         }
         case 'reject': {
           this.next();
@@ -379,6 +389,7 @@ const LUA_OP = { '!=': '~=' };
 function collectAssigned(stmts, out, { intoCandidates }) {
   for (const s of stmts) {
     if (s.t === 'assign') out.add(s.target.value);
+    if (s.t === 'search' && s.keep) out.add(s.keep.value);
     const kids = [];
     if (s.t === 'if') { for (const b of s.branches) kids.push(b.body); if (s.orelse) kids.push(s.orelse.body); }
     if (['loop', 'while', 'repeat', 'for'].includes(s.t)) kids.push(s.body);
@@ -720,12 +731,18 @@ export function compile(source, { fragments = [] } = {}) {
       case 'search': {
         const S = s.solver.value;
         if (!solvers.has(S)) err(s.solver, `'${S}' is not a declared solver`);
-        if (ctx.cand) err(s, "'search' cannot be nested inside 'on candidate'");
+        // a search may run inside 'on candidate' of another solver's search (phase L2)
+        for (let c = ctx.cand; c; c = c.outer) if (c.solver === S) err(s, `search ${S}: solver ${S} is already searching`);
         checkName(s.v, 'a candidate variable');
         if (isDecl(s.v.value)) err(s.v, `'${s.v.value}' is a solver or link and cannot be the candidate variable`);
-        emit(`${S}:search{ on_candidate = function(${s.v.value})`, s.line, depth);
+        if (s.keep) { checkName(s.keep, 'a variable'); if (isDecl(s.keep.value)) err(s.keep, `'${s.keep.value}' is a solver or link`); }
+        const opts = [];
+        if (s.assume && s.assume.length) opts.push(`assume = ${s.assume.length > 1 ? `rt.concat(${s.assume.map((x) => ex(x)).join(', ')})` : ex(s.assume[0])}`);
+        if (s.optimal) opts.push('optimal = true');
+        if (s.keep) opts.push('keep = true');
+        emit(`${s.keep ? `${s.keep.value} = ` : ''}${S}:search{ ${opts.map((o) => o + ', ').join('')}on_candidate = function(${s.v.value})`, s.line, depth);
         const saved = { cand: ctx.cand, loops: ctx.loops };
-        ctx.cand = { solver: S, v: s.v.value };
+        ctx.cand = { solver: S, v: s.v.value, outer: saved.cand };
         ctx.loops = [];
         const locals = new Set();
         collectAssigned(s.body, locals, { intoCandidates: false });

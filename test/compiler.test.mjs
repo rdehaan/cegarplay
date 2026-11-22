@@ -224,7 +224,8 @@ test('static check: reject naming another variable', () => one(DECL + 'search A:
 test('static check: restart outside on candidate', () => one(DECL + 'loop:\n    restart\n', 5, 5, /'restart' works only inside 'on candidate'/));
 test('static check: S.add inside on candidate of S', () => one(DECL + 'search A:\n    on candidate M:\n        A.add(G.block(M))\n', 6, 11, /A.add cannot be used inside 'on candidate' of A/));
 test('static check: S.expand inside on candidate of S', () => one(DECL + 'search A:\n    on candidate M:\n        A.expand(refine, cex = M.atoms(color/2))\n', 6, 11, /A.expand cannot be used inside 'on candidate' of A/));
-test('static check: nested search', () => one(DECL + 'search A:\n    on candidate M:\n        search C:\n            on candidate N:\n                stop\n', 6, 9, /'search' cannot be nested/));
+// phase L2: a search of another solver may nest; the same solver may not
+test('static check: nested search of the same solver', () => one(DECL + 'search A:\n    on candidate M:\n        search A:\n            on candidate N:\n                stop\n', 6, 9, /search A: solver A is already searching/));
 test('static check: break and continue outside a loop', () => {
   one(DECL + 'break\n', 4, 1, /'break' outside a loop/);
   one(DECL + 'search A:\n    on candidate M:\n        continue\n', 6, 9, /'continue' outside a loop/);

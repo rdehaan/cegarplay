@@ -589,6 +589,27 @@ candidate on purpose). `reasons-by-shrinking` and `knapsack-bounds` are loop scr
 `reasons-by-size` needs no helper solver (`G.above`), and `qbf` has no `always` atom
 (`G.clause(X)`).
 
+## Control: inner and optimal searches (phase L2)
+
+```loop
+search A:
+    on candidate M:
+        search B assume GX(M) keep Y:        # a search inside A's check
+            on candidate Y:
+                W = C.solve(assume GXY(Y))
+                if W: reject Y with GXY.clause(Y, W)
+        if Y: reject M with GXC.core(C)
+```
+
+- `search S assume e, ... [optimal] [keep Y]:` — a search may run inside `on candidate` of another
+  solver's search (not of the same solver: `search B: solver B is already searching`).
+  `assume` restricts it; `keep Y` ends it at the first candidate that is not rejected and stores
+  that candidate in Y (none when S is exhausted); a kept search reports no solution. Clauses
+  rejected in a nested or kept search stay for the solver's next solve.
+- `search A optimal:` runs with `--opt-mode=optN` and reports a model only when its optimality is
+  proven (`knapsack-interdiction` with `#minimize { 1,I : lock(I) }`: one solution).
+- `keep` is a keyword. `qbf-three-blocks` uses an inner search: 12 solves of B instead of 30.
+
 ## Refinement variants
 
 | Variant | Script | Example |
