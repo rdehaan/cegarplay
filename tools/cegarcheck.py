@@ -346,6 +346,34 @@ class Checker:
                 "refinements": clauses, "exhausted": exhausted, "time": time.time() - t0}
 
 
+def apply_variant(project, name):
+    """A variant applied (js/project.js applyVariant): swapped fragment texts, its own loop,
+    its constants and settings. name None, "" or "default": the project as it is; without a
+    name given, settings.variant when it names a variant."""
+    variants = project.get("variants") or []
+    if name is None:
+        picked = (project.get("settings") or {}).get("variant")
+        name = picked if picked and any(v.get("name") == picked for v in variants) else None
+    if not name or name == "default":
+        return project
+    v = next((x for x in variants if x.get("name") == name), None)
+    if v is None:
+        raise CheckError(f"no variant named '{name}'")
+    p = dict(project)
+    text = {f["name"]: f.get("text", "") for f in project["fragments"]}
+    swap = v.get("swap") or {}
+    p["fragments"] = [dict(f, text=text[swap[f["name"]]]) if f["name"] in swap else f for f in project["fragments"]]
+    loop = v.get("loop")
+    if isinstance(loop, str):
+        p["loop"] = {"language": "loop", "text": loop}
+    elif isinstance(loop, dict):
+        p["loop"] = dict(project.get("loop") or {}, **loop)
+    settings = dict(project.get("settings") or {}, **(v.get("settings") or {}))
+    settings["constants"] = dict((project.get("settings") or {}).get("constants") or {}, **(v.get("constants") or {}))
+    p["settings"] = settings
+    return p
+
+
 def select_instance(project, want):
     """The instance a run uses (js/project.js selectedInstance): the id given, else
     settings.instance, else the first; "" means the project as written."""
@@ -408,6 +436,7 @@ def main(argv=None):
     ap.add_argument("-c", dest="consts", action="append", default=[], help="name=value")
     ap.add_argument("--solutions", default=None, help="N or all (default: the project's setting)")
     ap.add_argument("--instance", default=None, help="the instance to check (format version 2)")
+    ap.add_argument("--variant", default=None, help="the variant to check (default: settings.variant, else the project as it is)")
     ap.add_argument("--max-candidates", type=int, default=1000000)
     ap.add_argument("--seconds", type=float, default=300)
     ap.add_argument("--show", action="store_true", help="print the solutions")
@@ -417,6 +446,7 @@ def main(argv=None):
             project = json.load(f)
         if project.get("format") != "cegarplay":
             raise CheckError("not a CegarPlay project (format must be \"cegarplay\")")
+        project = apply_variant(project, o.variant)
         loop = project.get("loop") or {}
         if loop.get("language") == "lua":
             raise CheckError("raw Lua projects are not supported; check this one with tools/run.mjs")

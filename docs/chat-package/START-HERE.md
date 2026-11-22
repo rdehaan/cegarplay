@@ -35,7 +35,11 @@ Write new examples for the `problems` group: problems that suit a CEGAR loop, th
 problems of the form "find X such that no Y exists with ...". The abstraction guesses X; the
 check guesses a Y that refutes X. Each example should teach something: a problem class, a
 modelling trick, a refinement variant, or a comparison (weak versus strong `relevant/1`,
-Shape 1 versus rule refinements).
+Shape 1 versus rule refinements). Put alternatives to compare in one project as **variants**: an
+extra fragment per alternative and a variant that swaps it in (`"variants": [{ "name": "s1",
+"swap": { "relevant": "relevant_s1" } }]`), or a variant with its own `loop`, plus a suite that runs
+them on the instances (`example-voting-justification.json`; manual, *Variants* and *Campaigns*).
+Every alternative must be correct; only the guide group shows wrong ones on purpose.
 
 Ideas (take one, or propose your own):
 

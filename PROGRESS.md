@@ -871,6 +871,16 @@ Goal: the app, library, tutorial, manual and guide as one whole with the PLAN2 f
   change of the run bar's pick made every stored row look stale. Both are left out of the key now.
 - Tests: `test/variants.test.mjs`, `test/browser/variants.test.mjs`.
 
+## Variants consolidated (2026-11-22)
+
+The variant now reaches every path that derives a project: `pickedVariant` (js/project.js) is
+used by Run/Audit/Run all, Export for clingo and `tools/run.mjs`/`tools/audit.mjs`; Fuzz applies
+the picked variant (its `reference` variant stays available for compare mode); recordings carry
+`variant` in their header (spec-recording.md), which the candidate space, the replay label and
+`tools/certcheck.py` use; `tools/cegarcheck.py --variant` (default `settings.variant`). Docs:
+manual (Python checker, export, Fuzz, Candidate space), llms.txt, chat package (alternatives as
+variants, all correct), README. Tests added to `test/variants.test.mjs`.
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.

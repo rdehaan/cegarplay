@@ -85,7 +85,9 @@ export class SpaceView {
     this.msg.textContent = 'Auditing for the candidate vectors…';
     const p = structuredClone(app.collect());
     let d;
-    try { d = derive(p, { instance: rec.header && rec.header.instance ? rec.header.instance : undefined }); } catch (e) { this.msg.textContent = e.message; return; }
+    const h = rec.header || {};
+    // the instance and variant the recorded run used
+    try { d = derive(p, { instance: h.instance ? h.instance : undefined, variant: h.variant || undefined }); } catch (e) { this.msg.textContent = e.message; return; }
     const exec = (prog, o) => app.engine.exec(prog, o);
     const pr = await validate(d, exec);
     const plan = pr.compiled ? auditPlan(pr.compiled) : { error: 'a raw Lua loop has no audit' };

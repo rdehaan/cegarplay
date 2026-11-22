@@ -195,7 +195,7 @@ its file. Format: `docs/spec-instances.md` section 5.
 
 ### Fuzz
 
-**Fuzz** (Instances tab) audits instances from small to large (constants 1..v, or a suite's grid),
+**Fuzz** (Instances tab) audits instances from small to large (constants 1..v, or a suite's grid; with the variant picked in the run bar),
 stops at the first unsound one, shrinks its facts and constants (delta debugging, keeping the
 `schema` fragment satisfied and the audit unsound) and diagnoses it: the lost solution, the
 audit's witness, and the step of the loop's own run whose refinement removes the solution (for
@@ -1016,7 +1016,7 @@ info annotations. The **Domain view** (see [Writing views](#manual-writing-views
 
 The **Candidate space** region (Observatory) shows every candidate of the unrefined abstraction at
 once, one square each, from the audit's enumeration (so the same limit of 200,000 applies).
-**Compute** needs a run recorded with every step (Recording "every step", Loop tab); without one it
+**Compute** audits the instance and variant the recorded run used, and needs a run recorded with every step (Recording "every step", Loop tab); without one it
 offers **Record every step, run, compute**, which sets that recording, runs and computes. The colour of a
 square is its fate up to the refinement chosen with the slider or the cursor: alive, alive and a
 solution, removed earlier, removed by this refinement, a lost solution (a solution some refinement
@@ -1147,7 +1147,7 @@ Pause, Step, Stop and threads works.
 | --- | --- |
 | Upload project from file | Loads a project JSON (`Project.load`). |
 | Download current project | The project JSON; "include run history" adds `runs`. |
-| Export for clingo | One `.lp` file with the fragments, the runtime and the loop: `clingo file.lp --outf=3` prints `Answer: n` lines and a summary. Needs a clingo built with Lua (conda-forge, Ubuntu's `gringo`; not the PyPI package). |
+| Export for clingo | One `.lp` file with the fragments, the runtime and the loop (with the instance and variant picked in the run bar applied): `clingo file.lp --outf=3` prints `Answer: n` lines and a summary. Needs a clingo built with Lua (conda-forge, Ubuntu's `gringo`; not the PyPI package). |
 
 ## Example library
 
@@ -1267,14 +1267,16 @@ usage (also: nothing to audit), 3 candidate or time limit.
 
 ```sh
 python3 tools/cegarcheck.py <project.json> [--mode auto|block|clause|clauses|core|expand]
-        [--instance ID] [-c name=value] [--solutions N|all] [--optimal] [--cex NAME=pred/arity] [--show]
+        [--instance ID] [--variant NAME] [-c name=value] [--solutions N|all] [--optimal] [--cex NAME=pred/arity] [--show]
 ```
 
 Runs a project with Python clingo (`pip install clingo`) where the page's engine is not available.
 It copies the runtime's link semantics for one abstraction, one check and one link, in a
 solve-check-refine loop (Shape 2); the mode is read from the loop script, and `--mode block` is the
 reference run. Raw Lua and scripts with more solvers or links are refused. Only solution counts of
-exhausted runs compare with the page.
+exhausted runs compare with the page. `--variant` applies a variant first (without it,
+`settings.variant`); `tools/certcheck.py` takes the variant (and instance) from the proof log's
+header, so a log of a variant run is checked against that variant.
 
 ### Driving the page
 

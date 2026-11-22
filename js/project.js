@@ -375,6 +375,12 @@ export function applyInstance(project, id) {
   return p;
 }
 
+// The variant the run bar picked (settings.variant), if it names a variant; else undefined.
+export function pickedVariant(project) {
+  const v = project.settings && project.settings.variant;
+  return v && (project.variants || []).some((x) => x.name === v) ? v : undefined;
+}
+
 // The plain project of one run: variant first, then instance.
 export function derive(project, { instance, variant } = {}) {
   return applyInstance(applyVariant(project, variant), instance);
@@ -461,7 +467,7 @@ export function importLp(text, title = 'Imported') {
 
 // modules: { ground, ... } the Lua module texts (lua/<name>.lua) a project may need (lift, certify).
 export function exportStandalone(project, runtimeLua, modules = {}) {
-  project = derive(project);                // the instance the run bar picks
+  project = derive(project, { variant: pickedVariant(project) });   // the run bar's instance and variant
   let compiled = null;
   if (project.loop.language === 'loop') {
     const c = compile(project.loop.text, { fragments: project.fragments.map((f) => f.name) });

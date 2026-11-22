@@ -23,7 +23,7 @@ import { resolveProject } from '../js/instances.js';
 import fs from 'node:fs';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import factory from '../vendor/clingo-wasm/clingo.js';
-import { load, derive, ProjectError } from '../js/project.js';
+import { load, derive, pickedVariant, ProjectError } from '../js/project.js';
 import { Recording } from '../js/recording.js';
 import { hashText } from '../js/stats.js';
 import { assemble, parseEvent, validate, auditPlan, auditBody, modulesFor } from '../js/driver.js';
@@ -72,10 +72,7 @@ export async function runProject(project, { onEvent, backstop = false, audit = n
     return { problems: [{ severity: 'error', message: e.message }], events: [] };
   }
   // like the page: without --variant, the variant picked in the project's settings (if it exists)
-  if (variant === undefined) {
-    const picked = project.settings && project.settings.variant;
-    if (picked && (project.variants || []).some((v) => v.name === picked)) variant = picked;
-  }
+  if (variant === undefined) variant = pickedVariant(project);
   project = derive(project, { instance, variant });
   if (constants) project = { ...project, settings: { ...project.settings, constants: { ...project.settings.constants, ...constants } } };
   const problems = await validate(project, engineRun);
@@ -100,7 +97,7 @@ export async function runProject(project, { onEvent, backstop = false, audit = n
 
 // A recording of a finished headless run (the same file the page writes).
 export function recordingOf(project, events, extra = {}) {
-  const rec = new Recording({ title: project.title || '', instance: project.instance || null, engine: 'clingo-wasm (node)', ...extra });
+  const rec = new Recording({ title: project.title || '', instance: project.instance || null, variant: project.variant || null, engine: 'clingo-wasm (node)', ...extra });
   for (const e of events) rec.add(e.kind, e.data);
   return rec;
 }

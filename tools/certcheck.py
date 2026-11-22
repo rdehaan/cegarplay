@@ -24,7 +24,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import clingo  # noqa: E402
-from cegarcheck import parse_script, join, consts_args, select_instance, recipe_facts, CheckError  # noqa: E402
+from cegarcheck import parse_script, join, consts_args, select_instance, apply_variant, recipe_facts, CheckError  # noqa: E402
 
 
 class Reject(Exception):
@@ -373,6 +373,8 @@ def read_log(path):
 
 def check(project, log_path):
     header, events = read_log(log_path)
+    # the variant the logged run used (recorded in the header since variants have a picker)
+    project = apply_variant(project, header.get("variant") or "default")
     loop = project.get("loop") or {}
     if loop.get("language") == "lua":
         raise Unsupported("raw Lua loops are not checked")

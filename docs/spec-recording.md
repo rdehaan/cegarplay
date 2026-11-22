@@ -52,8 +52,10 @@ with calls.
 `clauseLiterals(step)`, `firstViolated(solution, { link })`; `toBlob()` (gzip through
 `CompressionStream`) and `Recording.fromBlob(blob)` (gzip or plain), `fromText`.
 
-A file (`.cprec`) is line 1 `{ format: "cegarplay-recording", version: 1, title, instance, mode,
-engine, example, fragmentsHash }`, then one raw event line (`@@K json`) per event, gzip-compressed.
+A file (`.cprec`) is line 1 `{ format: "cegarplay-recording", version: 1, title, instance, variant,
+mode, engine, example, fragmentsHash }`, then one raw event line (`@@K json`) per event,
+gzip-compressed. `variant` (null for the project as it is) names the variant the run used; the
+candidate space and `tools/certcheck.py` apply it, older files without it mean the project as it is.
 
 The page keeps every event of a run in `app.recording` ("Download recording" in the Control tab).
 "Open recording" and `?replay=examples/replays/<id>.cprec` (only that pattern) feed a recording

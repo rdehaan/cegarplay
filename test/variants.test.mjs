@@ -79,3 +79,40 @@ test('parsePairs and showPairs', () => {
   assert.deepEqual(parsePairs(''), {});
   assert.throws(() => parsePairs('check'), /not name=value/);
 });
+
+// ---- the variant reaches every path: export, Python checker, proof logs -------------------
+const HAVE_CLINGO = spawnSync('python3', ['-c', 'import clingo'], { encoding: 'utf8' }).status === 0;
+const tmp = (name, text) => {
+  const f = nodePath.join(fs.mkdtempSync(nodePath.join(os.tmpdir(), 'cegarplay-')), name);
+  fs.writeFileSync(f, text);
+  return f;
+};
+
+test('Export for clingo applies the picked variant', () => {
+  const p = vote();
+  const modules = { ground: '', audit: '', draw: '', generate: '', replay: '' };
+  // every fragment is exported; with s3 picked, `relevant` holds strategy 3 as well as relevant_s3
+  const count = () => P.exportStandalone(p, H.RUNTIME, modules).split('Refinement strategy 3').length - 1;
+  p.settings.variant = 's3';
+  assert.equal(count(), 2);
+  delete p.settings.variant;
+  assert.equal(count(), 1);
+});
+
+test('cegarcheck.py --variant and certcheck.py on a proof log of a variant run', { skip: !HAVE_CLINGO && 'Python clingo missing' }, () => {
+  const inst = 'faith-pareto-neutral-reinf-k4';
+  const py = (tool, ...a) => spawnSync('python3', [H.path(`tools/${tool}`).pathname, ...a], { encoding: 'utf8' });
+  const file = H.path('examples/voting-justification.json').pathname;
+  const s1 = py('cegarcheck.py', file, '--instance', inst, '--variant', 's1', '--solutions', 'all').stdout;
+  const s2 = py('cegarcheck.py', file, '--instance', inst, '--solutions', 'all').stdout;
+  const cands = (s) => Number((/candidates: (\d+)/.exec(s) || [])[1]);
+  assert.match(s1, /Solutions: 1;/);
+  assert.ok(cands(s1) < cands(s2), `${cands(s1)} vs ${cands(s2)}`);
+  const log = tmp('proof.jsonl', '');
+  const r = spawnSync('node', [H.path('tools/run.mjs').pathname, 'voting-justification', '--variant', 's1', '--instance', 'pareto-neutral-reinf-k5',
+    '--solutions', 'all', '--proof', log, '--quiet'], { encoding: 'utf8' });
+  assert.match(r.stdout, /Solutions: 1;/);
+  assert.equal(JSON.parse(fs.readFileSync(log, 'utf8').split('\n')[0]).variant, 's1');
+  const v = JSON.parse(py('certcheck.py', file, log, '--json').stdout);
+  assert.equal(v.verdict, 'certified', JSON.stringify(v));
+});

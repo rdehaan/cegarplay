@@ -12,7 +12,9 @@ Run to see solutions, live statistics and a step-by-step trace.
 The page's tabs follow the work:
 
 - **Write**: *Programs* (the ASP fragments), *Loop* (the loop script, constants,
-  limits, recording and certificates) and *Instances* (the problem's inputs as
+  limits, recording, certificates, and variants: the same project with other
+  fragments or another loop, chosen in the run bar and compared in a campaign)
+  and *Instances* (the problem's inputs as
   facts and constants, generators of random instances, importers for common
   file formats, Run all, Fuzz).
 - **Run and look**: *Output* (solutions, trace, messages, the audit's verdict),

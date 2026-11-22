@@ -1,6 +1,6 @@
 // Run bar and run flow (spec-app.md section 6).
 import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody, modulesFor } from './driver.js';
-import { TEMPLATES, template, derive } from './project.js';
+import { TEMPLATES, template, derive, pickedVariant } from './project.js';
 import { resolveProject } from './instances.js';
 import { hashText } from './stats.js';
 import { fmt } from './output.js';
@@ -150,10 +150,7 @@ export class Control {
       // an instance stored as a recipe gets its facts from its generator first
       project = await resolveProject(project, instance, (p, o) => app.engine.exec(p, o), app.genLua());
       // without an explicit variant: the one picked in the run bar (a stale name is ignored)
-      const picked = project.settings.variant;
-      const chosen = variant !== undefined ? variant
-        : (picked && (project.variants || []).some((v) => v.name === picked) ? picked : undefined);
-      project = derive(project, { instance, variant: chosen });
+      project = derive(project, { instance, variant: variant !== undefined ? variant : pickedVariant(project) });
       instanceId = project.instance || null;
     } catch (e) {
       app.output.clear();
@@ -209,7 +206,7 @@ export class Control {
     this.mode = mode;
     document.body.dataset.lastMode = mode;   // shows the audit notes in Statistics and Observatory
     this.audit = null;
-    app.recording = new Recording({ title: project.title || '', instance: instanceId, mode, engine: app.engineVersion || '',
+    app.recording = new Recording({ title: project.title || '', instance: instanceId, variant: project.variant || null, mode, engine: app.engineVersion || '',
       example: app.exampleId || null, fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])) });
     this.D = null;
     this.E = null;
@@ -356,7 +353,9 @@ export class Control {
     if (app.observatory) app.observatory.update();
     if (app.views) app.views.show();
     const what = this.D ? this.describe(this.D) : 'the recording has no final event';
-    app.output.result(`Replayed: ${what}`);
+    const h = rec.header || {};
+    const of = [h.instance ? `instance ${h.instance}` : '', h.variant ? `variant ${h.variant}` : ''].filter(Boolean).join(', ');
+    app.output.result(`Replayed${of ? ` (${of})` : ''}: ${what}`);
     this.setState('replayed');
     return { state: 'replayed', D: this.D };
   }
