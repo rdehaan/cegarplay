@@ -56,7 +56,7 @@ export function removedBy(space, q) {
 // solution steps (R kind s). A full-length clause on a reported candidate is an acceptance.
 export function fates(space, steps, { truth = null } = {}) {
   const fate = new Int32Array(space.count);           // step number that removed it, 0 = alive
-  const accepted = new Uint8Array(space.count);
+  const accepted = new Int32Array(space.count);         // the R step that accepted it, 0 = not
   const reported = new Set();
   const rows = [];
   let firstUnsound = null, alive = space.count;
@@ -69,7 +69,7 @@ export function fates(space, steps, { truth = null } = {}) {
     const full = st.q.length === space.n;
     for (const i of gone) {
       if (fate[i] || accepted[i]) continue;
-      if (full && reported.has(normHex(space.hex[i]))) { accepted[i] = 1; acc++; continue; }
+      if (full && reported.has(normHex(space.hex[i]))) { accepted[i] = st.i; acc++; continue; }
       fate[i] = st.i; fresh++;
       if (truth && truth.has(i)) lost++;
     }

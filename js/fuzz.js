@@ -169,7 +169,8 @@ export async function diagnose(d, verdict, env) {
     const r = await runEvents(a.program, env);
     const Y = r.events.find((e) => e.kind === 'Y');
     out.culprit = Y ? Y.data.culprit : null;
-    out.step = Y && Y.data.culprit ? rec.steps.filter((s) => s.k === 'e')[Y.data.culprit - 1] : null;
+    const si = run.compiled.solvers.findIndex((x) => x.name === L.from) + 1;
+    out.step = Y && Y.data.culprit > 0 ? rec.steps.filter((x) => x.k === 'e' && x.s === si)[Y.data.culprit - 1] || null : null;
     return out;
   }
   const link = rec.I ? Math.max(1, rec.I.links.findIndex((x) => x.link === (verdict.link || x.link)) + 1) : 1;

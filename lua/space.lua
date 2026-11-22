@@ -30,7 +30,9 @@ function rt.enumerate(o)
   pcall(function() A.ctl.configuration.solve.opt_mode = "ignore" end)
   if not rt.prepared then rt.prepare() end
   local all = A:models{ limit = limit + 1 }
-  local chunk, from, count, over, seen = rt.array({}), 1, 0, false, {}
+  local chunk, from, count, seen = rt.array({}), 1, 0, {}
+  -- the cap applies to raw models: when it is reached the list may be incomplete
+  local over = #all > limit
   for _, M in ipairs(all) do
     local hx = hex(M[L], L.n)
     if not seen[hx] then

@@ -621,9 +621,16 @@ Notes per phase:
     values of the other program atoms from one solver call.
   - Unsupported by the checker (exit 2): raw Lua, witness checks, expansions.
 
-**Next step (PLAN2):** fix the confirmed findings of the wave-4 review (separate commit): level 4's
-scratch check lacks the glue facts of A (and compat relevant choices); `rt.enumerate` caps raw
-models before de-duplication; `diagnose` indexes expansions of all solvers. Then I5.
+- **Review of wave 4 (S4, I4, V4):** three confirmed bugs, fixed with tests: level 4's scratch
+  check lacked the glue atoms that are facts of A (and compat `relevant` choices), so it could
+  certify a refinement that loses a solution (`L.fsym` now kept by `rt.link`); `rt.enumerate`
+  reported `enumerated` when the raw-model cap cut the list (now `limit`); `diagnose` indexed the
+  expansions of every solver (now those of the expanding solver; culprit 0 gives null). Also
+  fixed: accepted cells of the map ignored the slider. Not fixed (plausible): replay of loops that
+  expand several parts, `lostInRun` with several links, acceptance across links.
+
+**Next step (PLAN2):** I5 Mining, pools, importers (`docs/directions/instance-lab.md`, phase I5;
+`js/mine.js` is started, not committed).
 
 ## Next step (PLAN.md, guide, TODO)
 

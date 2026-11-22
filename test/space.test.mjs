@@ -79,3 +79,13 @@ test('rt.enumerate lists one model per interface assignment: as many as the audi
   assert.equal(new Set(P).size, 256);
   assert.equal(H.ofKind(r, 'A').at(-1).candidates, 256);
 });
+
+test('review of wave 4: rt.enumerate reports limit when the raw models reach the cap', async () => {
+  const p = H.projectOf({ shared: '', abstraction: '{ p(1..2) }. { q(1..4) }.', glue: 'glue(p(1..2)).', check: ':- p(1).' });
+  p.loop = { language: 'loop', text: 'solver A = shared + abstraction\nsolver C = shared + check\nlink G = A -> C via shared + glue\nloop:\n    stop\n' };
+  const c = compile(p.loop.text, { fragments: p.fragments.map((f) => f.name) });
+  const body = [...declarationLines(c), 'rt.enumerate{ link = G, limit = 3 }'].map((l) => '    ' + l).join('\n') + '\n';
+  const a = assemble(p, c, H.RUNTIME, { modules: [H.read('lua/space.lua')], body });
+  const r = await H.run(a.program);
+  assert.equal(H.ofKind(r, 'A').at(-1).verdict, 'limit');
+});

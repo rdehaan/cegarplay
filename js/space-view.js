@@ -121,7 +121,7 @@ export class SpaceView {
     const F = this.F;
     const stepI = r > 0 ? F.rows[r - 1].i : 0;
     const f = F.fate[i];
-    if (F.accepted[i]) return 'accepted';
+    if (F.accepted[i] && F.accepted[i] <= stepI) return 'accepted';
     if (f && f <= stepI) return f === stepI ? (this.truth.has(i) ? 'lost' : 'now') : (this.truth.has(i) ? 'lost' : 'gone');
     return this.truth.has(i) ? 'aliveSol' : 'alive';
   }

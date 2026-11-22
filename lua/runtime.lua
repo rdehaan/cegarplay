@@ -527,6 +527,8 @@ function rt.link(name, from, to, glue, opts)
       if atom.is_fact then
         b:add_rule{ head = { d }, body = {} }
         L.facts = L.facts + 1
+        L.fsym = L.fsym or {}
+        L.fsym[#L.fsym + 1] = sym
       else
         local i = b:add_atom(clingo.Function("relevant", { sym }, true))
         b:add_rule{ head = { d }, body = {}, choice = true }

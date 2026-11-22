@@ -241,3 +241,17 @@ test('S4: level 4 on subset-sum-game and integer-expressions certifies or report
     assert.ok(K.every((k) => k.verdict === 'certified' || /budget/.test(k.reason || '')), `${id}: ${JSON.stringify(K.find((k) => k.verdict !== 'certified'))}`);
   }
 });
+
+test('review of wave 4: level 4 gives the check the glue atoms that are facts of the abstraction', async () => {
+  const p = H.projectOf({ shared: '', abstraction: '{ p(1..2) }. p(3).', glue: 'glue(p(1..3)).', check: 'cex :- p(1). cex :- not p(3). :- not cex.' }, { certify: 'exact' });
+  const lua = `
+    local A = rt.solver("A", {"shared", "abstraction"}, {})
+    local C = rt.solver("C", {"shared", "check"}, {})
+    local G = rt.link("G", A, C, {"shared", "glue"}, {})
+    rt.prepare()
+    local r, atoms = rt.LIFT.exact(G, {}, { [G.jstr["p(1)"]] = false }, 5)
+    rt.log(r .. " " .. table.concat(atoms or {}, " "))
+`;
+  const r = await H.runLua(p, lua, { modules: [H.read('lua/ground.lua')] });
+  assert.deepEqual(H.ofKind(r, 'L').map((l) => l.text), ['lost ']);   // {p(3)}: p(3) is a fact, not an interface atom
+});

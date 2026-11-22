@@ -737,10 +737,14 @@ function LIFT.exact(L, M, vals, budget)
     C2 = rt.new_control({}, "exact " .. L.to.name, L.to.frags)
     local b = C2:backend()
     local clit = {}
+    -- as rt.link: the glue atoms that are facts of A are facts of the check, the others choices
+    for _, sym in ipairs(L.fsym or {}) do b:add_rule{ head = { b:add_atom(sym) }, body = {} } end
     for j = 1, L.n do
       local d = b:add_atom(L.sym[j])
       b:add_rule{ head = { d }, body = {}, choice = true }
       clit[j] = d
+      local i = b:add_atom(clingo.Function("relevant", { L.sym[j] }, true))
+      if L.compat then b:add_rule{ head = { i }, body = {}, choice = true } end
     end
     b:close()
     C2:add("base", {}, rt.join(L.to.frags))
