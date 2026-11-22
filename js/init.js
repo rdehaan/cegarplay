@@ -263,9 +263,13 @@ async function buildLibrary() {
       make('span', { class: 'note' }, `${entries.length} · ${g.description}`)));
     const list = make('ul', { class: 'library-list' });
     for (const e of entries) {
-      const tags = [e.shape !== 'custom' ? e.shape : null, ...e.tags].filter(Boolean);
+      const has = e.has || {};
+      const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+      const tags = [e.shape !== 'custom' ? e.shape : null, ...e.tags,
+        has.instances ? plural(has.instances, 'instance') : null, has.generators ? plural(has.generators, 'generator') : null,
+        has.suites ? plural(has.suites, 'suite') : null, has.views ? 'view' : null].filter(Boolean);
       const li = make('li', { class: 'library-entry', 'data-example': e.id,
-        'data-search': [e.id, e.title, e.summary, e.shape, ...e.tags, g.title].join(' ').toLowerCase() });
+        'data-search': [e.id, e.title, e.summary, ...tags, g.title].join(' ').toLowerCase() });
       const text = make('div', { class: 'library-text' },
         make('span', { class: 'library-title' }, e.title), ' ',
         make('code', { class: 'library-id' }, e.id),

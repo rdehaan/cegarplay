@@ -11,6 +11,14 @@ programming. The solver is clingo 5.8.1 with Lua 5.4, compiled to WebAssembly
 (`clingo-wasm` 0.6.0), running in a Web Worker. The site is static: no server code, no build step,
 no request to another origin.
 
+The page's tabs follow the work: **Control** (the library, files, recordings, share and export) and
+**Tutorial**; then the project: **Programs** (the ASP fragments), **Loop** (the loop script,
+constants, limits, recording and certificates) and **Instances** (inputs, generators, Run all,
+Fuzz); then a run: **Output**, **Statistics** and **Observatory**; and many runs: **Campaign**. The
+run bar above the tabs holds **Run**, **Audit**, Abort (and Pause, Step, Stop on an isolated page),
+the Solutions and Instance pickers and the live counts. **Manual** and **Internals** appear when
+asked for.
+
 ## Model and terms
 
 | Term | Meaning |
@@ -572,7 +580,7 @@ Shape 1 with `reject M with G.block(M)` as the only refinement. Each bad candida
 its own, so it is always sound: its solution count is the truth on small instances. Compare a
 loop's count with it to find a `relevant/1` that is too weak.
 
-## Values: clauses, lists and model reads (phase L1)
+## Values: clauses, lists and model reads
 
 | Script | Meaning |
 | --- | --- |
@@ -589,7 +597,7 @@ candidate on purpose). `reasons-by-shrinking` and `knapsack-bounds` are loop scr
 `reasons-by-size` needs no helper solver (`G.above`), and `qbf` has no `always` atom
 (`G.clause(X)`).
 
-## Control: inner and optimal searches (phase L2)
+## Inner and optimal searches
 
 ```loop
 search A:
@@ -610,7 +618,7 @@ search A:
   proven (`knapsack-interdiction` with `#minimize { 1,I : lock(I) }`: one solution).
 - `keep` is a keyword. `qbf-three-blocks` uses an inner search: 12 solves of B instead of 30.
 
-## Dynamics: growing programs and externals (phase L3)
+## Growing programs and externals
 
 | Script | Meaning |
 | --- | --- |
@@ -623,7 +631,7 @@ The library example `conformant-growing` finds the shortest conformant plans by 
 horizon until plans exist (8 steps, the same 3 plans as `conformant-planning` with `t = 8`).
 Certificates are refused for programs with `#external` atoms.
 
-## Structure: procedures and solver families (phase L4)
+## Procedures and solver families
 
 ```loop
 solver S[i in 1..depth] = shared + level + inner     # members S1, S2, ... grounded with -c level=i
@@ -968,7 +976,24 @@ narrower than a pixel share a column split by the share of sat and unsat calls. 
 pans, double click shows all. **Cost per line**: one row per loop line with calls, sat, unsat,
 exclusive time (nested calls subtracted) and time with nested calls, sorted by time; a click
 selects the line and filters the timeline; after a run the loop editor shows the same figures as
-info annotations. The domain view (V3) and candidate space (V4) regions follow.
+info annotations. The **Domain view** (see [Writing views](#manual-writing-views)) and the **Candidate space** follow.
+
+### Candidate space
+
+The **Candidate space** region (Observatory) shows every candidate of the unrefined abstraction at
+once, one square each, from the audit's enumeration (so the same limit of 200,000 applies).
+**Compute** needs a run recorded with every step (Recording "every step", Loop tab). The colour of a
+square is its fate up to the refinement chosen with the slider or the cursor: alive, alive and a
+solution, removed earlier, removed by this refinement, a lost solution (a solution some refinement
+removed: the run is unsound), an accepted solution; a legend under the map names them. The summary
+names the first unsound refinement and how many solutions it removes, and counts the removals that
+hit a candidate already removed (redundant refinements). Hover shows a candidate's atoms, a click
+moves the cursor to the step that removed it. Two orders: by the most blamed atoms (a Z-order over
+the atoms the refinements rely on most), or rows by the number of true atoms. Below the map: the
+number of alive candidates per refinement, and the **blame matrix** (refinements by atoms; a cell is
+coloured when the refinement's clause contains the atom, by its sign). **Compare with a recording**
+lays a second recording of the same project and instance over the map: removed by this run only, by
+the second only, or by both.
 
 ### The linked cursor
 
@@ -1041,7 +1066,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?example=<id>` | Load the library example `<id>` (also `?file=<id>`). It does not replace the project kept in the browser until you edit it. |
 | `&fragment=<name>` | With `?example`: open the Programs tab on that fragment's editor (`loop` opens the Loop tab). Overrides `?tab`. An unknown name is ignored with a note in the status line. |
 | `&from=guide/<page>.html#<anchor>` | Show a link "← Back to the guide" at the top left, to that guide page. Only a page of the guide is accepted. |
-| `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances. |
+| `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory. The numbers are fixed; they are not the order on screen. |
 | `&instance=<id>` | Pick that instance of the project in the run bar. An unknown id is ignored with a note. |
 | `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
 | `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
@@ -1099,6 +1124,8 @@ Pause, Step, Stop and threads works.
 
 `shape` is a template key or `custom`; `expected.solutions` (when present) is the solution count
 with the example's own settings, checked by `test/library.test.mjs` for every example tagged `fast`.
+`has` (when present) counts the project's `instances`, `generators`, `suites` and `views`; the
+Library shows them as tags, and the filter matches them (type `view` or `suite`).
 
 | Group | Ids |
 | --- | --- |
@@ -1112,6 +1139,19 @@ with the example's own settings, checked by `test/library.test.mjs` for every ex
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.
 
+Most problems keep their input in [instances](#manual-instances): an instance `example` (tag
+`library`, whose count is the entry's `expected`) and two or three more, each with a comment line
+and its expected count (a smaller one, one without solutions, a larger one); `test/instances.test.mjs`
+runs every instance with an expected count. Parametric problems (`graph-coloring`, `min-dnf`,
+`clique-interdiction`) use constants-only instances and `settings.instance: ""`, so that the
+project as written runs with its own constants. `voting-justification` has seventeen instances,
+one question each. Some examples also have generators (`qbf`, `af-preferred`, `kemeny-control`, the
+graph problems), a campaign suite (`tutorial-weak-relevant`, `qbf`, `voting-justification`) or a
+domain view (fragment `view`). Every `fast` example has a recording in `examples/replays/`
+(`node tools/make-replays.mjs` after a change of the runtime or an example). `reasons-by-shrinking`
+and `qbf-three-blocks` deliberately use no format-2 keys: `test/assemble-golden.test.mjs` checks
+that such projects assemble to the same program text as before.
+
 Entries of the group `guide` have three more fields: `page` (the guide page and anchor that link
 it), `status` (`baseline`, `sound` or `unsound`) and `baseline` (the id of the blocking run of the
 same problem; absent on baselines). They are built by `tools/guide.mjs`; `node
@@ -1124,7 +1164,8 @@ count in `expected`.
 
 Without editing the tools: put a project file with a top-level `library` block
 (`{ "id", "group", "summary", "shape", "tags", "expected" }`, where `group` is `exists-forall` or
-`several-solvers` and `expected` is the solution count or `null`) in `examples/contrib/`; `node tools/make-examples.mjs` adds it to the
+`several-solvers` and `expected` is the solution count or `null`), with its input in instances, in
+`examples/contrib/`; `node tools/make-examples.mjs` adds it to the
 library (the block is dropped from `examples/<id>.json`). See `examples/contrib/README.md`.
 `node tools/make-chat-package.mjs` writes `dist/chat-package/`, a flat folder (this manual, the
 tutorial, every example, a template, the checker below, a guide) for writing examples in a chat

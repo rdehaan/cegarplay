@@ -1035,6 +1035,9 @@ tr.mismatch td {
 .view-stroke-8 { stroke: var(--view-8); }
 
 .space-map { display: block; margin: 6px 0; image-rendering: pixelated; }
+.space-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.85em; margin: 2px 0 6px; }
+.space-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.space-swatch { display: inline-block; width: 12px; height: 12px; border: 1px solid var(--border); }
 
 /* Lecture mode (?lecture=1): the domain view alone, notes as captions */
 body.lecture header, body.lecture footer, body.lecture .run-bar, body.lecture .tab-label, body.lecture #anatomy,

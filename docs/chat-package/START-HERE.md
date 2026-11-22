@@ -90,8 +90,16 @@ breaks as `\n`. After the block, give two or three sentences on what the example
   British spelling (colour, neighbour).
 - `title` short (2–5 words); `description` 1–3 sentences: the problem, what the loop does,
   and what to look at.
-- A small default instance through `settings.constants` (for example `{"n": "5"}`) so that the
-  run finishes in seconds. Say in the description which larger value is interesting.
+- The problem's input (a graph, a formula, an election, items) goes into **instances**, not into
+  `shared`: `"instances": [{ "id": "example", "facts": "% what it is\n...", "constants": {},
+  "expected": { "solutions": 3 }, "tags": ["library"] }, ...]` and `"version": 2` (manual,
+  *Instances*; `example-af-preferred.json`, `example-voting-justification.json`). `shared` then
+  keeps the encoding's domains and derived rules. Give two to four instances: the `example`
+  (its count is `library.expected`), a smaller one, one with no solution, a larger one; each
+  with a comment line and its `expected.solutions`. A parametric problem without data uses
+  constants-only instances (`"facts": ""`, `"constants": {"n": "5"}`, as in
+  `example-graph-coloring.json`). Keep `settings.constants` equal to the `example`'s values so
+  the project as written still runs in seconds.
 - Loop scripts: start from a template in the manual (*Templates*). In custom scripts, add
   `#` comments that explain each step, as in `example-lang-*.json`.
 - Settings: copy `settings` from the template (`solutions: 0, seconds: 60, candidates: 0,
@@ -126,6 +134,8 @@ python3 cegarcheck.py my-problem.json --solutions all              # the loop's 
 python3 cegarcheck.py my-problem.json --solutions all --mode block # reference run
 ```
 
+Add `--instance ID` for each instance (without it the first instance is used).
+
 Both runs must say `exhausted: yes` and report the same number of solutions; that number is
 your `expected`. A smaller count in the loop's mode means `relevant/1` (or the refine part) is
 too weak. `cegarcheck.py` reads the mode from the loop script (`G.clause`, `G.clauses`,
@@ -143,6 +153,8 @@ counterexample counts differ, because the page's Shape 1 checks inside one runni
 # save the file as examples/contrib/<id>.json, then:
 node tools/make-examples.mjs
 node tools/run.mjs <id> --solutions all --quiet
+node tools/run.mjs <id> --instance all --solutions all --quiet
+node tools/audit.mjs <id>
 cd test && npm test
 ```
 

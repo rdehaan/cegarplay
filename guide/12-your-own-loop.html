@@ -164,6 +164,7 @@ at(k,X2,Y2,T) :- at(k,X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).
           <li>Blocking is always sound and always slow. Keep the blocking loop as the ground truth for small instances. <a href="02-first-loop.html#rule-block-baseline">Chapter 02</a></li>
           <li>A refinement that is too strong removes solutions without any sign. The run still finishes, exhausted. <a href="04-soundness.html#rule-too-strong-is-silent">Chapter 04</a></li>
           <li>Test soundness by comparison: the blocking loop and your loop, same fragments and constants, all solutions, both exhausted, same count. <a href="04-soundness.html#rule-soundness-test">Chapter 04</a></li>
+          <li>Press Audit on a small instance: it checks every refinement against every solution, and its witness names the atom that should have been relevant. <a href="04-soundness.html#rule-audit">Chapter 04</a></li>
           <li>Run the test on several small instances: a wrong loop can be right on one. <a href="04-soundness.html#rule-several-instances">Chapter 04</a></li>
           <li>Test soundness where the blocking loop finishes; scale only afterwards. <a href="05-reading-a-run.html#rule-test-small-then-scale">Chapter 05</a></li>
           <li>An optimum is only as good as the soundness of every refinement; test the bounded version first. <a href="11-optimisation.html#rule-optimum-needs-soundness">Chapter 11</a></li>
@@ -213,8 +214,11 @@ at(k,X2,Y2,T) :- at(k,X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).
         <ul>
           <li>The <a href="../?manual=true&amp;tab=8">manual</a>: the loop language in full, every
             option, the troubleshooting table.</li>
-          <li>The library's group "Problems" (Control tab, Library): more than thirty problems from
-            the literature, each a working loop with a short description.</li>
+          <li>The library's problem groups (Control tab, Library): more than forty problems from
+            the literature, each a working loop with a short description, most with several
+            instances and their expected counts.</li>
+          <li>The playground's <a href="../?tab=2">Tutorial</a>: the tools around a loop, from the
+            Observatory and the audit to instances and campaigns.</li>
           <li><a href="../docs/chat-package/START-HERE.md">docs/chat-package/START-HERE.md</a>: how to
             write a new example together with an AI assistant in a chat, with a soundness checklist.</li>
           <li><a href="../tools/cegarcheck.py">tools/cegarcheck.py</a>: checks a project with the

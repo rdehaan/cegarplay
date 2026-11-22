@@ -44,6 +44,7 @@ export class SpaceView {
     this.msg = h('p', { id: 'space-message', class: 'note', role: 'status' });
     this.canvas = h('canvas', { id: 'space-map', class: 'space-map', 'aria-label': 'Every candidate, coloured by its fate' });
     this.tip = h('p', { id: 'space-tip', class: 'note' });
+    this.legend = h('div', { id: 'space-legend', class: 'space-legend', 'aria-label': 'Colours of the map' });
     this.curve = h('div', { id: 'space-curve' });
     this.matrix = h('canvas', { id: 'space-blame', class: 'space-map', 'aria-label': 'Blame matrix: refinements by atoms' });
     this.summary = h('p', { id: 'space-summary' });
@@ -55,7 +56,7 @@ export class SpaceView {
         h('button', { class: 'control-button small-button', id: 'space-compare', onclick: () => this.compareFile.click(), title: 'A second recording of the same project and instance' }, 'Compare with a recording'),
         this.compareFile = h('input', { type: 'file', id: 'space-compare-file', hidden: true, accept: '.cprec,.jsonl,.txt', onchange: () => this.openCompare() }),
         this.order, h('label', {}, 'Refinement ', this.slider), this.label),
-      this.msg, this.summary, this.canvas, this.tip, this.curve, h('h4', {}, 'Blame matrix'), this.matrix);
+      this.msg, this.summary, this.canvas, this.legend, this.tip, this.curve, h('h4', {}, 'Blame matrix'), this.matrix);
     this.canvas.addEventListener('mousemove', (e) => this.hover(e));
     this.canvas.addEventListener('click', (e) => this.click(e));
   }
@@ -171,6 +172,20 @@ export class SpaceView {
     return r;
   }
 
+  drawLegend(keys) {
+    const names = { alive: 'alive', aliveSol: 'alive, a solution', gone: 'removed earlier', now: 'removed now',
+      lost: 'a lost solution', accepted: 'an accepted solution', onlyA: 'removed by this run only',
+      onlyB: 'removed by the second run only', both: 'removed by both' };
+    const want = keys.map((k) => `${k}:${this.colors[k]}`).join(' ');
+    if (this.legend.dataset.keys === want) return;
+    this.legend.dataset.keys = want;
+    this.legend.textContent = '';
+    for (const k of keys) {
+      this.legend.append(h('span', { class: 'space-legend-item' },
+        h('span', { class: 'space-swatch', style: `background:${this.colors[k]}` }), names[k]));
+    }
+  }
+
   draw() {
     if (!this.F) return;
     const t0 = performance.now();
@@ -193,6 +208,7 @@ export class SpaceView {
       ctx.fillStyle = col[k];
       for (const i of list) ctx.fillRect(M.xs[i] * c, M.ys[i] * c, c - gap, c - gap);
     }
+    this.drawLegend(Object.keys(by).filter((k) => (this.B ? ['onlyA', 'onlyB', 'both', 'alive', 'aliveSol'] : ['alive', 'aliveSol', 'gone', 'now', 'lost', 'accepted']).includes(k)));
     const row = r > 0 ? this.F.rows[r - 1] : null;
     this.label.textContent = row ? `${r} of ${this.F.rows.length} (step ${row.i}: removes ${fmt(row.removed)}, ${fmt(row.fresh)} new, ${fmt(row.lost)} solutions)` : `before the first refinement (${this.F.rows.length} in all)`;
     this.lastDrawMs = performance.now() - t0;

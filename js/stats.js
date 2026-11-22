@@ -18,6 +18,15 @@ export function liveText(s) {
     `${fmt(refinements(s))} refinements · ${fmt(s.solutions)} solutions`;
 }
 
+// The run bar after an audit: its own counts (the S events of an audit count raw models).
+export function auditLiveText(a) {
+  if (!a || !a.verdict) return ' ';
+  const verdict = a.verdict === 'sound' ? 'sound' : a.verdict === 'unsound'
+    ? `unsound: ${fmt(a.unsound)} remove a solution` : a.verdict;
+  return `audit · ${fmt(a.candidates)} candidates · ${fmt(a.solutions)} solutions · ` +
+    `${fmt(a.pairs)} refinements checked · ${verdict}`;
+}
+
 function svg(tag, attrs = {}, text) {
   const e = document.createElementNS(SVGNS, tag);
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
@@ -130,6 +139,7 @@ export class Stats {
 
   done(D, info) {
     this.D = D;
+    if (info && info.mode === 'audit' && info.audit) this.live.textContent = auditLiveText(info.audit);
     if (this.S && info && !info.noHistory) this.record(info);
     this.render();
   }

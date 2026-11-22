@@ -75,14 +75,11 @@
     <input id="tab3" aria-controls="section-programs" type="radio" name="tabs">
     <label for="tab3" class="tab-label" id="label-programs" title="Programs"><span class="tab-text">Programs</span></label>
 
-    <input id="tab9" aria-controls="section-instances" type="radio" name="tabs">
-    <label for="tab9" class="tab-label" id="label-instances" title="Instances"><span class="tab-text">Instances</span></label>
-
-    <input id="tab10" aria-controls="section-campaign" type="radio" name="tabs">
-    <label for="tab10" class="tab-label" id="label-campaign" title="Campaign"><span class="tab-text">Campaign</span></label>
-
     <input id="tab4" aria-controls="section-loop" type="radio" name="tabs">
     <label for="tab4" class="tab-label" id="label-loop" title="Loop"><span class="tab-text">Loop</span></label>
+
+    <input id="tab9" aria-controls="section-instances" type="radio" name="tabs">
+    <label for="tab9" class="tab-label" id="label-instances" title="Instances"><span class="tab-text">Instances</span></label>
 
     <input id="tab5" aria-controls="section-output" type="radio" name="tabs">
     <label for="tab5" class="tab-label" id="label-output" title="Output"><span class="tab-text">Output</span></label>
@@ -93,6 +90,9 @@
     <input id="tab11" aria-controls="section-observatory" type="radio" name="tabs">
     <label for="tab11" class="tab-label" id="label-observatory" title="Observatory"><span class="tab-text">Observatory</span></label>
 
+    <input id="tab10" aria-controls="section-campaign" type="radio" name="tabs">
+    <label for="tab10" class="tab-label" id="label-campaign" title="Campaign"><span class="tab-text">Campaign</span></label>
+
     <input id="tab7" aria-controls="section-internals" type="radio" name="tabs">
     <label for="tab7" class="tab-label" title="Internals"><span class="tab-text">Internals</span></label>
 
@@ -101,8 +101,10 @@
       <p>
         CegarPlay runs CEGAR loops (counterexample-guided abstraction refinement) written in answer
         set programming, with clingo running in your browser. Load an example or a project file
-        here, then look at the <b>Programs</b> and <b>Loop</b> tabs, and press <b>Run</b>. New here?
-        Start with the <b>Tutorial</b> tab.
+        here. A project is written in the <b>Programs</b>, <b>Loop</b> and <b>Instances</b> tabs;
+        press <b>Run</b> (or <b>Audit</b>) and look at the run in <b>Output</b>, <b>Statistics</b> and
+        the <b>Observatory</b>; the <b>Campaign</b> tab compares many runs. New here? Start with the
+        <b>Tutorial</b> tab.
       </p>
       <div class="project-box">
         <div id="project-info">
@@ -125,9 +127,9 @@
       <details id="library-section" class="library-section">
         <summary><h3>Example library</h3></summary>
         <p class="note">Load an example to look at it and run it. Each has a link of its own:
-          <code>?example=&lt;id&gt;</code>. The <b>Tutorial</b> tab uses the first group step by step.</p>
+          <code>?example=&lt;id&gt;</code>. The <b>Tutorial</b> tab loads them lesson by lesson; the tags say which have instances, generators, suites or a domain view.</p>
         <div class="library-filter">
-          <input type="search" id="library-filter" placeholder="Filter by word, id or shape" aria-label="Filter the library">
+          <input type="search" id="library-filter" placeholder="Filter by word, id, shape or tag" aria-label="Filter the library">
         </div>
         <div id="library" class="library"><p class="note">Loading the library…</p></div>
       </details>
@@ -321,6 +323,9 @@
         <h3>The shared fragment</h3>
         <p>Rules that every solver needs: domains, constants, common definitions. In the default
           loop it is part of the abstraction solver, the check solver and the glue.</p>
+        <p>The problem's input (a graph, a formula, an election) belongs in an instance (Instances
+          tab): its facts reach every solver and the glue, ahead of all fragments, so one encoding
+          serves many inputs.</p>
       </div>
     </div>
   </div>
@@ -359,7 +364,8 @@
           If it finds one, it marks with <code>relevant(T)</code> the interface atoms the
           counterexample depends on. The refinement then says: one of these atoms must change.</p>
         <p>If <code>relevant/1</code> marks too few atoms, the refinement also removes good
-          candidates; compare with the Reference run template to find out.</p>
+          candidates. Press <b>Audit</b> to find out: it checks every refinement against every
+          solution of a small instance and names the atom that should have been relevant.</p>
       </div>
     </div>
   </div>
@@ -370,7 +376,7 @@
         <h3>The loop script</h3>
         <p>Declares the solvers (<code>solver A = shared + abstraction</code>), the links between
           them (<code>link G = A -&gt; C via shared + glue</code>) and how they call each other.
-          Start from a template; the Tutorial tab explains the language (lesson 7), and the
+          Start from a template; the Tutorial tab explains the language (lesson 10), and the
           <a href="#manual-the-loop-language">manual</a> has the full reference.</p>
       </div>
     </div>

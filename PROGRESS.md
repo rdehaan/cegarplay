@@ -763,6 +763,42 @@ The example `graph-coloring-original` (graph colouring with the too-weak origina
 - `docs/reference-numbers.md` rows 18 and 19 marked removed; `docs/directions/*.md` keep the
   historical numbers.
 
+## Unification pass (2026-11-22, on request)
+
+Goal: the app, library, tutorial, manual and guide as one whole with the PLAN2 features.
+
+- **Library:** `voting-justification`'s commented-out questions became 17 instances
+  (`voteInstances` in `tools/make-examples.mjs`: ids from the axioms and k; counts measured with
+  `tools/run.mjs --instance ID --solutions all`; `faith-cancel-reinf-pareto-condorcet-k3` has 0,
+  tag `no-solution`; the originally active `cancel-reinf-posresp-k4` (tag `original`, first
+  solution in 0.6 s, all not within 60 s) and `pareto-neutral-cancel-reinf-k8` (tag `hard`) have no
+  expected count) plus a suite `questions`. 31 contrib examples moved their data into an instance
+  `example` (tag `library`, expected = library count) with 2-3 extra instances each, every count
+  checked by the loop and an independent check (cegarcheck `--mode block`, a block-only copy, or a
+  brute-force Python enumeration). Not converted: `reasons-by-shrinking` and `qbf-three-blocks`
+  (golden-test guards without format-2 keys), `nash` (from declarative-cegar, solutions = 1).
+  `min-dnf` and `clique-interdiction` use constants-only instances with `settings.instance: ""`;
+  `conformant-planning`'s `example` keeps empty constants (the dynamics test sets t = 7).
+  `tools/guide.mjs fromContrib` folds a source's `example` facts back into `shared`, so the guide's
+  projects stay self-contained (cosmetic diffs only; guide numbers unchanged).
+- **Tutorial:** 13 lessons: new 5 (Observatory), 6 extended (Audit, Reference run, candidate
+  space), 7 (instances, generators, Fuzz), 8 (campaigns), 10 gained values, inner searches, growing
+  programs and families, 11 (certificates, lift, proofs, recordings), 12 (own problem) uses
+  instances, Audit, Fuzz, suites and Suggest a view. Numbers in it were measured in the page.
+- **Page:** tab order Control, Tutorial, Programs, Loop, Instances, Output, Statistics,
+  Observatory, Campaign (tab numbers unchanged); the run bar after an Audit shows the audit's counts
+  (`auditLiveText`) instead of the raw model counts; the candidate-space map has a colour legend;
+  Control intro and the info dialogs mention instances and the Audit.
+- **Docs:** manual: tab overview, headings without phase labels, a Candidate space section, the
+  library's use of instances, `?tab=` lists 10 and 11; guide page 4: section "The audit", rule
+  `rule-audit` (also on page 12), Instances/Fuzz/Campaign paragraph, Exercise 2 no longer needs the
+  removed example; constants are in the Loop tab (pages 1, 2, 3, 5, 7), Solutions in the run bar
+  (4, 8). README, `examples/contrib/README.md` and the chat package describe instances.
+- Removed the stray `test/_p.mjs`.
+- Environment note: this container's Playwright 1.65.1 wanted Chromium build 1255; only 1243 was
+  installed, so browser tests hung in `launch()`. A symlink `chromium_headless_shell-1255 ->
+  -1243` in `/opt/pw-browsers` fixed it (outside the repo).
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.
