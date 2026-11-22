@@ -23,6 +23,11 @@
       "name": "check",
       "description": "Looks for a larger admissible set (solver C) and states the refinement as clause/3 atoms.",
       "text": "% A counterexample: an admissible set that contains the candidate and one more argument\n% (it may contain the query argument). Then the candidate is not maximal.\n{ big(A) } :- arg(A).\n:- in(A), not big(A).\n:- big(A), big(B), att(A,B).\nhit(A) :- big(B), att(B,A).\n:- big(A), att(B,A), not hit(B).\nnew(A) :- big(A), not in(A).\nlarger :- new(A).\n:- not larger.\n#show big/1.\n\n% The larger set refutes each of its proper subsets. A set survives if it has an\n% argument outside the larger set, or if it contains the larger set. For each new\n% argument N, clause N says: an argument outside comes in, or N comes in.\nclause(N, in(A), true) :- new(N), arg(A), not big(A).\nclause(N, in(N), true) :- new(N).\n"
+    },
+    {
+      "name": "view",
+      "text": "% The argumentation framework; the candidate extension filled, a larger admissible set ringed.\n#program scene.\ndraw(layout(graph)).\ndraw(node(A)) :- arg(A).\ndraw(edge(A,B)) :- att(A,B), A != B.\ndraw(attr(node(A), stroke, query)) :- query(A).\n\n#program frame.\ndraw(attr(node(A), fill, in)) :- cand(in(A)).\ndraw(emph(node(A))) :- lit(in(A), _).\ndraw(note(\"A larger admissible set exists: the candidate is not preferred.\")) :- kind(reject).\n#show draw/1.\n",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks."
     }
   ],
   "loop": {
@@ -97,6 +102,15 @@
         "p": 250
       },
       "text": "% af-gnp: arguments 1..n; each ordered pair (also X = Y) attacks with probability p/1000\narg(1..n).\natt(X,Y) :- arg(X), arg(Y), @flip(p, X, Y) = 1.\nquery(@int(1, n, query)).\n\n#show arg/1.  #show att/2.  #show query/1.\n"
+    }
+  ],
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
     }
   ]
 }

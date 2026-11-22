@@ -860,6 +860,37 @@ exclusive time (nested calls subtracted) and time with nested calls, sorted by t
 selects the line and filters the timeline; after a run the loop editor shows the same figures as
 info annotations. The domain view (V3) and candidate space (V4) regions follow.
 
+### Writing views
+
+A **view** draws a step of the loop in the problem's own terms (Observatory tab, "Domain view").
+It is a fragment with two parts and a `views` entry naming the fragments it reads:
+
+```asp
+#program scene.                       % what stays: drawn once
+draw(layout(graph)).
+draw(node(V))   :- node(V).
+draw(edge(U,V)) :- edge(U,V).
+#program frame.                       % one step: cand/1, cex/1, lit/2, kind/1, step/1
+draw(attr(node(V), fill, deleted)) :- cand(del(V)).
+draw(emph(node(V)))                :- lit(del(V), _).
+draw(note("A triangle survives.")) :- kind(reject).
+#show draw/1.
+```
+
+```json
+"views": [ { "name": "view", "fragments": ["shared", "view"] } ]
+```
+
+Marks: `node/1`, `edge/2`, `cell/2`, `item/2`, `rank/3`, `attr/3` (keys `fill`, `stroke`,
+`label`, `weight`; a fill or stroke value is a class, coloured by first use), `emph/1`, `ghost/1`,
+`note/1`, `layout/1` (`grid`, `list`, `circle`, `layers`, `graph`), `pos/3`. The step slider picks
+a recorded step (the trace's `T` events, or `R` events of a recording); the drawing keeps every
+position between steps; dragging a node stores its position in the project. **Suggest a view**
+writes a first view from the predicates of the interface. The view runs as plain clingo with the
+instance and the named fragments, so a mistake shows as a clingo message. Details:
+`docs/spec-views.md`. Ten library examples ship a view (the guide's clique examples, the
+tutorial, `clique-colouring`, `af-preferred`, `arrowing`, `choosability`, `qbf`).
+
 ### Event lines
 
 The runtime prints one line per event: `@@` + kind letter + space + JSON. `tools/run.mjs --json`

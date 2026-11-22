@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Guide: everything relevant",
   "description": "The check marks every deleted-or-not node as relevant, so each refinement says exactly what blocking says. The numbers equal those of the blocking run. See the guide page \"Learning from a counterexample\".",
   "fragments": [
@@ -23,6 +23,11 @@
       "name": "check",
       "text": "% A counterexample: a triangle none of whose nodes is deleted.\n3 { q(V) : node(V) } 3.\n:- q(V), del(V).\n:- q(U), q(V), U < V, not edge(U,V).\n#show q/1.\n\n% Every interface atom counts: the refinement blocks the whole candidate.\nrelevant(del(V)) :- node(V).\n",
       "description": "Looks for a triangle that survives the deletions (solver C)."
+    },
+    {
+      "name": "view",
+      "text": "% The graph; deleted nodes filled, the surviving triangle drawn as a clique.\n#program scene.\ndraw(layout(graph)).\ndraw(node(V))   :- node(V).\ndraw(edge(U,V)) :- edge(U,V).\n\n#program frame.\ndraw(attr(node(V), fill, deleted))        :- cand(del(V)).\ndraw(attr(node(V), fill, clique))         :- cex(q(V)).\ndraw(attr(edge(U,V), stroke, clique))     :- edge(U,V), cex(q(U)), cex(q(V)).\ndraw(emph(node(V)))                       :- lit(del(V), _).\ndraw(note(\"A triangle survives. One of its ringed nodes must be deleted.\")) :- kind(reject).\ndraw(note(\"No triangle survives: a solution.\")) :- kind(solution).\n#show draw/1.\n",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks."
     }
   ],
   "loop": {
@@ -39,5 +44,14 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "runs": [],
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
+    }
+  ]
 }

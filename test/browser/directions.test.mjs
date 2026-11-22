@@ -291,3 +291,35 @@ test('I3: Abort during a suite leaves no running worker', async () => {
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('V3: the domain view draws a step; another step keeps every position; a cached step makes no call; drag writes positions', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=guide-03-hit-clique&tab=11');
+  await page.click('#run-button');
+  await settled(page);
+  await page.waitForSelector('#view-svg .view-node');
+  const state = () => page.evaluate(() => ({
+    pos: [...document.querySelectorAll('#view-svg .view-node')].map((g) => [g.dataset.key, g.getAttribute('transform')]),
+    emph: [...document.querySelectorAll('#view-svg .view-emph')].map((e) => e.parentNode.dataset.key || e.dataset.key).sort(),
+    calls: window.cegarplay.views.source.calls,
+  }));
+  assert.equal((await state()).pos.length, 10);
+  await page.$eval('#view-step', (s) => { s.value = '3'; s.dispatchEvent(new Event('input')); });
+  await page.waitForFunction(() => document.querySelectorAll('#view-svg .view-emph').length === 3);
+  const a = await state();
+  assert.deepEqual(a.emph, ['node(4)', 'node(5)', 'node(6)']);
+  assert.match(await page.textContent('#view-notes'), /A triangle survives/);
+  await page.$eval('#view-step', (s) => { s.value = '1'; s.dispatchEvent(new Event('input')); });
+  await page.waitForTimeout(150);
+  const b = await state();
+  assert.deepEqual(b.pos, a.pos);
+  await page.$eval('#view-step', (s) => { s.value = '3'; s.dispatchEvent(new Event('input')); });
+  await page.waitForTimeout(100);
+  assert.equal((await state()).calls, b.calls, 'step 3 again: cached');
+  // drag node 1
+  const box = await page.$eval('#view-svg [data-key="node(1)"] circle', (c) => { c.scrollIntoView({ block: 'center' }); const r = c.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  await page.mouse.move(box.x, box.y); await page.mouse.down(); await page.mouse.move(box.x + 30, box.y + 20, { steps: 4 }); await page.mouse.up();
+  const posd = await page.evaluate(() => window.cegarplay.project.views[0].positions);
+  assert.ok(posd && Array.isArray(posd['node(1)']), JSON.stringify(posd));
+  assert.deepEqual(errors, []);
+  await context.close();
+});

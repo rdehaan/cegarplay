@@ -456,3 +456,107 @@ export const SUITES = {
     suites: [{ name: 'random', instances: { generator: 'qbf-dnf', grid: { t: [6, 8, 10, 12] }, seeds: 5 }, limits: { seconds: 30 } }],
   },
 };
+
+// ---------------------------------------------------------------------------
+// Domain views (docs/spec-views.md), attached as a fragment `view` and a views entry.
+// ---------------------------------------------------------------------------
+const CLIQUE_VIEW = `% The graph; deleted nodes filled, the surviving triangle drawn as a clique.
+#program scene.
+draw(layout(graph)).
+draw(node(V))   :- node(V).
+draw(edge(U,V)) :- edge(U,V).
+
+#program frame.
+draw(attr(node(V), fill, deleted))        :- cand(del(V)).
+draw(attr(node(V), fill, clique))         :- cex(q(V)).
+draw(attr(edge(U,V), stroke, clique))     :- edge(U,V), cex(q(U)), cex(q(V)).
+draw(emph(node(V)))                       :- lit(del(V), _).
+draw(note("A triangle survives. One of its ringed nodes must be deleted.")) :- kind(reject).
+draw(note("No triangle survives: a solution.")) :- kind(solution).
+#show draw/1.
+`;
+const SUMFREE_VIEW = `% The numbers 1..n; picked numbers filled; the sum X + Y = Z of a counterexample ringed.
+#program scene.
+draw(layout(circle)).
+draw(node(X)) :- num(X).
+
+#program frame.
+draw(attr(node(X), fill, picked)) :- cand(pick(X)).
+draw(attr(node(X), stroke, sum)) :- cex(sum(X,_)).
+draw(attr(node(Y), stroke, sum)) :- cex(sum(_,Y)).
+draw(attr(node(X+Y), stroke, sum)) :- cex(sum(X,Y)).
+draw(emph(node(X))) :- lit(pick(X), _).
+draw(note("Picked numbers X, Y and X + Y: the ringed ones cannot all stay.")) :- kind(reject).
+draw(note("No sum inside the picked set: a solution.")) :- kind(solution).
+#show draw/1.
+`;
+export const VIEWS = {
+  'guide-03-hit-clique': CLIQUE_VIEW,
+  'guide-03-relevant-all': CLIQUE_VIEW,
+  'guide-04-one-node': CLIQUE_VIEW.replace('triangle', 'clique').replace('No triangle', 'No clique').replace('A triangle', 'A clique'),
+  'tutorial-first-run': SUMFREE_VIEW,
+  'tutorial-weak-relevant': SUMFREE_VIEW,
+  'clique-colouring': `% The graph; red nodes filled red, the others blue; a one-coloured maximal clique ringed.
+#program scene.
+draw(layout(circle)).
+draw(node(V)) :- node(V).
+draw(edge(U,V)) :- edge(U,V), U < V.
+
+#program frame.
+draw(attr(node(V), fill, red)) :- cand(red(V)).
+draw(attr(node(V), fill, blue)) :- node(V), not cand(red(V)), kind(_).
+draw(attr(edge(U,V), stroke, clique)) :- edge(U,V), U < V, cex(q(U)), cex(q(V)).
+draw(emph(node(V))) :- lit(red(V), _).
+draw(note("A maximal clique has one colour: recolour one of its ringed nodes.")) :- kind(reject).
+#show draw/1.
+`,
+  'af-preferred': `% The argumentation framework; the candidate extension filled, a larger admissible set ringed.
+#program scene.
+draw(layout(graph)).
+draw(node(A)) :- arg(A).
+draw(edge(A,B)) :- att(A,B), A != B.
+draw(attr(node(A), stroke, query)) :- query(A).
+
+#program frame.
+draw(attr(node(A), fill, in)) :- cand(in(A)).
+draw(emph(node(A))) :- lit(in(A), _).
+draw(note("A larger admissible set exists: the candidate is not preferred.")) :- kind(reject).
+#show draw/1.
+`,
+  arrowing: `% K_n; red edges red, blue edges blue; the pattern of a counterexample thick.
+#program scene.
+draw(layout(circle)).
+draw(node(V)) :- node(V).
+draw(edge(U,V)) :- edge(U,V).
+
+#program frame.
+draw(attr(edge(U,V), stroke, red)) :- cand(red(U,V)).
+draw(attr(edge(U,V), stroke, blue)) :- edge(U,V), not cand(red(U,V)), kind(_).
+draw(attr(edge(U,V), weight, 12)) :- cex(used(U,V)).
+draw(note("A one-coloured copy of a pattern (thick): one of its edges must change colour.")) :- kind(reject).
+#show draw/1.
+`,
+  choosability: `% One row per node, one column per colour: the lists of the candidate; a colouring ringed.
+#program scene.
+draw(layout(grid)).
+draw(cell(V,C)) :- node(V), colour(C).
+
+#program frame.
+draw(attr(cell(V,C), fill, list)) :- cand(list(V,C)).
+draw(attr(cell(V,C), label, "x")) :- cex(col(V,C)).
+draw(emph(cell(V,C))) :- lit(list(V,C), _).
+draw(note("A proper colouring from the lists (x): one of its ringed colours must leave a list.")) :- kind(reject).
+#show draw/1.
+`,
+  qbf: `% The x-variables; true ones filled; the variables a clause names ringed.
+#program scene.
+draw(layout(list)).
+draw(node(x(I))) :- xvar(I).
+
+#program frame.
+draw(attr(node(x(I)), fill, true)) :- cand(x(I)).
+draw(emph(node(x(I)))) :- lit(x(I), _).
+draw(note("A y-assignment falsifies every term: flip one of the ringed x-variables.")) :- kind(reject).
+#show draw/1.
+`,
+};

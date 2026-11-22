@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { importLp, load, save, template } from '../js/project.js';
 import { stripAspComments } from '../js/driver.js';
-import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES } from './library.mjs';
+import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS } from './library.mjs';
 import { buildGuide } from './guide.mjs';
 
 const root = new URL('..', import.meta.url);
@@ -241,6 +241,12 @@ export function buildAll({ contribDir } = {}) {
       for (const v of x.variants || []) if (v.loop && v.loop.text === 'REFERENCE') v.loop.text = template('reference');
       if (x.variants) e.project.variants = [...(e.project.variants || []), ...x.variants.map((v) => ({ swap: {}, constants: {}, ...v }))];
       e.project.suites = [...(e.project.suites || []), ...x.suites];
+      e.project.version = 2;
+    }
+    if (VIEWS[e.id] && !e.project.fragments.some((f) => f.name === 'view')) {
+      e.project.fragments.push({ name: 'view', text: VIEWS[e.id], description: 'A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks.' });
+      const base = e.project.fragments.some((f) => f.name === 'shared') ? ['shared', 'view'] : ['view'];
+      e.project.views = [{ name: 'view', fragments: base }];
       e.project.version = 2;
     }
     if (RECIPES[e.id]) e.project.instances = [...(e.project.instances || []), ...structuredClone(RECIPES[e.id]).map((x) => ({ constants: {}, ...x }))];

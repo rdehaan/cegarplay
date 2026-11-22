@@ -1005,3 +1005,31 @@ tr.mismatch td {
 .campaign-plot { max-width: 100%; height: auto; border: 1px solid var(--border-faint); }
 .plot-label { fill: var(--text-muted); font-size: 10px; }
 #campaign-status.error, #campaign-consistency.error { color: var(--error); }
+
+/* Domain views (js/view-panel.js) */
+.view-svg { max-width: 640px; }
+.view-root { width: 100%; height: auto; border: 1px solid var(--border-faint); background: var(--panel); }
+.view-shape { fill: var(--panel); stroke: var(--text-muted); stroke-width: 3; transition: fill 0.25s, stroke 0.25s, opacity 0.25s; }
+.view-edge { stroke: var(--chart-axis); stroke-width: 4; transition: stroke 0.25s, opacity 0.25s; }
+.view-label { fill: var(--text); font-size: 24px; pointer-events: none; }
+.view-node { cursor: grab; }
+.view-emph { stroke: var(--text); stroke-width: 8; }
+.view-ghost { opacity: 0.25; }
+.view-notes { margin: 6px 0; }
+@media (prefers-reduced-motion: reduce) { .view-shape, .view-edge { transition: none; } }
+.view-fill-1 { fill: var(--view-1); }
+.view-stroke-1 { stroke: var(--view-1); }
+.view-fill-2 { fill: var(--view-2); }
+.view-stroke-2 { stroke: var(--view-2); }
+.view-fill-3 { fill: var(--view-3); }
+.view-stroke-3 { stroke: var(--view-3); }
+.view-fill-4 { fill: var(--view-4); }
+.view-stroke-4 { stroke: var(--view-4); }
+.view-fill-5 { fill: var(--view-5); }
+.view-stroke-5 { stroke: var(--view-5); }
+.view-fill-6 { fill: var(--view-6); }
+.view-stroke-6 { stroke: var(--view-6); }
+.view-fill-7 { fill: var(--view-7); }
+.view-stroke-7 { stroke: var(--view-7); }
+.view-fill-8 { fill: var(--view-8); }
+.view-stroke-8 { stroke: var(--view-8); }

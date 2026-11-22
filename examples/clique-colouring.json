@@ -23,6 +23,11 @@
       "name": "check",
       "description": "Looks for a maximal clique in one colour (solver C).",
       "text": "% A counterexample: a clique with at least two nodes ...\n{ q(V) } :- node(V).\n:- q(U), q(V), U < V, not edge(U,V).\n:- #count { V : q(V) } < 2.\n% ... that is maximal: no further node is joined to all of its nodes ...\n:- node(W), not q(W), edge(W,V) : q(V).\n% ... and has one colour only.\n:- q(U), q(V), red(U), not red(V).\n#show q/1.\n\n% Being a maximal clique does not depend on the colouring; having one colour depends\n% on the colours of the clique's nodes only.\nrelevant(red(V)) :- q(V).\n"
+    },
+    {
+      "name": "view",
+      "text": "% The graph; red nodes filled red, the others blue; a one-coloured maximal clique ringed.\n#program scene.\ndraw(layout(circle)).\ndraw(node(V)) :- node(V).\ndraw(edge(U,V)) :- edge(U,V), U < V.\n\n#program frame.\ndraw(attr(node(V), fill, red)) :- cand(red(V)).\ndraw(attr(node(V), fill, blue)) :- node(V), not cand(red(V)), kind(_).\ndraw(attr(edge(U,V), stroke, clique)) :- edge(U,V), U < V, cex(q(U)), cex(q(V)).\ndraw(emph(node(V))) :- lit(red(V), _).\ndraw(note(\"A maximal clique has one colour: recolour one of its ringed nodes.\")) :- kind(reject).\n#show draw/1.\n",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks."
     }
   ],
   "loop": {
@@ -79,6 +84,15 @@
         "m": 10
       },
       "text": "% gnm: m edges chosen uniformly among the pairs of n nodes (pair I is the I-th pair X < Y)\nnode(1..n).\npair(X,Y,(X-1)*n - (X-1)*X/2 + Y - X) :- node(X), node(Y), X < Y.\nedge(X,Y) :- pair(X,Y,I), @subset(m, n*(n-1)/2, I, edges) = 1.\n% the example's check reads edges in both directions\nedge(Y,X) :- edge(X,Y).\n\n#show node/1.  #show edge/2.\n"
+    }
+  ],
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
     }
   ]
 }

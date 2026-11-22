@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Guide: one node of the triangle (unsound)",
   "description": "The check marks only the busiest node of the surviving triangle, so each refinement says \"this node must go\". That is too strong: the run finishes without a warning and reports too few solutions. See the guide page \"Soundness: when a refinement says too much\".",
   "fragments": [
@@ -23,6 +23,11 @@
       "name": "check",
       "text": "% A counterexample: a triangle none of whose nodes is deleted.\n3 { q(V) : node(V) } 3.\n:- q(V), del(V).\n:- q(U), q(V), U < V, not edge(U,V).\n#show q/1.\n\n% Too strong: only the busiest node of the triangle counts, the one with the\n% most edges (on a tie, the one with the larger number).\ndeg(V,D) :- node(V), D = #count { W : edge(V,W) ; W : edge(W,V) }.\nbusier(V) :- q(V), q(W), deg(V,D), deg(W,E), (E,W) > (D,V).\nrelevant(del(V)) :- q(V), not busier(V).\n",
       "description": "Looks for a triangle that survives the deletions (solver C)."
+    },
+    {
+      "name": "view",
+      "text": "% The graph; deleted nodes filled, the surviving clique drawn as a clique.\n#program scene.\ndraw(layout(graph)).\ndraw(node(V))   :- node(V).\ndraw(edge(U,V)) :- edge(U,V).\n\n#program frame.\ndraw(attr(node(V), fill, deleted))        :- cand(del(V)).\ndraw(attr(node(V), fill, clique))         :- cex(q(V)).\ndraw(attr(edge(U,V), stroke, clique))     :- edge(U,V), cex(q(U)), cex(q(V)).\ndraw(emph(node(V)))                       :- lit(del(V), _).\ndraw(note(\"A clique survives. One of its ringed nodes must be deleted.\")) :- kind(reject).\ndraw(note(\"No clique survives: a solution.\")) :- kind(solution).\n#show draw/1.\n",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks."
     }
   ],
   "loop": {
@@ -39,5 +44,14 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "runs": [],
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
+    }
+  ]
 }

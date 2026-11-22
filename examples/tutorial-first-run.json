@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Sum-free sets",
   "description": "Sets of numbers in 1..n in which no two members (possibly the same one twice) add up to a third. Solver A guesses a set, solver C looks for a sum inside it, and the refinement says that one of the three numbers involved must leave the set.",
   "fragments": [
@@ -23,6 +23,11 @@
       "name": "check",
       "text": "% Solver C looks for a counterexample: a sum X + Y = Z inside the candidate.\n1 { sum(X,Y) : num(X), num(Y), X <= Y, X + Y <= n } 1.\n:- sum(X,Y), not pick(X).\n:- sum(X,Y), not pick(Y).\n:- sum(X,Y), not pick(X+Y).\n#show sum/2.\n\n% relevant(T): the interface atoms the counterexample depends on.\n% The refinement says: at least one of them must change.\nrelevant(pick(X)) :- sum(X,Y).\nrelevant(pick(Y)) :- sum(X,Y).\nrelevant(pick(X+Y)) :- sum(X,Y).\n",
       "description": "Looks for a counterexample to a candidate (solver C) and marks the atoms it depends on with relevant/1."
+    },
+    {
+      "name": "view",
+      "text": "% The numbers 1..n; picked numbers filled; the sum X + Y = Z of a counterexample ringed.\n#program scene.\ndraw(layout(circle)).\ndraw(node(X)) :- num(X).\n\n#program frame.\ndraw(attr(node(X), fill, picked)) :- cand(pick(X)).\ndraw(attr(node(X), stroke, sum)) :- cex(sum(X,_)).\ndraw(attr(node(Y), stroke, sum)) :- cex(sum(_,Y)).\ndraw(attr(node(X+Y), stroke, sum)) :- cex(sum(X,Y)).\ndraw(emph(node(X))) :- lit(pick(X), _).\ndraw(note(\"Picked numbers X, Y and X + Y: the ringed ones cannot all stay.\")) :- kind(reject).\ndraw(note(\"No sum inside the picked set: a solution.\")) :- kind(solution).\n#show draw/1.\n",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks."
     }
   ],
   "loop": {
@@ -39,5 +44,14 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "runs": [],
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
+    }
+  ]
 }

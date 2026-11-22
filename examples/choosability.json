@@ -23,6 +23,11 @@
       "name": "check",
       "description": "Looks for a proper colouring from the lists (solver C).",
       "text": "% A counterexample: a proper colouring that gives every node a colour from its list.\n1 { col(V,C) : list(V,C) } 1 :- node(V).\n:- edge(U,V), col(U,C), col(V,C).\n#show col/2.\n\n% The colouring works for all lists that still contain the colours it uses.\nrelevant(list(V,C)) :- col(V,C).\n"
+    },
+    {
+      "name": "view",
+      "text": "% One row per node, one column per colour: the lists of the candidate; a colouring ringed.\n#program scene.\ndraw(layout(grid)).\ndraw(cell(V,C)) :- node(V), colour(C).\n\n#program frame.\ndraw(attr(cell(V,C), fill, list)) :- cand(list(V,C)).\ndraw(attr(cell(V,C), label, \"x\")) :- cex(col(V,C)).\ndraw(emph(cell(V,C))) :- lit(list(V,C), _).\ndraw(note(\"A proper colouring from the lists (x): one of its ringed colours must leave a list.\")) :- kind(reject).\n#show draw/1.\n",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks."
     }
   ],
   "loop": {
@@ -81,6 +86,15 @@
         "m": 10
       },
       "text": "% gnm: m edges chosen uniformly among the pairs of n nodes (pair I is the I-th pair X < Y)\nnode(1..n).\npair(X,Y,(X-1)*n - (X-1)*X/2 + Y - X) :- node(X), node(Y), X < Y.\nedge(X,Y) :- pair(X,Y,I), @subset(m, n*(n-1)/2, I, edges) = 1.\n\n#show node/1.  #show edge/2.\n"
+    }
+  ],
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
     }
   ]
 }

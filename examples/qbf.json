@@ -23,6 +23,11 @@
       "name": "check",
       "description": "Looks for a y-assignment that falsifies the formula (solver C) and marks the x-literals it relies on.",
       "text": "% A counterexample: an assignment to the y-variables under which every term is false.\n1 { yval(J,0); yval(J,1) } 1 :- yvar(J).\n% The y-assignment closes a term when it makes one of its y-literals false.\nclosed(T) :- ylit(T,J,S), yval(J,1-S).\n% A term that stays open must be false because of the candidate: bad(T,I) says that\n% the literal on x_I in term T is false.\nbad(T,I) :- xlit(T,I,1), not x(I).\nbad(T,I) :- xlit(T,I,0), x(I).\nfalsified(T) :- closed(T).\nfalsified(T) :- bad(T,_).\n:- term(T), not falsified(T).\n#show yval/2.\n\n% relevant(T): the y-assignment stays a counterexample while every open term keeps a\n% false x-literal. Marking all false x-literals of the open terms is safe: as long as\n% none of them flips, every open term stays false.\nrelevant(x(I)) :- bad(T,I), not closed(T).\n% If the y-assignment closes every term on its own, no candidate is a solution at all:\n% blame the atom that is always true.\nopen :- term(T), not closed(T).\nrelevant(always) :- not open.\n"
+    },
+    {
+      "name": "view",
+      "text": "% The x-variables; true ones filled; the variables a clause names ringed.\n#program scene.\ndraw(layout(list)).\ndraw(node(x(I))) :- xvar(I).\n\n#program frame.\ndraw(attr(node(x(I)), fill, true)) :- cand(x(I)).\ndraw(emph(node(x(I)))) :- lit(x(I), _).\ndraw(note(\"A y-assignment falsifies every term: flip one of the ringed x-variables.\")) :- kind(reject).\n#show draw/1.\n",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks."
     }
   ],
   "loop": {
@@ -135,6 +140,15 @@
       "limits": {
         "seconds": 30
       }
+    }
+  ],
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
     }
   ]
 }

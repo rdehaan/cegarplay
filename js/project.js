@@ -192,6 +192,19 @@ export function load(json) {
   if ('instances' in p) out.instances = loadInstances(p.instances);
   if ('variants' in p) out.variants = loadVariants(p.variants, names);
   if ('generators' in p) out.generators = loadGenerators(p.generators);
+  if ('views' in p) {
+    if (!Array.isArray(p.views)) throw new ProjectError('views must be a list');
+    const seen = new Set();
+    out.views = p.views.map((v, i) => {
+      if (!isObj(v) || typeof v.name !== 'string' || !INSTANCE_ID.test(v.name)) throw new ProjectError(`view ${i + 1}: name must match [A-Za-z0-9_-]+`);
+      if (seen.has(v.name)) throw new ProjectError(`duplicate view name '${v.name}'`);
+      seen.add(v.name);
+      if (!Array.isArray(v.fragments) || !v.fragments.every((f) => typeof f === 'string')) throw new ProjectError(`view ${v.name}: fragments must be a list of fragment names`);
+      for (const f of v.fragments) if (!names.has(f)) throw new ProjectError(`view ${v.name}: no fragment named ${f}`);
+      if (v.positions !== undefined && !isObj(v.positions)) throw new ProjectError(`view ${v.name}: positions must be an object`);
+      return { ...v };
+    });
+  }
   if ('suites' in p) {
     if (!Array.isArray(p.suites)) throw new ProjectError('suites must be a list');
     const seen = new Set();

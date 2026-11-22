@@ -378,7 +378,7 @@ commit at each checkpoint, no stops.
 - [x] V2 Loop anatomy
 - [x] S3 `lift` links
 - [x] I3 Campaigns
-- [ ] V3 Domain views
+- [x] V3 Domain views
 - [ ] S4 Rule refinements, exact level
 - [ ] I4 Fuzz and shrink
 - [ ] V4 Candidate space
@@ -549,8 +549,20 @@ Notes per phase:
   - The page draws plots from the rows of the current suite (store rows whose keys are cells of
     its expansion) or from imported rows.
 
-**Next step (PLAN2):** V3 Domain views (`docs/directions/observatory.md`, phase V3; then the
-review of wave 3: S3, I3, V3).
+- **V3 (done):** `js/views.js` (term parser, `frameFacts` from T or R events, `sceneProgram` /
+  `viewProgram`, `viewAtoms`, `parseMarks`, `Palette`, five hand-written layouts with a seeded
+  force layout, `suggestView`, `FrameCache`, `FrameSource`), `js/view-panel.js` (Observatory
+  region `#domain-view`: view picker, step slider, SVG scene drawn once and frames that change
+  classes only, drag writes `positions`, "Suggest a view"), `views` in format v2, tokens
+  `--view-1..8`, ten library views (`tools/library.mjs VIEWS`, fragment `view`),
+  `docs/spec-views.md`, manual "Writing views". Row 29 holds (38 marks, emph 4, 5, 6).
+  suggestView parses for 54 clause-based fast examples.
+  - Deviation: views run as plain clingo with `#program scene.`/`frame.` renamed to `base`
+    (the doc's three-line Lua `main` would trap the engine on a grounding error in a view).
+  - The cache is keyed by a hash of the frame program text, so editing a view invalidates it.
+
+**Next step (PLAN2):** review of wave 3 (S3, I3, V3) by a background agent, then S4 Rule
+refinements and the exact level (`docs/directions/soundness.md`, phase S4).
 
 ## Next step (PLAN.md, guide, TODO)
 
