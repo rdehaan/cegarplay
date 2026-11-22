@@ -381,7 +381,7 @@ commit at each checkpoint, no stops.
 - [x] V3 Domain views
 - [x] S4 Rule refinements, exact level
 - [x] I4 Fuzz and shrink
-- [ ] V4 Candidate space
+- [x] V4 Candidate space
 - [ ] S5 Certified counts
 - [ ] I5 Mining, pools, importers
 - [ ] V5 Cursor, compare, export, lecture
@@ -596,8 +596,22 @@ Notes per phase:
     for a pool-backed engineRun). Fuzz in the page prefers the 1..v constants grid over a
     library suite.
 
-**Next step (PLAN2):** V4 Candidate space (`docs/directions/observatory.md`, phase V4; end of
-wave 4: review S4, I4, V4).
+- **V4 (done):** `lua/space.lua` (`rt.enumerate`), `js/space.js` (packed vectors, masks, `fates`
+  with the acceptance rule, blame, two map orders, blame matrix with seriation, redundancy,
+  sample mode), `js/space-view.js` (Observatory region `#candidate-space`: Compute, map, hover,
+  click to the removing refinement, alive curve, blame matrix), fixtures
+  `test/fixtures/recordings/{tutorial-weak-relevant,tutorial-first-run,gc-shape1}.cprec`,
+  `test/space.test.mjs`, two browser tests. All design numbers reproduced; the gc-shape1 map
+  redraws in 1 ms.
+  - "Step 6" is the 6th refinement (R step 11; R steps count solution steps too): rows carry
+    `ref`.
+  - The `blame` order places candidates along a Z-order curve by rank of their blame-ordered
+    bits (the literal interleaving of bits collides above 30 atoms: gc-shape1 has more).
+  - `rt.enumerate` de-duplicates all models as the audit does (the Lua backend has no
+    `add_project`, so no projective enumeration).
+
+**Next step (PLAN2):** review of wave 4 (S4, I4, V4) by a background agent, then S5 Certified
+counts (`docs/directions/soundness.md`, phase S5).
 
 ## Next step (PLAN.md, guide, TODO)
 

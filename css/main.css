@@ -1033,3 +1033,5 @@ tr.mismatch td {
 .view-stroke-7 { stroke: var(--view-7); }
 .view-fill-8 { fill: var(--view-8); }
 .view-stroke-8 { stroke: var(--view-8); }
+
+.space-map { display: block; margin: 6px 0; image-rendering: pixelated; }

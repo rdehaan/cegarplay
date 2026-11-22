@@ -13,6 +13,7 @@ import { makeEditor } from './editors.js';
 import { Anatomy } from './anatomy.js';
 import { CampaignTab } from './campaign-tab.js';
 import { ViewPanel } from './view-panel.js';
+import { SpaceView } from './space-view.js';
 import { renderMarkdown } from './markdown.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
 
@@ -92,6 +93,7 @@ app.instancesTab = new InstancesTab(app);
 app.anatomy = new Anatomy(app, $('anatomy'));
 app.campaign = new CampaignTab(app);
 app.views = new ViewPanel(app, $('domain-view'));
+app.space = new SpaceView(app, $('candidate-space'));
 
 app.collect = () => app.editors.collect(app.project);
 app.genLua = () => ({ draw: app.modules.draw, generate: app.modules.generate });

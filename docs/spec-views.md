@@ -74,3 +74,34 @@ Library views (`tools/library.mjs VIEWS`): `guide-03-hit-clique`, `guide-03-rele
 `guide-04-one-node`, `tutorial-first-run`, `tutorial-weak-relevant`, `clique-colouring`,
 `af-preferred`, `arrowing`, `choosability`, `qbf`. Reference row 29: 38 marks for step 3 of
 `guide-03-hit-clique`, `emph` on nodes 4, 5 and 6 (`test/views.test.mjs`).
+
+## 5. The candidate space (phase V4)
+
+Inputs: the candidate vectors of the unrefined abstraction (one per interface assignment) and the
+solution vectors, from the audit's `P` events (`vectors: true`), or candidates alone from the
+assemble mode `enumerate` (`lua/space.lua`, `rt.enumerate{ link, limit }`: every model,
+de-duplicated on the interface, P events of 1,024 hex vectors, `A` event `enumerated` or `limit`
+above 1,048,576); and the `R` steps of a recording.
+
+`js/space.js` (no DOM): `Space.fromHex(list, n)` packs the vectors into a `Uint32Array` (32 atoms a
+word); a clause removes the candidates whose positive-literal bits are all 0 and negative-literal
+bits all 1 (one mask and one compare per word). `fates(space, steps, { truth })`: per refinement
+`{ ref, i, k, len, removed, fresh, already, lost, accepted }`, per candidate the R step that
+removed it; a full-length clause on a candidate reported by a solution step is an acceptance, not
+a removal. Also the alive series, the first unsound refinement, `blame`, `mapOrder` (`blame`:
+candidates sorted by their bits in blame order and placed along a Z-order curve by rank, one cell
+each; `size`: rows by the number of true atoms), `blameMatrix` (greedy seriation on the Jaccard
+overlap of blame sets), `redundancy` (clauses that contain an earlier one), `sampleSpace` (random
+sign vectors; labelled "sample, not uniform").
+
+`js/space-view.js`: **Compute** audits the current project with vectors (the instance of the last
+run) and uses the last run's recording (needs Recording "every step"); the map on a canvas,
+coloured at the slider's refinement (alive, alive solution, removed earlier, removed now, lost
+solution, accepted); hover shows the atoms, a click on a removed cell moves the slider to the
+refinement that removed it; the alive curve with the first unsound refinement; the blame matrix.
+
+Measured from `test/fixtures/recordings/` (copies of the stored replays): `tutorial-weak-relevant`
+256 candidates, 61 solutions, 17 refinements, refinement 6 (R step 11) first unsound, 128
+removed, 13 lost, alive 11; `tutorial-first-run` alive 61, 2,013 of 2,208 removals overlap;
+`gc-shape1` 3,373 candidates, 1,320 refinements, alive 101, 4,636 of 7,908 overlap. The map of
+gc-shape1 redraws in about 1 ms.

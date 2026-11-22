@@ -341,3 +341,38 @@ test('I4: Fuzz on tutorial-weak-relevant reports n = 2, the lost solution pick(2
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('V4: the candidate space of gc-shape1: 3,373 cells, alive 101, a cursor move redraws within one frame', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape1&tab=11');
+  await page.evaluate(() => { window.cegarplay.project.settings.record = { steps: 'all', n: 0, calls: false }; window.cegarplay.loopTab.load(window.cegarplay.project); });
+  await page.click('#run-button');
+  await settled(page);
+  await page.click('#space-compute');
+  await page.waitForFunction(() => /candidates/.test(document.getElementById('space-summary').textContent), null, { timeout: 60000 });
+  const sum = await page.textContent('#space-summary');
+  assert.match(sum, /3,373 candidates, 101 solutions, 1,320 refinements; alive at the end 101/);
+  assert.match(sum, /No refinement removes a solution/);
+  const ms = await page.evaluate(() => {
+    const v = window.cegarplay.space, t = [];
+    for (const r of [10, 500, 1000, 1320, 1]) { v.slider.value = String(r); v.draw(); t.push(v.lastDrawMs); }
+    return Math.max(...t);
+  });
+  console.log(`# candidate map redraw: ${ms.toFixed(1)} ms for 3,373 cells`);
+  assert.ok(ms < 16, `${ms} ms`);
+  assert.equal(await page.$eval('#space-map', (c) => c.dataset.cells), '3373');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('V4: tutorial-weak-relevant: the first unsound refinement is 6', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=11');
+  await page.evaluate(() => { window.cegarplay.project.settings.record = { steps: 'all', n: 0, calls: false }; });
+  await page.click('#run-button');
+  await settled(page);
+  await page.click('#space-compute');
+  await page.waitForFunction(() => /candidates/.test(document.getElementById('space-summary').textContent));
+  assert.match(await page.textContent('#space-summary'), /First unsound refinement: 6 \(it removes 13 solutions\)/);
+  assert.equal(await page.$eval('#space-step', (s) => s.value), '6');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
