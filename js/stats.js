@@ -86,6 +86,8 @@ export class Stats {
         <p class="inline-controls">
           <button class="control-button" id="rerun-seeds-button">Rerun with 5 seeds</button>
           <button class="control-button" id="clear-history-button">Clear</button>
+          <button class="control-button" id="import-verdict-button" title="The --json output of tools/certcheck.py for a proof log of one of these runs">Import certcheck verdict</button>
+          <input type="file" id="verdict-file" accept=".json,.txt" hidden>
         </p>
         <div class="table-wrapper"><table class="internals-table" id="history-table"></table></div>
         <p class="note" id="history-note">Rows marked ⚠ ran the same fragments with all solutions, finished exhausted,
@@ -95,6 +97,9 @@ export class Stats {
     r.querySelector('#copy-json-button').addEventListener('click', () => this.copy('json'));
     r.querySelector('#clear-history-button').addEventListener('click', () => { this.history = []; this.renderHistory(); });
     r.querySelector('#rerun-seeds-button').addEventListener('click', () => this.app.control && this.app.control.rerunSeeds());
+    const vf = r.querySelector('#verdict-file');
+    r.querySelector('#import-verdict-button').addEventListener('click', () => vf.click());
+    vf.addEventListener('change', async () => { const f = vf.files[0]; vf.value = ''; if (f) this.importVerdict(await f.text()); });
   }
 
   reset() {
@@ -350,12 +355,26 @@ export class Stats {
     return a.verdict;
   }
 
+  // A certcheck verdict ({ verdict, fragmentsHash, solutions }): the runs of the same fragments,
+  // constants and solution count get the mark "certified" (or "rejected") in the Audit column.
+  importVerdict(text) {
+    let v;
+    try { v = JSON.parse(text); } catch { return 0; }
+    if (!v || !v.fragmentsHash) return 0;
+    let n = 0;
+    for (const r of this.history) {
+      if (r.fragmentsHash === v.fragmentsHash && (v.verdict !== 'certified' || r.solutions === v.solutions)) { r.certcheck = v.verdict; n++; }
+    }
+    this.renderHistory();
+    return n;
+  }
+
   renderHistory() {
     const bad = this.mismatches();
     const rows = this.history.map((r, i) => ({
       attrs: { ...(bad.has(i) ? { class: 'mismatch', 'data-mismatch': 'true' } : {}), ...(r.audit ? { 'data-audit': r.audit.verdict } : {}) },
       cells: [(bad.has(i) ? '⚠ ' : '') + r.time, r.loop, r.outcome + (r.exhausted ? ' (exhausted)' : ''), secs(r.elapsed), fmt(r.candidates),
-        fmt(r.refinements), typeof r.meanLength !== 'number' ? '–' : r.meanLength.toFixed(2), fmt(r.solutions), String(r.seed ?? 0), this.auditText(r)],
+        fmt(r.refinements), typeof r.meanLength !== 'number' ? '–' : r.meanLength.toFixed(2), fmt(r.solutions), String(r.seed ?? 0), this.auditText(r) + (r.certcheck ? ` · ${r.certcheck}` : '')],
     }));
     this.table('history-table', ['Time', 'Loop', 'Outcome', 'Elapsed', 'Candidates', 'Refinements', 'Mean clause', 'Solutions', 'Seed', 'Audit'],
       rows.length ? rows : [['(no finished runs yet)', '', '', '', '', '', '', '', '', '']], [3, 4, 5, 6, 7, 8]);

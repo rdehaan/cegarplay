@@ -824,6 +824,14 @@ for a candidate the clause removes that has no counterexample. It reports the lo
 
 ### Recordings
 
+A recording with **proof** (Loop tab; `settings.record.proof`, `tools/run.mjs --proof FILE`) is a
+proof log: every counterexample and the certificate level of every refinement.
+`python3 tools/certcheck.py project.json log` confirms the solution count from it with code that
+shares nothing with the runtime (four checks: counterexamples are answer sets, certificates
+verify, solutions have no counterexample, nothing else is left). Its `--json` verdict can be
+imported in the Statistics tab ("Import certcheck verdict"). Details: `docs/spec-soundness.md`
+section 6.
+
 **Recording** (Loop tab, limits block) records the steps of a run as compact `R` events: every
 step, the first N, every N-th, the last N, or a sample of N; **solver calls** adds a `C` event per
 call. The setting is `settings.record` (absent when off). Every run's events are kept:

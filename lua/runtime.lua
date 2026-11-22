@@ -470,6 +470,20 @@ function rt.prepare()
     local solvers = array({})
     for _, x in ipairs(rt.solvers) do solvers[#solvers + 1] = x.name end
     emit("I", { links = links, solvers = solvers, record = REC })
+    -- proof logs (docs/spec-soundness.md section 6): the symbolic atoms of every check solver,
+    -- the table over which R events give a counterexample as hex (x)
+    if REC.proof then
+      for _, x in ipairs(rt.solvers) do
+        if #x.inn > 0 then
+          local atoms, lits, facts = array({}), {}, {}
+          for a in x.ctl.symbolic_atoms:iter() do
+            atoms[#atoms + 1] = tostring(a.symbol); lits[#atoms] = a.literal; facts[#atoms] = a.is_fact
+          end
+          x.qtable = { lits = lits, facts = facts, n = #atoms }
+          emit("Q", { solver = x.name, atoms = atoms })
+        end
+      end
+    end
   end
 end
 
@@ -793,6 +807,8 @@ local function rline(o)
   if o.c then t[#t + 1] = ',"c":"'; t[#t + 1] = o.c; t[#t + 1] = '"' end
   if o.q then t[#t + 1] = ',"q":['; t[#t + 1] = concat(o.q, ","); t[#t + 1] = "]" end
   if o.f then t[#t + 1] = ',"f":'; t[#t + 1] = json(o.f) end
+  if o.x then t[#t + 1] = ',"x":"'; t[#t + 1] = o.x; t[#t + 1] = '"' end
+  if o.v ~= nil then t[#t + 1] = ',"v":'; t[#t + 1] = json(o.v) end
   t[#t + 1] = "}"
   return concat(t)
 end
@@ -839,6 +855,19 @@ record = function(kind, s, c, M, facts)
     obj.q = q
   elseif kind == "x" then obj.q = array({}) end
   if facts then obj.f = facts end
+  if REC.proof and c and c.link then
+    local X = c.x
+    local Q = X and X.solver and X.solver.qtable
+    if Q and X.tv then
+      local v = {}
+      for j = 1, Q.n do v[j] = Q.facts[j] or X.tv[Q.lits[j]] == true end
+      obj.x = hexvec(v, Q.n)
+    end
+    if rt.certificate then
+      local level = rt.certificate(c)
+      obj.v = level == nil and NULL or level
+    end
+  end
   rec_emit(obj)
 end
 rt.record = record

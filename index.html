@@ -248,7 +248,8 @@
             <option value="sample">a sample of N steps</option>
           </select>
           <input type="number" min="0" step="1" id="record-n" aria-label="N, the number of steps" value="1000">
-          <label class="inline-label"><input type="checkbox" id="record-calls"> solver calls</label></span>
+          <label class="inline-label"><input type="checkbox" id="record-calls"> solver calls</label>
+          <label class="inline-label" title="A proof log for tools/certcheck.py: every step with its counterexample and certificate level"><input type="checkbox" id="record-proof"> proof</label></span>
         <label for="threads-checkbox">Threads (clingo-mt)</label>
         <span><input type="checkbox" id="threads-checkbox" disabled>
           <span id="threads-note" class="note">needs a cross-origin isolated page</span></span>

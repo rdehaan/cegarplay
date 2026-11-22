@@ -94,7 +94,7 @@ def parse_script(text):
                 raise CheckError(f"cannot read the declaration: {s}")
             words = m.group(4).split()
             flags = set()
-            while words and words[-1] in ("legacy", "compat"):
+            while words and words[-1] in ("legacy", "compat", "lift"):
                 flags.add(words.pop())
             frags = [f.strip() for f in " ".join(words).split("+")]
             links.append({"name": m.group(1), "from": m.group(2), "to": m.group(3),

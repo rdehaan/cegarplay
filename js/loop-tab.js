@@ -28,16 +28,19 @@ export class LoopTab {
     $('solutions-select').addEventListener('change', (e) => { this.app.project.settings.solutions = Number(e.target.value); });
     // settings.record: absent when off (the program text is then unchanged)
     const rec = () => {
-      const steps = $('record-select').value, calls = $('record-calls').checked;
+      let steps = $('record-select').value;
+      const calls = $('record-calls').checked, proof = $('record-proof').checked;
+      // a proof log needs every step
+      if (proof && steps !== 'all') { steps = 'all'; $('record-select').value = 'all'; }
       const n = Math.max(0, Math.floor(Number($('record-n').value) || 0));
       $('record-n').hidden = steps === 'off' || steps === 'all';
       const ac = $('anatomy-calls');
       if (ac) ac.checked = calls;
-      if (steps === 'off' && !calls) delete this.app.project.settings.record;
-      else this.app.project.settings.record = { steps, n, calls };
+      if (steps === 'off' && !calls && !proof) delete this.app.project.settings.record;
+      else this.app.project.settings.record = { steps, n, calls, ...(proof ? { proof: true } : {}) };
       this.app.dirty && this.app.dirty();
     };
-    for (const id of ['record-select', 'record-n', 'record-calls']) $(id).addEventListener('change', rec);
+    for (const id of ['record-select', 'record-n', 'record-calls', 'record-proof']) $(id).addEventListener('change', rec);
     $('certify-select').addEventListener('change', (e) => {
       if (e.target.value === 'off') delete this.app.project.settings.certify;
       else this.app.project.settings.certify = e.target.value;
@@ -76,6 +79,7 @@ export class LoopTab {
     $('record-n').value = r.n || 1000;
     $('record-n').hidden = !r.steps || r.steps === 'off' || r.steps === 'all';
     $('record-calls').checked = !!r.calls;
+    $('record-proof').checked = !!r.proof;
     const sel = $('solutions-select');
     const v = String(st.solutions);
     if (![...sel.options].some((o) => o.value === v)) {

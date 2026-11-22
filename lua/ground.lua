@@ -792,10 +792,25 @@ function LIFT.exact(L, M, vals, budget)
   end
 end
 
+-- The certificate of a clause, computed once (proof logs read it before the K event).
+local function cert_of(c)
+  if not c.cert then
+    local ok, level, verdict, reason = pcall(LIFT.certify_clause, c)
+    if not ok then level, verdict, reason = nil, "none", "error: " .. tostring(level) end
+    c.cert = { level = level, verdict = verdict, reason = reason }
+  end
+  return c.cert
+end
+rt.certificate = function(c)
+  local k = cert_of(c)
+  return k.verdict == "certified" and k.level or nil
+end
+
 -- Hook called by the runtime for every clause that refines (reject and S.add).
 rt.certify = function(s, c)
-  if CERT ~= "report" and CERT ~= "exact" then return end
-  local ok, level, verdict, reason = pcall(LIFT.certify_clause, c)
+  if CERT ~= "report" and CERT ~= "exact" and not (SETTINGS.record and SETTINGS.record.proof) then return end
+  local k = cert_of(c)
+  local ok, level, verdict, reason = true, k.level, k.verdict, k.reason
   if not ok then level, verdict, reason = nil, "none", "error: " .. tostring(level) end
   local key = level or ((verdict == "outside" or verdict == "unsound") and verdict or "none")
   LIFT.stats[key] = (LIFT.stats[key] or 0) + 1

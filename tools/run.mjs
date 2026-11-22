@@ -11,6 +11,8 @@
 //   --variant NAME    run a variant of the project
 //   --record FILE     write the run as a recording (.cprec, gzip): every step and call unless
 //                     --record-steps POLICY[:N] says otherwise (off|first|every|last|sample|all)
+//   --proof FILE      write a proof log (every step, counterexamples and certificate levels, plain
+//                     JSON lines) for tools/certcheck.py
 //   --json            print every event as one JSON line ({kind, data}) instead of a summary
 //   --quiet           do not print the solutions
 //
@@ -23,6 +25,7 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import factory from '../vendor/clingo-wasm/clingo.js';
 import { load, derive, ProjectError } from '../js/project.js';
 import { Recording } from '../js/recording.js';
+import { hashText } from '../js/stats.js';
 import { assemble, parseEvent, validate, auditPlan, auditBody, modulesFor } from '../js/driver.js';
 
 const root = new URL('..', import.meta.url);
@@ -87,7 +90,7 @@ export async function runProject(project, { onEvent, backstop = false, audit = n
     ? await engineRunWithin(a.program, Math.max(0, (seconds + 2) * 1000 - (Date.now() - t0)))
     : await engineRun(a.program);
   if (onEvent) r.events.forEach(onEvent);
-  return { problems: [], events: r.events, status: r.status, err: r.err, assembled: a };
+  return { problems: [], events: r.events, status: r.status, err: r.err, assembled: a, project };
 }
 
 // A recording of a finished headless run (the same file the page writes).
@@ -101,7 +104,7 @@ async function main(argv) {
   const args = [...argv];
   let target = null;
   const consts = {}, set = {};
-  let json = false, quiet = false, instance, variant, recordFile = null, recordSteps = null;
+  let json = false, quiet = false, instance, variant, recordFile = null, recordSteps = null, proofFile = null;
   while (args.length) {
     const a = args.shift();
     if (a === '-c') { const kv = args.shift() || usage('-c needs name=value'); const i = kv.indexOf('='); if (i < 1) usage(`bad constant ${kv}`); consts[kv.slice(0, i)] = kv.slice(i + 1); }
@@ -112,6 +115,7 @@ async function main(argv) {
     else if (a === '--variant') variant = args.shift() || usage('--variant needs a name');
     else if (a === '--record') recordFile = args.shift() || usage('--record needs a file');
     else if (a === '--record-steps') recordSteps = args.shift() || usage('--record-steps needs a policy');
+    else if (a === '--proof') proofFile = args.shift() || usage('--proof needs a file');
     else if (a === '--json') json = true;
     else if (a === '--quiet') quiet = true;
     else if (a === '-h' || a === '--help') usage();
@@ -154,6 +158,7 @@ async function main(argv) {
     return;
   }
 
+  if (proofFile) project.settings = { ...project.settings, record: { steps: 'all', n: 0, calls: false, proof: true } };
   let r;
   try { r = await runProject(project, { backstop: true, instance, variant, constants }); }
   catch (e) { console.error(e.message); process.exitCode = 2; return; }
@@ -168,6 +173,11 @@ async function main(argv) {
     console.log(`Outcome: limit (the run did not stop at the time limit of ${project.settings.seconds} s; ended after ${project.settings.seconds + 2} s)`);
     process.exitCode = 1;
     return;
+  }
+  if (proofFile) {
+    const d = r.project;
+    const rec = recordingOf(d, r.events, { fragmentsHash: hashText(JSON.stringify([d.fragments.map((f) => [f.name, f.text]), d.settings.constants])) });
+    fs.writeFileSync(proofFile, rec.text());
   }
   if (recordFile) {
     const rec = recordingOf(project, r.events);

@@ -382,7 +382,7 @@ commit at each checkpoint, no stops.
 - [x] S4 Rule refinements, exact level
 - [x] I4 Fuzz and shrink
 - [x] V4 Candidate space
-- [ ] S5 Certified counts
+- [x] S5 Certified counts
 - [ ] I5 Mining, pools, importers
 - [ ] V5 Cursor, compare, export, lecture
 - [ ] L1 Values (G1–G3)
@@ -610,8 +610,20 @@ Notes per phase:
   - `rt.enumerate` de-duplicates all models as the audit does (the Lua backend has no
     `add_project`, so no projective enumeration).
 
-**Next step (PLAN2):** review of wave 4 (S4, I4, V4) by a background agent, then S5 Certified
-counts (`docs/directions/soundness.md`, phase S5).
+- **S5 (done):** `settings.record.proof` (Q events with the check's symbolic atoms; R events gain
+  `x` and `v`; certificates computed once per clause, `rt.certificate`), `modulesFor` loads ground
+  for proofs, `tools/run.mjs --proof`, Loop-tab "proof" checkbox, `tools/certcheck.py` (own
+  observer stores, level-2 evaluator, product, exhaustive level 4; four checks; reads gzip too),
+  "Import certcheck verdict" in the run history, `cegarcheck.parse_script` accepts `lift`.
+  All done-when checks pass; row 27's proof log is 1.03x the plain recording (budget 2x).
+  - Deviation: `x` is hex over a table of the check's symbolic atoms (event Q), not over store
+    atom numbers, so that a checker with its own grounding can map it; the checker recomputes the
+    values of the other program atoms from one solver call.
+  - Unsupported by the checker (exit 2): raw Lua, witness checks, expansions.
+
+**Next step (PLAN2):** fix the confirmed findings of the wave-4 review (separate commit): level 4's
+scratch check lacks the glue facts of A (and compat relevant choices); `rt.enumerate` caps raw
+models before de-duplication; `diagnose` indexes expansions of all solvers. Then I5.
 
 ## Next step (PLAN.md, guide, TODO)
 

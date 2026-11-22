@@ -203,3 +203,46 @@ already (levels 2 fails there, level 3 holds), so level 4 has nothing left to do
 Deviation from the design: the product is not extended in place; the clause product is rebuilt
 when either store grows (wave-2 review fix) and the rule query builds its own program per
 expansion (gc-shape4: 226 queries, 1.2 s for the run).
+
+## 6. Proof logs and certified counts (phase S5)
+
+`settings.record.proof = true` (Loop tab: Recording "proof", which also sets every step; `tools/run.mjs
+--proof FILE`) loads `lua/ground.lua` and adds to a recording:
+
+- after `I`, one `Q` event per solver with incoming links: `{ solver, atoms }`, the texts of its
+  symbolic atoms in clingo's order (the table for `x`);
+- on every `R` event of a clause refinement: `x`, the counterexample as hex over the `Q` table of
+  its solver (bit j = atom j true in X; same digit order as `c`), when the clause came from a
+  counterexample; `v`, the certificate level (0-4) or `null` when no level holds.
+
+The log is the recording as JSON lines: the header (with `fragmentsHash` = `hashText` of the
+derived project's `[[name, text], ...]` and constants), then `@@K json` lines (`.cprec` gzip files
+are read too).
+
+`tools/certcheck.py <project.json> <log> [--json]` (Python clingo; it uses `cegarcheck.py` for the
+script's declarations and the instance, and none of `lua/`) rebuilds A and C with the link's
+semantics, records their ground programs with an observer, and checks:
+
+1. every counterexample: C under the candidate's interface values and the `x` values of every
+   `Q` atom has a model (so X is an answer set); its truth values on all of C's program atoms are
+   kept for check 2;
+2. every refinement has a level and verifies: 0 a full block of its candidate; 1 C has no model
+   under the kept values; 2 the checker's own three-valued evaluation (alternating fixpoint by
+   plain iteration, constraint and negative-cycle tests); 3 the checker's own product (A's rules,
+   C's rules with guesses switched by `sel`, constraints and interface-headed rules deriving
+   `violated`; C must be stratified) is unsatisfiable under `violated`, the kept values and X's
+   guesses; 4 every candidate of A agreeing with the kept values has a model of C;
+3. no solution (a solution step's candidate) has a model of C, no solution twice, one `M` per
+   solution step;
+4. A with every refinement as a constraint and every solution blocked is unsatisfiable.
+
+Verdict `certified` (exit 0), `rejected` with the check (exit 1), `unsupported` (exit 2: raw Lua,
+witness checks, expansions). `--json` prints `{ verdict, check, reason, solutions, refinements,
+certificates, counterexamples, fragmentsHash }`; "Import certcheck verdict" in the Statistics tab
+marks the runs with the same fragments hash (and solution count) "certified" in the run history.
+
+Measured (`test/certcheck.test.mjs`): `tutorial-first-run` (46 level-2 certificates), `qbf` (10)
+and graph-coloring n = 5 (1,320 level 3) certified; `tutorial-weak-relevant` rejected at check 2;
+three mutations rejected (a literal removed: check 2; a solution removed: check 4; a level-3
+certificate claimed at level 2 on graph-coloring: check 2). Row 27 (graph-coloring n = 6, every
+step): proof log 7.9 MB against 7.7 MB for the plain recording (1.03x), certified in 24 s.

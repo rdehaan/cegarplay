@@ -48,7 +48,8 @@ export function usesLift(compiled, loop) {
 // compiled / loop: the loop (for `lift` links).
 export function modulesFor(settings = {}, { mode = 'run', compiled = null, loop = null } = {}) {
   const out = [];
-  if ((CERTIFY.includes(settings.certify) && settings.certify !== 'off') || usesLift(compiled, loop)) out.push('ground');
+  const proof = !!(settings.record && settings.record.proof);
+  if ((CERTIFY.includes(settings.certify) && settings.certify !== 'off') || usesLift(compiled, loop) || proof) out.push('ground');
   if (mode === 'audit') out.push('audit');
   return out;
 }
