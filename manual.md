@@ -722,6 +722,17 @@ The audited link is the one that leaves the top solver; with several, the one th
 200,000 candidates the audit stops with outcome `limit`. Its run history row shows the verdict in
 the column **Audit**, and runs with the same fragments and constants show it too.
 
+### Certificates
+
+**Certificates** (Loop tab; `settings.certify = "report"`) gives every refinement clause the
+cheapest certificate that holds and counts them in the Statistics tab: level 0 a block, level 1 an
+unsat core, level 2 a three-valued evaluation of the check's ground program with the
+counterexample's guesses fixed, level 3 one unsatisfiable solver call on a product of abstraction
+and check. A certified refinement removes no solution, whatever the instance's other candidates
+are. Uncertified does not mean unsound (use Audit). Each clause gets a `K` event
+(`c`, `i`, `l`, `level`, `verdict`, `reason`), and the final `S` event a `certificates` object.
+Details and the proof: `docs/spec-soundness.md`.
+
 ### Recordings
 
 **Recording** (Loop tab, limits block) records the steps of a run as compact `R` events: every
@@ -778,6 +789,8 @@ prints them as `{"kind": ..., "data": ...}`.
 | `D` | last line of a run | `outcome`, `exhausted`, `detail` |
 | `I` | with `settings.record`, after `H` | `links` (`link`, `from`, `to`, `atoms`), `solvers`, `record` |
 | `R` | with `settings.record`: each recorded step | `i`, `k` (`r` reject, `a` add, `e` expand, `s` solution, `x` error), `s`, `l`, `n`, `t`, `c` (candidate, hex), `q` (clause, signed atom indices), `f` (facts) |
+| `K` | with `settings.certify`: each refinement clause | `c`, `i`, `l`, `level` (0-3 or null), `verdict` (`certified`, `none`, `outside`), `reason` |
+| `P` | audit with vectors | `set` (`candidates`, `solutions`), `link`, `from`, `v` (hex vectors) |
 | `C` | with `settings.record.calls`: each solver call | `id`, `s`, `t0`, `dt`, `r` (`sat`, `unsat`, `int`), `p` (enclosing call), `n` |
 | `A` | audit only: every 0.25 s, then the verdict | progress: `phase`, `candidates`, `pairs`, `unsound`; verdict: `verdict` (`sound`, `unsound`, `limit`), `link`, `kinds`, `candidates`, `solutions`, `counterexamples`, `pairs`, `unsound`, `at_risk`, `empty`, `atoms`, `t`, `witness` (`kind`, `candidate`, `counterexample`, `relevant` or `part` + `facts`, `solution`, `differ`) |
 

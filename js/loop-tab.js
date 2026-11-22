@@ -36,6 +36,11 @@ export class LoopTab {
       this.app.dirty && this.app.dirty();
     };
     for (const id of ['record-select', 'record-n', 'record-calls']) $(id).addEventListener('change', rec);
+    $('certify-select').addEventListener('change', (e) => {
+      if (e.target.value === 'off') delete this.app.project.settings.certify;
+      else this.app.project.settings.certify = e.target.value;
+      this.app.dirty && this.app.dirty();
+    });
     const th = $('threads-checkbox');
     const iso = app.engine.isolated && !!app.engine.control;
     th.disabled = !iso;
@@ -62,6 +67,8 @@ export class LoopTab {
   load(project) {
     const st = project.settings;
     for (const [id, key] of Object.entries(NUMERIC)) $(id).value = st[key];
+    $('certify-select').value = st.certify && st.certify !== 'off' ? st.certify : 'off';
+    if (![...$('certify-select').options].some((o) => o.value === $('certify-select').value)) $('certify-select').value = 'off';
     const r = st.record || {};
     $('record-select').value = r.steps || 'off';
     $('record-n').value = r.n || 1000;

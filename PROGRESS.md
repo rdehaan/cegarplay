@@ -373,7 +373,7 @@ commit at each checkpoint, no stops.
 - [x] S1 Audit
 - [x] I1 Instances
 - [x] V1 Recording
-- [ ] S2 Capture, level 2, level 3
+- [x] S2 Capture, level 2, level 3
 - [ ] I2 Generators
 - [ ] V2 Loop anatomy
 - [ ] S3 `lift` links
@@ -446,7 +446,23 @@ Notes per phase:
     (31,776). Overhead about 28% (2.4 -> 3.1 s), not 10%: encoding and printing 31k lines through
     the WASM print path; hand-written R lines and integer hex helped little. The test guards < 60%.
 
-**Next step (PLAN2):** S2 Capture, level 2, level 3.
+- **Review of wave 1 (commit 495c40f):** an agent found five bugs, all fixed with tests: `x` steps
+  never recorded and the sample policy ignored the seed (both: a local used before its
+  declaration); an older fragment named `instance` made the stored project unloadable (now
+  renamed to `instance_facts`, the editor refuses the name); a stale `settings.instance` made every
+  run fail (now falls back to the first instance); recipe-only instances ran with no facts.
+- **S2 (done):** `lua/ground.lua`: observer on every solver (`rt.on_solver`), store, truth tables in
+  check snapshots (`s.truth`), level 2 (alternating fixpoint, counter-based least model, criteria
+  (a)/(b)), level 3 (one product per link via the backend; `sel` atoms, `violated`), `rt.certify`
+  hook on reject/add -> `K` events, `S.certificates`. `settings.certify` (`modulesFor`), Loop-tab
+  select, Statistics "Certificates" table. Audit `P` events (vectors) for tests and V4.
+  Rows 21, 22, 24 hold; safety over 35+ examples; fewest-clues 1.3 ms per level-2 certificate.
+  - Clause values come from the clause itself (removed candidates falsify every literal), so
+    `G.clauses` clauses are certified too, without M.
+  - Not done: comparing the store with `clingo --mode=gringo` text (aspif numbering differs from
+    the observer's; a smaller structural test checks the capture instead).
+
+**Next step (PLAN2):** I2 Generators.
 
 ## Next step (PLAN.md, guide, TODO)
 

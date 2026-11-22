@@ -56,6 +56,11 @@ export class Stats {
     const r = this.root;
     r.innerHTML = `
       <div class="stats-block"><h3>Summary</h3><div class="table-wrapper"><table class="internals-table" id="stats-summary"></table></div></div>
+      <div class="stats-block" id="certificates-block" hidden><h3>Certificates</h3>
+        <div class="table-wrapper"><table class="internals-table" id="certificates-table"></table></div>
+        <p class="note">Each refinement gets the cheapest certificate that holds: 0 a block, 1 an unsat core, 2 the
+        three-valued evaluation of the check, 3 one solver call on the product of abstraction and check.
+        Uncertified does not mean unsound; use Audit for a verdict.</p></div>
       <div class="stats-block"><h3>Solvers</h3><div class="table-wrapper"><table class="internals-table" id="solver-table"></table></div></div>
       <div class="stats-block"><h3>Refinements</h3><div class="table-wrapper"><table class="internals-table" id="refinement-table"></table></div></div>
       <div class="stats-block"><h3>Charts</h3>
@@ -155,6 +160,13 @@ export class Stats {
     this.table('stats-summary', ['Outcome', 'Elapsed', 'Candidates', 'Counterexamples', 'Refinements', 'Solutions'],
       [[outcome, s ? secs(s.t) : '–', dash(s && s.candidates), dash(s && s.counterexamples), s ? fmt(refinements(s)) : '–', dash(s && s.solutions)]],
       [1, 2, 3, 4, 5]);
+    const c = s && s.certificates;
+    const box = this.root.querySelector('#certificates-block');
+    box.hidden = !c;
+    if (c) {
+      this.table('certificates-table', ['Level 0 (block)', 'Level 1 (core)', 'Level 2', 'Level 3', 'Uncertified', 'Outside levels 2-3', 'Time level 2', 'Time level 3'],
+        [[fmt(c.l0), fmt(c.l1), fmt(c.l2), fmt(c.l3), fmt(c.none), fmt(c.outside), secs(c.t2), secs(c.t3)]], [0, 1, 2, 3, 4, 5, 6, 7]);
+    }
   }
 
   solverRows() {

@@ -134,3 +134,17 @@ test('V1: the recording setting, a recorded run, Download and Open recording', a
   assert.equal(await page.evaluate(() => 'record' in window.cegarplay.collect().settings), false);
   await context.close();
 });
+
+test('S2: with certificates on, the Statistics tab counts refinements per level', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=4');
+  assert.equal(await page.isVisible('#certificates-block'), false);
+  await page.selectOption('#certify-select', 'report');
+  await page.click('#run-button');
+  await settled(page);
+  await page.click('label[for="tab6"]');
+  assert.equal(await page.isVisible('#certificates-block'), true);
+  const cells = await page.$$eval('#certificates-table tbody td', (t) => t.map((x) => x.textContent));
+  assert.deepEqual(cells.slice(0, 6), ['0', '0', '46', '0', '0', '0']);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
