@@ -21,13 +21,38 @@
     },
     {
       "name": "check",
-      "text": "%%% Guess (irresolute) outcomes for all profiles\n1 { outcome(Prof,C) : candidate(C) } :- profile_num(Prof).\n\n%%% Make sure that the outcome for profile 1 differs from the target outcome\ntarget_outcome_differs :-\n    outcome(1,C), not target_outcome(C), candidate(C).\ntarget_outcome_differs :-\n    not outcome(1,C), target_outcome(C), candidate(C).\n:- not target_outcome_differs.\n\n%%% Heuristic: satisfy as many axioms as possible\n#heuristic falsified(pos_axiom_instance(Profiles,Axiom)) :\n    use_axiom_instance(Profiles,Axiom). [20,false]\n#heuristic falsified(pos_axiom_instance(Profiles,Axiom)) :\n    pos_axiom_instance(Profiles,Axiom). [10,false]\n\n%%% Make sure that the outcomes satisfy all used axiom instances\n:- use_axiom_instance(Profiles,Axiom),\n    falsified(pos_axiom_instance(Profiles,Axiom)).\n%%% PARETO\nfalsified(pos_axiom_instance(single(Prof),pareto(C))) :-\n    pos_axiom_instance(single(Prof),pareto(C)),\n    outcome(Prof,C).\n%%% FAITHFULNESS\nfalsified(pos_axiom_instance(single(Prof),faithfulness)) :-\n    pos_axiom_instance(single(Prof),faithfulness),\n    profile(Prof,1,C,1), not outcome(Prof,C).\nfalsified(pos_axiom_instance(single(Prof),faithfulness)) :-\n    pos_axiom_instance(single(Prof),faithfulness),\n    profile(Prof,1,C1,1),\n    outcome(Prof,C2), candidate(C2), C1 != C2.\n%%% UNANIMITY\nfalsified(pos_axiom_instance(single(Prof),unanimity)) :-\n    pos_axiom_instance(single(Prof),unanimity),\n    profile(Prof,1,C,1), not outcome(Prof,C).\nfalsified(pos_axiom_instance(single(Prof),unanimity)) :-\n    pos_axiom_instance(single(Prof),unanimity),\n    profile(Prof,1,C1,1),\n    outcome(Prof,C2), candidate(C2), C1 != C2.\n%%% CANCELLATION\nfalsified(pos_axiom_instance(single(Prof),cancellation)) :-\n    pos_axiom_instance(single(Prof),cancellation),\n    not outcome(Prof,C), candidate(C).\n%%% REINFORCEMENT\noutcomes_intersect(Prof1,Prof2) :-\n    profile_num(Prof1), profile_num(Prof2), Prof1 <= Prof2,\n    outcome(Prof1,C), outcome(Prof2,C), candidate(C).\nfalsified(pos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement)) :-\n    pos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement),\n    outcomes_intersect(Prof1,Prof2),\n    outcome(Prof3,C), not outcome(Prof1,C).\nfalsified(pos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement)) :-\n    pos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement),\n    outcomes_intersect(Prof1,Prof2),\n    outcome(Prof3,C), not outcome(Prof2,C).\nfalsified(pos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement)) :-\n    pos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement),\n    outcomes_intersect(Prof1,Prof2),\n    outcome(Prof1,C), outcome(Prof2,C), not outcome(Prof3,C).\n%%% CONDORCET\nfalsified(pos_axiom_instance(single(Prof),condorcet(C))) :-\n    pos_axiom_instance(single(Prof),condorcet(C)),\n    not outcome(Prof,C).\nfalsified(pos_axiom_instance(single(Prof),condorcet(C1))) :-\n    pos_axiom_instance(single(Prof),condorcet(C1)),\n    outcome(Prof,C2), candidate(C2), C1 != C2.\n%%% NEUTRALITY/2\nfalsified(pos_axiom_instance(double(Prof1,Prof2),neutrality2(C1,C2))) :-\n    pos_axiom_instance(double(Prof1,Prof2),neutrality2(C1,C2)),\n    swap(C1,C2,CS1,CS2), candidate(CS1),\n    outcome(Prof1,CS1), not outcome(Prof2,CS2).\nfalsified(pos_axiom_instance(double(Prof1,Prof2),neutrality2(C1,C2))) :-\n    pos_axiom_instance(double(Prof1,Prof2),neutrality2(C1,C2)),\n    swap(C1,C2,CS1,CS2), candidate(CS1),\n    outcome(Prof2,CS2), not outcome(Prof1,CS1).\n%%% POSITIVE RESPONSIVENESS\nfalsified(pos_axiom_instance(double(Prof1,Prof2),pos_responsiveness(V,C,P))) :-\n    pos_axiom_instance(double(Prof1,Prof2),pos_responsiveness(V,C,P)),\n    candidate(C),\n    outcome(Prof1,C), not outcome(Prof2,C).\nfalsified(pos_axiom_instance(double(Prof1,Prof2),pos_responsiveness(V,C1,P))) :-\n    pos_axiom_instance(double(Prof1,Prof2),pos_responsiveness(V,C1,P)),\n    candidate(C1), candidate(C2), C1 != C2,\n    outcome(Prof1,C1), outcome(Prof2,C2).\n\n% %%% REFINEMENT STRATEGY 1\n% relevant(profile(Prof,V,Cand,Pos)) :-\n%     profile_num(Prof), voter(V), candidate(Cand), position(Pos).\n% relevant(use_axiom_instance(Profiles,Axiom)) :-\n%     falsified(pos_axiom_instance(Profiles,Axiom)),\n%     pos_axiom_instance(Profiles,Axiom).\n\n%%% REFINEMENT STRATEGY 2\nrelevant(profile(Prof,V,Cand,Pos)) :-\n    profile_num(Prof), voter(V), candidate(Cand), position(Pos).\nrelevant(use_axiom_instance(Profiles,Axiom)) :-\n    not falsified(pos_axiom_instance(Profiles,Axiom)),\n    pos_axiom_instance(Profiles,Axiom).\n\n% %%% REFINEMENT STRATEGY 3\n% relevant(profile(Prof,V,Cand,Pos)) :-\n%     profile_num(Prof), voter(V), candidate(Cand), position(Pos).\n% relevant(use_axiom_instance(Profiles,Axiom)) :-\n%     not use_axiom_instance(Profiles,Axiom),\n%     pos_axiom_instance(Profiles,Axiom).\n\n% %%% REFINEMENT STRATEGY 4\n% relevant(profile(Prof,V,Cand,Pos)) :-\n%     profile_num(Prof), voter(V), candidate(Cand), position(Pos).\n% relevant(use_axiom_instance(Profiles,Axiom)) :-\n%     use_axiom_instance(Profiles,Axiom).\n\n% %%% REFINEMENT STRATEGY 5\n% relevant(profile(Prof,V,Cand,Pos)) :-\n%     profile_num(Prof), voter(V), candidate(Cand), position(Pos).\n% relevant(use_axiom_instance(Profiles,Axiom)) :-\n%     pos_axiom_instance(Profiles,Axiom).\n",
+      "text": "%%% Guess (irresolute) outcomes for all profiles\n1 { outcome(Prof,C) : candidate(C) } :- profile_num(Prof).\n\n%%% Make sure that the outcome for profile 1 differs from the target outcome\ntarget_outcome_differs :-\n    outcome(1,C), not target_outcome(C), candidate(C).\ntarget_outcome_differs :-\n    not outcome(1,C), target_outcome(C), candidate(C).\n:- not target_outcome_differs.\n\n%%% Heuristic: satisfy as many axioms as possible\n#heuristic falsified(pos_axiom_instance(Profiles,Axiom)) :\n    use_axiom_instance(Profiles,Axiom). [20,false]\n#heuristic falsified(pos_axiom_instance(Profiles,Axiom)) :\n    pos_axiom_instance(Profiles,Axiom). [10,false]\n\n%%% Make sure that the outcomes satisfy all used axiom instances\n:- use_axiom_instance(Profiles,Axiom),\n    falsified(pos_axiom_instance(Profiles,Axiom)).\n%%% PARETO\nfalsified(pos_axiom_instance(single(Prof),pareto(C))) :-\n    pos_axiom_instance(single(Prof),pareto(C)),\n    outcome(Prof,C).\n%%% FAITHFULNESS\nfalsified(pos_axiom_instance(single(Prof),faithfulness)) :-\n    pos_axiom_instance(single(Prof),faithfulness),\n    profile(Prof,1,C,1), not outcome(Prof,C).\nfalsified(pos_axiom_instance(single(Prof),faithfulness)) :-\n    pos_axiom_instance(single(Prof),faithfulness),\n    profile(Prof,1,C1,1),\n    outcome(Prof,C2), candidate(C2), C1 != C2.\n%%% UNANIMITY\nfalsified(pos_axiom_instance(single(Prof),unanimity)) :-\n    pos_axiom_instance(single(Prof),unanimity),\n    profile(Prof,1,C,1), not outcome(Prof,C).\nfalsified(pos_axiom_instance(single(Prof),unanimity)) :-\n    pos_axiom_instance(single(Prof),unanimity),\n    profile(Prof,1,C1,1),\n    outcome(Prof,C2), candidate(C2), C1 != C2.\n%%% CANCELLATION\nfalsified(pos_axiom_instance(single(Prof),cancellation)) :-\n    pos_axiom_instance(single(Prof),cancellation),\n    not outcome(Prof,C), candidate(C).\n%%% REINFORCEMENT\noutcomes_intersect(Prof1,Prof2) :-\n    profile_num(Prof1), profile_num(Prof2), Prof1 <= Prof2,\n    outcome(Prof1,C), outcome(Prof2,C), candidate(C).\nfalsified(pos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement)) :-\n    pos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement),\n    outcomes_intersect(Prof1,Prof2),\n    outcome(Prof3,C), not outcome(Prof1,C).\nfalsified(pos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement)) :-\n    pos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement),\n    outcomes_intersect(Prof1,Prof2),\n    outcome(Prof3,C), not outcome(Prof2,C).\nfalsified(pos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement)) :-\n    pos_axiom_instance(triple(Prof1,Prof2,Prof3),reinforcement),\n    outcomes_intersect(Prof1,Prof2),\n    outcome(Prof1,C), outcome(Prof2,C), not outcome(Prof3,C).\n%%% CONDORCET\nfalsified(pos_axiom_instance(single(Prof),condorcet(C))) :-\n    pos_axiom_instance(single(Prof),condorcet(C)),\n    not outcome(Prof,C).\nfalsified(pos_axiom_instance(single(Prof),condorcet(C1))) :-\n    pos_axiom_instance(single(Prof),condorcet(C1)),\n    outcome(Prof,C2), candidate(C2), C1 != C2.\n%%% NEUTRALITY/2\nfalsified(pos_axiom_instance(double(Prof1,Prof2),neutrality2(C1,C2))) :-\n    pos_axiom_instance(double(Prof1,Prof2),neutrality2(C1,C2)),\n    swap(C1,C2,CS1,CS2), candidate(CS1),\n    outcome(Prof1,CS1), not outcome(Prof2,CS2).\nfalsified(pos_axiom_instance(double(Prof1,Prof2),neutrality2(C1,C2))) :-\n    pos_axiom_instance(double(Prof1,Prof2),neutrality2(C1,C2)),\n    swap(C1,C2,CS1,CS2), candidate(CS1),\n    outcome(Prof2,CS2), not outcome(Prof1,CS1).\n%%% POSITIVE RESPONSIVENESS\nfalsified(pos_axiom_instance(double(Prof1,Prof2),pos_responsiveness(V,C,P))) :-\n    pos_axiom_instance(double(Prof1,Prof2),pos_responsiveness(V,C,P)),\n    candidate(C),\n    outcome(Prof1,C), not outcome(Prof2,C).\nfalsified(pos_axiom_instance(double(Prof1,Prof2),pos_responsiveness(V,C1,P))) :-\n    pos_axiom_instance(double(Prof1,Prof2),pos_responsiveness(V,C1,P)),\n    candidate(C1), candidate(C2), C1 != C2,\n    outcome(Prof1,C1), outcome(Prof2,C2).\n",
       "description": "Looks for a counterexample to a candidate (solver C). relevant(T) marks the interface atoms the counterexample depends on."
+    },
+    {
+      "name": "relevant",
+      "text": "% Refinement strategy 2: every profile atom is relevant, and of the axiom-instance\n% atoms the axiom instances the outcomes do not falsify.\nrelevant(profile(Prof,V,Cand,Pos)) :-\n    profile_num(Prof), voter(V), candidate(Cand), position(Pos).\nrelevant(use_axiom_instance(Profiles,Axiom)) :-\n    not falsified(pos_axiom_instance(Profiles,Axiom)),\n    pos_axiom_instance(Profiles,Axiom).\n",
+      "description": "The relevant/1 rules of the check: strategy 2 (the variants s1, s3, s4, s5 swap in another)."
+    },
+    {
+      "name": "relevant_s1",
+      "text": "% Refinement strategy 1: every profile atom is relevant, and of the axiom-instance\n% atoms the axiom instances the outcomes falsify.\nrelevant(profile(Prof,V,Cand,Pos)) :-\n    profile_num(Prof), voter(V), candidate(Cand), position(Pos).\nrelevant(use_axiom_instance(Profiles,Axiom)) :-\n    falsified(pos_axiom_instance(Profiles,Axiom)),\n    pos_axiom_instance(Profiles,Axiom).\n",
+      "description": "Refinement strategy 1 for the check (relevant/1). Swapped in by the variant s1."
+    },
+    {
+      "name": "relevant_s3",
+      "text": "% Refinement strategy 3: every profile atom is relevant, and of the axiom-instance\n% atoms the axiom instances the candidate does not use.\nrelevant(profile(Prof,V,Cand,Pos)) :-\n    profile_num(Prof), voter(V), candidate(Cand), position(Pos).\nrelevant(use_axiom_instance(Profiles,Axiom)) :-\n    not use_axiom_instance(Profiles,Axiom),\n    pos_axiom_instance(Profiles,Axiom).\n",
+      "description": "Refinement strategy 3 for the check (relevant/1). Swapped in by the variant s3."
+    },
+    {
+      "name": "relevant_s4",
+      "text": "% Refinement strategy 4: every profile atom is relevant, and of the axiom-instance\n% atoms the axiom instances the candidate uses.\nrelevant(profile(Prof,V,Cand,Pos)) :-\n    profile_num(Prof), voter(V), candidate(Cand), position(Pos).\nrelevant(use_axiom_instance(Profiles,Axiom)) :-\n    use_axiom_instance(Profiles,Axiom).\n",
+      "description": "Refinement strategy 4 for the check (relevant/1). Swapped in by the variant s4."
+    },
+    {
+      "name": "relevant_s5",
+      "text": "% Refinement strategy 5: every profile atom is relevant, and of the axiom-instance\n% atoms every possible axiom instance.\nrelevant(profile(Prof,V,Cand,Pos)) :-\n    profile_num(Prof), voter(V), candidate(Cand), position(Pos).\nrelevant(use_axiom_instance(Profiles,Axiom)) :-\n    pos_axiom_instance(Profiles,Axiom).\n",
+      "description": "Refinement strategy 5 for the check (relevant/1). Swapped in by the variant s5."
     }
   ],
   "loop": {
     "language": "loop",
-    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+    "text": "solver A = shared + abstraction\nsolver C = shared + check + relevant   options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
   },
   "settings": {
     "constants": {
@@ -284,6 +309,54 @@
       ]
     }
   ],
+  "variants": [
+    {
+      "name": "s1",
+      "swap": {
+        "relevant": "relevant_s1"
+      },
+      "constants": {}
+    },
+    {
+      "name": "s3",
+      "swap": {
+        "relevant": "relevant_s3"
+      },
+      "constants": {}
+    },
+    {
+      "name": "s4",
+      "swap": {
+        "relevant": "relevant_s4"
+      },
+      "constants": {}
+    },
+    {
+      "name": "s5",
+      "swap": {
+        "relevant": "relevant_s5"
+      },
+      "constants": {}
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check + relevant   options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check + relevant   options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    }
+  ],
   "suites": [
     {
       "name": "questions",
@@ -292,6 +365,40 @@
       },
       "limits": {
         "seconds": 20
+      }
+    },
+    {
+      "name": "strategies",
+      "instances": {
+        "ids": [
+          "faith-k1",
+          "condorcet-k1",
+          "unanimity-k1",
+          "cancel-k1",
+          "pareto-k2-v1",
+          "pareto-k2",
+          "pareto-neutral-k2",
+          "faith-reinf-k2",
+          "cancel-posresp-k2",
+          "faith-reinf-k3",
+          "faith-cancel-reinf-k3",
+          "faith-cancel-reinf-pareto-condorcet-k3",
+          "faith-cancel-reinf-pareto-k3",
+          "faith-pareto-neutral-reinf-k4",
+          "pareto-neutral-reinf-k5"
+        ]
+      },
+      "variants": [
+        "default",
+        "s1",
+        "s3",
+        "s4",
+        "s5",
+        "shape2",
+        "reference"
+      ],
+      "limits": {
+        "seconds": 30
       }
     }
   ]

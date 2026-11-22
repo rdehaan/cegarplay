@@ -55,6 +55,8 @@
         </select>
         <label class="inline-label" for="instance-select" id="instance-select-label" hidden>Instance:</label>
         <select id="instance-select" hidden></select>
+        <label class="inline-label" for="variant-select" id="variant-select-label" hidden>Variant:</label>
+        <select id="variant-select" hidden></select>
         <span class="status-label">Status:</span>
         <span id="run-status" data-state="idle" role="status" aria-live="polite">idle</span>
       </div>
@@ -276,6 +278,12 @@
         The seed changes the search only together with randomising solver options, such as
         <code>options "--rand-freq=0.05"</code>.
       </p>
+
+      <h3>Variants</h3>
+      <p class="note">The same project with other fragments swapped in, its own loop script or other
+        constants. The run bar's <b>Variant</b> picker chooses the variant of a run (also for Audit and
+        Run all); a campaign suite compares variants on the same instances.</p>
+      <div id="variants"></div>
     </section>
 
     <!-- 5. Output -->

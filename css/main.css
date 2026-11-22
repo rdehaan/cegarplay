@@ -1060,3 +1060,9 @@ body[data-last-mode="audit"] .audit-only { display: block; }
 .audit-note { border-left: 3px solid var(--accent); padding: 4px 10px; background: var(--panel); }
 
 .tab-toggles { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 22px; }
+
+/* variants (Loop tab) */
+.variant-card { border: 1px solid var(--border); border-radius: 4px; margin: 8px 0; padding: 6px 10px; }
+.variant-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 4px 0; }
+.variant-swap { min-width: 22em; }
+.variant-loop { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 13px; }

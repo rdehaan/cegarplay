@@ -1,0 +1,81 @@
+// Variants: settings.variant (the run bar's pick), the campaign key, the headless runner, and the
+// voting example's strategies.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import nodePath from 'node:path';
+import * as P from '../js/project.js';
+import { cellKey } from '../js/campaign.js';
+import { parsePairs, showPairs } from '../js/variants.js';
+import * as H from './helpers.mjs';
+
+const vote = () => P.load(H.read('examples/voting-justification.json'));
+
+test('settings.variant survives load and save; it is dropped when the project has no variants', () => {
+  const p = vote();
+  p.settings.variant = 's3';
+  assert.equal(JSON.parse(P.save(P.load(P.save(p)))).settings.variant, 's3');
+  const q = H.example('tutorial-first-run');
+  q.settings.variant = 'x';
+  assert.equal('variant' in JSON.parse(P.save(q)).settings, false);
+  assert.throws(() => P.load(JSON.stringify({ ...JSON.parse(P.save(p)), settings: { variant: 3 } })), /settings.variant/);
+});
+
+test('the run bar picks (settings.instance, settings.variant) do not change campaign cell keys', async () => {
+  const p = vote();
+  const cell = { inst: p.instances[0], variant: 's1', seed: 0 };
+  const suite = { name: 's', limits: { seconds: 30 } };
+  const k1 = await cellKey(p, cell, suite, 'e');
+  p.settings.instance = p.instances[3].id;
+  p.settings.variant = 's4';
+  assert.equal(await cellKey(p, cell, suite, 'e'), k1);
+  assert.notEqual(await cellKey(p, { ...cell, variant: 's3' }, suite, 'e'), k1);
+});
+
+test('the voting example: a relevant fragment per strategy, a variant per other strategy and per loop, a suite over them', () => {
+  const p = vote();
+  assert.deepEqual(p.fragments.map((f) => f.name).filter((n) => n.startsWith('relevant')), ['relevant', 'relevant_s1', 'relevant_s3', 'relevant_s4', 'relevant_s5']);
+  assert.match(p.loop.text, /solver C = shared \+ check \+ relevant/);
+  assert.ok(!/^relevant\(/m.test(p.fragments.find((f) => f.name === 'check').text), 'the check holds no relevant/1 rules');
+  assert.deepEqual(p.variants.map((v) => v.name), ['s1', 's3', 's4', 's5', 'shape2', 'reference']);
+  const d = P.derive(p, { variant: 's3' });
+  assert.match(d.fragments.find((f) => f.name === 'relevant').text, /strategy 3/);
+  const s = p.suites.find((x) => x.name === 'strategies');
+  assert.deepEqual(s.variants, ['default', ...p.variants.map((v) => v.name)]);
+  assert.ok(s.instances.ids.every((id) => p.instances.find((x) => x.id === id).expected), 'only instances that finish');
+});
+
+for (const [variant, solutions] of [['s1', 2], ['s5', 2], ['reference', 2]]) {
+  test(`voting variant ${variant} on cancel-posresp-k2 gives ${solutions} solutions`, async () => {
+    const p = vote();
+    p.settings = { ...p.settings, solutions: 0, trace: 0, seconds: 0 };
+    const r = await H.runProject(P.derive(p, { variant }), { instance: 'cancel-posresp-k2' });
+    assert.equal(H.done(r).exhausted, true);
+    assert.equal(H.finalStats(r).solutions, solutions);
+  });
+}
+
+test('tools/run.mjs uses the stored variant pick unless --variant is given', () => {
+  const run = (args) => spawnSync('node', [H.path('tools/run.mjs').pathname, ...args], { encoding: 'utf8' });
+  const p = JSON.parse(H.read('examples/voting-justification.json'));
+  p.settings.variant = 's1';
+  const file = nodePath.join(fs.mkdtempSync(nodePath.join(os.tmpdir(), 'cegarplay-')), 'vote-picked.json');
+  fs.writeFileSync(file, JSON.stringify(p));
+  const inst = 'faith-pareto-neutral-reinf-k4';
+  const picked = run([file, '--instance', inst, '--solutions', 'all', '--quiet']).stdout;
+  const plain = run([file, '--instance', inst, '--solutions', 'all', '--quiet', '--variant', 'default']).stdout;
+  const cands = (s) => Number((/candidates: (\d+)/.exec(s) || [])[1]);
+  assert.match(picked, /Solutions: 1;/);
+  assert.match(plain, /Solutions: 1;/);
+  assert.ok(cands(picked) < cands(plain), `strategy 1 refines more strongly: ${cands(picked)} vs ${cands(plain)}`);
+  fs.unlinkSync(file);
+});
+
+test('parsePairs and showPairs', () => {
+  assert.deepEqual(parsePairs('check=check_alt, relevant = relevant_s3'), { check: 'check_alt', relevant: 'relevant_s3' });
+  assert.equal(showPairs({ a: 'b', c: 'd' }), 'a=b, c=d');
+  assert.deepEqual(parsePairs(''), {});
+  assert.throws(() => parsePairs('check'), /not name=value/);
+});

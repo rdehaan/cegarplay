@@ -227,6 +227,7 @@ export function load(json) {
     });
   }
   if ('instance' in st && st.instance !== null && st.instance !== '' && typeof st.instance !== 'string') throw new ProjectError('settings.instance must be an instance id or ""');
+  if ('variant' in st && st.variant !== null && typeof st.variant !== 'string') throw new ProjectError('settings.variant must be a variant name or ""');
   out.version = usesV2(out) ? 2 : 1;
   return out;
 }
@@ -320,6 +321,7 @@ export function save(project, { runs = true } = {}) {
   p.version = usesV2(project) ? 2 : 1;
   for (const k of V2_KEYS) if (Array.isArray(p[k]) && p[k].length === 0) delete p[k];
   if (p.settings && 'instance' in p.settings && !usesV2(project)) { p.settings = { ...p.settings }; delete p.settings.instance; }
+  if (p.settings && 'variant' in p.settings && !(project.variants || []).length) { p.settings = { ...p.settings }; delete p.settings.variant; }
   return JSON.stringify(p, null, 2) + '\n';
 }
 

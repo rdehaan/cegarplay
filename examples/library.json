@@ -978,13 +978,13 @@
       "id": "voting-justification",
       "title": "Voting: justifications",
       "group": "problems",
-      "summary": "Explaining a voting outcome by axioms: 17 questions as instances, from one axiom to five, one with no justification.",
+      "summary": "Explaining a voting outcome by axioms: 17 questions as instances, five refinement strategies and two loops as variants, a suite that compares them.",
       "shape": "shape1",
       "tags": [],
       "expected": null,
       "has": {
         "instances": 17,
-        "suites": 1
+        "suites": 2
       }
     },
     {

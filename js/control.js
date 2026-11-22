@@ -149,7 +149,11 @@ export class Control {
     try {
       // an instance stored as a recipe gets its facts from its generator first
       project = await resolveProject(project, instance, (p, o) => app.engine.exec(p, o), app.genLua());
-      project = derive(project, { instance, variant });
+      // without an explicit variant: the one picked in the run bar (a stale name is ignored)
+      const picked = project.settings.variant;
+      const chosen = variant !== undefined ? variant
+        : (picked && (project.variants || []).some((v) => v.name === picked) ? picked : undefined);
+      project = derive(project, { instance, variant: chosen });
       instanceId = project.instance || null;
     } catch (e) {
       app.output.clear();
@@ -213,7 +217,8 @@ export class Control {
     if (app.anatomy) app.anatomy.start({ assembled, compiled });
     this.setState('running');
     const info = {
-      loopLabel: (mode === 'audit' ? 'audit: ' : '') + loopLabel(project.loop) + (instanceId ? ` [${instanceId}]` : ''), mode, instance: instanceId, settings: { ...project.settings, constants: { ...project.settings.constants } },
+      loopLabel: (mode === 'audit' ? 'audit: ' : '') + loopLabel(project.loop) + (instanceId ? ` [${instanceId}]` : '') +
+        (project.variant ? ` (variant ${project.variant})` : ''), mode, instance: instanceId, variant: project.variant || null, settings: { ...project.settings, constants: { ...project.settings.constants } },
       engine: app.engineVersion, solvers: compiled ? compiled.solvers : [],
       fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])),
     };

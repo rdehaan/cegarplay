@@ -234,7 +234,16 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
 </ul>
 <p>The results are kept in this browser: press Start again and nothing runs; change a fragment and only the runs it
   affects run again. The suite is JSON in the editor; <code>tools/bench.mjs</code> runs the same suite from the command
-  line, and <b>Import rows</b> reads its output. The voting example has a suite over all seventeen questions.</p>
+  line, and <b>Import rows</b> reads its output.</p>
+<h3 id="tut-variants">Comparing encodings: variants</h3>
+<p>The voting example has five refinement strategies for its check: which axiom instances a counterexample marks
+  as relevant. The fragment <code>relevant</code> holds strategy 2; <code>relevant_s1</code> … <code>relevant_s5</code>
+  hold the others. Each is a <b>variant</b>, listed under <b>Variants</b> at the foot of the Loop tab: <code>s3</code>
+  swaps <code>relevant_s3</code> in for <code>relevant</code>; <code>shape2</code> and <code>reference</code> have a loop
+  script of their own. The <b>Variant</b> picker in the run bar runs one of them; the suite <code>strategies</code> runs
+  all seven on the questions that finish, so the Campaign tab compares them side by side (strategy 1 needs the fewest
+  candidates). To try a strategy of your own: add a fragment, then a variant that swaps it in.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="voting-justification">Load: Voting justifications</button></p>
 
 <h2 id="tut-shapes">9. Choosing a loop shape</h2>
 <p>

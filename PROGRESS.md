@@ -849,6 +849,28 @@ Goal: the app, library, tutorial, manual and guide as one whole with the PLAN2 f
 - **Clear run history** (was "Clear") asks with `window.confirm` (row count, "cannot be undone"),
   is disabled while the history is empty; test in `test/browser/stats.test.mjs`.
 
+## Variants for comparing encodings (2026-11-22, on request)
+
+- **voting-justification:** the check's five refinement strategies (explain1.lp, strategy 2 active)
+  became the fragment `relevant` (strategy 2, in the check solver) and `relevant_s1/s3/s4/s5`;
+  variants `s1`, `s3`, `s4`, `s5` (swap), `shape2`, `reference` (own loops); suite `strategies`
+  (the 15 questions with an expected count × default + 6 variants, 30 s). Measured: every variant
+  gives the expected count on all 15; the audit is sound for every strategy on 13 of 15 (the two
+  largest run out of memory or time in the audit). `tools/bench.mjs ... --suite strategies --jobs
+  4`: 105 cells in 10 s, no disagreement; total candidates default 3,710, s1 1,277, s3 3,746, s4
+  3,689, s5 3,744, shape2 3,636, reference 3,744: strategies 2-5 prune about as little as blocking,
+  strategy 1 a third of that.
+- **Page:** run bar Variant picker (`settings.variant`, like `settings.instance`; a stale name is
+  ignored; used by Run, Audit and Run all; the run history label adds `(variant NAME)`); Loop tab
+  block **Variants** (`js/variants.js`): name, swap `a=b, ...` (checked against the fragments),
+  constants, its own loop script (starts as a copy), delete (asks); fragment renames and deletions
+  are carried into the swaps, variant renames and deletions into the suites.
+- **Tools:** `tools/audit.mjs --variant`; `tools/run.mjs` (and so the audit tool) uses
+  `settings.variant` when `--variant` is not given.
+- **Fix:** campaign cell keys hashed `settings.instance` (and would hash `settings.variant`): a
+  change of the run bar's pick made every stored row look stale. Both are left out of the key now.
+- Tests: `test/variants.test.mjs`, `test/browser/variants.test.mjs`.
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.

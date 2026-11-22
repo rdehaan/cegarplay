@@ -196,6 +196,73 @@ function voteInstances(blocks) {
   return out.sort((a, b) => { const p = key(a), q = key(b); return p[0] - q[0] || p[1] - q[1] || p[2] - q[2]; });
 }
 
+// voting-justification: the check of explain1.lp ends with five refinement strategies (one
+// active, four commented out). Each becomes a fragment relevant_sN; the fragment `relevant`
+// (in the check solver) holds the active one, strategy 2, and a variant per other strategy swaps
+// its text in. Two more variants change the loop: Shape 2, and the Reference run.
+const VOTE_STRATEGY = {
+  1: 'the axiom instances the outcomes falsify',
+  2: 'the axiom instances the outcomes do not falsify',
+  3: 'the axiom instances the candidate does not use',
+  4: 'the axiom instances the candidate uses',
+  5: 'every possible axiom instance',
+};
+const VOTE_LOOP_HEAD = `solver A = shared + abstraction
+solver C = shared + check + relevant   options "--heuristic=Domain"
+link   G = A -> C via shared + glue
+`;
+function voteStrategies(p) {
+  const c = frag(p, 'check');
+  const at = c.text.indexOf('% %%% REFINEMENT STRATEGY 1');
+  if (at < 0) throw new Error('make-examples: voting strategies not found');
+  const tail = c.text.slice(at);
+  c.text = c.text.slice(0, at).replace(/\s*$/, '\n');
+  const parts = tail.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
+  if (parts.length !== 5) throw new Error(`make-examples: ${parts.length} voting strategies, expected 5`);
+  const text = {};
+  for (const part of parts) {
+    const lines = part.split('\n').map((l) => l.replace(/^% ?/, ''));
+    const n = Number((lines[0].match(/REFINEMENT STRATEGY (\d)/) || [])[1]);
+    if (!VOTE_STRATEGY[n]) throw new Error(`make-examples: bad voting strategy header ${lines[0]}`);
+    text[n] = `% Refinement strategy ${n}: every profile atom is relevant, and of the axiom-instance\n` +
+      `% atoms ${VOTE_STRATEGY[n]}.\n` + lines.slice(1).join('\n') + '\n';
+  }
+  const idx = p.fragments.indexOf(c);
+  const desc = (n) => `Refinement strategy ${n} for the check (relevant/1). ` +
+    (n === 2 ? 'Used by the default loop.' : `Swapped in by the variant s${n}.`);
+  p.fragments.splice(idx + 1, 0,
+    { name: 'relevant', text: text[2], description: 'The relevant/1 rules of the check: strategy 2 (the variants s1, s3, s4, s5 swap in another).' },
+    ...[1, 3, 4, 5].map((n) => ({ name: `relevant_s${n}`, text: text[n], description: desc(n) })));
+  p.loop.text = VOTE_LOOP_HEAD + `
+search A:
+    on candidate M:
+        X = C.solve(assume G(M))
+        if X:
+            reject M with G.clause(M, X)
+`;
+  p.variants = [
+    ...[1, 3, 4, 5].map((n) => ({ name: `s${n}`, swap: { relevant: `relevant_s${n}` }, constants: {} })),
+    { name: 'shape2', swap: {}, constants: {}, loop: { language: 'loop', text: VOTE_LOOP_HEAD + `
+loop:
+    M = A.solve()
+    if not M: stop
+    X = C.solve(assume G(M))
+    if X:
+        A.add(G.clause(M, X))
+    else:
+        accept M
+        A.add(G.block(M))
+` } },
+    { name: 'reference', swap: {}, constants: {}, loop: { language: 'loop', text: VOTE_LOOP_HEAD + `
+search A:
+    on candidate M:
+        X = C.solve(assume G(M))
+        if X:
+            reject M with G.block(M)
+` } },
+  ];
+}
+
 export function buildExamples() {
   const gc = make('graph-coloring.lp', 'Graph colouring',
     'Connected graphs with a leaf colouring that no proper 3-colouring extends. Shape 1 finds all 10,698 ' +
@@ -280,10 +347,15 @@ export function buildExamples() {
       p.instances = voteInstances(blocks);
       p.settings.instance = VOTE_DEFAULT;
       p.version = 2;
-      p.loop.text = template('shape1');
+      voteStrategies(p);
     }, { solutions: 1 });
   vote.settings.constants = { ...vote.instances.find((i) => i.id === VOTE_DEFAULT).constants };
-  vote.suites = [{ name: 'questions', instances: { ids: 'all' }, limits: { seconds: 20 } }];
+  vote.suites = [
+    { name: 'questions', instances: { ids: 'all' }, limits: { seconds: 20 } },
+    // every refinement strategy and loop on the questions that finish
+    { name: 'strategies', instances: { ids: vote.instances.filter((i) => i.expected).map((i) => i.id) },
+      variants: ['default', ...vote.variants.map((v) => v.name)], limits: { seconds: 30 } },
+  ];
   // constants-only instances; "" = the project as written (n = 5, w = 3). Counts agree with the
   // Reference loop (cegarcheck --mode block) and the audit is sound on each.
   nash.instances = [

@@ -71,6 +71,11 @@ export async function runProject(project, { onEvent, backstop = false, audit = n
     if (e instanceof ProjectError) throw e;      // an unknown instance: a usage error, as before
     return { problems: [{ severity: 'error', message: e.message }], events: [] };
   }
+  // like the page: without --variant, the variant picked in the project's settings (if it exists)
+  if (variant === undefined) {
+    const picked = project.settings && project.settings.variant;
+    if (picked && (project.variants || []).some((v) => v.name === picked)) variant = picked;
+  }
   project = derive(project, { instance, variant });
   if (constants) project = { ...project, settings: { ...project.settings, constants: { ...project.settings.constants, ...constants } } };
   const problems = await validate(project, engineRun);

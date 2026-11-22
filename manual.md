@@ -104,6 +104,7 @@ two-space indentation.
 | `instances` | list | none | Format version 2. See [Instances](#manual-instances). |
 | `variants` | list | none | Format version 2. See [Instances](#manual-instances). |
 | `settings.instance` | string | the first instance | The instance a run uses; `""` = the project as written. |
+| `settings.variant` | string | none | The variant a run uses (the run bar's Variant picker); absent or `""` = the project as it is; a name that is no variant is ignored. Dropped on save when the project has no variants. |
 
 ### Instances
 
@@ -152,6 +153,26 @@ scenarios (`.jagg`: `var/1`, `cl/1`, `pos/2`, `neg/2`); each importer is checked
 the instance is added. **Run all** runs every instance and marks a count other than the expected one
 with ✗ in red. The run bar's **Instance** picker (shown only for a project with instances) chooses
 the instance of the next run; the run history names it in brackets.
+
+### Variants
+
+A variant runs the same project with other fragments swapped in, its own loop script, or other
+constants (the table above). The **Variants** block at the foot of the Loop tab edits them: a name,
+**Swap** as `fragment=other fragment, ...` (the first fragment gets the text of the second; names
+are checked), **Constants** as `name=value, ...`, and **its own loop script** (a text box that
+starts as a copy of the project's loop). A renamed or deleted fragment is renamed in, or dropped
+from, every swap; a renamed or deleted variant also in the suites. The run bar's **Variant** picker
+(shown only for a project with variants) chooses the variant of a run, an audit and Run all, and
+is stored as `settings.variant`; the run history adds `(variant NAME)`. Alternative fragments
+that only a variant uses are not grounded by the project as it is. `tools/run.mjs` and
+`tools/audit.mjs` take `--variant NAME` (without it, `settings.variant`); a campaign suite names
+its variants (`default` = the project as it is) and ignores the picker.
+
+`voting-justification` is the worked example: its check solver reads the fragment `relevant`
+(refinement strategy 2), the fragments `relevant_s1`, `relevant_s3`, `relevant_s4` and
+`relevant_s5` hold the other strategies of the original file, the variants `s1` … `s5` swap them
+in, `shape2` and `reference` replace the loop, and the suite `strategies` runs all seven on the 15
+questions that finish.
 
 ### Campaigns
 
