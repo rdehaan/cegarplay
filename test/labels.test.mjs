@@ -57,3 +57,22 @@ test('sign facts: S.expand(part, core = K) adds core_false(k,T) for the atoms th
   assert.ok(pos.length > 0);
   assert.deepEqual(neg.map((f) => f.replace('core_false', 'core')).sort(), pos.sort());
 });
+
+test('core.minimal on a large core (QuickXplain): minimal and unsatisfiable, with few solves', async () => {
+  const p = H.example('lang-core');
+  // 40 atoms assumed true; the check fails as soon as 3 of the first 5 hold: a minimal core has 3
+  p.fragments = [
+    { name: 'shared', text: 'n(1..40).\n' },
+    { name: 'abstraction', text: '{ a(I) : n(I) }.\n:- #count { I : a(I) } < 40.\n#show a/1.\n' },
+    { name: 'glue', text: 'glue(a(I)) :- n(I).\n' },
+    { name: 'check', text: ':- 3 #count { I : a(I), I <= 5 }.\n' },
+  ];
+  p.loop = { language: 'loop', text: DECL + 'loop:\n    M = A.solve()\n    if not M: stop\n    if not C.solve(assume G(M)):\n        K = C.core.minimal\n        log "size", K.size\n        A.add(K.on(G))\n    else:\n        accept M\n        A.add(G.block(M))\n' };
+  p.settings = { ...p.settings, solutions: 0, trace: 0, constants: {} };
+  delete p.instances; delete p.settings.instance;
+  const r = await H.runProject(p);
+  const logs = H.ofKind(r, 'L').map((x) => x.text);
+  assert.equal(logs[0], 'size 3');
+  const S = H.finalStats(r);
+  assert.ok(S.solvers.C.calls < 40, `${S.solvers.C.calls} calls`);
+});

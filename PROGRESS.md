@@ -1351,3 +1351,7 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   `abduction-ihs` (AbHS-style; optima 1/2/1), `robust-facilities` (2-ASP(Q) with a weak
   constraint; optimum 15, checked by brute force), `qbf-caqe` (clausal abstraction; 4 solutions).
 - Loop language (done): sign facts `NAME_false(k,T)` in expansions of cores, clauses and lists.
+- Runtime (done): QuickXplain for `core.minimal` on cores of more than 32 assumptions (deletion
+  stays for small cores, so measured numbers did not move). Caching cores across IHS rounds was
+  considered and dropped: a cached core cannot be a subset of a later core there (the hitting
+  set drops one of its clauses), so the cache would never hit.

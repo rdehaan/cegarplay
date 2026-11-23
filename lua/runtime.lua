@@ -911,9 +911,45 @@ local function core_of(s, assume)
   if sat then s.n.sat = s.n.sat + 1 else s.n.unsat = s.n.unsat + 1 end
   return core
 end
+-- QuickXplain (Junker): a minimal subset of C that is unsatisfiable together with B, in
+-- O(k log(n/k)) solves for a core of k out of n assumptions, against up to n for deletion. Used
+-- for cores of more than QX_MIN assumptions; deletion (below) keeps its clause-set refinement
+-- for the small cores of the library, so their call counts stay as measured.
+local QX_MIN = 32
+local function unsat_with(s, B, X)
+  local t = {}
+  for _, l in ipairs(B) do t[#t + 1] = l end
+  for _, l in ipairs(X) do t[#t + 1] = l end
+  return core_of(s, t) ~= nil
+end
+local function quickxplain(s, B, D, C)
+  if #D > 0 and unsat_with(s, B, {}) then return {} end
+  if #C == 1 then return { C[1] } end
+  local h = #C // 2
+  local C1, C2 = {}, {}
+  for i, l in ipairs(C) do if i <= h then C1[#C1 + 1] = l else C2[#C2 + 1] = l end end
+  local B1 = {}
+  for _, l in ipairs(B) do B1[#B1 + 1] = l end
+  for _, l in ipairs(C1) do B1[#B1 + 1] = l end
+  local D2 = quickxplain(s, B1, C1, C2)
+  local B2 = {}
+  for _, l in ipairs(B) do B2[#B2 + 1] = l end
+  for _, l in ipairs(D2) do B2[#B2 + 1] = l end
+  local D1 = quickxplain(s, B2, D2, C1)
+  for _, l in ipairs(D2) do D1[#D1 + 1] = l end
+  return D1
+end
+
 function Core:minimal()
   local s = self.solver
   if s.busy then fail(s.name .. ".core.minimal: the solver is busy (searching or solving)") end
+  if #rawget(self, "lits") > QX_MIN then
+    local C = {}
+    for i, l in ipairs(rawget(self, "lits")) do C[i] = l end
+    local K = quickxplain(s, {}, {}, C)
+    rt.minimised = (rt.minimised or 0) + 1
+    return setmetatable({ solver = s, lits = K, minimal = true }, Core)
+  end
   local K = {}
   for i, l in ipairs(rawget(self, "lits")) do K[i] = l end
   local i = 1
