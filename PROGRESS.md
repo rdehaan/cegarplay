@@ -1374,3 +1374,5 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   internal link lands, figures have captions). `test/book.test.mjs`: fresh export equals the
   committed file, lint passes, links land, pandoc converts (skips without pandoc).
 - `tools/_t.mjs`, a scratch runner committed by mistake in 28c81f0, is removed.
+- `FUTURE-DIRECTIONS.md` now lists only what is still open (owner items, the blocked runtime
+  items, checker coverage, the k8 ground truth, figures in the booklet).
