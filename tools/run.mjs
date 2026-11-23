@@ -202,6 +202,7 @@ async function main(argv) {
     if (S) {
       console.log(`Solutions: ${S.solutions}; candidates: ${S.candidates}; counterexamples: ${S.counterexamples}; clauses: ${S.clauses}; time: ${S.t} s`);
       if (S.counters && Object.keys(S.counters).length) console.log(`Counters: ${JSON.stringify(S.counters)}`);
+      if (S.partials) console.log(`Partial checks: ${S.partials}`);
     }
     // track statements: each series in order (the first 30 values)
     const tracks = new Map();

@@ -1502,6 +1502,43 @@
       }
     },
     {
+      "id": "colourable-partial",
+      "title": "Dense 3-colourable graphs: cores at partial assignments",
+      "group": "graphs",
+      "summary": "Branch-and-check with unsat cores: graphs with at least m edges that can be 3-coloured; the colouring check also runs at partial assignments (on partial) and its short cores cut whole subtrees (n = 7, m = 16, 105 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "branch-and-check",
+        "partial",
+        "cores"
+      ],
+      "expected": {
+        "solutions": 105
+      },
+      "has": {
+        "instances": 5
+      }
+    },
+    {
+      "id": "triangle-free-lazy",
+      "title": "Triangle-free graphs: lazy constraints at partial assignments",
+      "group": "graphs",
+      "summary": "Lazy constraint generation at partial assignments (on partial, G(P, false)): graphs with at least m edges and no triangle (n = 8, m = 16, 35 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "lazy-constraints",
+        "partial"
+      ],
+      "expected": {
+        "solutions": 35
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
       "id": "nash",
       "title": "Nash equilibria",
       "group": "games",

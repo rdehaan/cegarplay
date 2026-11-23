@@ -421,6 +421,23 @@ loop:
         if W: reject Y with GXY.clause(Y, W)
 if Y: reject M with GXC.core(C)</div>
 
+<h3 id="tut-lang-partial">Checks at partial assignments</h3>
+<p>An <code>on partial P:</code> block, before <code>on candidate</code>, runs the check while the search of A is still
+  deciding, as branch-and-check does. <code>G(P)</code> lists the atoms decided so far; <code>G(P, false)</code> takes the
+  open ones as false. Only refinements that hold for every completion are allowed there: a core, or
+  <code>G.clause(X)</code> from a counterexample. In the triangle-free graphs a triangle among the edges chosen so far
+  cuts the subtree at once: 136 total candidates instead of 218 (the variant <code>total-only</code>), at the price
+  of more check calls; <code>every n</code> makes them rarer (see
+  <a href="#manual-checks-on-partial-candidates">Checks on partial candidates</a>).</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="triangle-free-lazy">Load: triangle-free graphs</button></p>
+<div class="example-code" data-mode="loop">search A:
+    on partial P every 8:
+        X = C.solve(assume G(P, false))
+        if X: reject P with G.clause(X)
+    on candidate M:
+        X = C.solve(assume G(M))
+        if X: reject M with G.clause(M, X)</div>
+
 <h3 id="tut-lang-growing">Growing programs</h3>
 <p><code>A.ground(step, t)</code> grounds the part <code>#program step(t).</code> while the loop runs, and
   <code>G.extend(step, t)</code> adds the new interface atoms to a link. The planning example grows the horizon until

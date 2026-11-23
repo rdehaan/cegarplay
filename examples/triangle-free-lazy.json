@@ -1,0 +1,104 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Triangle-free graphs: lazy constraints at partial assignments",
+  "description": "Graphs on n nodes with at least m edges and no triangle. The abstraction has no triangle constraint; the check finds a triangle, and G.clause(X) adds it as a clause inside the search (lazy constraint generation). With on partial (G5) the check also runs at partial assignments, with the open edges taken as absent (G(P, false)): a triangle among the edges chosen so far cuts the subtree before the candidate is complete. The variant total-only checks total candidates only. Counts checked against clingo with the triangle constraint written out.",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% Graphs on the nodes 1 .. n.\nnode(1..n).\npair(X,Y) :- node(X), node(Y), X < Y.\n"
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: a graph with at least m edges. The abstraction does not know the triangles.\n{ edge(X,Y) : pair(X,Y) }.\n:- #count { X,Y : edge(X,Y) } < m.\n#show edge/2.\n"
+    },
+    {
+      "name": "glue",
+      "text": "glue(edge(X,Y)) :- pair(X,Y).\n"
+    },
+    {
+      "name": "check",
+      "text": "% A counterexample: a triangle. It depends on its three edges.\n1 { tri(X,Y,Z) : node(X), node(Y), node(Z), X < Y, Y < Z } 1.\n:- tri(X,Y,Z), not edge(X,Y).\n:- tri(X,Y,Z), not edge(X,Z).\n:- tri(X,Y,Z), not edge(Y,Z).\nrelevant(edge(X,Y)) :- tri(X,Y,Z).\nrelevant(edge(X,Z)) :- tri(X,Y,Z).\nrelevant(edge(Y,Z)) :- tri(X,Y,Z).\n#show tri/3.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Lazy constraint generation: the \"no triangle\" constraint is not in the abstraction; each\n# triangle the check finds becomes a clause, inside the search of A.\nsearch A:\n    # G5: also at partial assignments, with the open edges taken as absent (G(P, false)).\n    # A triangle found there consists of edges A has already chosen: G.clause(X) is false at\n    # once and cuts the subtree. G.clause(X) is sound on a partial candidate: it holds for\n    # every graph with these three edges.\n    # every 8: at every 8th propagation fixpoint, to keep the number of check calls down.\n    on partial P every 8:\n        X = C.solve(assume G(P, false))\n        if X: reject P with G.clause(X)\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "8",
+      "m": "16"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0,
+    "instance": ""
+  },
+  "instances": [
+    {
+      "id": "n8",
+      "facts": "% n = 8, at least 16 edges: the 35 complete bipartite graphs K(4,4) (clingo with the triangle constraint).\n",
+      "constants": {
+        "n": "8",
+        "m": "16"
+      },
+      "expected": {
+        "solutions": 35
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "n6",
+      "facts": "% n = 6, at least 8 edges: 115 graphs.\n",
+      "constants": {
+        "n": "6",
+        "m": "8"
+      },
+      "expected": {
+        "solutions": 115
+      },
+      "tags": []
+    },
+    {
+      "id": "n7",
+      "facts": "% n = 7, at least 10 edges: 3416 graphs.\n",
+      "constants": {
+        "n": "7",
+        "m": "10"
+      },
+      "expected": {
+        "solutions": 3416
+      },
+      "tags": []
+    },
+    {
+      "id": "n7-none",
+      "facts": "% n = 7, at least 13 edges: none (at most 12 edges without a triangle).\n",
+      "constants": {
+        "n": "7",
+        "m": "13"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    }
+  ],
+  "variants": [
+    {
+      "name": "total-only",
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Lazy constraint generation: the \"no triangle\" constraint is not in the abstraction; each\n# triangle the check finds becomes a clause, inside the search of A.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clause(M, X)\n"
+      },
+      "swap": {},
+      "constants": {}
+    }
+  ],
+  "runs": []
+}

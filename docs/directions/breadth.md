@@ -51,14 +51,13 @@ gaps found by writing the loops.
 | 10 | Recursive nesting (RAReQS) | `qbf-deep` | families, `def` |
 | 11 | Clausal abstraction (CAQE) | `qbf-three-blocks`, `knapsack-fortification` | chains, `core.on(G)`, inner `search ... keep` |
 | 12 | Omission-based abstraction | `queens-omission` | `#external` guards, `A.set` |
+| (7) | Branch-and-check, lazy clause generation | `colourable-partial`, `triangle-free-lazy` | `on partial P every n:` (G5), `G(P, false)` |
 
 The manual's section *Loops from the literature* holds the same table for readers, and every
 example carries a tag for its algorithm.
 
 Out of reach:
 
-- **Checks during the search** (branch-and-check, lazy clause generation). This needs G5 of
-  `generality.md`, which is still not built: a check sees total candidates only.
 - **Refinement by interpolants** (predicate abstraction). clingo produces no proofs.
 
 ## What was built
@@ -149,10 +148,40 @@ The loops are pointed to from these places:
 - `examples/contrib/README.md`;
 - algorithm tags on the examples.
 
+### G5. Checks on partial candidates (built after the rest)
+
+- **Syntax.** `on partial P every n:` before `on candidate`. It compiles to `on_partial` and
+  `every` in the search table. While such a search runs, the propagator checks at every
+  fixpoint (`clingo.PropagatorCheckMode.Fixpoint`). It is set in `init`, which clingo calls
+  for every solve.
+- **Which fixpoints.** The hook runs at every n-th fixpoint. A fixpoint whose interface values
+  equal those at the previous call is skipped.
+- **The partial candidate.** `G(P)` lists the decided atoms. `G(P, v)` completes `P` with `v`,
+  an addition to the design.
+- **Refinements.** A reject adds its clauses at once; they need not be false yet.
+  Candidate-specific clauses (`G.clause(P, X)`, `G.block`, `G.above`, `G.below`, `G.lift`) are
+  errors. Cores and `G.clause(X)` hold for every completion.
+- **Recording.** A partial reject is an `r` step whose candidate is the counterexample's
+  interface. `certcheck.py` certifies such a log: `triangle-free-lazy`, n = 6, 115 solutions,
+  65 refinements at level 2.
+- **What it gains.** Fewer total candidates, but more time, because each call is a solve:
+
+  | Example | Total candidates, total-only | With `on partial` |
+  | --- | --- | --- |
+  | `triangle-free-lazy`, n = 8 | 218 | 136 |
+  | `colourable-partial`, n = 7 | 1,725 | 1,372 |
+  | `colourable-partial`, n = 8 | 8,614 | 5,073 |
+
+  clasp already learns a clause that cuts the subtree from a refuted total candidate. Cores at
+  partial assignments were not shorter (clasp's cores are not minimal), and a bin-packing
+  example showed no gain at all (its capacity relaxation already removes most bad candidates),
+  so it was dropped. The manual says when partial checks pay off.
+
 ## What is left
 
-- **G5, checks on partial candidates.** This is the only missing loop family. It is worth
-  building only together with an example that needs it.
+- **Core minimisation.** Shrinking a core before the reject would make partial checks (and
+  `maxsat-ihs`) learn shorter clauses. It can be written with `E.without` today, but a built-in
+  `C.core.minimal` would be cheaper.
 - **A stop rule for bounds.** IHS and Benders could stop as soon as the lower and upper bound
   meet. Both examples already reach the optimum by accepting the first candidate that passes
   the check, so this is left to the script.

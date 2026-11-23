@@ -1193,3 +1193,26 @@ non-list (today it silently runs zero times: an endless MaxHS loop); B2 cores as
   `examples/contrib/README.md` and the chat-package guide (tags, `stops-at-optimum`, `#minimize`
   tuples, sum-assignment grounding); `breadth.md` rewritten as one consolidated note.
   683 tests pass, 8 skipped.
+
+## G5: checks on partial candidates (2026-11-23, on request)
+
+- Language: `on partial P [every n]:` before `on candidate` (keywords `partial`, `every`); errors
+  for the wrong order, a second block, and a `search` inside `on partial`. `G(P, v)`: the open
+  atoms with value `v` (an addition to the design: a total completion for counterexample checks).
+- Runtime: the propagator's `init` sets `check_mode = Fixpoint` while a search with `on_partial`
+  runs (init runs per solve; a test switches modes between searches). The check hook calls
+  `on_partial` at every n-th fixpoint, skipping one with the same interface values as the
+  previous call. `G(P)` lists decided atoms; partial rejects add their clauses at once (no
+  "must be false" test; after a conflict the rest is stashed, rule 3). `G.clause(P, X)`,
+  `G.block`, `G.above`, `G.below`, `G.lift` on a partial candidate: error "... needs a total
+  candidate; ...". `partials` in S (only when > 0), Statistics counter "partial checks", trace kind
+  `partial`; a partial reject is recorded as an `r` step with the counterexample's interface as
+  candidate (certcheck certifies `triangle-free-lazy` n = 6: 115 solutions, 65 refinements).
+- Examples: `triangle-free-lazy` (counterexample check, `G(P, false)`, `G.clause(X)`; n = 8 m = 16:
+  35; 136 total candidates vs 218 for the variant `total-only`) and `colourable-partial` (witness
+  check, cores; n = 7 m = 16: 105; 1,372 vs 1,725), counts checked against direct clingo programs.
+  Both are slower than `total-only` (each partial call is a solve); the docs say so. A bin-packing
+  branch-and-check example was built and dropped: no gain (its relaxation removes the bad
+  candidates). Docs: manual section "Checks on partial candidates", literature row, tutorial
+  lesson 10 "Checks at partial assignments", guide chapter 10, spec-loop-language, breadth.md,
+  generality.md G5 marked built. Tests: `test/partial.test.mjs`.

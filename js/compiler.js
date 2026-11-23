@@ -2,7 +2,7 @@
 // No DOM, no Node APIs: used by the page and by the tests.
 
 export const KEYWORDS = new Set(('solver link via options legacy compat lift keep def return if elif else loop while repeat until for in ' +
-  'search on candidate reject with accept restart stop break continue count by track log assume limit optimal and or not ' +
+  'search on candidate partial every reject with accept restart stop break continue count by track log assume limit optimal and or not ' +
   'true false none').split(' '));
 const LUA_RESERVED = new Set(('and break do else elseif end false for function goto if in local nil not or repeat return ' +
   'then true until while').split(' '));
@@ -262,13 +262,27 @@ class Parser {
           this.expect('op', ':');
           this.expect('NEWLINE', undefined, "end of line after 'search S:'");
           this.expect('INDENT', undefined, "an indented 'on candidate M:' line");
+          // G5: on partial P [every n]: before on candidate
+          let partial = null;
+          const onPartial = () => this.isKw('on') && this.toks[this.i + 1] && this.toks[this.i + 1].type === 'kw' && this.toks[this.i + 1].value === 'partial';
+          if (onPartial()) {
+            const pt = this.next();
+            this.next();
+            const pv = this.name('a candidate variable');
+            let every = null;
+            if (this.isKw('every')) { this.next(); every = this.expr(); }
+            const pbody = this.block();
+            partial = { v: pv, every, body: pbody, line: pt.line };
+          }
           const on = this.expect('kw', 'on', "'on candidate M:'");
+          if (this.isKw('partial')) this.fail(this.peek(), partial ? "only one 'on partial' block is allowed inside 'search'" : "'on partial' must come before 'on candidate'");
           this.expect('kw', 'candidate', "'candidate'");
           const v = this.name('a candidate variable');
           const body = this.block();
+          if (onPartial()) this.fail(this.peek(), "'on partial' must come before 'on candidate'");
           if (!this.is('DEDENT')) this.fail(this.peek(), "only one 'on candidate' block is allowed inside 'search'");
           this.next();
-          return { t: 'search', ...at, solver: s, sidx, v, body, onLine: on.line, assume, optimal, keep };
+          return { t: 'search', ...at, solver: s, sidx, v, body, onLine: on.line, assume, optimal, keep, partial };
         }
         case 'return': {
           this.next();
@@ -453,7 +467,7 @@ function collectAssigned(stmts, out, { intoCandidates }) {
     const kids = [];
     if (s.t === 'if') { for (const b of s.branches) kids.push(b.body); if (s.orelse) kids.push(s.orelse.body); }
     if (['loop', 'while', 'repeat', 'for'].includes(s.t)) kids.push(s.body);
-    if (s.t === 'search' && intoCandidates) kids.push(s.body);
+    if (s.t === 'search' && intoCandidates) { kids.push(s.body); if (s.partial) kids.push(s.partial.body); }
     for (const k of kids) collectAssigned(k, out, { intoCandidates });
   }
 }
@@ -538,7 +552,7 @@ export function compile(source, { fragments = [] } = {}) {
   (function walk(stmts) {
     for (const s of stmts) {
       if (s.t === 'for') known.add(s.v.value);
-      if (s.t === 'search') known.add(s.v.value);
+      if (s.t === 'search') { known.add(s.v.value); if (s.partial) { known.add(s.partial.v.value); walk(s.partial.body); } }
       if (s.t === 'if') { for (const b of s.branches) walk(b.body); if (s.orelse) walk(s.orelse.body); }
       if (['loop', 'while', 'repeat', 'for', 'search'].includes(s.t)) walk(s.body);
     }
@@ -559,6 +573,7 @@ export function compile(source, { fragments = [] } = {}) {
     (function walk(list) {
       for (const st of list) {
         if (st.t === 'for' || st.t === 'search') known.add(st.v.value);
+        if (st.t === 'search' && st.partial) { known.add(st.partial.v.value); walk(st.partial.body); }
         if (st.t === 'if') { for (const b of st.branches) walk(b.body); if (st.orelse) walk(st.orelse.body); }
         if (['loop', 'while', 'repeat', 'for', 'search'].includes(st.t)) walk(st.body);
       }
@@ -572,7 +587,11 @@ export function compile(source, { fragments = [] } = {}) {
   const varSolver = new Map();
   (function walkVars(list) {
     for (const s of list) {
-      if (s.t === 'search') { varSolver.set(s.v.value, s.solver.value); walkVars(s.body); continue; }
+      if (s.t === 'search') {
+        varSolver.set(s.v.value, s.solver.value); walkVars(s.body);
+        if (s.partial) { varSolver.set(s.partial.v.value, s.solver.value); walkVars(s.partial.body); }
+        continue;
+      }
       if (s.t === 'assign' && s.e.t === 'method' && s.e.obj.t === 'name' && solvers.has(s.e.obj.name) && ['solve', 'models'].includes(s.e.name)) {
         const prev = varSolver.get(s.target.value);
         varSolver.set(s.target.value, prev && prev !== s.e.obj.name ? '?' : s.e.obj.name);
@@ -629,7 +648,7 @@ export function compile(source, { fragments = [] } = {}) {
           if (!links.get(G).family) err(e.fn, `'${G}' is not a link family`);
           use(G, 'of');
           const pos = positional(e.args, e, `${G}[i](M)`);
-          if (pos.length !== 1) err(e, `${G}[i](M) takes exactly one model`);
+          if (pos.length !== 1 && pos.length !== 2) err(e, `${G}[i](M) takes a model, and for a partial candidate a value for its open atoms: ${G}[i](P, false)`);
           return `${G}[${ex(e.fn.idx)}]:of(${pos.map((a) => ex(a)).join(', ')})`;
         }
         if (e.fn.t === 'name' && procs.has(e.fn.name)) {
@@ -647,7 +666,7 @@ export function compile(source, { fragments = [] } = {}) {
         if (e.fn.t === 'name' && links.has(e.fn.name)) {
           use(e.fn.name, 'of');
           const pos = positional(e.args, e, `${e.fn.name}(M)`);
-          if (pos.length !== 1) err(e, `${e.fn.name}(M) takes exactly one model`);
+          if (pos.length !== 1 && pos.length !== 2) err(e, `${e.fn.name}(M) takes a model, and for a partial candidate a value for its open atoms: ${e.fn.name}(P, false)`);
           return `${e.fn.name}:of(${pos.map((a) => ex(a)).join(', ')})`;
         }
         const what = e.fn.t === 'name' ? `'${e.fn.name}'` : 'this expression';
@@ -894,6 +913,7 @@ export function compile(source, { fragments = [] } = {}) {
         const SR = s.sidx ? `${S}[${ex(s.sidx)}]` : S;
         // a search may run inside 'on candidate' of another solver's search (phase L2)
         for (let c = ctx.cand; c; c = c.outer) if (c.solver === S) err(s, `search ${S}: solver ${S} is already searching`);
+        if (ctx.cand && ctx.cand.partial) err(s, "'search' cannot stand inside 'on partial'");
         checkName(s.v, 'a candidate variable');
         if (isDecl(s.v.value)) err(s.v, `'${s.v.value}' is a solver or link and cannot be the candidate variable`);
         if (s.keep) { checkName(s.keep, 'a variable'); if (isDecl(s.keep.value)) err(s.keep, `'${s.keep.value}' is a solver or link`); }
@@ -901,7 +921,28 @@ export function compile(source, { fragments = [] } = {}) {
         if (s.assume && s.assume.length) opts.push(`assume = ${s.assume.length > 1 ? `rt.concat(${s.assume.map((x) => ex(x)).join(', ')})` : ex(s.assume[0])}`);
         if (s.optimal) opts.push('optimal = true');
         if (s.keep) opts.push('keep = true');
-        emit(`${s.keep ? `${s.keep.value} = ` : ''}${SR}:search{ ${opts.map((o) => o + ', ').join('')}on_candidate = function(${s.v.value})`, s.line, depth);
+        const head = `${s.keep ? `${s.keep.value} = ` : ''}${SR}:search{ ${opts.map((o) => o + ', ').join('')}`;
+        if (s.partial) {
+          // on partial P every n: (G5) a callback of its own, before on_candidate in the same table
+          const P = s.partial;
+          checkName(P.v, 'a candidate variable');
+          if (isDecl(P.v.value)) err(P.v, `'${P.v.value}' is a solver or link and cannot be the candidate variable`);
+          emit(`${head}on_partial = function(${P.v.value})`, s.line, depth);
+          const sv = { cand: ctx.cand, loops: ctx.loops, def: ctx.def };
+          ctx.cand = { solver: S, v: P.v.value, outer: sv.cand, partial: true };
+          ctx.loops = [];
+          ctx.def = null;
+          const pl = new Set();
+          collectAssigned(P.body, pl, { intoCandidates: false });
+          for (const n of mainLocals) pl.delete(n);
+          pl.delete(P.v.value);
+          emit(pl.size ? `local ${[...pl].join(', ')}` : '', P.line, depth + 1);
+          stmts(P.body, depth + 1);
+          ctx.cand = sv.cand; ctx.loops = sv.loops; ctx.def = sv.def;
+          emit(`end, ${P.every ? `every = ${ex(P.every)}, ` : ''}on_candidate = function(${s.v.value})`, s.onLine, depth);
+        } else {
+          emit(`${head}on_candidate = function(${s.v.value})`, s.line, depth);
+        }
         const saved = { cand: ctx.cand, loops: ctx.loops };
         ctx.cand = { solver: S, v: s.v.value, outer: saved.cand };
         ctx.loops = [];

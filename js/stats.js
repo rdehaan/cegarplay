@@ -249,6 +249,7 @@ export class Stats {
     const last = new Map(Object.entries((this.S && this.S.tracked) || {}));
     for (const [k, pts] of this.tracks) if (!last.has(k) && pts.length) last.set(k, pts.at(-1)[1]);
     for (const [k, v] of last) rows.push([`${k} (tracked, last value)`, fmt(v)]);
+    if (this.S && this.S.partials) rows.unshift(['partial checks (on partial)', fmt(this.S.partials)]);
     this.table('counters-table', ['Counter', 'Value'], rows.length ? rows : [['(none: use count or track in the loop script)', '']], [1]);
   }
 

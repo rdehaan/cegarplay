@@ -365,7 +365,7 @@ The compiler runs 500 ms after each edit in the Loop tab and marks errors at onc
 - Names: `[A-Za-z_][A-Za-z0-9_]*`. Numbers: integers or decimals. Strings: double quotes, with `\"`
   and `\\` escapes.
 - Keywords: `solver link via options legacy compat if elif else loop while repeat until for in
-  search on candidate reject with accept restart stop break continue count by track log assume limit
+  search on candidate partial every reject with accept restart stop break continue count by track log assume limit
   optimal and or not true false none`, and `lift keep def return`.
 - Reserved names (cannot be declared or assigned): every Lua keyword, `rt`, `clingo`, `FRAGMENTS`,
   `CONSTS`, `SETTINGS`, `main`, `ipairs`, `_`, and names starting with `__`.
@@ -383,7 +383,8 @@ stmt    := NAME "=" expr NEWLINE
          | "while" expr ":" block
          | "repeat" ":" block "until" expr NEWLINE
          | "for" NAME "in" expr ":" block
-         | "search" NAME ":" NEWLINE INDENT "on" "candidate" NAME ":" block DEDENT
+         | "search" NAME ":" NEWLINE INDENT [ "on" "partial" NAME [ "every" expr ] ":" block ]
+           "on" "candidate" NAME ":" block DEDENT
          | "reject" NAME "with" expr NEWLINE
          | "accept" NAME NEWLINE
          | "restart" NEWLINE | "break" NEWLINE | "continue" NEWLINE
@@ -436,6 +437,7 @@ before the link is declared (declarations are processed in order, then all solve
 | `for x in e:` | Run the block for each element of the list `e`: a list, `G(M)`, a clause, a core (`C.core`) or `X.atoms(p/n)`. Anything else (a model, a solver, `none`, a number) is an error: `for: expected a list, got ...`. |
 | `break`, `continue` | Leave the innermost loop; go to its next round. |
 | `search A:` / `on candidate M:` / block | Run `A`'s own search; call the block for every candidate `M` (a total assignment). A candidate that is not rejected is a solution. |
+| `on partial P every n:` / block | Before `on candidate`: also call the block at partial assignments of the search, at every n-th propagation fixpoint (default 1). See [Checks on partial candidates](#manual-checks-on-partial-candidates). |
 | `reject M with e` | Add the clause (or list of clauses) `e` to the searching solver. Only inside `on candidate`, naming its candidate variable. Several `reject`s of one candidate are allowed: the first clause is added at once, the rest at the next check. |
 | `accept M` | Count the model `M` as a solution and print it (for models from `solve`/`models`). Inside a search it does nothing: not rejecting already accepts. When the wanted number of solutions is reached, the run ends with outcome `solutions`. |
 | `restart` | Only inside `on candidate`: end the current search early. The next `search` starts afresh; the solutions found so far are not reported again. |
@@ -515,6 +517,7 @@ threads, `solver S: the option -t needs the threaded engine ...`.
 | `link G = A -> C via shared + glue legacy` | `local G = rt.link("G", A, C, {"shared", "glue"}, {legacy = true})` |
 | end of declarations | `rt.capture("p", n)` for each `p/n` used, then `rt.prepare()` |
 | `search A:` / `on candidate M:` | `A:search{ on_candidate = function(M) ... end }` |
+| `on partial P every n:` | `on_partial = function(P) ... end, every = n,` in the same table, before `on_candidate` |
 | `reject M with e` / `accept M` | `M:reject(e)` / `rt.accept(M)` |
 | `S.solve(assume E1, E2, optimal)` | `S:solve{ assume = rt.concat(E1, E2), optimal = true }` |
 | `G(M)`, `G.clause(M, X)` | `G:of(M)`, `G:clause(M, X)` |
@@ -649,6 +652,48 @@ search A:
   proven (`knapsack-interdiction` with `#minimize { 1,I : lock(I) }`: one solution).
 - `keep` is a keyword. `qbf-three-blocks` uses an inner search: 12 solves of B instead of 30.
 
+## Checks on partial candidates
+
+```loop
+search A:
+    on partial P every 4:                    # at every 4th propagation fixpoint
+        X = C.solve(assume G(P, false))      # the open atoms taken as false
+        if X: reject P with G.clause(X)
+    on candidate M:
+        X = C.solve(assume G(M))
+        if X: reject M with G.clause(M, X)
+```
+
+The search of `A` normally calls the check on total candidates only. With an `on partial` block
+(before `on candidate`), it also calls that block while the assignment is partial, at clasp's
+propagation fixpoints, as in branch-and-check and lazy clause generation. A refutation found
+there cuts the whole subtree before any of its candidates is complete.
+
+| Script | Meaning |
+| --- | --- |
+| `on partial P every n:` | The block runs at every n-th fixpoint (`every` is optional, default 1). A fixpoint whose interface values are the same as at the previous call is skipped. `P` is valid only during the call. |
+| `G(P)` | The decided interface atoms only. A check given these leaves the open atoms to its own choice: a witness check fails only when no completion can pass. |
+| `G(P, false)`, `G(P, true)` | Every interface atom, the open ones with the given value: a total candidate that completes `P`. For a check whose counterexamples persist when more atoms become true (a triangle in a graph), `G(P, false)` finds the counterexamples among the atoms decided so far. |
+| `reject P with c` | Adds `c` at once. It need not be false yet: it may only propagate. Allowed: `G.core(C)` and `C.core.on(G)` after a failed witness check, `G.clause(X)` and `G.clauses(X)` from a counterexample: they hold for every candidate, so for every completion of `P`. |
+| `G.clause(P, X)`, `G.block(P)`, `G.above(P)`, `G.below(P)`, `G.lift(P, X)` | Errors: they speak about the candidate itself (`G.block needs a total candidate; on a partial candidate use G.clause(X), G.clauses(X) or a core`). |
+| `P.atoms(p/n)` | The atoms true so far. |
+
+- The candidate counts and the solutions are unchanged; the counter **partial checks** (Statistics,
+  Custom counters; `partials` in the `S` event; `Partial checks:` in `tools/run.mjs`) counts the
+  calls. A reject at a partial assignment is a trace step of kind `partial`, recorded as an `r` step
+  whose candidate is the counterexample's interface (none after a core), so proof logs stay
+  checkable.
+- **When it pays.** Every call is a solve of the check. Partial checks pay off when the check is
+  cheap compared with completing a candidate, and when the checks refute early. Within clasp, a clause
+  learned from a total candidate already cuts the subtree too, so measure: in the library
+  examples, partial checks cut the total candidates by a third or more but cost time.
+  [triangle-free-lazy](?example=triangle-free-lazy) (n = 8, m = 16) needs 136 total candidates
+  instead of 218; [colourable-partial](?example=colourable-partial) (n = 7, m = 16) needs 1,372
+  instead of 1,725. Both have a variant `total-only` to compare. Raise `every` to make the calls
+  rarer.
+- A `search` cannot stand inside `on partial`. `S.add` and `S.expand` of the searching solver
+  are refused there, as in `on candidate`.
+
 ## Growing programs and externals
 
 | Script | Meaning |
@@ -778,11 +823,10 @@ filter also finds the tag in the last column.
 | Optimisation over a Σ2 check, 2-ASP(Q) with weak constraints | An optimal abstraction whose first surviving candidate is optimal (`A.solve(optimal)` or `search A optimal`) | [knapsack-optimum](?example=knapsack-optimum), [reasons-by-size](?example=reasons-by-size) | `bounds` |
 | Recursive CEGAR for any number of quantifier blocks: RAReQS (Janota, Klieber, Marques-Silva and Clarke) | Solver and link families and a recursive `def` | [qbf-deep](?example=qbf-deep) | `rareqs` |
 | Clausal abstraction, multi-level QBF: CAQE (Rabe and Tentrup), QESTO | A chain of solvers; cores along the chain with `core.on(G)`; an inner `search ... keep` | [qbf-three-blocks](?example=qbf-three-blocks), [knapsack-fortification](?example=knapsack-fortification) | `caqe` |
+| Branch-and-check (Thorsteinsson), lazy clause generation | `on partial P:` in the search: the check also runs at partial assignments; cores or `G.clause(X)` with `G(P, false)` cut whole subtrees | [colourable-partial](?example=colourable-partial), [triangle-free-lazy](?example=triangle-free-lazy) | `branch-and-check`, `lazy-constraints` |
 | Omission-based abstraction (Saribatur and Eiter) | Constraints guarded by `#external` atoms, switched on with `A.set` when a candidate breaks them | [queens-omission](?example=queens-omission), [conformant-growing](?example=conformant-growing) (a growing horizon) | `omission` |
 
-Not expressible: checks *during* the search on partial assignments (branch-and-check, lazy
-clause generation), since a check sees only total candidates; and refinement by interpolants,
-since clingo produces no proofs. `docs/directions/breadth.md` has the reasoning.
+Not expressible: refinement by interpolants, since clingo produces no proofs. `docs/directions/breadth.md` has the reasoning.
 
 ## Raw Lua projects
 
@@ -1007,7 +1051,7 @@ so; the next Run replaces them. The run history keeps both.
 - **Trace**: one recorded step at a time (slider, Previous, Next): **Candidate** (true interface
   atoms; the atoms in the refinement highlighted), **Counterexample** (shown atoms of the check's
   model), **Refinement** (clause literals such as `-pick(3)`, or the facts of an expansion). Step
-  kinds: `reject` (Shape 1 clause), `add` (clause added between solves), `expand` (rules grounded),
+  kinds: `reject` (Shape 1 clause), `partial` (a clause from `on partial`), `add` (clause added between solves), `expand` (rules grounded),
   `error` (the counterexample from which `relevant/1` derived nothing; the view jumps to it).
 - **Messages**: clingo messages grouped with a count, `log` lines, errors (with a collapsed Lua
   traceback) and hints.
@@ -1115,10 +1159,10 @@ prints them as `{"kind": ..., "data": ...}`.
 | Kind | When | Fields |
 | --- | --- | --- |
 | `H` | after grounding | `solvers` (`name`, `fragments`, `options`, `atoms`, `ground`), `links` (`name`, `from`, `to`, `atoms` = non-fact interface atoms), `settings` |
-| `S` | every 0.25 s and at the end | `t`, `candidates`, `counterexamples`, `solutions`, `clauses`, `literals`, `maxlen`, `hist`, `expansions`, `restarts`, `blocks`, `solvers` (per solver: `calls`, `sat`, `unsat`, `time`, `ground`, `busy`, `choices`, `conflicts`, `restarts`, `atoms`, `rules`, `vars`, `constraints`, `k`), `counters`, `tracked` (only after a `track`: the last value per name) |
+| `S` | every 0.25 s and at the end | `t`, `candidates`, `counterexamples`, `solutions`, `clauses`, `literals`, `maxlen`, `hist`, `expansions`, `restarts`, `blocks`, `solvers` (per solver: `calls`, `sat`, `unsat`, `time`, `ground`, `busy`, `choices`, `conflicts`, `restarts`, `atoms`, `rules`, `vars`, `constraints`, `k`), `counters`, `tracked` (only after a `track`: the last value per name), `partials` (only after an `on partial` call: their number) |
 | `V` | each `track` (the first 2,000 values per name) | `n` name, `i` round, `v` value, `t` |
 | `M` | each solution | `n`, `atoms`, `cost` |
-| `T` | each traced step | `i`, `kind`, `solver`, `candidate`, `counterexample`, `literals`, `facts` |
+| `T` | each traced step | `i`, `kind` (`reject`, `partial`, `add`, `expand`, `accept`, `error`), `solver`, `candidate`, `counterexample`, `literals`, `facts` |
 | `W` | clingo message | `solver`, `code`, `message`, `fragment`, `line`, `col` |
 | `L` | `log` | `text` |
 | `E` | runtime error | `message`, `line`, `traceback` |
@@ -1209,7 +1253,7 @@ Library shows them as tags, and the filter matches them (type `view` or `suite`)
 | `guide` | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
 | `logic` | `cegis-circuit`, `integer-expressions`, `marco`, `maxsat-ihs`, `maxsat-oll`, `min-dnf`, `qbf-blame-solver`, `qbf-deep`, `qbf-expansion`, `qbf-optimal`, `qbf-three-blocks`, `qbf`, `smallest-mus`, `stable-models`, `strategic-companies` |
 | `reasoning` | `abduction-two-checks`, `abduction`, `actual-cause`, `af-preferred`, `af-semi-stable`, `belief-update`, `default-extensions`, `diagnosis`, `minimal-reasons`, `reasons-by-shrinking`, `reasons-by-size`, `sufficient-reason` |
-| `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction` |
+| `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction`, `colourable-partial`, `triangle-free-lazy` |
 | `games` | `nash`, `voting-justification`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `kemeny-control`, `strong-nash`, `subset-sum-game` |
 | `planning` | `benders-tardiness`, `conformant-growing`, `conformant-planning`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-interdiction`, `knapsack-optimum` |
 | `puzzles` | `akari`, `binairo`, `fewest-clues`, `futoshiki`, `queens-omission`, `slitherlink`, `sudoku-graded`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `sudoku-unique` |
@@ -1347,6 +1391,7 @@ header, so a log of a variant run is checked against that variant.
 | `unsafe variable 'Y' in bar(Y).` | A variable of the rule occurs in no positive body literal. Add a domain atom such as `num(Y)`. |
 | The run ends with outcome `limit` | Time (default 60 s) or candidate limit; raise it in the Loop tab, or set 0. |
 | A cost is too small; two `#minimize` statements interfere | clingo sums a `#minimize` over distinct tuples: with `{ C,J : cost(J,C) }` and `{ V,M : est(M,V) }`, the tuples (2,1) of both count once. Add a tag to each statement: `{ C,J,cost : ... }`, `{ V,M,est : ... }` (`benders-tardiness`). |
+| `G.block needs a total candidate; ...` (also `G.clause`, `G.above`, `G.below`, `G.lift`) | Inside `on partial`, a clause about the candidate's own values would cut completions that are solutions. Use a core or `G.clause(X)`; see [Checks on partial candidates](#manual-checks-on-partial-candidates). |
 | `for: expected a list, got ...` | `for` walks lists only: write `X.atoms(p/n)` for the atoms of a model, `C.core` for a core. |
 | `flip: the atom is not in the list` | `E.flip(a)` and `E.without(a)` need an element of `E`. The atoms of a clause (`G.core(C)`, `G.block(M)`) are literals of the solver it refines, not assumptions of `C`; walk `C.core` or `E` itself. |
 | Seeds give the same statistics | The seed needs randomising options (`--rand-freq=0.05`, `--sign-def=rnd`). |

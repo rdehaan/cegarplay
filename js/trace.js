@@ -34,7 +34,7 @@ export function predicateOf(atom) {
   return a.slice(0, i) + '/' + n;
 }
 
-const KIND = { reject: 'Rejected inside the search', add: 'Clause added between solves', expand: 'Rules grounded (expand)', accept: 'Accepted as a solution', error: 'The step where the run stopped with an error' };
+const KIND = { reject: 'Rejected inside the search', partial: 'Rejected at a partial assignment (on partial)', add: 'Clause added between solves', expand: 'Rules grounded (expand)', accept: 'Accepted as a solution', error: 'The step where the run stopped with an error' };
 
 export class TraceView {
   constructor(root) {

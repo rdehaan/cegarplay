@@ -16,7 +16,7 @@ four example scripts below were run as the hand-written Lua shown in
 - `NAME`: `[A-Za-z_][A-Za-z0-9_]*`. `NUMBER`: integer or decimal.
   `STRING`: double quotes, with `\"` and `\\` escapes.
 - Keywords: `solver link via options legacy compat if elif else loop while
-  repeat until for in search on candidate reject with accept restart stop
+  repeat until for in search on candidate partial every reject with accept restart stop
   break continue count by track log assume limit optimal and or not true false none`.
 - A name may not be a Lua keyword, nor `rt`, `clingo`, `FRAGMENTS`, `CONSTS`,
   `SETTINGS`, `main`, nor start with `__`.
@@ -34,7 +34,8 @@ stmt    := NAME "=" expr NEWLINE
          | "while" expr ":" block
          | "repeat" ":" block "until" expr NEWLINE
          | "for" NAME "in" expr ":" block
-         | "search" NAME ":" NEWLINE INDENT "on" "candidate" NAME ":" block DEDENT
+         | "search" NAME ":" NEWLINE INDENT [ "on" "partial" NAME [ "every" expr ] ":" block ]
+           "on" "candidate" NAME ":" block DEDENT
          | "reject" NAME "with" expr NEWLINE
          | "accept" NAME NEWLINE
          | "restart" NEWLINE | "break" NEWLINE | "continue" NEWLINE
@@ -89,6 +90,8 @@ variables).
 | `break` | `break` |
 | `continue` | `goto __continue_N`, with `::__continue_N::` as the last statement of the innermost loop body (Lua 5.4 has `goto`) |
 | `search A:` / `on candidate M:` / block | `A:search{ on_candidate = function(M)` ... `end }` |
+| `on partial P every n:` / block (G5) | `on_partial = function(P)` ... `end, every = n, ` before `on_candidate` in the same table; the propagator checks at every fixpoint (`clingo.PropagatorCheckMode.Fixpoint`) while such a search runs |
+| `G(P, v)` | `G:of(P, v)`: on a partial candidate, the open atoms get the value `v` |
 | `reject M with e` | `M:reject(e)` |
 | `accept M` | `rt.accept(M)` |
 | `restart` | `rt.restart()` |

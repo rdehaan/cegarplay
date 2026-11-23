@@ -151,6 +151,8 @@ In a three-level loop the inner solver works hardest, so this is where a kept se
 
 ### G5. Checks on partial candidates
 
+*Built on Nov 23, 2026; see `breadth.md` (G5) and the manual's "Checks on partial candidates".*
+
 ```loop
 search A:
     on partial M every 32:

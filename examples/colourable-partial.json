@@ -1,0 +1,120 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Dense 3-colourable graphs: cores at partial assignments",
+  "description": "Graphs on n nodes with at least m edges that can be 3-coloured. A witness check colours the candidate; when it cannot, its unsat core (G.core) refutes the candidate. With on partial (G5) the check also runs at partial assignments of the search, every 4th propagation fixpoint, with the undecided edges left to the check: as soon as the edges chosen so far cannot be coloured, the core cuts the whole subtree, and an early core is short. The variant total-only checks total candidates only; compare the candidates and the clause lengths in the Statistics tab. Counts checked against one clingo program that guesses graph and colouring together (projected on the edges).",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% Graphs on the nodes 1 .. n.\nnode(1..n).\npair(X,Y) :- node(X), node(Y), X < Y.\n"
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: a graph with at least m edges. The abstraction knows nothing of colourings.\n{ edge(X,Y) : pair(X,Y) }.\n:- #count { X,Y : edge(X,Y) } < m.\n#show edge/2.\n"
+    },
+    {
+      "name": "glue",
+      "text": "glue(edge(X,Y)) :- pair(X,Y).\n"
+    },
+    {
+      "name": "check",
+      "text": "% A witness: a proper 3-colouring. An edge that a partial candidate leaves open is a free\n% choice here, so the check leaves it out when it can: it fails only when the edges chosen\n% so far cannot be coloured, and its unsat core is a set of chosen edges that no colouring\n% survives. That core refutes every completion.\n1 { col(N,1..3) } 1 :- node(N).\n:- edge(X,Y), col(X,C), col(Y,C).\n% Colours are interchangeable: node 1 gets colour 1.\ncol(1,1).\n#show col/2.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# A witness check inside the search: a graph without a 3-colouring is refined with the unsat\n# core of the check, the edges that together make a colouring impossible.\nsearch A:\n    # G5: also at partial assignments. G(P) lists the decided edges only; as soon as the\n    # edges chosen so far admit no colouring, the core cuts every completion. A core found\n    # early names few edges, so the clause is short.\n    on partial P every 4:\n        if not C.solve(assume G(P)):\n            reject P with G.core(C)\n    on candidate M:\n        if not C.solve(assume G(M)):\n            reject M with G.core(C)\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "7",
+      "m": "16"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0,
+    "instance": ""
+  },
+  "instances": [
+    {
+      "id": "n7",
+      "facts": "% n = 7, at least 16 edges: 105 graphs (clingo, projected).\n",
+      "constants": {
+        "n": "7",
+        "m": "16"
+      },
+      "expected": {
+        "solutions": 105
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "n6",
+      "facts": "% n = 6, at least 12 edges: 15 graphs.\n",
+      "constants": {
+        "n": "6",
+        "m": "12"
+      },
+      "expected": {
+        "solutions": 15
+      },
+      "tags": []
+    },
+    {
+      "id": "n7-15",
+      "facts": "% n = 7, at least 15 edges: 1855 graphs.\n",
+      "constants": {
+        "n": "7",
+        "m": "15"
+      },
+      "expected": {
+        "solutions": 1855
+      },
+      "tags": []
+    },
+    {
+      "id": "n8",
+      "facts": "% n = 8, at least 21 edges: 280 graphs.\n",
+      "constants": {
+        "n": "8",
+        "m": "21"
+      },
+      "expected": {
+        "solutions": 280
+      },
+      "tags": [
+        "slow"
+      ]
+    },
+    {
+      "id": "n8-none",
+      "facts": "% n = 8, at least 22 edges: none (a 3-colourable graph on 8 nodes has at most 21 edges).\n",
+      "constants": {
+        "n": "8",
+        "m": "22"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": [
+        "slow"
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "name": "total-only",
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# A witness check inside the search: a graph without a 3-colouring is refined with the unsat\n# core of the check, the edges that together make a colouring impossible.\nsearch A:\n    on candidate M:\n        if not C.solve(assume G(M)):\n            reject M with G.core(C)\n"
+      },
+      "swap": {},
+      "constants": {}
+    }
+  ],
+  "runs": []
+}

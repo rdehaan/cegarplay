@@ -16,6 +16,7 @@ end
 
 rt.solvers, rt.links, rt.captures = {}, {}, {}
 rt.solutions, rt.candidates, rt.counterexamples = 0, 0, 0
+rt.partials = 0          -- calls of on partial (G5)
 rt.clauses, rt.literals, rt.maxlen = 0, 0, 0
 rt.hist = { 0, 0, 0, 0, 0, 0, 0, 0 }
 rt.expansions, rt.restarts, rt.blocks = 0, 0, 0
@@ -176,6 +177,7 @@ local function stats_event()
   local e = { t = clock() - rt.t0, candidates = rt.candidates, counterexamples = rt.counterexamples,
     solutions = rt.solutions, clauses = rt.clauses, literals = rt.literals, maxlen = rt.maxlen, hist = hist,
     expansions = rt.expansions, restarts = rt.restarts, blocks = rt.blocks, solvers = sv, counters = counters }
+  if rt.partials > 0 then e.partials = rt.partials end
   if #rt.track_order > 0 then
     local tr = {}
     for k, v in pairs(rt.tracked) do tr[k] = v end
@@ -362,6 +364,9 @@ function rt.solver(name, frags, options)
   s.ctl = new_control(s.options, name, frags)
   s.hooks = {
     init = function(_, init)
+      -- on partial (G5): check at every propagation fixpoint, not only on total assignments
+      local mode = (s.searching and s.on_partial) and clingo.PropagatorCheckMode.Fixpoint or clingo.PropagatorCheckMode.Total
+      if init.check_mode ~= mode then init.check_mode = mode end
       guarded(s, function()
         if #s.queue > 0 then local q = s.queue; s.queue = {}; inject(s, init, q) end
         if #s.blocks > 0 then local q = s.blocks; s.blocks = {}; rt.blocks = rt.blocks + #q; inject(s, init, q) end
@@ -383,8 +388,10 @@ function rt.solver(name, frags, options)
     check = function(_, control)
       if rt.fatal or rt.ending then return end
       -- clasp may call check on a partial assignment after clauses were added in an earlier
-      -- check; candidates are total assignments only
-      if not control.assignment.is_total then return end
+      -- check, and calls it at every fixpoint when the search has an on partial hook (G5);
+      -- candidates are total assignments, partial ones go to on_partial only
+      local total = control.assignment.is_total
+      if not total and not s.on_partial then return end
       if s.dead then guarded(s, kill_search, s, control); return end
       -- stashed clauses: the 2nd, 3rd, ... clause of one reject
       if #s.stash > 0 then
@@ -404,9 +411,10 @@ function rt.solver(name, frags, options)
         end)
         if conflict or rt.fatal then return end
         -- an added clause may have changed the assignment; check runs again when it is total
-        if not control.assignment.is_total then return end
+        -- (or at the next fixpoint)
+        if not total or not control.assignment.is_total then return end
       end
-      local f = s.on_check
+      local f = total and s.on_check or s.on_partial
       if f then guarded(s, f, control) end
     end }
   s.ctl:register_propagator(s.hooks)
@@ -610,13 +618,25 @@ local function check_model(L, M, what, side)
     fail(L.name .. "." .. what .. ": expected a model of " .. want.name .. ", got one of " .. M.solver.name)
   end
   if M[L] == nil then fail(L.name .. "." .. what .. ": the model has no values for link " .. L.name) end
+  if M.partial and side == "from" and what ~= "of" then
+    fail(L.name .. "." .. what .. " needs a total candidate; on a partial candidate use " .. L.name .. ".clause(X), " .. L.name .. ".clauses(X) or a core")
+  end
 end
 
-function Link:of(M)
+function Link:of(M, fill)
   check_model(self, M, "of", "from")
+  if fill ~= nil and type(fill) ~= "boolean" then fail(self.name .. "(M, v): v must be true or false (the value of the atoms a partial candidate leaves open)") end
   -- a fresh list: a stored G(M) keeps its values after the candidate is gone
   local a, v, dst = {}, M[self], self.dst
-  for j = 1, self.n do a[j] = v[j] and dst[j] or -dst[j] end
+  if M.partial and fill == nil then
+    -- a partial candidate: the assigned atoms only (G5)
+    for j = 1, self.n do if v[j] ~= nil then a[#a + 1] = v[j] and dst[j] or -dst[j] end end
+  elseif M.partial then
+    -- G(P, v): the open atoms get the value v, a total candidate that completes P
+    for j = 1, self.n do local x = v[j]; if x == nil then x = fill end; a[j] = x and dst[j] or -dst[j] end
+  else
+    for j = 1, self.n do a[j] = v[j] and dst[j] or -dst[j] end
+  end
   list_links[a] = { self }
   return a
 end
@@ -1178,7 +1198,12 @@ record = function(kind, s, c, M, facts, domain)
   local L = c and c.link or (M and M.solver.out[1]) or (s and s.out[1])
   local obj = { k = kind, s = s and s.index or NULL, l = L and L.index or NULL, n = loop_line(),
     t = clock() - rt.t0 }
-  if L and M and not (M.lazy and M.done) and M[L] then obj.c = hexvec(M[L], L.n) end
+  if L and M and M.partial then
+    -- a partial candidate (G5): the counterexample's interface values are a total candidate it
+    -- refutes; a clause from a core has none
+    local X = c and c.x
+    if X and X.ival and X.ival[L] then obj.c = hexvec(X.ival[L], L.n) end
+  elseif L and M and not (M.lazy and M.done) and M[L] then obj.c = hexvec(M[L], L.n) end
   if c and c.link then
     local lits, q, extra = c.lazy and L.slit or L.src, array({}), false
     for k = 1, #c do
@@ -1249,11 +1274,21 @@ function Model:reject(c)
     if type(cl) ~= "table" or #cl == 0 then fail("reject: an empty clause cannot refine the candidate") end
     if cl.lazy == false then fail("reject: the clause was built from a model outside the search; use S.add") end
     count_clause(cl)
-    trace("reject", s, cl, self)
+    trace(self.partial and "partial" or "reject", s, cl, self)
     if REC then record("r", s, cl, self) end
     if rt.certify then rt.certify(s, cl) end
     if s.rejlog then s.rejlog[#s.rejlog + 1] = cl end
-    if not self.rejected and i == 1 then
+    if self.partial then
+      -- a partial candidate (G5): the clause must hold for every completion (a core, G.clause(X));
+      -- it need not be false yet. After a conflict (add_clause false) nothing more is added
+      -- now (rule 3); the rest waits in the stash for the next check.
+      if not self.conflict then
+        if not self.control:add_clause{ plain(cl) } then self.conflict = true end
+      else
+        s.stash[#s.stash + 1] = cl
+      end
+      self.rejected = true
+    elseif not self.rejected and i == 1 then
       local ass = self.control.assignment
       for k = 1, #cl do
         if ass:value(cl[k]) ~= false then fail("refinement does not exclude the candidate") end
@@ -1573,6 +1608,36 @@ function Solver:search(h)
   local found = 0
   local block = SETTINGS.solutions ~= 1
   local cur
+  -- on partial M every n (G5): a candidate with the assigned interface atoms only, at every
+  -- n-th propagation fixpoint of a partial assignment
+  if h.on_partial ~= nil then
+    if type(h.on_partial) ~= "function" then fail(s.name .. ".search: on_partial must be a function") end
+    local every = h.every or 1
+    if math.type(every) ~= "integer" or every < 1 then fail(s.name .. ".search: every must be a whole number of at least 1") end
+    local fp, g = 0, h.on_partial
+    local last = {}            -- the values at the previous call: an unchanged candidate is skipped
+    s.on_partial = function(control)
+      fp = fp + 1
+      if fp % every ~= 0 then return end
+      local ass = control.assignment
+      local P = setmetatable({ solver = s, lazy = true, partial = true, control = control, rejected = false }, Model)
+      local same = true
+      for _, L in ipairs(s.out) do
+        local v, sl, prev = {}, L.slit, last[L]
+        for j = 1, L.n do
+          v[j] = ass:value(sl[j])     -- true, false or nil (unassigned)
+          if not prev or prev[j] ~= v[j] then same = false end
+        end
+        P[L] = v
+      end
+      if same then return end
+      for _, L in ipairs(s.out) do last[L] = P[L] end
+      tick(true)
+      rt.partials = rt.partials + 1
+      g(P)
+      P.done = true
+    end
+  end
   s.on_check = function(control)
     tick(true)
     count_candidate()
@@ -1644,6 +1709,7 @@ function Solver:search(h)
     s.rejlog = nil
   end
   s.on_check = nil
+  s.on_partial = nil
   if cur then cur.done = true end
   -- clauses still stashed hold solver literals: keep them as program literals for the next solve
   if #s.stash > 0 then
