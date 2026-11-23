@@ -1,9 +1,10 @@
 // Run bar and run flow (spec-app.md section 6).
-import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody, modulesFor } from './driver.js';
-import { TEMPLATES, template, derive, pickedVariant } from './project.js';
+import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody, boundedPlan, boundedBody, modulesFor } from './driver.js';
+import { spaceProblems } from './bounded.js';
+import { TEMPLATES, template, derive, pickedVariant, deriveSpace, spaceBound } from './project.js';
 import { resolveProject } from './instances.js';
 import { hashText } from './stats.js';
-import { fmt } from './output.js';
+import { fmt, symbolicText } from './output.js';
 import { Recording } from './recording.js';
 
 const $ = (id) => document.getElementById(id);
@@ -209,7 +210,10 @@ export class Control {
     try { return await this.runOne(opts); } finally { this.inRun = false; }
   }
 
-  async runOne({ seed, mode = 'run', instance, variant, stepping = false, allSolutions = false } = {}) {
+  //   mode 'bounded': the symbolic audit of lua/bounded.lua (PLAN3); with spaceRun = { name, k },
+  //   on the project derived from that space at bound k (js/project.js deriveSpace).
+  //   noHistory: no row in the run history (the steps of a space audit).
+  async runOne({ seed, mode = 'run', instance, variant, stepping = false, allSolutions = false, spaceRun = null, noHistory = false } = {}) {
     const app = this.app;
     this.mode = mode;
     this.setState('validating');
@@ -224,10 +228,16 @@ export class Control {
     app.editors.clearAnnotations();
     let problems, instanceId = null;
     try {
-      // an instance stored as a recipe gets its facts from its generator first
-      project = await resolveProject(project, instance, (p, o) => app.engine.exec(p, o), app.genLua());
-      // without an explicit variant: the one picked in the run bar (a stale name is ignored)
-      project = derive(project, { instance, variant: variant !== undefined ? variant : pickedVariant(project) });
+      if (spaceRun) {
+        const sp = (project.spaces || []).find((x) => x.name === spaceRun.name);
+        if (!sp) throw new Error(`no space named ${spaceRun.name}`);
+        project = deriveSpace(project, sp.name, { [spaceBound(sp)]: spaceRun.k }, { variant: variant !== undefined ? variant : pickedVariant(project) });
+      } else {
+        // an instance stored as a recipe gets its facts from its generator first
+        project = await resolveProject(project, instance, (p, o) => app.engine.exec(p, o), app.genLua());
+        // without an explicit variant: the one picked in the run bar (a stale name is ignored)
+        project = derive(project, { instance, variant: variant !== undefined ? variant : pickedVariant(project) });
+      }
       instanceId = project.instance || null;
     } catch (e) {
       app.output.clear();
@@ -255,6 +265,10 @@ export class Control {
       plan = auditPlan(compiled);
       if (plan.error) problems.push({ where: { kind: 'loop', name: 'loop', line: 1, col: 1 }, severity: 'error', message: `audit: ${plan.error}` });
     }
+    if (mode === 'bounded' && !problems.some((p) => p.severity === 'error')) {
+      plan = boundedPlan(compiled);
+      if (plan.error) problems.push({ where: { kind: 'loop', name: 'loop', line: 1, col: 1 }, severity: 'error', message: `symbolic audit: ${plan.error}` });
+    }
     if (problems.some((p) => p.severity === 'error')) {
       app.output.clear();
       app.output.result(`Not started: ${problems.filter((p) => p.severity === 'error').length} problem(s) found before the run.`, 'error');
@@ -268,18 +282,21 @@ export class Control {
       return { state: 'error', problems };
     }
     const iso = app.engine.isolated && !!app.engine.control;
-    const run = mode === 'audit'
-      ? { ...project, settings: { ...project.settings, solutions: 0, candidates: 0, trace: 0 } } : project;
+    const auditing = mode === 'audit' || mode === 'bounded';
+    const budget = Number(project.settings.seconds) > 0 ? Number(project.settings.seconds) : 60;
+    const run = auditing
+      ? { ...project, settings: { ...project.settings, solutions: 0, candidates: 0, trace: 0, ...(mode === 'bounded' ? { seconds: budget } : {}) } } : project;
     const modules = modulesFor(run.settings, { mode, compiled, loop: run.loop }).map((m) => app.modules[m]);
     const assembled = assemble(run, compiled, app.runtime, mode === 'audit'
-      ? { poll: iso, modules, body: auditBody(compiled, plan) } : { poll: iso, modules });
+      ? { poll: iso, modules, body: auditBody(compiled, plan) }
+      : mode === 'bounded' ? { poll: iso, modules, body: boundedBody(compiled, plan, { seconds: budget, space: !!spaceRun }) } : { poll: iso, modules });
     this.assembled = assembled;
     app.internals && app.internals.program(project, compiled, assembled);
     app.editors.setReadOnly(true);
     app.output.clear();
     app.output.trace.clear(project.settings.trace);
     app.stats.start({});
-    app.output.result(mode === 'audit' ? 'Auditing…' : 'Running…');
+    app.output.result(mode === 'audit' ? 'Auditing…' : mode === 'bounded' ? (spaceRun ? `Symbolic audit of space ${spaceRun.name} at k = ${spaceRun.k}…` : 'Symbolic audit…') : 'Running…');
     this.mode = mode;
     document.body.dataset.lastMode = mode;   // shows the audit notes in Statistics and Observatory
     this.audit = null;
@@ -291,9 +308,9 @@ export class Control {
     if (app.anatomy) app.anatomy.start({ assembled, compiled });
     this.setState('running');
     const info = {
-      loopLabel: (mode === 'audit' ? 'audit: ' : '') + loopLabel(project.loop) + (instanceId ? ` [${instanceId}]` : '') +
+      loopLabel: (mode === 'audit' ? 'audit: ' : mode === 'bounded' ? (spaceRun ? `space ${spaceRun.name}: ` : 'symbolic audit: ') : '') + loopLabel(project.loop) + (instanceId ? ` [${instanceId}]` : '') +
         (project.variant ? ` (variant ${project.variant})` : ''), mode, instance: instanceId, variant: project.variant || null, settings: { ...project.settings, constants: { ...project.settings.constants } },
-      engine: app.engineVersion, solvers: compiled ? compiled.solvers : [],
+      engine: app.engineVersion, solvers: compiled ? compiled.solvers : [], noHistory,
       fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])),
     };
     return new Promise((resolve) => {
@@ -301,7 +318,7 @@ export class Control {
         onEvent: (kind, data, raw) => this.onEvent(kind, data, raw),
         onLine: (text, isErr) => { app.internals && app.internals.raw(text); app.output.line(text, isErr); },
         onDone: (d) => resolve(this.onDone(d, info)),
-      }, { seconds: Number(project.settings.seconds) || 0 });
+      }, { seconds: mode === 'bounded' ? budget : Number(project.settings.seconds) || 0 });
       // started by Step: the first poll lets one candidate through, then the run waits
       if (stepping && iso) { app.engine.step(); this.setState('paused'); }
     });
@@ -341,6 +358,7 @@ export class Control {
       }
       case 'A':
         if (data.verdict) { this.audit = data; app.output.auditVerdict(data); }
+        else if (data.phase === 'symbolic') app.output.result(`Symbolic audit: ${fmt(data.rounds)} rounds, ${fmt(data.refinements)} refinements so far…`);
         else app.output.result(`Auditing: ${fmt(data.candidates)} candidates, ${fmt(data.pairs)} pairs, ${fmt(data.unsound)} unsound so far…`);
         break;
       case 'D': this.D = data; break;
@@ -367,7 +385,7 @@ export class Control {
     }
     if (this.audit) info.audit = this.audit;
     app.stats.done(this.D, this.D ? info : null);
-    if (info.mode !== 'audit' && app.instancesTab) app.instancesTab.noteRun(info.instance, app.stats.S, this.D, app.output.costs);
+    if (info.mode !== 'audit' && info.mode !== 'bounded' && app.instancesTab) app.instancesTab.noteRun(info.instance, app.stats.S, this.D, app.output.costs);
     app.editors.setReadOnly(false);
     if (this.marks.length) app.editors.annotate(this.marks);
     if (app.anatomy) app.anatomy.done();
@@ -379,7 +397,7 @@ export class Control {
       this.runMessage(this.E ? `Error: ${this.E.message}${line ? ` (loop script, line ${line})` : ''}` : app.output.resultEl.textContent);
     }
     this.setState(state);
-    return { state, D: this.D, E: this.E, audit: this.audit, S: app.stats.S };
+    return { state, D: this.D, E: this.E, audit: this.audit, S: app.stats.S, info };
   }
 
   describe(D) {
@@ -391,6 +409,10 @@ export class Control {
       return A.verdict === 'sound'
         ? `Audit: sound for every candidate and counterexample of this instance (${fmt(A.candidates)} candidates, ${fmt(A.pairs)} pairs).`
         : `Audit: unsound. ${fmt(A.unsound)} of ${fmt(A.pairs)} refinements would remove a solution; ${fmt(A.at_risk)} solutions at risk.`;
+    }
+    if (this.mode === 'bounded' && D.outcome !== 'error') {
+      if (!A) return `Symbolic audit ended without a verdict: ${D.outcome}${D.detail ? ` (${D.detail})` : ''}.`;
+      return symbolicText(A);
     }
     const n = S ? fmt(S.solutions) : '?';
     const sol = S && S.solutions === 1 ? 'solution' : 'solutions';
@@ -461,6 +483,9 @@ export class Control {
   // enumerate); then every auditable instance, one after the other.
   auditPicked() {
     const app = this.app, it = app.instancesTab;
+    const how = $('audit-mode') ? $('audit-mode').value : 'enumerate';
+    if (how === 'symbolic') return this.run({ mode: 'bounded' });
+    if (how === 'space') return this.auditSpace();
     const id = it ? it.selectedId() : null;
     const x = id ? (app.project.instances || []).find((i) => i.id === id) : null;
     if (x && x.audit === false && it) {
@@ -468,6 +493,48 @@ export class Control {
       return it.auditAll();
     }
     return this.run({ mode: 'audit' });
+  }
+
+  // Space (PLAN3 S7): one symbolic audit per k = from..K on the space's instances, as a batch that
+  // stops at the first k that is not sound (js/bounded.js verifySpace does the same headless).
+  // One row in the run history.
+  async auditSpace() {
+    const app = this.app;
+    const name = $('space-select') ? $('space-select').value : '';
+    const project = app.collect();
+    const sp = (project.spaces || []).find((x) => x.name === name);
+    if (!sp) { this.runMessage('Not started: the project has no space of that name.'); return null; }
+    const from = sp.from ?? 1;
+    const to = Math.max(from, Math.floor(Number($('space-bound') && $('space-bound').value) || (sp.expected && sp.expected.k) || from));
+    const errs = await spaceProblems(project, sp.name, (p, o) => app.engine.exec(p, o), from);
+    if (errs.length) {
+      const msg = `Not started: space ${sp.name}, line ${errs[0].line}: ${oneLineMessage(errs[0].message)}`;
+      this.runMessage(msg); app.output.result(msg, 'error');
+      return null;
+    }
+    const b = this.beginBatch('space audit');
+    if (!b) return null;
+    let last = null, result = null;
+    const perK = [];
+    try {
+      for (let k = from; k <= to; k++) {
+        this.batchProgress(`k = ${k} of ${to}`);
+        const r = await this.run({ mode: 'bounded', spaceRun: { name: sp.name, k }, noHistory: true });
+        if (b.cancelled || !r || r.state === 'aborted') break;
+        last = r;
+        const v = r.audit;
+        perK.push({ k, verdict: v ? v.verdict : r.state, rounds: v ? v.rounds : null, t: v ? v.t : null });
+        if (!v || v.verdict !== 'sound') { result = { verdict: v ? v.verdict : 'error', k, witness: v && v.witness ? { ...v.witness, k } : null, reason: v ? v.reason : r.state, last: v }; break; }
+        if (k === to) result = { verdict: 'sound', k, witness: null, last: v };
+      }
+    } finally { this.endBatch(b); }
+    if (!result) { app.output.result(`Space audit stopped after ${perK.length} step${perK.length === 1 ? '' : 's'}.`); return null; }
+    const A = { ...(result.last || {}), verdict: result.verdict, mode: 'space', space: sp.name, k: result.k, witness: result.witness, reason: result.reason, perK };
+    this.audit = A;
+    app.output.auditVerdict(A);
+    app.output.result(symbolicText(A), result.verdict === 'unsound' ? 'error' : '');
+    if (last && last.info && app.stats.S) { app.stats.record({ ...last.info, noHistory: false, audit: A }); app.stats.render(); }
+    return { ...result, perK };
   }
 
   stop() {

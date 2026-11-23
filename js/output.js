@@ -40,13 +40,16 @@ export class Output {
     if (this.auditEl) { this.auditEl.hidden = true; this.auditEl.textContent = ''; }
   }
 
-  // The verdict of an audit (A event with a verdict), with its witness.
+  // The verdict of an audit (A event with a verdict), with its witness. A symbolic or space verdict
+  // (PLAN3, a.mode) has rounds and refinements instead of counts.
   auditVerdict(a) {
     const el = this.auditEl;
     if (!el) return;
     el.textContent = '';
     el.hidden = false;
     el.dataset.verdict = a.verdict;
+    el.dataset.mode = a.mode || 'enumerate';
+    if (a.mode) { this.symbolicVerdict(el, a); return; }
     const h = document.createElement('h3');
     h.textContent = a.verdict === 'sound' ? 'Audit: sound' : a.verdict === 'unsound' ? 'Audit: unsound' : 'Audit: limit';
     el.append(h);
@@ -81,6 +84,50 @@ export class Output {
       e.className = 'note';
       e.textContent = `${fmt(a.empty)} counterexamples have no relevant atom (a run stops there with an error).`;
       el.append(e);
+    }
+  }
+
+  symbolicVerdict(el, a) {
+    const h = document.createElement('h3');
+    const what = a.mode === 'space' ? `Space ${a.space}` : 'Symbolic audit';
+    h.textContent = `${what}: ${a.mode === 'space' && a.verdict === 'sound' ? `sound up to k = ${a.k}` : a.verdict === 'unsound' && a.mode === 'space' ? `unsound at k = ${a.k}` : a.verdict}`;
+    el.append(h);
+    const p = document.createElement('p');
+    p.textContent = symbolicText(a);
+    el.append(p);
+    if (a.mode === 'space' && a.perK && a.perK.length) {
+      const q = document.createElement('p');
+      q.className = 'note space-steps';
+      q.textContent = 'Per k: ' + a.perK.map((r) => `${r.k} ${r.verdict}${r.rounds != null ? ` (${fmt(r.rounds)} rounds)` : ''}`).join(' · ');
+      el.append(q);
+    }
+    const w = a.witness;
+    if (w) {
+      const dl = document.createElement('dl');
+      const row = (k, v) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; dl.append(dt, dd); return dd; };
+      const set = (l) => `{${(l || []).join(' ')}}`;
+      if (w.instance != null) row(`Instance (k = ${w.k ?? a.k})`, w.instance || '(no facts)').className = 'witness-instance';
+      row('Candidate', set(w.candidate));
+      row('Counterexample', w.counterexample || '(no shown atoms)');
+      if (w.kind === 'clauses') row('Clause', set(w.clause));
+      else row('Relevant', set(w.relevant));
+      row('Lost solution', set(w.solution));
+      row('They differ on', set(w.differ));
+      el.append(dl);
+      const n = document.createElement('p');
+      n.className = 'note';
+      n.textContent = w.kind === 'clauses'
+        ? 'The lost solution falsifies every literal of the clause, so the clause removes it.'
+        : 'The lost solution agrees with the candidate on every relevant atom, so the clause removes it too. An atom on which they differ should have been relevant.';
+      el.append(n);
+      if (w.instance != null && this.onSaveInstance) {
+        const b = document.createElement('button');
+        b.className = 'control-button save-witness';
+        b.type = 'button';
+        b.textContent = 'Save as regression instance';
+        b.addEventListener('click', () => this.onSaveInstance(a));
+        el.append(b);
+      }
     }
   }
 
@@ -214,4 +261,19 @@ export class Output {
       this.message(`${p.severity === 'error' ? 'Error' : 'Warning'} in ${at}: ${p.message}`, p.severity === 'error' ? 'error' : 'warning');
     }
   }
+}
+
+// One line for a symbolic or space verdict (PLAN3), for the result line and the panel.
+export function symbolicText(a) {
+  const steps = `${fmt(a.rounds ?? 0)} rounds, ${fmt(a.refinements ?? 0)} refinements${a.fallback ? ` (${fmt(a.fallback)} blocks)` : ''}`;
+  if (a.mode === 'space') {
+    if (a.verdict === 'sound') return `Space ${a.space}: sound for every instance up to k = ${a.k} (the strategy loses no solution on any of them).`;
+    if (a.verdict === 'unsound') return `Space ${a.space}: unsound at k = ${a.k}: a clause removes a solution on the instance shown.`;
+    if (a.verdict === 'budget') return `Space ${a.space}: no verdict at k = ${a.k} within the time budget (sound below it).`;
+    return `Space ${a.space}: ${a.verdict} at k = ${a.k}${a.reason ? `: ${a.reason}` : ''}.`;
+  }
+  if (a.verdict === 'sound') return `Symbolic audit: sound for every candidate and counterexample of this instance (${steps}).`;
+  if (a.verdict === 'unsound') return `Symbolic audit: unsound. A clause removes a solution (${steps}).`;
+  if (a.verdict === 'budget') return `Symbolic audit: no verdict within ${fmt(a.seconds || 60)} s (${steps}).`;
+  return `Symbolic audit: ${a.verdict}${a.reason ? ` (${a.reason})` : ''}.`;
 }

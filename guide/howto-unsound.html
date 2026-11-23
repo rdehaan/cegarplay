@@ -46,22 +46,26 @@
           <li><b>Audit.</b> Press <b>Audit</b> (next to Run). It checks every refinement against every
             candidate and counterexample of the instance, and names a witness: the candidate, the
             counterexample, the relevant set, the lost solution and the atoms on which the candidate
-            and the lost solution differ. One of those atoms should have been relevant.</li>
+            and the lost solution differ. One of those atoms should have been relevant. On an
+            instance too large to enumerate, choose the mode <b>Symbolic</b>: the same verdict and the
+            same kind of witness from one search.</li>
           <li><b>See it.</b> Observatory, Candidate space, <b>Compute</b>: one square per candidate,
             coloured by its fate; lost solutions stand out. The summary names the first unsound
             refinement; the blame matrix shows which atoms each clause relies on.</li>
           <li><b>Shrink it.</b> If the instance is large, <b>Fuzz</b> (Instances tab) audits instances
-            from small to large, stops at the first unsound one and shrinks it.</li>
-          <li><b>Keep it.</b> Fuzz's card saves the small instance as a regression instance with its
-            true count; <b>Run all</b> checks it from then on.</li>
+            from small to large, stops at the first unsound one and shrinks it (instances marked
+            "no audit" get the symbolic audit). With a space (the mode <b>Space</b> of Audit) the
+            search for the smallest breaking instance is exhaustive: k = 1, 2, … until one breaks.</li>
+          <li><b>Keep it.</b> Fuzz's card, and the witness of a space audit, save the small instance as
+            a regression instance; <b>Run all</b> checks it from then on.</li>
           <li><b>Fix and re-audit.</b> Mark the atom relevant (or fix the refine part), audit again.</li>
         </ol>
 
         <h2 id="pitfalls">Pitfalls</h2>
         <ul>
           <li>The audit is per instance: "sound" means sound on this instance. Audit several, small
-            ones first, and use certificates (Loop tab) for a guarantee that does not depend on the
-            instance.</li>
+            ones first, check a space up to a bound, and use certificates (Loop tab) for a guarantee
+            that does not depend on the instance. "Sound up to k" covers the space below k only.</li>
           <li>Too many solutions is a bug too: a core taken from the wrong check (chapter 10) accepts
             wrong candidates.</li>
           <li>Blocks and cores need no audit; the audit refuses loops refined only by them.</li>

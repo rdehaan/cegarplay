@@ -789,7 +789,17 @@ The comparison only sees the counterexamples that one run happens to meet. The *
 
 For the loop that marks one node the witness is a candidate that deletes 4 and 8, its counterexample the triangle 1, 2, 3, and the relevant set "delete 3". The solution that deletes 1, 4 and 8 agrees with the candidate on node 3, so the clause removes it too. The two differ on node 1 only: the node that should have been relevant. [Playground: guide-04-one-node]{.play}
 
-The audit lists every candidate, so like the blocking loop it needs a small instance. Blocks and cores need no audit (they are sound by construction), and clauses written in ASP (`G.clauses`) are not audited: there, compare counts as above.
+The audit lists every candidate, so like the blocking loop it needs a small instance. Blocks and cores need no audit (they are sound by construction); clauses written in ASP (`G.clauses`) are audited like relevant sets.
+
+[]{#c04-symbolic}The **symbolic audit** asks the audit's question without the list. It searches for three things at once: a candidate, a counterexample of it, and a solution that the counterexample's clause removes. When the search finds none, every refinement is sound on the instance; when it finds one, that is the witness, with as few differing atoms as the audit's. It runs a small loop of its own: a triple whose "solution" turns out to have a counterexample after all is ruled out, and the search goes on. On a correct relevant set it usually needs a single search, so it also answers for instances far too large to enumerate. It is optional: the audit stays the default.
+
+### Every instance up to a bound {#c04-bounded}
+
+Both audits judge one instance. A **space** describes a whole family: a few choice rules over the instance's predicates, with a bound k. "Every graph on the nodes 1..k" is `node(1..k). { edge(U,V) : node(U), node(V), U < V }.` The symbolic audit can leave the instance free inside such a space, and checking k = 1, 2, … in turn gives a verdict for *every* instance of the space up to the bound: **sound up to k**, or the smallest instance on which a refinement removes a solution.
+
+The tutorial's sum-free sets have the space "n = 1, 2, …". The correct relevant set is sound up to n = 10 (and further); the too weak one first loses a solution at n = 2, exactly where the audit over n = 1, 2, … first fails. For a graph problem the space can be every graph on k nodes: the clique-colouring example's strategy is sound on every graph with up to 12 nodes, more than 10^19^ graphs, checked in seconds.
+
+What "sound up to k" does not say: anything about k + 1, or about instances the space leaves out (no self-loops, one query, only two players). It is strong evidence, not a proof. Write the space so that it contains the small instances where your relevant set could go wrong, and keep the bound where each step still takes seconds.
 
 ### One instance is not enough {#c04-instances}
 
@@ -869,6 +879,7 @@ In the leaf-colouring example, delete its third `relevant/1` rule and, without l
 - []{#c04-rule-soundness-test}Test soundness by comparison: the blocking loop and your loop, same fragments and constants, all solutions, both exhausted, same count.
 - []{#c04-rule-audit}Audit a small instance: it checks every refinement against every solution, and its witness names the atom that should have been relevant.
 - []{#c04-rule-several-instances}Apply the test to several small instances: a wrong loop can be right on one.
+- With a space, check every instance up to a bound at once: "sound up to k" covers the whole family below k, and nothing beyond it.
 - []{#c04-rule-both-polarities}A counterexample can depend on an atom being false. Mark it too.
 :::
 
@@ -3429,6 +3440,15 @@ Sound and complete
 Audit
 :   A test of every refinement against every candidate and counterexample of an instance. [Chapter 4](#c04); how-to.
 
+Symbolic audit
+:   The audit's question answered by one search for a candidate, a counterexample and a solution its clause removes, instead of a list: also for instances too large to enumerate. [Chapter 4](#c04-symbolic).
+
+Instance space
+:   Every instance up to a bound k, written as choice rules over the instance's predicates (a project's `spaces`). How-to.
+
+Bounded-sound
+:   Sound on every instance of a space up to the bound k ("sound up to k"); it says nothing about larger instances. [Chapter 4](#c04-bounded).
+
 Witness check
 :   A check whose answer set means the candidate is *good*; a failed witness check is refined by its unsat core. [Chapter 10](#c10).
 
@@ -3655,6 +3675,14 @@ The **Audit** is the second way to run a project. Instead of the pairs of candid
 - the atoms on which they differ, `{pick(2)}`: one of them should have been relevant.
 
 The audit of the first example is sound. Make the audit a habit on a small instance of every new problem. It needs no change to the project, and it works for rule refinements too (lesson 9).
+
+### The symbolic audit and spaces {#t06-tut-symbolic}
+
+The audit lists every candidate, so it stops being practical when there are millions. The **symbolic audit** asks the same question in one search: is there a candidate, a counterexample and a solution that the counterexample's clause removes? It is the mode **Symbolic** of the Audit. On the too weak sum-free sets it says unsound at once, with a witness of the same kind: here the candidate `{pick(1) pick(2)}`, the counterexample `sum(1,1)`, the relevant set `{pick(2)}` and the lost solution `{pick(2)}`. Like the audit, it shows a witness on which the candidate and the lost solution differ in as few atoms as possible (here one, `pick(1)`; the audit happened to show another witness with one atom).
+
+A verdict, of either audit, is about one instance. A **space** describes many: the sum-free examples have a space `n` that is just the constant `n` = 1, 2, 3, … The Audit's mode **Space** takes a space and a bound k. The first example is *sound up to* `n` = 10: no refinement it can make loses a solution on any of these ten instances. The too weak variant breaks at `n` = 2, the smallest instance where it loses a solution, and the witness names the instance. Sound up to 10 says nothing about `n` = 11; the design guide's chapter on soundness says what such a bound is worth.
+
+[Playground: tutorial-first-run]{.play}
 
 ### The reference run {#t06-tut-reference}
 

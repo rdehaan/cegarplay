@@ -2,13 +2,14 @@
 // the audit for a verdict on each, shrink the first unsound one, and name the refinement that
 // removes a solution. No DOM, no Node APIs.
 import { derive } from './project.js';
-import { validate, assemble, modulesFor, auditPlan, auditBody, declarationLines, parseEvent } from './driver.js';
+import { validate, assemble, modulesFor, auditPlan, auditBody, boundedPlan, boundedBody, declarationLines, parseEvent } from './driver.js';
 import { suiteInstances, Reducer, cellProject } from './campaign.js';
 import { resolveProject } from './instances.js';
 import { Recording } from './recording.js';
 import { shrink, shrinkConstants, normaliseFacts } from './shrink.js';
 
-// env: { engineRun, runtime, modules: { audit, ground, replay }, luaTexts }
+// env: { engineRun, runtime, modules: { audit, ground, replay, bounded }, luaTexts }. With
+// modules.bounded (PLAN3), instances marked audit: false get the symbolic audit instead of none.
 
 // The default source: a constants grid 1..v over each numeric constant of the project.
 export function defaultSource(project) {
@@ -23,9 +24,10 @@ export function defaultSource(project) {
 const size = (params) => Object.values(params || {}).reduce((a, v) => (typeof v === 'number' || /^\d+$/.test(String(v)) ? a * Number(v) : a), 1);
 
 // The instances of a source, smallest first (by the product of their numeric parameters).
-export function fuzzInstances(project, source) {
-  // instances marked audit: false (too large to enumerate) are never audited
-  const list = suiteInstances(project, { name: 'fuzz', instances: source }).filter((x) => !x.instance || x.instance.audit !== false);
+export function fuzzInstances(project, source, { symbolic = false } = {}) {
+  // instances marked audit: false (too large to enumerate) are never audited by enumeration; with
+  // symbolic, they get the symbolic audit
+  const list = suiteInstances(project, { name: 'fuzz', instances: source }).filter((x) => symbolic || !x.instance || x.instance.audit !== false);
   return list.map((x, i) => ({ ...x, order: i })).sort((a, b) => size(a.params) - size(b.params) || a.order - b.order);
 }
 
@@ -50,6 +52,25 @@ export async function auditOf(d, env) {
   const A = r.events.filter((e) => e.kind === 'A' && e.data.verdict).map((e) => e.data).at(-1);
   const E = r.events.find((e) => e.kind === 'E');
   if (!A) return { error: E ? E.data.message : `the audit ended without a verdict (${r.status})` };
+  return { verdict: A, plan };
+}
+
+// The symbolic audit (lua/bounded.lua) of a plain project: { verdict } | { error } | { noAudit }.
+export async function symbolicOf(d, env, { seconds = 60 } = {}) {
+  const problems = await validate(d, env.engineRun);
+  const errs = problems.filter((p) => p.severity === 'error');
+  if (errs.length) return { error: errs[0].message };
+  const compiled = problems.compiled;
+  if (!compiled) return { noAudit: 'a raw Lua loop has no audit' };
+  const plan = boundedPlan(compiled);
+  if (plan.error) return { noAudit: plan.error };
+  const run = { ...d, settings: { ...d.settings, solutions: 0, candidates: 0, trace: 0, seconds } };
+  const mods = modulesFor(run.settings, { mode: 'bounded' }).map((m) => env.modules[m]);
+  const a = assemble(run, compiled, env.runtime, { modules: mods, body: boundedBody(compiled, plan, { seconds }) });
+  const r = await runEvents(a.program, env);
+  const A = r.events.filter((e) => e.kind === 'A' && e.data.verdict).map((e) => e.data).at(-1);
+  const E = r.events.find((e) => e.kind === 'E');
+  if (!A) return { error: E ? E.data.message : `the symbolic audit ended without a verdict (${r.status})` };
   return { verdict: A, plan };
 }
 
@@ -82,13 +103,17 @@ async function plainOf(project, x, env, variant) {
 // skipped }. mode "audit", or "compare" (no audit for this script: solution hashes against the
 // variant `reference`).
 export async function fuzz(project, { source = defaultSource(project), env, onProgress = () => {}, signal = { aborted: false } } = {}) {
-  const list = fuzzInstances(project, source);
+  const symbolic = !!(env.modules && env.modules.bounded);
+  const list = fuzzInstances(project, source, { symbolic });
   let mode = 'audit', tried = 0, skipped = 0, note = '';
   for (const x of list) {
     if (signal.aborted) break;
     tried++;
     const d = await plainOf(project, x, env);
-    let res = mode === 'audit' ? await auditOf(d, env) : null;
+    const big = x.instance && x.instance.audit === false;
+    if (big && mode !== 'audit') { skipped++; continue; }
+    let res = mode === 'audit' ? await (big ? symbolicOf(d, env) : auditOf(d, env)) : null;
+    if (big && res && res.noAudit) { skipped++; continue; }   // the symbolic audit does not cover this loop
     if (res && res.noAudit) {
       if (!(project.variants || []).some((v) => v.name === 'reference')) return { found: null, tried, mode: 'none', skipped, note: `${res.noAudit}, and the project has no variant "reference" to compare with` };
       mode = 'compare'; note = `no audit for this script (${res.noAudit}): solution hashes compared with the variant "reference"`;
@@ -96,7 +121,8 @@ export async function fuzz(project, { source = defaultSource(project), env, onPr
     if (mode === 'audit') {
       onProgress({ instance: x.id, tried, total: list.length, verdict: res.verdict ? res.verdict.verdict : 'error' });
       if (res.error) { skipped++; continue; }
-      if (res.verdict.verdict === 'limit') { skipped++; continue; }
+      // no verdict: the candidate limit (enumeration), the time budget or an unsupported plan (symbolic)
+      if (['limit', 'budget', 'unsupported'].includes(res.verdict.verdict)) { skipped++; continue; }
       if (res.verdict.verdict === 'unsound') return { found: { instance: x, params: x.params, verdict: res.verdict, plan: res.plan, project: d }, tried, mode, skipped, note };
       continue;
     }

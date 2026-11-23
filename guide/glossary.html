@@ -68,6 +68,16 @@
           <dt id="audit">Audit</dt>
           <dd>A test of every refinement against every candidate and counterexample of an instance.
             <a href="04-soundness.html">Chapter 4</a>; <a href="howto-unsound.html">how-to</a>.</dd>
+          <dt id="symbolic-audit">Symbolic audit</dt>
+          <dd>The audit's question answered by one search for a candidate, a counterexample and a
+            solution its clause removes, instead of a list: also for instances too large to enumerate.
+            <a href="04-soundness.html#symbolic">Chapter 4</a>.</dd>
+          <dt id="instance-space">Instance space</dt>
+          <dd>Every instance up to a bound k, written as choice rules over the instance's predicates
+            (a project's <code>spaces</code>). <a href="howto-instances.html#space">How-to</a>.</dd>
+          <dt id="bounded-sound">Bounded-sound</dt>
+          <dd>Sound on every instance of a space up to the bound k ("sound up to k"); it says nothing
+            about larger instances. <a href="04-soundness.html#bounded">Chapter 4</a>.</dd>
           <dt id="witness">Witness check</dt>
           <dd>A check whose answer set means the candidate is <em>good</em>; a failed witness check is
             refined by its unsat core. <a href="10-witness-and-cores.html">Chapter 10</a>.</dd>

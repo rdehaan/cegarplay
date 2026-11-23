@@ -129,6 +129,11 @@ app.loopTab = new LoopTab(app);
 app.internals = new Internals(app);
 app.control = new Control(app);
 app.instancesTab = new InstancesTab(app);
+// the audit modes (PLAN3): Space shows the space picker and the bound; a space audit's witness
+// can be kept as an instance
+$('audit-mode').addEventListener('change', () => app.instancesTab.renderSpaceBar());
+$('space-select').addEventListener('change', () => app.instancesTab.renderSpaceBar());
+app.output.onSaveInstance = (a) => app.instancesTab.saveWitness(a);
 app.variants = new Variants(app);
 app.cursor = new Cursor();
 bindKeys(app.cursor, () => $('tab11').checked || document.body.classList.contains('lecture'));
@@ -662,7 +667,7 @@ addEventListener('keydown', (ev) => {
 // What a first visit opens with: small and fast (graph-coloring stays in the library).
 const DEFAULT_EXAMPLE = 'tutorial-first-run';
 async function start() {
-  const [runtime, audit, ground, draw, generate, replayLua, version] = await Promise.all([
+  const [runtime, audit, ground, draw, generate, replayLua, version, bounded] = await Promise.all([
     fetch('lua/runtime.lua').then((r) => r.text()),
     fetch('lua/audit.lua').then((r) => r.text()),
     fetch('lua/ground.lua').then((r) => r.text()),
@@ -670,9 +675,10 @@ async function start() {
     fetch('lua/generate.lua').then((r) => r.text()),
     fetch('lua/replay.lua').then((r) => r.text()),
     fetch('vendor/clingo-wasm/VERSION').then((r) => r.text()).catch(() => 'clingo-wasm'),
+    fetch('lua/bounded.lua').then((r) => r.text()),
   ]);
   app.runtime = runtime;
-  app.modules = { audit, ground, draw, generate, replay: replayLua };
+  app.modules = { audit, ground, draw, generate, replay: replayLua, bounded };
   tutorialLoaded = loadTutorial();
   app.engineVersion = version.split('\n')[0];
   // ?example=<id> (or the older ?file=<id>) loads an example of the library

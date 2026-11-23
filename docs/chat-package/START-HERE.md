@@ -101,6 +101,11 @@ breaks as `\n`. After the block, give two or three sentences on what the example
   `@perm`, `@subset`, `@weighted` and `@mallows`; an instance can be a recipe
   `{ "id": "random-1", "recipe": { "generator": "g", "params": { "n": 6 }, "seed": 1 } }` instead
   of facts (`example-qbf.json`, `example-af-preferred.json`).
+- Optional: a **space** (`spaces`, manual *Spaces*) describes every instance up to a bound k with
+  choice rules over the instance's predicates, so that the strategy can be verified on all of them
+  (the page's Audit, mode Space; `node tools/audit.mjs ID --space NAME --bound K`). Keep what the
+  glue is built from as facts, use a parameter name no fragment uses, and say in your notes which
+  bound you would expect to check (`example-af-preferred.json` has the space `frameworks`).
 - The problem's input (a graph, a formula, an election, items) goes into **instances**, not into
   `shared`: `"instances": [{ "id": "example", "facts": "% what it is\n...", "constants": {},
   "expected": { "solutions": 3 }, "tags": ["library"] }, ...]` and `"version": 2` (manual,

@@ -194,6 +194,24 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
 </ul>
 <p><span class="web-only">Load the first example again and press Audit: it is sound.</span><span class="book-only">The audit of the first example is sound.</span> Make the audit a habit on a small instance of every
   new problem. It needs no change to the project, and it works for rule refinements too (lesson 9).</p>
+<h3 id="tut-symbolic">The symbolic audit and spaces</h3>
+<p>The audit lists every candidate, so it stops being practical when there are millions. The
+  <b>symbolic audit</b> asks the same question in one search: is there a candidate, a counterexample and a solution
+  that the counterexample's clause removes? <span class="web-only">Choose <b>Symbolic</b> in the select next to
+  Audit and press Audit.</span><span class="book-only">It is the mode <b>Symbolic</b> of the Audit.</span> On the too
+  weak sum-free sets it says unsound at once, with a witness of the same kind: here the candidate
+  <code>{pick(1) pick(2)}</code>, the counterexample <code>sum(1,1)</code>, the relevant set <code>{pick(2)}</code> and
+  the lost solution <code>{pick(2)}</code>. Like the audit, it shows a witness on which the candidate and the lost
+  solution differ in as few atoms as possible (here one, <code>pick(1)</code>; the audit happened to show another
+  witness with one atom).</p>
+<p>A verdict, of either audit, is about one instance. A <b>space</b> describes many: the sum-free examples have a
+  space <code>n</code> that is just the constant <code>n</code> = 1, 2, 3, … <span class="web-only">Choose <b>Space</b>
+  with the bound 10 and press Audit.</span><span class="book-only">The Audit's mode <b>Space</b> takes a space and a
+  bound k.</span> The first example is <em>sound up to</em> <code>n</code> = 10: no refinement it can make loses a
+  solution on any of these ten instances. The too weak variant breaks at <code>n</code> = 2, the smallest instance
+  where it loses a solution, and the witness names the instance. Sound up to 10 says nothing about
+  <code>n</code> = 11; the design guide's chapter on soundness says what such a bound is worth.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="tutorial-first-run">Load: Sum-free sets</button></p>
 <h3 id="tut-reference">The reference run</h3>
 <p>
   A second way to find out, which works for any loop: <code>G.block(M)</code> removes only the candidate itself, so a

@@ -54,6 +54,12 @@
             refinement's certificate verifies, every solution has no counterexample, and nothing else
             is left.</li>
         </ol>
+        <p id="strategy">These checks confirm one run. To check the <em>strategy</em> (the relevant set
+          or the clause/3 rules) on many instances at once, use a space: <code>node tools/audit.mjs qbf
+          --space formulas --bound 6</code> runs the symbolic audit on every DNF with up to 6 terms over
+          6 + 6 variables, one bound after the other, and prints "sound up to k" or the smallest
+          instance it breaks on (Audit, mode <b>Space</b>, on the page). <code>--symbolic</code> checks
+          one instance the same way when it is too large for the audit.</p>
 
         <h2 id="pitfalls">Pitfalls</h2>
         <ul>
@@ -62,6 +68,8 @@
           <li>Loops it does not model (MARCO, IHS, OLL, Benders, chains, families) can be checked only
             by the reference variant and the audit today.</li>
           <li>certcheck refuses proof logs of witness checks.</li>
+          <li>A space verdict is about the space up to its bound: it checks the strategy, not a run's
+            count, and says nothing about larger instances.</li>
         </ul>
       </article>
       <nav class="pager">

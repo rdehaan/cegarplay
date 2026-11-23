@@ -42,6 +42,14 @@
       <div class="run-buttons">
         <button class="control-button" id="run-button" title="Run (Ctrl+Enter)" disabled>&#x23F5; Run</button>
         <button class="control-button" id="audit-button" title="Audit: check every candidate and every counterexample of this instance against the solutions" disabled>&#x2713; Audit</button>
+        <select id="audit-mode" aria-label="Audit mode" title="Enumerate: every candidate and counterexample (the audit). Symbolic: the same question in one search, also for large instances. Space: every instance of a space up to a bound k">
+          <option value="enumerate">Enumerate</option>
+          <option value="symbolic">Symbolic</option>
+          <option value="space" id="audit-mode-space" hidden disabled>Space</option>
+        </select>
+        <select id="space-select" aria-label="Space" hidden></select>
+        <label class="inline-label" for="space-bound" id="space-bound-label" hidden>up to k =</label>
+        <input id="space-bound" size="3" inputmode="numeric" aria-label="Bound k of the space audit" hidden>
         <button class="control-button" id="abort-button" disabled>&#x2717; Abort</button>
         <button class="control-button isolated-only" id="pause-button" title="Pause the run; Resume goes on" disabled hidden>&#x23F8; Pause</button>
         <button class="control-button isolated-only" id="step-button" title="One candidate at a time: starts a run that waits after its first candidate, or moves a running or paused run on by one candidate" disabled hidden>&#x21E5; Step</button>

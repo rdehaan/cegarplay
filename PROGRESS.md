@@ -15,6 +15,9 @@ only memory of what happened.
 - [x] Phase 7: example library (after the final review, on request)
 - [x] Phase 8: tutorial tab
 - [x] Phase 9: technical manual
+- [x] PLAN3 S6: symbolic audit
+- [x] PLAN3 S7: instance spaces
+- [x] PLAN3 S8: app, Fuzz, docs
 
 ## Hand-over (final review, 2026-11-20)
 
@@ -1431,3 +1434,126 @@ within about a minute and the instances are small but nontrivial.
   conformant-growing, triangle-free-lazy, slitherlink and the sudoku examples (blocking copies or
   `cegarcheck --mode block` checked their small instances instead). No generator where the input is
   a fixed structure or a size constant (24 examples, listed by `survey`).
+
+## PLAN3: bounded verification of refinement strategies (started 2026-11-23)
+
+All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIRECTIONS.md
+("Bounded verification") for what was left out.
+
+### S6: the symbolic audit (done)
+
+- `lua/bounded.lua` (`rt.bounded`), loaded only in bounded mode (`modulesFor(.., { mode: 'bounded' })`
+  = `ground`, `bounded`). V = A1 + C1 + A2 + removal (+ pruning when C is stratified, + the witness
+  order), inner loop with C_Y copies or blocks; docs/spec-soundness.md section 7.
+- `lua/ground.lua`: `LIFT.stratified`, `LIFT.atom_map`, `LIFT.copy` (the copy code of `LIFT.product`
+  moved there; options isint, violated, guess, shared), `LIFT.check_scratch` (level 4's scratch
+  check, now also with the interface as program text, CLAUDE.md rule 10).
+- `js/driver.js`: `boundedPlan`, `boundedBody`; `tools/run.mjs runProject({ bounded })`;
+  `tools/audit.mjs --symbolic [--no-fewest]` (exit 3 budget, 4 unsupported).
+- **The enumerative audit now covers `G.clauses`** (needed to compare): `auditPlan` adds
+  `clauses: true` (the key only when used, so other plans are unchanged), `audit_clauses` adds a
+  pair per `clause/3` group with the values that falsify its literals.
+- **Sweep** (`spike3/sweep.mjs`, results in `spike3/sweep.jsonl`): 311 clause-based library
+  instances. On the 272 the audit finishes (within 60 s): the same verdict on all 272, and on the 7
+  unsound ones (exercise-sum-free n4..n8, tutorial-weak-relevant, guide-04-one-node) the same
+  smallest number of differing atoms. 23 of them are `G.clauses` examples (guide-06-clauses,
+  guide-08-shape4, lang-clauses, min-dnf, af-preferred, strategic-companies). Wall time: audit
+  638 s, symbolic 213 s in all (mostly engine start-up; most symbolic audits take 1 round).
+- **`audit: false` instances:** 29 of the 36 clause-based ones get a verdict within 60 s (all
+  sound; akari/example 34 s, sudoku-graded/one-erased-c 32 s, most under 2 s); no verdict on
+  slitherlink/example, sudoku-graded/example, sudoku-unavoidable/example and one-clue-missing,
+  voting-justification pareto-neutral-cancel-reinf-k8, cancel-reinf-posresp-k4, random-1.
+  Reference row 31: graph-coloring n6, sound in 1 round (0.01 s).
+- **Block fallback:** no library check is non-stratified (fallback 0 in the whole sweep). The test
+  uses a variant of tutorial-weak-relevant whose check guesses its sum through an even loop over
+  negation: blocks are used and the verdict agrees with the audit at n = 3 and n = 5.
+- **Spike:** the plan asked for V built by hand in `spike3/` first; V was written directly as
+  `lua/bounded.lua` (it worked at once on the three cases) and `spike3/` holds the measuring
+  scripts instead. V is much faster than the audit on the `audit: false` instances (graph-coloring
+  n6: 0.01 s against over 90 s).
+- Library: the instance field `symbolic` ("sound" | "unsound"), written by `make-examples` for
+  every instance of a clause-based example (`SYMBOLIC` in `tools/library.mjs` lists the unsound ones
+  and the 7 without a verdict). `test/bounded.test.mjs` checks the fast ones (all with `SLOW=1`).
+
+### S7: instance spaces (done)
+
+- Format `spaces[]` (docs/spec-instances.md **section 8**, not 6: 6 and 7 were taken by Fuzz and
+  Pools): `{ name, text, params, bound, defaults, from, description, expected }`. `from` (the first
+  k) is an addition: hedonic-core and triangle-free-lazy have no interface at k = 1 (the glue
+  derives nothing, a runtime error).
+- `deriveSpace`, `spaceBound` (`js/project.js`), `validateSpace` (`js/driver.js`), `js/bounded.js`
+  (`verifySpace`, `spaceProblems`), `tools/audit.mjs --space NAME --bound K [--from K0]`.
+- **Deviation:** `opts.extra` is implemented in `lua/bounded.lua` by wrapping `rt.link`, not in
+  `lua/runtime.lua`: the runtime text is unchanged, so normal runs, their recordings and the
+  replays are byte-identical (requirement 1). The wrapper adds the free instance atoms to the link
+  (choices and program text, as `rt.link` does) and checks the glue's brave and cautious `glue/1`
+  sets.
+- **Measured K** (largest finishing within 60 s per k): tutorial-first-run sound up to 10 (and
+  12); tutorial-weak-relevant first unsound at n = 2, as the enumerative audit (row 15, row 32).
+  af-preferred and clique-colouring: sound up to k = 40 at least (stopped there; 1.7 s and 4.0 s at
+  k = 40); qbf: K = 29 (44 s at k = 29, budget at k = 30; `spike3/spaces-big.jsonl`). Every
+  other space: `spike3/spaces.jsonl` (k up to 12, or where a step passed 20 s: nash 3,
+  hedonic-core 5, strong-nash 5 (50 s), slitherlink 5, min-dnf 9 (26 s)). Every library space verifies
+  in 1 round at each k: with a correct relevant/1 the pruning part of V alone is unsatisfiable (a
+  symbolic certificate). The stored `expected.k` is capped at 12 to keep the tests short.
+- **Mutation test** (`test/spaces.test.mjs`): af-preferred (each `clause/3` rule deleted),
+  clique-colouring and qbf (the relevant/1 rule deleted): every mutant the audit finds unsound on
+  a library instance is unsound in the space at a k no larger than that instance's size, and the
+  audit is unsound on each witness instance. More mutants by hand (belief-update, a relevant rule
+  each): found at k = 1 and 2.
+- **Library:** 40 examples have a space (`SPACES`, `SPACE_TEXTS` in `tools/library.mjs`): the
+  constants families (tutorial x2, lang-basics, lang-several-cex, lang-optimal, lang-clauses,
+  lang-legacy, lang-second-solver, graph-coloring, gc-shape1, gc-shape2, min-dnf,
+  triangle-free-lazy, clique-interdiction, nash, akari, slitherlink, sudoku-unique) and spaces over
+  facts (af-preferred, af-semi-stable, clique-colouring, choosability, qbf, qbf-optimal,
+  qbf-blame-solver, smallest-mus, stable-models, belief-update, default-extensions, abduction,
+  strategic-companies, boolean-game, agenda-safety, hedonic-core, strong-nash,
+  knapsack-interdiction, robust-facilities, sufficient-reason, reasons-by-size,
+  reasons-by-shrinking). Tests: `test/spaces-library-[1-3].test.mjs` (slow ones with `SLOW=1`).
+- **Clause-based examples without a space, and why:**
+  - the guide examples (guide-03..13) and `starter`: their instance is written into their
+    fragments and fixed by the guide's pages (`tools/guide.mjs`); the guide uses the tutorial's
+    spaces;
+  - exercise-sum-free: an exercise (a space would give its answer away);
+  - arrowing, subset-sum-game, voting-justification: the interface depends on the instance
+    (arrowing's glue is over the edges, subset-sum's over the reachable sums, voting's over the
+    axiom instances);
+  - binairo, futoshiki, fewest-clues, sudoku-graded, sudoku-hard, sudoku-symmetry,
+    sudoku-unavoidable: the glue leaves out the printed cells, so it depends on the instance's
+    givens (a space over givens is unsupported);
+  - integer-expressions: the instance is a set of nested terms (a space would enumerate
+    expression trees);
+  - diagnosis: the circuit is the instance (a space over circuits needs a gate grammar);
+  - actual-cause: the causal model is a fixed fragment; the instance only names its variables.
+- Phases S6 and S7 were developed together (S7's runtime part lives in `lua/bounded.lua`) and are
+  committed as two commits after one green test run.
+
+### S8: app, Fuzz, docs (done)
+
+- Run bar: a mode select beside Audit (Enumerate, Symbolic, Space; Space only for a project with
+  spaces: hidden and disabled otherwise), the space and the bound k (default: the space's
+  expected k). `Control.runOne({ mode: 'bounded', spaceRun })` runs one symbolic audit (on the
+  project derived from the space at k); `auditSpace()` runs k = from..K as a batch and records one
+  history row. The Output tab's panel shows mode, rounds, refinements, blocks, per-k steps, the
+  witness (with the instance for a space) and **Save as regression instance**
+  (`InstancesTab.saveWitness`). Run history: the Audit column shows `unsound (symbolic)`,
+  `sound ≤ 4`, `unsound at k = 2`; a run row only borrows an enumerative audit's verdict.
+- Instances tab: **Spaces** (select, New space, name, bound, description, text editor, parameters
+  with values, Check = `spaceProblems`, Delete). `lua/bounded.lua` is fetched at start
+  (`app.modules.bounded`).
+- `js/fuzz.js`: with `env.modules.bounded` (the page), instances marked `audit: false` get the
+  symbolic audit (`symbolicOf`); `budget` and `unsupported` are skipped like `limit`; without it
+  (older callers, the existing tests) nothing changed.
+- Docs: `manual.md` (field row, *Audit modes*, *Spaces*, the CLI options), `tutorial.html` (new
+  step "The symbolic audit and spaces" in lesson 6), `guide/04-soundness.html` (symbolic audit,
+  "Every instance up to a bound" with what "sound up to k" does not say, a recap rule),
+  `guide/howto-unsound.html`, `howto-check.html`, `howto-instances.html` ("Writing a space"),
+  `guide/glossary.html` (symbolic audit, instance space, bounded-sound),
+  `docs/chat-package/START-HERE.md`. No guide example was added, so `guide/numbers.json` is
+  unchanged (`guide-numbers --check` passes); `book/cegarplay.md` regenerated
+  (`export-book.py --check` and `--lint` pass).
+- Tests: `test/browser/bounded.test.mjs` (symbolic audit of tutorial-weak-relevant with its
+  witness; a space audit's k and history cell; the witness saved as an instance; no Space mode
+  without spaces; the Spaces list), `test/bounded.test.mjs` (Fuzz on an `audit: false` instance).
+- Environment note: in this container the browser tests need `CHROMIUM_PATH=/opt/pw-browsers/chromium`
+  (the preinstalled Chromium); without it they hang.

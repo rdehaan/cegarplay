@@ -5,8 +5,9 @@ import { generate, PARAM_TYPES } from './generate.js';
 import { fuzz, shrinkInstance, diagnose, defaultSource } from './fuzz.js';
 import { mine } from './mine.js';
 import { BatchStopped } from './control.js';
-import { auditable, INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary, exerciseItems, gradeItem, exerciseSummary } from './project.js';
+import { spaceBound, auditable, INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary, exerciseItems, gradeItem, exerciseSummary } from './project.js';
 import { fmt } from './output.js';
+import { spaceProblems } from './bounded.js';
 
 const $ = (id) => document.getElementById(id);
 // the Expected column: "12", "optimum 8" or both
@@ -105,6 +106,7 @@ export class InstancesTab {
     this.root.append(
       bar, this.status, this.exerciseBox, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table), this.form);
     this.buildGenerators();
+    this.buildSpaces();
     this.editor = makeEditor(editorBox, 'ace/mode/gringo');
     this.editor.on('change', () => {
       if (this.loading) return;
@@ -118,6 +120,8 @@ export class InstancesTab {
     this.showExercise();
     this.gen = (this.app.project.generators || [])[0] ? this.app.project.generators[0].name : null;
     this.renderGenerators();
+    this.space = (this.app.project.spaces || [])[0] ? this.app.project.spaces[0].name : null;
+    this.renderSpaces();
     this.current = this.list.length ? this.selectedId() || this.list[0].id : null;
     if (this.current === '') this.current = this.list[0].id;
     this.render();
@@ -667,6 +671,157 @@ export class InstancesTab {
         el('button', { class: 'control-button small-button', id: 'fuzz-trace', onclick: () => this.fuzzAction('trace', s) }, 'Open in trace'),
         el('button', { class: 'control-button small-button', id: 'fuzz-witness', onclick: () => this.fuzzAction('audit', s) }, 'Show audit witness'),
         el('button', { class: 'control-button small-button', id: 'fuzz-save', onclick: () => this.fuzzAction('save', s) }, 'Save as regression instance')));
+  }
+
+  // ---- spaces (PLAN3 phase S7, docs/spec-instances.md section 8, optional) ------------------
+  get spaces() { return this.app.project.spaces || (this.app.project.spaces = []); }
+  get spaceItem() { return this.spaces.find((x) => x.name === this.space) || null; }
+
+  buildSpaces() {
+    this.spSelect = el('select', { id: 'space-list-select', 'aria-label': 'Space' });
+    this.spSelect.addEventListener('change', () => { this.space = this.spSelect.value; this.renderSpaces(); });
+    this.spName = el('input', { id: 'space-name', size: 14, 'aria-label': 'Space name' });
+    this.spName.addEventListener('change', () => this.renameSpace(this.spName.value));
+    this.spDesc = el('input', { id: 'space-description', size: 48, 'aria-label': 'Space description' });
+    this.spDesc.addEventListener('change', () => { const x = this.spaceItem; if (x) { x.description = this.spDesc.value; this.app.dirty(); } });
+    this.spBound = el('select', { id: 'space-bound-param', 'aria-label': 'Bound parameter' });
+    this.spBound.addEventListener('change', () => { const x = this.spaceItem; if (x) { x.bound = this.spBound.value; this.renderSpaces(); this.app.dirty(); } });
+    this.spParams = el('table', { class: 'internals-table', id: 'space-params' });
+    this.spStatus = el('p', { id: 'space-status', class: 'note', role: 'status', 'aria-live': 'polite' });
+    const box = el('div', { class: 'instance-editor', id: 'space-editor' });
+    this.spBody = el('div', { id: 'space-body', hidden: true },
+      el('div', { class: 'instance-fields' }, el('label', {}, 'Name ', this.spName), el('label', {}, 'Bound ', this.spBound),
+        el('button', { class: 'control-button small-button', id: 'delete-space-button', onclick: () => this.removeSpace() }, 'Delete')),
+      el('div', { class: 'instance-fields' }, el('label', {}, 'Description ', this.spDesc)),
+      el('p', { class: 'note' }, 'Every instance up to the bound k: choice rules and constraints over the instance predicates (with the fragment "schema", if there is one). ' +
+        'The parameters are constants of every solver; the bound runs from 1 (or the space\'s first k) to K. Optional: Audit with the mode Space verifies the loop on all of them.'),
+      box,
+      el('div', { class: 'table-wrapper' }, this.spParams),
+      el('div', { class: 'instances-bar' },
+        el('button', { class: 'control-button small-button', id: 'add-space-param-button', onclick: () => this.addSpaceParam() }, 'Add parameter'),
+        el('button', { class: 'control-button small-button', id: 'check-space-button', onclick: () => this.checkSpace() }, 'Check')),
+      this.spStatus);
+    this.root.append(el('h3', {}, 'Spaces'),
+      el('div', { class: 'instances-bar' }, this.spSelect,
+        el('button', { class: 'control-button', id: 'add-space-button', onclick: () => this.addSpace() }, 'New space')),
+      this.spBody);
+    this.spEditor = makeEditor(box, 'ace/mode/gringo');
+    this.spEditor.on('change', () => {
+      if (this.spLoading) return;
+      const x = this.spaceItem;
+      if (x) { x.text = this.spEditor.getValue(); this.app.dirty(); }
+    });
+  }
+
+  renderSpaces() {
+    const list = this.spaces, x = this.spaceItem;
+    this.spSelect.textContent = '';
+    this.spSelect.hidden = !list.length;
+    for (const y of list) this.spSelect.append(el('option', { value: y.name }, y.name));
+    if (x) this.spSelect.value = x.name;
+    this.renderSpaceBar();
+    this.spBody.hidden = !x;
+    if (!x) return;
+    this.spName.value = x.name;
+    this.spDesc.value = x.description || '';
+    this.spLoading = true;
+    if (this.spEditor.getValue() !== x.text) this.spEditor.setValue(x.text || '', -1);
+    this.spLoading = false;
+    const bound = spaceBound(x);
+    this.spBound.textContent = '';
+    for (const k of Object.keys(x.params || {})) this.spBound.append(el('option', { value: k, selected: k === bound }, k));
+    this.spParams.textContent = '';
+    this.spParams.append(el('tr', {}, ...['Parameter', 'Value (not the bound)', ''].map((h) => el('th', {}, h))));
+    for (const k of Object.keys(x.params || {})) {
+      const val = el('input', { size: 6, value: x.defaults && x.defaults[k] !== undefined ? String(x.defaults[k]) : '', 'aria-label': `Value of ${k}`, disabled: k === bound });
+      val.addEventListener('change', () => { x.defaults = { ...(x.defaults || {}), [k]: val.value.trim() === '' ? undefined : Number(val.value) }; this.app.dirty(); });
+      this.spParams.append(el('tr', {}, el('td', {}, k), el('td', {}, k === bound ? '(the bound k)' : val),
+        el('td', {}, el('button', { class: 'control-button small-button', disabled: Object.keys(x.params).length < 2, onclick: () => {
+          delete x.params[k]; if (x.defaults) delete x.defaults[k]; if (x.bound === k) delete x.bound; this.renderSpaces(); this.app.dirty(); } }, 'Remove'))));
+    }
+    requestAnimationFrame(() => this.spEditor.resize());
+  }
+
+  // The run bar: the Space mode of Audit appears only for a project with spaces.
+  renderSpaceBar() {
+    const list = this.spaces;
+    const mode = document.getElementById('audit-mode'), opt = document.getElementById('audit-mode-space');
+    const sel = document.getElementById('space-select'), bound = document.getElementById('space-bound');
+    if (!mode || !sel) return;
+    opt.hidden = opt.disabled = !list.length;
+    if (!list.length && mode.value === 'space') mode.value = 'enumerate';
+    const keep = sel.value;
+    sel.textContent = '';
+    for (const y of list) sel.append(el('option', { value: y.name }, y.name));
+    if (list.some((y) => y.name === keep)) sel.value = keep;
+    const on = mode.value === 'space' && list.length > 0;
+    sel.hidden = bound.hidden = !on;
+    document.getElementById('space-bound-label').hidden = !on;
+    const y = list.find((z) => z.name === sel.value);
+    if (y && (!bound.value || bound.dataset.space !== y.name)) { bound.value = String(y.expected ? y.expected.k : 3); bound.dataset.space = y.name; }
+  }
+
+  addSpace() {
+    let name = 'space';
+    for (let i = 2; this.spaces.some((x) => x.name === name); i++) name = `space${i}`;
+    this.spaces.push({ name, description: 'Every graph on the nodes 1..k.', text: 'node(1..k).\n{ edge(X,Y) : node(X), node(Y), X < Y }.\n', params: { k: 'int' } });
+    this.space = name;
+    this.renderSpaces();
+    this.app.dirty();
+  }
+
+  removeSpace() {
+    const i = this.spaces.findIndex((x) => x.name === this.space);
+    if (i < 0) return;
+    this.spaces.splice(i, 1);
+    this.space = this.spaces.length ? this.spaces[0].name : null;
+    this.renderSpaces();
+    this.app.dirty();
+  }
+
+  renameSpace(v) {
+    const x = this.spaceItem;
+    v = v.trim();
+    if (!x || v === x.name) return;
+    if (!INSTANCE_ID.test(v) || this.spaces.some((y) => y.name === v)) { this.spStatus.textContent = `"${v}" is not a valid new name.`; this.spName.value = x.name; return; }
+    x.name = v; this.space = v;
+    this.renderSpaces();
+    this.app.dirty();
+  }
+
+  addSpaceParam() {
+    const x = this.spaceItem;
+    if (!x) return;
+    const k = (window.prompt('Parameter name (a lower case letter first):') || '').trim();
+    if (!/^[a-z][A-Za-z0-9_]*$/.test(k)) return;
+    x.params = { ...(x.params || {}), [k]: 'int' };
+    this.renderSpaces();
+    this.app.dirty();
+  }
+
+  // The validation messages of the space at its first k (clingo in gringo mode, as for generators).
+  async checkSpace() {
+    const x = this.spaceItem;
+    if (!x || !this.app.ready || this.app.engine.active) return [];
+    const errs = await spaceProblems(this.app.collect(), x.name, (p, o) => this.app.engine.exec(p, o), x.from ?? 1);
+    this.spEditor.getSession().setAnnotations(errs.filter((e) => !e.where).map((e) => ({ row: e.line - 1, column: (e.col || 1) - 1, text: e.message, type: 'error' })));
+    this.spStatus.textContent = errs.length ? `${errs[0].where ? 'schema, ' : ''}line ${errs[0].line}: ${errs[0].message}` : 'No problems.';
+    this.spStatus.classList.toggle('error', errs.length > 0);
+    return errs;
+  }
+
+  // "Save as regression instance" of a space audit's witness (as Fuzz saves its instance).
+  saveWitness(a) {
+    const w = a.witness || {};
+    const sp = this.spaces.find((x) => x.name === a.space);
+    const id = freshId(this.app.project, 'regression');
+    const consts = { ...((sp && sp.defaults) || {}) };
+    if (sp) consts[spaceBound(sp)] = a.k;
+    const constants = Object.fromEntries(Object.entries(consts).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
+      .filter(([k, v]) => this.app.project.settings.constants[k] !== v));
+    this.add({ id, facts: (w.instance || '').split(' ').filter(Boolean).join('\n') + '\n', constants, tags: ['regression'] });
+    this.say(`Saved instance ${id}: the space ${a.space} at k = ${a.k} breaks the loop there (tag regression).`);
+    return id;
   }
 
   fuzzSave(s) {

@@ -21,6 +21,7 @@ export function liveText(s) {
 // The run bar after an audit: its own counts (the S events of an audit count raw models).
 export function auditLiveText(a) {
   if (!a || !a.verdict) return ' ';
+  if (a.mode) return `${a.mode === 'space' ? `space ${a.space} · k = ${a.k}` : 'symbolic audit'} · ${fmt(a.rounds ?? 0)} rounds · ${fmt(a.refinements ?? 0)} refinements · ${a.verdict}`;
   const verdict = a.verdict === 'sound' ? 'sound' : a.verdict === 'unsound'
     ? `unsound: ${fmt(a.unsound)} remove a solution` : a.verdict;
   return `audit · ${fmt(a.candidates)} candidates · ${fmt(a.solutions)} solutions · ` +
@@ -153,7 +154,7 @@ export class Stats {
 
   done(D, info) {
     this.D = D;
-    if (info && info.mode === 'audit' && info.audit) this.live.textContent = auditLiveText(info.audit);
+    if (info && (info.mode === 'audit' || info.mode === 'bounded') && info.audit) this.live.textContent = auditLiveText(info.audit);
     if (this.S && info && !info.noHistory) this.record(info);
     this.render();
   }
@@ -392,14 +393,15 @@ export class Stats {
       candidates: s.candidates,
       refinements: refinements(s),
       meanLength: meanLen(s),
-      solutions: info.audit && info.audit.verdict !== 'limit' ? info.audit.solutions : s.solutions,
+      solutions: info.audit && info.audit.verdict !== 'limit' && !info.audit.mode ? info.audit.solutions : s.solutions,
       seed: info.settings.seed,
       engine: info.engine,
       solvers: (info.solvers || []).map((x) => ({ name: x.name, options: x.options })),
       settings: info.settings,
       fragmentsHash: info.fragmentsHash,
-      mode: info.mode || 'run',
-      audit: info.audit ? { verdict: info.audit.verdict, unsound: info.audit.unsound, pairs: info.audit.pairs } : null,
+      mode: info.audit && info.audit.mode === 'space' ? 'bounded' : info.mode || 'run',
+      audit: info.audit ? { verdict: info.audit.verdict, unsound: info.audit.unsound, pairs: info.audit.pairs,
+        ...(info.audit.mode ? { mode: info.audit.mode, k: info.audit.k ?? null, space: info.audit.space ?? null } : {}) } : null,
       // for "two runs side by side" (FUTURE-DIRECTIONS D5) and the lab notebook (D10)
       counterexamples: s.counterexamples,
       perSolver: Object.fromEntries(Object.entries(s.solvers || {}).map(([k, v]) => [k, { calls: v.calls, time: v.time, conflicts: v.conflicts }])),
@@ -416,7 +418,7 @@ export class Stats {
     for (let i = 0; i < h.length; i++) {
       for (let j = i + 1; j < h.length; j++) {
         const a = h[i], b = h[j];
-        if (a.mode === 'audit' || b.mode === 'audit') continue;
+        if (a.mode === 'audit' || b.mode === 'audit' || a.mode === 'bounded' || b.mode === 'bounded') continue;
         if (a.fragmentsHash && a.fragmentsHash === b.fragmentsHash && a.settings && b.settings &&
             Number(a.settings.solutions) === 0 && Number(b.settings.solutions) === 0 &&
             a.outcome === 'finished' && b.outcome === 'finished' && a.exhausted && b.exhausted && a.solutions !== b.solutions) {
@@ -430,8 +432,10 @@ export class Stats {
   // The audit column: an audit row shows its verdict; a run shows the verdict of the last
   // audit of the same fragments and constants, if there is one.
   auditText(r) {
-    const a = r.audit || (r.mode !== 'audit' && [...this.history].reverse().find((x) => x.audit && x.fragmentsHash === r.fragmentsHash)?.audit);
+    const a = r.audit || (r.mode !== 'audit' && r.mode !== 'bounded' && [...this.history].reverse().find((x) => x.audit && !x.audit.mode && x.fragmentsHash === r.fragmentsHash)?.audit);
     if (!a) return '–';
+    if (a.mode === 'space') return a.verdict === 'sound' ? `sound ≤ ${a.k}` : `${a.verdict} at k = ${a.k}`;
+    if (a.mode === 'symbolic') return `${a.verdict} (symbolic)`;
     if (a.verdict === 'unsound') return `unsound (${fmt(a.unsound)})`;
     return a.verdict;
   }

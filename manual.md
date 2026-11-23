@@ -110,6 +110,7 @@ two-space indentation.
 | `runs` | list | `[]` | Final statistics of earlier runs (Statistics tab, run history). Written only when "include run history" is ticked on download. |
 | `instances` | list | none | Format version 2. See [Instances](#manual-instances). |
 | `variants` | list | none | Format version 2. See [Instances](#manual-instances). |
+| `spaces` | list | none | Optional, format version 2: every instance up to a bound, for the Audit's mode Space. See [Spaces](#manual-spaces). |
 | `settings.instance` | string | the first instance | The instance a run uses; `""` = the project as written. |
 | `settings.variant` | string | none | The variant a run uses (the run bar's Variant picker); absent or `""` = the project as it is; a name that is no variant is ignored. Dropped on save when the project has no variants. |
 
@@ -228,7 +229,36 @@ stops at the first unsound one, shrinks its facts and constants (delta debugging
 `schema` fragment satisfied and the audit unsound) and diagnoses it: the lost solution, the
 audit's witness, and the step of the loop's own run whose refinement removes the solution (for
 `expand` loops, a replay of the recorded expansions). The card saves the instance as a regression
-instance with its true count. Details: `docs/spec-instances.md` section 6.
+instance with its true count. Details: `docs/spec-instances.md` section 6. Instances marked
+`audit: false` get the [symbolic audit](#manual-audit-modes) instead of none; one without a verdict
+(`budget`, `unsupported`) is skipped like one above the candidate limit.
+
+### Spaces
+
+Optional. `spaces[]` describes every instance up to a bound, for the Audit's mode Space:
+
+| Field | Type | Rules |
+| --- | --- | --- |
+| `name` | string | Matches `[A-Za-z0-9_-]+`; unique. |
+| `text` | string | Replaces the instance: choice rules and constraints over the instance's predicates. A `schema` fragment is added. Empty with one parameter: the constants family n = 1, 2, … |
+| `params` | object | At least one parameter, each `"int"`; passed as constants to every solver (pick names no fragment uses). |
+| `bound` | string | The bound parameter; default the first. |
+| `defaults` | object | Values of the other parameters. |
+| `from` | number | The first k (default 1). |
+| `description` | string | Shown in the Instances tab. |
+| `expected` | object | `{ verdict, k }`: the bounded verdict and its k (the library's tests check it). |
+
+```json
+{ "name": "frameworks", "params": { "size": "int" },
+  "text": "arg(1..size).\n{ att(X,Y) : arg(X), arg(Y) }.\n1 { query(X) : arg(X) } 1.\n",
+  "expected": { "verdict": "sound", "k": 12 } }
+```
+
+The fixed part (what the glue is built from) must be facts: when the glue's `glue/1` atoms differ
+between the instances of the space, the verdict is `unsupported` ("the interface depends on the
+instance"). The Instances tab lists the spaces (name, bound, description, text, parameters;
+**Check** runs clingo on the text). 40 library examples have one; an instance field
+`symbolic: "sound" | "unsound"` records the symbolic audit's expected verdict.
 
 ### Pools and mining
 
@@ -1046,7 +1076,9 @@ after the other (**running audit (3 of 18: …)**), and the Instances tab sums u
 The verdict is "sound for every candidate and counterexample of this instance", or `unsound` with a
 witness: candidate, counterexample, relevant set (or facts), the lost solution and the atoms on
 which candidate and lost solution differ. The witness with the fewest such atoms is chosen; one of
-them should usually have been relevant. Blocks need no audit; `G.clauses` is not audited.
+them should usually have been relevant. Blocks need no audit. `G.clauses` refinements are audited
+like relevant sets: each `clause(Id, _, _)` group of a counterexample is one pair, unsound when a
+solution falsifies every literal of the group.
 6. Core refinements (a loop that refines link G only by cores: `G.core(C)`, `C.core.on(G)`,
    `C.core.minimal.on(G)`): the check is taken as a witness check, so a candidate is a solution
    when C has a model under it; every refuted candidate's core (made minimal when the script uses
@@ -1059,6 +1091,29 @@ The audited link is the one that leaves the top solver; with several, the one th
 (or name it with `--link`). A check solver that passes models on (a chain) is refused. Above
 200,000 candidates the audit stops with outcome `limit`. Its run history row shows the verdict in
 the column **Audit**, and runs with the same fragments and constants show it too.
+
+### Audit modes
+
+Optional. The select next to **Audit** picks how the audit works (`docs/spec-soundness.md` sections 7
+and 8):
+
+- **Enumerate** (default): the audit above.
+- **Symbolic**: the same question as one search with an inner CEGAR loop (`lua/bounded.lua`): a
+  candidate M, a counterexample X of M and a candidate M' that X's clause removes, where M' has no
+  counterexample. None: sound. Found: unsound, with the same witness fields (the fewest differing
+  atoms, as the audit; ties may be broken differently). It covers `G.clause` and `G.clauses`
+  (blocks and cores are sound by construction) on one link; `expand`, `lift` links and chains get
+  the verdict `unsupported` with the reason. Every counterexample counts, also when the loop asks
+  for `optimal` or `limit` ones. Its time budget is the project's time limit (60 s when none); without
+  a verdict by then: `budget`. The panel shows the rounds of the inner loop, its refinements and
+  the blocks it used (a check that is not stratified is refined by blocks). Use it for instances
+  marked `audit: false`.
+- **Space** (only for a project with [spaces](#manual-spaces)): pick the space and the bound K; the
+  symbolic audit runs for k = 1, 2, …, K (from the space's `from`) on every instance of the space
+  at once, and stops at the first k that is not sound. "Sound up to K" holds for every instance of
+  the space up to K, and says nothing about larger ones. An unsound verdict shows the instance it
+  breaks on, with **Save as regression instance**. The run history's Audit column shows `sound ≤ K`
+  or `unsound at k = 2`.
 
 ### Certificates
 
@@ -1424,11 +1479,15 @@ variant exits with 2. Example: `node tools/run.mjs tutorial-first-run --quiet`.
 ```sh
 node tools/audit.mjs <project.json | library id> [--link G] [--limit N] [-c name=value]
                      [--instance ID] [--variant NAME] [--seconds N] [--json]
+                     [--symbolic [--no-fewest]] [--space NAME --bound K [--from K0]]
 ```
 
 Runs the [audit](#manual-audit) headless. Prints the counts and the verdict, with the witness when
 it is unsound; `--json` prints the verdict event. Exit code 0 sound, 1 unsound or error, 2 bad
-usage (also: nothing to audit), 3 candidate or time limit.
+usage (also: nothing to audit), 3 candidate or time limit. `--symbolic` runs the
+[symbolic audit](#manual-audit-modes) (`--seconds` is its budget, default 60; `--no-fewest` takes
+any witness): exit 3 for `budget`, 4 for `unsupported`. `--space NAME --bound K` checks the space
+for k = 1..K (or `--from K0`), one line per k, and stops at the first k that is not sound.
 
 ### Python checker
 
