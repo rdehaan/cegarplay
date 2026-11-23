@@ -495,32 +495,19 @@ favourite(b).
 `,
 };
 
-// example id -> its generators
-export const GENERATORS = {
-  'clique-colouring': [gnp(true), gnm(true)],
-  arrowing: [gnp(), gnm()],
-  choosability: [gnp(), gnm()],
-  'af-preferred': [afGnp(true)],
-  'af-semi-stable': [afGnp(false)],
-  qbf: [QBF_DNF],
-  'kemeny-control': [BALLOTS_IC, BALLOTS_MALLOWS],
-};
+// example id -> its generators (contrib examples carry their generators in their own file)
+export const GENERATORS = {};
 // voting-justification's generator, recipe instances and view are attached by buildExamples in
 // tools/make-examples.mjs (its file must equal buildExamples' output).
 export const VOTE_KIT = { generators: [VOTE_QUESTION], recipes: VOTE_RECIPES };
 // recipe instances added to the library (their facts are generated on demand)
-export const RECIPES = {
-  qbf: [{ id: 'dnf-1', recipe: { generator: 'qbf-dnf', params: { nx: 5, ny: 4, t: 10 }, seed: 1 }, tags: ['generated'] }],
-};
+export const RECIPES = {};
 
 // suites and variants added to library examples (docs/spec-instances.md section 5)
 export const SUITES = {
   'tutorial-weak-relevant': {
     variants: [{ name: 'reference', loop: { language: 'loop', text: 'REFERENCE' } }],
     suites: [{ name: 'scaling', instances: { constants: { n: [4, 5, 6, 7, 8] } }, variants: ['default', 'reference'], limits: { seconds: 30 } }],
-  },
-  qbf: {
-    suites: [{ name: 'random', instances: { generator: 'qbf-dnf', grid: { t: [6, 8, 10, 12] }, seeds: 5 }, limits: { seconds: 30 } }],
   },
 };
 

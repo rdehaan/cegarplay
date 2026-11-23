@@ -88,7 +88,6 @@
       }
     }
   ],
-  "runs": [],
   "generators": [
     {
       "name": "af-gnp",
@@ -104,6 +103,7 @@
       "text": "% af-gnp: arguments 1..n; each ordered pair (also X = Y) attacks with probability p/1000\narg(1..n).\natt(X,Y) :- arg(X), arg(Y), @flip(p, X, Y) = 1.\nquery(@int(1, n, query)).\n\n#show arg/1.  #show att/2.  #show query/1.\n"
     }
   ],
+  "runs": [],
   "views": [
     {
       "name": "view",

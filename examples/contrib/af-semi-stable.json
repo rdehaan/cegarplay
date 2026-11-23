@@ -37,16 +37,6 @@
     "trace": 200,
     "seed": 0
   },
-  "library": {
-    "id": "af-semi-stable",
-    "group": "reasoning",
-    "summary": "Semi-stable extensions of an argumentation framework; the interface is the derived range/1, so clauses speak about ranges (11 arguments, 2 solutions).",
-    "shape": "shape1",
-    "tags": [
-      "fast"
-    ],
-    "expected": 2
-  },
   "instances": [
     {
       "id": "example",
@@ -59,5 +49,30 @@
         "library"
       ]
     }
-  ]
+  ],
+  "generators": [
+    {
+      "name": "af-gnp",
+      "description": "A random argumentation framework: n arguments, each attack X -> Y with probability p/1000.",
+      "params": {
+        "n": "int",
+        "p": "permille"
+      },
+      "defaults": {
+        "n": 7,
+        "p": 250
+      },
+      "text": "% af-gnp: arguments 1..n; each ordered pair (also X = Y) attacks with probability p/1000\narg(1..n).\natt(X,Y) :- arg(X), arg(Y), @flip(p, X, Y) = 1.\n\n#show arg/1.  #show att/2.\n"
+    }
+  ],
+  "library": {
+    "id": "af-semi-stable",
+    "group": "reasoning",
+    "summary": "Semi-stable extensions of an argumentation framework; the interface is the derived range/1, so clauses speak about ranges (11 arguments, 2 solutions).",
+    "shape": "shape1",
+    "tags": [
+      "fast"
+    ],
+    "expected": 2
+  }
 }

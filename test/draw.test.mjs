@@ -7,12 +7,15 @@ import { generate, assembleGenerator, paramList } from '../js/generate.js';
 import { validateGenerator } from '../js/driver.js';
 import { resolveInstance } from '../js/instances.js';
 import { load, template } from '../js/project.js';
-import { GENERATORS } from '../tools/library.mjs';
+import fs from 'node:fs';
 
 const L = H.GEN_LUA;
 const VECTORS = JSON.parse(H.read('test/draw-vectors.json'));
 const HAVE_CLINGO = spawnSync('python3', ['-c', 'import clingo'], { encoding: 'utf8' }).status === 0;
 const py = (code) => spawnSync('python3', ['-c', code], { cwd: H.path('tools/').pathname, encoding: 'utf8' });
+// every generator of every library example (contrib files carry their own)
+const LIBRARY = JSON.parse(H.read('examples/library.json')).examples;
+const GENERATORS = Object.fromEntries(LIBRARY.map((e) => [e.id, JSON.parse(fs.readFileSync(H.path(`examples/${e.id}.json`), 'utf8')).generators || []]));
 const GNP = GENERATORS.arrowing.find((g) => g.name === 'gnp');
 
 const ROW30 = [

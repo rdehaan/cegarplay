@@ -50,7 +50,6 @@
       ]
     }
   ],
-  "runs": [],
   "generators": [
     {
       "name": "af-gnp",
@@ -66,5 +65,6 @@
       "text": "% af-gnp: arguments 1..n; each ordered pair (also X = Y) attacks with probability p/1000\narg(1..n).\natt(X,Y) :- arg(X), arg(Y), @flip(p, X, Y) = 1.\n\n#show arg/1.  #show att/2.\n"
     }
   ],
+  "runs": [],
   "readme": "# Project: argumentation: semi-stable extensions\n\n## Research question\n\nSemi-stable extensions maximise the range. Does an interface of derived atoms (`range/1`) give stronger refinements than one of guessed atoms (`in/1`), and by how much?\n\n## Baseline\n\n2 solutions (exhausted) after 7 candidates and 5 clauses (0.06 s) on the example.\n\n## Things to try\n\n- A variant whose interface is `in/1` and a campaign on generated frameworks (copy the `af-gnp` generator from `af-preferred`).\n- Stage extensions: change the check and compare the loops.\n- Count the candidates per instance size and fit the growth.\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n"
 }

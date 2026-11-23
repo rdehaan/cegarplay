@@ -37,17 +37,6 @@
     "trace": 200,
     "seed": 0
   },
-  "library": {
-    "id": "qbf",
-    "group": "logic",
-    "summary": "Exists-forall QBF with a DNF matrix: clause refinements from the false x-literals of the open terms (6 + 5 variables, 12 terms, 5 solutions).",
-    "shape": "shape1",
-    "tags": [
-      "fast",
-      "cegar"
-    ],
-    "expected": 5
-  },
   "instances": [
     {
       "id": "example",
@@ -92,6 +81,70 @@
       "expected": {
         "solutions": 14
       }
+    },
+    {
+      "constants": {},
+      "id": "dnf-1",
+      "recipe": {
+        "generator": "qbf-dnf",
+        "params": {
+          "nx": 5,
+          "ny": 4,
+          "t": 10
+        },
+        "seed": 1
+      },
+      "tags": [
+        "generated"
+      ]
     }
-  ]
+  ],
+  "generators": [
+    {
+      "name": "qbf-dnf",
+      "description": "A random exists-forall QBF with a DNF matrix: t terms of three literals over nx + ny variables.",
+      "params": {
+        "nx": "int",
+        "ny": "int",
+        "t": "int"
+      },
+      "defaults": {
+        "nx": 5,
+        "ny": 4,
+        "t": 10
+      },
+      "text": "% qbf-dnf: exists x1..x_nx forall y1..y_ny : T1 v ... v Tt, three literals per term.\n% Each literal picks one of the nx + ny variables uniformly and a sign with probability 1/2.\nxvar(1..nx).  yvar(1..ny).\nterm(1..t).  slot(1..3).\nvar(T,J,@int(1, nx+ny, T, J)) :- term(T), slot(J).\nsign(T,J,@flip(500, T, J, sign)) :- term(T), slot(J).\nxlit(T,I,S) :- var(T,J,I), sign(T,J,S), I <= nx.\nylit(T,I-nx,S) :- var(T,J,I), sign(T,J,S), I > nx.\n\n#show xvar/1.  #show yvar/1.  #show xlit/3.  #show ylit/3.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "random",
+      "instances": {
+        "generator": "qbf-dnf",
+        "grid": {
+          "t": [
+            6,
+            8,
+            10,
+            12
+          ]
+        },
+        "seeds": 5
+      },
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "qbf",
+    "group": "logic",
+    "summary": "Exists-forall QBF with a DNF matrix: clause refinements from the false x-literals of the open terms (6 + 5 variables, 12 terms, 5 solutions).",
+    "shape": "shape1",
+    "tags": [
+      "fast",
+      "cegar"
+    ],
+    "expected": 5
+  }
 }

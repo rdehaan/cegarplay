@@ -104,7 +104,6 @@
       ]
     }
   ],
-  "runs": [],
   "generators": [
     {
       "name": "qbf-dnf",
@@ -142,6 +141,7 @@
       }
     }
   ],
+  "runs": [],
   "views": [
     {
       "name": "view",

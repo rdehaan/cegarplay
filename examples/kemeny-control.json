@@ -57,7 +57,6 @@
       ]
     }
   ],
-  "runs": [],
   "generators": [
     {
       "name": "ballots-ic",
@@ -83,5 +82,6 @@
       },
       "text": "% ballots-mallows: voter V places candidate I at position @mallows(4, phi, I, V)\ncand(a;b;c;d).\nc(1,a). c(2,b). c(3,c). c(4,d).\nvoter(1..v).\nat(V,@mallows(4, phi, I, V),X) :- voter(V), c(I,X).\nballot(V,(A,B,C,D)) :- at(V,1,A), at(V,2,B), at(V,3,C), at(V,4,D).\nfavourite(b).\n\n#show cand/1.  #show ballot/2.  #show favourite/1.\n"
     }
-  ]
+  ],
+  "runs": []
 }

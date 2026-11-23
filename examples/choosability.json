@@ -59,7 +59,6 @@
       ]
     }
   ],
-  "runs": [],
   "generators": [
     {
       "name": "gnp",
@@ -88,6 +87,7 @@
       "text": "% gnm: m edges chosen uniformly among the pairs of n nodes (pair I is the I-th pair X < Y)\nnode(1..n).\npair(X,Y,(X-1)*n - (X-1)*X/2 + Y - X) :- node(X), node(Y), X < Y.\nedge(X,Y) :- pair(X,Y,I), @subset(m, n*(n-1)/2, I, edges) = 1.\n\n#show node/1.  #show edge/2.\n"
     }
   ],
+  "runs": [],
   "views": [
     {
       "name": "view",
