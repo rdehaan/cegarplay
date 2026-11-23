@@ -1341,3 +1341,4 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   be blocks or level-1 cores).
 - `tools/multicheck.py` (done): a brute-force Python reference for one abstraction with several
   checks; agrees with every several-check example it models.
+- Statistics (done): a Cores block (lengths of plain and minimised cores; `S.cores`).

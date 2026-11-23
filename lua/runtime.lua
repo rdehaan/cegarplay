@@ -184,6 +184,12 @@ local function stats_event()
     e.labels = lb
   end
   if rt.minimised then e.minimised = rt.minimised end
+  if rt.core_hist then
+    -- the lengths of the clauses made from cores, plain and minimised (same buckets as hist)
+    local ch = { plain = array({}), minimal = array({}) }
+    for i = 1, 8 do ch.plain[i] = rt.core_hist.plain[i]; ch.minimal[i] = rt.core_hist.minimal[i] end
+    e.cores = ch
+  end
   if #rt.track_order > 0 then
     local tr = {}
     for k, v in pairs(rt.tracked) do tr[k] = v end
@@ -847,7 +853,10 @@ function Core:on(G)
   if getmetatable(G) ~= Link then fail("core.on: expected a link") end
   -- (G ending at the core's solver: as G.core(C), but an empty clause is a value, not an error:
   -- `if K.size == 0` then tells that the core lies outside G, e.g. hard clauses alone)
-  if G.to == self.solver and #G:core_lits(rawget(self, "lits")) > 0 then return G:core(self.solver, rawget(self, "lits")) end
+  -- a core value is counted once, however often .on(G) is asked (K.on(G).size, then A.add(K.on(G)))
+  local first = not rawget(self, "counted")
+  rawset(self, "counted", true)
+  if G.to == self.solver and #G:core_lits(rawget(self, "lits")) > 0 then return G:core(self.solver, rawget(self, "lits"), rawget(self, "minimal"), not first) end
   local lazy = G.from.searching and true or false
   local lits = lazy and G.slit or G.src
   local c = new_clause(G, lazy, nil, nil)
@@ -868,6 +877,7 @@ function Core:on(G)
     end
   end
   c.empty_ok = true
+  if #c > 0 and first then rt.core_stat(#c, rawget(self, "minimal")) end
   return c
 end
 function Solver:core()
@@ -923,7 +933,7 @@ function Core:minimal()
     end
   end
   rt.minimised = (rt.minimised or 0) + 1
-  return setmetatable({ solver = s, lits = K }, Core)
+  return setmetatable({ solver = s, lits = K, minimal = true }, Core)
 end
 function rt.minimal(K)
   if getmetatable(K) ~= Core then fail("minimal: expected a core, as in C.core.minimal") end
@@ -1033,7 +1043,7 @@ function Link:core_lits(lits)
   for _, l in ipairs(lits) do if self.jof[abs(l)] then out[#out + 1] = l end end
   return out
 end
-function Link:core(S, core_lits)
+function Link:core(S, core_lits, minimal, uncounted)
   if S ~= self.to then fail(self.name .. ".core: expected solver " .. self.to.name) end
   if not core_lits and not S.last_core then fail(self.name .. ".core: the last solve of " .. S.name .. " was not unsatisfiable") end
   local lazy = self.from.searching
@@ -1051,7 +1061,15 @@ function Link:core(S, core_lits)
     end
   end
   if #c == 0 then fail(self.name .. ".core: the unsat core contains no atom of link " .. self.name) end
+  if not uncounted then rt.core_stat(#c, minimal) end
   return c
+end
+
+-- the length of a clause made from a core, for the Statistics tab (S event: cores)
+function rt.core_stat(n, minimal)
+  if not rt.core_hist then rt.core_hist = { plain = { 0, 0, 0, 0, 0, 0, 0, 0 }, minimal = { 0, 0, 0, 0, 0, 0, 0, 0 } } end
+  local h = minimal and rt.core_hist.minimal or rt.core_hist.plain
+  local b = bucket(n); h[b] = h[b] + 1
 end
 
 function Link:clauses(X)

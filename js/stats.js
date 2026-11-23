@@ -74,6 +74,9 @@ export class Stats {
       <div class="stats-block" id="lift-block" hidden><h3>Lifting coach</h3>
         <div class="table-wrapper"><table class="internals-table" id="lift-table"></table></div>
         <p class="note" id="lift-note"></p></div>
+      <div class="stats-block" id="cores-block" hidden><h3>Cores</h3>
+        <div class="table-wrapper"><table class="internals-table" id="cores-table"></table></div>
+        <p class="note" id="cores-note"></p></div>
       <div class="stats-block"><h3>Solvers</h3><div class="table-wrapper"><table class="internals-table" id="solver-table"></table></div></div>
       <div class="stats-block"><h3>Refinements</h3><div class="table-wrapper"><table class="internals-table" id="refinement-table"></table></div></div>
       <div class="stats-block"><h3>Charts</h3>
@@ -165,6 +168,7 @@ export class Stats {
     this.renderSummary();
     this.renderSolvers();
     this.renderRefinements();
+    this.renderCores();
     this.renderCharts();
     this.renderCounters();
     this.renderHistory();
@@ -213,6 +217,21 @@ export class Stats {
         (L.uncertified ? `; ${fmt(L.uncertified)} hand-written sets were not certified (lifting started from the whole interface)` : '') +
         (L.fallbacks ? `; ${fmt(L.fallbacks)} fallbacks to a block (the counterexample could not be certified)` : '') + '.';
     }
+  }
+
+  // the clauses made from cores (FUTURE-DIRECTIONS, Statistics): their lengths, plain and minimised
+  renderCores() {
+    const s = this.S;
+    const cb = this.root.querySelector('#cores-block');
+    const ch = s && s.cores;
+    const total = (h) => (h || []).reduce((a, x) => a + x, 0);
+    cb.hidden = !ch || total(ch.plain) + total(ch.minimal) === 0;
+    if (cb.hidden) return;
+    const mean = (h) => { const mids = [1, 2, 3.5, 6.5, 12.5, 24.5, 48.5, 80]; const n = total(h); return n ? (h.reduce((a, x, i) => a + x * mids[i], 0) / n).toFixed(1) : '–'; };
+    const rows = [['as clasp returns them', ch.plain], ['minimised (core.minimal)', ch.minimal]].filter(([, h]) => total(h) > 0)
+      .map(([name, h]) => [name, fmt(total(h)), ...h.map((x) => fmt(x)), mean(h)]);
+    this.table('cores-table', ['Cores', 'Count', ...HIST_LABELS.map((x) => `len ${x}`), 'Mean (approx.)'], rows, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    this.root.querySelector('#cores-note').textContent = 'A short core is a strong clause. Compare the two rows in one run, or a run with and without core.minimal (run history, Compare).';
   }
 
   solverRows() {

@@ -645,3 +645,15 @@ test('D9: the workspace keeps several projects by name and asks before overwriti
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('Statistics: the Cores block shows the lengths of plain and minimised cores', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=maxsat-ihs&tab=6');
+  assert.equal(await page.isVisible('#cores-block'), false);
+  await page.click('#run-button');
+  await settled(page);
+  assert.equal(await page.isVisible('#cores-block'), true);
+  const rows = await page.$$eval('#cores-table tbody tr', (r) => r.map((x) => [...x.children].slice(0, 2).map((c) => c.textContent)));
+  assert.deepEqual(rows, [['minimised (core.minimal)', '5']]);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
