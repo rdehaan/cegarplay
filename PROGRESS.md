@@ -1148,3 +1148,13 @@ and START-HERE lists the categories. Example files are unchanged; only `examples
   (qbf-blame-solver, qbf-three-blocks, qbf-deep), `reasoning` (abduction-two-checks and the three
   reasons examples) and `planning` (the three knapsack examples, conformant-growing), each with a
   tag `several-solvers`. `loadContrib` maps every older group name to `other`.
+
+## Breadth: loop shapes from the literature (2026-11-23, investigation only)
+
+On request: how far the machinery reaches over the CEGAR shapes of an external survey (12 shapes:
+IHS/MaxHS, MARCO, OLL, LBBD, RAReQS, CAQE, ...). Note: `docs/directions/breadth.md`. 9 of 12 are
+native already; MaxHS and MARCO prototypes run with `tools/run.mjs` (scripts in the note).
+Proposed, not built: B1 a core is a list of assumptions (`for a in C.core`) and `for` refuses a
+non-list (today it silently runs zero times: an endless MaxHS loop); B2 cores as `expand` facts
+(OLL); B3 `track name = e` with a chart; B4 = G5 partial checks (optional). Plus a manual table
+"Loops from the literature", examples `marco`/`maxsat-ihs`, algorithm tags. No code changed.
