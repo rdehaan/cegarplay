@@ -45,9 +45,30 @@ as D9 or F1 in code comments refer to that version (`git show 652e5bb:FUTURE-DIR
   `tools/multicheck.py` models one abstraction with several checks by brute force. Loops refined
   by `A.set` (`queens-omission`) or by `G.above`/`G.below` (`marco`), and the chains and
   families, are still checked only by the engine and its audit.
-- **The audit's candidate limit on mid-size voting questions.**
-  `faith-cancel-reinf-pareto-condorcet-k3` and `faith-cancel-reinf-pareto-k3` hit it. Either
-  raise the limit for these questions or mark them `audit: false` as the two hard ones are.
+- **Audits of large candidate spaces.** 46 library instances are marked `audit: false`, because
+  the audit enumerates every candidate and runs out of time (60 s) or memory there. They include
+  most puzzle `example` instances, every `sudoku-unavoidable` instance (its interface is the
+  whole grid), `graph-coloring/n6`, `lang-second-solver/n5` (one solve of R per pair),
+  `arrowing/example`, the large voting questions and the larger `cegis-circuit`, `maxsat-ihs`,
+  `colourable-partial` and `triangle-free-lazy` instances. `triangle-free-lazy/n8` stops at the
+  candidate limit. A sampling audit (random candidates and counterexamples, with a confidence
+  statement), or an audit restricted to the candidates the loop actually visited, would cover
+  them.
+- **No blocking baseline for some examples.** `reference` (the blocking loop) cannot finish on
+  `cegis-circuit`, `maxsat-ihs`, `conformant-growing`, `triangle-free-lazy`, `slitherlink` and
+  the sudoku examples, so they have no `reference` variant. Their counts on small instances were
+  checked once by hand (`cegarcheck.py --mode block` or a temporary blocking copy). A checker
+  family that handles them would turn that into a test.
+
+## Library
+
+- **Graded random puzzles.** The `erased` generators of `sudoku-hard` and `sudoku-graded` give
+  puzzles that singles or a beginner solve, so their recipe instances have 0 solutions and only
+  show the generator. A generator that searches for a grade (erase until the grade is reached,
+  as a loop in itself) would give useful random instances.
+- **Slow `example` runs.** `sudoku-graded` (13 s), `sudoku-unavoidable` (13 s) and
+  `sudoku-hard` (7 s) are tagged `fast` but are not; their variants on `example` take as long.
+  Make the instances smaller, or tag them and leave them to `SLOW=1`.
 
 ## Voting-justification ground truth
 
