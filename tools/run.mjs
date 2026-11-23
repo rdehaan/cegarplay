@@ -30,7 +30,7 @@ import { assemble, parseEvent, validate, auditPlan, auditBody, modulesFor } from
 
 const root = new URL('..', import.meta.url);
 
-async function engineRun(program, options = '--outf=3') {
+export async function engineRun(program, options = '--outf=3') {
   const out = [], err = [];
   const m = await factory({ print: (l) => out.push(l), printErr: (l) => err.push(l) });
   let status;

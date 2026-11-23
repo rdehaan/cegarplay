@@ -237,7 +237,12 @@ the run history, after a run with expansions recorded); `for P in pool(cex): A.e
 = P)` replays them as a warm start. A pool is keyed by its check domain: on an instance with
 another domain it is skipped with a message (`settings.pools = "any"` uses it anyway, at your own
 risk: check with Audit). `js/mine.js` searches a generator grid for hard instances (successive
-halving, then single-fact mutations) and returns them as `hard` instances with their recipe.
+halving, then single-fact mutations) and returns them as `hard` instances with their recipe. **Mine hard
+instances** (the generator panel of the Instances tab) runs it on 24 seeds of the generator's
+defaults and offers the five hardest (candidates per solution) as recipe instances; it is a batch
+("running mining"), stopped by Abort. Headless: `node tools/mine.mjs <project> [--generator NAME]
+[--grid name=v1,v2] [--seeds N] [--objective candidates-per-solution|clauses|time] [--budget N]
+[--keep N] [--add out.json]`.
 
 ### Generators
 

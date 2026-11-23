@@ -1332,3 +1332,4 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   hit the audit's candidate limit; they are left in the audit for now.
 - D7 (done): Import file takes several files at once; a CSV importer with a column map
   (`fromCsv`, `parseColumnMap` in `js/instances.js`).
+- D8 (done): Mine hard instances (generator panel, a batch) and `tools/mine.mjs`.

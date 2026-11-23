@@ -3,6 +3,7 @@ import { makeEditor } from './editors.js';
 import { IMPORTERS, importerFor, freshId, checkFacts, ImportError } from './instances.js';
 import { generate, PARAM_TYPES } from './generate.js';
 import { fuzz, shrinkInstance, diagnose, defaultSource } from './fuzz.js';
+import { mine } from './mine.js';
 import { BatchStopped } from './control.js';
 import { auditable, INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary, exerciseItems, gradeItem, exerciseSummary } from './project.js';
 import { fmt } from './output.js';
@@ -457,7 +458,9 @@ export class InstancesTab {
       el('div', { class: 'instances-bar' },
         el('button', { class: 'control-button small-button', id: 'add-param-button', onclick: () => this.addParam() }, 'Add parameter'),
         el('label', {}, 'Seed ', this.genSeed),
-        el('button', { class: 'control-button', id: 'preview-button', onclick: () => this.previewSix() }, 'Preview 6')),
+        el('button', { class: 'control-button', id: 'preview-button', onclick: () => this.previewSix() }, 'Preview 6'),
+        el('button', { class: 'control-button', id: 'mine-button', onclick: () => this.mineHard(),
+          title: 'Search 24 seeds of this generator (default parameters) for the instances with the most candidates per solution, then try removing single facts' }, 'Mine hard instances')),
       this.genStatus, this.preview);
     this.root.append(el('h3', {}, 'Generators'),
       el('div', { class: 'instances-bar' }, this.genSelect,
@@ -538,6 +541,40 @@ export class InstancesTab {
   }
 
   // Six instances from seeds s..s+5, each with its attempt number and label.
+  // Mining (FUTURE-DIRECTIONS D8, js/mine.js): the hardest instances of this generator for the
+  // loop as it is, by candidates per solution; each can be added as a recipe instance.
+  async mineHard() {
+    const g = this.generator;
+    if (!g) return;
+    const c = this.app.control;
+    const b = c.beginBatch('mining');
+    if (!b) return;
+    const app = this.app;
+    const env = { engineRun: c.batchExec(b), runtime: app.runtime, modules: app.modules, luaTexts: app.genLua() };
+    this.preview.textContent = '';
+    this.genStatus.textContent = 'Mining…';
+    let r;
+    try {
+      r = await mine(structuredClone(app.collect()), { source: { generator: g.name, grid: {}, seeds: 24 }, objective: 'candidates-per-solution',
+        budget: 48, keep: 5, seconds: 1, rounds: 2, mutations: 6, env,
+        onProgress: (x) => { c.batchProgress(`${x.runs} runs`); this.genStatus.textContent = `Mining: stage ${x.stage}, ${x.runs} runs (${x.instance})…`; } });
+    } catch (e) {
+      this.genStatus.textContent = e instanceof BatchStopped || b.cancelled ? 'Mining stopped.' : `Mining failed: ${e.message || e}`;
+      return;
+    } finally { c.endBatch(b); }
+    this.genStatus.textContent = `Mined ${r.runs} runs: the ${r.best.length} hardest instances, by candidates per solution.`;
+    for (const x of r.best) {
+      const card = el('div', { class: 'generator-card mined', 'data-mined': x.id });
+      card.append(el('p', {}, `${x.id}: ${x.score.toFixed(2)} candidates per solution (${x.res ? `${x.res.candidates} candidates, ${x.res.solutions} solutions, ${x.res.outcome}` : 'no run'})` +
+        `${x.instance.mutations && x.instance.mutations.length ? `; ${x.instance.mutations.length} facts removed` : ''}`),
+        el('button', { class: 'control-button small-button', onclick: () => {
+          const id = this.add({ ...structuredClone(x.instance), id: freshId(this.app.project, x.id) });
+          this.genStatus.textContent = `Added instance ${id} (tag hard).`;
+        } }, 'Add as instance'));
+      this.preview.append(card);
+    }
+  }
+
   async previewSix() {
     const g = this.generator;
     if (!g || !this.app.ready || this.app.engine.active) return;

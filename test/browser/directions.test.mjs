@@ -607,3 +607,18 @@ test('D7: several files at once, and a CSV file with a column map', async () => 
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('D8: Mine hard instances in the generator panel, and add one', { timeout: 180000 }, async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf&tab=9');
+  const n0 = await page.evaluate(() => window.cegarplay.project.instances.length);
+  await page.click('#mine-button');
+  await page.waitForFunction(() => /^running mining/.test(document.getElementById('run-status').textContent));
+  await page.waitForFunction(() => /^Mined \d+ runs/.test(document.getElementById('generator-status').textContent), null, { timeout: 170000 });
+  assert.equal(await page.$$eval('#generator-preview .mined', (l) => l.length), 5);
+  await page.click('#generator-preview .mined button');
+  assert.match(await page.textContent('#generator-status'), /Added instance hard-qbf-dnf/);
+  const x = await page.evaluate((n) => window.cegarplay.project.instances[n], n0);
+  assert.ok(x.recipe && x.tags.includes('hard'));
+  assert.deepEqual(errors, []);
+  await context.close();
+});
