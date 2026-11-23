@@ -146,11 +146,11 @@ export function auditPlan(compiled, linkName) {
       .map((p) => ({ part: p.part, facts: p.facts.map(({ name, pred, arity }) => ({ name, pred, arity })) }));
     const seen = new Set();
     const parts = expand.filter((p) => { const k = JSON.stringify(p); if (seen.has(k)) return false; seen.add(k); return true; });
-    return { link: L.name, clause: uses.includes('clause'), expand: parts, L };
+    return { link: L.name, clause: uses.includes('clause'), core: uses.includes('core'), expand: parts, L };
   };
   let plans = cands.map(what);
   if (plans.length > 1) {
-    const useful = plans.filter((p) => p.clause || p.expand.length);
+    const useful = plans.filter((p) => p.clause || p.core || p.expand.length);
     if (useful.length !== 1) return { error: `several links leave a top solver (${cands.map((L) => L.name).join(', ')}); name one with --link` };
     plans = useful;
   }
@@ -158,7 +158,9 @@ export function auditPlan(compiled, linkName) {
   if (compiled.links.some((x) => x.from === plan.L.to)) {
     return { error: `solver ${plan.L.to} passes models on to another solver (a chain); the audit covers a top solver and a check` };
   }
-  if (!plan.clause && plan.expand.length === 0) return { error: `the script refines link ${plan.link} with neither ${plan.link}.clause nor an expand from a counterexample: nothing to audit` };
+  // a loop refined only by cores (a witness check): the core audit (lua/audit.lua audit_cores)
+  if (plan.core && !plan.clause && plan.expand.length === 0) return { link: plan.link, clause: false, expand: [], core: compiled.minimalCore ? 'minimal' : 'plain' };
+  if (!plan.clause && plan.expand.length === 0) return { error: `the script refines link ${plan.link} with neither ${plan.link}.clause nor a core nor an expand from a counterexample: nothing to audit` };
   return { link: plan.link, clause: plan.clause, expand: plan.expand };
 }
 
@@ -169,7 +171,7 @@ export function auditBody(compiled, plan, { limit = 200000, vectors = false } = 
     : typeof v === 'string' ? luaQ(v) : String(v);
   const lines = declarationLines(compiled);
   lines.push(`rt.audit{ link = ${plan.link}, limit = ${Number(limit) | 0}, clause = ${plan.clause ? 'true' : 'false'}, ` +
-    `expand = ${lua(plan.expand)}${vectors ? ', vectors = true' : ''} }`);
+    `expand = ${lua(plan.expand)}${plan.core ? `, core = ${luaQ(plan.core)}` : ''}${vectors ? ', vectors = true' : ''} }`);
   return lines.map((l) => '    ' + l).join('\n') + '\n';
 }
 

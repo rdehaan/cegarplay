@@ -1045,8 +1045,14 @@ after the other (**running audit (3 of 18: …)**), and the Instances tab sums u
 The verdict is "sound for every candidate and counterexample of this instance", or `unsound` with a
 witness: candidate, counterexample, relevant set (or facts), the lost solution and the atoms on
 which candidate and lost solution differ. The witness with the fewest such atoms is chosen; one of
-them should usually have been relevant. Blocks and cores need no audit (they are sound by
-construction); `G.clauses` is not audited.
+them should usually have been relevant. Blocks need no audit; `G.clauses` is not audited.
+6. Core refinements (a loop that refines link G only by cores: `G.core(C)`, `C.core.on(G)`,
+   `C.core.minimal.on(G)`): the check is taken as a witness check, so a candidate is a solution
+   when C has a model under it; every refuted candidate's core (made minimal when the script uses
+   `.minimal`) is one pair, unsound when a solution agrees with the candidate on the core's atoms.
+   A core of the check under these assumptions cannot remove such a solution, so the audit confirms
+   the loop's solution count and its cores; it cannot see a check of the wrong polarity
+   (`guide-10-core-misused`): compare with the reference run for that.
 
 The audited link is the one that leaves the top solver; with several, the one the script refines
 (or name it with `--link`). A check solver that passes models on (a chain) is refused. Above

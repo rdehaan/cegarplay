@@ -86,6 +86,7 @@ test('auditPlan: picks the link, refuses chains and scripts with nothing to audi
   assert.deepEqual(plan('gc-shape3').expand, [{ part: 'refine', facts: [{ name: 'cex', pred: 'color', arity: 2 }] }]);
   assert.match(plan('knapsack-fortification').error, /chain/);
   assert.match(plan('gc-reference').error, /nothing to audit/);
+  assert.match(plan('guide-10-core-block').error, /nothing to audit/);   // blocks need no audit
   // an expand from the abstraction's own model (a bound) is not a refinement to audit
   assert.equal(plan('knapsack-optimum').expand.length, 1);
 });
@@ -118,3 +119,14 @@ test('sweep: of the fast loop-script examples, exactly the two that teach unsoun
   assert.deepEqual(unsound.sort(), ['guide-04-one-node', 'tutorial-weak-relevant']);
 });
 
+
+test('loops refined only by cores get the core audit (witness checks; minimal cores when the loop shrinks them)', async () => {
+  const plan = (id) => { const p = loadTarget(id); return auditPlan(compile(p.loop.text, { fragments: p.fragments.map((f) => f.name) })); };
+  assert.deepEqual(plan('lang-core'), { link: 'G', clause: false, expand: [], core: 'plain' });
+  assert.equal(plan('maxsat-ihs').core, 'minimal');
+  const v = await audit('lang-core');
+  assert.equal(v.verdict, 'sound');
+  assert.deepEqual(v.kinds, ['core']);
+  // its solutions are the candidates with a witness: the loop's 958
+  assert.deepEqual(pick(v), { candidates: 1024, solutions: 958, counterexamples: 66, pairs: 66, unsound: 0, at_risk: 0 });
+});

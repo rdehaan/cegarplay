@@ -590,6 +590,7 @@ export function compile(source, { fragments = [] } = {}) {
 
   // which members of each link the script uses (the audit decides what to audit from it)
   const linkUses = {};
+  let minimalCore = false;          // C.core.minimal somewhere (the audit of a core loop shrinks its cores too)
   function use(G, name) { (linkUses[G] = linkUses[G] || new Set()).add(name); }
   // the solver a variable's model comes from, when the script says so directly
   const varSolver = new Map();
@@ -848,7 +849,7 @@ export function compile(source, { fragments = [] } = {}) {
       }
       case 'true': if (args) err(e, "'true' is not a method: write a.true"); return `rt.atrue(${ex(obj)})`;
       case 'cost': if (args) err(e, "'cost' is not a method: write X.cost"); return `rt.cost(${ex(obj)})`;
-      case 'minimal': if (args) err(e, "'minimal' is not a method: write C.core.minimal"); return `rt.minimal(${ex(obj)})`;
+      case 'minimal': if (args) err(e, "'minimal' is not a method: write C.core.minimal"); minimalCore = true; return `rt.minimal(${ex(obj)})`;
       case 'value': case 'count': {
         if (!args || args.length !== 1 || args[0].k !== 'pred') { err(e, `${name} takes one predicate, as in X.${name}(gain/1)`); return 'nil'; }
         capture(args[0].name, args[0].arity);
@@ -1032,7 +1033,7 @@ export function compile(source, { fragments = [] } = {}) {
   if (errors.length) return finishErrors(errors);
   const map = [null, ...out.map((o) => o.line)];
   return { ok: true, lua: out.map((o) => o.text).join('\n') + '\n', map, solvers: outSolvers, links: outLinks, parts, captures,
-    linkUses: Object.fromEntries(Object.entries(linkUses).map(([k, v]) => [k, [...v].sort()])) };
+    linkUses: Object.fromEntries(Object.entries(linkUses).map(([k, v]) => [k, [...v].sort()])), minimalCore };
 }
 
 function finishErrors(errors) {

@@ -1335,3 +1335,5 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
 - D8 (done): Mine hard instances (generator panel, a batch) and `tools/mine.mjs`.
 - D9 (done): the Workspace in the Control tab (`js/workspace.js`): named projects in browser
   storage, with a warning before an overwrite.
+- Core audit (done): loops refined only by cores get `audit_cores` (lua/audit.lua; the clause
+  check is shared as `check_pairs`); `compiled.minimalCore` makes it shrink cores as the loop does.

@@ -96,31 +96,10 @@ local function candidates(A, L, limit, st)
   return cands
 end
 
--- Clause refinements: every counterexample of every candidate, reduced to distinct relevant sets.
-local function audit_clauses(A, C, L, cands, st)
-  local sols, pairs_ = {}, {}
-  for _, c in ipairs(cands) do
-    local Xs = C:models{ assume = L:of(c.M) }
-    if #Xs == 0 then
-      sols[#sols + 1] = c
-    else
-      local rs = {}
-      for _, X in ipairs(Xs) do
-        st.counterexamples = st.counterexamples + 1
-        local r = pack(X[L], L.n)
-        local k = key(r)
-        if not rs[k] then
-          rs[k] = true
-          pairs_[#pairs_ + 1] = { c = c, r = r, shown = X.shown or "" }
-          if iszero(r) then st.empty = st.empty + 1 end
-        end
-      end
-      st.pairs = #pairs_
-    end
-    c.M = nil                              -- the models are no longer needed
-    progress("counterexamples", st)
-  end
-  st.solutions = #sols
+-- A pair (candidate M, set R of interface atoms) is unsound when some solution agrees with M on
+-- every atom of R: the clause "one of R changes" would remove that solution. Used for clauses
+-- (R: the relevant atoms) and cores (R: the atoms of the core, assumed as in M).
+local function check_pairs(L, sols, pairs_, st, kind)
   local risk, best = {}, nil
   local nw = words(L.n)
   if nw == 1 then
@@ -168,9 +147,73 @@ local function audit_clauses(A, C, L, cands, st)
     local m, sp = best.pr.c.p, best.s.p
     local d = {}
     for w = 1, nw do d[w] = m[w] ~ sp[w] end
-    st.witness = { kind = "clause", candidate = array(atoms_of(L, m)), counterexample = best.pr.shown,
+    st.witness = { kind = kind, candidate = array(atoms_of(L, m)), counterexample = best.pr.shown,
       relevant = array(atoms_of(L, best.pr.r)), solution = array(atoms_of(L, sp)), differ = array(atoms_of(L, d)) }
   end
+end
+
+-- Clause refinements: every counterexample of every candidate, reduced to distinct relevant sets.
+local function audit_clauses(A, C, L, cands, st)
+  local sols, pairs_ = {}, {}
+  for _, c in ipairs(cands) do
+    local Xs = C:models{ assume = L:of(c.M) }
+    if #Xs == 0 then
+      sols[#sols + 1] = c
+    else
+      local rs = {}
+      for _, X in ipairs(Xs) do
+        st.counterexamples = st.counterexamples + 1
+        local r = pack(X[L], L.n)
+        local k = key(r)
+        if not rs[k] then
+          rs[k] = true
+          pairs_[#pairs_ + 1] = { c = c, r = r, shown = X.shown or "" }
+          if iszero(r) then st.empty = st.empty + 1 end
+        end
+      end
+      st.pairs = #pairs_
+    end
+    c.M = nil                              -- the models are no longer needed
+    progress("counterexamples", st)
+  end
+  st.solutions = #sols
+  check_pairs(L, sols, pairs_, st, "clause")
+  AUDIT.solutions = sols
+  return sols
+end
+
+-- Core refinements (a witness check: a candidate is a solution when C has a model). A refuted
+-- candidate is refined by the core of its failed check (made minimal when the loop does), on
+-- the atoms of link L: the pair is unsound when a solution agrees with the candidate on them.
+local function audit_cores(A, C, L, cands, st, minimal)
+  local sols, pairs_, seen = {}, {}, {}
+  for _, c in ipairs(cands) do
+    local X = C:solve{ assume = L:of(c.M) }
+    if X then
+      sols[#sols + 1] = c
+    else
+      st.counterexamples = st.counterexamples + 1
+      local K = C:core()
+      if minimal then K = K:minimal() end
+      local v = {}
+      for _, l in ipairs(rawget(K, "lits")) do
+        local j = L.jof[math.abs(l)]
+        if j then v[j] = true end
+      end
+      local r = pack(v, L.n)
+      local k = key(c.p) .. "|" .. key(r)
+      if not seen[k] then
+        seen[k] = true
+        pairs_[#pairs_ + 1] = { c = c, r = r, shown = "(no model of " .. C.name .. "; its " .. (minimal and "minimal " or "") .. "core)" }
+        if iszero(r) then st.empty = st.empty + 1 end
+      end
+      st.pairs = #pairs_
+    end
+    c.M = nil
+    progress("counterexamples", st)
+  end
+  st.solutions = #sols
+  check_pairs(L, sols, pairs_, st, "core")
   AUDIT.solutions = sols
   return sols
 end
@@ -336,7 +379,8 @@ function rt.audit(o)
   progress("counterexamples", st, true)
   if o.vectors then emit_vectors("candidates", L, cands) end
   local sols
-  if o.clause ~= false then sols = audit_clauses(A, C, L, cands, st) end
+  if o.core then sols = audit_cores(A, C, L, cands, st, o.core == "minimal")
+  elseif o.clause ~= false then sols = audit_clauses(A, C, L, cands, st) end
   if #spec > 0 then
     if sols then
       -- the clause audit dropped the models; enumerate again for the facts
@@ -348,7 +392,8 @@ function rt.audit(o)
   end
   if o.vectors then emit_vectors("solutions", L, AUDIT.solutions or {}) end
   local kinds = array({})
-  if o.clause ~= false then kinds[#kinds + 1] = "clause" end
+  if o.core then kinds[#kinds + 1] = o.core == "minimal" and "minimal core" or "core"
+  elseif o.clause ~= false then kinds[#kinds + 1] = "clause" end
   if #spec > 0 then kinds[#kinds + 1] = "expand" end
   rt.emit("A", { verdict = st.unsound > 0 and "unsound" or "sound", link = L.name, kinds = kinds,
     candidates = st.candidates, solutions = st.solutions, counterexamples = st.counterexamples, pairs = st.pairs,
