@@ -1,0 +1,78 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "MaxSAT by unsat cores (OLL)",
+  "description": "Unweighted MaxSAT with the core-guided algorithm OLL: one solver called under assumptions, an unsat core per round that raises the lower bound, and a rule refinement per core that adds totaliser outputs as new soft constraints. The core is iterated as a list (for a in C.core) to relax its assumptions, and its atoms become facts of the refinement (C.expand(relax, core = K)). The first satisfiable call gives an optimal assignment. Optima checked with the optimisation of clingo itself.",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The instance (Instances tab): soft(C) is a soft clause C (each has weight 1), hard(C) a\n% hard clause; pos(C,V) and neg(C,V) are the literals of clause C.\ncl(C) :- soft(C).\ncl(C) :- hard(C).\nvar(V) :- pos(_,V).\nvar(V) :- neg(_,V).\n"
+    },
+    {
+      "name": "abstraction",
+      "text": "% Only a source of the starting assumptions: its optimal model drops nothing, so G(M) assumes\n% every soft clause kept. All the work happens in the solver C.\n{ drop(C) : soft(C) }.\n#minimize { 1,C : drop(C) }.\n#show drop/1.\n"
+    },
+    {
+      "name": "glue",
+      "text": "glue(drop(C)) :- soft(C).\n"
+    },
+    {
+      "name": "check",
+      "text": "% An assignment that satisfies the hard clauses and every soft clause that is not dropped.\n{ t(V) } :- var(V).\nsat(C) :- pos(C,V), t(V).\nsat(C) :- neg(C,V), not t(V).\n:- hard(C), not sat(C).\n:- soft(C), not drop(C), not sat(C).\nunsat(C) :- soft(C), not sat(C).\n#show t/1.\n#show unsat/1.\n% viol(T): the soft constraint T is violated. The soft constraints are the soft clauses\n% (T = drop(C)) and the totaliser outputs added by relax (T = over(K,J)).\nviol(drop(C)) :- drop(C).\n\n#program relax(k).\n% core(k,T): the k-th unsat core, one fact per soft constraint in it. At least one of them is\n% violated in every solution: that is the +1 of the lower bound. over(k,J) says that at least\n% J of them are violated; each over(k,J) for J >= 2 becomes a new soft constraint (assumed\n% false by the loop), so a solution pays for every violation beyond the first.\nsize(k,N) :- N = #count { T : core(k,T) }.\nover(k,J) :- size(k,N), J = 2..N, #count { T : core(k,T), viol(T) } >= J.\nviol(over(k,J)) :- over(k,J).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Core-guided MaxSAT (OLL, Morgado, Dodaro and Marques-Silva): one solver, called under\n# assumptions \"every soft constraint holds\". Each unsat core raises the lower bound by one;\n# its soft constraints are relaxed (no longer assumed) and replaced by the totaliser outputs\n# over(k,J) of relax(k), assumed false. The first satisfiable call is optimal.\nE = G(A.solve(optimal))            # every soft clause assumed kept\nlower = 0\nloop:\n    track lower = lower\n    X = C.solve(assume E)\n    if X:\n        log \"optimum:\", lower, \"violated:\", X.count(unsat/1)\n        accept X\n        stop\n    K = C.core\n    if K.size == 0: stop \"the hard clauses are unsatisfiable\"\n    lower = lower + 1\n    for a in K:                    # relax the core's soft constraints\n        E = E.without(a)\n    C.expand(relax, core = K)      # facts core(k,T): the core's atoms (B2)\n    j = 2\n    while j <= K.size:             # the new soft constraints: not over(k,j)\n        o = C.atom(\"over\", C.step, j)\n        for a in o:\n            E.push(a)\n            E = E.flip(a)\n        j = j + 1\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0,
+    "instance": "example"
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Random MaxSAT: 5 variables, 40 soft clauses, 2 hard clauses. Optimum 6.\nsoft(1). neg(1,c). neg(1,d).\nsoft(2). pos(2,e). neg(2,d).\nsoft(3). neg(3,d). neg(3,c).\nsoft(4). pos(4,c). pos(4,b).\nsoft(5). pos(5,a). pos(5,c).\nsoft(6). pos(6,c). neg(6,a).\nsoft(7). pos(7,b). neg(7,a). neg(7,d).\nsoft(8). pos(8,b).\nsoft(9). pos(9,a).\nsoft(10). pos(10,b). pos(10,d).\nsoft(11). pos(11,c). pos(11,d). neg(11,a).\nsoft(12). pos(12,b).\nsoft(13). neg(13,b). pos(13,d).\nsoft(14). pos(14,d). neg(14,c).\nsoft(15). pos(15,e). pos(15,d). neg(15,b).\nsoft(16). neg(16,a). pos(16,b).\nsoft(17). pos(17,c). neg(17,d).\nsoft(18). pos(18,a).\nsoft(19). neg(19,e). pos(19,a).\nsoft(20). pos(20,e). neg(20,a).\nsoft(21). neg(21,e). pos(21,c). pos(21,a).\nsoft(22). neg(22,d). neg(22,a).\nsoft(23). pos(23,a). neg(23,c).\nsoft(24). neg(24,a). pos(24,e).\nsoft(25). neg(25,c). pos(25,b).\nsoft(26). neg(26,d). neg(26,c). neg(26,a).\nsoft(27). pos(27,b).\nsoft(28). pos(28,d). neg(28,e).\nsoft(29). pos(29,a).\nsoft(30). neg(30,b). pos(30,c).\nsoft(31). pos(31,d). neg(31,e). pos(31,c).\nsoft(32). neg(32,b). pos(32,d).\nsoft(33). pos(33,d). pos(33,c).\nsoft(34). neg(34,e). pos(34,b).\nsoft(35). neg(35,b). neg(35,e). pos(35,d).\nsoft(36). neg(36,d). neg(36,b).\nsoft(37). pos(37,d). pos(37,e). pos(37,a).\nsoft(38). pos(38,b).\nsoft(39). neg(39,b). pos(39,d). pos(39,a).\nsoft(40). neg(40,e). pos(40,a).\nhard(h1). neg(h1,e).\nhard(h2). pos(h2,a). neg(h2,e). pos(h2,b).\n\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "optimum-3",
+      "facts": "% Random MaxSAT: 6 variables, 26 soft clauses, 2 hard clauses. Optimum 3.\nsoft(1). pos(1,f). pos(1,d). neg(1,c).\nsoft(2). pos(2,a). neg(2,f).\nsoft(3). neg(3,b). pos(3,f).\nsoft(4). neg(4,a). neg(4,c). neg(4,d).\nsoft(5). pos(5,f). neg(5,a).\nsoft(6). pos(6,e). pos(6,c).\nsoft(7). pos(7,b). neg(7,a). neg(7,f).\nsoft(8). pos(8,e).\nsoft(9). neg(9,c). pos(9,b).\nsoft(10). neg(10,e). pos(10,d). pos(10,c).\nsoft(11). pos(11,f). pos(11,d).\nsoft(12). pos(12,e). neg(12,f).\nsoft(13). neg(13,c). pos(13,e).\nsoft(14). neg(14,b).\nsoft(15). neg(15,f). neg(15,a).\nsoft(16). neg(16,b). pos(16,e). pos(16,a).\nsoft(17). pos(17,b). neg(17,e).\nsoft(18). pos(18,c).\nsoft(19). pos(19,a). pos(19,d).\nsoft(20). pos(20,b). pos(20,d).\nsoft(21). neg(21,b).\nsoft(22). neg(22,c). pos(22,e).\nsoft(23). neg(23,b). pos(23,e).\nsoft(24). pos(24,f). pos(24,b). pos(24,a).\nsoft(25). neg(25,f). neg(25,d).\nsoft(26). pos(26,b). pos(26,a).\nhard(h1). neg(h1,b). pos(h1,a). neg(h1,e).\nhard(h2). neg(h2,d). neg(h2,f).\n\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    },
+    {
+      "id": "optimum-4",
+      "facts": "% Random MaxSAT: 6 variables, 26 soft clauses, 2 hard clauses. Optimum 4.\nsoft(1). neg(1,d). pos(1,e).\nsoft(2). neg(2,f).\nsoft(3). neg(3,b). neg(3,d). pos(3,f).\nsoft(4). neg(4,b). neg(4,f).\nsoft(5). pos(5,b). neg(5,e).\nsoft(6). pos(6,e).\nsoft(7). neg(7,e). neg(7,f). pos(7,c).\nsoft(8). pos(8,c).\nsoft(9). pos(9,e). pos(9,f). neg(9,b).\nsoft(10). pos(10,d).\nsoft(11). neg(11,a). neg(11,d).\nsoft(12). pos(12,a).\nsoft(13). neg(13,b).\nsoft(14). pos(14,e). pos(14,d).\nsoft(15). pos(15,a).\nsoft(16). neg(16,e).\nsoft(17). pos(17,e).\nsoft(18). pos(18,d).\nsoft(19). pos(19,a). pos(19,c).\nsoft(20). neg(20,f).\nsoft(21). neg(21,d). neg(21,c).\nsoft(22). pos(22,a).\nsoft(23). pos(23,b). neg(23,c). neg(23,f).\nsoft(24). neg(24,f). neg(24,a).\nsoft(25). pos(25,a).\nsoft(26). pos(26,a). pos(26,b).\nhard(h1). pos(h1,f). neg(h1,d).\nhard(h2). pos(h2,a).\n\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    },
+    {
+      "id": "hard-unsat",
+      "facts": "% The hard clauses alone are unsatisfiable (a and not a): no solution.\nsoft(1). pos(1,b).\nhard(h1). pos(h1,a).\nhard(h2). neg(h2,a).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    }
+  ],
+  "runs": []
+}

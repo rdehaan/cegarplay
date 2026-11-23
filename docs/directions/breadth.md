@@ -2,6 +2,44 @@
 
 Nov 23, 2026. A follow-up to `generality.md`.
 
+## Status (Nov 23, 2026): built
+
+Steps 1 to 4 below are built, along with the discoverability items and one example per loop
+family. What was built differs from the plan in three ways:
+
+- **B1.** `core.on(G)` returns an empty clause instead of failing when the core lies outside
+  `G`, for example when the hard clauses alone are unsatisfiable. `G.core(C)` still fails in
+  that case.
+- **B2.** `expand` takes a core, a clause or `G(M)`, and the facts name the atoms. The
+  separate fact set for signs was not built: a loop that needs the signs splits the list with
+  `a.true`.
+- **B3.** `track n = e` is a label, not a variable. Values are drawn per round, not over time.
+
+Building the examples exposed a grounding problem in the runtime. Interface atoms reached the
+check only through clingo's backend. clingo 5.8 then grounds a rule that projects such atoms
+away (`b :- q(X).`) with a single instance, so the check
+`b :- q(X).  :- not b.` refuted every candidate with `q(2)` but not `q(1)`. The problem
+reproduces in Python clingo 5.8.3.
+
+The runtime now also gives the interface atoms to the check as a choice rule in program text
+(`iface_part` in `lua/runtime.lua`), so they keep the same literals. `test/breadth.test.mjs`
+has the regression test.
+
+New examples, each checked independently:
+
+| Example | Loop family | Checked against |
+| --- | --- | --- |
+| `maxsat-ihs` | Implicit hitting sets | Optima 8, 3 and 6, the same as clingo's own `#minimize` |
+| `marco` | MARCO | MUS and MSS counts from brute force over all subsets |
+| `maxsat-oll` | Core-guided optimisation | Optima 6, 3 and 4, the same as clingo's own `#minimize` |
+| `benders-tardiness` | Logic-based Benders | Optima 20, 16 and 18, the same as a single clingo program that assigns and sequences at once |
+| `queens-omission` | Omission-based abstraction | 92, 4 and 0 placements |
+| `cegis-circuit` | CEGIS | 27 and 789 majority circuits, from brute force over all circuits |
+
+The manual has a new section, *Loops from the literature*, linked from the README, `llms.txt`
+and the library panel. Existing examples carry algorithm tags (`rareqs`, `caqe`, `ihs`,
+`marco`, `benders`, `cegis`, ...).
+
 ## Question and verdict
 
 An external survey (the "CEGAR Loop Shapes in the Literature" chat artifact) put twelve loop shapes

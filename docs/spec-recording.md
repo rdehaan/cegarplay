@@ -29,6 +29,10 @@ All only with `SETTINGS.record`.
 | `R` | each step | `i` step number (counts every step, recorded or not), `k` kind, `s` solver index, `l` link index, `n` program line of the loop statement (map with `mapLine`), `t` seconds since the start, `c` candidate, `q` clause, `f` facts |
 | `C` | each solve, models call and search | `id`, `s` solver index, `t0` start, `dt` duration, `r` result (`sat`, `unsat`, `int`), `p` id of the enclosing call (0 = none), `n` program line |
 
+Not part of the record setting, but replayed like every event: `V` (one per `track` statement
+call, `{ n, i, v, t }`, at most 2,000 per name) and the `tracked` table of `S` (only present after a
+`track`). A replay feeds them to the Statistics tab, which draws the tracked values again.
+
 Step kinds: `r` reject (`Model:reject`), `a` add (`S.add`), `e` expand (`S.expand`), `s` solution
 (an accepted model of a search, or `accept M`), `x` error (a counterexample without relevant atoms).
 

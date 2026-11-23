@@ -20,6 +20,7 @@ rt.clauses, rt.literals, rt.maxlen = 0, 0, 0
 rt.hist = { 0, 0, 0, 0, 0, 0, 0, 0 }
 rt.expansions, rt.restarts, rt.blocks = 0, 0, 0
 rt.counters, rt.counter_order = {}, {}
+rt.tracked, rt.track_order, rt.track_n = {}, {}, {}
 rt.traced = 0
 rt.t0 = clock()
 rt.last_s = rt.t0
@@ -175,6 +176,11 @@ local function stats_event()
   local e = { t = clock() - rt.t0, candidates = rt.candidates, counterexamples = rt.counterexamples,
     solutions = rt.solutions, clauses = rt.clauses, literals = rt.literals, maxlen = rt.maxlen, hist = hist,
     expansions = rt.expansions, restarts = rt.restarts, blocks = rt.blocks, solvers = sv, counters = counters }
+  if #rt.track_order > 0 then
+    local tr = {}
+    for k, v in pairs(rt.tracked) do tr[k] = v end
+    e.tracked = tr
+  end
   if rt.stats_extra then rt.stats_extra(e) end
   return e
 end
@@ -411,11 +417,41 @@ function rt.solver(name, frags, options)
   return s
 end
 
+-- Interface atoms reach the target through the backend (so that their literals are known at
+-- once) and, again, as program text grounded with the target: a choice rule (or a fact). The
+-- grounder does not treat atoms that only the backend added like atoms with a rule: a rule
+-- with a variable that only such an atom binds, as in "b :- q(X).", got one instance instead
+-- of one per atom (clingo 5.8; the check "b :- q(X). :- not b." then refuted candidates that
+-- have q(2) but not q(1)). The text gives the grounder the same atoms with the same literals.
+local function iface_text(S, atom, choice)
+  S.iface = S.iface or { choice = {}, facts = {} }
+  local t = choice and S.iface.choice or S.iface.facts
+  t[#t + 1] = atom
+end
+local iface_parts = 0
+-- The pending interface text of S as a program part to ground (its name), or nil.
+local function iface_part(S)
+  local p = S.iface
+  if not p or (#p.choice == 0 and #p.facts == 0) then return nil end
+  S.iface = nil
+  local lines = {}
+  if #p.choice > 0 then lines[#lines + 1] = "{ " .. concat(p.choice, "; ") .. " }." end
+  for _, a in ipairs(p.facts) do lines[#lines + 1] = a .. "." end
+  iface_parts = iface_parts + 1
+  local name = "cegarplay_iface_" .. iface_parts
+  S.ctl:add(name, {}, concat(lines, "\n"))
+  return name
+end
+rt.iface_part = iface_part
+
 function Solver:ground()
   if self.grounded then return end
   local t0 = clock()
   self.ctl:add("base", {}, join(self.frags))
-  self.ctl:ground({ { "base", {} } })
+  local parts = { { "base", {} } }
+  local ip = iface_part(self)
+  if ip then parts[2] = { ip, {} } end
+  self.ctl:ground(parts)
   self.grounded = true
   self.n.ground = self.n.ground + (clock() - t0)
 end
@@ -535,6 +571,7 @@ function rt.link(name, from, to, glue, opts)
       local d = b:add_atom(sym)
       if atom.is_fact then
         b:add_rule{ head = { d }, body = {} }
+        iface_text(to, key, false)
         L.facts = L.facts + 1
         L.fsym = L.fsym or {}
         L.fsym[#L.fsym + 1] = sym
@@ -542,6 +579,8 @@ function rt.link(name, from, to, glue, opts)
         local i = b:add_atom(clingo.Function("relevant", { sym }, true))
         b:add_rule{ head = { d }, body = {}, choice = true }
         if opts.compat then b:add_rule{ head = { i }, body = {}, choice = true } end
+        iface_text(to, key, true)
+        if opts.compat then iface_text(to, "relevant(" .. key .. ")", true) end
         local j = L.n + 1; L.n = j
         L.src[j] = atom.literal; L.dst[j] = d; L.ind[j] = i; L.sym[j] = sym; L.str[j] = key
         L.jof[d] = j; L.jstr[key] = j
@@ -642,7 +681,10 @@ function Solver:ground_part(part, n)
   if math.type(n) ~= "integer" then fail(self.name .. ".ground: the parameter must be a whole number") end
   self:ground()
   local t0 = clock()
-  self.ctl:ground({ { part, { clingo.Number(n) } } })
+  local parts = { { part, { clingo.Number(n) } } }
+  local ip = iface_part(self)
+  if ip then parts[2] = { ip, {} } end
+  self.ctl:ground(parts)
   self:resolve()
   self.n.ground = self.n.ground + (clock() - t0)
 end
@@ -676,6 +718,7 @@ function Link:extend(part, n)
       local d = b:add_atom(sym)
       if atom.is_fact then
         b:add_rule{ head = { d }, body = {} }
+        iface_text(C, key, false)
         self.facts = self.facts + 1
         self.fsym = self.fsym or {}
         self.fsym[#self.fsym + 1] = sym
@@ -683,6 +726,8 @@ function Link:extend(part, n)
         local i = b:add_atom(clingo.Function("relevant", { sym }, true))
         b:add_rule{ head = { d }, body = {}, choice = true }
         if self.compat then b:add_rule{ head = { i }, body = {}, choice = true } end
+        iface_text(C, key, true)
+        if self.compat then iface_text(C, "relevant(" .. key .. ")", true) end
         local j = self.n + 1; self.n = j
         self.src[j] = atom.literal; self.dst[j] = d; self.ind[j] = i; self.sym[j] = sym; self.str[j] = key
         self.jof[d] = j; self.jstr[key] = j
@@ -761,13 +806,22 @@ function Link:below(x)
 end
 
 -- C.core: the whole core of the last solve of C; core.on(G) keeps the atoms of link G.
+-- A core is also a list: its elements are the literals the solver was assumed (target literals,
+-- as in G(M)), so `for a in C.core`, E.flip(a) and E.without(a) work on them (phase B1).
 local Core = {}
-Core.__index = Core
+Core.__index = function(t, k)
+  if math.type(k) == "integer" then return rawget(t, "lits")[k] end
+  return Core[k]
+end
+Core.__len = function(t) return #rawget(t, "lits") end
+rt.Core = Core
 -- core.on(G): the atoms of the core that G knows, by name (also when G does not end at the
 -- core's solver: a core along a chain, phase L4), as a clause for G's source.
 function Core:on(G)
   if getmetatable(G) ~= Link then fail("core.on: expected a link") end
-  if G.to == self.solver then return G:core(self.solver) end
+  -- (G ending at the core's solver: as G.core(C), but an empty clause is a value, not an error:
+  -- `if K.size == 0` then tells that the core lies outside G, e.g. hard clauses alone)
+  if G.to == self.solver and #G:core_lits(self.lits) > 0 then return G:core(self.solver) end
   local lazy = G.from.searching and true or false
   local lits = lazy and G.slit or G.src
   local c = new_clause(G, lazy, nil, nil)
@@ -825,15 +879,25 @@ local function list_copy(E, what)
   list_links[out] = list_links[E]
   return out
 end
+local NOT_IN = " (the atoms of a clause belong to the solver it refines; for the assumptions of a check, walk G(M) or C.core)"
 function rt.flip(E, a)
   local out = list_copy(E, "flip")
   for i = 1, #out do if out[i] == a then out[i] = -a; return out end end
-  fail("flip: the atom is not in the list")
+  fail("flip: the atom is not in the list" .. NOT_IN)
 end
 function rt.without(E, a)
   local out = list_copy(E, "without")
   for i = 1, #out do if out[i] == a then table.remove(out, i); return out end end
-  fail("without: the atom is not in the list")
+  fail("without: the atom is not in the list" .. NOT_IN)
+end
+-- for x in e: e must be a list (a plain list, G(M), a clause, a core, atoms); a model, a solver,
+-- a link, none, a number or a string is an error instead of zero rounds (phase B1).
+function rt.each(l)
+  local mt = getmetatable(l)
+  if type(l) == "table" and (mt == nil or mt == ARRAY or mt == Core) then return ipairs(l) end
+  local what = l == nil and "none" or mt == Model and "a model (use X.atoms(p/n))" or mt == Solver and "a solver"
+    or mt == Link and "a link" or type(l) == "table" and "not a list" or "a " .. type(l)
+  fail("for: expected a list, got " .. what)
 end
 
 -- Model reads: X.value(p/1) (the argument of the one true atom), X.count(p/n), X.cost, a.arg(i).
@@ -882,6 +946,12 @@ function Link:block(M)
   return c
 end
 
+-- the literals of a core that are atoms of the link
+function Link:core_lits(lits)
+  local out = {}
+  for _, l in ipairs(lits) do if self.jof[abs(l)] then out[#out + 1] = l end end
+  return out
+end
 function Link:core(S)
   if S ~= self.to then fail(self.name .. ".core: expected solver " .. self.to.name) end
   if not S.last_core then fail(self.name .. ".core: the last solve of " .. S.name .. " was not unsatisfiable") end
@@ -1368,6 +1438,48 @@ function Solver:add(c, o)
   if is_clause_list(c) then for _, x in ipairs(c) do queue_clause(self, x) end else queue_clause(self, c) end
 end
 
+-- The atoms a fact list of expand stands for (phase B2): a list of atoms (X.atoms), or a list of
+-- literals that says whose they are: a core (C.core, the atoms C was assumed), a clause (the
+-- atoms of its link), or G(M). The value of a literal is dropped: the fact names the atom.
+local function sym_of_literal(S, l)
+  for _, L in ipairs(S.inn) do
+    local j = L.jof[abs(l)]
+    if j then return L.sym[j] end
+  end
+  for x in S.ctl.symbolic_atoms:iter() do if x.literal == abs(l) then return x.symbol end end
+  return nil
+end
+function rt.fact_atoms(v, what)
+  if type(v) ~= "table" then error(what .. " must be a list of atoms, a core or a clause", 0) end
+  local mt = getmetatable(v)
+  local out = array({})
+  if mt == Core then
+    for _, l in ipairs(rawget(v, "lits")) do
+      local sym = sym_of_literal(v.solver, l)
+      if sym then out[#out + 1] = sym end
+    end
+    return out
+  end
+  if mt == nil and v.link and v.j then
+    for k = 1, #v do out[#out + 1] = v.link.sym[v.j[k]] end
+    return out
+  end
+  local links = list_links[v]
+  if links and #v > 0 and math.type(v[1]) == "integer" then
+    for _, l in ipairs(v) do
+      local sym
+      for _, L in ipairs(links) do local j = L.jof[abs(l)]; if j then sym = L.sym[j]; break end end
+      if not sym then error(what .. ": a literal of the list belongs to no link", 0) end
+      out[#out + 1] = sym
+    end
+    return out
+  end
+  for _, a in ipairs(v) do
+    if type(a) ~= "userdata" then error(what .. " must be a list of atoms, a core or a clause", 0) end
+  end
+  return v
+end
+
 function Solver:expand(part, facts)
   check_idle(self, "expand")
   if type(part) ~= "string" then fail(self.name .. ".expand: the part name must be a string") end
@@ -1383,8 +1495,7 @@ function Solver:expand(part, facts)
   local b = self.ctl:backend()
   local ok, err = pcall(function()
     for _, name in ipairs(names) do
-      local atoms = facts[name]
-      if type(atoms) ~= "table" then error(self.name .. ".expand: " .. name .. " must be a list of atoms", 0) end
+      local atoms = rt.fact_atoms(facts[name], self.name .. ".expand: " .. name)
       for _, a in ipairs(atoms) do
         if type(a) ~= "userdata" then error(self.name .. ".expand: " .. name .. " must be a list of atoms", 0) end
         b:add_rule{ head = { b:add_atom(clingo.Function(name, { k, a }, true)) }, body = {} }
@@ -1395,7 +1506,10 @@ function Solver:expand(part, facts)
   end)
   b:close()
   if not ok then error(err, 0) end
-  self.ctl:ground({ { part, { k } } })
+  local parts = { { part, { k } } }
+  local ip = iface_part(self)
+  if ip then parts[2] = { ip, {} } end
+  self.ctl:ground(parts)
   self:resolve()
   rt.expansions = rt.expansions + 1
   self.n.ground = self.n.ground + (clock() - t0)
@@ -1634,6 +1748,20 @@ function rt.count(name, n)
   rt.counters[name] = rt.counters[name] + n
 end
 
+-- track name = e (phase B3): a series of numbers drawn in the Statistics tab. Each call sends a
+-- V event { n, i, v, t } (i counts the values of that name); after TRACK_CAP values of a name only
+-- its last value is kept (in the S event's tracked table). none is skipped.
+local TRACK_CAP = 2000
+function rt.track(name, v)
+  if v == nil then return end
+  if type(v) ~= "number" then fail("track " .. tostring(name) .. ": the value must be a number, got " .. type(v)) end
+  local n = (rt.track_n[name] or 0) + 1
+  rt.track_n[name] = n
+  if rt.tracked[name] == nil then rt.track_order[#rt.track_order + 1] = name end
+  rt.tracked[name] = v
+  if n <= TRACK_CAP then emit("V", { n = name, i = n, v = v, t = clock() - rt.t0 }) end
+end
+
 local function fmt(v)
   if type(v) == "table" and getmetatable(v) ~= Model and getmetatable(v) ~= Solver and getmetatable(v) ~= Link then
     local t = {}
@@ -1713,6 +1841,7 @@ function plain_table(d)
     print(string.format("Solver %-6s: %d calls, %d sat, %d unsat, %.3f s", s.name, c.calls, c.sat, c.unsat, c.time))
   end
   for _, k in ipairs(rt.counter_order) do print(string.format("%-13s: %s", k, tostring(rt.counters[k]))) end
+  for _, k in ipairs(rt.track_order) do print(string.format("%-13s: %s", k, tostring(rt.tracked[k]))) end
 end
 
 function rt.run(f)

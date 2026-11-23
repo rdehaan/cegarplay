@@ -17,7 +17,7 @@ four example scripts below were run as the hand-written Lua shown in
   `STRING`: double quotes, with `\"` and `\\` escapes.
 - Keywords: `solver link via options legacy compat if elif else loop while
   repeat until for in search on candidate reject with accept restart stop
-  break continue count by log assume limit optimal and or not true false none`.
+  break continue count by track log assume limit optimal and or not true false none`.
 - A name may not be a Lua keyword, nor `rt`, `clingo`, `FRAGMENTS`, `CONSTS`,
   `SETTINGS`, `main`, nor start with `__`.
 
@@ -40,6 +40,7 @@ stmt    := NAME "=" expr NEWLINE
          | "restart" NEWLINE | "break" NEWLINE | "continue" NEWLINE
          | "stop" [ STRING ] NEWLINE
          | "count" NAME [ "by" expr ] NEWLINE
+         | "track" NAME "=" expr NEWLINE
          | "log" expr { "," expr } NEWLINE
          | expr NEWLINE
 block   := simple_stmt                        (rest of the same line; no compound statement)
@@ -84,7 +85,7 @@ variables).
 | `loop:` | `while true do ... end` |
 | `while e:` | `while e do ... end` |
 | `repeat: ... until e` | `repeat ... until e` |
-| `for x in e:` | `for _, x in ipairs(e) do ... end` |
+| `for x in e:` | `for _, x in rt.each(e) do ... end` (`rt.each` fails on a value that is not a list: a model, a solver, a link, none, a number, a string; a core `C.core` is a list) |
 | `break` | `break` |
 | `continue` | `goto __continue_N`, with `::__continue_N::` as the last statement of the innermost loop body (Lua 5.4 has `goto`) |
 | `search A:` / `on candidate M:` / block | `A:search{ on_candidate = function(M)` ... `end }` |
@@ -93,6 +94,7 @@ variables).
 | `restart` | `rt.restart()` |
 | `stop "msg"` | `rt.stop("msg")` |
 | `count n by e` | `rt.count("n", e)` |
+| `track n = e` | `rt.track("n", e)`: a number per call, sent as a V event (breadth.md B3) |
 | `log a, b` | `rt.log(a, b)` |
 
 ### 3.3 Expressions

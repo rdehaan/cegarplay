@@ -23,8 +23,11 @@ export async function startServer({ coi = false } = {}) {
   return { url: `http://127.0.0.1:${port}/`, port, close: () => proc.kill() };
 }
 
+// CHROMIUM_PATH: a Chromium binary to use instead of Playwright's own download (for machines
+// with a preinstalled browser of another Playwright version, e.g. cloud sessions).
 export async function launch() {
-  return (process.env.BROWSER === 'firefox' ? firefox : chromium).launch();
+  if (process.env.BROWSER === 'firefox') return firefox.launch();
+  return chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 }
 
 // By default the page is opened with ?nocoi=1 (not isolated); pass { coi: true } to let the

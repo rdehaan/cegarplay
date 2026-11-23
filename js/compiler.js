@@ -2,7 +2,7 @@
 // No DOM, no Node APIs: used by the page and by the tests.
 
 export const KEYWORDS = new Set(('solver link via options legacy compat lift keep def return if elif else loop while repeat until for in ' +
-  'search on candidate reject with accept restart stop break continue count by log assume limit optimal and or not ' +
+  'search on candidate reject with accept restart stop break continue count by track log assume limit optimal and or not ' +
   'true false none').split(' '));
 const LUA_RESERVED = new Set(('and break do else elseif end false for function goto if in local nil not or repeat return ' +
   'then true until while').split(' '));
@@ -301,6 +301,15 @@ class Parser {
           if (this.isKw('by')) { this.next(); by = this.expr(); }
           this.endLine();
           return { t: 'count', ...at, n, by };
+        }
+        case 'track': {
+          this.next();
+          const n = this.name('a value name');
+          if (!this.isOp('=')) this.fail(this.peek(), `track needs a value, as in track ${n.value} = e`);
+          this.next();
+          const v = this.expr();
+          this.endLine();
+          return { t: 'track', ...at, n, v };
         }
         case 'log': {
           this.next();
@@ -871,7 +880,7 @@ export function compile(source, { fragments = [] } = {}) {
       case 'for': {
         checkName(s.v, 'a loop variable');
         if (isDecl(s.v.value)) err(s.v, `'${s.v.value}' is a solver or link and cannot be a loop variable`);
-        emit(`for _, ${s.v.value} in ipairs(${ex(s.iter)}) do rt.tick()`, s.line, depth);
+        emit(`for _, ${s.v.value} in rt.each(${ex(s.iter)}) do rt.tick()`, s.line, depth);
         loopBody(s.body, depth, s.line);
         emit('end', null, depth);
         break;
@@ -938,6 +947,7 @@ export function compile(source, { fragments = [] } = {}) {
       }
       case 'stop': emit(s.msg === null ? 'rt.stop()' : `rt.stop(${luaString(s.msg)})`, s.line, depth); break;
       case 'count': emit(`rt.count(${luaString(s.n.value)}${s.by ? ', ' + ex(s.by) : ''})`, s.line, depth); break;
+      case 'track': emit(`rt.track(${luaString(s.n.value)}, ${ex(s.v)})`, s.line, depth); break;
       case 'log': emit(`rt.log(${s.args.map((a) => ex(a)).join(', ')})`, s.line, depth); break;
       default: err(s, `unsupported statement '${s.t}'`);
     }

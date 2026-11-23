@@ -54,7 +54,8 @@
     "shape": "custom",
     "tags": [
       "fast",
-      "several-solvers"
+      "several-solvers",
+      "caqe"
     ],
     "expected": 4
   }

@@ -275,6 +275,7 @@ export class Control {
         break;
       }
       case 'L': app.output.log(data.text); break;
+      case 'V': app.stats.track(data); break;
       case 'T': app.output.trace.add(data); app.output.schedule(); break;
       case 'E': {
         this.E = data;

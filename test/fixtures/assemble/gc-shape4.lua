@@ -91,7 +91,7 @@ function main(prg)
         end
       end }
       grounded = rt.size(pending)
-      for _, X in ipairs(pending) do rt.tick()
+      for _, X in rt.each(pending) do rt.tick()
         A:expand("refine", { cex = X:atoms("color", 2) })
       end
       rt.clear(pending)

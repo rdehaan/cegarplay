@@ -1,0 +1,78 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Weighted MaxSAT by implicit hitting sets (MaxHS)",
+  "description": "Weighted MaxSAT with the implicit hitting set loop of MaxHS (Davies and Bacchus): an optimal hitting set of the cores found so far, then a SAT oracle on the clauses it keeps. The check looks for a witness; a failed check is refined by its unsat core (G.core), and each core is relaxed (for a in C.core: E = E.without(a)) so that one round can find several disjoint cores. track draws the lower bound (the hitting set's cost) and the upper bound (the witness's cost) in the Statistics tab until they meet. One solution: an optimal set of soft clauses to give up.",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The instance (Instances tab): soft(C,W) is a soft clause C with weight W, hard(C) a hard\n% clause; pos(C,V) and neg(C,V) are the literals of clause C.\ncl(C) :- soft(C,_).\ncl(C) :- hard(C).\nvar(V) :- pos(_,V).\nvar(V) :- neg(_,V).\n"
+    },
+    {
+      "name": "abstraction",
+      "text": "% The hitting-set solver: which soft clauses to give up (drop). It knows nothing of the\n% formula; it only learns the cores, as clauses \"drop at least one clause of this core\".\n{ drop(C) : soft(C,_) }.\n% Each call is optimal (A.solve(optimal)): the cheapest set that hits every core so far.\n% Its cost is a lower bound on the optimum.\n#minimize { W,C : drop(C), soft(C,W) }.\n#show drop/1.\n"
+    },
+    {
+      "name": "glue",
+      "text": "glue(drop(C)) :- soft(C,_).\n"
+    },
+    {
+      "name": "check",
+      "text": "% The SAT oracle: an assignment that satisfies the hard clauses and every soft clause that is\n% not dropped. It is a witness: if it exists, the hitting set is optimal; if not, the unsat\n% core names the soft clauses (assumed not dropped) that cannot all hold.\n{ t(V) } :- var(V).\nsat(C) :- pos(C,V), t(V).\nsat(C) :- neg(C,V), not t(V).\n:- hard(C), not sat(C).\n:- soft(C,_), not drop(C), not sat(C).\n% Not needed for correctness: with it, X.cost is the true cost of the witness X, an upper bound.\n#minimize { W,C : soft(C,W), not sat(C) }.\n#show t/1.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Implicit hitting sets (MaxHS): an optimal hitting set of the cores found so far, then a SAT\n# call with the clauses it keeps. Unsatisfiable: a new core, which the next hitting set must\n# hit. Satisfiable: the hitting set is optimal. Within a round, each core is relaxed\n# (E.without) and the oracle is asked again, so that one round finds several disjoint cores.\nupper = none\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"the hard clauses are unsatisfiable\"\n    track lower = M.cost\n    E = G(M)\n    cores = 0\n    loop:\n        X = C.solve(assume E)\n        if X:\n            if upper == none or X.cost < upper: upper = X.cost\n            break\n        K = C.core.on(G)               # the core's soft clauses, as a clause for A\n        if K.size == 0: stop \"the hard clauses are unsatisfiable\"\n        A.add(K)                       # hit at least one clause of the core\n        cores = cores + 1\n        count cores\n        for a in C.core:               # relax the core's clauses, look for a disjoint one\n            E = E.without(a)\n    track upper = upper\n    if cores == 0:\n        log \"optimum:\", M.cost\n        accept M\n        stop\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0,
+    "instance": "example"
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Random weighted MaxSAT: 8 variables, 16 soft clauses (weights 1 to 5), 4 hard clauses. Optimum 8.\nsoft(1,2). pos(1,e).\nsoft(2,4). pos(2,g). pos(2,h). neg(2,b).\nsoft(3,4). pos(3,h).\nsoft(4,2). pos(4,f).\nsoft(5,1). neg(5,g).\nsoft(6,4). neg(6,d).\nsoft(7,4). neg(7,f). neg(7,b).\nsoft(8,3). neg(8,g).\nsoft(9,5). neg(9,c).\nsoft(10,3). neg(10,f).\nsoft(11,5). neg(11,d). neg(11,c). neg(11,g).\nsoft(12,5). neg(12,a). pos(12,d). neg(12,b).\nsoft(13,3). neg(13,b). pos(13,d).\nsoft(14,2). pos(14,f). pos(14,d). neg(14,h).\nsoft(15,5). pos(15,c). pos(15,b). pos(15,e).\nsoft(16,5). pos(16,g). neg(16,e).\nhard(h1). neg(h1,h). neg(h1,c).\nhard(h2). neg(h2,g).\nhard(h3). neg(h3,d). pos(h3,h).\nhard(h4). pos(h4,d). neg(h4,e).\n\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "small-opt",
+      "facts": "% Another random instance of the same size. Optimum 3.\nsoft(1,1). pos(1,b).\nsoft(2,2). pos(2,e). pos(2,h).\nsoft(3,2). neg(3,g). neg(3,h). pos(3,f).\nsoft(4,4). pos(4,a). pos(4,g).\nsoft(5,3). neg(5,g). pos(5,e). pos(5,b).\nsoft(6,3). neg(6,c). neg(6,e).\nsoft(7,5). pos(7,h). neg(7,g).\nsoft(8,3). neg(8,f). pos(8,g).\nsoft(9,4). neg(9,d). neg(9,h). neg(9,c).\nsoft(10,3). neg(10,h). neg(10,c). pos(10,e).\nsoft(11,2). pos(11,c). neg(11,e).\nsoft(12,3). neg(12,g). pos(12,c).\nsoft(13,3). neg(13,f).\nsoft(14,2). neg(14,a).\nsoft(15,1). neg(15,d). pos(15,f).\nsoft(16,5). neg(16,e). neg(16,b).\nhard(h1). neg(h1,g).\nhard(h2). pos(h2,a).\nhard(h3). pos(h3,d). pos(h3,f).\nhard(h4). pos(h4,a).\n\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    },
+    {
+      "id": "opt-6",
+      "facts": "% Another random instance of the same size. Optimum 6.\nsoft(1,5). neg(1,h).\nsoft(2,1). neg(2,c).\nsoft(3,4). pos(3,f). pos(3,g).\nsoft(4,2). neg(4,b). neg(4,h). pos(4,e).\nsoft(5,5). pos(5,g).\nsoft(6,1). pos(6,g). neg(6,h).\nsoft(7,2). neg(7,b). pos(7,a).\nsoft(8,3). neg(8,d). neg(8,e). neg(8,g).\nsoft(9,1). pos(9,d). pos(9,e).\nsoft(10,1). pos(10,d).\nsoft(11,3). pos(11,d). pos(11,h).\nsoft(12,2). neg(12,d).\nsoft(13,1). pos(13,e). pos(13,c).\nsoft(14,2). neg(14,a). neg(14,b). pos(14,d).\nsoft(15,4). neg(15,b). neg(15,e).\nsoft(16,4). pos(16,b). neg(16,e). pos(16,d).\nhard(h1). neg(h1,d).\nhard(h2). neg(h2,h). neg(h2,d).\nhard(h3). neg(h3,a).\nhard(h4). pos(h4,f). pos(h4,b).\n\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    },
+    {
+      "id": "hard-unsat",
+      "facts": "% The hard clauses alone are unsatisfiable (a and not a): no solution.\nsoft(1,2). pos(1,b).\nhard(h1). pos(h1,a).\nhard(h2). neg(h2,a).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    }
+  ],
+  "runs": []
+}

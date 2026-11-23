@@ -68,7 +68,7 @@ function main(prg)
       else
         E = G:of(M)
         shrunk = false
-        for _, a in ipairs(E) do rt.tick()
+        for _, a in rt.each(E) do rt.tick()
           if rt.atrue(a) and (not C:solve{ assume = rt.flip(E, a) }) then
             E = rt.flip(E, a)
             shrunk = true

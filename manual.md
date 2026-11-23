@@ -3,7 +3,9 @@
 This manual describes CegarPlay completely and precisely, for lookup. It is written for people
 who already know the basics (the **Tutorial** tab teaches them) and for AI agents that write,
 validate and run CegarPlay projects. How to design a loop, step by step and with measured examples,
-is taught by the [design guide](guide/). The raw Markdown is served at `manual.md`; `llms.txt` points
+is taught by the [design guide](guide/); algorithms from the literature (MaxHS, MARCO, OLL,
+Benders, CEGIS, RAReQS, ...) are mapped to loop patterns and examples in
+[Loops from the literature](#manual-loops-from-the-literature). The raw Markdown is served at `manual.md`; `llms.txt` points
 to it.
 
 CegarPlay runs CEGAR loops (counterexample-guided abstraction refinement) written in answer set
@@ -363,8 +365,8 @@ The compiler runs 500 ms after each edit in the Loop tab and marks errors at onc
 - Names: `[A-Za-z_][A-Za-z0-9_]*`. Numbers: integers or decimals. Strings: double quotes, with `\"`
   and `\\` escapes.
 - Keywords: `solver link via options legacy compat if elif else loop while repeat until for in
-  search on candidate reject with accept restart stop break continue count by log assume limit
-  optimal and or not true false none`.
+  search on candidate reject with accept restart stop break continue count by track log assume limit
+  optimal and or not true false none`, and `lift keep def return`.
 - Reserved names (cannot be declared or assigned): every Lua keyword, `rt`, `clingo`, `FRAGMENTS`,
   `CONSTS`, `SETTINGS`, `main`, `ipairs`, `_`, and names starting with `__`.
 
@@ -387,6 +389,7 @@ stmt    := NAME "=" expr NEWLINE
          | "restart" NEWLINE | "break" NEWLINE | "continue" NEWLINE
          | "stop" [ STRING ] NEWLINE
          | "count" NAME [ "by" expr ] NEWLINE
+         | "track" NAME "=" expr NEWLINE
          | "log" expr { "," expr } NEWLINE
          | expr NEWLINE
 block   := simple_stmt                  (on the same line; not a compound statement)
@@ -430,7 +433,7 @@ before the link is declared (declarations are processed in order, then all solve
 | `loop:` | Repeat forever; leave with `break` or `stop`. |
 | `while e:` | Repeat while `e` is true. |
 | `repeat: ... until e` | Run the block, then stop once `e` is true. |
-| `for x in e:` | Run the block for each element of the list `e`. |
+| `for x in e:` | Run the block for each element of the list `e`: a list, `G(M)`, a clause, a core (`C.core`) or `X.atoms(p/n)`. Anything else (a model, a solver, `none`, a number) is an error: `for: expected a list, got ...`. |
 | `break`, `continue` | Leave the innermost loop; go to its next round. |
 | `search A:` / `on candidate M:` / block | Run `A`'s own search; call the block for every candidate `M` (a total assignment). A candidate that is not rejected is a solution. |
 | `reject M with e` | Add the clause (or list of clauses) `e` to the searching solver. Only inside `on candidate`, naming its candidate variable. Several `reject`s of one candidate are allowed: the first clause is added at once, the rest at the next check. |
@@ -439,6 +442,7 @@ before the link is declared (declarations are processed in order, then all solve
 | `stop` | End the run with outcome `finished`. |
 | `stop "msg"` | End the run with outcome `stopped` and the message as detail. |
 | `count n by e` | Add `e` (default 1) to the custom counter `n` (Statistics tab, Custom counters). |
+| `track n = e` | Record the number `e` as the next value of the series `n` (`none` is skipped). The Statistics tab draws each series as a line over its rounds (the i-th value of `n` is round i) and lists the last value; `tools/run.mjs` prints the series. For bounds that should meet, as in `maxsat-ihs` or `benders-tardiness`. `n` is a label, not a variable. |
 | `log a, b` | Print the values, separated by spaces, to the Messages in the Output tab. |
 | `e` | An expression statement must be a call (such as `A.add(c)`). |
 
@@ -454,7 +458,7 @@ A block may follow the colon on the same line if it is one simple statement: `if
 | `S.solve(assume E, optimal)` | With a `#minimize` in `S`: the optimal model. |
 | `S.models(assume E, limit n)` | A list of up to `n` models (empty if unsatisfiable). |
 | `S.add(c)` | Add a clause or a list of clauses to `S` before its next solve. Not inside `on candidate` of `S`. |
-| `S.expand(refine, cex = L)` | Add the facts `cex(k, T)` for each atom `T` in the list `L`, then ground `refine(k)` with the next `k`. More named lists are allowed: `S.expand(refine, cex = L1, old = L2)`. Not inside `on candidate` of `S`. |
+| `S.expand(refine, cex = L)` | Add the facts `cex(k, T)` for each atom `T` in the list `L`, then ground `refine(k)` with the next `k`. More named lists are allowed: `S.expand(refine, cex = L1, old = L2)`. `L` may also be a core (`C.core`: the atoms C was assumed), a clause (the atoms of its link) or a list `G(M)`; the facts name the atoms, whatever value they had (example `maxsat-oll`). Not inside `on candidate` of `S`. |
 | `S.exhausted` | Whether the last search of `S` ran to the end (not interrupted, model limit not reached). |
 | `S.step` | The number of expansions of `S` so far (the last `k`). |
 | `G(M)` | The values of `G`'s interface atoms in `M`, as an assumption list for `G`'s target (a new list: it can be stored). Passing it to another solver is an error (`A.solve: the assumptions of G are for solver C`). |
@@ -517,7 +521,7 @@ threads, `solver S: the option -t needs the threaded engine ...`.
 | `X.atoms(color/2)` | `X:atoms("color", 2)` |
 | `S.expand(refine, cex = L)` | `S:expand("refine", { cex = L })` |
 | `S.step` | `S.k` |
-| `loop:`, `while c:`, `repeat:`, `for x in l:` | `while true do rt.tick()`, `while c do rt.tick()`, `repeat rt.tick()`, `for _, x in ipairs(l) do rt.tick()` (`rt.tick` checks the time limit and Stop every 256 iterations, also in a loop without solver calls) |
+| `loop:`, `while c:`, `repeat:`, `for x in l:` | `while true do rt.tick()`, `while c do rt.tick()`, `repeat rt.tick()`, `for _, x in rt.each(l) do rt.tick()` (`rt.each` refuses a value that is not a list; `rt.tick` checks the time limit and Stop every 256 iterations, also in a loop without solver calls) |
 | `continue` | `goto __continue_N` |
 | `l.push(e)`, `l.size` | `rt.push(l, e)`, `rt.size(l)` |
 
@@ -612,7 +616,8 @@ calls it the *blocking loop*.
 | --- | --- |
 | `G.above(M)`, `G.below(M)` | A clause for the source of G that removes M and all its supersets (subsets) on G's atoms; M is a model or a list `G(M)`. |
 | `G.clause(X)` | The clause from the counterexample alone: its `relevant/1` atoms with the values X saw. It may be empty: rejecting with an empty clause ends the search, adding it leaves the solver without models. (`G.clause(M, X)` still stops with "relevant/1 derived nothing" on an empty set.) |
-| `C.core` and `core.on(G)` | The whole unsat core of C's last solve; `.on(G)` keeps the atoms of link G (`G.core(C)` is short for `C.core.on(G)`). |
+| `C.core` and `core.on(G)` | The whole unsat core of C's last solve; `.on(G)` keeps the atoms of link G (`G.core(C)` is short for `C.core.on(G)`, but `core.on(G)` gives an empty clause where `G.core(C)` is an error: test `K.size == 0`). |
+| `for a in C.core:`, `C.core.size` | A core is also a list: its elements are the assumptions of C that are in the core, with the values they were assumed, so `E.without(a)` and `E.flip(a)` work on a list `E` that C was given. Relaxing a core (`for a in C.core: E = E.without(a)`) and asking again finds disjoint cores (`maxsat-ihs`). The atoms of a clause belong to the solver it refines, so `for a in G.core(C)` does not give C's assumptions. |
 | `for a in E:`, `a.true`, `E.flip(a)`, `E.without(a)` | Walk and edit a list of assumptions such as `G(M)`; flip and without return new lists. |
 | `S.atom("bound", n)` | The atom `bound(n)` of S as a one-element assumption list (an error names a missing atom). |
 | `A.solve(assume G(M))` | A list of link G given to G's source means the same values on the source's atoms. |
@@ -754,6 +759,31 @@ not read the outer candidate, so two links suffice) and
 [qbf-three-blocks](?example=qbf-three-blocks). The counter *counterexamples* then counts the
 satisfiable solves of both `B` and `C`.
 
+## Loops from the literature
+
+Most CEGAR-style algorithms in the literature are a few lines of loop script. The table names
+the algorithm, the CegarPlay pattern that writes it, and a library example to load; the library
+filter also finds the tag in the last column.
+
+| Algorithm (literature) | Pattern | Example | Tag |
+| --- | --- | --- | --- |
+| CEGAR for ∃∀ problems: circumscription, argumentation, stable-unstable (Janota and Marques-Silva; Lehtonen, Wallner and Järvisalo; Bogaerts, Janhunen and Tasharrofi) | Shape 1, clause from `relevant/1` | [qbf](?example=qbf), [af-preferred](?example=af-preferred), [stable-models](?example=stable-models) | |
+| Expansion: AReQS for 2QBF (Janota and Marques-Silva) | Shape 3: each counterexample grounds a copy of the matrix | [qbf-expansion](?example=qbf-expansion) | `expansion` |
+| CEGIS, counterexample-guided inductive synthesis (Solar-Lezama et al.) | Shape 3: each counterexample input is simulated in the synthesiser; the specification stays in the check | [cegis-circuit](?example=cegis-circuit), [min-dnf](?example=min-dnf) | `cegis` |
+| Several oracles (equilibria: one deviation check per player) | One candidate, several checks or several `reject`s | [nash](?example=nash), [boolean-game](?example=boolean-game), [abduction-two-checks](?example=abduction-two-checks) | `several-solvers` |
+| Implicit hitting sets: MaxHS (Davies and Bacchus), IHS beyond NP (Saikko, Wallner and Järvisalo) | `A.solve(optimal)` for a minimum-cost hitting set; a witness check refined by `G.core(C)`; disjoint cores by `for a in C.core: E = E.without(a)`; `track` for the bounds | [maxsat-ihs](?example=maxsat-ihs); the dual form (correction sets from models): [smallest-mus](?example=smallest-mus) | `ihs` |
+| MARCO, MUS and MSS enumeration (Liffiton, Previti, Malik and Marques-Silva) | A map solver with maximal seeds; grow or shrink by walking `G(M)` (`a.true`, `E.flip(a)`); `G.below` and `G.above` block both ways | [marco](?example=marco), [reasons-by-shrinking](?example=reasons-by-shrinking) | `marco` |
+| Core-guided optimisation: OLL (Morgado, Dodaro and Marques-Silva), Fu-Malik | One solver under assumptions; each core is relaxed (`E.without`) and grounded as a totaliser (`C.expand(relax, core = K)`); new soft constraints from `C.atom` | [maxsat-oll](?example=maxsat-oll) | `oll` |
+| Logic-based Benders decomposition (Hooker and Ottosson) | An optimal master and an optimal subproblem; optimality cuts as rules from `refine(k)`; bounds read with `M.cost`, `X.cost`, `a.arg(i)` | [benders-tardiness](?example=benders-tardiness), [knapsack-bounds](?example=knapsack-bounds) | `benders` |
+| Optimisation over a Σ2 check, 2-ASP(Q) with weak constraints | An optimal abstraction whose first surviving candidate is optimal (`A.solve(optimal)` or `search A optimal`) | [knapsack-optimum](?example=knapsack-optimum), [reasons-by-size](?example=reasons-by-size) | `bounds` |
+| Recursive CEGAR for any number of quantifier blocks: RAReQS (Janota, Klieber, Marques-Silva and Clarke) | Solver and link families and a recursive `def` | [qbf-deep](?example=qbf-deep) | `rareqs` |
+| Clausal abstraction, multi-level QBF: CAQE (Rabe and Tentrup), QESTO | A chain of solvers; cores along the chain with `core.on(G)`; an inner `search ... keep` | [qbf-three-blocks](?example=qbf-three-blocks), [knapsack-fortification](?example=knapsack-fortification) | `caqe` |
+| Omission-based abstraction (Saribatur and Eiter) | Constraints guarded by `#external` atoms, switched on with `A.set` when a candidate breaks them | [queens-omission](?example=queens-omission), [conformant-growing](?example=conformant-growing) (a growing horizon) | `omission` |
+
+Not expressible: checks *during* the search on partial assignments (branch-and-check, lazy
+clause generation), since a check sees only total candidates; and refinement by interpolants,
+since clingo produces no proofs. `docs/directions/breadth.md` has the reasoning.
+
 ## Raw Lua projects
 
 With `loop.language = "lua"` the compiler is skipped. The text runs as the body of
@@ -812,7 +842,7 @@ its line.
 | `X:atoms(pred, arity)` | Captured atoms (clingo symbols); for a candidate inside `search`, built on demand from the assignment. Error if not captured. |
 | `rt.tick()` | The compiler puts it at the top of every loop body: time limit and Stop poll every 256 calls. Call it in long raw Lua loops without solver calls. |
 | `rt.accept(M)`, `rt.restart()`, `rt.stop(msg)` | As `accept`, `restart`, `stop`. |
-| `rt.count(name, n)`, `rt.log(...)` | As `count`, `log`. |
+| `rt.count(name, n)`, `rt.track(name, v)`, `rt.log(...)` | As `count`, `track`, `log`. |
 | `rt.size(l)`, `rt.push(l, x)`, `rt.clear(l)`, `rt.list()` | List helpers. |
 
 Runtime errors (raised as a Lua error, reported in the Output tab with the loop line): `relevant/1
@@ -989,8 +1019,8 @@ so; the next Run replaces them. The run history keeps both.
 | Summary | Outcome, elapsed time, candidates, counterexamples, refinements (clauses + expansions), solutions. |
 | Solvers | Per solver: fragments, options, calls, sat, unsat, solving time (exclusive of nested solves), time per call, grounding time, choices, conflicts, restarts, atoms, rules, expansions. |
 | Refinements | Clauses, mean and largest length, expansions, restarts, automatic blocks (solutions blocked so that a later search does not report them again). |
-| Charts | Candidates and refinements over time; time split per solver; clause length distribution (1, 2, 3–4, 5–8, 9–16, 17–32, 33–64, 65+). |
-| Custom counters | The `count` statements. |
+| Charts | Candidates and refinements over time; time split per solver; clause length distribution (1, 2, 3–4, 5–8, 9–16, 17–32, 33–64, 65+); after a `track` statement, the tracked values per round (one line per name, a value holds until the next). |
+| Custom counters and tracked values | The `count` statements, and the last value of each `track` series. |
 | Run history | One row per run: time, loop, outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. **Rerun with 5 seeds**, **Clear run history** (asks first; disabled while empty), copy as text or JSON. |
 
 Counting rules: *candidates* are the assignments seen by `on candidate` plus models returned by
@@ -1085,7 +1115,8 @@ prints them as `{"kind": ..., "data": ...}`.
 | Kind | When | Fields |
 | --- | --- | --- |
 | `H` | after grounding | `solvers` (`name`, `fragments`, `options`, `atoms`, `ground`), `links` (`name`, `from`, `to`, `atoms` = non-fact interface atoms), `settings` |
-| `S` | every 0.25 s and at the end | `t`, `candidates`, `counterexamples`, `solutions`, `clauses`, `literals`, `maxlen`, `hist`, `expansions`, `restarts`, `blocks`, `solvers` (per solver: `calls`, `sat`, `unsat`, `time`, `ground`, `busy`, `choices`, `conflicts`, `restarts`, `atoms`, `rules`, `vars`, `constraints`, `k`), `counters` |
+| `S` | every 0.25 s and at the end | `t`, `candidates`, `counterexamples`, `solutions`, `clauses`, `literals`, `maxlen`, `hist`, `expansions`, `restarts`, `blocks`, `solvers` (per solver: `calls`, `sat`, `unsat`, `time`, `ground`, `busy`, `choices`, `conflicts`, `restarts`, `atoms`, `rules`, `vars`, `constraints`, `k`), `counters`, `tracked` (only after a `track`: the last value per name) |
+| `V` | each `track` (the first 2,000 values per name) | `n` name, `i` round, `v` value, `t` |
 | `M` | each solution | `n`, `atoms`, `cost` |
 | `T` | each traced step | `i`, `kind`, `solver`, `candidate`, `counterexample`, `literals`, `facts` |
 | `W` | clingo message | `solver`, `code`, `message`, `fragment`, `line`, `col` |
@@ -1176,12 +1207,12 @@ Library shows them as tags, and the filter matches them (type `view` or `suite`)
 | `language` | `lang-basics`, `lang-several-cex`, `lang-optimal`, `lang-two-stage`, `lang-clauses`, `lang-core`, `lang-second-solver`, `lang-legacy`, `lang-raw-lua` |
 | `shapes` | `gc-shape1`, `gc-shape2`, `gc-shape3`, `gc-shape4`, `gc-reference` |
 | `guide` | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
-| `logic` | `integer-expressions`, `min-dnf`, `qbf-blame-solver`, `qbf-deep`, `qbf-expansion`, `qbf-optimal`, `qbf-three-blocks`, `qbf`, `smallest-mus`, `stable-models`, `strategic-companies` |
+| `logic` | `cegis-circuit`, `integer-expressions`, `marco`, `maxsat-ihs`, `maxsat-oll`, `min-dnf`, `qbf-blame-solver`, `qbf-deep`, `qbf-expansion`, `qbf-optimal`, `qbf-three-blocks`, `qbf`, `smallest-mus`, `stable-models`, `strategic-companies` |
 | `reasoning` | `abduction-two-checks`, `abduction`, `actual-cause`, `af-preferred`, `af-semi-stable`, `belief-update`, `default-extensions`, `diagnosis`, `minimal-reasons`, `reasons-by-shrinking`, `reasons-by-size`, `sufficient-reason` |
 | `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction` |
 | `games` | `nash`, `voting-justification`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `kemeny-control`, `strong-nash`, `subset-sum-game` |
-| `planning` | `conformant-growing`, `conformant-planning`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-interdiction`, `knapsack-optimum` |
-| `puzzles` | `akari`, `binairo`, `fewest-clues`, `futoshiki`, `slitherlink`, `sudoku-graded`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `sudoku-unique` |
+| `planning` | `benders-tardiness`, `conformant-growing`, `conformant-planning`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-interdiction`, `knapsack-optimum` |
+| `puzzles` | `akari`, `binairo`, `fewest-clues`, `futoshiki`, `queens-omission`, `slitherlink`, `sudoku-graded`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `sudoku-unique` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.
 
@@ -1197,6 +1228,10 @@ domain view (fragment `view`). Every `fast` example has a recording in `examples
 (`node tools/make-replays.mjs` after a change of the runtime or an example). `reasons-by-shrinking`
 and `qbf-three-blocks` deliberately use no format-2 keys: `test/assemble-golden.test.mjs` checks
 that such projects assemble to the same program text as before.
+
+Examples tagged `stops-at-optimum` (`maxsat-ihs`, `maxsat-oll`, `benders-tardiness`) end their run
+with `stop` once the optimum is proven, so the run is not exhausted and their `expected` counts are
+null; `test/breadth.test.mjs` checks their optima against clingo's own optimisation.
 
 Entries of the group `guide` have three more fields: `page` (the guide page and anchor that link
 it), `status` (`baseline`, `sound` or `unsound`) and `baseline` (the id of the blocking run of the
@@ -1311,5 +1346,8 @@ header, so a log of a variant run is checked against that variant.
 | `A.solve: the assumptions of G are for solver C` | `G(M)` was passed to a solver that is not `G`'s target. Solve the target (`C.solve(assume G(M))`). |
 | `unsafe variable 'Y' in bar(Y).` | A variable of the rule occurs in no positive body literal. Add a domain atom such as `num(Y)`. |
 | The run ends with outcome `limit` | Time (default 60 s) or candidate limit; raise it in the Loop tab, or set 0. |
+| A cost is too small; two `#minimize` statements interfere | clingo sums a `#minimize` over distinct tuples: with `{ C,J : cost(J,C) }` and `{ V,M : est(M,V) }`, the tuples (2,1) of both count once. Add a tag to each statement: `{ C,J,cost : ... }`, `{ V,M,est : ... }` (`benders-tardiness`). |
+| `for: expected a list, got ...` | `for` walks lists only: write `X.atoms(p/n)` for the atoms of a model, `C.core` for a core. |
+| `flip: the atom is not in the list` | `E.flip(a)` and `E.without(a)` need an element of `E`. The atoms of a clause (`G.core(C)`, `G.block(M)`) are literals of the solver it refines, not assumptions of `C`; walk `C.core` or `E` itself. |
 | Seeds give the same statistics | The seed needs randomising options (`--rand-freq=0.05`, `--sign-def=rnd`). |
 | `-t` rejected | Threads need a cross-origin isolated page and the Threads box in the Loop tab. |

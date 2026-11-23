@@ -45,7 +45,8 @@
     "summary": "Unsatisfiable subsets with at most k clauses, by collecting hitting-set constraints from satisfying assignments (12 clauses, k = 4, 2 solutions).",
     "shape": "shape1",
     "tags": [
-      "fast"
+      "fast",
+      "ihs"
     ],
     "expected": 2
   },

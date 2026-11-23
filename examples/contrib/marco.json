@@ -1,0 +1,90 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "MUS and MSS enumeration (MARCO)",
+  "description": "All minimal unsatisfiable subsets (MUSes) and maximal satisfiable subsets (MSSes) of a CNF formula, with the MARCO loop: a map solver proposes unexplored seeds, the check says whether a seed is satisfiable, and the seed is grown or shrunk by walking the assumption list (a.true, E.flip(a)). Both outcomes refine the map, in opposite directions (G.below, G.above). The MUSes are the solutions; the MSSes are logged and counted (Messages, Custom counters). Counts checked by brute force over all subsets.",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The instance (Instances tab): pos(C,V) and neg(C,V) are the literals of clause C.\ncl(C) :- pos(C,_).\ncl(C) :- neg(C,_).\nvar(V) :- pos(_,V).\nvar(V) :- neg(_,V).\n"
+    },
+    {
+      "name": "abstraction",
+      "text": "% The map: a seed is any set of clauses (pick/1) not yet explored. Grown seeds (MSSes) block\n% their subsets, shrunk seeds (MUSes) block their supersets; the map learns only these clauses.\n{ pick(C) : cl(C) }.\n% Maximal seeds first (Liffiton and Malik's getUnexploredMax): with --heuristic=Domain the\n% solver decides every pick to true first.\n#heuristic pick(C) : cl(C). [1,true]\n#show pick/1.\n"
+    },
+    {
+      "name": "glue",
+      "text": "glue(pick(C)) :- cl(C).\n"
+    },
+    {
+      "name": "check",
+      "text": "% Is the seed satisfiable? An assignment that satisfies every picked clause.\n{ t(V) } :- var(V).\nsat(C) :- pos(C,V), t(V).\nsat(C) :- neg(C,V), not t(V).\n:- pick(C), not sat(C).\n#show t/1.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction    options \"--heuristic=Domain\"\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# MARCO (Liffiton, Previti, Malik and Marques-Silva): every seed is explored. A satisfiable seed\n# grows to a maximal satisfiable subset (MSS): add clauses while the check still succeeds. An\n# unsatisfiable one shrinks to a minimal unsatisfiable subset (MUS): drop clauses while the\n# check still fails. Both kinds are reported, and both refine the map: G.below(E) removes the\n# MSS and its subsets, G.above(E) the MUS and its supersets. The MUSes are the solutions; the\n# MSSes are logged and counted. The run ends when the map has no seed left.\nloop:\n    M = A.solve()\n    if not M: stop\n    E = G(M)\n    if C.solve(assume E):\n        for a in E:\n            if not a.true and C.solve(assume E.flip(a)): E = E.flip(a)\n        log \"MSS\", A.solve(assume E).atoms(pick/1)\n        count mss\n        A.add(G.below(E))\n    else:\n        for a in E:\n            if a.true and not C.solve(assume E.flip(a)): E = E.flip(a)\n        accept A.solve(assume E)\n        count mus\n        A.add(G.above(E))\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0,
+    "instance": "example"
+  },
+  "library": {
+    "id": "marco",
+    "group": "logic",
+    "summary": "MARCO: every MUS (the solutions) and MSS (logged) of a CNF formula, by growing and shrinking seeds of a map solver (10 clauses, 7 MUSes, 12 MSSes).",
+    "shape": "custom",
+    "tags": [
+      "fast",
+      "marco",
+      "mus",
+      "several-solvers"
+    ],
+    "expected": 7
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Random CNF: 4 variables, 10 clauses. 7 MUSes, 12 MSSes (brute force).\nneg(1,c).\nneg(2,b).\npos(3,b).\npos(4,b). pos(4,d). pos(4,a).\npos(5,d).\nneg(6,a).\nneg(7,d). neg(7,b). pos(7,c).\nneg(8,d).\npos(9,a). pos(9,c).\nneg(10,d).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 7
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "nine-mus",
+      "facts": "% Random CNF: 4 variables, 10 clauses. 9 MUSes, 3 MSSes (brute force).\nneg(1,c). neg(1,d). neg(1,b).\nneg(2,a). neg(2,b). pos(2,d).\nneg(3,b). neg(3,d).\npos(4,b).\npos(5,d).\nneg(6,b).\npos(7,b). neg(7,a).\nneg(8,b).\npos(9,b).\npos(10,b).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 9
+      },
+      "tags": []
+    },
+    {
+      "id": "four-mus",
+      "facts": "% Random CNF: 4 variables, 10 clauses. 4 MUSes, 6 MSSes (brute force).\npos(1,a).\nneg(2,d). neg(2,b).\npos(3,d).\nneg(4,d). pos(4,c).\nneg(5,c). neg(5,d).\npos(6,c).\nneg(7,a).\nneg(8,b). neg(8,d).\npos(9,d). pos(9,c).\nneg(10,d).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 4
+      },
+      "tags": []
+    },
+    {
+      "id": "satisfiable",
+      "facts": "% A satisfiable CNF: no MUS; the one MSS is the whole formula.\npos(1,a). pos(1,b). neg(1,c).\npos(2,c). neg(2,a).\nneg(3,a). neg(3,d).\npos(4,a). pos(4,b).\nneg(5,c). neg(5,b).\nneg(6,a). pos(6,d).\nneg(7,d). neg(7,a).\npos(8,a). pos(8,c). pos(8,b).\nneg(9,a).\npos(10,b). pos(10,a). pos(10,d).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    }
+  ]
+}

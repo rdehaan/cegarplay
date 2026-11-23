@@ -203,6 +203,10 @@ async function main(argv) {
       console.log(`Solutions: ${S.solutions}; candidates: ${S.candidates}; counterexamples: ${S.counterexamples}; clauses: ${S.clauses}; time: ${S.t} s`);
       if (S.counters && Object.keys(S.counters).length) console.log(`Counters: ${JSON.stringify(S.counters)}`);
     }
+    // track statements: each series in order (the first 30 values)
+    const tracks = new Map();
+    for (const e of r.events) if (e.kind === 'V') { if (!tracks.has(e.data.n)) tracks.set(e.data.n, []); tracks.get(e.data.n).push(e.data.v); }
+    for (const [n, vs] of tracks) console.log(`Tracked ${n}: ${vs.slice(0, 30).join(' ')}${vs.length > 30 ? ` ... (${vs.length} values, last ${S && S.tracked ? S.tracked[n] : vs.at(-1)})` : ''}`);
   }
   const D = r.events.filter((e) => e.kind === 'D').at(-1)?.data;
   // exitCode, not process.exit(): exit() drops output still buffered for a pipe

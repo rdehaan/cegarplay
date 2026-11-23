@@ -197,3 +197,18 @@ test('Clear removes the last run\'s results and keeps the run history', async ()
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('track: a chart of the tracked values, and their last values with the counters', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=knapsack-bounds&tab=6');
+  assert.equal(await page.$eval('#tracked-figure', (e) => e.hidden), true, 'hidden before a run');
+  await page.click('#run-button');
+  await B.waitState(page, ['finished']);
+  assert.equal(await page.$eval('#tracked-figure', (e) => e.hidden), false);
+  const lines = await page.$$eval('#svg-tracked polyline.series-tracked', (l) => l.map((e) => [e.dataset.name, Number(e.dataset.points)]));
+  assert.deepEqual(lines, [['lower', 7], ['upper', 7]]);
+  const counters = await page.textContent('#counters-table');
+  assert.match(counters, /lower \(tracked, last value\)\s*25/);
+  assert.match(counters, /upper \(tracked, last value\)\s*25/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

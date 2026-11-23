@@ -34,6 +34,14 @@ Control tab; the browser remembers them.
   proof logs checked by an independent Python checker, and recordings that
   replay a run without the engine.
 
+**Loops from the literature.** Most CEGAR-style algorithms are a few lines of
+loop script: CEGAR for ∃∀ problems, expansion (AReQS) and CEGIS, implicit hitting
+sets (MaxHS), MARCO, core-guided optimisation (OLL), logic-based Benders
+decomposition, recursive QBF solving (RAReQS), clausal abstraction (CAQE) and
+omission-based abstraction. The manual's section *Loops from the literature*
+maps each to the pattern that writes it and a library example (the library
+filter finds them by tag: `ihs`, `marco`, `oll`, `benders`, `cegis`, ...).
+
 CegarPlay is a browser version of the Python prototype
 [declarative-cegar](https://github.com/rdehaan/declarative-cegar), laid out
 like [logic-game](https://github.com/rdehaan/logic-game).

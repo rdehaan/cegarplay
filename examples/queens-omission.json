@@ -1,0 +1,77 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "n queens by omission-based abstraction",
+  "description": "The n-queens puzzle with an abstraction that omits constraints (omission-based abstraction, Saribatur and Eiter): the diagonal constraints start switched off, each guarded by an #external atom. A candidate that the full program rejects names the diagonals it breaks, and the loop switches those constraints on (A.set) instead of adding a clause about the candidate. track draws how many of the 4n - 2 diagonal constraints the loop needed. Solutions: all placements (n = 8: 92).",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% n queens on an n x n board. Diagonal D: the up diagonals are numbered R + C (2 .. 2n),\n% the down diagonals 2n + R - C + n (2n + 1 .. 4n - 1).\nrow(1..n).\ndiag(R,C,R+C) :- row(R), row(C).\ndiag(R,C,2*n+R-C+n) :- row(R), row(C).\n"
+    },
+    {
+      "name": "abstraction",
+      "text": "% The abstraction omits the diagonal constraints: one queen per row and per column only.\n1 { q(R,C) : row(C) } 1 :- row(R).\n1 { q(R,C) : row(R) } 1 :- row(C).\n% Each diagonal constraint is guarded by an external atom, false at the start. The loop\n% switches one on (A.set) when a candidate breaks it: the refinement puts back an omitted\n% part of the program instead of adding a clause about the candidate.\n#external active(D) : diag(_,_,D).\n:- active(D), #count { R,C : q(R,C), diag(R,C,D) } > 1.\n#show q/2.\n"
+    },
+    {
+      "name": "glue",
+      "text": "glue(q(R,C)) :- row(R), row(C).\n"
+    },
+    {
+      "name": "check",
+      "text": "% A counterexample: the full program says no. violated(D): two queens on diagonal D.\nviolated(D) :- diag(R1,C1,D), diag(R2,C2,D), q(R1,C1), q(R2,C2), R1 < R2.\nbad :- violated(_).\n:- not bad.\n#show violated/1.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Omission-based abstraction (Saribatur and Eiter): the abstraction is the program with some\n# constraints left out. A candidate that the full program rejects shows which omitted\n# constraints matter; they are put back (A.set of an external atom), and the abstraction\n# keeps no clause about the candidate itself. Only the diagonals that some candidate broke\n# are ever switched on.\nactive = 0\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        for v in X.atoms(violated/1):\n            A.set(A.atom(\"active\", v.arg(1)), true)\n            active = active + 1\n        track constraints = active\n    else:\n        accept M\n        A.add(G.block(M))\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "8"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0,
+    "instance": ""
+  },
+  "instances": [
+    {
+      "id": "n8",
+      "facts": "% n = 8: 92 placements.\n",
+      "constants": {
+        "n": "8"
+      },
+      "expected": {
+        "solutions": 92
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "n6",
+      "facts": "% n = 6: 4 placements.\n",
+      "constants": {
+        "n": "6"
+      },
+      "expected": {
+        "solutions": 4
+      },
+      "tags": []
+    },
+    {
+      "id": "n3",
+      "facts": "% n = 3: no placement.\n",
+      "constants": {
+        "n": "3"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    }
+  ],
+  "runs": []
+}

@@ -33,6 +33,10 @@ programming, solved with clingo compiled to WebAssembly.
 8. `js/compiler.js`, `js/driver.js`, `js/project.js` must not use the DOM or Node APIs.
 9. Trust tests over the plan; record deviations in `PROGRESS.md`. Do not change
    reference numbers without finding the cause.
+10. An atom that the backend adds to a control before it is grounded must also reach the
+    grounder as program text (a choice rule or a fact): clingo 5.8 grounds a rule that projects
+    backend-only choice atoms away (`b :- q(X).`) with one instance. See `iface_part` in
+    `lua/runtime.lua`.
 
 ## Setup (fresh clone, e.g. Claude Code cloud)
 

@@ -81,9 +81,10 @@ export class Stats {
           <figure><figcaption>Candidates and refinements over time</figcaption><div id="chart-progress" class="chart"></div></figure>
           <figure><figcaption>Where the time went</figcaption><div id="chart-time" class="chart"></div></figure>
           <figure><figcaption>Clause lengths</figcaption><div id="chart-hist" class="chart"></div></figure>
+          <figure id="tracked-figure" hidden><figcaption>Tracked values (<code>track</code>), per round</figcaption><div id="chart-tracked" class="chart"></div></figure>
         </div>
       </div>
-      <div class="stats-block"><h3>Custom counters</h3><div class="table-wrapper"><table class="internals-table" id="counters-table"></table></div></div>
+      <div class="stats-block"><h3>Custom counters and tracked values</h3><div class="table-wrapper"><table class="internals-table" id="counters-table"></table></div></div>
       <div class="stats-block">
         <h3>Copy</h3>
         <button class="control-button" id="copy-tsv-button">Copy as text (tab-separated)</button>
@@ -118,6 +119,7 @@ export class Stats {
     this.S = null;
     this.D = null;
     this.series = [];
+    this.tracks = new Map();
     this.live.textContent = ' ';
     this.render();
   }
@@ -134,6 +136,13 @@ export class Stats {
       this.series.push(p);
       if (this.series.length > MAX_POINTS) this.series = this.series.filter((_, i) => i % 2 === 0 || i === this.series.length - 1);
     }
+    this.schedule();
+  }
+
+  // A V event (track name = e): one value of a named series.
+  track(V) {
+    if (!this.tracks.has(V.n)) this.tracks.set(V.n, []);
+    this.tracks.get(V.n).push([V.i, V.v]);
     this.schedule();
   }
 
@@ -237,13 +246,43 @@ export class Stats {
   renderCounters() {
     const c = (this.S && this.S.counters) || {};
     const rows = Object.entries(c).map(([k, v]) => [k, fmt(v)]);
-    this.table('counters-table', ['Counter', 'Value'], rows.length ? rows : [['(none: use count in the loop script)', '']], [1]);
+    const last = new Map(Object.entries((this.S && this.S.tracked) || {}));
+    for (const [k, pts] of this.tracks) if (!last.has(k) && pts.length) last.set(k, pts.at(-1)[1]);
+    for (const [k, v] of last) rows.push([`${k} (tracked, last value)`, fmt(v)]);
+    this.table('counters-table', ['Counter', 'Value'], rows.length ? rows : [['(none: use count or track in the loop script)', '']], [1]);
   }
 
   renderCharts() {
     this.chartProgress(this.root.querySelector('#chart-progress'));
     this.chartTime(this.root.querySelector('#chart-time'));
     this.chartHist(this.root.querySelector('#chart-hist'));
+    const fig = this.root.querySelector('#tracked-figure');
+    fig.hidden = this.tracks.size === 0;
+    if (!fig.hidden) this.chartTracked(this.root.querySelector('#chart-tracked'));
+  }
+
+  // One line per tracked name; x = the round (the i-th value of that name), one shared y axis.
+  chartTracked(box) {
+    const W = 380, H = 200, L = 48, R = 10, T = 10, B = 28;
+    const s = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', id: 'svg-tracked', role: 'img' });
+    const thin = (pts) => { const k = Math.ceil(pts.length / MAX_POINTS); return k <= 1 ? pts : pts.filter((_, i) => i % k === 0 || i === pts.length - 1); };
+    const all = [...this.tracks.entries()].map(([n, pts]) => [n, thin(pts)]);
+    const xs = all.flatMap(([, p]) => p.map((q) => q[0])), ys = all.flatMap(([, p]) => p.map((q) => q[1]));
+    const xMax = Math.max(1, ...xs), yMin = Math.min(0, ...ys), yMax = Math.max(yMin + 1, ...ys);
+    s.append(svg('line', { x1: L, y1: H - B, x2: W - R, y2: H - B, class: 'axis' }), svg('line', { x1: L, y1: T, x2: L, y2: H - B, class: 'axis' }));
+    s.append(svg('text', { x: L - 4, y: T + 8, 'text-anchor': 'end', class: 'tick' }, fmt(yMax)));
+    s.append(svg('text', { x: L - 4, y: H - B, 'text-anchor': 'end', class: 'tick' }, fmt(yMin)));
+    s.append(svg('text', { x: W - R, y: H - 8, 'text-anchor': 'end', class: 'tick' }, `round ${fmt(xMax)}`));
+    const x = (i) => L + (xMax <= 1 ? 0.5 : (i - 1) / (xMax - 1)) * (W - L - R), y = (v) => H - B - ((v - yMin) / (yMax - yMin)) * (H - T - B);
+    all.forEach(([name, pts], k) => {
+      const c = COLORS[k % COLORS.length];
+      // a step line: a value holds until the next one
+      const d = pts.map((p, i) => (i ? `${x(p[0]).toFixed(1)},${y(pts[i - 1][1]).toFixed(1)} ` : '') + `${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(' ');
+      s.append(svg('polyline', { points: d, fill: 'none', style: `stroke: ${c}`, 'stroke-width': 2, class: 'series-tracked', 'data-name': name, 'data-points': pts.length }));
+      if (pts.length === 1) s.append(svg('circle', { cx: x(pts[0][0]), cy: y(pts[0][1]), r: 3, style: `fill: ${c}` }));
+    });
+    s.append(this.legend(all.map(([n], k) => [n, COLORS[k % COLORS.length]]), L + 8, T + 4));
+    box.replaceChildren(s);
   }
 
   chartProgress(box) {
@@ -441,7 +480,7 @@ export class Stats {
     return { summary: this.S && { outcome: this.D && this.D.outcome, exhausted: this.D && this.D.exhausted, t: this.S.t,
       candidates: this.S.candidates, counterexamples: this.S.counterexamples, refinements: refinements(this.S), solutions: this.S.solutions,
       clauses: this.S.clauses, literals: this.S.literals, maxlen: this.S.maxlen, expansions: this.S.expansions, restarts: this.S.restarts,
-      blocks: this.S.blocks, hist: this.S.hist }, solvers: this.solverRows(), counters: (this.S && this.S.counters) || {} };
+      blocks: this.S.blocks, hist: this.S.hist }, solvers: this.solverRows(), counters: (this.S && this.S.counters) || {}, tracked: (this.S && this.S.tracked) || {} };
   }
 
   asText() {
@@ -459,6 +498,8 @@ export class Stats {
     }
     const cs = Object.entries(sn.counters);
     if (cs.length) { lines.push(''); lines.push('counter\tvalue'); for (const [k, v] of cs) lines.push(`${k}\t${v}`); }
+    const ts = Object.entries(sn.tracked || {});
+    if (ts.length) { lines.push(''); lines.push('tracked\tlast value'); for (const [k, v] of ts) lines.push(`${k}\t${v}`); }
     return lines.join('\n') + '\n';
   }
 

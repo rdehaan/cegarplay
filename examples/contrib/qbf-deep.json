@@ -42,7 +42,8 @@
     "shape": "custom",
     "tags": [
       "fast",
-      "several-solvers"
+      "several-solvers",
+      "rareqs"
     ],
     "expected": null
   }

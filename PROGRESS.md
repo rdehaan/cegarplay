@@ -1158,3 +1158,28 @@ Proposed, not built: B1 a core is a list of assumptions (`for a in C.core`) and 
 non-list (today it silently runs zero times: an endless MaxHS loop); B2 cores as `expand` facts
 (OLL); B3 `track name = e` with a chart; B4 = G5 partial checks (optional). Plus a manual table
 "Loops from the literature", examples `marco`/`maxsat-ihs`, algorithm tags. No code changed.
+- **Built (same day, on request): steps 1 to 4 of `breadth.md`, findability, six examples.**
+  - B1: `Core` is indexable (`for a in C.core`, `C.core.size`; elements are C's assumption
+    literals); `for` compiles to `rt.each`, which fails on a non-list (`for: expected a list, got
+    ...`); `core.on(G)` gives an empty clause where `G.core(C)` fails; `flip`/`without` errors
+    name the cause. Golden fixtures `gc-shape4`, `reasons-by-shrinking` updated (only the `for` line).
+  - B2: `S.expand(part, name = L)` takes a core, a clause or `G(M)` (`rt.fact_atoms`): the facts
+    name the atoms, signs dropped.
+  - B3: `track n = e` (keyword `track`; `rt.track`; V event `{n,i,v,t}`, 2,000 per name; `S.tracked`
+    only after a track, so existing recordings and final S are unchanged); Statistics: chart
+    "Tracked values" (hidden without track) and rows in "Custom counters and tracked values";
+    `tools/run.mjs` prints the series. `knapsack-bounds` tracks its bounds.
+  - Bug found and fixed: interface atoms reached the target only through the backend; clingo 5.8
+    grounds a rule that projects backend-only choice atoms away (`b :- q(X).`) with one instance
+    (reproduced in Python clingo 5.8.3). The runtime now also adds them as a choice rule / facts
+    in program text (`iface_part`, grounded with the base, `S.ground`, `S.expand`); CLAUDE.md rule 10.
+    No library count changed.
+  - Examples (contrib): `maxsat-ihs`, `marco`, `maxsat-oll`, `benders-tardiness`, `queens-omission`,
+    `cegis-circuit`; checked against brute force or clingo's own optimisation (`test/breadth.test.mjs`).
+    Algorithm tags on existing examples (`rareqs`, `caqe`, `ihs`, `marco`, `benders`, `cegis`, ...).
+  - Deviation: the three optimisation loops `stop` at the optimum, so their runs are not exhausted;
+    their `expected` counts are null (tag `stops-at-optimum`) and breadth.test checks the optima.
+  - Findability: manual section "Loops from the literature" (linked from the manual intro, README,
+    `llms.txt`, the library panel note); troubleshooting rows (`#minimize` tuple collision, `for`, `flip`).
+  - `test/browser/harness.mjs`: `CHROMIUM_PATH` launches a preinstalled Chromium (cloud sessions
+    whose Playwright download differs). Replays rebuilt.

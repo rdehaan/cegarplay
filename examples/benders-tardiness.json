@@ -1,0 +1,69 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Job assignment by logic-based Benders decomposition",
+  "description": "Assign jobs to machines so that the assignment cost plus the total tardiness is smallest, with logic-based Benders decomposition: the master problem (an optimal abstraction) assigns jobs and estimates the tardiness of each machine, the subproblem (an optimal check) sequences each machine. A too-low estimate gives an optimality cut, grounded as rules from refine(k); it holds for every assignment that gives the machine a superset of the jobs. track draws the lower bound (the optimum of the master) and the upper bound (the best feasible cost) until they meet. One solution: an optimal assignment. Optima checked against one clingo program that assigns and sequences at once.",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The instance (Instances tab): job(J,P,D) has processing time P and due date D;\n% cost(J,M,C) is the cost of running job J on machine M.\nmachine(M) :- cost(_,M,_).\ntotal(S) :- S = #sum { P,J : job(J,P,_) }.\nnjobs(N) :- N = #count { J : job(J,_,_) }.\n% No machine can have more total tardiness than this.\ntop(T) :- total(S), njobs(N), T = S * N.\n"
+    },
+    {
+      "name": "abstraction",
+      "text": "% The master problem: which machine runs each job, and an estimate est(M,V) of the total\n% tardiness on machine M. The estimate starts free (0 is cheapest); optimality cuts from the\n% subproblem raise it.\n1 { assign(J,M) : machine(M) } 1 :- job(J,_,_).\n1 { est(M,V) : V = 0..T } 1 :- machine(M), top(T).\n% The tags assign and est keep the two sums apart: without them, a cost and an estimate\n% with the same (value, number) tuple would be counted once.\n#minimize { C,J,assign : assign(J,M), cost(J,M,C) }.\n#minimize { V,M,est : est(M,V) }.\n#show assign/2.\n#show est/2.\n\n#program refine(k).\n% A Benders optimality cut from the k-th subproblem. cut(k,has(M,J)): machine M ran job J;\n% lateness(k,late(J,L)): job J was L late. If machine M gets at least these jobs again, its\n% tardiness is at least their total lateness V: more jobs never make the tardiness smaller.\nneed(k,M,V) :- machine(M), cut(k,has(M,_)), V = #sum { L,J : lateness(k,late(J,L)), cut(k,has(M,J)) }.\ncovered(k,M) :- need(k,M,_), assign(J,M) : cut(k,has(M,J)).\n:- covered(k,M), need(k,M,V), est(M,E), E < V.\n"
+    },
+    {
+      "name": "glue",
+      "text": "glue(assign(J,M)) :- job(J,_,_), machine(M).\nglue(est(M,V)) :- machine(M), top(T), V = 0..T.\n"
+    },
+    {
+      "name": "check",
+      "text": "% The subproblem: sequence the jobs on each machine to minimise the total tardiness\n% (solved with 'optimal'). before(A,B): A runs before B on their machine.\nsame(A,B) :- assign(A,M), assign(B,M), A < B.\n{ before(A,B) } :- same(A,B).\nbefore(B,A) :- same(A,B), not before(A,B).\n:- before(A,B), before(B,C), before(C,A).\nwait(J,S) :- assign(J,_), S = #sum { Q,I : before(I,J), job(I,Q,_) }.\ndone(J,F) :- wait(J,S), job(J,P,_), F = S + P.\nlate(J,L) :- done(J,F), job(J,_,D), L = F - D, L > 0.\n#minimize { L,J,late : late(J,L) }.\n% A machine whose estimate is below its real tardiness (a comparison, not a computed sum:\n% the sums stay out of the grounding) gets a cut, built from its jobs and their lateness.\nbad(M) :- est(M,E), #sum { L,J : late(J,L), assign(J,M) } > E.\nhas(M,J) :- bad(M), assign(J,M).\n#show bad/1.\n#show has/2.\n#show late/2.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Logic-based Benders decomposition (Hooker and Ottosson): the master assigns jobs and\n# estimates each machine's tardiness; the subproblem sequences the jobs and computes the real\n# tardiness. Where an estimate is too low, an optimality cut (rules, grounded from refine(k))\n# raises it for every assignment that gives that machine at least these jobs. The master's\n# optimum is a lower bound; the master's cost corrected by the real tardiness is a feasible\n# cost, an upper bound. They meet at the optimum.\nupper = none\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no assignment\"\n    X = C.solve(assume G(M), optimal)\n    # a feasible cost: the master's cost with the estimates replaced by the real tardiness\n    claimed = 0\n    for e in M.atoms(est/2):\n        claimed = claimed + e.arg(2)\n    cost = M.cost - claimed + X.cost\n    if upper == none or cost < upper: upper = cost\n    track lower = M.cost\n    track upper = upper\n    if X.count(bad/1) == 0:\n        log \"optimum:\", M.cost\n        accept M\n        stop\n    count cuts by X.count(bad/1)\n    A.expand(refine, cut = X.atoms(has/2), lateness = X.atoms(late/2))\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0,
+    "instance": "example"
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% 6 jobs (time, due date), 2 machines with different costs per job.\njob(1,4,5). job(2,3,4). job(3,5,9). job(4,2,3). job(5,6,10). job(6,3,7).\ncost(1,1,2). cost(1,2,4). cost(2,1,3). cost(2,2,2). cost(3,1,4). cost(3,2,3).\ncost(4,1,1). cost(4,2,3). cost(5,1,5). cost(5,2,4). cost(6,1,2). cost(6,2,2).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "tight",
+      "facts": "% 5 jobs whose due dates equal their processing times, equal costs: every job but the\n% first on a machine is late.\njob(1,4,4). job(2,3,3). job(3,5,5). job(4,2,2). job(5,6,6).\ncost(1,1,1). cost(1,2,1). cost(2,1,1). cost(2,2,1). cost(3,1,1). cost(3,2,1).\ncost(4,1,1). cost(4,2,1). cost(5,1,1). cost(5,2,1).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    },
+    {
+      "id": "three-machines",
+      "facts": "% 7 jobs on 3 machines.\njob(1,4,5). job(2,3,4). job(3,5,9). job(4,2,3). job(5,6,10). job(6,3,7). job(7,4,8).\ncost(1,1,2). cost(1,2,4). cost(1,3,3). cost(2,1,3). cost(2,2,2). cost(2,3,3).\ncost(3,1,4). cost(3,2,3). cost(3,3,5). cost(4,1,1). cost(4,2,3). cost(4,3,2).\ncost(5,1,5). cost(5,2,4). cost(5,3,4). cost(6,1,2). cost(6,2,2). cost(6,3,1).\ncost(7,1,3). cost(7,2,3). cost(7,3,2).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    }
+  ],
+  "runs": []
+}

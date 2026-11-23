@@ -964,6 +964,25 @@
       }
     },
     {
+      "id": "cegis-circuit",
+      "title": "Circuit synthesis by CEGIS",
+      "group": "logic",
+      "summary": "CEGIS: circuits of and/or/nand gates that compute the majority, synthesised from the counterexample inputs a verifier returns; each input is grounded as a simulation in the synthesiser (3 inputs, 4 gates, 27 solutions).",
+      "shape": "shape3",
+      "tags": [
+        "fast",
+        "cegis",
+        "synthesis",
+        "expansion"
+      ],
+      "expected": {
+        "solutions": 27
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
       "id": "integer-expressions",
       "title": "Integer expressions",
       "group": "logic",
@@ -980,13 +999,71 @@
       }
     },
     {
+      "id": "marco",
+      "title": "MUS and MSS enumeration (MARCO)",
+      "group": "logic",
+      "summary": "MARCO: every MUS (the solutions) and MSS (logged) of a CNF formula, by growing and shrinking seeds of a map solver (10 clauses, 7 MUSes, 12 MSSes).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "marco",
+        "mus",
+        "several-solvers"
+      ],
+      "expected": {
+        "solutions": 7
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "maxsat-ihs",
+      "title": "Weighted MaxSAT by implicit hitting sets (MaxHS)",
+      "group": "logic",
+      "summary": "Weighted MaxSAT by implicit hitting sets (MaxHS): optimal hitting sets of unsat cores, disjoint cores per round, lower and upper bounds tracked (8 variables, 16 soft clauses, optimum 8; 1 solution).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "ihs",
+        "maxhs",
+        "cores",
+        "bounds",
+        "stops-at-optimum"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "maxsat-oll",
+      "title": "MaxSAT by unsat cores (OLL)",
+      "group": "logic",
+      "summary": "Core-guided MaxSAT (OLL): unsat cores raise a lower bound, each core is relaxed and grounded as a totaliser (C.expand with a core); the first satisfiable call is optimal (40 soft clauses, optimum 6, 1 solution).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "oll",
+        "core-guided",
+        "cores",
+        "bounds",
+        "stops-at-optimum"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 4
+      }
+    },
+    {
       "id": "min-dnf",
       "title": "Smallest equivalent DNF",
       "group": "logic",
       "summary": "DNF formulas with at most k terms equivalent to a given one: counterexample assignments become clauses over a pool of terms (n = 3, k = 3, 2 solutions).",
       "shape": "custom",
       "tags": [
-        "fast"
+        "fast",
+        "cegis"
       ],
       "expected": {
         "solutions": 2
@@ -1020,7 +1097,8 @@
       "shape": "custom",
       "tags": [
         "fast",
-        "several-solvers"
+        "several-solvers",
+        "rareqs"
       ],
       "expected": null
     },
@@ -1031,7 +1109,9 @@
       "summary": "The 2QBF example with Shape 3: each counterexample y-assignment instantiates the formula in the abstraction (5 solutions).",
       "shape": "shape3",
       "tags": [
-        "fast"
+        "fast",
+        "expansion",
+        "areqs"
       ],
       "expected": {
         "solutions": 5
@@ -1064,7 +1144,8 @@
       "shape": "custom",
       "tags": [
         "fast",
-        "several-solvers"
+        "several-solvers",
+        "caqe"
       ],
       "expected": {
         "solutions": 4
@@ -1077,7 +1158,8 @@
       "summary": "Exists-forall QBF with a DNF matrix: clause refinements from the false x-literals of the open terms (6 + 5 variables, 12 terms, 5 solutions).",
       "shape": "shape1",
       "tags": [
-        "fast"
+        "fast",
+        "cegar"
       ],
       "expected": {
         "solutions": 5
@@ -1096,7 +1178,8 @@
       "summary": "Unsatisfiable subsets with at most k clauses, by collecting hitting-set constraints from satisfying assignments (12 clauses, k = 4, 2 solutions).",
       "shape": "shape1",
       "tags": [
-        "fast"
+        "fast",
+        "ihs"
       ],
       "expected": {
         "solutions": 2
@@ -1294,7 +1377,8 @@
       "shape": "custom",
       "tags": [
         "fast",
-        "several-solvers"
+        "several-solvers",
+        "marco"
       ],
       "expected": {
         "solutions": 4
@@ -1556,6 +1640,24 @@
       }
     },
     {
+      "id": "benders-tardiness",
+      "title": "Job assignment by logic-based Benders decomposition",
+      "group": "planning",
+      "summary": "Logic-based Benders decomposition: a master assigns jobs to machines and estimates their tardiness; the subproblem sequences them and returns optimality cuts as rules; lower and upper bounds tracked (6 jobs, 2 machines, optimum 20, 1 solution).",
+      "shape": "shape3",
+      "tags": [
+        "fast",
+        "benders",
+        "bounds",
+        "expansion",
+        "stops-at-optimum"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 3
+      }
+    },
+    {
       "id": "conformant-growing",
       "title": "Conformant planning, growing horizon",
       "group": "planning",
@@ -1563,7 +1665,8 @@
       "shape": "custom",
       "tags": [
         "fast",
-        "several-solvers"
+        "several-solvers",
+        "externals"
       ],
       "expected": null,
       "has": {
@@ -1594,7 +1697,9 @@
       "shape": "custom",
       "tags": [
         "fast",
-        "several-solvers"
+        "several-solvers",
+        "benders",
+        "bounds"
       ],
       "expected": {
         "solutions": 2
@@ -1611,7 +1716,8 @@
       "shape": "custom",
       "tags": [
         "fast",
-        "several-solvers"
+        "several-solvers",
+        "caqe"
       ],
       "expected": {
         "solutions": 2
@@ -1644,7 +1750,8 @@
       "shape": "custom",
       "tags": [
         "fast",
-        "several-solvers"
+        "several-solvers",
+        "bounds"
       ],
       "expected": {
         "solutions": 2
@@ -1706,6 +1813,24 @@
       "has": {
         "instances": 7,
         "views": 1
+      }
+    },
+    {
+      "id": "queens-omission",
+      "title": "n queens by omission-based abstraction",
+      "group": "puzzles",
+      "summary": "n queens by omission-based abstraction: the diagonal constraints start switched off (#external) and are switched on (A.set) when a candidate breaks them (n = 8, 92 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "omission",
+        "externals"
+      ],
+      "expected": {
+        "solutions": 92
+      },
+      "has": {
+        "instances": 3
       }
     },
     {

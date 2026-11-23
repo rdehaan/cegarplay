@@ -23,6 +23,9 @@
 
 ## Examples
 
+- [Loops from the literature](manual.md#loops-from-the-literature): MaxHS, MARCO, OLL, Benders,
+  CEGIS, AReQS, RAReQS, CAQE, omission-based abstraction, each mapped to a loop pattern and an
+  example id (tags `ihs`, `marco`, `oll`, `benders`, `cegis`, `rareqs`, `caqe`, `omission`).
 - [Library manifest](examples/library.json): every example with id, group, summary, loop shape
   and expected solution count. Each example is the project file `examples/<id>.json`.
 - Open an example in the page: `index.html?example=<id>`; add `&tab=4` for the loop script,
