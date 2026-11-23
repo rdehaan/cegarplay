@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>How to check a loop independently · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">How-to</p>
+        <h1>How to check a loop independently</h1>
+        <p class="lead">Goal: trust a solution count without trusting the engine that produced it.</p>
+
+        <h2 id="example">The example</h2>
+        <p id="example-link"><code>qbf</code>: a Shape 1 loop with a clause refinement, which every
+          checker below understands.
+          <a class="play" href="../?example=qbf&amp;fragment=check&amp;from=guide/howto-check.html%23example-link" target="cegarplay">Open qbf</a></p>
+
+        <h2 id="steps">Three independent checks</h2>
+        <ol>
+          <li><b>The reference variant.</b> The blocking loop (template "Reference run") uses no
+            refinement that could be wrong. Same count, both exhausted: the refinement removed no
+            solution on this instance.</li>
+          <li><b>Python clingo.</b> <code>python3 tools/cegarcheck.py examples/qbf.json --instance
+            example --solutions all</code> runs the loop with Python clingo and code that shares nothing
+            with the page's Lua runtime (<code>--mode block</code> is the reference run). It covers one
+            abstraction, one check and one link, and refuses, with a reason, any statement it does not
+            model.</li>
+          <li><b>Proof logs.</b> Loop tab: Certificates and a recording with proof
+            (<code>tools/run.mjs --proof FILE</code>). <code>python3 tools/certcheck.py project.json
+            log</code> confirms the count from the log: every counterexample is an answer set, every
+            refinement's certificate verifies, every solution has no counterexample, and nothing else
+            is left.</li>
+        </ol>
+
+        <h2 id="pitfalls">Pitfalls</h2>
+        <ul>
+          <li>cegarcheck compares only solution counts of exhausted runs; candidate counts differ by
+            design.</li>
+          <li>Loops it does not model (MARCO, IHS, OLL, Benders, chains, families) can be checked only
+            by the reference variant and the audit today.</li>
+          <li>certcheck refuses proof logs of witness checks.</li>
+        </ul>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

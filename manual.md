@@ -5,8 +5,11 @@ who already know the basics (the **Tutorial** tab teaches them) and for AI agent
 validate and run CegarPlay projects. How to design a loop, step by step and with measured examples,
 is taught by the [design guide](guide/); algorithms from the literature (MaxHS, MARCO, OLL,
 Benders, CEGIS, RAReQS, ...) are mapped to loop patterns and examples in
-[Loops from the literature](#manual-loops-from-the-literature). The raw Markdown is served at `manual.md`; `llms.txt` points
-to it.
+[Loops from the literature](#manual-loops-from-the-literature). Task-oriented
+[how-to pages](guide/index.html#howto) (campaigns, timing, unsound refinements, instance sets,
+headless experiments, independent checks, views, presenting a run, papers) and a
+[glossary](guide/glossary.html) are part of the guide. The raw Markdown is served at `manual.md`;
+`llms.txt` points to it.
 
 CegarPlay runs CEGAR loops (counterexample-guided abstraction refinement) written in answer set
 programming. The solver is clingo 5.8.1 with Lua 5.4, compiled to WebAssembly

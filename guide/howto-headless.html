@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>How to run experiments headlessly · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">How-to</p>
+        <h1>How to run experiments headlessly</h1>
+        <p class="lead">Goal: run many instances and variants from the command line, on a machine
+          with more cores than a browser tab, and turn the results into a table and a plot.</p>
+
+        <h2 id="example">The example</h2>
+        <p id="example-link">Any project with a suite; <code>voting-justification</code> has three.
+          <a class="play" href="../?example=voting-justification&amp;fragment=loop&amp;from=guide/howto-headless.html%23example-link" target="cegarplay">Open voting-justification</a></p>
+
+        <h2 id="steps">Steps</h2>
+        <ol>
+          <li><b>One run.</b> <code>node tools/run.mjs voting-justification --instance faith-k1
+            --solutions all</code>. <code>--instance all</code> runs every instance and compares the
+            expected counts; <code>--variant NAME</code> picks a variant.</li>
+          <li><b>A suite.</b> <code>node tools/bench.mjs voting-justification --suite strategies --jobs 4
+            --out rows.jsonl</code>. One JSON line per cell: outcome, solutions, candidates,
+            refinements, time, the cost, the mean clause length and per-solver calls, time and
+            conflicts. <code>--seconds N</code> overrides the suite's time limit.</li>
+          <li><b>Resume and shard.</b> <code>--resume</code> skips the cells already in the file;
+            <code>--shard 0/4</code> … <code>3/4</code> splits a suite over machines.</li>
+          <li><b>Report.</b> <code>node tools/report.mjs rows.jsonl --out report</code> writes
+            <code>report.md</code> (per-variant totals with PAR2, the instance × variant matrix, the
+            disagreements), <code>report.csv</code> and a cactus plot <code>report.svg</code>.
+            <code>--metric candidates</code> switches the matrix.</li>
+          <li><b>Look in the page.</b> The Campaign tab's <b>Import rows</b> reads the same file.</li>
+        </ol>
+
+        <h2 id="native">When to move to native clingo</h2>
+        <p><b>Export for clingo</b> (Control tab) writes one <code>.lp</code> file with the fragments,
+          the runtime and the loop; <code>clingo file.lp --outf=3</code> runs it with a clingo built
+          with Lua. Native clingo is several times faster than WebAssembly and has no memory cap; use
+          it for runs of hours, such as ground truth for hard instances.</p>
+
+        <h2 id="pitfalls">Pitfalls</h2>
+        <ul>
+          <li>The engine version is part of a row's key; rows from another version are not reused.</li>
+          <li>With more jobs than cores, times grow; compare candidates, or run with
+            <code>--jobs 1</code> for timings.</li>
+        </ul>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

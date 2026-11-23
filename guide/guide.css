@@ -238,6 +238,14 @@ aside.paper h2 { margin-top: 10px; font-size: 19px; }
 ul.bib { padding-left: 20px; }
 ul.bib li { margin: 6px 0; }
 ul.extra-list li { margin: 4px 0; }
+dl.glossary dt { font-weight: 600; margin-top: 12px; }
+dl.glossary dd { margin: 2px 0 0 20px; }
+section.tools {
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  font-size: 15px;
+}
+section.tools h2 { font-size: 17px; }
 
 section.exercise {
   border-top: 1px solid var(--border);

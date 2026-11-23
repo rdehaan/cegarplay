@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Glossary · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <h1>Glossary</h1>
+        <p class="lead">The terms of the guide, each with the chapter that introduces it. The
+          manual's section <a href="../?manual=true&amp;tab=8">"Model and terms"</a> is the reference
+          version.</p>
+        <dl class="glossary">
+          <dt id="abstraction">Abstraction</dt>
+          <dd>The solver (A) that proposes candidates. It knows part of the problem and learns the
+            rest from refinements. <a href="01-why-a-loop.html">Chapter 1</a>,
+            <a href="07-abstraction.html">chapter 7</a>.</dd>
+          <dt id="candidate">Candidate</dt>
+          <dd>An answer set of the abstraction: a proposed solution, to be checked.
+            <a href="02-first-loop.html">Chapter 2</a>.</dd>
+          <dt id="check">Check</dt>
+          <dd>The solver (C) that tests a candidate. Usually it looks for a counterexample; a witness
+            check looks for evidence that the candidate is good. <a href="02-first-loop.html">Chapter 2</a>,
+            <a href="10-witness-and-cores.html">chapter 10</a>.</dd>
+          <dt id="counterexample">Counterexample</dt>
+          <dd>An answer set of the check under a candidate: proof that the candidate is wrong.
+            <a href="02-first-loop.html">Chapter 2</a>.</dd>
+          <dt id="interface">Interface (glue)</dt>
+          <dd>The atoms of the abstraction that the check reads, declared by <code>glue/1</code> and
+            passed as assumptions. <a href="02-first-loop.html">Chapter 2</a>.</dd>
+          <dt id="refinement">Refinement</dt>
+          <dd>What the abstraction learns from a counterexample: a clause, a rule, a copy of part of
+            the problem. <a href="03-learning.html">Chapter 3</a>,
+            <a href="09-rule-refinements.html">chapter 9</a>.</dd>
+          <dt id="blocking">Blocking</dt>
+          <dd>The weakest refinement: exclude exactly the refuted candidate. Always sound; the baseline
+            of every chapter. <a href="02-first-loop.html">Chapter 2</a>.</dd>
+          <dt id="relevant">relevant/1</dt>
+          <dd>The interface atoms a counterexample depends on; <code>G.clause</code> turns them into a
+            clause. <a href="03-learning.html">Chapter 3</a>.</dd>
+          <dt id="sound">Sound and complete</dt>
+          <dd>A refinement is sound when it removes no solution; a loop is complete when it ends with
+            every solution. Soundness is the property that fails in practice.
+            <a href="04-soundness.html">Chapter 4</a>.</dd>
+          <dt id="audit">Audit</dt>
+          <dd>A test of every refinement against every candidate and counterexample of an instance.
+            <a href="04-soundness.html">Chapter 4</a>; <a href="howto-unsound.html">how-to</a>.</dd>
+          <dt id="witness">Witness check</dt>
+          <dd>A check whose answer set means the candidate is <em>good</em>; a failed witness check is
+            refined by its unsat core. <a href="10-witness-and-cores.html">Chapter 10</a>.</dd>
+          <dt id="core">Core</dt>
+          <dd>A subset of the assumptions of a failed solve that is unsatisfiable on its own; a
+            minimal core has no smaller such subset. <a href="10-witness-and-cores.html">Chapter 10</a>,
+            <a href="14-hitting-sets.html">chapter 14</a>.</dd>
+          <dt id="expansion">Expansion</dt>
+          <dd>A refinement that adds a copy of part of the problem, instantiated with the
+            counterexample. <a href="09-rule-refinements.html">Chapter 9</a>,
+            <a href="13-qbf.html">chapter 13</a>.</dd>
+          <dt id="shape">Shape</dt>
+          <dd>The control structure of a loop: one search with the check inside (Shape 1), solve-check-refine
+            (Shape 2), rules per counterexample (Shape 3), batches (Shape 4).
+            <a href="08-loop-shapes.html">Chapter 8</a>.</dd>
+          <dt id="hitting-set">Hitting set</dt>
+          <dd>A set that meets every set of a family; an abstraction refined by cores computes one.
+            <a href="14-hitting-sets.html">Chapter 14</a>.</dd>
+          <dt id="instance">Instance</dt>
+          <dd>One input of a project: facts and constants, with an expected count or optimum.
+            <a href="howto-instances.html">How-to</a>.</dd>
+          <dt id="variant">Variant</dt>
+          <dd>The same project with other fragments, another loop or other constants; the
+            <code>reference</code> variant is the blocking loop. <a href="howto-campaign.html">How-to</a>.</dd>
+          <dt id="campaign">Campaign</dt>
+          <dd>A suite of instances × variants × seeds, run cell by cell, read as a matrix and plots.
+            <a href="howto-campaign.html">How-to</a>.</dd>
+        </dl>
+        <p id="playground-link">Every term is used in the first library example.
+          <a class="play" href="../?example=tutorial-first-run&amp;fragment=check&amp;from=guide/glossary.html%23playground-link" target="cegarplay">Open tutorial-first-run</a></p>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

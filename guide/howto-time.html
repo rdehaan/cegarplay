@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>How to find where the time goes · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">How-to</p>
+        <h1>How to find where the time goes</h1>
+        <p class="lead">Goal: a loop is slow. Is the check too slow, are there too many candidates, or
+          are the refinements too weak?</p>
+
+        <h2 id="example">The example</h2>
+        <p id="example-link"><code>guide-05-paley-block</code> and <code>guide-05-paley-clause</code>
+          solve the same problem on a larger graph, one by blocking and one with a clause.
+          <a class="play" href="../?example=guide-05-paley-block&amp;fragment=loop&amp;from=guide/howto-time.html%23example-link" target="cegarplay">Open the blocking loop</a></p>
+
+        <h2 id="steps">Steps</h2>
+        <ol>
+          <li><b>Statistics tab, Solvers.</b> Per solver: calls, solving time (without nested calls)
+            and time per call. If the check's time per call dominates, the check is the problem; if the
+            abstraction's calls are few but long, its search is.</li>
+          <li><b>Count the candidates.</b> Candidates against solutions: if most candidates are refuted,
+            the refinements are too weak (or the abstraction knows too little, chapter 7).</li>
+          <li><b>Refinements and the Lifting coach.</b> The clause length distribution: long clauses are
+            weak. With lifting on (manual, "Refinement variants"), the Lifting coach in the Statistics
+            tab shows per interface predicate which atoms <code>relevant/1</code> marked and which
+            lifting kept.</li>
+          <li><b>Observatory, timeline.</b> Turn on <b>Record calls</b> (Loop tab), run again, and open
+            the Observatory (Advanced mode). One lane per solver; long bars are slow calls.</li>
+          <li><b>Observatory, cost per line.</b> One row per line of the loop script, with calls and
+            exclusive time; click a row to filter the timeline. The loop editor shows the same figures
+            as annotations.</li>
+        </ol>
+
+        <h2 id="decide">Deciding</h2>
+        <ul>
+          <li>Many candidates, short clauses, cheap checks: the refinement is fine but the problem is
+            big; try a stronger abstraction (chapter 7) or several counterexamples per check (chapter 6).</li>
+          <li>Many candidates, long clauses: mark fewer atoms relevant, soundly (chapter 3), or
+            minimise cores (chapter 14).</li>
+          <li>Few candidates, slow check calls: the check's encoding is the problem; try it alone with
+            <b>Export for clingo</b>.</li>
+          <li>Time in the abstraction after many refinements: a Shape 2 loop regrounds or restarts;
+            compare shapes (chapter 8).</li>
+        </ul>
+
+        <h2 id="pitfalls">Pitfalls</h2>
+        <ul>
+          <li>Recording calls costs time itself; compare timings with recording off.</li>
+          <li>A single run's time is noisy; <b>Rerun with 5 seeds</b> in the run history, or a
+            <a href="howto-campaign.html">campaign</a>.</li>
+        </ul>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

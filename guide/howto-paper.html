@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>How to turn a paper into a loop · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">How-to</p>
+        <h1>How to turn a paper into a loop</h1>
+        <p class="lead">Goal: you have an algorithm in pseudocode from a paper and want it as a
+          CegarPlay loop, checked against the paper's numbers.</p>
+
+        <h2 id="example">The example</h2>
+        <p id="example-link">Chapters 13–15 each end with a box that maps a paper's pseudocode onto a
+          loop script; <code>marco</code> is the shortest complete case.
+          <a class="play" href="../?example=marco&amp;fragment=loop&amp;from=guide/howto-paper.html%23example-link" target="cegarplay">Open marco</a></p>
+
+        <h2 id="steps">A checklist</h2>
+        <ol>
+          <li><b>Find the solvers.</b> Every SAT/ASP/MIP oracle in the pseudocode is a solver; name
+            what each one guesses. The abstraction is the one whose formula grows.</li>
+          <li><b>Find the interface.</b> What does the check need to know about a candidate? Those atoms
+            are <code>glue/1</code>.</li>
+          <li><b>Find the refinement.</b> "Add the clause …" is <code>G.clause</code> or
+            <code>G.core</code>; "add φ[μ]" is a program part grounded per counterexample
+            (<code>A.expand</code>); "block the seed and its supersets" is <code>G.above</code>.</li>
+          <li><b>Find the outer control.</b> "Repeat until unsatisfiable" is Shape 2; "for each model"
+            is a <code>search</code>; "optimal" is <code>A.solve(optimal)</code>; bounds are
+            <code>track</code>.</li>
+          <li><b>Write a blocking baseline first</b> with the same solvers, and check that the paper's
+            refinement gives the same answers (audit, reference variant).</li>
+          <li><b>Compare with the paper's numbers</b> on its examples: iterations are candidates, oracle
+            calls are solver calls (Statistics tab).</li>
+        </ol>
+
+        <h2 id="missing">When the paper uses something CegarPlay lacks</h2>
+        <ul>
+          <li>Interpolants or proofs: clingo produces none. Omission-based abstraction
+            (<code>queens-omission</code>) is the nearest substitute.</li>
+          <li>A MIP solver for hitting sets: use an optimal ASP solver (<code>A.solve(optimal)</code>).</li>
+          <li>Incremental solving with assumptions: every solver keeps its state; assumptions are
+            <code>assume</code> lists.</li>
+        </ul>
+        <p>The <a href="bibliography.html">bibliography</a> lists the papers behind the library's
+          loops.</p>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

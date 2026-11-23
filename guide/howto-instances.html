@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>How to build an instance set · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">How-to</p>
+        <h1>How to build an instance set</h1>
+        <p class="lead">Goal: instances at several levels of difficulty, with ground truth, so that a
+          loop can be tested and compared.</p>
+
+        <h2 id="example">The example</h2>
+        <p id="example-link"><code>af-preferred</code> has a hand-written instance, three generated
+          ones and the generator <code>af-gnp</code> (random argumentation frameworks).
+          <a class="play" href="../?example=af-preferred&amp;fragment=shared&amp;from=guide/howto-instances.html%23example-link" target="cegarplay">Open af-preferred</a></p>
+
+        <h2 id="steps">Steps</h2>
+        <ol>
+          <li><b>Move the input out of the program.</b> The problem's data goes into instances
+            (Instances tab), not into <code>shared</code>. Each instance has facts, constants, tags and
+            an expected count or optimum.</li>
+          <li><b>Write a generator.</b> A generator is an ASP program with parameters and random draws:
+            <code>@flip(P, K…)</code> (probability P/1000), <code>@int(lo, hi, K…)</code>,
+            <code>@perm(N, I, K…)</code>, <code>@subset(M, N, I, K…)</code>,
+            <code>@weighted((W1, …), K…)</code> and <code>@mallows(N, phi, I, K…)</code>. The keys K
+            make draws independent; the seed makes them repeatable.</li>
+          <li><b>Preview and add.</b> The generator panel draws instances for a few seeds; add them as
+            recipe instances (stored as generator, parameters and seed, not as facts).</li>
+          <li><b>Import files.</b> <b>Import file</b> reads ASP facts, DIMACS graphs, QDIMACS, ASPARTIX,
+            Trivial Graph Format, PrefLib orders and jaggpy scenarios as facts, checked by clingo
+            first.</li>
+          <li><b>Get ground truth.</b> Run the <code>reference</code> variant with all solutions, or
+            <b>Export for clingo</b> and run native clingo for longer, or
+            <code>tools/cegarcheck.py</code> (see <a href="howto-check.html">checking a loop
+            independently</a>). Write the counts into the instances' expected values.</li>
+          <li><b>Tag the hard ones</b> (<code>hard</code>, <code>slow</code>) and check everything with
+            <b>Run all</b>, which says how many instances it actually checked.</li>
+        </ol>
+
+        <h2 id="pitfalls">Pitfalls</h2>
+        <ul>
+          <li>Random instances of a fixed size are often all easy or all trivial: vary the parameters
+            in a suite grid and look at the scaling plot.</li>
+          <li>An expected count is compared only for a run that was exhausted; Run all now runs such
+            instances to all solutions.</li>
+          <li><code>js/mine.js</code> searches a generator's grid for hard instances; it is not in the
+            page yet.</li>
+        </ul>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

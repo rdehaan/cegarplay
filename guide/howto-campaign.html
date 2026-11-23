@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>How to compare refinement strategies with a campaign · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">How-to</p>
+        <h1>How to compare refinement strategies with a campaign</h1>
+        <p class="lead">Goal: decide which of several loops (refinements, shapes, options) is better
+          on many instances, and be sure they compute the same thing.</p>
+
+        <h2 id="example">The example</h2>
+        <p id="example-link"><code>voting-justification</code> has five refinement strategies, a Shape 2
+          loop, a record-enumeration loop and the blocking reference as <em>variants</em>, and a suite
+          <code>strategies</code> that runs them all on fifteen questions.
+          <a class="play" href="../?example=voting-justification&amp;fragment=relevant&amp;from=guide/howto-campaign.html%23example-link" target="cegarplay">Open voting-justification</a></p>
+
+        <h2 id="steps">Steps</h2>
+        <ol>
+          <li><b>Write the variants.</b> Loop tab, Variants: <b>+ Add variant</b>. A variant swaps
+            fragments (<code>relevant</code> for <code>relevant_s1</code>), replaces the loop script, or
+            changes constants. Always keep one variant whose loop is the Reference run (template
+            "Reference run"): it is the ground truth.</li>
+          <li><b>Write a suite.</b> The Campaign tab is shown in Advanced mode (Control tab, Tabs); the
+            Variants section links to it. <b>New suite</b> writes one over all instances and variants;
+            edit its JSON (instances, variants, solver seeds, a time limit per cell).</li>
+          <li><b>Run it.</b> <b>Start</b> runs every cell with all solutions, several engines at a
+            time. The rows are kept in the browser: after a reload or an edit, <b>Start</b> runs only
+            the cells whose key changed.</li>
+          <li><b>Read the matrix.</b> One row per instance, one column per variant; switch between
+            time, candidates and refinements. The best finished cell of a row is bold; a cell that did
+            not finish shows its outcome; click a heading to sort by that variant.</li>
+          <li><b>Read the plots.</b> The cactus plot (cells solved against time) compares variants over
+            the whole suite; the scatter plot compares two variants per instance (pick both); a
+            parameter grid adds a scaling plot with a growth factor.</li>
+          <li><b>Export.</b> <b>Export matrix (CSV)</b> for a spreadsheet, <b>Export rows</b> for the
+            raw data (JSON lines, the same format as <code>tools/bench.mjs</code>, see
+            <a href="howto-headless.html">running experiments headlessly</a>).</li>
+        </ol>
+
+        <h2 id="look">What to look at</h2>
+        <ul>
+          <li>A cell marked ✗: two finished variants disagree on the solutions or on the optimum. One
+            of them is unsound; <a href="howto-unsound.html">hunt it</a> before reading any times.</li>
+          <li>Candidates explain time: a variant that needs fewer candidates but more time has a costly
+            check or a costly refinement. <a href="howto-time.html">Find where the time goes.</a></li>
+          <li>On the voting suite, strategy <code>s1</code> needs far fewer candidates on the four
+            questions that separate the strategies, and the default strategy is no better than
+            blocking: a real finding, and the start of the project kit's first open question.</li>
+        </ul>
+
+        <h2 id="pitfalls">Pitfalls</h2>
+        <ul>
+          <li>A time limit that is too short turns every cell into <code>timeout</code>, and the matrix
+            says nothing. Start with a few instances and a generous limit.</li>
+          <li>Times measured with several engines at once are noisier than single runs; compare
+            candidates first, and use solver seeds for spread.</li>
+          <li>Only exhausted runs (or finished optimisation runs) are compared for consistency: a cell
+            that stopped at the limit is never marked ✗, but proves nothing either.</li>
+        </ul>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

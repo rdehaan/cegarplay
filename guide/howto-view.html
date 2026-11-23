@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>How to write a domain view · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">How-to</p>
+        <h1>How to write a domain view</h1>
+        <p class="lead">Goal: see each step of a loop in the problem's own terms (a graph, a grid, a
+          profile), not as lists of atoms.</p>
+
+        <h2 id="example">The example</h2>
+        <p id="example-link"><code>guide-03-hit-clique</code> draws the graph, the deleted nodes and the
+          surviving triangle.
+          <a class="play" href="../?example=guide-03-hit-clique&amp;fragment=view&amp;from=guide/howto-view.html%23example-link" target="cegarplay">Open its view</a></p>
+
+        <h2 id="steps">Steps</h2>
+        <ol>
+          <li><b>Start from a suggestion.</b> Observatory, Domain view, <b>Suggest a view</b> writes a
+            fragment <code>view</code> from the interface predicates and adds a <code>views</code>
+            entry.</li>
+          <li><b>The scene</b> (<code>#program scene.</code>) draws what stays: nodes and edges, cells,
+            items, from the instance and <code>shared</code>. It runs once.</li>
+          <li><b>The frame</b> (<code>#program frame.</code>) marks one step with the facts
+            <code>step/1</code>, <code>kind/1</code> (reject, solution, …), <code>cand/1</code> (the
+            candidate's interface atoms), <code>cex/1</code> (the counterexample) and
+            <code>lit/2</code> (the refinement's literals): <code>attr(E, fill, Class)</code>,
+            <code>emph(E)</code>, <code>note("…")</code>.</li>
+          <li><b>Check it against the trace.</b> Move the cursor (arrow keys) and compare the drawing
+            with the Output tab's trace of the same step.</li>
+        </ol>
+
+        <h2 id="pitfalls">Pitfalls</h2>
+        <ul>
+          <li><code>cand/1</code> holds only interface atoms that are not facts; draw what the instance
+            fixes in the scene.</li>
+          <li>The view runs as plain clingo with the project's constants: a mistake shows as a clingo
+            message, never as a crash.</li>
+          <li>Marks: <code>node</code>, <code>edge</code>, <code>cell</code>, <code>item</code>,
+            <code>rank</code>, <code>attr</code>, <code>emph</code>, <code>ghost</code>,
+            <code>note</code>, <code>layout</code>, <code>pos</code>; anything else is reported.</li>
+        </ul>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

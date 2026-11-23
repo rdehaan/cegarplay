@@ -1,7 +1,7 @@
 // The guide's pages: chapter navigation, code highlighting, graph figures.
 // An ES module without dependencies. The exports (GRAPH, LOOP_KEYWORDS, tokenise) are also
 // read by test/guide.test.mjs under Node, so the DOM is touched only when there is one.
-import { CHAPTERS, PARTS, EXTRAS } from './chapters.js';
+import { CHAPTERS, PARTS, EXTRAS, EXTRA_GROUPS } from './chapters.js';
 
 // ---- the small graph of pages 1-4 -------------------------------------------------------
 // The same edges as SMALL_EDGES in tools/guide.mjs (a test compares them). Coordinates in a
@@ -145,7 +145,13 @@ function buildNav(nav) {
     ol.append(li);
     for (const c of cs) item(c.file, c.title, c.file.slice(0, 2));
   }
-  for (const x of EXTRAS) item(x.file, x.title);
+  for (const g of EXTRA_GROUPS) {
+    const li = document.createElement('li');
+    li.className = 'part';
+    li.textContent = g.title;
+    ol.append(li);
+    for (const x of EXTRAS.filter((e) => e.group === g.group)) item(x.file, x.title.replace(/^How to /, ''));
+  }
   det.append(ol);
   nav.append(det);
 }

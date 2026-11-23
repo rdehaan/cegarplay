@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Reading the guide and the tutorial together · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <h1>Reading the guide and the tutorial together</h1>
+        <p class="lead">The guide teaches the design of a loop; the playground's Tutorial tab teaches the tool. This page interleaves them, so that each tool appears when a
+          design question calls for it.</p>
+        <ol class="reading-order">
+          <li id="step-1">Tutorial lessons 1–4: <a href="../?tab=2#tut-cegar">what CEGAR is</a>, the first run,
+            fragments and solvers, reading the trace.</li>
+          <li id="step-2">Guide chapters <a href="01-why-a-loop.html">1</a>–<a href="04-soundness.html">4</a>:
+            why a loop, blocking, learning, soundness.</li>
+          <li id="step-3">Tutorial lesson 6 (<a href="../?tab=2#tut-audit">the audit</a>) and the how-to
+            <a href="howto-unsound.html">hunting an unsound refinement</a>.</li>
+          <li id="step-4">Guide chapter <a href="05-reading-a-run.html">5</a>, then tutorial lesson 5
+            (<a href="../?tab=2#tut-observatory">the Observatory</a>) and the how-to
+            <a href="howto-time.html">finding where the time goes</a>.</li>
+          <li id="step-5">Guide chapters <a href="06-more-per-check.html">6</a>–<a href="08-loop-shapes.html">8</a>,
+            with tutorial lesson 9 (<a href="../?tab=2#tut-shapes">loop shapes</a>).</li>
+          <li id="step-6">Tutorial lessons 7–8 (<a href="../?tab=2#tut-instances">instances</a>,
+            <a href="../?tab=2#tut-campaign">campaigns</a>) and the how-tos
+            <a href="howto-instances.html">building an instance set</a> and
+            <a href="howto-campaign.html">comparing strategies</a>.</li>
+          <li id="step-7">Guide chapters <a href="09-rule-refinements.html">9</a>–<a href="11-optimisation.html">11</a>,
+            with tutorial lesson 10 (<a href="../?tab=2#tut-language">the loop language</a>).</li>
+          <li id="step-8">Guide chapter <a href="12-your-own-loop.html">12</a> and tutorial lessons 11–12
+            (<a href="../?tab=2#tut-trust">certificates and recordings</a>, your own problem), with the
+            how-tos <a href="howto-check.html">checking a loop</a> and
+            <a href="howto-present.html">presenting a run</a>.</li>
+          <li id="step-9">Part II: chapters <a href="13-qbf.html">13</a>–<a href="15-marco.html">15</a>,
+            the how-to <a href="howto-paper.html">turning a paper into a loop</a>, and the
+            <a href="bibliography.html">bibliography</a>.</li>
+          <li id="step-10">A project: a library example tagged <code>project</code> (its readme has a
+            question, a baseline and things to try), headless with
+            <a href="howto-headless.html">bench and report</a>.</li>
+        </ol>
+        <p id="playground-link">The first stop of the tutorial.
+          <a class="play" href="../?example=tutorial-first-run&amp;fragment=loop&amp;from=guide/reading-order.html%23playground-link" target="cegarplay">Open tutorial-first-run</a></p>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>How to hunt an unsound refinement · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">How-to</p>
+        <h1>How to hunt an unsound refinement</h1>
+        <p class="lead">Goal: a loop finds fewer solutions than it should (or two variants disagree).
+          Find the refinement that removes a solution, and the atom it forgot.</p>
+
+        <h2 id="example">The example</h2>
+        <p id="example-link"><code>guide-04-one-node</code> marks only one node of a surviving clique as
+          relevant: a refinement that says too much (chapter 4).
+          <a class="play" href="../?example=guide-04-one-node&amp;fragment=check&amp;from=guide/howto-unsound.html%23example-link" target="cegarplay">Open guide-04-one-node</a></p>
+
+        <h2 id="steps">Steps</h2>
+        <ol>
+          <li><b>Confirm.</b> Run the Reference variant (or the template "Reference run") with all
+            solutions. Fewer solutions in your loop means a refinement removed one.</li>
+          <li><b>Audit.</b> Press <b>Audit</b> (next to Run). It checks every refinement against every
+            candidate and counterexample of the instance, and names a witness: the candidate, the
+            counterexample, the relevant set, the lost solution and the atoms on which the candidate
+            and the lost solution differ. One of those atoms should have been relevant.</li>
+          <li><b>See it.</b> Observatory, Candidate space, <b>Compute</b>: one square per candidate,
+            coloured by its fate; lost solutions stand out. The summary names the first unsound
+            refinement; the blame matrix shows which atoms each clause relies on.</li>
+          <li><b>Shrink it.</b> If the instance is large, <b>Fuzz</b> (Instances tab) audits instances
+            from small to large, stops at the first unsound one and shrinks it.</li>
+          <li><b>Keep it.</b> Fuzz's card saves the small instance as a regression instance with its
+            true count; <b>Run all</b> checks it from then on.</li>
+          <li><b>Fix and re-audit.</b> Mark the atom relevant (or fix the refine part), audit again.</li>
+        </ol>
+
+        <h2 id="pitfalls">Pitfalls</h2>
+        <ul>
+          <li>The audit is per instance: "sound" means sound on this instance. Audit several, small
+            ones first, and use certificates (Loop tab) for a guarantee that does not depend on the
+            instance.</li>
+          <li>Too many solutions is a bug too: a core taken from the wrong check (chapter 10) accepts
+            wrong candidates.</li>
+          <li>Blocks and cores need no audit; the audit refuses loops refined only by them.</li>
+        </ul>
+        <p>Tutorial lesson 6 shows the same tools on another example
+          (<a href="../?tab=2#tut-audit">the audit</a>).</p>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

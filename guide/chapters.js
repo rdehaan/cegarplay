@@ -42,5 +42,20 @@ export const CHAPTERS = [
 // Pages of the guide that are not chapters: linked from the contents page and the sidebar, with
 // the guide's skeleton but without a recap, exercises or a place in the pager.
 export const EXTRAS = [
-  { file: 'bibliography.html', title: 'Bibliography', summary: 'The papers behind the loops of Part II and the manual\'s table "Loops from the literature".' },
+  { file: 'reading-order.html', group: 'more', title: 'Reading the guide and the tutorial together', summary: 'One order for both, so that each tool appears when a design question calls for it.' },
+  { file: 'glossary.html', group: 'more', title: 'Glossary', summary: 'The terms of the guide, each with the chapter that introduces it.' },
+  { file: 'bibliography.html', group: 'more', title: 'Bibliography', summary: 'The papers behind the loops of Part II and the manual\'s table "Loops from the literature".' },
+  { file: 'howto-campaign.html', group: 'howto', title: 'How to compare refinement strategies with a campaign', summary: 'Variants, a suite, the instance × variant matrix and the plots.' },
+  { file: 'howto-time.html', group: 'howto', title: 'How to find where the time goes', summary: 'Solvers, candidates, clause lengths, the timeline and the cost per line.' },
+  { file: 'howto-unsound.html', group: 'howto', title: 'How to hunt an unsound refinement', summary: 'The audit, the candidate space, Fuzz and a regression instance.' },
+  { file: 'howto-instances.html', group: 'howto', title: 'How to build an instance set', summary: 'Generators, imports, ground truth and Run all.' },
+  { file: 'howto-headless.html', group: 'howto', title: 'How to run experiments headlessly', summary: 'run.mjs, bench.mjs, report.mjs, and when to move to native clingo.' },
+  { file: 'howto-check.html', group: 'howto', title: 'How to check a loop independently', summary: 'The reference variant, cegarcheck.py and proof logs with certcheck.py.' },
+  { file: 'howto-view.html', group: 'howto', title: 'How to write a domain view', summary: 'Scene and frame, the step facts, and checking a view against the trace.' },
+  { file: 'howto-present.html', group: 'howto', title: 'How to record and present a run', summary: 'Recordings, replays, storyboards and lecture links.' },
+  { file: 'howto-paper.html', group: 'howto', title: 'How to turn a paper into a loop', summary: 'A checklist from pseudocode to loop script, and what to do when CegarPlay lacks something.' },
+];
+export const EXTRA_GROUPS = [
+  { group: 'howto', title: 'How-to' },
+  { group: 'more', title: 'More' },
 ];

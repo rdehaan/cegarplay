@@ -1290,3 +1290,7 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
 - Guide Part II, chapters 13-15 (done): 2QBF by clauses and by expansion, implicit hitting sets,
   MARCO; `part` in `guide/chapters.js` (sidebar and contents grouped by part), `EXTRAS` for pages
   that are not chapters (the bibliography); QUOTED runs may carry `exhausted: false`.
+- How-tos, glossary, reading order (done): nine `guide/howto-*.html`, `glossary.html`,
+  `reading-order.html`, listed in `EXTRAS` (groups How-to and More in the sidebar and the
+  contents page); every chapter ends with "Tool skills for this chapter"; the tutorial and the
+  manual link the how-tos.

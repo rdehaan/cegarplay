@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>How to record and present a run · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">How-to</p>
+        <h1>How to record and present a run</h1>
+        <p class="lead">Goal: show a run in a talk or a report, step by step, without running it
+          live.</p>
+
+        <h2 id="example">The example</h2>
+        <p id="example-link">Every fast library example has a replay; <code>voting-justification</code>
+          has one too, with a view of the profiles.
+          <a class="play" href="../?example=voting-justification&amp;fragment=view&amp;from=guide/howto-present.html%23example-link" target="cegarplay">Open voting-justification</a></p>
+
+        <h2 id="steps">Steps</h2>
+        <ol>
+          <li><b>Record.</b> Loop tab, Recording: every step (or the first N, every N-th, a sample),
+            and <b>solver calls</b> for the timeline. Run.</li>
+          <li><b>Save.</b> Control tab, <b>Download recording</b>: a <code>.cprec</code> file.
+            <b>Open recording</b> replays it later without the engine.</li>
+          <li><b>Pick the moments.</b> In the Observatory, the cursor drives every view; mark the steps
+            that matter (the first refinement, an unsound one caught by the audit, a core shrinking)
+            and export a storyboard strip or the view as SVG.</li>
+          <li><b>Link it.</b> A link with <code>?replay=examples/replays/ID.cprec</code>,
+            <code>&amp;step=N</code> and <code>&amp;view=view</code> opens a replay on a step; <code>&amp;lecture=1</code> shows the view alone with its notes as
+            captions, for a projector.</li>
+        </ol>
+
+        <h2 id="pitfalls">Pitfalls</h2>
+        <ul>
+          <li>Recording every step of a long run makes a large file; record the first N steps or a
+            sample.</li>
+          <li>A replay link works only for files in <code>examples/replays/</code>; a file of your own
+            is opened with <b>Open recording</b>.</li>
+        </ul>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>
