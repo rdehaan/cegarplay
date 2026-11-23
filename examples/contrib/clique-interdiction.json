@@ -44,7 +44,7 @@
   },
   "library": {
     "id": "clique-interdiction",
-    "group": "exists-forall",
+    "group": "graphs",
     "summary": "Deleting at most k nodes so that no clique of c nodes survives, with up to three counterexample cliques per candidate (Paley graph, n = 13, k = 6, c = 3, 39 solutions).",
     "shape": "custom",
     "tags": [

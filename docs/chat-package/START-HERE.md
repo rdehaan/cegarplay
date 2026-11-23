@@ -31,7 +31,7 @@ to Lua that runs inside clingo.
 
 ## The task
 
-Write new examples for the `problems` group: problems that suit a CEGAR loop, that is
+Write new library examples: problems that suit a CEGAR loop, that is
 problems of the form "find X such that no Y exists with ...". The abstraction guesses X; the
 check guesses a Y that refutes X. Each example should teach something: a problem class, a
 modelling trick, a refinement variant, or a comparison (weak versus strong `relevant/1`,
@@ -63,7 +63,7 @@ from `contrib-template.json`. It is a normal project plus a top-level `library` 
 ```json
 "library": {
   "id": "my-problem",
-  "group": "problems",
+  "group": "graphs",
   "summary": "One sentence for the library list that quotes the solution count (n = 4, 42 solutions).",
   "shape": "shape1",
   "tags": ["fast"],
@@ -72,7 +72,7 @@ from `contrib-template.json`. It is a normal project plus a top-level `library` 
 ```
 
 - `id`: `[A-Za-z0-9_-]+`, short, lower case with hyphens.
-- `group`: always `problems`.
+- `group`: the category of the problem: `logic` (QBF, minimal formulas, stable models), `reasoning` (abduction, defaults, diagnosis, causality, argumentation, explanation), `graphs`, `games` (equilibria, coalitions, fair division, voting), `planning` (planning, bilevel optimisation), `puzzles`, or `several-solvers` (more than one check, staged searches, raw Lua).
 - `shape`: `shape1`, `shape2`, `shape3`, `shape4`, `reference` (the templates in the
   manual) or `custom` when you write your own loop.
 - `tags`: `["fast"]` when a run with `solutions` = all takes under about 2 s (the test suite

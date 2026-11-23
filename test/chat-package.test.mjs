@@ -61,10 +61,14 @@ test('contrib: a project with a library block becomes a library entry; bad block
   try {
     const { files, manifest } = buildAll({ contribDir: url });
     const e = manifest.examples.find((x) => x.id === 'demo');
-    assert.deepEqual([e.group, e.expected], ['exists-forall', { solutions: 4 }]);
-    // the older group name is sorted by the loop
+    assert.deepEqual([e.group, e.expected], ['other', { solutions: 4 }]);
+    // a category is kept; the older group names are sorted by the loop
+    fs.writeFileSync(join(dir, 'a.json'), JSON.stringify({ ...t, library: { ...t.library, id: 'demo', group: 'puzzles' } }));
+    assert.equal(loadContrib(url)[0].group, 'puzzles');
+    fs.writeFileSync(join(dir, 'a.json'), JSON.stringify({ ...t, library: { ...t.library, id: 'demo', group: 'exists-forall' } }));
+    assert.equal(loadContrib(url)[0].group, 'other');
     fs.writeFileSync(join(dir, 'a.json'), JSON.stringify({ ...t, library: { ...t.library, id: 'demo', group: 'problems' } }));
-    assert.equal(loadContrib(url)[0].group, 'exists-forall');
+    assert.equal(loadContrib(url)[0].group, 'other');
     fs.writeFileSync(join(dir, 'a.json'), JSON.stringify({ ...t, loop: { language: 'lua', text: '' }, library: { ...t.library, id: 'demo', group: 'problems' } }));
     assert.equal(loadContrib(url)[0].group, 'several-solvers');
     assert.equal(files.demo.library, undefined);

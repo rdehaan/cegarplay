@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "subset-sum-game",
-    "group": "exists-forall",
+    "group": "games",
     "summary": "Sets of x-numbers that no set of y-numbers completes to the target; the interface is the derived sum, so one clause removes all sets with that sum (7 + 7 numbers, 11 solutions).",
     "shape": "shape1",
     "tags": [

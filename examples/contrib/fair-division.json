@@ -44,7 +44,7 @@
   },
   "library": {
     "id": "fair-division",
-    "group": "exists-forall",
+    "group": "games",
     "summary": "Envy-free and Pareto-efficient allocations of indivisible goods; a dominating allocation becomes a rule in the abstraction (Shape 3; 3 agents, 7 goods, 3 solutions).",
     "shape": "shape3",
     "tags": [

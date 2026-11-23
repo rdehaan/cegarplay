@@ -46,7 +46,7 @@
   },
   "library": {
     "id": "fewest-clues",
-    "group": "exists-forall",
+    "group": "puzzles",
     "summary": "Puzzles with a unique solution: k clues added to a partly filled 4 x 4 Sudoku; a counterexample is a pair of solutions (k = 2, 64 solutions).",
     "shape": "shape1",
     "tags": [

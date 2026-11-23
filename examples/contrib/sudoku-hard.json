@@ -135,7 +135,7 @@
   ],
   "library": {
     "id": "sudoku-hard",
-    "group": "exists-forall",
+    "group": "puzzles",
     "summary": "A 9 x 9 Sudoku with a unique solution that singles, pairs and locked candidates cannot finish; the beginner is part of the abstraction (k = 26 on a fixed grid; the run stops at the first puzzle).",
     "shape": "shape1",
     "tags": [],

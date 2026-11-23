@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "strong-nash",
-    "group": "exists-forall",
+    "group": "games",
     "summary": "Strong Nash equilibria of a graphical game: a counterexample is a coalition whose members all gain by deviating together (8 players, 1 solution).",
     "shape": "shape1",
     "tags": [

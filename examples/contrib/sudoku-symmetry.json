@@ -111,7 +111,7 @@
   ],
   "library": {
     "id": "sudoku-symmetry",
-    "group": "exists-forall",
+    "group": "puzzles",
     "summary": "sudoku-unique with symmetry breaking on the solved grid (values relabelled, rows ordered); it does not reach fewer clues (k = 26; the run stops at the first puzzle).",
     "shape": "shape1",
     "tags": [],

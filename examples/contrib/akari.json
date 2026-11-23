@@ -147,7 +147,7 @@
   ],
   "library": {
     "id": "akari",
-    "group": "exists-forall",
+    "group": "puzzles",
     "summary": "An Akari (Light Up) puzzle with a unique solution: the abstraction places the black cells, the lights and the numbers shown (7 x 7, 12 black cells, 4 numbers; the run stops at the first puzzle).",
     "shape": "shape1",
     "tags": [],

@@ -184,7 +184,7 @@
   ],
   "library": {
     "id": "slitherlink",
-    "group": "exists-forall",
+    "group": "puzzles",
     "summary": "A Slitherlink puzzle with a unique solution: one loop (reachability) and k numbers (7 x 7, 12 numbers, a loop of at least 28 edges; the run stops at the first puzzle).",
     "shape": "shape1",
     "tags": [],

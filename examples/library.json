@@ -23,18 +23,38 @@
       "description": "Graph colouring at n = 5 with each of the five templates; all give the same solutions."
     },
     {
-      "id": "problems",
-      "title": "Problems",
-      "description": "Larger problems from declarative-cegar."
+      "id": "logic",
+      "title": "Logic and QBF",
+      "description": "Quantified Boolean formulas, minimal formulas and unsatisfiable cores, stable models."
     },
     {
-      "id": "exists-forall",
-      "title": "Contributed: exists-forall problems",
-      "description": "One abstraction and one check solver each, in the loop language."
+      "id": "reasoning",
+      "title": "Knowledge representation and explanation",
+      "description": "Abduction, defaults, belief update, diagnosis, causality, argumentation, reasons for a classifier."
+    },
+    {
+      "id": "graphs",
+      "title": "Graphs",
+      "description": "Colourings, list colourings, cliques and Ramsey-type arrowing."
+    },
+    {
+      "id": "games",
+      "title": "Games and social choice",
+      "description": "Equilibria, stable coalitions, fair division and voting."
+    },
+    {
+      "id": "planning",
+      "title": "Planning and optimisation",
+      "description": "Conformant planning and bilevel optimisation."
+    },
+    {
+      "id": "puzzles",
+      "title": "Puzzles",
+      "description": "Generating puzzles with a unique solution: Sudoku, Binairo, Futoshiki, Akari, Slitherlink."
     },
     {
       "id": "several-solvers",
-      "title": "Contributed: several solvers or raw Lua",
+      "title": "Several solvers or raw Lua",
       "description": "More than one check, a solver that computes the refinement, staged searches, or raw Lua."
     }
   ],
@@ -949,48 +969,140 @@
       }
     },
     {
-      "id": "graph-coloring",
-      "title": "Graph colouring",
-      "group": "problems",
-      "summary": "Graphs with a leaf colouring that no 3-colouring extends (n = 6, all 10,698 solutions).",
-      "shape": "shape1",
-      "tags": [],
+      "id": "integer-expressions",
+      "title": "Integer expressions",
+      "group": "logic",
+      "summary": "Numbers that one integer expression denotes and another does not (Stockmeyer and Meyer); the candidate is a derived number, its derivation a hidden witness (22 solutions).",
+      "shape": "shape2",
+      "tags": [
+        "fast"
+      ],
       "expected": {
-        "solutions": 10698
+        "solutions": 22
       },
       "has": {
         "instances": 3
       }
     },
     {
-      "id": "nash",
-      "title": "Nash equilibria",
-      "group": "problems",
-      "summary": "Weighted graphs whose colouring game has a Nash equilibrium (four size instances).",
-      "shape": "shape1",
-      "tags": [],
-      "expected": null,
+      "id": "min-dnf",
+      "title": "Smallest equivalent DNF",
+      "group": "logic",
+      "summary": "DNF formulas with at most k terms equivalent to a given one: counterexample assignments become clauses over a pool of terms (n = 3, k = 3, 2 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2
+      },
       "has": {
         "instances": 4
       }
     },
     {
-      "id": "voting-justification",
-      "title": "Voting: justifications",
-      "group": "problems",
-      "summary": "Explaining a voting outcome by axioms: 17 questions as instances, five refinement strategies and two loops as variants, a suite that compares them.",
-      "shape": "shape1",
-      "tags": [],
-      "expected": null,
+      "id": "qbf-expansion",
+      "title": "2QBF by expansion",
+      "group": "logic",
+      "summary": "The 2QBF example with Shape 3: each counterexample y-assignment instantiates the formula in the abstraction (5 solutions).",
+      "shape": "shape3",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 5
+      },
       "has": {
-        "instances": 17,
-        "suites": 2
+        "instances": 4
+      }
+    },
+    {
+      "id": "qbf-optimal",
+      "title": "2QBF, smallest refinement",
+      "group": "logic",
+      "summary": "The 2QBF example with a check that guesses which x-literals to blame and minimises their number (C.solve(..., optimal); 5 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 5
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "qbf",
+      "title": "2QBF",
+      "group": "logic",
+      "summary": "Exists-forall QBF with a DNF matrix: clause refinements from the false x-literals of the open terms (6 + 5 variables, 12 terms, 5 solutions).",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 5
+      },
+      "has": {
+        "instances": 5,
+        "generators": 1,
+        "suites": 1,
+        "views": 1
+      }
+    },
+    {
+      "id": "smallest-mus",
+      "title": "Smallest unsatisfiable subsets",
+      "group": "logic",
+      "summary": "Unsatisfiable subsets with at most k clauses, by collecting hitting-set constraints from satisfying assignments (12 clauses, k = 4, 2 solutions).",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "has": {
+        "instances": 3
+      }
+    },
+    {
+      "id": "stable-models",
+      "title": "Stable models by hand",
+      "group": "logic",
+      "summary": "Stable models of a disjunctive program given as facts: classical models checked against the reduct (11 atoms, 22 rules, 3 solutions).",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 3
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "strategic-companies",
+      "title": "Strategic companies",
+      "group": "logic",
+      "summary": "Strategic sets of companies that contain a given company; minimality is refuted by a smaller set, refined with G.clauses (8 companies, 2 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "has": {
+        "instances": 3
       }
     },
     {
       "id": "abduction",
       "title": "Abduction",
-      "group": "exists-forall",
+      "group": "reasoning",
       "summary": "Propositional abduction: consistent hypothesis sets that entail the observation, with a hidden consistency witness in the abstraction (7 hypotheses, k = 2, 17 solutions).",
       "shape": "shape2",
       "tags": [
@@ -1006,7 +1118,7 @@
     {
       "id": "actual-cause",
       "title": "Actual causes",
-      "group": "exists-forall",
+      "group": "reasoning",
       "summary": "Halpern-Pearl actual causation on the rock-throwing story: witnesses for Suzy's throw being a cause (cause = st, 4 solutions; cause = bt, none).",
       "shape": "shape1",
       "tags": [
@@ -1022,7 +1134,7 @@
     {
       "id": "af-preferred",
       "title": "Preferred extensions",
-      "group": "exists-forall",
+      "group": "reasoning",
       "summary": "Preferred extensions that leave out a query argument (sceptical acceptance), with one refinement clause per added argument (9 arguments, 3 solutions).",
       "shape": "custom",
       "tags": [
@@ -1040,7 +1152,7 @@
     {
       "id": "af-semi-stable",
       "title": "Semi-stable extensions",
-      "group": "exists-forall",
+      "group": "reasoning",
       "summary": "Semi-stable extensions of an argumentation framework; the interface is the derived range/1, so clauses speak about ranges (11 arguments, 2 solutions).",
       "shape": "shape1",
       "tags": [
@@ -1055,38 +1167,87 @@
       }
     },
     {
-      "id": "agenda-safety",
-      "title": "Agenda safety",
-      "group": "exists-forall",
-      "summary": "Minimally inconsistent subsets of an agenda with three or more formulas, the witnesses that majority voting is unsafe (doctrinal paradox agenda, 6 solutions).",
+      "id": "belief-update",
+      "title": "Belief update",
+      "group": "reasoning",
+      "summary": "Updating beliefs by minimal change (possible-models approach): old and new worlds that refute a query, checked against closer worlds (7 atoms, 8 solutions).",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 8
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "default-extensions",
+      "title": "Default extensions",
+      "group": "reasoning",
+      "summary": "Extensions of prerequisite-free normal defaults that entail a query: two kinds of counterexample in one check (Nixon diamond, 7 defaults, 3 solutions).",
       "shape": "shape2",
       "tags": [
         "fast"
       ],
       "expected": {
-        "solutions": 6
+        "solutions": 3
       },
       "has": {
         "instances": 3
       }
     },
     {
-      "id": "akari",
-      "title": "Akari with a unique solution",
-      "group": "exists-forall",
-      "summary": "An Akari (Light Up) puzzle with a unique solution: the abstraction places the black cells, the lights and the numbers shown (7 x 7, 12 black cells, 4 numbers; the run stops at the first puzzle).",
+      "id": "diagnosis",
+      "title": "Minimal diagnoses",
+      "group": "reasoning",
+      "summary": "Minimal diagnoses of a faulty full adder that blame a given gate: minimal models with varying wires (suspect = x2, 2 solutions).",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "has": {
+        "instances": 3
+      }
+    },
+    {
+      "id": "sufficient-reason",
+      "title": "Sufficient reasons",
+      "group": "reasoning",
+      "summary": "Smallest sets of features that force a small neural network's answer on a given input (8 features, k = 3, 2 solutions).",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "has": {
+        "instances": 3
+      }
+    },
+    {
+      "id": "graph-coloring",
+      "title": "Graph colouring",
+      "group": "graphs",
+      "summary": "Graphs with a leaf colouring that no 3-colouring extends (n = 6, all 10,698 solutions).",
       "shape": "shape1",
       "tags": [],
-      "expected": null,
+      "expected": {
+        "solutions": 10698
+      },
       "has": {
-        "instances": 7,
-        "views": 1
+        "instances": 3
       }
     },
     {
       "id": "arrowing",
       "title": "Ramsey arrowing",
-      "group": "exists-forall",
+      "group": "graphs",
       "summary": "Edge colourings of K_n without a red triangle and without a blue 4-cycle; the check embeds a pattern graph (n = 6, 100 solutions; n = 7, none).",
       "shape": "shape1",
       "tags": [
@@ -1102,54 +1263,9 @@
       }
     },
     {
-      "id": "belief-update",
-      "title": "Belief update",
-      "group": "exists-forall",
-      "summary": "Updating beliefs by minimal change (possible-models approach): old and new worlds that refute a query, checked against closer worlds (7 atoms, 8 solutions).",
-      "shape": "shape1",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 8
-      },
-      "has": {
-        "instances": 4
-      }
-    },
-    {
-      "id": "binairo",
-      "title": "Binary puzzle with a unique solution",
-      "group": "exists-forall",
-      "summary": "A binary puzzle (Binairo) with k clues and a unique solution; a counterexample is a pair of solutions (6 x 6, k = 6; the run stops at the first puzzle).",
-      "shape": "shape1",
-      "tags": [],
-      "expected": null,
-      "has": {
-        "instances": 5,
-        "views": 1
-      }
-    },
-    {
-      "id": "boolean-game",
-      "title": "Boolean games",
-      "group": "exists-forall",
-      "summary": "Pure Nash equilibria of a Boolean game: a counterexample is a player with a profitable deviation (4 players, 8 variables, 6 solutions).",
-      "shape": "shape1",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 6
-      },
-      "has": {
-        "instances": 4
-      }
-    },
-    {
       "id": "choosability",
       "title": "List colouring",
-      "group": "exists-forall",
+      "group": "graphs",
       "summary": "List assignments from which a graph cannot be properly coloured, refuting choosability (K(3,3), lists of 2 out of 3 colours, 36 solutions).",
       "shape": "shape1",
       "tags": [
@@ -1167,7 +1283,7 @@
     {
       "id": "clique-colouring",
       "title": "Clique colouring",
-      "group": "exists-forall",
+      "group": "graphs",
       "summary": "Two-colourings of the nodes without a one-coloured maximal clique (complement of a cycle, n = 8, 44 solutions).",
       "shape": "shape1",
       "tags": [
@@ -1185,7 +1301,7 @@
     {
       "id": "clique-interdiction",
       "title": "Clique interdiction",
-      "group": "exists-forall",
+      "group": "graphs",
       "summary": "Deleting at most k nodes so that no clique of c nodes survives, with up to three counterexample cliques per candidate (Paley graph, n = 13, k = 6, c = 3, 39 solutions).",
       "shape": "custom",
       "tags": [
@@ -1199,57 +1315,66 @@
       }
     },
     {
-      "id": "conformant-planning",
-      "title": "Conformant planning",
-      "group": "exists-forall",
-      "summary": "A sequence of moves that reaches the goal from every start cell; each counterexample start cell is simulated inside the abstraction (Shape 3; t = 8, 3 solutions).",
-      "shape": "shape3",
+      "id": "nash",
+      "title": "Nash equilibria",
+      "group": "games",
+      "summary": "Weighted graphs whose colouring game has a Nash equilibrium (four size instances).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "voting-justification",
+      "title": "Voting: justifications",
+      "group": "games",
+      "summary": "Explaining a voting outcome by axioms: 17 questions as instances, five refinement strategies and two loops as variants, a suite that compares them.",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 17,
+        "suites": 2
+      }
+    },
+    {
+      "id": "agenda-safety",
+      "title": "Agenda safety",
+      "group": "games",
+      "summary": "Minimally inconsistent subsets of an agenda with three or more formulas, the witnesses that majority voting is unsafe (doctrinal paradox agenda, 6 solutions).",
+      "shape": "shape2",
       "tags": [
         "fast"
       ],
       "expected": {
-        "solutions": 3
+        "solutions": 6
+      },
+      "has": {
+        "instances": 3
+      }
+    },
+    {
+      "id": "boolean-game",
+      "title": "Boolean games",
+      "group": "games",
+      "summary": "Pure Nash equilibria of a Boolean game: a counterexample is a player with a profitable deviation (4 players, 8 variables, 6 solutions).",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 6
       },
       "has": {
         "instances": 4
       }
     },
     {
-      "id": "default-extensions",
-      "title": "Default extensions",
-      "group": "exists-forall",
-      "summary": "Extensions of prerequisite-free normal defaults that entail a query: two kinds of counterexample in one check (Nixon diamond, 7 defaults, 3 solutions).",
-      "shape": "shape2",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 3
-      },
-      "has": {
-        "instances": 3
-      }
-    },
-    {
-      "id": "diagnosis",
-      "title": "Minimal diagnoses",
-      "group": "exists-forall",
-      "summary": "Minimal diagnoses of a faulty full adder that blame a given gate: minimal models with varying wires (suspect = x2, 2 solutions).",
-      "shape": "shape1",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 2
-      },
-      "has": {
-        "instances": 3
-      }
-    },
-    {
       "id": "fair-division",
       "title": "Fair and efficient division",
-      "group": "exists-forall",
+      "group": "games",
       "summary": "Envy-free and Pareto-efficient allocations of indivisible goods; a dominating allocation becomes a rule in the abstraction (Shape 3; 3 agents, 7 goods, 3 solutions).",
       "shape": "shape3",
       "tags": [
@@ -1263,38 +1388,9 @@
       }
     },
     {
-      "id": "fewest-clues",
-      "title": "Fewest clues",
-      "group": "exists-forall",
-      "summary": "Puzzles with a unique solution: k clues added to a partly filled 4 x 4 Sudoku; a counterexample is a pair of solutions (k = 2, 64 solutions).",
-      "shape": "shape1",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 64
-      },
-      "has": {
-        "instances": 4
-      }
-    },
-    {
-      "id": "futoshiki",
-      "title": "Futoshiki with a unique solution",
-      "group": "exists-forall",
-      "summary": "A Futoshiki puzzle (Latin square with inequality signs) with a unique solution; clues are values and signs (5 x 5 with 7 signs and no values; the run stops at the first puzzle).",
-      "shape": "shape1",
-      "tags": [],
-      "expected": null,
-      "has": {
-        "instances": 7,
-        "views": 1
-      }
-    },
-    {
       "id": "hedonic-core",
       "title": "Core-stable coalitions",
-      "group": "exists-forall",
+      "group": "games",
       "summary": "Core-stable partitions of an additively separable hedonic game; relevant/1 uses monotonicity to mark few atoms (6 agents, 2 solutions).",
       "shape": "shape1",
       "tags": [
@@ -1308,25 +1404,9 @@
       }
     },
     {
-      "id": "integer-expressions",
-      "title": "Integer expressions",
-      "group": "exists-forall",
-      "summary": "Numbers that one integer expression denotes and another does not (Stockmeyer and Meyer); the candidate is a derived number, its derivation a hidden witness (22 solutions).",
-      "shape": "shape2",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 22
-      },
-      "has": {
-        "instances": 3
-      }
-    },
-    {
       "id": "kemeny-control",
       "title": "Kemeny control",
-      "group": "exists-forall",
+      "group": "games",
       "summary": "Deleting a few voters so that the favourite becomes a Kemeny winner; better rankings are collected and grounded in batches (Shape 4; 7 voters, budget = 2, 3 solutions).",
       "shape": "shape4",
       "tags": [
@@ -1341,153 +1421,9 @@
       }
     },
     {
-      "id": "knapsack-interdiction",
-      "title": "Knapsack interdiction",
-      "group": "exists-forall",
-      "summary": "Bilevel knapsack: locked item sets that keep the follower's best profit at or below a bound, with smallest counterexample packings (8 items, 2 solutions).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 2
-      },
-      "has": {
-        "instances": 4
-      }
-    },
-    {
-      "id": "min-dnf",
-      "title": "Smallest equivalent DNF",
-      "group": "exists-forall",
-      "summary": "DNF formulas with at most k terms equivalent to a given one: counterexample assignments become clauses over a pool of terms (n = 3, k = 3, 2 solutions).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 2
-      },
-      "has": {
-        "instances": 4
-      }
-    },
-    {
-      "id": "qbf-expansion",
-      "title": "2QBF by expansion",
-      "group": "exists-forall",
-      "summary": "The 2QBF example with Shape 3: each counterexample y-assignment instantiates the formula in the abstraction (5 solutions).",
-      "shape": "shape3",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 5
-      },
-      "has": {
-        "instances": 4
-      }
-    },
-    {
-      "id": "qbf-optimal",
-      "title": "2QBF, smallest refinement",
-      "group": "exists-forall",
-      "summary": "The 2QBF example with a check that guesses which x-literals to blame and minimises their number (C.solve(..., optimal); 5 solutions).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 5
-      },
-      "has": {
-        "instances": 4
-      }
-    },
-    {
-      "id": "qbf",
-      "title": "2QBF",
-      "group": "exists-forall",
-      "summary": "Exists-forall QBF with a DNF matrix: clause refinements from the false x-literals of the open terms (6 + 5 variables, 12 terms, 5 solutions).",
-      "shape": "shape1",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 5
-      },
-      "has": {
-        "instances": 5,
-        "generators": 1,
-        "suites": 1,
-        "views": 1
-      }
-    },
-    {
-      "id": "slitherlink",
-      "title": "Slitherlink with a unique solution",
-      "group": "exists-forall",
-      "summary": "A Slitherlink puzzle with a unique solution: one loop (reachability) and k numbers (7 x 7, 12 numbers, a loop of at least 28 edges; the run stops at the first puzzle).",
-      "shape": "shape1",
-      "tags": [],
-      "expected": null,
-      "has": {
-        "instances": 9,
-        "views": 1
-      }
-    },
-    {
-      "id": "smallest-mus",
-      "title": "Smallest unsatisfiable subsets",
-      "group": "exists-forall",
-      "summary": "Unsatisfiable subsets with at most k clauses, by collecting hitting-set constraints from satisfying assignments (12 clauses, k = 4, 2 solutions).",
-      "shape": "shape1",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 2
-      },
-      "has": {
-        "instances": 3
-      }
-    },
-    {
-      "id": "stable-models",
-      "title": "Stable models by hand",
-      "group": "exists-forall",
-      "summary": "Stable models of a disjunctive program given as facts: classical models checked against the reduct (11 atoms, 22 rules, 3 solutions).",
-      "shape": "shape1",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 3
-      },
-      "has": {
-        "instances": 4
-      }
-    },
-    {
-      "id": "strategic-companies",
-      "title": "Strategic companies",
-      "group": "exists-forall",
-      "summary": "Strategic sets of companies that contain a given company; minimality is refuted by a smaller set, refined with G.clauses (8 companies, 2 solutions).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 2
-      },
-      "has": {
-        "instances": 3
-      }
-    },
-    {
       "id": "strong-nash",
       "title": "Strong Nash equilibria",
-      "group": "exists-forall",
+      "group": "games",
       "summary": "Strong Nash equilibria of a graphical game: a counterexample is a coalition whose members all gain by deviating together (8 players, 1 solution).",
       "shape": "shape1",
       "tags": [
@@ -1503,7 +1439,7 @@
     {
       "id": "subset-sum-game",
       "title": "Subset sum game",
-      "group": "exists-forall",
+      "group": "games",
       "summary": "Sets of x-numbers that no set of y-numbers completes to the target; the interface is the derived sum, so one clause removes all sets with that sum (7 + 7 numbers, 11 solutions).",
       "shape": "shape1",
       "tags": [
@@ -1517,9 +1453,109 @@
       }
     },
     {
+      "id": "conformant-planning",
+      "title": "Conformant planning",
+      "group": "planning",
+      "summary": "A sequence of moves that reaches the goal from every start cell; each counterexample start cell is simulated inside the abstraction (Shape 3; t = 8, 3 solutions).",
+      "shape": "shape3",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 3
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "knapsack-interdiction",
+      "title": "Knapsack interdiction",
+      "group": "planning",
+      "summary": "Bilevel knapsack: locked item sets that keep the follower's best profit at or below a bound, with smallest counterexample packings (8 items, 2 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "akari",
+      "title": "Akari with a unique solution",
+      "group": "puzzles",
+      "summary": "An Akari (Light Up) puzzle with a unique solution: the abstraction places the black cells, the lights and the numbers shown (7 x 7, 12 black cells, 4 numbers; the run stops at the first puzzle).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 7,
+        "views": 1
+      }
+    },
+    {
+      "id": "binairo",
+      "title": "Binary puzzle with a unique solution",
+      "group": "puzzles",
+      "summary": "A binary puzzle (Binairo) with k clues and a unique solution; a counterexample is a pair of solutions (6 x 6, k = 6; the run stops at the first puzzle).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 5,
+        "views": 1
+      }
+    },
+    {
+      "id": "fewest-clues",
+      "title": "Fewest clues",
+      "group": "puzzles",
+      "summary": "Puzzles with a unique solution: k clues added to a partly filled 4 x 4 Sudoku; a counterexample is a pair of solutions (k = 2, 64 solutions).",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 64
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "futoshiki",
+      "title": "Futoshiki with a unique solution",
+      "group": "puzzles",
+      "summary": "A Futoshiki puzzle (Latin square with inequality signs) with a unique solution; clues are values and signs (5 x 5 with 7 signs and no values; the run stops at the first puzzle).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 7,
+        "views": 1
+      }
+    },
+    {
+      "id": "slitherlink",
+      "title": "Slitherlink with a unique solution",
+      "group": "puzzles",
+      "summary": "A Slitherlink puzzle with a unique solution: one loop (reachability) and k numbers (7 x 7, 12 numbers, a loop of at least 28 edges; the run stops at the first puzzle).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 9,
+        "views": 1
+      }
+    },
+    {
       "id": "sudoku-graded",
       "title": "Sudoku graded by technique",
-      "group": "exists-forall",
+      "group": "puzzles",
       "summary": "A 9 x 9 Sudoku that needs pairs or locked candidates: singles get stuck (abstraction), the stronger techniques solve it (the check looks for stuck pencil marks; uniqueness follows) (k = 26; the run stops at the first puzzle).",
       "shape": "shape1",
       "tags": [],
@@ -1532,7 +1568,7 @@
     {
       "id": "sudoku-hard",
       "title": "Sudoku beyond the beginner",
-      "group": "exists-forall",
+      "group": "puzzles",
       "summary": "A 9 x 9 Sudoku with a unique solution that singles, pairs and locked candidates cannot finish; the beginner is part of the abstraction (k = 26 on a fixed grid; the run stops at the first puzzle).",
       "shape": "shape1",
       "tags": [],
@@ -1545,7 +1581,7 @@
     {
       "id": "sudoku-symmetry",
       "title": "Sudoku with symmetry breaking",
-      "group": "exists-forall",
+      "group": "puzzles",
       "summary": "sudoku-unique with symmetry breaking on the solved grid (values relabelled, rows ordered); it does not reach fewer clues (k = 26; the run stops at the first puzzle).",
       "shape": "shape1",
       "tags": [],
@@ -1558,7 +1594,7 @@
     {
       "id": "sudoku-unavoidable",
       "title": "Sudoku by unavoidable sets",
-      "group": "exists-forall",
+      "group": "puzzles",
       "summary": "sudoku-unique refined by unavoidable sets of the guessed grid, up to 3 disjoint ones per candidate: fewer clues in reasonable time (k = 22; the run stops at the first puzzle).",
       "shape": "custom",
       "tags": [],
@@ -1571,7 +1607,7 @@
     {
       "id": "sudoku-unique",
       "title": "Sudoku with a unique solution",
-      "group": "exists-forall",
+      "group": "puzzles",
       "summary": "A 9 x 9 Sudoku with k clues and a unique solution, generated from scratch; a counterexample is a pair of solutions (k = 25; the run stops at the first puzzle).",
       "shape": "shape1",
       "tags": [],
@@ -1579,22 +1615,6 @@
       "has": {
         "instances": 5,
         "views": 1
-      }
-    },
-    {
-      "id": "sufficient-reason",
-      "title": "Sufficient reasons",
-      "group": "exists-forall",
-      "summary": "Smallest sets of features that force a small neural network's answer on a given input (8 features, k = 3, 2 solutions).",
-      "shape": "shape1",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 2
-      },
-      "has": {
-        "instances": 3
       }
     },
     {

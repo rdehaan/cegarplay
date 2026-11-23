@@ -122,7 +122,7 @@
   ],
   "library": {
     "id": "binairo",
-    "group": "exists-forall",
+    "group": "puzzles",
     "summary": "A binary puzzle (Binairo) with k clues and a unique solution; a counterexample is a pair of solutions (6 x 6, k = 6; the run stops at the first puzzle).",
     "shape": "shape1",
     "tags": [],

@@ -117,7 +117,7 @@
   ],
   "library": {
     "id": "sudoku-unique",
-    "group": "exists-forall",
+    "group": "puzzles",
     "summary": "A 9 x 9 Sudoku with k clues and a unique solution, generated from scratch; a counterexample is a pair of solutions (k = 25; the run stops at the first puzzle).",
     "shape": "shape1",
     "tags": [],

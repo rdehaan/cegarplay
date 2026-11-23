@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "qbf-optimal",
-    "group": "exists-forall",
+    "group": "logic",
     "summary": "The 2QBF example with a check that guesses which x-literals to blame and minimises their number (C.solve(..., optimal); 5 solutions).",
     "shape": "custom",
     "tags": [

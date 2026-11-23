@@ -117,7 +117,7 @@
   ],
   "library": {
     "id": "sudoku-unavoidable",
-    "group": "exists-forall",
+    "group": "puzzles",
     "summary": "sudoku-unique refined by unavoidable sets of the guessed grid, up to 3 disjoint ones per candidate: fewer clues in reasonable time (k = 22; the run stops at the first puzzle).",
     "shape": "custom",
     "tags": [],

@@ -170,7 +170,7 @@
   ],
   "library": {
     "id": "sudoku-graded",
-    "group": "exists-forall",
+    "group": "puzzles",
     "summary": "A 9 x 9 Sudoku that needs pairs or locked candidates: singles get stuck (abstraction), the stronger techniques solve it (the check looks for stuck pencil marks; uniqueness follows) (k = 26; the run stops at the first puzzle).",
     "shape": "shape1",
     "tags": [],

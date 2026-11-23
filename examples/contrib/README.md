@@ -6,7 +6,7 @@ CegarPlay project (`"format": "cegarplay"`) with one extra top-level block:
 ```json
 "library": {
   "id": "my-problem",
-  "group": "exists-forall",
+  "group": "graphs",
   "summary": "One sentence for the library list, with the solution count.",
   "shape": "shape1",
   "tags": ["fast"],
@@ -15,9 +15,12 @@ CegarPlay project (`"format": "cegarplay"`) with one extra top-level block:
 ```
 
 - `id`: `[A-Za-z0-9_-]+`, not used by another example; the page loads it as `?example=<id>`.
-- `group`: `exists-forall` (one abstraction and one check solver) or `several-solvers` (more
-  solvers, staged searches or raw Lua). The older `problems` is still accepted and sorted by the
-  loop (raw Lua or more than two solvers: `several-solvers`).
+- `group`: the category of the problem: `logic` (QBF, minimal formulas, stable models),
+  `reasoning` (abduction, defaults, diagnosis, causality, argumentation, explanation), `graphs`,
+  `games` (equilibria, coalitions, fair division, voting), `planning` (planning, bilevel
+  optimisation) or `puzzles`; or `several-solvers` (more solvers, staged searches or raw Lua).
+  The older `exists-forall` and `problems` are still accepted: they go to the group `other`, or
+  to `several-solvers` for a `problems` example with raw Lua or more than two solvers.
 - `shape`: `shape1` … `shape4`, `reference` or `custom`.
 - `tags`: `fast` makes `test/library.test.mjs` run the example and check `expected`
   (the solution count with `solutions = all`); use it when the run takes under ~2 s.

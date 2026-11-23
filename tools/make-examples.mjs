@@ -371,14 +371,17 @@ export function buildExamples() {
 
 // Contributed examples: examples/contrib/*.json, each a project with a top-level
 // 'library' block { id, group, summary, shape, tags, expected }. Returns library entries.
-// 'problems' (the older name) is sorted by the loop: raw Lua or more than two solvers ->
-// several-solvers, else exists-forall.
-export const CONTRIB_GROUPS = ['exists-forall', 'several-solvers', 'problems'];
+// The group is a category (CATEGORIES) or several-solvers. The older names exists-forall and
+// problems still load: problems with raw Lua or more than two solvers -> several-solvers, the
+// rest -> other.
+export const CATEGORIES = ['logic', 'reasoning', 'graphs', 'games', 'planning', 'puzzles'];
+export const CONTRIB_GROUPS = [...CATEGORIES, 'several-solvers', 'other', 'exists-forall', 'problems'];
 function contribGroup(group, project) {
+  if (group === 'exists-forall') return 'other';
   if (group !== 'problems') return group;
   const l = project.loop;
   const solvers = l.language === 'lua' ? Infinity : (l.text.match(/^\s*solver\s/gm) || []).length;
-  return solvers > 2 ? 'several-solvers' : 'exists-forall';
+  return solvers > 2 ? 'several-solvers' : 'other';
 }
 export function loadContrib(dir = new URL('examples/contrib/', root), taken = new Set()) {
   if (!fs.existsSync(dir)) return [];
@@ -391,7 +394,7 @@ export function loadContrib(dir = new URL('examples/contrib/', root), taken = ne
     try { raw = JSON.parse(fs.readFileSync(new URL(name, dir), 'utf8')); } catch (e) { fail(`not JSON: ${e.message}`); }
     const lib = raw && raw.library;
     if (!lib || typeof lib !== 'object') fail('no "library" block');
-    const { id, group = 'exists-forall', summary, shape, tags = [], expected = null } = lib;
+    const { id, group = 'other', summary, shape, tags = [], expected = null } = lib;
     if (typeof id !== 'string' || !/^[A-Za-z0-9_-]+$/.test(id)) fail(`library.id must match [A-Za-z0-9_-]+, got ${JSON.stringify(id)}`);
     if (taken.has(id)) fail(`library.id '${id}' is already used`);
     if (!CONTRIB_GROUPS.includes(group)) fail(`library.group must be one of ${CONTRIB_GROUPS.join(', ')}`);
@@ -419,7 +422,7 @@ function features(p) {
 export function buildAll({ contribDir } = {}) {
   const problems = buildExamples();
   const entries = buildLibrary(problems['graph-coloring']);
-  for (const e of PROBLEMS) entries.push({ ...e, group: 'problems', project: problems[e.id] });
+  for (const e of PROBLEMS) entries.push({ ...e, project: problems[e.id] });
   entries.push(...buildGuide());
   entries.push(...loadContrib(contribDir, new Set(entries.map((e) => e.id))));
   for (const e of entries) {
@@ -451,7 +454,9 @@ export function buildAll({ contribDir } = {}) {
         ...(e.exhausted === false ? { exhausted: false } : {}), ...features(e.project) });
     }
   }
-  return { files, manifest: { format: 'cegarplay-library', version: 1, groups: GROUPS, examples } };
+  // a group without examples (such as the fallback 'other') is left out
+  const groups = GROUPS.filter((g) => examples.some((e) => e.group === g.id));
+  return { files, manifest: { format: 'cegarplay-library', version: 1, groups, examples } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

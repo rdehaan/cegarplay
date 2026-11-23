@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "integer-expressions",
-    "group": "exists-forall",
+    "group": "logic",
     "summary": "Numbers that one integer expression denotes and another does not (Stockmeyer and Meyer); the candidate is a derived number, its derivation a hidden witness (22 solutions).",
     "shape": "shape2",
     "tags": [

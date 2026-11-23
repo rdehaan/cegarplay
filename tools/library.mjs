@@ -234,9 +234,14 @@ export const GROUPS = [
   { id: 'guide', title: 'Guide', description: 'The examples of the design guide, in reading order.' },
   { id: 'language', title: 'The loop language', description: 'One feature of the loop language each, with comments in the loop script.' },
   { id: 'shapes', title: 'Loop shapes', description: 'Graph colouring at n = 5 with each of the five templates; all give the same solutions.' },
-  { id: 'problems', title: 'Problems', description: 'Larger problems from declarative-cegar.' },
-  { id: 'exists-forall', title: 'Contributed: exists-forall problems', description: 'One abstraction and one check solver each, in the loop language.' },
-  { id: 'several-solvers', title: 'Contributed: several solvers or raw Lua', description: 'More than one check, a solver that computes the refinement, staged searches, or raw Lua.' },
+  { id: 'logic', title: 'Logic and QBF', description: 'Quantified Boolean formulas, minimal formulas and unsatisfiable cores, stable models.' },
+  { id: 'reasoning', title: 'Knowledge representation and explanation', description: 'Abduction, defaults, belief update, diagnosis, causality, argumentation, reasons for a classifier.' },
+  { id: 'graphs', title: 'Graphs', description: 'Colourings, list colourings, cliques and Ramsey-type arrowing.' },
+  { id: 'games', title: 'Games and social choice', description: 'Equilibria, stable coalitions, fair division and voting.' },
+  { id: 'planning', title: 'Planning and optimisation', description: 'Conformant planning and bilevel optimisation.' },
+  { id: 'puzzles', title: 'Puzzles', description: 'Generating puzzles with a unique solution: Sudoku, Binairo, Futoshiki, Akari, Slitherlink.' },
+  { id: 'several-solvers', title: 'Several solvers or raw Lua', description: 'More than one check, a solver that computes the refinement, staged searches, or raw Lua.' },
+  { id: 'other', title: 'Other problems', description: 'Contributed problems without a category.' },
 ];
 
 // Every entry: id, group, summary, shape (template or 'custom'), tags, expected solutions.
@@ -333,11 +338,11 @@ clause(1, pick(X+Y), false) :- sum(X,Y).
 }
 const TEMPLATE_TITLE = { shape1: 'Shape 1', shape2: 'Shape 2', shape3: 'Shape 3', shape4: 'Shape 4', reference: 'Reference run' };
 
-// Problems group: the three examples built from declarative-cegar.
+// The three larger problems built from the declarative-cegar files, with their categories.
 export const PROBLEMS = [
-  { id: 'graph-coloring', summary: 'Graphs with a leaf colouring that no 3-colouring extends (n = 6, all 10,698 solutions).', shape: 'shape1', tags: [], expected: 10698 },
-  { id: 'nash', summary: 'Weighted graphs whose colouring game has a Nash equilibrium (four size instances).', shape: 'shape1', tags: [], expected: null },
-  { id: 'voting-justification', summary: 'Explaining a voting outcome by axioms: 17 questions as instances, five refinement strategies and two loops as variants, a suite that compares them.', shape: 'shape1', tags: [], expected: null },
+  { id: 'graph-coloring', group: 'graphs', summary: 'Graphs with a leaf colouring that no 3-colouring extends (n = 6, all 10,698 solutions).', shape: 'shape1', tags: [], expected: 10698 },
+  { id: 'nash', group: 'games', summary: 'Weighted graphs whose colouring game has a Nash equilibrium (four size instances).', shape: 'shape1', tags: [], expected: null },
+  { id: 'voting-justification', group: 'games', summary: 'Explaining a voting outcome by axioms: 17 questions as instances, five refinement strategies and two loops as variants, a suite that compares them.', shape: 'shape1', tags: [], expected: null },
 ];
 
 // ---------------------------------------------------------------------------

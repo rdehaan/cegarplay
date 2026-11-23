@@ -21,7 +21,7 @@ export function buildPackage() {
   p.description = 'Replace: the problem in 1-3 sentences, what the loop does, what to look at.';
   const t = JSON.parse(save(p, { runs: false }));
   delete t.runs;
-  t.library = { id: 'my-problem', group: 'exists-forall', summary: 'Replace: one sentence with the solution count.',
+  t.library = { id: 'my-problem', group: 'other', summary: 'Replace: one sentence with the solution count.',
     shape: 'shape1', tags: ['fast'], expected: 4 };
   files['contrib-template.json'] = JSON.stringify(t, null, 2) + '\n';
   return files;

@@ -46,7 +46,7 @@
   },
   "library": {
     "id": "actual-cause",
-    "group": "exists-forall",
+    "group": "reasoning",
     "summary": "Halpern-Pearl actual causation on the rock-throwing story: witnesses for Suzy's throw being a cause (cause = st, 4 solutions; cause = bt, none).",
     "shape": "shape1",
     "tags": [

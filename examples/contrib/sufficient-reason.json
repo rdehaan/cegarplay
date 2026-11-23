@@ -41,7 +41,7 @@
   },
   "library": {
     "id": "sufficient-reason",
-    "group": "exists-forall",
+    "group": "reasoning",
     "summary": "Smallest sets of features that force a small neural network's answer on a given input (8 features, k = 3, 2 solutions).",
     "shape": "shape1",
     "tags": [

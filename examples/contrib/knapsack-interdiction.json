@@ -43,7 +43,7 @@
   },
   "library": {
     "id": "knapsack-interdiction",
-    "group": "exists-forall",
+    "group": "planning",
     "summary": "Bilevel knapsack: locked item sets that keep the follower's best profit at or below a bound, with smallest counterexample packings (8 items, 2 solutions).",
     "shape": "custom",
     "tags": [

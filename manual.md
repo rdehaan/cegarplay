@@ -1176,9 +1176,13 @@ Library shows them as tags, and the filter matches them (type `view` or `suite`)
 | `language` | `lang-basics`, `lang-several-cex`, `lang-optimal`, `lang-two-stage`, `lang-clauses`, `lang-core`, `lang-second-solver`, `lang-legacy`, `lang-raw-lua` |
 | `shapes` | `gc-shape1`, `gc-shape2`, `gc-shape3`, `gc-shape4`, `gc-reference` |
 | `guide` | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
-| `problems` | `graph-coloring`, `nash`, `voting-justification` |
-| `exists-forall` | `qbf`, `qbf-optimal`, `qbf-expansion`, `smallest-mus`, `min-dnf`, `integer-expressions`, `strategic-companies`, `diagnosis`, `stable-models`, `abduction`, `default-extensions`, `belief-update`, `af-preferred`, `af-semi-stable`, `conformant-planning`, `sufficient-reason`, `actual-cause`, `clique-interdiction`, `clique-colouring`, `arrowing`, `choosability`, `subset-sum-game`, `knapsack-interdiction`, `fewest-clues`, `sudoku-unique`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `sudoku-graded`, `binairo`, `futoshiki`, `akari`, `slitherlink`, `fair-division`, `hedonic-core`, `boolean-game`, `strong-nash`, `kemeny-control`, `agenda-safety` |
-| `several-solvers` | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking`, `knapsack-fortification`, `qbf-three-blocks`, `conformant-growing`, `qbf-deep` |
+| `logic` | `integer-expressions`, `min-dnf`, `qbf-expansion`, `qbf-optimal`, `qbf`, `smallest-mus`, `stable-models`, `strategic-companies` |
+| `reasoning` | `abduction`, `actual-cause`, `af-preferred`, `af-semi-stable`, `belief-update`, `default-extensions`, `diagnosis`, `sufficient-reason` |
+| `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction` |
+| `games` | `nash`, `voting-justification`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `kemeny-control`, `strong-nash`, `subset-sum-game` |
+| `planning` | `conformant-planning`, `knapsack-interdiction` |
+| `puzzles` | `akari`, `binairo`, `fewest-clues`, `futoshiki`, `slitherlink`, `sudoku-graded`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `sudoku-unique` |
+| `several-solvers` | `abduction-two-checks`, `conformant-growing`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-optimum`, `minimal-reasons`, `qbf-blame-solver`, `qbf-deep`, `qbf-three-blocks`, `reasons-by-shrinking`, `reasons-by-size` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.
 
@@ -1206,8 +1210,9 @@ run `node tools/make-examples.mjs`, measure its count with `node tools/run.mjs <
 count in `expected`.
 
 Without editing the tools: put a project file with a top-level `library` block
-(`{ "id", "group", "summary", "shape", "tags", "expected" }`, where `group` is `exists-forall` or
-`several-solvers` and `expected` is the solution count or `null`), with its input in instances, in
+(`{ "id", "group", "summary", "shape", "tags", "expected" }`, where `group` is a category
+(`logic`, `reasoning`, `graphs`, `games`, `planning`, `puzzles`) or `several-solvers` and
+`expected` is the solution count or `null`), with its input in instances, in
 `examples/contrib/`; `node tools/make-examples.mjs` adds it to the
 library (the block is dropped from `examples/<id>.json`). See `examples/contrib/README.md`.
 `node tools/make-chat-package.mjs` writes `dist/chat-package/`, a flat folder (this manual, the

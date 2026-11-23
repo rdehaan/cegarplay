@@ -43,7 +43,7 @@
   },
   "library": {
     "id": "choosability",
-    "group": "exists-forall",
+    "group": "graphs",
     "summary": "List assignments from which a graph cannot be properly coloured, refuting choosability (K(3,3), lists of 2 out of 3 colours, 36 solutions).",
     "shape": "shape1",
     "tags": [

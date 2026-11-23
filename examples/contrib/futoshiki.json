@@ -151,7 +151,7 @@
   ],
   "library": {
     "id": "futoshiki",
-    "group": "exists-forall",
+    "group": "puzzles",
     "summary": "A Futoshiki puzzle (Latin square with inequality signs) with a unique solution; clues are values and signs (5 x 5 with 7 signs and no values; the run stops at the first puzzle).",
     "shape": "shape1",
     "tags": [],

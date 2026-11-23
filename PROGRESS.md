@@ -1132,3 +1132,15 @@ the trace limit of 200). Facts: `cand/1` never held fact interface atoms (T cand
 both list non-fact atoms only), so no runtime change: views draw instance facts in the scene
 (akari's fixed layout). `sudoku-unavoidable`'s view also reads `given/3` (a solution step has the
 shown atoms only).
+
+## Library categories (2026-11-23)
+
+On request: the groups `problems` ("Larger problems from declarative-cegar") and `exists-forall`
+("Contributed: ...") are replaced by six categories by problem type: `logic` (Logic and QBF, 8),
+`reasoning` (Knowledge representation and explanation, 8), `graphs` (5), `games` (Games and social
+choice, 9), `planning` (Planning and optimisation, 2), `puzzles` (10). `several-solvers` stays (a
+technique group) without "Contributed:". The three older problems carry their category in
+`PROBLEMS` (tools/library.mjs); the contrib files in `library.group`. `loadContrib` still accepts
+`exists-forall` and `problems` (-> `other`, a fallback group "Other problems", or
+`several-solvers` for raw Lua / more than two solvers); the chat-package template uses `other`
+and START-HERE lists the categories. Example files are unchanged; only `examples/library.json`.

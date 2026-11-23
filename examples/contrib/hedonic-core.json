@@ -39,7 +39,7 @@
   },
   "library": {
     "id": "hedonic-core",
-    "group": "exists-forall",
+    "group": "games",
     "summary": "Core-stable partitions of an additively separable hedonic game; relevant/1 uses monotonicity to mark few atoms (6 agents, 2 solutions).",
     "shape": "shape1",
     "tags": [
