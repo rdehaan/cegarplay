@@ -57,6 +57,7 @@ export const CHAPTERS = [
 // the guide's skeleton but without a recap, exercises or a place in the pager.
 export const EXTRAS = [
   { file: 'reading-order.html', group: 'more', title: 'Reading the guide and the tutorial together', summary: 'One order for both, so that each tool appears when a design question calls for it.' },
+  { file: 'instructors.html', group: 'more', title: 'Notes for instructors', summary: 'A twelve-week course plan, replays for the key moments, graded exercises and project kits by size.' },
   { file: 'glossary.html', group: 'more', title: 'Glossary', summary: 'The terms of the guide, each with the chapter that introduces it.' },
   { file: 'bibliography.html', group: 'more', title: 'Bibliography', summary: 'The papers behind the loops of Part II and the manual\'s table "Loops from the literature".' },
   { file: 'howto-campaign.html', group: 'howto', title: 'How to compare refinement strategies with a campaign', summary: 'Variants, a suite, the instance × variant matrix and the plots.' },

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Notes for instructors · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <h1>Notes for instructors</h1>
+        <p class="lead">A suggested course built from the guide, the tutorial, the how-tos and the
+          library: a week-by-week plan, replays for the key moments of a lecture, self-checking
+          exercises, and project kits by size.</p>
+
+        <h2 id="plan">A course plan (twelve weeks)</h2>
+        <table class="results">
+          <thead><tr><th>Week</th><th>Read</th><th>Do</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Chapters <a href="01-why-a-loop.html">1</a>–<a href="02-first-loop.html">2</a>; tutorial lessons 1–4</td><td>Run the blocking loop; exercise <code>exercise-triangles</code></td></tr>
+            <tr><td>2</td><td>Chapters <a href="03-learning.html">3</a>–<a href="04-soundness.html">4</a>; how-to <a href="howto-unsound.html">unsound refinements</a></td><td><code>exercise-sum-free</code>; audit a too-strong refinement</td></tr>
+            <tr><td>3</td><td>Chapters <a href="05-reading-a-run.html">5</a>–<a href="06-more-per-check.html">6</a>; how-to <a href="howto-time.html">time</a></td><td>The fresh-problem exercises of chapters 5 and 6</td></tr>
+            <tr><td>4</td><td>Chapters <a href="07-abstraction.html">7</a>–<a href="08-loop-shapes.html">8</a>; how-to <a href="howto-campaign.html">campaigns</a></td><td>A campaign comparing two shapes</td></tr>
+            <tr><td>5</td><td>Chapters <a href="09-rule-refinements.html">9</a>–<a href="10-witness-and-cores.html">10</a></td><td>Rule refinements; a witness check with cores</td></tr>
+            <tr><td>6</td><td>Chapters <a href="11-optimisation.html">11</a>–<a href="12-your-own-loop.html">12</a>; how-to <a href="howto-instances.html">instance sets</a></td><td>Choose a project kit</td></tr>
+            <tr><td>7</td><td>Chapter <a href="13-qbf.html">13</a>; how-to <a href="howto-paper.html">from a paper</a></td><td>Project: baseline and instances</td></tr>
+            <tr><td>8</td><td>Chapters <a href="14-hitting-sets.html">14</a>–<a href="15-marco.html">15</a></td><td>Project: first refinement, audited</td></tr>
+            <tr><td>9</td><td>Chapters <a href="16-cegis.html">16</a>–<a href="18-benders.html">18</a></td><td>Project: variants and a campaign</td></tr>
+            <tr><td>10</td><td>Chapters <a href="19-more-levels.html">19</a>–<a href="20-lazy-and-omission.html">20</a>; how-to <a href="howto-headless.html">headless</a></td><td>Project: headless experiments, report</td></tr>
+            <tr><td>11</td><td>Chapter <a href="21-voting-case-study.html">21</a>; how-to <a href="howto-check.html">independent checks</a></td><td>Project: ground truth, independent check</td></tr>
+            <tr><td>12</td><td>Chapter <a href="22-from-a-paper.html">22</a>; how-to <a href="howto-present.html">presenting</a></td><td>Project presentations with recorded replays</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="replays">Replays for the key moments</h2>
+        <p>Every fast library example ships a recording. A link of the form
+          <code>?replay=examples/replays/ID.cprec</code> with <code>&amp;step=N</code>,
+          <code>&amp;view=view</code> and <code>&amp;lecture=1</code> opens it on a step, with the domain view
+          alone and its notes as captions, for a projector.</p>
+        <ul>
+          <li id="replay-first">The first refinement: <code>guide-03-hit-clique</code>, step 1: a surviving
+            triangle becomes a clause that rules out every candidate keeping it.
+            <a class="play" href="../?replay=examples/replays/guide-03-hit-clique.cprec&amp;step=1&amp;view=view&amp;lecture=1&amp;from=guide/instructors.html%23replay-first" target="cegarplay">Open the replay</a></li>
+          <li id="replay-unsound">A refinement that says too much: <code>guide-04-one-node</code>, whose
+            audit names the lost solution; show the step, then press Audit.
+            <a class="play" href="../?replay=examples/replays/guide-04-one-node.cprec&amp;step=1&amp;view=view&amp;lecture=1&amp;from=guide/instructors.html%23replay-unsound" target="cegarplay">Open the replay</a></li>
+          <li id="replay-core">A core shrinking: <code>maxsat-ihs</code>, whose cores are made minimal; the
+            Statistics tab's Cores block and the tracked bounds on the timeline tell the story.
+            <a class="play" href="../?replay=examples/replays/maxsat-ihs.cprec&amp;from=guide/instructors.html%23replay-core" target="cegarplay">Open the replay</a></li>
+        </ul>
+
+        <h2 id="exercises">Exercises that check themselves</h2>
+        <p>A project with an <code>exercise</code> block (a task, instances with expected counts, audits and
+          budgets) gets a <b>Check exercise</b> button; <code>node tools/grade.mjs submissions/ --exercise
+          reference.json</code> grades a folder of submissions against the reference's instances, so a
+          submission cannot weaken what it is graded against. The library group <b>Exercises</b> has two
+          starters; the fresh-problem exercises of chapters 5–12 come with blocking starters that make good
+          graded exercises once you add an <code>exercise</code> block.</p>
+
+        <h2 id="projects">Project kits by size</h2>
+        <table class="results">
+          <thead><tr><th>Size</th><th>Examples (tag <code>project</code>, with a readme)</th></tr></thead>
+          <tbody>
+            <tr><td>Small (two weeks)</td><td><code>af-semi-stable</code>, <code>strategic-companies</code>, <code>fewest-clues</code></td></tr>
+            <tr><td>Medium (four weeks)</td><td><code>af-preferred</code>, <code>conformant-planning</code>, <code>conformant-growing</code>, <code>nash</code>, <code>strong-nash</code></td></tr>
+            <tr><td>Large (a term)</td><td><code>voting-justification</code> (the full kit, chapter 21), <code>sudoku-unavoidable</code>, <code>benders-tardiness</code></td></tr>
+          </tbody>
+        </table>
+        <p id="playground-link">The library's <b>Projects</b> group lists them; each readme has a research
+          question, a measured baseline and things to try.
+          <a class="play" href="../?example=voting-justification&amp;fragment=loop&amp;from=guide/instructors.html%23playground-link" target="cegarplay">Open voting-justification</a></p>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>
