@@ -1,0 +1,103 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Abduction by implicit hitting sets (AbHS)",
+  "description": "Cost-optimal abduction with an implicit hitting set loop in the style of AbHS (Saikko, Wallner and Järvisalo): the abstraction proposes a cheapest set of hypotheses (A.solve(optimal)); one check looks for a witness that the set is consistent with the theory (no witness: its minimal unsat core must be hit), a second one for a counterexample to the entailment of the manifestations (a model refutes every set it makes true: one of the hypotheses false in it must be added). The first set that passes both checks is a cheapest explanation; track draws the lower bound.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The theory, the hypotheses and the manifestations. Added to every solver.",
+      "text": "% The instance (its facts) is in the Instances tab.\nclause(C) :- pos(C,_).\nclause(C) :- neg(C,_).\natom(A) :- pos(_,A).\natom(A) :- neg(_,A).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): any set of at most k hypotheses.",
+      "text": "% A candidate: any set of hypotheses, cheapest first (each hypothesis costs 1, or cost(H,C)).\n{ assume(H) : hypothesis(H) }.\nprice(H,C) :- hypothesis(H), cost(H,C).\nprice(H,1) :- hypothesis(H), not cost(H,_).\n#minimize { C,H : assume(H), price(H,C) }.\n#show assume/1.\n% 'always' is true in every candidate. The check blames it when a counterexample does\n% not depend on the candidate: then no candidate is a solution.\n{ always }.\n:- not always.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the assumed hypotheses.",
+      "text": "glue(assume(H)) :- hypothesis(H).\nglue(always).\n"
+    },
+    {
+      "name": "consistent",
+      "description": "The first check (solver C1): a witness that theory and hypotheses are consistent.",
+      "text": "% A witness, not a counterexample: a model of the theory in which the assumed\n% hypotheses hold. If there is none, the hypotheses contradict the theory, and the\n% unsat core names the hypotheses that are to blame.\n{ w(A) } :- atom(A).\n:- clause(C), not w(A) : pos(C,A); w(A) : neg(C,A).\n:- assume(H), not w(H).\n#show w/1.\n"
+    },
+    {
+      "name": "entails",
+      "description": "The second check (solver C2): a model in which a manifestation is false.",
+      "text": "% A counterexample: a model of the theory and the assumed hypotheses in which some\n% manifestation is false. Then the hypotheses do not entail the manifestations.\n{ m(A) } :- atom(A).\n:- clause(C), not m(A) : pos(C,A); m(A) : neg(C,A).\n:- assume(H), not m(H).\n:- m(A) : manifestation(A).\n#show m/1.\n\n% The model refutes every set of hypotheses that are all true in it. So a hypothesis\n% that is false in the model has to be assumed.\nrelevant(assume(H)) :- hypothesis(H), not m(H).\n% If all hypotheses are true in the model, nothing explains the manifestations: blame\n% the atom that is always true.\nmissing :- hypothesis(H), not m(H).\nrelevant(always) :- not missing.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A  = shared + abstraction\nsolver C1 = shared + consistent\nsolver C2 = shared + entails       options \"--heuristic=Domain\"\nlink   G1 = A -> C1 via shared + glue\nlink   G2 = A -> C2 via shared + glue\n\n# Implicit hitting sets for abduction (AbHS): the cheapest hypothesis set that hits every\n# lesson so far. Inconsistent: its minimal core must be hit (drop one of these). Not\n# entailing: a model in which a manifestation is false refutes every set that is true in\n# it (add one of the hypotheses false there). The first set that passes both is optimal.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no explanation\"\n    track lower = M.cost\n    if not C1.solve(assume G1(M)):\n        A.add(C1.core.minimal.on(G1))\n    else:\n        X = C2.solve(assume G2(M))\n        if X:\n            A.add(G2.clause(M, X))\n        else:\n            log \"a cheapest explanation, cost\", M.cost\n            accept M\n            stop\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "abduction-ihs",
+    "group": "reasoning",
+    "summary": "Cost-optimal abduction by implicit hitting sets (AbHS): a cheapest hypothesis set, refined by minimal cores of a consistency witness and by counterexamples to the entailment.",
+    "shape": "custom",
+    "tags": [
+      "fast",
+      "ihs",
+      "cores",
+      "bounds",
+      "stops-at-optimum",
+      "several-solvers"
+    ],
+    "expected": null,
+    "optimum": 1,
+    "level": 4,
+    "after": 14
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Why does the car not start? A theory in clause form:\n% pos(C,A): atom A occurs in clause C, neg(C,A): its negation does.\nneg(1,flat).    pos(1,nostart).                   % a flat battery: no start\nneg(2,flat).    pos(2,dim).                       % a flat battery: dim lights\nneg(3,empty).   pos(3,nostart).                   % an empty tank: no start\nneg(4,starter). pos(4,nostart).                   % a broken starter: no start\nneg(5,plugs).   neg(5,damp). pos(5,nostart).      % fouled plugs in a damp engine: no start\nneg(6,cold).    pos(6,flat). pos(6,damp).         % a cold night: flat battery or damp engine\nneg(7,lights).  pos(7,flat).                      % lights left on: flat battery\nneg(8,rain).    pos(8,damp).                      % rain: damp engine\npos(9,gauge).                                     % the fuel gauge shows fuel\nneg(10,gauge).  neg(10,empty).                    % ... so the tank is not empty\n% What may be assumed, and what has to be explained.\nhypothesis(flat; empty; starter; plugs; cold; lights; rain).\nmanifestation(nostart).\n",
+      "constants": {},
+      "tags": [
+        "library"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 1
+      }
+    },
+    {
+      "id": "repair-costs",
+      "facts": "% Why does the car not start? A theory in clause form:\n% pos(C,A): atom A occurs in clause C, neg(C,A): its negation does.\nneg(1,flat).    pos(1,nostart).                   % a flat battery: no start\nneg(2,flat).    pos(2,dim).                       % a flat battery: dim lights\nneg(3,empty).   pos(3,nostart).                   % an empty tank: no start\nneg(4,starter). pos(4,nostart).                   % a broken starter: no start\nneg(5,plugs).   neg(5,damp). pos(5,nostart).      % fouled plugs in a damp engine: no start\nneg(6,cold).    pos(6,flat). pos(6,damp).         % a cold night: flat battery or damp engine\nneg(7,lights).  pos(7,flat).                      % lights left on: flat battery\nneg(8,rain).    pos(8,damp).                      % rain: damp engine\npos(9,gauge).                                     % the fuel gauge shows fuel\nneg(10,gauge).  neg(10,empty).                    % ... so the tank is not empty\n% The cost of checking each hypothesis in the garage (a replaced starter is dear).\ncost(flat,3). cost(empty,1). cost(starter,9). cost(plugs,2). cost(cold,1). cost(lights,2). cost(rain,1).\nmanifestation(dim).\n% What may be assumed, and what has to be explained.\nhypothesis(flat; empty; starter; plugs; cold; lights; rain).\nmanifestation(nostart).\n",
+      "constants": {},
+      "tags": [
+        "costs"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 2
+      }
+    },
+    {
+      "id": "two-symptoms",
+      "facts": "% A patient with fever and a cough; which diseases explain both?\nneg(1,flu).       pos(1,fever).                   % flu: fever\nneg(2,flu).       pos(2,cough).                   % flu: cough\nneg(3,cold).      pos(3,cough).                   % a cold: cough\nneg(4,infection). pos(4,fever).                   % an infection: fever\nneg(5,allergy).   pos(5,cough).                   % an allergy: cough\nneg(6,allergy).   neg(6,infection).               % (the allergy test rules out an infection)\nneg(7,covid).     pos(7,fever). pos(7,cough).     % covid: fever and cough\npos(8,vaccinated).                                % the patient is vaccinated ...\nneg(9,vaccinated). neg(9,covid).                  % ... so it is not covid\nhypothesis(flu; cold; infection; allergy; covid).\nmanifestation(fever; cough).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 1
+      }
+    },
+    {
+      "id": "no-explanation",
+      "facts": "% The only hypothesis that would explain the symptom contradicts the theory.\nneg(1,leak).  pos(1,wet).                         % a leak: a wet floor\npos(2,dry).                                       % the pipes are dry ...\nneg(3,dry).   neg(3,leak).                        % ... so there is no leak\nneg(4,spill). pos(4,sticky).                      % a spill: a sticky floor\nhypothesis(leak; spill).\nmanifestation(wet).\n",
+      "constants": {}
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Robust facility location (2-ASP(Q) with weak constraints)",
+  "description": "Open facilities at the least total cost so that every customer is still served by a nearby open facility when any one open facility fails: an exists-forall problem with an objective on the outer level, as in 2-ASP(Q) programs with weak constraints. The abstraction opens facilities cheapest first (a #minimize, A.solve(optimal)); the check picks a failure and a customer left without service. The refinement says: open another facility near that customer. The first opening that no failure refutes is optimal.",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The instance (Instances tab): site(S,C) is a possible facility with opening cost C;\n% near(U,S): customer U can be served from site S.\ncustomer(U) :- near(U,_).\n",
+      "description": "Sites and customers."
+    },
+    {
+      "name": "abstraction",
+      "text": "% The outer level: which sites to open, at the least total cost (a weak constraint).\n{ open(S) : site(S,_) }.\n:~ open(S), site(S,C). [C,S]\n#show open/1.\n",
+      "description": "Proposes candidates (solver A): open sites, cheapest first."
+    },
+    {
+      "name": "glue",
+      "text": "glue(open(S)) :- site(S,_).\n",
+      "description": "The interface atoms: the open sites."
+    },
+    {
+      "name": "check",
+      "text": "% The inner level: at most one open facility fails, and some customer has no other open\n% site near (with no failure: a customer without any open site near).\n{ fail(S) : open(S) } 1.\n1 { lost(U) : customer(U) } 1.\n:- lost(U), near(U,S), open(S), not fail(S).\n#show fail/1.\n#show lost/1.\n\n% The customer stays lost while every site near it other than the failed one stays closed:\n% one of them must open.\nrelevant(open(S)) :- lost(U), near(U,S), not fail(S).\n",
+      "description": "Looks for a failure that leaves a customer without service (solver C)."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# 2-ASP(Q) with a weak constraint on the outer level: the cheapest opening first; the first\n# one that no failure refutes is optimal (chapter 11). The refinement is a clause, so every\n# opening it removes leaves the same customer stranded by the same failure.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no robust opening\"\n    track lower = M.cost\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        stop\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0,
+    "instance": "example"
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Seven sites with opening costs, nine customers with three nearby sites each.\nsite(1,7). site(2,4). site(3,8). site(4,2). site(5,3). site(6,3). site(7,7).\nnear(1,1). near(1,5). near(1,7).\nnear(2,1). near(2,2). near(2,6).\nnear(3,1). near(3,4). near(3,7).\nnear(4,1). near(4,2). near(4,5).\nnear(5,1). near(5,4). near(5,5).\nnear(6,1). near(6,2). near(6,5).\nnear(7,1). near(7,5). near(7,6).\nnear(8,1). near(8,2). near(8,4).\nnear(9,1). near(9,2). near(9,5).",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 15
+      },
+      "tags": []
+    }
+  ],
+  "library": {
+    "id": "robust-facilities",
+    "group": "planning",
+    "summary": "Robust facility location as 2-ASP(Q) with a weak constraint: the cheapest opening that survives any single failure (optimum 15).",
+    "shape": "custom",
+    "tags": [
+      "fast",
+      "aspq",
+      "bounds",
+      "stops-at-optimum"
+    ],
+    "expected": null,
+    "optimum": 15,
+    "level": 3,
+    "after": 11
+  }
+}

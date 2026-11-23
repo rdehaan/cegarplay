@@ -1574,6 +1574,30 @@
       "after": 14
     },
     {
+      "id": "maxsat-oll-weighted",
+      "title": "Weighted MaxSAT by unsat cores (OLL, split weights)",
+      "group": "logic",
+      "summary": "Weighted MaxSAT by OLL with weights split into unit copies: one core per unit of the optimum (the weighted instances of maxsat-ihs, optimum 8).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "oll",
+        "core-guided",
+        "cores",
+        "bounds",
+        "stops-at-optimum"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 8
+      },
+      "has": {
+        "instances": 4
+      },
+      "level": 4,
+      "after": 17
+    },
+    {
       "id": "maxsat-oll",
       "title": "MaxSAT by unsat cores (OLL)",
       "group": "logic",
@@ -1634,6 +1658,23 @@
       },
       "level": 3,
       "after": 6
+    },
+    {
+      "id": "qbf-caqe",
+      "title": "3QBF by clausal abstraction (CAQE-style)",
+      "group": "logic",
+      "summary": "3QBF by clausal abstraction (CAQE-style): the levels exchange the clauses they satisfy; witnesses refine the middle level, cores the outer one (4 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers",
+        "caqe"
+      ],
+      "expected": {
+        "solutions": 4
+      },
+      "level": 4,
+      "after": 19
     },
     {
       "id": "qbf-deep",
@@ -1783,6 +1824,30 @@
       },
       "level": 2,
       "after": 3
+    },
+    {
+      "id": "abduction-ihs",
+      "title": "Abduction by implicit hitting sets (AbHS)",
+      "group": "reasoning",
+      "summary": "Cost-optimal abduction by implicit hitting sets (AbHS): a cheapest hypothesis set, refined by minimal cores of a consistency witness and by counterexamples to the entailment.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "ihs",
+        "cores",
+        "bounds",
+        "stops-at-optimum",
+        "several-solvers"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 1
+      },
+      "has": {
+        "instances": 4
+      },
+      "level": 4,
+      "after": 14
     },
     {
       "id": "abduction-two-checks",
@@ -2453,6 +2518,28 @@
       },
       "has": {
         "instances": 4
+      },
+      "level": 3,
+      "after": 11
+    },
+    {
+      "id": "robust-facilities",
+      "title": "Robust facility location (2-ASP(Q) with weak constraints)",
+      "group": "planning",
+      "summary": "Robust facility location as 2-ASP(Q) with a weak constraint: the cheapest opening that survives any single failure (optimum 15).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "aspq",
+        "bounds",
+        "stops-at-optimum"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 15
+      },
+      "has": {
+        "instances": 1
       },
       "level": 3,
       "after": 11

@@ -1347,3 +1347,6 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   `guide-NN-ex2-*`, solutions are library examples); predict boxes in chapters 5-7, 9, 10, 12;
   "Tool moment" asides in chapters 4, 5, 8 and 12.
 - F4 (done): `guide/instructors.html` (course plan, lecture replays, graded exercises, project kits).
+- Library families (done): `maxsat-oll-weighted` (weights split into unit copies; optima 8/3/6),
+  `abduction-ihs` (AbHS-style; optima 1/2/1), `robust-facilities` (2-ASP(Q) with a weak
+  constraint; optimum 15, checked by brute force), `qbf-caqe` (clausal abstraction; 4 solutions).
