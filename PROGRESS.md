@@ -1216,3 +1216,19 @@ non-list (today it silently runs zero times: an endless MaxHS loop); B2 cores as
   candidates). Docs: manual section "Checks on partial candidates", literature row, tutorial
   lesson 10 "Checks at partial assignments", guide chapter 10, spec-loop-language, breadth.md,
   generality.md G5 marked built. Tests: `test/partial.test.mjs`.
+
+## Core minimisation (2026-11-23, on request)
+
+- `C.core.minimal` (value member `minimal` -> `rt.minimal`, `Core:minimal` in `lua/runtime.lua`):
+  deletion with clause-set refinement through a lean `core_of` solve (counts as a call of C, not
+  as a counterexample; leaves `last_core` alone). `minimised` in S (only when used), Statistics
+  counter "minimised cores", `Minimised cores:` in `tools/run.mjs`.
+- Two fixes found on the way: `core.on(G)` for a link that ends at the core's solver used the
+  solver's last core instead of the core value (silently dropped a minimisation); `G:core(S, lits)`
+  no longer needs the last solve to be unsatisfiable when given a core value. A core value works
+  as assumptions (`C.solve(assume K)`; `convert_assumptions`).
+- Examples: `maxsat-ihs` uses minimal cores (5 rounds instead of 57; variant `plain-cores`);
+  `colourable-partial` too (537 total candidates instead of 1,372 at n = 7; variants `total-only`,
+  `plain-cores`). Same optima and counts. Docs: manual (Values, Checks on partial candidates,
+  literature table, S event), tutorial lesson 10 snippet, breadth.md. Tests in `breadth.test.mjs`
+  (minimality checked by re-solving: the core is unsatisfiable, each proper subset satisfiable).

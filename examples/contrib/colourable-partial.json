@@ -2,7 +2,7 @@
   "format": "cegarplay",
   "version": 2,
   "title": "Dense 3-colourable graphs: cores at partial assignments",
-  "description": "Graphs on n nodes with at least m edges that can be 3-coloured. A witness check colours the candidate; when it cannot, its unsat core (G.core) refutes the candidate. With on partial (G5) the check also runs at partial assignments of the search, every 4th propagation fixpoint, with the undecided edges left to the check: as soon as the edges chosen so far cannot be coloured, the core cuts the whole subtree, and an early core is short. The variant total-only checks total candidates only; compare the candidates and the clause lengths in the Statistics tab. Counts checked against one clingo program that guesses graph and colouring together (projected on the edges).",
+  "description": "Graphs on n nodes with at least m edges that can be 3-coloured. A witness check colours the candidate; when it cannot, its unsat core, made subset-minimal (C.core.minimal), refutes the candidate. With on partial (G5) the check also runs at partial assignments of the search, every 4th propagation fixpoint, with the undecided edges left to the check: as soon as the edges chosen so far cannot be coloured, the core cuts the whole subtree. Variants: total-only (no on partial) and plain-cores (on partial, cores as clasp returns them); compare candidates, clause lengths and time in the Statistics tab. Counts checked against one clingo program that guesses graph and colouring together (projected on the edges).",
   "fragments": [
     {
       "name": "shared",
@@ -23,7 +23,7 @@
   ],
   "loop": {
     "language": "loop",
-    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# A witness check inside the search: a graph without a 3-colouring is refined with the unsat\n# core of the check, the edges that together make a colouring impossible.\nsearch A:\n    # G5: also at partial assignments. G(P) lists the decided edges only; as soon as the\n    # edges chosen so far admit no colouring, the core cuts every completion. A core found\n    # early names few edges, so the clause is short.\n    on partial P every 4:\n        if not C.solve(assume G(P)):\n            reject P with G.core(C)\n    on candidate M:\n        if not C.solve(assume G(M)):\n            reject M with G.core(C)\n"
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# A witness check inside the search: a graph without a 3-colouring is refined with the unsat\n# core of the check, the edges that together make a colouring impossible, made\n# subset-minimal (C.core.minimal) so that the clause is short.\nsearch A:\n    # G5: also at partial assignments. G(P) lists the decided edges only; as soon as the\n    # edges chosen so far admit no colouring, the core cuts every completion. A core found\n    # early names few edges, so the clause is short.\n    on partial P every 4:\n        if not C.solve(assume G(P)):\n            reject P with C.core.minimal.on(G)\n    on candidate M:\n        if not C.solve(assume G(M)):\n            reject M with C.core.minimal.on(G)\n"
   },
   "settings": {
     "constants": {
@@ -40,13 +40,14 @@
   "library": {
     "id": "colourable-partial",
     "group": "graphs",
-    "summary": "Branch-and-check with unsat cores: graphs with at least m edges that can be 3-coloured; the colouring check also runs at partial assignments (on partial) and its short cores cut whole subtrees (n = 7, m = 16, 105 solutions).",
+    "summary": "Branch-and-check with minimised unsat cores: graphs with at least m edges that can be 3-coloured; the colouring check also runs at partial assignments (on partial) and C.core.minimal keeps the clauses short (n = 7, m = 16, 105 solutions).",
     "shape": "custom",
     "tags": [
       "fast",
       "branch-and-check",
       "partial",
-      "cores"
+      "cores",
+      "core-minimisation"
     ],
     "expected": 105
   },
@@ -121,7 +122,11 @@
   "variants": [
     {
       "name": "total-only",
-      "loop": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# A witness check inside the search: a graph without a 3-colouring is refined with the unsat\n# core of the check, the edges that together make a colouring impossible.\nsearch A:\n    on candidate M:\n        if not C.solve(assume G(M)):\n            reject M with G.core(C)\n"
+      "loop": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# A witness check inside the search: a graph without a 3-colouring is refined with the unsat\n# core of the check, the edges that together make a colouring impossible, made\n# subset-minimal (C.core.minimal) so that the clause is short.\nsearch A:\n    on candidate M:\n        if not C.solve(assume G(M)):\n            reject M with C.core.minimal.on(G)\n"
+    },
+    {
+      "name": "plain-cores",
+      "loop": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# A witness check inside the search: a graph without a 3-colouring is refined with the unsat\n# core of the check, the edges that together make a colouring impossible.\nsearch A:\n    # G5: also at partial assignments. G(P) lists the decided edges only; as soon as the\n    # edges chosen so far admit no colouring, the core cuts every completion. A core found\n    # early names few edges, so the clause is short.\n    on partial P every 4:\n        if not C.solve(assume G(P)):\n            reject P with G.core(C)\n    on candidate M:\n        if not C.solve(assume G(M)):\n            reject M with G.core(C)\n"
     }
   ]
 }

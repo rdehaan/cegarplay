@@ -1021,7 +1021,7 @@
       "id": "maxsat-ihs",
       "title": "Weighted MaxSAT by implicit hitting sets (MaxHS)",
       "group": "logic",
-      "summary": "Weighted MaxSAT by implicit hitting sets (MaxHS): optimal hitting sets of unsat cores, disjoint cores per round, lower and upper bounds tracked (8 variables, 16 soft clauses, optimum 8; 1 solution).",
+      "summary": "Weighted MaxSAT by implicit hitting sets (MaxHS): optimal hitting sets of minimised unsat cores (C.core.minimal), disjoint cores per round, lower and upper bounds tracked (8 variables, 16 soft clauses, optimum 8; 1 solution).",
       "shape": "custom",
       "tags": [
         "fast",
@@ -1029,7 +1029,8 @@
         "maxhs",
         "cores",
         "bounds",
-        "stops-at-optimum"
+        "stops-at-optimum",
+        "core-minimisation"
       ],
       "expected": null,
       "has": {
@@ -1505,13 +1506,14 @@
       "id": "colourable-partial",
       "title": "Dense 3-colourable graphs: cores at partial assignments",
       "group": "graphs",
-      "summary": "Branch-and-check with unsat cores: graphs with at least m edges that can be 3-coloured; the colouring check also runs at partial assignments (on partial) and its short cores cut whole subtrees (n = 7, m = 16, 105 solutions).",
+      "summary": "Branch-and-check with minimised unsat cores: graphs with at least m edges that can be 3-coloured; the colouring check also runs at partial assignments (on partial) and C.core.minimal keeps the clauses short (n = 7, m = 16, 105 solutions).",
       "shape": "custom",
       "tags": [
         "fast",
         "branch-and-check",
         "partial",
-        "cores"
+        "cores",
+        "core-minimisation"
       ],
       "expected": {
         "solutions": 105

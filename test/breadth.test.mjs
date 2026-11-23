@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as H from './helpers.mjs';
-import { load } from '../js/project.js';
+import { load, applyVariant } from '../js/project.js';
 import { compile } from '../js/compiler.js';
 
 const ex = (id) => load(H.read(`examples/${id}.json`));
@@ -100,4 +100,53 @@ test('the loops from the literature: each example agrees with brute force or dir
     assert.equal(H.finalStats(r).counters.mss, mss, inst);
     assert.equal(H.done(r).exhausted, true, inst);
   }
+});
+
+test('C.core.minimal: unsatisfiable, every proper subset satisfiable, and .on(G) uses its own literals', async () => {
+  const p = all(ex('lang-core'));
+  const loop = p.loop.text.split('\nsearch A:')[0] + `
+search A:
+    on candidate M:
+        if not C.solve(assume G(M)):
+            full = C.core.size
+            linked = C.core.on(G).size
+            K = C.core.minimal
+            bad = 0
+            if C.solve(assume K): bad = bad + 1
+            for a in K:
+                if not C.solve(assume K.without(a)): bad = bad + 1
+            log full, K.size, linked, K.on(G).size, bad
+            reject M with K.on(G)
+`;
+  const r = await H.runProject({ ...p, loop: { language: 'loop', text: loop } });
+  assert.equal(H.done(r).outcome, 'finished', errs(r));
+  assert.equal(H.finalStats(r).solutions, 958);
+  const rows = logs(r).map((l) => l.split(' ').map(Number));
+  assert.ok(rows.length > 0);
+  for (const [full, min, linked, minLinked, bad] of rows) {
+    assert.equal(bad, 0, 'not minimal');
+    assert.ok(min <= full && minLinked <= linked && minLinked === min, JSON.stringify([full, min, linked, minLinked]));
+  }
+  assert.ok(rows.some(([full, min]) => min < full), 'some core shrinks');
+  assert.equal(H.finalStats(r).minimised, rows.length);
+  // only a core can be minimised; it is a value, not a method
+  const e = await H.runProject({ ...p, loop: { language: 'loop', text: p.loop.text.split('\nsearch A:')[0] + '\nM = A.solve()\nlog M.minimal\n' } });
+  assert.equal(H.ofKind(e, 'E')[0].message, 'minimal: expected a core, as in C.core.minimal');
+  assert.deepEqual(compile('solver C = shared\nx = C.core.minimal()\n', { fragments: ['shared'] }).errors.map((x) => x.message),
+    ["'minimal' is not a method: write C.core.minimal"]);
+});
+
+test('minimal cores: maxsat-ihs needs 5 rounds instead of 57, colourable-partial a third of the candidates', async () => {
+  const ihs = all(ex('maxsat-ihs'));
+  const a = await H.runProject(ihs);
+  const b = await H.runProject(applyVariant(ihs, 'plain-cores'));
+  assert.ok(logs(a).includes('optimum: 8') && logs(b).includes('optimum: 8'));
+  assert.equal(H.finalStats(a).candidates, 5);
+  assert.equal(H.finalStats(b).candidates, 57);
+  const col = all(ex('colourable-partial'));
+  const c = await H.runProject(col);
+  const d = await H.runProject(applyVariant(col, 'plain-cores'));
+  assert.equal(H.finalStats(c).solutions, 105);
+  assert.equal(H.finalStats(d).solutions, 105);
+  assert.ok(H.finalStats(c).candidates * 2 < H.finalStats(d).candidates, `${H.finalStats(c).candidates} vs ${H.finalStats(d).candidates}`);
 });

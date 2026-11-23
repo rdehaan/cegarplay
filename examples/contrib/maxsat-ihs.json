@@ -2,7 +2,7 @@
   "format": "cegarplay",
   "version": 2,
   "title": "Weighted MaxSAT by implicit hitting sets (MaxHS)",
-  "description": "Weighted MaxSAT with the implicit hitting set loop of MaxHS (Davies and Bacchus): an optimal hitting set of the cores found so far, then a SAT oracle on the clauses it keeps. The check looks for a witness; a failed check is refined by its unsat core (G.core), and each core is relaxed (for a in C.core: E = E.without(a)) so that one round can find several disjoint cores. track draws the lower bound (the hitting set's cost) and the upper bound (the witness's cost) in the Statistics tab until they meet. One solution: an optimal set of soft clauses to give up.",
+  "description": "Weighted MaxSAT with the implicit hitting set loop of MaxHS (Davies and Bacchus): an optimal hitting set of the cores found so far, then a SAT oracle on the clauses it keeps. The check looks for a witness; a failed check is refined by its unsat core (G.core), and each core is relaxed (for a in C.core: E = E.without(a)) so that one round can find several disjoint cores. Each core is made subset-minimal first (C.core.minimal): on the example the loop needs 5 rounds instead of 57 (the variant plain-cores). track draws the lower bound (the hitting set's cost) and the upper bound (the witness's cost) in the Statistics tab until they meet. One solution: an optimal set of soft clauses to give up.",
   "fragments": [
     {
       "name": "shared",
@@ -23,7 +23,7 @@
   ],
   "loop": {
     "language": "loop",
-    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Implicit hitting sets (MaxHS): an optimal hitting set of the cores found so far, then a SAT\n# call with the clauses it keeps. Unsatisfiable: a new core, which the next hitting set must\n# hit. Satisfiable: the hitting set is optimal. Within a round, each core is relaxed\n# (E.without) and the oracle is asked again, so that one round finds several disjoint cores.\nupper = none\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"the hard clauses are unsatisfiable\"\n    track lower = M.cost\n    E = G(M)\n    cores = 0\n    loop:\n        X = C.solve(assume E)\n        if X:\n            if upper == none or X.cost < upper: upper = X.cost\n            break\n        K = C.core.on(G)               # the core's soft clauses, as a clause for A\n        if K.size == 0: stop \"the hard clauses are unsatisfiable\"\n        A.add(K)                       # hit at least one clause of the core\n        cores = cores + 1\n        count cores\n        for a in C.core:               # relax the core's clauses, look for a disjoint one\n            E = E.without(a)\n    track upper = upper\n    if cores == 0:\n        log \"optimum:\", M.cost\n        accept M\n        stop\n"
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Implicit hitting sets (MaxHS): an optimal hitting set of the cores found so far, then a SAT\n# call with the clauses it keeps. Unsatisfiable: a new core, which the next hitting set must\n# hit. Satisfiable: the hitting set is optimal. Within a round, each core is relaxed\n# (E.without) and the oracle is asked again, so that one round finds several disjoint cores.\n# Each core is made subset-minimal first (C.core.minimal): a short core is a strong clause.\n# The variant plain-cores uses the cores as clasp returns them.\nupper = none\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"the hard clauses are unsatisfiable\"\n    track lower = M.cost\n    E = G(M)\n    cores = 0\n    loop:\n        X = C.solve(assume E)\n        if X:\n            if upper == none or X.cost < upper: upper = X.cost\n            break\n        K = C.core.minimal             # no assumption of it can be left out\n        if K.on(G).size == 0: stop \"the hard clauses are unsatisfiable\"\n        A.add(K.on(G))                 # hit at least one clause of the core\n        cores = cores + 1\n        count cores\n        for a in K:                    # relax the core's clauses, look for a disjoint one\n            E = E.without(a)\n    track upper = upper\n    if cores == 0:\n        log \"optimum:\", M.cost\n        accept M\n        stop\n"
   },
   "settings": {
     "constants": {},
@@ -37,7 +37,7 @@
   "library": {
     "id": "maxsat-ihs",
     "group": "logic",
-    "summary": "Weighted MaxSAT by implicit hitting sets (MaxHS): optimal hitting sets of unsat cores, disjoint cores per round, lower and upper bounds tracked (8 variables, 16 soft clauses, optimum 8; 1 solution).",
+    "summary": "Weighted MaxSAT by implicit hitting sets (MaxHS): optimal hitting sets of minimised unsat cores (C.core.minimal), disjoint cores per round, lower and upper bounds tracked (8 variables, 16 soft clauses, optimum 8; 1 solution).",
     "shape": "custom",
     "tags": [
       "fast",
@@ -45,7 +45,8 @@
       "maxhs",
       "cores",
       "bounds",
-      "stops-at-optimum"
+      "stops-at-optimum",
+      "core-minimisation"
     ],
     "expected": null
   },
@@ -87,6 +88,12 @@
         "solutions": null
       },
       "tags": []
+    }
+  ],
+  "variants": [
+    {
+      "name": "plain-cores",
+      "loop": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Implicit hitting sets (MaxHS): an optimal hitting set of the cores found so far, then a SAT\n# call with the clauses it keeps. Unsatisfiable: a new core, which the next hitting set must\n# hit. Satisfiable: the hitting set is optimal. Within a round, each core is relaxed\n# (E.without) and the oracle is asked again, so that one round finds several disjoint cores.\nupper = none\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"the hard clauses are unsatisfiable\"\n    track lower = M.cost\n    E = G(M)\n    cores = 0\n    loop:\n        X = C.solve(assume E)\n        if X:\n            if upper == none or X.cost < upper: upper = X.cost\n            break\n        K = C.core.on(G)               # the core's soft clauses, as a clause for A\n        if K.size == 0: stop \"the hard clauses are unsatisfiable\"\n        A.add(K)                       # hit at least one clause of the core\n        cores = cores + 1\n        count cores\n        for a in C.core:               # relax the core's clauses, look for a disjoint one\n            E = E.without(a)\n    track upper = upper\n    if cores == 0:\n        log \"optimum:\", M.cost\n        accept M\n        stop\n"
     }
   ]
 }

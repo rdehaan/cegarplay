@@ -177,11 +177,38 @@ The loops are pointed to from these places:
   example showed no gain at all (its capacity relaxation already removes most bad candidates),
   so it was dropped. The manual says when partial checks pay off.
 
+### Core minimisation (built last)
+
+`C.core.minimal` returns a subset-minimal core:
+
+- **Algorithm.** Deletion with clause-set refinement: each assumption is left out in turn, and
+  the smaller core of a solve that stays unsatisfiable replaces the rest.
+- **Accounting.** Its solves count as calls of the check, not as counterexamples.
+- **Using a core value.** A core value can be given as assumptions, and `core.on(G)` now builds
+  its clause from the value's own literals.
+
+  Before, a core of the check's own link read the solver's last core. That was harmless
+  while every core was the last one, but it would have dropped the minimisation silently, and it
+  refused a stored core after a later satisfiable solve.
+
+Effect on the examples, with the same optima and counts:
+
+| Example | Plain cores | Minimal cores |
+| --- | --- | --- |
+| `maxsat-ihs` (rounds) | 57, 9, 114 | 5, 2, 3 |
+| `colourable-partial`, n = 7 (total candidates) | 1,372 | 537 |
+| `colourable-partial`, n = 8 (total candidates) | 5,073 | 738 |
+
+Mean clause length in `colourable-partial` falls from about 14 literals to about 8. Run times
+stay about the same (more check calls, far fewer candidates). OLL already needs as many rounds
+as the optimum and is left unchanged.
+
 ## What is left
 
-- **Core minimisation.** Shrinking a core before the reject would make partial checks (and
-  `maxsat-ihs`) learn shorter clauses. It can be written with `E.without` today, but a built-in
-  `C.core.minimal` would be cheaper.
+Nothing from this note. Possible next steps:
+
+- an `expected.optimum` for instances of optimisation loops;
+- a stop rule when the bounds meet.
 - **A stop rule for bounds.** IHS and Benders could stop as soon as the lower and upper bound
   meet. Both examples already reach the optimum by accepting the first candidate that passes
   the check, so this is left to the script.

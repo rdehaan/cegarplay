@@ -620,6 +620,7 @@ calls it the *blocking loop*.
 | `G.above(M)`, `G.below(M)` | A clause for the source of G that removes M and all its supersets (subsets) on G's atoms; M is a model or a list `G(M)`. |
 | `G.clause(X)` | The clause from the counterexample alone: its `relevant/1` atoms with the values X saw. It may be empty: rejecting with an empty clause ends the search, adding it leaves the solver without models. (`G.clause(M, X)` still stops with "relevant/1 derived nothing" on an empty set.) |
 | `C.core` and `core.on(G)` | The whole unsat core of C's last solve; `.on(G)` keeps the atoms of link G (`G.core(C)` is short for `C.core.on(G)`, but `core.on(G)` gives an empty clause where `G.core(C)` is an error: test `K.size == 0`). |
+| `C.core.minimal` | A subset-minimal core: no assumption of it can be left out. Computed by deletion (each assumption left out in turn, keeping the smaller core of every solve that stays unsatisfiable), so it costs up to one solve of C per assumption; the solves count as calls of C, not as counterexamples. A core value also works as assumptions (`C.solve(assume K)`) and with `.on(G)`, `for`, `.size`. Short cores make strong clauses: `maxsat-ihs` needs 5 rounds instead of 57. The Statistics counter **minimised cores** (`minimised` in the `S` event) counts the calls. |
 | `for a in C.core:`, `C.core.size` | A core is also a list: its elements are the assumptions of C that are in the core, with the values they were assumed, so `E.without(a)` and `E.flip(a)` work on a list `E` that C was given. Relaxing a core (`for a in C.core: E = E.without(a)`) and asking again finds disjoint cores (`maxsat-ihs`). The atoms of a clause belong to the solver it refines, so `for a in G.core(C)` does not give C's assumptions. |
 | `for a in E:`, `a.true`, `E.flip(a)`, `E.without(a)` | Walk and edit a list of assumptions such as `G(M)`; flip and without return new lists. |
 | `S.atom("bound", n)` | The atom `bound(n)` of S as a one-element assumption list (an error names a missing atom). |
@@ -688,9 +689,10 @@ there cuts the whole subtree before any of its candidates is complete.
   learned from a total candidate already cuts the subtree too, so measure: in the library
   examples, partial checks cut the total candidates by a third or more but cost time.
   [triangle-free-lazy](?example=triangle-free-lazy) (n = 8, m = 16) needs 136 total candidates
-  instead of 218; [colourable-partial](?example=colourable-partial) (n = 7, m = 16) needs 1,372
-  instead of 1,725. Both have a variant `total-only` to compare. Raise `every` to make the calls
-  rarer.
+  instead of 218. In [colourable-partial](?example=colourable-partial) (n = 7, m = 16) the cores
+  matter more than where they are found: with minimised cores (`C.core.minimal`) the loop needs
+  537 total candidates, 550 without `on partial` (variant `total-only`) and 1,372 with the cores
+  as clasp returns them (variant `plain-cores`). Raise `every` to make the calls rarer.
 - A `search` cannot stand inside `on partial`. `S.add` and `S.expand` of the searching solver
   are refused there, as in `on candidate`.
 
@@ -816,7 +818,7 @@ filter also finds the tag in the last column.
 | Expansion: AReQS for 2QBF (Janota and Marques-Silva) | Shape 3: each counterexample grounds a copy of the matrix | [qbf-expansion](?example=qbf-expansion) | `expansion` |
 | CEGIS, counterexample-guided inductive synthesis (Solar-Lezama et al.) | Shape 3: each counterexample input is simulated in the synthesiser; the specification stays in the check | [cegis-circuit](?example=cegis-circuit), [min-dnf](?example=min-dnf) | `cegis` |
 | Several oracles (equilibria: one deviation check per player) | One candidate, several checks or several `reject`s | [nash](?example=nash), [boolean-game](?example=boolean-game), [abduction-two-checks](?example=abduction-two-checks) | `several-solvers` |
-| Implicit hitting sets: MaxHS (Davies and Bacchus), IHS beyond NP (Saikko, Wallner and Järvisalo) | `A.solve(optimal)` for a minimum-cost hitting set; a witness check refined by `G.core(C)`; disjoint cores by `for a in C.core: E = E.without(a)`; `track` for the bounds | [maxsat-ihs](?example=maxsat-ihs); the dual form (correction sets from models): [smallest-mus](?example=smallest-mus) | `ihs` |
+| Implicit hitting sets: MaxHS (Davies and Bacchus), IHS beyond NP (Saikko, Wallner and Järvisalo) | `A.solve(optimal)` for a minimum-cost hitting set; a witness check refined by minimised cores (`C.core.minimal`); disjoint cores by `for a in K: E = E.without(a)`; `track` for the bounds | [maxsat-ihs](?example=maxsat-ihs); the dual form (correction sets from models): [smallest-mus](?example=smallest-mus) | `ihs` |
 | MARCO, MUS and MSS enumeration (Liffiton, Previti, Malik and Marques-Silva) | A map solver with maximal seeds; grow or shrink by walking `G(M)` (`a.true`, `E.flip(a)`); `G.below` and `G.above` block both ways | [marco](?example=marco), [reasons-by-shrinking](?example=reasons-by-shrinking) | `marco` |
 | Core-guided optimisation: OLL (Morgado, Dodaro and Marques-Silva), Fu-Malik | One solver under assumptions; each core is relaxed (`E.without`) and grounded as a totaliser (`C.expand(relax, core = K)`); new soft constraints from `C.atom` | [maxsat-oll](?example=maxsat-oll) | `oll` |
 | Logic-based Benders decomposition (Hooker and Ottosson) | An optimal master and an optimal subproblem; optimality cuts as rules from `refine(k)`; bounds read with `M.cost`, `X.cost`, `a.arg(i)` | [benders-tardiness](?example=benders-tardiness), [knapsack-bounds](?example=knapsack-bounds) | `benders` |
@@ -1159,7 +1161,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | Kind | When | Fields |
 | --- | --- | --- |
 | `H` | after grounding | `solvers` (`name`, `fragments`, `options`, `atoms`, `ground`), `links` (`name`, `from`, `to`, `atoms` = non-fact interface atoms), `settings` |
-| `S` | every 0.25 s and at the end | `t`, `candidates`, `counterexamples`, `solutions`, `clauses`, `literals`, `maxlen`, `hist`, `expansions`, `restarts`, `blocks`, `solvers` (per solver: `calls`, `sat`, `unsat`, `time`, `ground`, `busy`, `choices`, `conflicts`, `restarts`, `atoms`, `rules`, `vars`, `constraints`, `k`), `counters`, `tracked` (only after a `track`: the last value per name), `partials` (only after an `on partial` call: their number) |
+| `S` | every 0.25 s and at the end | `t`, `candidates`, `counterexamples`, `solutions`, `clauses`, `literals`, `maxlen`, `hist`, `expansions`, `restarts`, `blocks`, `solvers` (per solver: `calls`, `sat`, `unsat`, `time`, `ground`, `busy`, `choices`, `conflicts`, `restarts`, `atoms`, `rules`, `vars`, `constraints`, `k`), `counters`, `tracked` (only after a `track`: the last value per name), `partials` (only after an `on partial` call: their number), `minimised` (only after a `C.core.minimal`: their number) |
 | `V` | each `track` (the first 2,000 values per name) | `n` name, `i` round, `v` value, `t` |
 | `M` | each solution | `n`, `atoms`, `cost` |
 | `T` | each traced step | `i`, `kind` (`reject`, `partial`, `add`, `expand`, `accept`, `error`), `solver`, `candidate`, `counterexample`, `literals`, `facts` |

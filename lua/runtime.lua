@@ -178,6 +178,7 @@ local function stats_event()
     solutions = rt.solutions, clauses = rt.clauses, literals = rt.literals, maxlen = rt.maxlen, hist = hist,
     expansions = rt.expansions, restarts = rt.restarts, blocks = rt.blocks, solvers = sv, counters = counters }
   if rt.partials > 0 then e.partials = rt.partials end
+  if rt.minimised then e.minimised = rt.minimised end
   if #rt.track_order > 0 then
     local tr = {}
     for k, v in pairs(rt.tracked) do tr[k] = v end
@@ -841,7 +842,7 @@ function Core:on(G)
   if getmetatable(G) ~= Link then fail("core.on: expected a link") end
   -- (G ending at the core's solver: as G.core(C), but an empty clause is a value, not an error:
   -- `if K.size == 0` then tells that the core lies outside G, e.g. hard clauses alone)
-  if G.to == self.solver and #G:core_lits(self.lits) > 0 then return G:core(self.solver) end
+  if G.to == self.solver and #G:core_lits(rawget(self, "lits")) > 0 then return G:core(self.solver, rawget(self, "lits")) end
   local lazy = G.from.searching and true or false
   local lits = lazy and G.slit or G.src
   local c = new_clause(G, lazy, nil, nil)
@@ -867,6 +868,61 @@ end
 function Solver:core()
   if not self.last_core then fail(self.name .. ".core: the last solve of " .. self.name .. " was not unsatisfiable") end
   return setmetatable({ solver = self, lits = self.last_core }, Core)
+end
+
+-- C.core.minimal: a subset-minimal core, by deletion. Each assumption is left out in turn; when
+-- the rest is still unsatisfiable it goes, and the smaller core of that solve replaces the rest
+-- (clause-set refinement). The extra solves count as calls of the solver, not as
+-- counterexamples, and leave its last core alone.
+local function core_of(s, assume)
+  if s.dead then return {} end
+  tick(rt.searching == nil)
+  local fr = timer_start(s)
+  s.n.calls = s.n.calls + 1
+  local h = s.ctl:solve{ assumptions = assume, yield = true }
+  local sat, core = false, nil
+  local ok, err = pcall(function()
+    for _ in h:iter() do sat = true; break end
+    if not sat then
+      local c = h:core()
+      core = {}
+      if c then for i, l in ipairs(c) do core[i] = tointeger(l) or floor(l) end end
+    end
+  end)
+  h:close()
+  timer_stop(fr, not ok and "int" or sat and "sat" or "unsat")
+  if not ok then error(err, 0) end
+  reraise()
+  if sat then s.n.sat = s.n.sat + 1 else s.n.unsat = s.n.unsat + 1 end
+  return core
+end
+function Core:minimal()
+  local s = self.solver
+  if s.busy then fail(s.name .. ".core.minimal: the solver is busy (searching or solving)") end
+  local K = {}
+  for i, l in ipairs(rawget(self, "lits")) do K[i] = l end
+  local i = 1
+  while i <= #K do
+    local trial = {}
+    for j = 1, #K do if j ~= i then trial[#trial + 1] = K[j] end end
+    local c = core_of(s, trial)
+    if c then
+      -- still unsatisfiable without K[i]: keep only what this core needs (a subset of trial,
+      -- in trial's order); the element now at position i is tried next
+      local need = {}
+      for _, l in ipairs(c) do need[l] = true end
+      K = {}
+      for _, l in ipairs(trial) do if need[l] then K[#K + 1] = l end end
+    else
+      i = i + 1
+    end
+  end
+  rt.minimised = (rt.minimised or 0) + 1
+  return setmetatable({ solver = s, lits = K }, Core)
+end
+function rt.minimal(K)
+  if getmetatable(K) ~= Core then fail("minimal: expected a core, as in C.core.minimal") end
+  return K:minimal()
 end
 
 -- S.atom(name, args...): the literal of an atom of S, as a one-element list of assumptions.
@@ -972,14 +1028,15 @@ function Link:core_lits(lits)
   for _, l in ipairs(lits) do if self.jof[abs(l)] then out[#out + 1] = l end end
   return out
 end
-function Link:core(S)
+function Link:core(S, core_lits)
   if S ~= self.to then fail(self.name .. ".core: expected solver " .. self.to.name) end
-  if not S.last_core then fail(self.name .. ".core: the last solve of " .. S.name .. " was not unsatisfiable") end
+  if not core_lits and not S.last_core then fail(self.name .. ".core: the last solve of " .. S.name .. " was not unsatisfiable") end
   local lazy = self.from.searching
   local lits = lazy and self.slit or self.src
   local c = new_clause(self, lazy, nil, nil)
   local seen = {}
-  for _, l in ipairs(S.last_core) do
+  -- core_lits: the literals of a core value (core.on(G), also a minimised core); else the last core
+  for _, l in ipairs(core_lits or S.last_core) do
     local j = self.jof[abs(l)]
     if j and not seen[j] then
       seen[j] = true
@@ -1319,6 +1376,13 @@ end
 local function convert_assumptions(a, s, what)
   if a == nil then return {} end
   if type(a) ~= "table" then fail("assume: expected a list of literals") end
+  if getmetatable(a) == Core then
+    -- a core as assumptions: its literals belong to its own solver
+    if a.solver ~= s then fail(s.name .. "." .. what .. ": the core is one of solver " .. a.solver.name) end
+    local out = {}
+    for i, l in ipairs(rawget(a, "lits")) do out[i] = l end
+    return out
+  end
   local ls = list_links[a]
   if ls then
     -- G(M) given to the source of G: the same values on the source's literals

@@ -11,7 +11,7 @@ const COMPOUND = new Set(['if', 'elif', 'else', 'loop', 'while', 'repeat', 'for'
 
 export const SOLVER_MEMBERS = ['solve', 'models', 'add', 'expand', 'exhausted', 'step', 'core', 'atom', 'ground', 'set', 'release'];
 export const LINK_MEMBERS = ['clause', 'block', 'core', 'clauses', 'lift', 'above', 'below', 'extend'];
-export const VALUE_MEMBERS = ['atoms', 'push', 'clear', 'size', 'on', 'flip', 'without', 'true', 'value', 'count', 'cost', 'arg'];
+export const VALUE_MEMBERS = ['atoms', 'push', 'clear', 'size', 'on', 'flip', 'without', 'true', 'value', 'count', 'cost', 'arg', 'minimal'];
 
 class CompileError extends Error {
   constructor(line, col, message) { super(message); this.line = line; this.col = col; }
@@ -840,6 +840,7 @@ export function compile(source, { fragments = [] } = {}) {
       }
       case 'true': if (args) err(e, "'true' is not a method: write a.true"); return `rt.atrue(${ex(obj)})`;
       case 'cost': if (args) err(e, "'cost' is not a method: write X.cost"); return `rt.cost(${ex(obj)})`;
+      case 'minimal': if (args) err(e, "'minimal' is not a method: write C.core.minimal"); return `rt.minimal(${ex(obj)})`;
       case 'value': case 'count': {
         if (!args || args.length !== 1 || args[0].k !== 'pred') { err(e, `${name} takes one predicate, as in X.${name}(gain/1)`); return 'nil'; }
         capture(args[0].name, args[0].arity);

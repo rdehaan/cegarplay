@@ -394,7 +394,8 @@ A.add(G.above(E))                   # no superset of E again</div>
 <p>A core is a list too: <code>for a in C.core:</code> walks the assumptions that the failed check needed. The MaxSAT
   example uses this the way the implicit hitting set solver MaxHS does: an optimal solver picks the soft clauses to
   give up, a SAT check tests the rest, and each core is relaxed with <code>E.without(a)</code> so that one round can
-  find several disjoint cores. <code>track</code> records a number per round; the Statistics tab draws the lower and
+  find several disjoint cores. <code>C.core.minimal</code> first shrinks each core until no clause can be left out: a
+  short core is a strong clause, and the example needs 5 rounds instead of 57. <code>track</code> records a number per round; the Statistics tab draws the lower and
   the upper bound until they meet at the optimum, 8. The manual's
   <a href="#manual-loops-from-the-literature">Loops from the literature</a> lists the other algorithms written this
   way (MARCO, OLL, Benders, CEGIS, RAReQS, ...), each with an example.</p>
@@ -405,8 +406,9 @@ E = G(M)
 loop:
     X = C.solve(assume E)
     if X: break                      # the rest is satisfiable
-    A.add(C.core.on(G))              # give up at least one clause of the core
-    for a in C.core:
+    K = C.core.minimal               # no clause of it can be left out
+    A.add(K.on(G))                   # give up at least one clause of the core
+    for a in K:
         E = E.without(a)             # relax it, look for a disjoint core</div>
 
 <h3 id="tut-lang-search">Searches inside searches</h3>
