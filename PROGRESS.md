@@ -1337,3 +1337,5 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   storage, with a warning before an overwrite.
 - Core audit (done): loops refined only by cores get `audit_cores` (lua/audit.lua; the clause
   check is shared as `check_pairs`); `compiled.minimalCore` makes it shrink cores as the loop does.
+- certcheck (done): proof logs of witness checks are checked (polarity flipped; refinements must
+  be blocks or level-1 cores).

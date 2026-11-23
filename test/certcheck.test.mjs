@@ -139,3 +139,24 @@ test('review of wave 5: a level-0 block of an unreported solution, a fake soluti
   assert.equal(r3.v.check, 2);
   assert.match(r3.v.reason, /level 4/);
 });
+
+test('certcheck handles witness checks: lang-core is certified; a solution without a witness is rejected', opts, () => {
+  const file = proof('lang-core');
+  const r = check(ex('lang-core'), file);
+  assert.equal(r.code, 0, `${JSON.stringify(r.v)} ${r.err}`);
+  assert.equal(r.v.verdict, 'certified');
+  assert.equal(r.v.solutions, 958);
+  // turn the first refuted candidate's step into a reported solution: it has no witness
+  const bad = mutate(file, (lines) => {
+    let done = false;
+    return lines.map((l) => {
+      if (done || !l.startsWith('@@R ')) return l;
+      const d = parse(l);
+      if (d.k !== 'r' && d.k !== 'a') return l;
+      done = true;
+      return '@@R ' + JSON.stringify({ i: d.i, k: 's', c: d.c });
+    }).concat(['@@M {"n":959,"atoms":""}']);
+  }, 'lang-core-bad.jsonl');
+  const b = check(ex('lang-core'), bad);
+  assert.equal(b.code, 1, JSON.stringify(b.v));
+});

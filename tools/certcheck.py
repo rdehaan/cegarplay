@@ -379,8 +379,9 @@ def check(project, log_path):
     if loop.get("language") == "lua":
         raise Unsupported("raw Lua loops are not checked")
     info = parse_script(loop.get("text", ""))
-    if info["witness"]:
-        raise Unsupported("witness checks (a solution has a model of the check) are not checked")
+    # a witness check (if not C.solve(...)): a solution HAS a model of the check, a refuted
+    # candidate has none, and its refinements are blocks (level 0) or cores (level 1)
+    witness = bool(info["witness"])
     settings = project.get("settings") or {}
     consts = dict(settings.get("constants") or {})
     inst = select_instance(project, header.get("instance") if header.get("instance") else ("" if project.get("instances") else None))
@@ -490,11 +491,13 @@ def check(project, log_path):
             # candidate that has a counterexample
             if s.get("c") not in reported:
                 ca, _ = cand_assume(s.get("c") or "")
-                if P.model_c(ca) is None:
+                if (P.model_c(ca) is None) != witness:
                     raise Reject(2, f"step {s['i']}: a level-0 block removes a candidate that is neither a reported solution nor refuted")
         elif level == 1:
             if P.model_c([P.dst[k] if v else -P.dst[k] for k, v in vals.items()]) is not None:
                 raise Reject(2, f"step {s['i']}: level 1: the check has a model under the kept values")
+        elif witness:
+            raise Reject(2, f"step {s['i']}: a witness check's refinement needs a level-0 or level-1 certificate, got {level}")
         elif level in (2, 3):
             if tv is None:
                 raise Reject(2, f"step {s['i']}: a level-{level} certificate needs the counterexample")
@@ -505,10 +508,12 @@ def check(project, log_path):
                 raise Reject(2, f"step {s['i']}: level 4: a removed candidate has no counterexample")
         else:
             raise Reject(2, f"step {s['i']}: unknown certificate level {level}")
-    # 3. no solution has a counterexample
+    # 3. no solution has a counterexample (a witness check: every solution has a witness)
     for c in solutions:
         ca, _ = cand_assume(c)
-        if P.model_c(ca) is not None:
+        if witness and P.model_c(ca) is None:
+            raise Reject(3, f"the solution {c} has no witness")
+        if not witness and P.model_c(ca) is not None:
             raise Reject(3, f"the solution {c} has a counterexample")
     stats["solutions"] = len(solutions)
     if len(set(solutions)) != len(solutions):

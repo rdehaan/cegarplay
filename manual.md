@@ -1083,7 +1083,8 @@ A recording with **proof** (Loop tab; `settings.record.proof`, `tools/run.mjs --
 proof log: every counterexample and the certificate level of every refinement.
 `python3 tools/certcheck.py project.json log` confirms the solution count from it with code that
 shares nothing with the runtime (four checks: counterexamples are answer sets, certificates
-verify, solutions have no counterexample, nothing else is left). Its `--json` verdict can be
+verify, solutions have no counterexample (for a witness check: every solution has a witness),
+nothing else is left). Its `--json` verdict can be
 imported in the Statistics tab ("Import certcheck verdict"). Details: `docs/spec-soundness.md`
 section 6.
 

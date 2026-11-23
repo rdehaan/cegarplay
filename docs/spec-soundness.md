@@ -236,8 +236,12 @@ semantics, records their ground programs with an observer, and checks:
    solution step;
 4. A with every refinement as a constraint and every solution blocked is unsatisfiable.
 
+A witness check (`if not C.solve(...)`) flips the polarity: a solution must have a model of the check,
+a block may remove only a candidate without one, and every other refinement must carry a level-1
+(core) certificate.
+
 Verdict `certified` (exit 0), `rejected` with the check (exit 1), `unsupported` (exit 2: raw Lua,
-witness checks, expansions). `--json` prints `{ verdict, check, reason, solutions, refinements,
+expansions). `--json` prints `{ verdict, check, reason, solutions, refinements,
 certificates, counterexamples, fragmentsHash }`; "Import certcheck verdict" in the Statistics tab
 marks the runs with the same fragments hash (and solution count) "certified" in the run history.
 
