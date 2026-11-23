@@ -151,3 +151,28 @@ for f in (lambda d: d.perm(5, 0), lambda d: d.weighted([5, -2, 3]), lambda d: d.
 print(bad)`);
   assert.equal(r.stdout.trim(), '4', r.stderr);
 });
+
+test('exact: false when the solver completes the instance, true when only hidden atoms vary (Lua and Python)', { skip: !HAVE_CLINGO && 'Python clingo missing' }, async () => {
+  const cases = [
+    ['node(1..3).\n1 { pick(X) : node(X) } 1.\n#show pick/1.\n', false],
+    ['node(1..3).\n{ h(X) : node(X) }.\nedge(1,@int(2,3,e)).\n#show edge/2.\n', true],
+    ['edge(1,@int(2,3,e)).\n#show edge/2.\n', true],
+  ];
+  for (const [text, exact] of cases) {
+    const g = { name: 't', params: {}, defaults: {}, text };
+    const a = await generate(g, {}, [1], L, H.engineRun);
+    assert.equal(a.results[0].exact, exact, text);
+    const r = py(`import json\nfrom draw import generate\nprint(json.dumps(generate(${JSON.stringify(text)}, {}, 1)))`);
+    assert.equal(r.status, 0, r.stderr);
+    const b = JSON.parse(r.stdout);
+    assert.equal(b.exact, exact, text);
+    assert.equal(b.facts, a.results[0].facts, text);
+  }
+});
+
+test('every library generator is exact: its facts follow from the draws alone', async () => {
+  for (const g of ALL_GENERATORS) {
+    const a = await generate(g, {}, [1, 2, 3], L, H.engineRun);
+    assert.deepEqual(a.results.map((r) => r.exact), [true, true, true], g.name);
+  }
+});

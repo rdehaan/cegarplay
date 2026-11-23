@@ -93,8 +93,9 @@ written from Lua by `tools/make-draw-vectors.mjs`):
   sets `draw.error` and returns 0, and the runner reports it.
 
 Runner (`lua/generate.lua`, `gen.run{ text, params, seeds, attempts }`): per attempt a fresh control
-with the parameters as `-c` constants, ground with the context, at most two models read with
-`h:iter()`. Output, one line per seed:
+with the parameters as `-c` constants and `--models=2 --project=show`, ground with the context,
+at most two models read with `h:iter()` (a second model, which differs on the shown atoms, makes the
+instance not `exact`). Output, one line per seed:
 
 ```
 @@G {"attempt":0,"exact":true,"facts":"edge(1,5). ... node(7).","seed":1}

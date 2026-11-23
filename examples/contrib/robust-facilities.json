@@ -32,7 +32,7 @@
   ],
   "loop": {
     "language": "loop",
-    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# 2-ASP(Q) with a weak constraint on the outer level: the cheapest opening first; the first\n# one that no failure refutes is optimal (chapter 11). The refinement is a clause, so every\n# opening it removes leaves the same customer stranded by the same failure.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no robust opening\"\n    track lower = M.cost\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        stop\n"
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# 2-ASP(Q) with a weak constraint on the outer level: the cheapest opening first; the first\n# one that no failure refutes is optimal (chapter 11). The refinement is a clause, so every\n# opening it removes leaves the same customer stranded by the same failure. G.clause(X)\n# takes the values from the counterexample: for a customer whose only near site failed (or\n# with no near site) it is the empty clause; then A has no candidate left and the loop\n# ends exhausted, with no solution.\nloop:\n    M = A.solve(optimal)\n    if not M:\n        log \"no robust opening\"\n        break\n    track lower = M.cost\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(X))\n    else:\n        accept M\n        stop\n"
   },
   "settings": {
     "constants": {},
@@ -115,6 +115,17 @@
         "solutions": null,
         "optimum": 18
       }
+    },
+    {
+      "id": "no-robust",
+      "facts": "% No robust opening: customer 1 is near site 1 only, so the failure of site 1 always strands it.\nsite(1,4). site(2,3). site(3,5).\nnear(1,1).\nnear(2,1). near(2,2).\nnear(3,2). near(3,3).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": [
+        "no-solution"
+      ]
     }
   ],
   "variants": [
@@ -124,7 +135,7 @@
       "constants": {},
       "loop": {
         "language": "loop",
-        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Baseline: every refuted opening is blocked on its own.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no robust opening\"\n    track lower = M.cost\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        stop\n"
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Baseline: every refuted opening is blocked on its own.\nloop:\n    M = A.solve(optimal)\n    if not M:\n        log \"no robust opening\"\n        break\n    track lower = M.cost\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        stop\n"
       }
     },
     {
@@ -135,7 +146,7 @@
       "constants": {},
       "loop": {
         "language": "loop",
-        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The counterexample with the fewest relevant sites (optimal): the shortest clause.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no robust opening\"\n    track lower = M.cost\n    X = C.solve(assume G(M), optimal)\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        stop\n"
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The counterexample with the fewest relevant sites (optimal): the shortest clause.\nloop:\n    M = A.solve(optimal)\n    if not M:\n        log \"no robust opening\"\n        break\n    track lower = M.cost\n    X = C.solve(assume G(M), optimal)\n    if X:\n        A.add(G.clause(X))\n    else:\n        accept M\n        stop\n"
       }
     },
     {
@@ -144,7 +155,7 @@
       "constants": {},
       "loop": {
         "language": "loop",
-        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to four counterexamples per opening, one clause each.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no robust opening\"\n    track lower = M.cost\n    Xs = C.models(assume G(M), limit 4)\n    if Xs.size > 0:\n        for X in Xs:\n            A.add(G.clause(M, X))\n    else:\n        accept M\n        stop\n"
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to four counterexamples per opening, one clause each.\nloop:\n    M = A.solve(optimal)\n    if not M:\n        log \"no robust opening\"\n        break\n    track lower = M.cost\n    Xs = C.models(assume G(M), limit 4)\n    if Xs.size > 0:\n        for X in Xs:\n            A.add(G.clause(X))\n    else:\n        accept M\n        stop\n"
       }
     }
   ],

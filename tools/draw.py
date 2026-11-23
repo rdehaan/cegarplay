@@ -151,6 +151,7 @@ def generate(text, params, seed, attempts=100):
     import clingo
     for attempt in range(attempts):
         args = [x for k, v in params.items() for x in ("-c", f"{k}={v}")]
+        args += ["--models=2", "--project=show"]   # as lua/generate.lua: a second shown model = not exact
         ctl = clingo.Control(args, logger=lambda c, m: None)
         ctl.add("base", [], text)
         ctx = _Context(seed, attempt)

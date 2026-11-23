@@ -1413,12 +1413,20 @@ within about a minute and the instances are small but nontrivial.
   `test/structure.test.mjs` G7 clears qbf-deep's instances; the maxsat-ihs browser test expects 6.
 - **Tools:** `tools/survey.mjs` (per instance: counts, refinements, run and audit time;
   `--variants`; honours `audit: false`).
-- **Found, not fixed:** `exact` in `tools/draw.py` / `lua/generate.lua` is always true (the
-  generator control reads one model only), so a generator whose facts the solver completes is not
-  flagged; the library generators avoid this. `robust-facilities` ends with "relevant/1 derived
-  nothing" on an instance without a robust opening (`G.clause(X)` would end it cleanly).
-  `tools/make-replays.mjs` treats the `ground` time in the H line as content, so it rewrites every
-  replay; only replays of changed examples were committed.
+- **Found and fixed afterwards (same day):**
+  - `exact` was always true: the generator control in `lua/generate.lua` and `tools/draw.py` had no
+    model limit, so clingo stopped after the first model. Both now ask for `--models=2
+    --project=show` (a second model must differ on the shown atoms, so hidden choices do not count).
+    All 42 library generators are exact; tests in `test/draw.test.mjs`.
+  - `robust-facilities` ended with "relevant/1 derived nothing" when a customer's only near site
+    failed: the loop (and the variants shortest, several) now refine with `G.clause(X)`, which is
+    the empty clause there, and end with `break` instead of `stop`, so the run is exhausted and a
+    count of 0 is checked (new instance `no-robust`, 0 solutions).
+  - Replays: the earlier note was wrong; `make-replays` did mask `ground`. The replays were stale
+    (the program line `n` of C events moved with the runtime changes of the afternoon), and the
+    timer-flushed progress `S` events land at varying places, so two runs never matched. The
+    comparison now ignores progress `S` events (the final one counts); all replays rebuilt, and a
+    second run rewrites none.
 - Variants not added (they cannot finish): `reference` for cegis-circuit, maxsat-ihs,
   conformant-growing, triangle-free-lazy, slitherlink and the sudoku examples (blocking copies or
   `cegarcheck --mode block` checked their small instances instead). No generator where the input is

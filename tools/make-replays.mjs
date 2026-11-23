@@ -48,10 +48,14 @@ for (const e of lib.examples) {
   if (r.problems && r.problems.length) { console.error(`${e.id}: ${r.problems[0].message}`); continue; }
   const rec = recordingOf(p, r.events, { example: e.id, instance: r.project ? r.project.instance || null : null });
   const buf = Buffer.from(await (await rec.toBlob()).arrayBuffer());
-  // keep the old file when only times differ (smaller commits)
+  // keep the old file when only times differ (smaller commits): time fields, and the progress
+  // S events, which a timer flushes at varying places (only the final S is compared)
   const file = new URL(`${e.id}.cprec`, dir);
-  const timeless = (b) => zlib.gunzipSync(b).toString('utf8')
-    .replace(/"(dt|t0|t|time|ground|ms|seconds_used)":-?[0-9.e-]+/g, '"$1":0');
+  const timeless = (b) => {
+    const lines = zlib.gunzipSync(b).toString('utf8').replace(/"(dt|t0|t|time|ground|ms|seconds_used)":-?[0-9.e-]+/g, '"$1":0').split('\n');
+    const lastS = lines.map((l) => l.startsWith('@@S ')).lastIndexOf(true);
+    return lines.filter((l, i) => !l.startsWith('@@S ') || i === lastS).join('\n');
+  };
   let same = false;
   try { same = timeless(fs.readFileSync(file)) === timeless(buf); } catch { same = false; }
   if (!same) { fs.writeFileSync(file, buf); changed++; }

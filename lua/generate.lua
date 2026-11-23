@@ -3,7 +3,7 @@
 --   gen.run{ text = "...", params = { "n=7", "p=300" }, seeds = { 1, 2 }, attempts = 100 }
 --
 -- For each attempt: a fresh control with the parameters as constants, grounded with the draw
--- context of (seed, attempt), asked for two models. One model: the instance is exact. Two: the
+-- context of (seed, attempt), asked for two models projected on the shown atoms. One model: the instance is exact. Two: the
 -- solver completed it (clingo returns some model, not a uniform one). None: the next attempt.
 -- Emits one line per instance:
 --   @@G {"facts": "...", "seed": S, "attempt": A, "exact": true}
@@ -38,6 +38,9 @@ gen.emit = emit
 function gen.attempt(o, seed, attempt)
   local args = {}
   for _, c in ipairs(o.params or {}) do args[#args + 1] = "-c"; args[#args + 1] = c end
+  -- two models, distinct on the shown atoms: a second one means the solver completed the
+  -- instance (without "-n 2" clingo stops after the first model and every draw looks exact)
+  args[#args + 1] = "--models=2"; args[#args + 1] = "--project=show"
   local ctl = clingo.Control(args, function() end, 20)
   ctl:add("base", {}, o.text)
   draw.error = nil
