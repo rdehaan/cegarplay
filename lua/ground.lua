@@ -295,6 +295,109 @@ local function stratified(st, skip)
   end
   return true
 end
+LIFT.stratified = stratified
+
+-- A rule of a store, written to backend b with its body already mapped.
+local function add_mapped(b, head, body, r, choice)
+  if r.w then
+    local wb = {}
+    for i, l in ipairs(body) do wb[i] = { l, r.w[i] } end
+    b:add_weight_rule{ head = head, lower = r.lower, body = wb, choice = choice }
+  else
+    b:add_rule{ head = head, body = body, choice = choice }
+  end
+end
+
+-- An atom map over a backend: map(a) is the copy of store atom a, made on first use (or given by
+-- fixed[a], e.g. a check's interface atom identified with the abstraction's copy).
+function LIFT.atom_map(b, fixed)
+  local m = {}
+  local function map(a)
+    if fixed then local f = fixed(a); if f then return f end end
+    local x = m[a]; if not x then x = b:add_atom(); m[a] = x end
+    return x
+  end
+  return map, m
+end
+
+-- Copy the rules of store st into backend b under the atom map o.map (docs/spec-soundness.md
+-- section 7). Options:
+--   isint     atom -> j for the interface atoms of a check: they are inputs. A choice drops
+--             them from its heads; a normal rule with one as head becomes `:- body, not a`
+--             (with map(a) the input's copy).
+--   violated  constraints (and those interface-headed rules) derive this atom instead of
+--             being constraints.
+--   guess     function(h) for the heads of choice rules: nil -> the rule stays a choice; else
+--             each head h is derived from the body when guess(h) is true (no extra literal), a
+--             literal (added to the body), or skipped when it is false.
+-- Disjunctive stores are not supported (callers check st.disjunctive).
+--   shared    atom -> true: heads another copy already defines (lua/bounded.lua: the instance
+--             atoms of a space); a rule left without heads is dropped.
+function LIFT.copy(b, st, o)
+  local map, isint, violated, guess, shared = o.map, o.isint or {}, o.violated, o.guess, o.shared
+  local function lits(body)
+    local t = {}
+    for i, l in ipairs(body) do t[i] = l > 0 and map(l) or -map(-l) end
+    return t
+  end
+  for _, r in ipairs(st.rules) do
+    if shared and #r.head > 0 then
+      local keep = false
+      for _, h in ipairs(r.head) do if not shared[h] then keep = true end end
+      if not keep then goto continue end
+    end
+    local body = lits(r.body)
+    if #r.head == 0 then
+      add_mapped(b, violated and { violated } or {}, body, r, false)
+    elseif r.choice then
+      local hs = {}
+      for _, h in ipairs(r.head) do if not isint[h] and not (shared and shared[h]) then hs[#hs + 1] = h end end
+      if #hs > 0 then
+        if not guess then
+          local mh = {}
+          for i, h in ipairs(hs) do mh[i] = map(h) end
+          add_mapped(b, mh, body, r, true)
+        else
+          local base = body
+          if r.w then
+            -- a guarded weight rule: its head needs the weight body (as one atom) and the switch
+            local aux = b:add_atom()
+            add_mapped(b, { aux }, body, r, false)
+            base = { aux }
+          end
+          for _, h in ipairs(hs) do
+            local g = guess(h)
+            if g then
+              local bb = {}
+              for i, l in ipairs(base) do bb[i] = l end
+              if g ~= true then bb[#bb + 1] = g end
+              b:add_rule{ head = { map(h) }, body = bb }
+            end
+          end
+        end
+      end
+    elseif isint[r.head[1]] then
+      -- an interface atom as the head of a normal rule: the constraint `:- body, not a`
+      local na = -map(r.head[1])
+      local head = violated and { violated } or {}
+      if r.w then
+        local aux = b:add_atom()
+        add_mapped(b, { aux }, body, r, false)
+        b:add_rule{ head = head, body = { aux, na } }
+      else
+        local bb = {}
+        for i, l in ipairs(body) do bb[i] = l end
+        bb[#bb + 1] = na
+        b:add_rule{ head = head, body = bb }
+      end
+    else
+      local hs = {}
+      for i, h in ipairs(r.head) do hs[i] = map(h) end
+      add_mapped(b, hs, body, r, false)
+    end
+    ::continue::
+  end
+end
 
 -- Build Q: A's rules, C's rules with C's interface atoms (of link L) identified with A's, each
 -- guess of C switched by a sel atom, and each constraint of C deriving `violated`.
@@ -314,75 +417,16 @@ function LIFT.product(L)
   local ctl = rt.new_control({}, "product " .. L.name, {})
   local ok, err = pcall(function()
     local b = ctl:backend()
-    local amap, cmap, sel = {}, {}, {}
-    local function am(a) local x = amap[a]; if not x then x = b:add_atom(); amap[a] = x end; return x end
-    local function cm(a)
-      local j = isint[a]
-      if j then return am(L.src[j]) end
-      local x = cmap[a]; if not x then x = b:add_atom(); cmap[a] = x end; return x
-    end
-    local function lits(body, map)
-      local t = {}
-      for i, l in ipairs(body) do t[i] = l > 0 and map(l) or -map(-l) end
-      return t
-    end
-    local function add(head, body, r, choice)
-      if r.w then
-        local wb = {}
-        for i, l in ipairs(body) do wb[i] = { l, r.w[i] } end
-        b:add_weight_rule{ head = head, lower = r.lower, body = wb, choice = choice }
-      else
-        b:add_rule{ head = head, body = body, choice = choice }
-      end
-    end
-    for _, r in ipairs(sa.rules) do
-      local hs = {}
-      for i, h in ipairs(r.head) do hs[i] = am(h) end
-      add(hs, lits(r.body, am), r, r.choice)
-    end
+    local am, amap = LIFT.atom_map(b)
+    local cm = LIFT.atom_map(b, function(a) local j = isint[a]; return j and am(L.src[j]) end)
+    local sel = {}
+    LIFT.copy(b, sa, { map = am })
     local violated = b:add_atom()
-    for _, r in ipairs(sc.rules) do
-      local body = lits(r.body, cm)
-      if #r.head == 0 then
-        add({ violated }, body, r, false)
-      elseif r.choice then
-        for _, h in ipairs(r.head) do
-          if not isint[h] then
-            local s = sel[h]
-            if not s then s = b:add_atom(); sel[h] = s; b:add_rule{ head = { s }, body = {}, choice = true } end
-            local bb = {}
-            for i, l in ipairs(body) do bb[i] = l end
-            if r.w then
-              -- a guarded weight rule: its head needs the weight body and the switch
-              local aux = b:add_atom()
-              add({ aux }, body, r, false)
-              b:add_rule{ head = { cm(h) }, body = { aux, s } }
-            else
-              bb[#bb + 1] = s
-              b:add_rule{ head = { cm(h) }, body = bb }
-            end
-          end
-        end
-      elseif isint[r.head[1]] then
-        -- an interface atom as the head of a normal rule: the constraint `:- body, not a`
-        local j = isint[r.head[1]]
-        local na = -am(L.src[j])
-        if r.w then
-          local aux = b:add_atom()
-          add({ aux }, body, r, false)
-          b:add_rule{ head = { violated }, body = { aux, na } }
-        else
-          local bb = {}
-          for i, l in ipairs(body) do bb[i] = l end
-          bb[#bb + 1] = na
-          b:add_rule{ head = { violated }, body = bb }
-        end
-      else
-        local hs = {}
-        for i, h in ipairs(r.head) do hs[i] = cm(h) end
-        add(hs, body, r, false)
-      end
-    end
+    LIFT.copy(b, sc, { map = cm, isint = isint, violated = violated, guess = function(h)
+      local s = sel[h]
+      if not s then s = b:add_atom(); sel[h] = s; b:add_rule{ head = { s }, body = {}, choice = true } end
+      return s
+    end })
     b:close()
     L.product = { ctl = ctl, amap = amap, sel = sel, violated = violated }
   end)
@@ -727,33 +771,47 @@ local function scratch(s)
   ctl:ground({ { "base", {} } })
   return ctl
 end
+-- The check of link L on a scratch control, with the interface atoms as free choices (the link's
+-- glue, as rt.link does: glue atoms that are facts of A are facts here). Returns the control
+-- and clit[j], the literal of interface atom j. Used by level 4 and by lua/bounded.lua.
+function LIFT.check_scratch(L, name)
+  local C2 = rt.new_control({}, (name or "exact") .. " " .. L.to.name, L.to.frags)
+  local b = C2:backend()
+  local clit, lines = {}, {}
+  for _, sym in ipairs(L.fsym or {}) do
+    b:add_rule{ head = { b:add_atom(sym) }, body = {} }
+    lines[#lines + 1] = tostring(sym) .. "."
+  end
+  local choice = {}
+  for j = 1, L.n do
+    local d = b:add_atom(L.sym[j])
+    b:add_rule{ head = { d }, body = {}, choice = true }
+    clit[j] = d
+    choice[#choice + 1] = L.str[j]
+    local i = b:add_atom(clingo.Function("relevant", { L.sym[j] }, true))
+    if L.compat then b:add_rule{ head = { i }, body = {}, choice = true }; choice[#choice + 1] = "relevant(" .. L.str[j] .. ")" end
+  end
+  b:close()
+  -- the same atoms as program text (CLAUDE.md rule 10)
+  if #choice > 0 then lines[#lines + 1] = "{ " .. concat(choice, "; ") .. " }." end
+  C2:add("cegarplay_iface", {}, concat(lines, "\n"))
+  C2:add("base", {}, rt.join(L.to.frags))
+  C2:ground({ { "base", {} }, { "cegarplay_iface", {} } })
+  return C2, clit
+end
+
 function LIFT.exact(L, M, vals, budget)
   budget = budget or 2
   local t0 = clock()
   local v = M[L]
   if not L.exact then
-    local A2, C2 = scratch(L.from), nil
+    local A2 = scratch(L.from)
     local alit = {}
     for j = 1, L.n do
       local a = A2.symbolic_atoms:lookup(L.sym[j])
       alit[j] = a and a.literal or nil
     end
-    -- the check with the interface atoms as free choices (the link's glue, as rt.link does)
-    C2 = rt.new_control({}, "exact " .. L.to.name, L.to.frags)
-    local b = C2:backend()
-    local clit = {}
-    -- as rt.link: the glue atoms that are facts of A are facts of the check, the others choices
-    for _, sym in ipairs(L.fsym or {}) do b:add_rule{ head = { b:add_atom(sym) }, body = {} } end
-    for j = 1, L.n do
-      local d = b:add_atom(L.sym[j])
-      b:add_rule{ head = { d }, body = {}, choice = true }
-      clit[j] = d
-      local i = b:add_atom(clingo.Function("relevant", { L.sym[j] }, true))
-      if L.compat then b:add_rule{ head = { i }, body = {}, choice = true } end
-    end
-    b:close()
-    C2:add("base", {}, rt.join(L.to.frags))
-    C2:ground({ { "base", {} } })
+    local C2, clit = LIFT.check_scratch(L, "exact")
     L.exact = { A = A2, C = C2, alit = alit, clit = clit }
   end
   local E = L.exact

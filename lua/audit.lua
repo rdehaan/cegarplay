@@ -107,8 +107,9 @@ local function check_pairs(L, sols, pairs_, st, kind)
     local sv, ns = {}, #sols
     for i = 1, ns do sv[i] = sols[i].p[1] end
     for _, pr in ipairs(pairs_) do
+      -- pr.v: the values the clause fixes (G.clauses), else the candidate's
       local m, r = pr.c.p[1], pr.r[1]
-      local mr, bad = m & r, false
+      local mr, bad = (pr.v and pr.v[1] or m) & r, false
       for si = 1, ns do
         local x = sv[si]
         if x & r == mr then
@@ -125,11 +126,12 @@ local function check_pairs(L, sols, pairs_, st, kind)
   end
   for _, pr in ipairs(pairs_) do
     local m, r = pr.c.p, pr.r
+    local mv = pr.v or m
     local bad = false
     for si, s in ipairs(sols) do
       local sp, agree = s.p, true
       for w = 1, nw do
-        if ((m[w] ~ sp[w]) & r[w]) ~= 0 then agree = false; break end
+        if ((mv[w] ~ sp[w]) & r[w]) ~= 0 then agree = false; break end
       end
       if agree then
         bad = true
@@ -147,13 +149,42 @@ local function check_pairs(L, sols, pairs_, st, kind)
     local m, sp = best.pr.c.p, best.s.p
     local d = {}
     for w = 1, nw do d[w] = m[w] ~ sp[w] end
-    st.witness = { kind = kind, candidate = array(atoms_of(L, m)), counterexample = best.pr.shown,
-      relevant = array(atoms_of(L, best.pr.r)), solution = array(atoms_of(L, sp)), differ = array(atoms_of(L, d)) }
+    st.witness = { kind = best.pr.clause and "clauses" or kind, candidate = array(atoms_of(L, m)), counterexample = best.pr.shown,
+      relevant = array(atoms_of(L, best.pr.r)), solution = array(atoms_of(L, sp)), differ = array(atoms_of(L, d)),
+      clause = best.pr.clause and array(best.pr.clause) or nil }
   end
 end
 
+-- The clause/3 groups of a counterexample (G.clauses): { r = atoms, v = values that falsify
+-- every literal, clause = literal texts }. A group that names an atom outside the link is skipped
+-- (the run stops with an error there).
+local function clause_groups(L, X)
+  local atoms = X["clause/3"]
+  if not atoms then return {} end
+  local byid, order = {}, {}
+  for _, a in ipairs(atoms) do
+    local args = a.arguments
+    local id, t, val = tostring(args[1]), tostring(args[2]), tostring(args[3])
+    local g = byid[id]
+    if not g then g = { r = {}, v = {}, clause = {} }; byid[id] = g; order[#order + 1] = g end
+    local j = L.jstr[t]
+    if not j or (val ~= "true" and val ~= "false") then g.bad = true
+    else
+      g.r[j] = true
+      g.v[j] = val ~= "true"
+      g.clause[#g.clause + 1] = (val == "true" and "" or "-") .. t
+    end
+  end
+  local out = {}
+  for _, g in ipairs(order) do
+    if not g.bad then table.sort(g.clause); out[#out + 1] = { r = pack(g.r, L.n), v = pack(g.v, L.n), clause = g.clause } end
+  end
+  return out
+end
+
 -- Clause refinements: every counterexample of every candidate, reduced to distinct relevant sets.
-local function audit_clauses(A, C, L, cands, st)
+-- clauses: also (or only, with clause = false) the clause/3 groups of each counterexample.
+local function audit_clauses(A, C, L, cands, st, clause, clauses)
   local sols, pairs_ = {}, {}
   for _, c in ipairs(cands) do
     local Xs = C:models{ assume = L:of(c.M) }
@@ -163,12 +194,24 @@ local function audit_clauses(A, C, L, cands, st)
       local rs = {}
       for _, X in ipairs(Xs) do
         st.counterexamples = st.counterexamples + 1
-        local r = pack(X[L], L.n)
-        local k = key(r)
-        if not rs[k] then
-          rs[k] = true
-          pairs_[#pairs_ + 1] = { c = c, r = r, shown = X.shown or "" }
-          if iszero(r) then st.empty = st.empty + 1 end
+        if clause ~= false then
+          local r = pack(X[L], L.n)
+          local k = key(r)
+          if not rs[k] then
+            rs[k] = true
+            pairs_[#pairs_ + 1] = { c = c, r = r, shown = X.shown or "" }
+            if iszero(r) then st.empty = st.empty + 1 end
+          end
+        end
+        if clauses then
+          for _, g in ipairs(clause_groups(L, X)) do
+            local k = "c|" .. key(g.r) .. "|" .. key(g.v)
+            if not rs[k] then
+              rs[k] = true
+              pairs_[#pairs_ + 1] = { c = c, r = g.r, v = g.v, clause = g.clause, shown = X.shown or "" }
+              if iszero(g.r) then st.empty = st.empty + 1 end
+            end
+          end
         end
       end
       st.pairs = #pairs_
@@ -380,7 +423,7 @@ function rt.audit(o)
   if o.vectors then emit_vectors("candidates", L, cands) end
   local sols
   if o.core then sols = audit_cores(A, C, L, cands, st, o.core == "minimal")
-  elseif o.clause ~= false then sols = audit_clauses(A, C, L, cands, st) end
+  elseif o.clause ~= false or o.clauses then sols = audit_clauses(A, C, L, cands, st, o.clause, o.clauses) end
   if #spec > 0 then
     if sols then
       -- the clause audit dropped the models; enumerate again for the facts
@@ -393,7 +436,10 @@ function rt.audit(o)
   if o.vectors then emit_vectors("solutions", L, AUDIT.solutions or {}) end
   local kinds = array({})
   if o.core then kinds[#kinds + 1] = o.core == "minimal" and "minimal core" or "core"
-  elseif o.clause ~= false then kinds[#kinds + 1] = "clause" end
+  else
+    if o.clause ~= false then kinds[#kinds + 1] = "clause" end
+    if o.clauses then kinds[#kinds + 1] = "clauses" end
+  end
   if #spec > 0 then kinds[#kinds + 1] = "expand" end
   rt.emit("A", { verdict = st.unsound > 0 and "unsound" or "sound", link = L.name, kinds = kinds,
     candidates = st.candidates, solutions = st.solutions, counterexamples = st.counterexamples, pairs = st.pairs,

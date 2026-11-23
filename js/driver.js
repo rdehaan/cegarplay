@@ -51,6 +51,7 @@ export function modulesFor(settings = {}, { mode = 'run', compiled = null, loop 
   const proof = !!(settings.record && settings.record.proof);
   if ((CERTIFY.includes(settings.certify) && settings.certify !== 'off') || usesLift(compiled, loop) || proof) out.push('ground');
   if (mode === 'audit') out.push('audit');
+  if (mode === 'bounded') { if (!out.includes('ground')) out.push('ground'); out.push('bounded'); }
   return out;
 }
 
@@ -112,7 +113,7 @@ const luaQ = (s) => JSON.stringify(String(s));
 
 // The declarations of a compiled loop script, without its statements (for modes that replace
 // the loop body): one rt.solver / rt.link line per declaration, in script order.
-export function declarationLines(compiled) {
+export function declarationLines(compiled, extraOpts = null) {
   const out = [];
   const list = (a) => `{${a.map(luaQ).join(', ')}}`;
   // the compiler keeps solvers and links apart; the order of declarations matters (a link
@@ -120,7 +121,7 @@ export function declarationLines(compiled) {
   // uses it, so solvers first, then links in order, is a valid order.
   for (const s of compiled.solvers) out.push(`local ${s.name} = rt.solver(${luaQ(s.name)}, ${list(s.fragments)}, ${list(s.options)})`);
   for (const L of compiled.links) {
-    const o = [L.legacy && 'legacy = true', L.compat && 'compat = true', L.lift && 'lift = true'].filter(Boolean).join(', ');
+    const o = [L.legacy && 'legacy = true', L.compat && 'compat = true', L.lift && 'lift = true', extraOpts && extraOpts[L.name]].filter(Boolean).join(', ');
     out.push(`local ${L.name} = rt.link(${luaQ(L.name)}, ${L.from}, ${L.to}, ${list(L.fragments)}, {${o}})`);
   }
   return out;
@@ -146,11 +147,11 @@ export function auditPlan(compiled, linkName) {
       .map((p) => ({ part: p.part, facts: p.facts.map(({ name, pred, arity }) => ({ name, pred, arity })) }));
     const seen = new Set();
     const parts = expand.filter((p) => { const k = JSON.stringify(p); if (seen.has(k)) return false; seen.add(k); return true; });
-    return { link: L.name, clause: uses.includes('clause'), core: uses.includes('core'), expand: parts, L };
+    return { link: L.name, clause: uses.includes('clause'), clauses: uses.includes('clauses'), core: uses.includes('core'), expand: parts, L };
   };
   let plans = cands.map(what);
   if (plans.length > 1) {
-    const useful = plans.filter((p) => p.clause || p.core || p.expand.length);
+    const useful = plans.filter((p) => p.clause || p.clauses || p.core || p.expand.length);
     if (useful.length !== 1) return { error: `several links leave a top solver (${cands.map((L) => L.name).join(', ')}); name one with --link` };
     plans = useful;
   }
@@ -159,9 +160,10 @@ export function auditPlan(compiled, linkName) {
     return { error: `solver ${plan.L.to} passes models on to another solver (a chain); the audit covers a top solver and a check` };
   }
   // a loop refined only by cores (a witness check): the core audit (lua/audit.lua audit_cores)
-  if (plan.core && !plan.clause && plan.expand.length === 0) return { link: plan.link, clause: false, expand: [], core: compiled.minimalCore ? 'minimal' : 'plain' };
-  if (!plan.clause && plan.expand.length === 0) return { error: `the script refines link ${plan.link} with neither ${plan.link}.clause nor a core nor an expand from a counterexample: nothing to audit` };
-  return { link: plan.link, clause: plan.clause, expand: plan.expand };
+  if (plan.core && !plan.clause && !plan.clauses && plan.expand.length === 0) return { link: plan.link, clause: false, expand: [], core: compiled.minimalCore ? 'minimal' : 'plain' };
+  if (!plan.clause && !plan.clauses && plan.expand.length === 0) return { error: `the script refines link ${plan.link} with neither ${plan.link}.clause nor a core nor an expand from a counterexample: nothing to audit` };
+  // clauses (G.clauses, PLAN3 phase S6): the key only when used, so other plans are unchanged
+  return { link: plan.link, clause: plan.clause, ...(plan.clauses ? { clauses: true } : {}), expand: plan.expand };
 }
 
 // The Lua body of the audit mode.
@@ -170,8 +172,56 @@ export function auditBody(compiled, plan, { limit = 200000, vectors = false } = 
     : typeof v === 'object' && v ? `{ ${Object.entries(v).map(([k, x]) => `${k} = ${lua(x)}`).join(', ')} }`
     : typeof v === 'string' ? luaQ(v) : String(v);
   const lines = declarationLines(compiled);
-  lines.push(`rt.audit{ link = ${plan.link}, limit = ${Number(limit) | 0}, clause = ${plan.clause ? 'true' : 'false'}, ` +
+  lines.push(`rt.audit{ link = ${plan.link}, limit = ${Number(limit) | 0}, clause = ${plan.clause ? 'true' : 'false'}, ${plan.clauses ? 'clauses = true, ' : ''}` +
     `expand = ${lua(plan.expand)}${plan.core ? `, core = ${luaQ(plan.core)}` : ''}${vectors ? ', vectors = true' : ''} }`);
+  return lines.map((l) => '    ' + l).join('\n') + '\n';
+}
+
+// Which link the symbolic audit (lua/bounded.lua) looks at, and what it verifies (docs/spec-soundness.md
+// section 7). Returns { link, clause, clauses, kinds } or { error } (no plan) or { unsupported }
+// (a plan the verifier does not cover: the verdict is 'unsupported' with that reason).
+export function boundedPlan(compiled, linkName) {
+  if (!compiled || !compiled.ok) return { error: 'the symbolic audit needs a loop script without errors' };
+  const incoming = new Set(compiled.links.map((L) => L.to));
+  let cands = compiled.links.filter((L) => !incoming.has(L.from));
+  if (linkName) {
+    const L = compiled.links.find((x) => x.name === linkName);
+    if (!L) return { error: `no link named ${linkName}` };
+    if (incoming.has(L.from)) return { error: `link ${linkName} does not leave a top solver (${L.from} has incoming links)` };
+    cands = [L];
+  }
+  if (cands.length === 0) return { error: 'the script declares no link that leaves a top solver' };
+  const what = (L) => {
+    const uses = (compiled.linkUses && compiled.linkUses[L.name]) || [];
+    const expand = (compiled.parts || []).some((p) => p.solver === L.from && p.facts && p.facts.length && p.facts.every((f) => f.receiver !== 'abstraction'));
+    return { L, uses, expand };
+  };
+  let plans = cands.map(what);
+  if (plans.length > 1) {
+    const useful = plans.filter((p) => p.uses.some((u) => ['clause', 'clauses', 'core', 'block', 'lift'].includes(u)) || p.expand);
+    if (useful.length !== 1) return { error: `several links leave a top solver (${cands.map((L) => L.name).join(', ')}); name one with --link` };
+    plans = useful;
+  }
+  const { L, uses, expand } = plans[0];
+  const base = { link: L.name };
+  if (compiled.links.some((x) => x.from === L.to)) return { ...base, unsupported: `solver ${L.to} passes models on to another solver (a chain)` };
+  if (L.lift || uses.includes('lift')) return { ...base, unsupported: 'lift link: certified per clause' };
+  if (expand) return { ...base, unsupported: 'the script expands the abstraction with rules (expand)' };
+  const kinds = ['clause', 'clauses', 'block', 'core'].filter((k) => uses.includes(k));
+  if (!kinds.length) return { error: `the script refines link ${L.name} with neither ${L.name}.clause, ${L.name}.clauses, a block nor a core: nothing to verify` };
+  return { ...base, clause: uses.includes('clause'), clauses: uses.includes('clauses'), kinds };
+}
+
+// The Lua body of the bounded mode (symbolic audit; with a space, one bound k).
+export function boundedBody(compiled, plan, { seconds = 60, fewest = true, space = null } = {}) {
+  const lines = declarationLines(compiled, space ? { [plan.link]: 'extra = true' } : null);
+  if (plan.unsupported) {
+    lines.push(`rt.bounded{ link = ${plan.link}, unsupported = ${luaQ(plan.unsupported)}${space ? ', space = true' : ''} }`);
+  } else {
+    lines.push(`rt.bounded{ link = ${plan.link}, clause = ${plan.clause ? 'true' : 'false'}, clauses = ${plan.clauses ? 'true' : 'false'}, ` +
+      `kinds = { ${plan.kinds.map(luaQ).join(', ')} }, seconds = ${Number(seconds) > 0 ? Number(seconds) : 60}, fewest = ${fewest ? 'true' : 'false'}` +
+      `${space ? ', space = true' : ''} }`);
+  }
   return lines.map((l) => '    ' + l).join('\n') + '\n';
 }
 
@@ -383,6 +433,21 @@ export async function validateGenerator(generator, engineRun, params = []) {
   if (r.status === 0) return [];
   const errs = parseClingoErrors(r.err || []).filter((e) => e.severity === 'error')
     .map((e) => ({ line: e.line - 1, col: e.col, message: e.message }));
+  if (!errs.length) errs.push({ line: 1, col: 1, message: (r.err || []).join('\n').trim() || `clingo exited with status ${r.status}` });
+  return errs;
+}
+
+// A space (docs/spec-instances.md section 8) checked by clingo --mode=gringo with its parameters
+// as constants (and the project's schema text, when given), so syntax errors and unsafe
+// variables are reported with their line and never reach ctl:add. params: ["k=3", ...].
+export async function validateSpace(space, engineRun, params = [], schema = '') {
+  const text = `${space.text || ''}\n${schema || ''}\n`;
+  const consts = params.flatMap((c) => ['-c', c]).join(' ');
+  const r = await engineRun(text, `--mode=gringo -Wnone ${consts}`.trim());
+  if (r.status === 0) return [];
+  const lines = (space.text || '').split('\n').length;
+  const errs = parseClingoErrors(r.err || []).filter((e) => e.severity === 'error')
+    .map((e) => (e.line > lines ? { line: e.line - lines, col: e.col, message: e.message, where: 'schema' } : { line: e.line, col: e.col, message: e.message }));
   if (!errs.length) errs.push({ line: 1, col: 1, message: (r.err || []).join('\n').trim() || `clingo exited with status ${r.status}` });
   return errs;
 }

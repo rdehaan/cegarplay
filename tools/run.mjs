@@ -26,7 +26,7 @@ import factory from '../vendor/clingo-wasm/clingo.js';
 import { load, derive, pickedVariant, ProjectError, expectedCheck, costTracker, costText } from '../js/project.js';
 import { Recording } from '../js/recording.js';
 import { hashText } from '../js/stats.js';
-import { assemble, parseEvent, validate, auditPlan, auditBody, modulesFor } from '../js/driver.js';
+import { assemble, parseEvent, validate, auditPlan, auditBody, boundedPlan, boundedBody, modulesFor } from '../js/driver.js';
 
 const root = new URL('..', import.meta.url);
 
@@ -63,7 +63,8 @@ const lua = (name) => fs.readFileSync(new URL(`lua/${name}`, root), 'utf8');
 // audit: { link, limit } runs the audit mode (lua/audit.lua) instead of the loop.
 // instance, variant: derive the plain project first (js/project.js derive); constants given
 // here override the instance's.
-export async function runProject(project, { onEvent, backstop = false, audit = null, instance, variant, constants } = {}) {
+// bounded: { link, seconds, fewest, space } runs the symbolic audit (lua/bounded.lua).
+export async function runProject(project, { onEvent, backstop = false, audit = null, bounded = null, instance, variant, constants } = {}) {
   const t0 = Date.now();
   try {
     project = await resolveProject(project, instance, engineRun, { draw: lua('draw.lua'), generate: lua('generate.lua') });
@@ -84,6 +85,13 @@ export async function runProject(project, { onEvent, backstop = false, audit = n
     const plan = auditPlan(problems.compiled, audit.link);
     if (plan.error) return { problems: [{ severity: 'error', message: plan.error, where: { kind: 'loop' } }], events: [] };
     opts = { modules: [...opts.modules, lua('audit.lua')], body: auditBody(problems.compiled, plan, { limit: audit.limit, vectors: audit.vectors }) };
+    project = { ...project, settings: { ...project.settings, solutions: 0, candidates: 0, trace: 0 } };
+  }
+  if (bounded) {
+    const plan = boundedPlan(problems.compiled, bounded.link);
+    if (plan.error) return { problems: [{ severity: 'error', message: plan.error, where: { kind: 'loop' } }], events: [] };
+    opts = { modules: modulesFor(project.settings, { mode: 'bounded' }).map((m) => lua(`${m}.lua`)),
+      body: boundedBody(problems.compiled, plan, { seconds: bounded.seconds, fewest: bounded.fewest !== false, space: bounded.space }) };
     project = { ...project, settings: { ...project.settings, solutions: 0, candidates: 0, trace: 0 } };
   }
   const a = assemble(project, problems.compiled, runtime, opts);

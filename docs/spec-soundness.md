@@ -250,3 +250,98 @@ and graph-coloring n = 5 (1,320 level 3) certified; `tutorial-weak-relevant` rej
 three mutations rejected (a literal removed: check 2; a solution removed: check 4; a level-3
 certificate claimed at level 2 on graph-coloring: check 2). Row 27 (graph-coloring n = 6, every
 step): proof log 7.9 MB against 7.7 MB for the plain recording (1.03x), certified in 24 s.
+
+## 7. The symbolic audit (PLAN3 phase S6)
+
+The same question as the audit (section 1) — can a clause that the strategy builds, from any
+candidate and any counterexample, remove a solution? — answered by one search with an inner
+CEGAR loop instead of enumeration (`lua/bounded.lua`, `rt.bounded`). Loaded only in bounded mode
+(`modulesFor(settings, { mode: 'bounded' })` = `ground`, `bounded`); a normal run's program is
+unchanged.
+
+Definitions as in the audit: a **solution** is an interface assignment of A (unrefined) with no
+model of C. The strategy is sound on the instance when for every candidate M, every model X of C
+under G(M) and every clause c that X yields (`G.clause`: the relevant atoms with M's values;
+`G.clauses`: each `clause(Id, _, _)` group), no solution falsifies c. Every X counts, also when the
+loop asks for `optimal` or `limit` counterexamples: a strategy that relies on optimal
+counterexamples may be reported unsound (as by the audit).
+
+**The verifier program V**, built through the backend of a fresh control from the captured ground
+programs (`lua/ground.lua`: `LIFT.copy` copies a store under an atom map, `LIFT.atom_map`):
+
+| Part | Content |
+| --- | --- |
+| A1 | A's rules (candidate M); interface atoms a_j |
+| C1 | C's rules with the interface atoms identified with A1's (a choice drops them from its heads; a normal rule with one as head becomes `:- body, not a_j`); guesses free: X is any model of C under M. r_j = C1's copy of `relevant(a_j)` |
+| A2 | A's rules again (candidate M'), interface atoms b_j |
+| Removal | `G.clause`: `:- r_j, a_j, not b_j.` and `:- r_j, not a_j, b_j.` (M' agrees with M on R). `G.clauses`: per group Id, `present_Id` from its `clause/3` atoms and a choice `pick_Id`, at most one pick; `:- pick_Id, clause(Id,T,true), b_T.` and `:- pick_Id, clause(Id,T,false), not b_T.` With both kinds, a selector chooses which clause removes M'; some removal must hold |
+| Pruning (C stratified) | C3 = C under M' with each guess head h derived as `h3 :- body3, h1` (X's guesses); constraints and interface-headed rules derive `violated`; `:- not violated.` |
+| Witness order | `d_j ↔ a_j xor b_j` and `#minimize` over the d_j (on by default; `--no-fewest`) |
+
+**The inner loop.** Solve V (with the witness order, the last model of the optimisation is
+kept). No model → **sound**. Otherwise solve C (its own control, under b's values as
+assumptions): no model → M' is a solution → **unsound**, with the witness `{ kind, candidate,
+counterexample, relevant | clause, solution, differ }` (the audit's fields). A model Y refines V:
+C stratified → a copy C_Y of C under M' with Y's guesses fixed must fire a constraint
+(`violated_Y`), which removes every M'' that Y still refutes, for every M and X; otherwise
+M''s interface vector is blocked (a **fallback**). A time budget (`seconds`, default 60) gives
+**budget**.
+
+**Why V unsatisfiable means sound.** Every model of V is a triple (M, X, M') with X a model of C
+under M (A1 ∪ C1 splits on A1) and M' removed by X's clause. The pruning and every C_Y remove only
+triples whose M' has a counterexample (with C stratified, fixed guesses give one model, and no
+violated constraint means it is an answer set), and a block removes one M' with a counterexample.
+So every triple with a solution M' survives, and an unsatisfiable V has none. An unsound verdict
+is checked directly: C has no model under M'.
+
+**Preconditions** (else `unsupported` with the reason): a plan from `boundedPlan` (one link
+leaving a top solver, no chain); no disjunctive rules, no negative weights, no `#external` (store
+error); refinements only by `G.clause`, `G.clauses`, `G.block` or `G.core` (blocks and cores are
+sound by construction, listed in `kinds`; a loop with neither clause kind is `sound` at once); no
+`expand`; no `lift` link ("lift link: certified per clause"). A `clause/3` atom naming an atom
+outside the link (the run stops with an error there) excludes its X.
+
+The enumerative audit covers `G.clauses` too (PLAN3): `auditPlan` adds `clauses: true` (the key
+only when used) and `audit_clauses` adds one pair per `clause/3` group with the values that
+falsify each literal (`pr.v`).
+
+**Events.** `A` progress `{ phase: "symbolic", rounds, refinements }` (at most every 0.25 s);
+`A` verdict `{ verdict: sound | unsound | budget | unsupported, mode: "symbolic", link, kinds,
+rounds, refinements, fallback, atoms, t, witness, reason, seconds }`.
+
+**CLI.** `node tools/audit.mjs <id> --symbolic [--seconds S] [--no-fewest] [--json]`: exit 0 sound,
+1 unsound, 2 usage, 3 budget, 4 unsupported.
+
+**Ties.** The witness has the fewest differing atoms (the same number as the audit's); among
+witnesses with that number the two may pick different ones (`tutorial-weak-relevant` n = 8: the
+audit names `pick(2)`, the symbolic audit `pick(1)`, both lose one solution of one atom).
+
+## 8. Bounded verification (PLAN3 phase S7, optional)
+
+A **space** (`docs/spec-instances.md` section 8) describes every instance up to a bound k. The
+strategy is **bounded-sound for the space up to k** when it is sound (section 7) on every instance
+the space generates for every k' ≤ k. Checked by iterative deepening, one symbolic audit per k'
+(`js/bounded.js verifySpace`), stopping at the first k' that is not sound; the witness adds the
+breaking `instance` (facts text) and `k`.
+
+In bounded mode with a space, the link is declared with `extra = true`: `lua/bounded.lua` wraps
+`rt.link` (so `lua/runtime.lua` is unchanged) and
+
+- grounds the space alone: its facts are kept for the witness, its other atoms are the **free
+  instance atoms**; each becomes an extra interface atom of the link (`L.inst[j]`; a choice in C
+  and program text, CLAUDE.md rule 10). An interface atom that is a free instance atom is marked
+  too;
+- checks that the interface does not depend on the free part: the glue control's brave and
+  cautious `glue/1` sets must be equal, else `unsupported` ("the interface depends on the
+  instance").
+
+In V, A2 shares A1's instance atoms (one instance for M and M'); instance atoms are never in a
+clause and never counted by the witness order; the check of M' and the blocks include them.
+
+What "sound up to k" does and does not say: it covers every instance of the space with k' ≤ k and
+nothing else. A strategy that is sound on every small instance can still lose a solution on a
+larger one, and a space that leaves out a kind of instance (only one query, no self-attacks, ...)
+says nothing about it.
+
+`node tools/audit.mjs <project | id> --space NAME --bound K [--from K0] [--seconds S] [--json]`
+prints one line per k and the verdict; exit codes as in section 7 (2 for a space with errors).

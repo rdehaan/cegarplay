@@ -8,6 +8,8 @@ programming, solved with clingo compiled to WebAssembly.
 - Both implementation plans (PLAN.md, PLAN2.md) are done and were removed; they are in
   the git history. `docs/directions/*.md` holds the design behind PLAN2's features; the `spike2/`
   prototypes it cites were removed too (git history).
+- `PLAN3.md`: bounded verification of refinement strategies (phases S6 symbolic audit, S7
+  instance spaces, S8 app and docs). `spike3/`: its measurements (`sweep.mjs`, `spaces.mjs`).
 - `FUTURE-DIRECTIONS.md`: what was considered and not built (language, tools, views, library).
 - `PROGRESS.md`: what is done and what is next. **Read it first after any
   context clear. Update it at every checkpoint.**
@@ -71,6 +73,8 @@ node tools/vendor.mjs                        # copy the engine into vendor/
 node tools/make-examples.mjs                 # rebuild examples/*.json (+ examples/contrib/*.json)
 node tools/make-replays.mjs                  # rebuild examples/replays/*.cprec (after a runtime or example change)
 node tools/audit.mjs <id> [--json]           # audit a project (exit 0 sound, 1 unsound)
+node tools/audit.mjs <id> --symbolic         # the symbolic audit (exit 3 budget, 4 unsupported)
+node tools/audit.mjs <id> --space NAME --bound K   # bounded verification over a space
 node tools/survey.mjs [id ...] [--variants]  # per instance: counts, refinements, audit time; variants vs expected
 node tools/make-chat-package.mjs             # dist/chat-package/: docs for writing examples in web chat
 node tools/guide-numbers.mjs [--check]       # measure the guide's examples into guide/numbers.json
