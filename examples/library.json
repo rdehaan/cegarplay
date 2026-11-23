@@ -1218,13 +1218,15 @@
       "summary": "Strategic sets of companies that contain a given company; minimality is refuted by a smaller set, refined with G.clauses (8 companies, 2 solutions).",
       "shape": "custom",
       "tags": [
-        "fast"
+        "fast",
+        "project"
       ],
       "expected": {
         "solutions": 2
       },
       "has": {
-        "instances": 3
+        "instances": 3,
+        "readme": 1
       }
     },
     {
@@ -1283,7 +1285,8 @@
       "summary": "Preferred extensions that leave out a query argument (sceptical acceptance), with one refinement clause per added argument (9 arguments, 3 solutions).",
       "shape": "custom",
       "tags": [
-        "fast"
+        "fast",
+        "project"
       ],
       "expected": {
         "solutions": 3
@@ -1291,7 +1294,8 @@
       "has": {
         "instances": 4,
         "generators": 1,
-        "views": 1
+        "views": 1,
+        "readme": 1
       }
     },
     {
@@ -1301,14 +1305,16 @@
       "summary": "Semi-stable extensions of an argumentation framework; the interface is the derived range/1, so clauses speak about ranges (11 arguments, 2 solutions).",
       "shape": "shape1",
       "tags": [
-        "fast"
+        "fast",
+        "project"
       ],
       "expected": {
         "solutions": 2
       },
       "has": {
         "instances": 1,
-        "generators": 1
+        "generators": 1,
+        "readme": 1
       }
     },
     {
@@ -1552,10 +1558,13 @@
       "group": "games",
       "summary": "Weighted graphs whose colouring game has a Nash equilibrium (four size instances).",
       "shape": "shape1",
-      "tags": [],
+      "tags": [
+        "project"
+      ],
       "expected": null,
       "has": {
-        "instances": 4
+        "instances": 4,
+        "readme": 1
       }
     },
     {
@@ -1564,11 +1573,16 @@
       "group": "games",
       "summary": "Explaining a voting outcome by axioms: 17 questions as instances, five refinement strategies and two loops as variants, a suite that compares them.",
       "shape": "shape1",
-      "tags": [],
+      "tags": [
+        "project"
+      ],
       "expected": null,
       "has": {
-        "instances": 17,
-        "suites": 2
+        "instances": 20,
+        "generators": 1,
+        "suites": 3,
+        "views": 1,
+        "readme": 1
       }
     },
     {
@@ -1659,13 +1673,15 @@
       "summary": "Strong Nash equilibria of a graphical game: a counterexample is a coalition whose members all gain by deviating together (8 players, 1 solution).",
       "shape": "shape1",
       "tags": [
-        "fast"
+        "fast",
+        "project"
       ],
       "expected": {
         "solutions": 1
       },
       "has": {
-        "instances": 4
+        "instances": 4,
+        "readme": 1
       }
     },
     {
@@ -1695,14 +1711,16 @@
         "benders",
         "bounds",
         "expansion",
-        "stops-at-optimum"
+        "stops-at-optimum",
+        "project"
       ],
       "expected": {
         "solutions": null,
         "optimum": 20
       },
       "has": {
-        "instances": 3
+        "instances": 3,
+        "readme": 1
       }
     },
     {
@@ -1714,11 +1732,13 @@
       "tags": [
         "fast",
         "several-solvers",
-        "externals"
+        "externals",
+        "project"
       ],
       "expected": null,
       "has": {
-        "instances": 3
+        "instances": 3,
+        "readme": 1
       }
     },
     {
@@ -1728,13 +1748,15 @@
       "summary": "A sequence of moves that reaches the goal from every start cell; each counterexample start cell is simulated inside the abstraction (Shape 3; t = 8, 3 solutions).",
       "shape": "shape3",
       "tags": [
-        "fast"
+        "fast",
+        "project"
       ],
       "expected": {
         "solutions": 3
       },
       "has": {
-        "instances": 4
+        "instances": 4,
+        "readme": 1
       }
     },
     {
@@ -1843,13 +1865,15 @@
       "summary": "Puzzles with a unique solution: k clues added to a partly filled 4 x 4 Sudoku; a counterexample is a pair of solutions (k = 2, 64 solutions).",
       "shape": "shape1",
       "tags": [
-        "fast"
+        "fast",
+        "project"
       ],
       "expected": {
         "solutions": 64
       },
       "has": {
-        "instances": 4
+        "instances": 4,
+        "readme": 1
       }
     },
     {
@@ -1941,11 +1965,14 @@
       "group": "puzzles",
       "summary": "sudoku-unique refined by unavoidable sets of the guessed grid, up to 3 disjoint ones per candidate: fewer clues in reasonable time (k = 22; the run stops at the first puzzle).",
       "shape": "custom",
-      "tags": [],
+      "tags": [
+        "project"
+      ],
       "expected": null,
       "has": {
         "instances": 5,
-        "views": 1
+        "views": 1,
+        "readme": 1
       }
     },
     {

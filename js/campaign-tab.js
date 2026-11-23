@@ -286,7 +286,7 @@ export class CampaignTab {
       })));
     }
     this.matrixBox.append(h('div', { class: 'instances-bar' }, h('b', {}, 'Instance × variant '), h('label', {}, 'Show ', pick),
-      h('span', { class: 'note' }, ' best solved cell per row in bold; click a heading to sort')), t);
+      h('span', { class: 'note' }, ' the best solved cell per row in bold (none on a tie); click a heading to sort')), t);
   }
 
   // the progress grid's tooltip: the cell under the mouse

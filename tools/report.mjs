@@ -25,7 +25,7 @@ export function report(rows, { metric = 'time', limit = 0, title = 'Campaign' } 
   const bad = inconsistencies(rows);
   const lines = [`# ${title}`, '',
     `${m.rows.length} instances × ${m.variants.length} variants, ${rows.filter((r) => !r.skipped).length} cells. ` +
-    `Metric: ${metric} (median over seeds); the best solved cell of a row is in bold; a cell that did not finish shows its outcome.`, '',
+    `Metric: ${metric} (median over seeds); the best solved cell of a row is in bold (none on a tie); a cell that did not finish shows its outcome.`, '',
     '## Per variant', '',
     '| variant | solved | cells | total time (s) | PAR2 (s) |', '|---|---:|---:|---:|---:|',
     ...m.variants.map((v) => { const t = tot[v]; return `| ${v} | ${t.solved} | ${t.cells} | ${t.time.toFixed(3)} | ${t.par2.toFixed(3)} |`; }),

@@ -125,3 +125,13 @@ test('review of wave 3: run settings and the engine tag change the key; skipped 
   const d = await runSuite(p, suite, opts({ store }));
   assert.equal(d.ran, 1);
 });
+
+test('a generator suite can give its instances constants (voting-justification, suite generated)', async () => {
+  const { suiteInstances } = await import('../js/campaign.js');
+  const p = ex('voting-justification');
+  const s = p.suites.find((x) => x.name === 'generated');
+  const inst = suiteInstances(p, s);
+  assert.equal(inst.length, 12);
+  assert.deepEqual(inst[0].instance.constants, { num_candidates: '3', num_voters: '3', num_profiles: '3', num_axiom_instances: '3' });
+  assert.equal(inst[0].id, 'vote-question-v2-a2-s1');
+});

@@ -154,7 +154,7 @@ async function main(argv) {
       const mismatch = v.checked && !v.ok;
       if (mismatch || (r.problems && r.problems.length) || !D || D.outcome === 'error') bad++;
       const what = r.problems && r.problems.length ? `problem: ${r.problems[0].message}` : !D ? `no result (${r.status})`
-        : `${got} solutions${t.n ? `, cost ${costText(t.cost)}${t.same ? '' : ' (costs differ)'}` : ''}; ${D.outcome}${D.exhausted ? ' (exhausted)' : ''}; ${S ? S.candidates : '?'} candidates; ${S ? S.t : '?'} s`;
+        : `${got} solutions${t.n && (t.cost || !t.same) ? `, cost ${costText(t.cost)}${t.same ? '' : ' (costs differ)'}` : ''}; ${D.outcome}${D.exhausted ? ' (exhausted)' : ''}; ${S ? S.candidates : '?'} candidates; ${S ? S.t : '?'} s`;
       console.log(`${x.id}: ${what}${v.want ? (mismatch ? `; MISMATCH: expected ${v.want}` : v.checked ? '; as expected' : `; expected ${v.want}`) : ''}`);
     }
     process.exitCode = bad ? 1 : 0;

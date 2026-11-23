@@ -141,8 +141,11 @@ test('the library: groups from library.json, filter, ?example=, copy link, unkno
   await page.click('label[for="tab1"]');
   assert.deepEqual(await page.$$eval('#library-section, .library-group', (l) => l.filter((d) => d.open).length), 0, 'folded by default');
   await B.openLibrary(page);
-  assert.equal(await page.$$eval('#library .library-entry', (l) => l.length), lib.examples.length);
+  assert.equal(await page.$$eval('#library .library-group:not([data-group="projects"]) .library-entry', (l) => l.length), lib.examples.length);
+  // the Projects group lists the examples with a readme again (FUTURE-DIRECTIONS E3)
+  assert.equal(await page.$$eval('#library .library-group[data-group="projects"] .library-entry', (l) => l.length), lib.examples.filter((e) => e.tags.includes('project')).length);
   assert.equal(await page.$eval('#library .library-entry.loaded', (e) => e.dataset.example), 'lang-basics');
+  assert.equal(await page.isVisible('#project-readme'), false, 'no readme');
   await page.fill('#library-filter', 'shape4');
   const shown = await page.$$eval('#library .library-entry', (l) => l.filter((e) => !e.hidden).map((e) => e.dataset.example));
   assert.ok(shown.includes('gc-shape4') && !shown.includes('nash'), shown.join());
@@ -151,6 +154,16 @@ test('the library: groups from library.json, filter, ?example=, copy link, unkno
   await page.waitForFunction(() => /\?example=nash/.test(document.getElementById('load-status').textContent));
   await page.click('#library [data-load-example="tutorial-first-run"]');
   await page.waitForFunction(() => /Sum-free/.test(document.getElementById('load-status').textContent));
+  // a project kit's readme is shown under its title, and edited with the description (E1)
+  await page.click('#library [data-load-example="voting-justification"]');
+  await page.waitForFunction(() => !document.getElementById('project-readme').hidden);
+  await page.click('#project-readme summary');
+  assert.match(await page.textContent('#project-readme-body h2'), /Background/);
+  await page.click('#edit-project-button');
+  await page.fill('#project-readme-input', '# Notes\n\nMy **own** question.');
+  await page.click('#save-project-info');
+  assert.match(await page.innerHTML('#project-readme-body'), /<b>own<\/b>/);
+  assert.equal(await page.evaluate(() => window.cegarplay.project.readme), '# Notes\n\nMy **own** question.');
   assert.deepEqual(errors, []);
   await context.close();
   const o = await B.openPage(browser, server, '?example=no-such-thing');

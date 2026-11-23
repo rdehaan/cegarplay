@@ -155,6 +155,11 @@ export function load(json) {
   out.version = VERSION;
   out.title = typeof p.title === 'string' ? p.title : 'Untitled';
   out.description = typeof p.description === 'string' ? p.description : '';
+  // readme (FUTURE-DIRECTIONS E1): Markdown for a project kit, shown in the Control tab
+  if ('readme' in p) {
+    if (typeof p.readme !== 'string') throw new ProjectError('readme must be a string (Markdown)');
+    if (!p.readme.trim()) delete out.readme;
+  }
   if (!Array.isArray(p.fragments)) throw new ProjectError('fragments must be a list');
   const names = new Set();
   out.fragments = p.fragments.map((f, i) => {
@@ -501,11 +506,12 @@ export function exportStandalone(project, runtimeLua, modules = {}) {
 // list, one number per priority level; a single number means a one-level cost.
 export const costList = (c) => (c === null || c === undefined ? null : Array.isArray(c) ? c.map(Number) : [Number(c)]);
 const sameCost = (a, b) => !!a && !!b && a.length === b.length && a.every((v, i) => v === b[i]);
+const sameOrNone = (a, b) => (a === null && b === null) || sameCost(a, b);
 export const costText = (c) => { const l = costList(c); return l ? l.join(' ') : '–'; };
 
 // A running summary of the costs of a run's solutions: add(cost) per M event.
 export function costTracker() {
-  return { cost: null, same: true, n: 0, add(c) { const l = costList(c); if (this.n === 0) this.cost = l; else if (!sameCost(this.cost, l)) this.same = false; this.n++; } };
+  return { cost: null, same: true, n: 0, add(c) { const l = costList(c); if (this.n === 0) this.cost = l; else if (!sameOrNone(this.cost, l)) this.same = false; this.n++; } };
 }
 
 // r = { outcome, exhausted, solutions, cost, same } (cost and same from a costTracker).

@@ -15,10 +15,17 @@ export function buildPackage() {
   files['tutorial.html'] = read('tutorial.html');
   files['library.json'] = read('examples/library.json');
   files['cegarcheck.py'] = read('tools/cegarcheck.py');
-  for (const e of lib.examples) files[`example-${e.id}.json`] = read(`examples/${e.id}.json`);
+  for (const e of lib.examples) {
+    const text = read(`examples/${e.id}.json`);
+    files[`example-${e.id}.json`] = text;
+    // a project kit's readme, also as its own file (easier to read than a JSON string)
+    const readme = JSON.parse(text).readme;
+    if (typeof readme === 'string' && readme.trim()) files[`readme-${e.id}.md`] = readme.trim() + '\n';
+  }
   const p = load(read('examples/starter.json'));
   p.title = 'My problem';
   p.description = 'Replace: the problem in 1-3 sentences, what the loop does, what to look at.';
+  p.readme = '# My problem\n\nOptional (a project kit): the background, what the abstraction and the check model, the baseline and the variants, what "better" means, and open questions. Delete this field if not needed.\n';
   const t = JSON.parse(save(p, { runs: false }));
   delete t.runs;
   t.library = { id: 'my-problem', group: 'other', summary: 'Replace: one sentence with the solution count.',

@@ -94,6 +94,13 @@ breaks as `\n`. After the block, give two or three sentences on what the example
   British spelling (colour, neighbour).
 - `title` short (2–5 words); `description` 1–3 sentences: the problem, what the loop does,
   and what to look at.
+- Optional `readme` (Markdown) for an example that makes a good student project: background, the
+  baseline with measured numbers, things to try, how to measure, open questions. The template has
+  one; delete it if not needed. `readme-voting-justification.md` is the full example of a kit.
+- Generators (`generators`, manual *Generators*) draw random instances with `@flip`, `@int`,
+  `@perm`, `@subset`, `@weighted` and `@mallows`; an instance can be a recipe
+  `{ "id": "random-1", "recipe": { "generator": "g", "params": { "n": 6 }, "seed": 1 } }` instead
+  of facts (`example-qbf.json`, `example-af-preferred.json`).
 - The problem's input (a graph, a formula, an election, items) goes into **instances**, not into
   `shared`: `"instances": [{ "id": "example", "facts": "% what it is\n...", "constants": {},
   "expected": { "solutions": 3 }, "tags": ["library"] }, ...]` and `"version": 2` (manual,

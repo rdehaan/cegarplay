@@ -388,6 +388,32 @@ ${query ? 'query(@int(1, n, query)).\n' : ''}
 #show arg/1.  #show att/2.${query ? '  #show query/1.' : ''}
 `,
 });
+// voting-justification: random questions (FUTURE-DIRECTIONS E2)
+const VOTE_QUESTION = {
+  name: 'vote-question',
+  description: 'A random question: a of the eight axioms, a target profile of v voters over three candidates (uniform rankings, sorted), one target outcome.',
+  params: { v: 'int', a: 'int' }, defaults: { v: 2, a: 2 },
+  text: `% vote-question: a random question for voting-justification. a axioms out of eight, a target
+% profile of v voters over three candidates (each voter a uniform ranking; the voters sorted
+% lexicographically, as the abstraction expects), and one target outcome.
+ax(1,pareto). ax(2,faithfulness). ax(3,unanimity). ax(4,cancellation).
+ax(5,reinforcement). ax(6,condorcet). ax(7,neutrality2). ax(8,pos_responsiveness).
+use_axiom(A) :- ax(I,A), @subset(a, 8, I, axioms) = 1.
+% the six rankings of 1..3 in lexicographic order: rk(K, Position, Candidate)
+rk(1,1,1). rk(1,2,2). rk(1,3,3).   rk(2,1,1). rk(2,2,3). rk(2,3,2).
+rk(3,1,2). rk(3,2,1). rk(3,3,3).   rk(4,1,2). rk(4,2,3). rk(4,3,1).
+rk(5,1,3). rk(5,2,1). rk(5,3,2).   rk(6,1,3). rk(6,2,2). rk(6,3,1).
+voter(1..v).
+pick(V,@int(1, 6, V, ranking)) :- voter(V).
+% voter V's place in the sorted profile: voters with a smaller ranking, then ties by index
+place(V,1 + N1 + N2) :- pick(V,K), N1 = #count { W : pick(W,L), L < K }, N2 = #count { W : pick(W,K), W < V }.
+target_profile(P,C,Pos) :- place(V,P), pick(V,K), rk(K,Pos,C).
+target_outcome(@int(1, 3, outcome)).
+requires_polarity_axiom.
+#show use_axiom/1. #show target_profile/3. #show target_outcome/1. #show requires_polarity_axiom/0.
+`,
+};
+
 const QBF_DNF = {
   name: 'qbf-dnf',
   description: 'A random exists-forall QBF with a DNF matrix: t terms of three literals over nx + ny variables.',
@@ -443,10 +469,20 @@ export const GENERATORS = {
   'af-semi-stable': [afGnp(false)],
   qbf: [QBF_DNF],
   'kemeny-control': [BALLOTS_IC, BALLOTS_MALLOWS],
+  'voting-justification': [VOTE_QUESTION],
 };
 // recipe instances added to the library (their facts are generated on demand)
 export const RECIPES = {
   qbf: [{ id: 'dnf-1', recipe: { generator: 'qbf-dnf', params: { nx: 5, ny: 4, t: 10 }, seed: 1 }, tags: ['generated'] }],
+  // three generated questions with small bounds; counts measured with tools/run.mjs --solutions all
+  'voting-justification': [
+    { id: 'random-1', recipe: { generator: 'vote-question', params: { v: 3, a: 3 }, seed: 1 }, expected: { solutions: 6 }, tags: ['generated'],
+      constants: { num_candidates: '3', num_voters: '3', num_profiles: '3', num_axiom_instances: '3' } },
+    { id: 'random-2', recipe: { generator: 'vote-question', params: { v: 2, a: 2 }, seed: 3 }, expected: { solutions: 0 }, tags: ['generated', 'no-solution'],
+      constants: { num_candidates: '3', num_voters: '2', num_profiles: '3', num_axiom_instances: '3' } },
+    { id: 'random-3', recipe: { generator: 'vote-question', params: { v: 3, a: 2 }, seed: 3 }, expected: { solutions: 0 }, tags: ['generated', 'no-solution'],
+      constants: { num_candidates: '3', num_voters: '3', num_profiles: '2', num_axiom_instances: '2' } },
+  ],
 };
 
 // suites and variants added to library examples (docs/spec-instances.md section 5)
@@ -551,6 +587,26 @@ draw(emph(cell(V,C))) :- lit(list(V,C), _).
 draw(note("A proper colouring from the lists (x): one of its ringed colours must leave a list.")) :- kind(reject).
 #show draw/1.
 `,
+  'voting-justification': `% The profiles of the candidate: one row per profile and voter, one column per position
+% (labelled with the candidate there), then one column per candidate for the outcome of the
+% profile in the counterexample. The target profile is profile 1.
+#program scene.
+draw(layout(grid)).
+row(P,V,(P-1)*num_voters+V) :- profile_num(P), voter(V).
+draw(cell(R,Pos)) :- row(_,_,R), position(Pos).
+draw(cell(R,num_candidates+1+C)) :- row(_,1,R), candidate(C).
+draw(attr(cell(R,num_candidates+1+C), label, C)) :- row(_,1,R), candidate(C).
+draw(attr(cell(R,num_candidates+1+C), stroke, target)) :- row(1,1,R), target_outcome(C).
+
+#program frame.
+draw(attr(cell(R,Pos), label, C)) :- cand(profile(P,V,C,Pos)), row(P,V,R).
+draw(attr(cell(R,Pos), fill, used)) :- cand(profile(P,V,C,Pos)), row(P,V,R).
+draw(emph(cell(R,Pos))) :- lit(profile(P,V,C,Pos),_), row(P,V,R).
+draw(attr(cell(R,num_candidates+1+C), fill, outcome)) :- cex(outcome(P,C)), row(P,1,R).
+draw(note("Outcomes (right) that satisfy the axiom instances but differ from the target: the clause names the ringed cells.")) :- kind(reject).
+draw(note("A justification: the target profile (top rows) and the profiles its axiom instances use.")) :- kind(solution).
+#show draw/1.
+`,
   qbf: `% The x-variables; true ones filled; the variables a clause names ringed.
 #program scene.
 draw(layout(list)).
@@ -562,4 +618,102 @@ draw(emph(node(x(I)))) :- lit(x(I), _).
 draw(note("A y-assignment falsifies every term: flip one of the ringed x-variables.")) :- kind(reject).
 #show draw/1.
 `,
+};
+
+// ---------------------------------------------------------------------------
+// Project cards (FUTURE-DIRECTIONS E3): a short readme with a research question and baseline
+// numbers for examples that make good student projects. The full kit is voting-justification
+// (tools/make-examples.mjs, VOTE_README). Each gets the library tag "project".
+// Baselines: node tools/run.mjs <id> --seconds 60 (one machine, Nov 2026).
+// ---------------------------------------------------------------------------
+const card = (title, question, baseline, ideas, measure) => `# Project: ${title}
+
+## Research question
+
+${question}
+
+## Baseline
+
+${baseline}
+
+## Things to try
+
+${ideas.map((x) => `- ${x}`).join('\n')}
+
+## How to measure
+
+${measure}
+`;
+const CAMPAIGN = 'Add the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.';
+export const PROJECT_CARDS = {
+  'sudoku-unavoidable': card('minimal Sudoku puzzles by unavoidable sets',
+    'How much do stronger refinements (unavoidable sets, several per check) and symmetry cut the candidates of a "fewest clues" search on 9 × 9 Sudoku?',
+    'The default instance with k = 22 finds its first puzzle after 1,684 candidates and 2,325 clauses (17 s). `sudoku-unique` is the weaker baseline: one clause per counterexample.',
+    ['Ask the check for several unavoidable sets per candidate and compare the clause counts (Statistics tab, Lifting coach).',
+      'Lift a clause over the symmetries of the grid (digit permutations, row and column swaps within a band); compare with `sudoku-symmetry`.',
+      'Grow k downwards: at which k does the time explode, and why?'],
+    CAMPAIGN),
+  'fewest-clues': card('fewest clues on 4 × 4 Sudoku',
+    'The fewest clues problem is Σ2P-complete. How does the number of candidates grow with the number of clues to add (k) and with the number of printed clues?',
+    '64 solutions (exhausted) after 353 candidates and 289 clauses, 0.5 s, at k = 2 on the example instance.',
+    ['A suite over k (a constants grid) and over the instances; fit the growth factor per step of k.',
+      'A refinement that names the whole unavoidable set (as in `sudoku-unavoidable`) instead of one clue.',
+      'Write a generator of partly filled grids and look for the hardest ones (Fuzz, mining).'],
+    CAMPAIGN),
+  'conformant-planning': card('conformant planning: expansion against clauses',
+    'When does expansion (a copy of the robot per counterexample, Shape 3) beat clause refinement, and how many counterexamples does a plan need?',
+    '3 plans (exhausted) after 11 candidates and 8 counterexamples (0.2 s) at t = 8. The reference run would remove up to 65,536 plans one by one. `conformant-growing` finds the horizon by itself: 27 candidates.',
+    ['A variant with a clause refinement (blocking the plan prefix that fails) and a campaign against the expansion loop.',
+      'Larger grids (a generator of mazes) and longer horizons: how does the number of copies grow?',
+      'Compare with `conformant-growing`: is growing the horizon cheaper than guessing it?'],
+    CAMPAIGN),
+  'conformant-growing': card('growing the horizon',
+    'Is it cheaper to grow the horizon one step at a time (and keep what was learned) than to solve each horizon from scratch?',
+    '3 shortest plans (exhausted) after 27 candidates and 24 counterexamples (0.4 s).',
+    ['A variant that restarts at each horizon (no learned clauses kept) and a campaign over the instances.',
+      'Grow the horizon by two steps, or by doubling, and compare candidates and time.',
+      'Bigger mazes: where does the time go (Observatory, cost per line)?'],
+    CAMPAIGN),
+  'af-preferred': card('argumentation: preferred extensions',
+    'How does a CEGAR loop for sceptical acceptance under preferred semantics compare with dedicated solvers (for example the ICCMA competitors), and which refinement scales best on random frameworks?',
+    '3 solutions (exhausted) after 13 candidates and 13 clauses (0.06 s) on the example framework; the generator `af-gnp` draws more.',
+    ['A suite over the generator grid (n, p) with seeds; fit the growth with n.',
+      'Refine with one clause per larger admissible set against `G.clause` over relevant/1; compare clause lengths.',
+      'Export frameworks (Export for clingo) and time a dedicated solver on the same instances.'],
+    CAMPAIGN),
+  'af-semi-stable': card('argumentation: semi-stable extensions',
+    'Semi-stable extensions maximise the range. Does an interface of derived atoms (`range/1`) give stronger refinements than one of guessed atoms (`in/1`), and by how much?',
+    '2 solutions (exhausted) after 7 candidates and 5 clauses (0.06 s) on the example.',
+    ['A variant whose interface is `in/1` and a campaign on generated frameworks (copy the `af-gnp` generator from `af-preferred`).',
+      'Stage extensions: change the check and compare the loops.',
+      'Count the candidates per instance size and fit the growth.'],
+    CAMPAIGN),
+  'strategic-companies': card('strategic companies',
+    'Strategic companies is a classic Σ2P benchmark of ASP competitions. How does the CEGAR loop scale against the disjunctive encoding solved by clingo alone?',
+    '2 solutions (exhausted) after 10 candidates and 8 clauses (0.06 s) on the example.',
+    ['Write a generator of random company structures (goods, producers, control) and a suite over its size.',
+      'Write the disjunctive encoding as the `reference` variant (or run it with Export for clingo) and compare the times.',
+      'Try one clause per smaller closed set against a clause over all companies.'],
+    CAMPAIGN),
+  nash: card('Nash equilibria of colouring games',
+    'How does the number of candidates depend on the number of players and edge weights, and does a refinement over the deviating player only pay?',
+    'The default run stops at its first solution after one candidate (0.6 s). With all solutions: n2-w1 12, n2 36, n3-w1 576, n3-w2 4,080 (the instances\' expected counts).',
+    ['A suite over the four instances with all solutions; read the matrix by candidates.',
+      'A refinement that names only the deviating player\'s colour and its neighbours.',
+      'Compare with `strong-nash`, which checks coalitions instead of single players.'],
+    CAMPAIGN),
+  'strong-nash': card('strong Nash equilibria',
+    'Deciding whether a strong Nash equilibrium exists is Σ2P-complete. Which refinement (the coalition, its members\' actions, the neighbourhood) cuts the most candidates?',
+    '1 solution (exhausted) after 70 candidates and 69 clauses (0.1 s) on the example.',
+    ['Variants with the three refinements and a campaign over the instances.',
+      'A generator of random graphical games and a scaling plot.',
+      'A loop with two checks: Nash first (cheap), then coalitions (see `lang-two-stage`).'],
+    CAMPAIGN),
+  'benders-tardiness': card('logic-based Benders decomposition',
+    'How much do stronger optimality cuts (and feasibility cuts) shrink the number of master iterations, and when do the bounds meet?',
+    'The optimum after 26 master solutions and 26 cuts (1.1 s) on the example; the bounds are tracked in the Statistics tab.',
+    ['A variant with a weaker cut (only the machine\'s exact assignment) and a campaign over the instances.',
+      'Stop as soon as the lower bound reaches the upper bound (an `if` on the tracked numbers).',
+      'Larger instances from a generator of jobs and machines; plot the bounds against the iterations.'],
+    CAMPAIGN),
 };

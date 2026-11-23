@@ -91,5 +91,6 @@
         "slow"
       ]
     }
-  ]
+  ],
+  "readme": "# Project: Nash equilibria of colouring games\n\n## Research question\n\nHow does the number of candidates depend on the number of players and edge weights, and does a refinement over the deviating player only pay?\n\n## Baseline\n\nThe default run stops at its first solution after one candidate (0.6 s). With all solutions: n2-w1 12, n2 36, n3-w1 576, n3-w2 4,080 (the instances' expected counts).\n\n## Things to try\n\n- A suite over the four instances with all solutions; read the matrix by candidates.\n- A refinement that names only the deviating player's colour and its neighbours.\n- Compare with `strong-nash`, which checks coalitions instead of single players.\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n"
 }

@@ -90,5 +90,6 @@
       "tags": []
     }
   ],
-  "runs": []
+  "runs": [],
+  "readme": "# Project: fewest clues on 4 × 4 Sudoku\n\n## Research question\n\nThe fewest clues problem is Σ2P-complete. How does the number of candidates grow with the number of clues to add (k) and with the number of printed clues?\n\n## Baseline\n\n64 solutions (exhausted) after 353 candidates and 289 clauses, 0.5 s, at k = 2 on the example instance.\n\n## Things to try\n\n- A suite over k (a constants grid) and over the instances; fit the growth factor per step of k.\n- A refinement that names the whole unavoidable set (as in `sudoku-unavoidable`) instead of one clue.\n- Write a generator of partly filled grids and look for the hardest ones (Fuzz, mining).\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n"
 }

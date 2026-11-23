@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { importLp, load, save, template } from '../js/project.js';
 import { stripAspComments } from '../js/driver.js';
-import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS } from './library.mjs';
+import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS, PROJECT_CARDS } from './library.mjs';
 import { buildGuide } from './guide.mjs';
 
 const root = new URL('..', import.meta.url);
@@ -211,6 +211,104 @@ const VOTE_LOOP_HEAD = `solver A = shared + abstraction
 solver C = shared + check + relevant   options "--heuristic=Domain"
 link   G = A -> C via shared + glue
 `;
+// The project kit of voting-justification (FUTURE-DIRECTIONS E1, E2): the readme field.
+const VOTE_README = `# Explaining a voting outcome by axioms
+
+## Background
+
+A *justification* of an election outcome explains it from normative principles (axioms) such
+as Pareto, faithfulness or reinforcement: given a target profile and its outcome, find a small set
+of *axiom instances* (an axiom applied to one, two or three concrete profiles) such that every
+voting rule that satisfies them must give the target profile that outcome. The idea is from
+Boixel and Endriss (AAMAS 2020) and Nardi, Boixel and Endriss (AAMAS 2022); the ASP encoding is
+\`explain1.lp\` of the declarative-cegar repository.
+
+The problem is Σ2P-shaped: *there is* a set of axiom instances (with the profiles they need) such
+that *every* outcome assignment that satisfies them gives the target outcome. That is a CEGAR loop.
+
+## The loop
+
+- **Abstraction (A)**: guesses up to \`num_profiles\` profiles (profile 1 is the target) and exactly
+  \`num_axiom_instances\` applicable axiom instances on them, with symmetry breaking.
+- **Check (C)**: looks for outcomes of all profiles that satisfy every chosen axiom instance but
+  differ from the target outcome on profile 1. Such outcomes are the counterexample.
+- **Refinement**: a clause over the interface atoms that are \`relevant/1\` for the counterexample.
+  The five strategies differ in which axiom-instance atoms they call relevant (fragments
+  \`relevant\`, \`relevant_s1\` … \`relevant_s5\`). Strategy 2 is the default.
+
+## Baseline and variants
+
+| Variant | What changes |
+|---|---|
+| default | Shape 1 (\`search A\`), strategy 2 |
+| s1, s3, s4, s5 | another refinement strategy |
+| record | Shape 1 with \`--enum-mode=record\` on A: blocked candidates stay as nogoods |
+| shape2 | a Shape 2 loop (solve A again after each refinement) |
+| reference | the blocking loop: the ground truth on small questions |
+
+## Instances and ground truth
+
+- 17 questions from \`explain1.lp\` (tags: \`original\`, \`hard\`, \`no-solution\`). The 15 with an
+  expected count finish in seconds; the counts agree with the reference variant and with
+  \`tools/cegarcheck.py\`.
+- Three generated questions (\`random-1\` … \`random-3\`, generator \`vote-question\`: \`a\` random
+  axioms, a sorted random target profile of \`v\` voters, a random outcome). Most random questions
+  have no justification within small bounds, which is itself a useful test of soundness.
+- The two hard questions have no expected count yet. \`cancel-reinf-posresp-k4\` (the question
+  the original file has switched on) finds its first justification in about a second but does not
+  finish within a minute; \`pareto-neutral-cancel-reinf-k8\` finds none within a minute. Getting
+  their ground truth (a long run of the reference variant, or \`tools/cegarcheck.py --instance ID
+  --solutions all --seconds 3600\` with Python clingo) is part of the project.
+
+## Suites
+
+- \`questions\`: every question, the default loop (20 s each).
+- \`strategies\`: the 15 questions with a count × every variant (30 s each). Read the
+  instance × variant matrix in the Campaign tab, or run
+  \`node tools/bench.mjs voting-justification --suite strategies --out rows.jsonl\` and
+  \`node tools/report.mjs rows.jsonl\`.
+- \`generated\`: 12 generated questions (v = 2, 3; a = 2, 3; three seeds) × default, s1, record,
+  reference.
+
+## What "better" means
+
+Fewer candidates (each costs a check), less time, and more questions solved within the limit.
+A variant that finds a *different* number of justifications than the reference is unsound
+(or the reference has not finished): the Campaign tab marks those cells ✗.
+
+## Measured (tools/bench.mjs, one machine, Nov 2026)
+
+Suite \`strategies\` (15 questions × 8 variants, 30 s limit): every cell finishes and every variant
+agrees with the reference. Eleven questions need at most 9 candidates in every variant; the four
+others separate the strategies (candidates):
+
+| question | default | s1 | s3 | s4 | s5 | shape2 | record | reference |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| faith-cancel-reinf-pareto-condorcet-k3 | 2,132 | **770** | 2,117 | 2,134 | 2,123 | 2,093 | 2,132 | 2,123 |
+| faith-cancel-reinf-pareto-k3 | 1,364 | **405** | 1,415 | 1,341 | 1,407 | 1,329 | 1,329 | 1,407 |
+| faith-pareto-neutral-reinf-k4 | 146 | **44** | 146 | 146 | 146 | 146 | 146 | 146 |
+| pareto-neutral-reinf-k5 | 48 | **38** | 48 | 48 | 48 | 48 | 48 | 48 |
+
+Total time: s1 4.2 s, default 6.1 s, reference 6.0 s, shape2 19.9 s. Strategy 1 (the axiom
+instances the outcomes falsify) is the only one that beats blocking; the default strategy 2 is
+no better than the reference run here. Suite \`generated\` (12 questions): s1 9.8 s in total,
+reference 36.9 s, record 43.0 s, default 49.6 s. Why strategy 2 gains nothing over blocking is a
+good first question.
+
+## Open questions
+
+1. Which strategy wins on which kind of question, and why? Relate the matrix to the axioms each
+   question uses (instances whose axioms link two or three profiles behave differently).
+2. Can a refinement be *lifted* over symmetric profiles (permuting voters or candidates), so that
+   one counterexample rules out many candidates? Measure the clause lengths (Statistics tab).
+3. Does Shape 2, or a rule refinement (\`G.rule\`), pay on the hard questions?
+4. The hard questions (\`cancel-reinf-posresp-k4\`, \`pareto-neutral-cancel-reinf-k8\`): what
+   change to the abstraction (symmetry breaking, a bound on the profiles, a two-step search that
+   first fixes the profiles, as the original file suggests) makes them finish?
+5. Is every strategy sound? Run the audit (Audit button, or \`node tools/audit.mjs
+   voting-justification --instance ID\`) on small questions and grow them with Fuzz.
+`;
+
 function voteStrategies(p) {
   const c = frag(p, 'check');
   const at = c.text.indexOf('% %%% REFINEMENT STRATEGY 1');
@@ -252,6 +350,15 @@ loop:
     else:
         accept M
         A.add(G.block(M))
+` } },
+    // Shape 1 with clasp's record enumeration: blocked candidates are kept as nogoods, so the
+    // abstraction prunes more (manual, "Shape 1")
+    { name: 'record', swap: {}, constants: {}, loop: { language: 'loop', text: VOTE_LOOP_HEAD.replace('solver A = shared + abstraction', 'solver A = shared + abstraction   options "--enum-mode=record"') + `
+search A:
+    on candidate M:
+        X = C.solve(assume G(M))
+        if X:
+            reject M with G.clause(M, X)
 ` } },
     { name: 'reference', swap: {}, constants: {}, loop: { language: 'loop', text: VOTE_LOOP_HEAD + `
 search A:
@@ -350,11 +457,16 @@ export function buildExamples() {
       voteStrategies(p);
     }, { solutions: 1 });
   vote.settings.constants = { ...vote.instances.find((i) => i.id === VOTE_DEFAULT).constants };
+  vote.readme = VOTE_README;
   vote.suites = [
     { name: 'questions', instances: { ids: 'all' }, limits: { seconds: 20 } },
     // every refinement strategy and loop on the questions that finish
     { name: 'strategies', instances: { ids: vote.instances.filter((i) => i.expected).map((i) => i.id) },
       variants: ['default', ...vote.variants.map((v) => v.name)], limits: { seconds: 30 } },
+    // generated questions (the generator vote-question) with small bounds
+    { name: 'generated', instances: { generator: 'vote-question', grid: { v: [2, 3], a: [2, 3] }, seeds: 3,
+      constants: { num_candidates: 3, num_voters: 3, num_profiles: 3, num_axiom_instances: 3 } },
+      variants: ['default', 's1', 'record', 'reference'], limits: { seconds: 30 } },
   ];
   // constants-only instances; "" = the project as written (n = 5, w = 3). Counts agree with the
   // Reference loop (cegarcheck --mode block) and the audit is sound on each.
@@ -411,6 +523,7 @@ export function loadContrib(dir = new URL('examples/contrib/', root), taken = ne
 function features(p) {
   const has = {};
   for (const k of ['instances', 'generators', 'suites', 'views']) if ((p[k] || []).length) has[k] = p[k].length;
+  if (typeof p.readme === 'string' && p.readme.trim()) has.readme = 1;
   return Object.keys(has).length ? { has } : {};
 }
 
@@ -436,6 +549,8 @@ export function buildAll({ contribDir } = {}) {
       e.project.views = [{ name: 'view', fragments: base }];
       e.project.version = 2;
     }
+    if (PROJECT_CARDS[e.id]) e.project.readme = PROJECT_CARDS[e.id];
+    if (e.project.readme && !(e.tags || []).includes('project')) e.tags = [...(e.tags || []), 'project'];
     if (RECIPES[e.id]) e.project.instances = [...(e.project.instances || []), ...structuredClone(RECIPES[e.id]).map((x) => ({ constants: {}, ...x }))];
   }
   const files = {};

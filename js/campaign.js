@@ -4,7 +4,7 @@
 //
 //   suite: { name, instances, variants, solver_seeds, limits, where }
 //     instances: { ids: [...] | "all" }
-//              | { generator, grid: { param: [values] }, seeds: N, attempts }
+//              | { generator, grid: { param: [values] }, seeds: N, attempts, constants: { name: value } }
 //              | { constants: { name: [values] }, base: instance id }
 //     variants: ["default", "reference", ...]   (default: ["default"])
 //     solver_seeds: N (seeds 0..N-1; default 1)
@@ -37,11 +37,13 @@ export function suiteInstances(project, suite) {
     const g = (project.generators || []).find((x) => x.name === spec.generator);
     if (!g) throw new SuiteError(`suite ${suite.name}: no generator named ${spec.generator}`);
     const seeds = Math.max(1, Number(spec.seeds) || 1);
+    // constants: { name: value } given to every generated instance (the project's bounds for it)
+    const consts = Object.fromEntries(Object.entries(spec.constants || {}).map(([k, v]) => [k, String(v)]));
     const out = [];
     for (const p of gridPoints(spec.grid || {})) {
       for (let s = 1; s <= seeds; s++) {
         const id = `${g.name}-${pointId(p)}${pointId(p) ? '-' : ''}s${s}`;
-        out.push({ id, params: p, instance: { id, recipe: { generator: g.name, params: p, seed: s, ...(spec.attempts ? { attempts: spec.attempts } : {}) }, constants: {}, tags: ['suite'] } });
+        out.push({ id, params: p, instance: { id, recipe: { generator: g.name, params: p, seed: s, ...(spec.attempts ? { attempts: spec.attempts } : {}) }, constants: { ...consts }, tags: ['suite'] } });
       }
     }
     return out;
@@ -329,7 +331,7 @@ export function inconsistencies(rows) {
 // metric: 'time' | 'candidates' | 'refinements'. Seeds of one cell are summarised by the median.
 // Returns { metric, variants, rows: [{ instance, cells: { variant: cell }, best }] } where a
 // cell is { value, n, solved, outcome, disagree, solutions, cost }; best names the variant with
-// the smallest value among the solved cells of the row (null when none is solved).
+// the smallest value among the solved cells of the row (null when none is solved or on a tie).
 export const solvedRow = (r) => !r.skipped && r.outcome === 'finished';
 export function resultMatrix(rows, metric = 'time') {
   const bad = new Set(inconsistencies(rows).flatMap((b) => b.rows.map((r) => r.key)));
@@ -354,11 +356,14 @@ export function resultMatrix(rows, metric = 'time') {
       cells[v] = { value: vals.length ? quantile(vals, 0.5) : null, n: rs.length, solved, outcome,
         disagree: rs.some((r) => bad.has(r.key)), solutions: rs[0].solutions, cost: rs[0].cost || null };
     }
-    let best = null;
+    // the best cell: the smallest value among the solved cells, when no other cell ties with it
+    let best = null, ties = 0;
     for (const v of variants) {
       const c = cells[v];
-      if (c && c.solved && c.value !== null && (best === null || c.value < cells[best].value)) best = v;
+      if (!c || !c.solved || c.value === null) continue;
+      if (best === null || c.value < cells[best].value) { best = v; ties = 0; } else if (c.value === cells[best].value) ties++;
     }
+    if (ties) best = null;
     return { instance, cells, best };
   });
   return { metric, variants, rows: out };

@@ -73,5 +73,6 @@
       "tags": []
     }
   ],
-  "runs": []
+  "runs": [],
+  "readme": "# Project: growing the horizon\n\n## Research question\n\nIs it cheaper to grow the horizon one step at a time (and keep what was learned) than to solve each horizon from scratch?\n\n## Baseline\n\n3 shortest plans (exhausted) after 27 candidates and 24 counterexamples (0.4 s).\n\n## Things to try\n\n- A variant that restarts at each horizon (no learned clauses kept) and a campaign over the instances.\n- Grow the horizon by two steps, or by doubling, and compare candidates and time.\n- Bigger mazes: where does the time go (Observatory, cost per line)?\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n"
 }

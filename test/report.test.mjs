@@ -20,16 +20,16 @@ const rows = [
 test('matrix: one row per instance, one column per variant, best solved cell, disagreements', () => {
   const m = resultMatrix(rows, 'time');
   assert.deepEqual(m.variants, ['base', 'fast']);
-  assert.deepEqual(m.rows.map((r) => [r.instance, r.best]), [['a', 'fast'], ['b', 'base'], ['c', 'base']]);
+  assert.deepEqual(m.rows.map((r) => [r.instance, r.best]), [['a', 'fast'], ['b', 'base'], ['c', null]]);
   assert.equal(m.rows[1].cells.fast.solved, false);
   assert.equal(m.rows[1].cells.fast.outcome, 'timeout');
   assert.equal(m.rows[2].cells.base.disagree, true);
   assert.equal(resultMatrix(rows, 'candidates').rows[0].cells.base.value, 40);
-  assert.equal(matrixCSV(m), 'instance,base,fast,best\na,2,0.5,fast\nb,3,timeout,base\nc,1,1,base\n');
+  assert.equal(matrixCSV(m), 'instance,base,fast,best\na,2,0.5,fast\nb,3,timeout,base\nc,1,1,\n');
   const md = matrixMarkdown(m);
   assert.match(md, /\| a \| 2\.000 \| \*\*0\.500\*\* \|/);
   assert.match(md, /\| b \| \*\*3\.000\*\* \| timeout \|/);
-  assert.match(md, /\| c \| \*\*1\.000\*\* ✗ \| 1\.000 ✗ \|/);
+  assert.match(md, /\| c \| 1\.000 ✗ \| 1\.000 ✗ \|/);
   const t = variantTotals(rows, 30);
   assert.deepEqual(t.fast, { cells: 3, solved: 2, time: 1.5, par2: 61.5 });
   assert.match(cactusSvg(rows), /^<svg[^]*<polyline[^]*base[^]*fast[^]*<\/svg>\n$/);

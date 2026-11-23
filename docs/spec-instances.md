@@ -128,7 +128,7 @@ Reference template).
 
 | Field | Meaning |
 | --- | --- |
-| `instances` | `{ ids: [...] }` or `{ ids: "all" }` (the default; a project without instances runs as written); `{ generator, grid: { param: [values] }, seeds: N, attempts }` (one recipe instance per grid point and seed 1..N, id `gen-n6-p300-s2`); `{ constants: { name: [values] }, base }` (one constants-only instance per grid point, id `n6-k3`, with the facts of instance `base` if given) |
+| `instances` | `{ ids: [...] }` or `{ ids: "all" }` (the default; a project without instances runs as written); `{ generator, grid: { param: [values] }, seeds: N, attempts, constants: { name: value } }` (one recipe instance per grid point and seed 1..N, id `gen-n6-p300-s2`, each with the given constants); `{ constants: { name: [values] }, base }` (one constants-only instance per grid point, id `n6-k3`, with the facts of instance `base` if given) |
 | `variants` | variant names, `default` = the project as it is (default `["default"]`) |
 | `solver_seeds` | N: settings.seed 0..N-1 (default 1) |
 | `limits` | `{ seconds, candidates }` (default `{ seconds: 30 }`); every cell runs with all solutions, no trace |

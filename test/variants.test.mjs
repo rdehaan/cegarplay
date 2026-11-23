@@ -39,7 +39,8 @@ test('the voting example: a relevant fragment per strategy, a variant per other 
   assert.deepEqual(p.fragments.map((f) => f.name).filter((n) => n.startsWith('relevant')), ['relevant', 'relevant_s1', 'relevant_s3', 'relevant_s4', 'relevant_s5']);
   assert.match(p.loop.text, /solver C = shared \+ check \+ relevant/);
   assert.ok(!/^relevant\(/m.test(p.fragments.find((f) => f.name === 'check').text), 'the check holds no relevant/1 rules');
-  assert.deepEqual(p.variants.map((v) => v.name), ['s1', 's3', 's4', 's5', 'shape2', 'reference']);
+  assert.deepEqual(p.variants.map((v) => v.name), ['s1', 's3', 's4', 's5', 'shape2', 'record', 'reference']);
+  assert.match(p.variants.find((v) => v.name === 'record').loop.text, /solver A = shared \+ abstraction +options "--enum-mode=record"/);
   const d = P.derive(p, { variant: 's3' });
   assert.match(d.fragments.find((f) => f.name === 'relevant').text, /strategy 3/);
   const s = p.suites.find((x) => x.name === 'strategies');
@@ -47,7 +48,19 @@ test('the voting example: a relevant fragment per strategy, a variant per other 
   assert.ok(s.instances.ids.every((id) => p.instances.find((x) => x.id === id).expected), 'only instances that finish');
 });
 
-for (const [variant, solutions] of [['s1', 2], ['s5', 2], ['reference', 2]]) {
+test('the voting kit: a readme, a generator with three recipe questions, a generated suite, a view (E2)', () => {
+  const p = vote();
+  assert.match(p.readme, /^# Explaining a voting outcome by axioms/);
+  assert.match(p.readme, /## Open questions/);
+  assert.deepEqual(p.generators.map((g) => g.name), ['vote-question']);
+  assert.deepEqual(p.instances.filter((x) => x.recipe).map((x) => [x.id, x.expected.solutions]), [['random-1', 6], ['random-2', 0], ['random-3', 0]]);
+  const g = p.suites.find((x) => x.name === 'generated');
+  assert.equal(g.instances.generator, 'vote-question');
+  assert.equal(g.instances.constants.num_voters, 3);
+  assert.deepEqual(p.views.map((v) => v.name), ['view']);
+});
+
+for (const [variant, solutions] of [['s1', 2], ['s5', 2], ['record', 2], ['reference', 2]]) {
   test(`voting variant ${variant} on cancel-posresp-k2 gives ${solutions} solutions`, async () => {
     const p = vote();
     p.settings = { ...p.settings, solutions: 0, trace: 0, seconds: 0 };

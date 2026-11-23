@@ -115,12 +115,18 @@
           <button class="control-button small-button project-edit" id="edit-project-button" title="Edit the title and the description">Edit</button>
           <p id="project-heading" class="project-heading"></p>
           <p id="project-description" class="project-description"></p>
+          <details id="project-readme" class="project-readme" hidden>
+            <summary>Readme</summary>
+            <div id="project-readme-body" class="manual project-readme-body"></div>
+          </details>
         </div>
         <div id="project-form" class="project-form" hidden>
           <label class="inline-label" for="project-title-input">Title</label>
           <input type="text" id="project-title-input">
           <label class="inline-label" for="project-description-input">Description</label>
           <textarea id="project-description-input" rows="3"></textarea>
+          <label class="inline-label" for="project-readme-input">Readme (Markdown: background, baseline, what "better" means, open questions)</label>
+          <textarea id="project-readme-input" rows="8" spellcheck="true"></textarea>
           <div>
             <button class="control-button small-button" id="save-project-info">Save</button>
             <button class="control-button small-button" id="cancel-project-info">Cancel</button>

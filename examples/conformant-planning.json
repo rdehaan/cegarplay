@@ -90,5 +90,6 @@
       "tags": []
     }
   ],
-  "runs": []
+  "runs": [],
+  "readme": "# Project: conformant planning: expansion against clauses\n\n## Research question\n\nWhen does expansion (a copy of the robot per counterexample, Shape 3) beat clause refinement, and how many counterexamples does a plan need?\n\n## Baseline\n\n3 plans (exhausted) after 11 candidates and 8 counterexamples (0.2 s) at t = 8. The reference run would remove up to 65,536 plans one by one. `conformant-growing` finds the horizon by itself: 27 candidates.\n\n## Things to try\n\n- A variant with a clause refinement (blocking the plan prefix that fails) and a campaign against the expansion loop.\n- Larger grids (a generator of mazes) and longer horizons: how does the number of copies grow?\n- Compare with `conformant-growing`: is growing the horizon cheaper than guessing it?\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n"
 }

@@ -433,6 +433,12 @@ label.tab-label.has-problem:after {
   margin: 4px 0 0;
 }
 .project-description:empty { display: none; }
+.project-readme { margin: 8px 0 0; }
+.project-readme > summary { cursor: pointer; font-weight: 600; }
+.project-readme-body { max-height: 60vh; overflow: auto; padding: 0 4px; }
+.project-readme-body h1 { font-size: 17px; }
+.project-readme-body h2 { font-size: 15px; }
+.project-readme-body h3 { font-size: 14px; }
 .project-edit { float: right; }
 .project-form {
   display: flex;

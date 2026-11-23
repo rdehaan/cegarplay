@@ -89,7 +89,8 @@ two-space indentation.
 | `format` | string | (required) | Must be `"cegarplay"`. A file with logic-game keys is rejected as a logic-game file. |
 | `version` | number | 1 | 1, or 2 when a key of format version 2 is used (see [Instances](#manual-instances)). A version above 2 is rejected (newer than this CegarPlay). |
 | `title` | string | `"Untitled"` | Shown in the Control tab and the page title. |
-| `description` | string | `""` | Shown under the title. |
+| `description` | string | `""` | Shown under the title; one paragraph, also the library's text. |
+| `readme` | string (Markdown) | absent | A project kit: background, what the abstraction and the check model, the baseline and the variants, what "better" means, open questions. Shown folded under the description (**Readme**), edited with **Edit**; the library tags such examples `project` and lists them under **Projects**. |
 | `fragments` | list | (required) | Ordered (tab order in the Programs tab). |
 | `fragments[].name` | string | (required) | Matches `[a-z][a-z0-9_]*`; unique. |
 | `fragments[].text` | string | `""` | ASP text. |
@@ -190,7 +191,7 @@ exactly the cells it touches. Instances whose exhausted variants disagree on the
 whose finished variants report different optima, are marked red (the run history's ⚠, for a whole
 grid); hover a square of the progress grid to see its cell. The **instance × variant matrix** has
 one row per instance and one column per variant, showing time, candidates or refinements (median
-over seeds); the best finished cell of a row is bold, a cell that did not finish shows its outcome,
+over seeds); the best finished cell of a row is bold (none on a tie), a cell that did not finish shows its outcome,
 a disagreement is marked ✗, and a click on a heading sorts by that column. **Export matrix (CSV)**
 saves it. Plots: time against a parameter (median and interquartile band), a heat map over two
 parameters, one variant against another (pick both), and a cactus plot (the i-th fastest finished

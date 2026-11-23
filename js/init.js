@@ -143,6 +143,10 @@ app.genLua = () => ({ draw: app.modules.draw, generate: app.modules.generate });
 function showProjectInfo(p) {
   $('project-heading').textContent = p.title || 'Untitled';
   $('project-description').textContent = p.description || '';
+  const readme = typeof p.readme === 'string' ? p.readme.trim() : '';
+  $('project-readme').hidden = !readme;
+  $('project-readme-body').innerHTML = readme ? renderMarkdown(readme, { idPrefix: 'readme-' }) : '';
+  if (readme) codeBlocks($('project-readme-body'));
   document.title = p.title ? `CegarPlay · ${p.title}` : 'CegarPlay';
 }
 function editProjectInfo(on) {
@@ -151,11 +155,14 @@ function editProjectInfo(on) {
   if (!on) return;
   $('project-title-input').value = app.project.title || '';
   $('project-description-input').value = app.project.description || '';
+  $('project-readme-input').value = app.project.readme || '';
   $('project-title-input').focus();
 }
 function saveProjectInfo() {
   app.project.title = $('project-title-input').value.trim() || 'Untitled';
   app.project.description = $('project-description-input').value.trim();
+  const readme = $('project-readme-input').value.trim();
+  if (readme) app.project.readme = readme; else delete app.project.readme;
   showProjectInfo(app.project);
   editProjectInfo(false);
   app.dirty();
@@ -288,8 +295,11 @@ async function buildLibrary() {
   const lib = await app.library;
   if (!lib) { box.innerHTML = '<p class="error-text">The example library could not be loaded.</p>'; return; }
   box.textContent = '';
-  for (const g of lib.groups) {
-    const entries = lib.examples.filter((e) => e.group === g.id);
+  // a Projects group first (FUTURE-DIRECTIONS E3): the examples with a readme (tag "project"),
+  // also listed in their own group
+  const projects = { id: 'projects', title: 'Projects', description: 'Examples with a readme: a research question, a baseline and things to try (shown under the project title once loaded).' };
+  for (const g of [projects, ...lib.groups]) {
+    const entries = lib.examples.filter((e) => (g === projects ? (e.tags || []).includes('project') : e.group === g.id));
     if (!entries.length) continue;
     const det = make('details', { class: 'library-group', 'data-group': g.id });
     det.open = false;
@@ -301,7 +311,7 @@ async function buildLibrary() {
       const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
       const tags = [e.shape !== 'custom' ? e.shape : null, ...e.tags,
         has.instances ? plural(has.instances, 'instance') : null, has.generators ? plural(has.generators, 'generator') : null,
-        has.suites ? plural(has.suites, 'suite') : null, has.views ? 'view' : null].filter(Boolean);
+        has.suites ? plural(has.suites, 'suite') : null, has.views ? 'view' : null, has.readme ? 'readme' : null].filter(Boolean);
       const li = make('li', { class: 'library-entry', 'data-example': e.id,
         'data-search': [e.id, e.title, e.summary, ...tags, g.title].join(' ').toLowerCase() });
       const text = make('div', { class: 'library-text' },

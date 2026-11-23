@@ -68,5 +68,6 @@
       "tags": []
     }
   ],
-  "runs": []
+  "runs": [],
+  "readme": "# Project: logic-based Benders decomposition\n\n## Research question\n\nHow much do stronger optimality cuts (and feasibility cuts) shrink the number of master iterations, and when do the bounds meet?\n\n## Baseline\n\nThe optimum after 26 master solutions and 26 cuts (1.1 s) on the example; the bounds are tracked in the Statistics tab.\n\n## Things to try\n\n- A variant with a weaker cut (only the machine's exact assignment) and a campaign over the instances.\n- Stop as soon as the lower bound reaches the upper bound (an `if` on the tracked numbers).\n- Larger instances from a generator of jobs and machines; plot the bounds against the iterations.\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n"
 }
