@@ -37,6 +37,9 @@ export function errorHint(message) {
 
 const PARALLEL = /^(-t|--parallel-mode)(=|$)/;
 
+// Thrown by a batch's engine calls once the batch was stopped.
+export class BatchStopped extends Error { constructor() { super('stopped'); } }
+
 export class Control {
   constructor(app) {
     this.app = app;
@@ -50,7 +53,7 @@ export class Control {
     this.statusEl = $('run-status');
     this.auditButton = $('audit-button');
     this.runButton.addEventListener('click', () => this.run());
-    this.auditButton.addEventListener('click', () => this.run({ mode: 'audit' }));
+    this.auditButton.addEventListener('click', () => this.auditPicked());
     this.abortButton.addEventListener('click', () => this.abort());
     this.pauseButton.addEventListener('click', () => this.togglePause());
     this.stepButton.addEventListener('click', () => this.step());
@@ -68,19 +71,56 @@ export class Control {
     $('run-message-text').textContent = text || '';
   }
 
+  // A batch (Run all, Fuzz, Check exercise, Rerun with 5 seeds) keeps the run bar in 'running'
+  // between its runs, names itself there ("running fuzz"), and ends at the first Stop or Abort.
+  //   const b = control.beginBatch('fuzz'); ... if (b.cancelled) ...; control.endBatch(b)
+  beginBatch(name) {
+    if (this.busy || !this.app.ready) return null;
+    this.batch = { name, cancelled: false, progress: '' };
+    this.lastRunState = 'idle';
+    this.setState('running');
+    return this.batch;
+  }
+  batchProgress(text) { if (this.batch) { this.batch.progress = text; this.setState(this.state); } }
+  endBatch(b) {
+    if (!b || this.batch !== b) return;
+    this.batch = null;
+    this.setState(b.cancelled ? 'aborted' : this.lastRunState || 'idle');
+  }
+  // An engine call of a batch (Fuzz): it refuses to start, and throws when it ends, once the batch
+  // was stopped, so the batch's own code unwinds at once.
+  batchExec(b) {
+    return async (p, o) => {
+      if (b.cancelled) throw new BatchStopped();
+      const r = await this.app.engine.exec(p, o);
+      if (b.cancelled) throw new BatchStopped();
+      return r;
+    };
+  }
+
   setState(state) {
     this.state = state;
-    this.statusEl.textContent = state;
+    // inside a batch the bar stays 'running' between the batch's runs
+    if (this.batch && !['running', 'paused'].includes(state)) {
+      if (state !== 'validating') this.lastRunState = state;
+      state = 'running';
+      this.state = 'running';
+    }
+    const label = state === 'running' && this.batch ? `running ${this.batch.name}${this.batch.progress ? ` (${this.batch.progress})` : ''}`
+      : state === 'running' && this.mode === 'audit' ? 'running audit'
+        : state === 'paused' && this.mode === 'audit' ? 'paused audit' : state;
+    this.statusEl.textContent = label;
     this.statusEl.dataset.state = state;
+    this.statusEl.dataset.task = this.batch ? this.batch.name : this.mode === 'audit' && (state === 'running' || state === 'paused') ? 'audit' : '';
     const active = state === 'running' || state === 'paused';
     this.runButton.disabled = active || state === 'validating' || !this.app.ready;
     this.auditButton.disabled = this.runButton.disabled;
     this.abortButton.disabled = !active;
-    this.pauseButton.disabled = !active;
+    this.pauseButton.disabled = !active || !!this.batch;
     this.pauseButton.innerHTML = state === 'paused' ? '&#x23F5; Resume' : '&#x23F8; Pause';
     // Step: from idle it starts a run that pauses after its first candidate; while running it
     // pauses after the next candidate; while paused it advances by one candidate.
-    this.stepButton.disabled = !(active || !this.runButton.disabled);
+    this.stepButton.disabled = !!this.batch || !(active || !this.runButton.disabled);
     this.stopButton.disabled = !active;
     // Clear: something of an earlier run is on screen and no run is active
     this.clearButton.disabled = active || state === 'validating' || (state === 'idle' && !this.app.recording);
@@ -112,6 +152,8 @@ export class Control {
   }
 
   get busy() { return ['validating', 'running', 'paused'].includes(this.state); }
+  // a run may start when nothing is active, or between the runs of a batch
+  get canStart() { return this.batch ? !this.inRun && !this.batch.cancelled : !this.busy; }
 
   // ---- live check of the fragments: clingo --mode=gringo on each edited fragment, 800 ms
   // after the last edit, only while no run is active. A newer edit or a run drops the result.
@@ -161,9 +203,15 @@ export class Control {
   //   allSolutions: look for all solutions, whatever settings.solutions says.
   //   instance, variant: the run uses the derived project (js/project.js derive); without
   //   instance, the one picked in the run bar.
-  async run({ seed, mode = 'run', instance, variant, stepping = false, allSolutions = false } = {}) {
+  async run(opts = {}) {
+    if (!this.canStart || !this.app.ready) return null;
+    this.inRun = true;
+    try { return await this.runOne(opts); } finally { this.inRun = false; }
+  }
+
+  async runOne({ seed, mode = 'run', instance, variant, stepping = false, allSolutions = false } = {}) {
     const app = this.app;
-    if (this.busy || !app.ready) return null;
+    this.mode = mode;
     this.setState('validating');
     this.runMessage('');
     if (app.loopTab) app.loopTab.cancelLiveCheck();
@@ -393,7 +441,9 @@ export class Control {
 
   abort() {
     if (this.state !== 'running' && this.state !== 'paused') return;
-    this.app.engine.abort();
+    if (this.batch) this.batch.cancelled = true;
+    if (this.app.engine.busy) this.app.engine.abort();
+    if (this.batch) this.setState('running');
   }
 
   togglePause() {
@@ -407,17 +457,36 @@ export class Control {
     else if (!this.busy && !this.runButton.disabled) this.run({ stepping: true });
   }
 
+  // Audit: the instance picked in the run bar, unless it is marked audit: false (too large to
+  // enumerate); then every auditable instance, one after the other.
+  auditPicked() {
+    const app = this.app, it = app.instancesTab;
+    const id = it ? it.selectedId() : null;
+    const x = id ? (app.project.instances || []).find((i) => i.id === id) : null;
+    if (x && x.audit === false && it) {
+      $('tab9').checked = true; $('tab9').dispatchEvent(new Event('change', { bubbles: true }));
+      return it.auditAll();
+    }
+    return this.run({ mode: 'audit' });
+  }
+
   stop() {
     if (this.state !== 'running' && this.state !== 'paused') return;
+    // a batch ends at once: its current call is aborted (a graceful stop would let it go on)
+    if (this.batch) { this.abort(); return; }
     this.app.engine.stop();
     if (this.state === 'paused') this.setState('running');
   }
 
   async rerunSeeds() {
-    if (this.busy) return;
-    for (let seed = 1; seed <= 5; seed++) {
-      const r = await this.run({ seed });
-      if (!r || r.state === 'aborted' || (r.problems && r.problems.length)) break;
-    }
+    const b = this.beginBatch('5 seeds');
+    if (!b) return;
+    try {
+      for (let seed = 1; seed <= 5; seed++) {
+        this.batchProgress(`seed ${seed} of 5`);
+        const r = await this.run({ seed });
+        if (b.cancelled || !r || r.state === 'aborted' || (r.problems && r.problems.length)) break;
+      }
+    } finally { this.endBatch(b); }
   }
 }

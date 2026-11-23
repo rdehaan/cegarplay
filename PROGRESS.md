@@ -1312,3 +1312,21 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   in the manual and the `maxsat-ihs` variant `bounds-meet`.
 - D5, D10 (done): run history rows have a Note and a Compare box (two runs side by side with
   the change, per-solver calls/time/conflicts); variants have a `note`.
+
+## Requests of 2026-11-23 (evening)
+
+- Tutorial: the declarative-cegar sentence is gone; a side note explains why a Shape 1 candidate
+  can violate an earlier clause (clasp's default `--enum-mode=bt` keeps clauses added during
+  enumeration weakly; `record` keeps them).
+- voting-justification: the source's paper links, to-do list, commented-out bound and
+  commented-out glue rule are cut in `tools/make-examples.mjs`.
+- Run bar: "running audit" during an audit. Run all, Fuzz, Check exercise and Rerun with 5 seeds
+  are batches (`Control.beginBatch/endBatch/batchExec`): the bar names them with progress
+  ("running all instances (3 of 17: n5)", "running fuzz"), Run/Audit wait, and one Abort or Stop
+  ends the whole batch.
+- `instances[].audit: false` (checkbox "audit" in the instance form, "no audit" in the table):
+  the audit and Fuzz skip the instance; Audit on such an instance audits the others in turn;
+  `tools/audit.mjs --instance all`. voting-justification's two hard questions have it.
+  `cancel-reinf-posresp-k4` now has its ground truth, 16 (s1, exhausted in ~15 min; tag `slow`).
+  Two mid-size questions (`faith-cancel-reinf-pareto-condorcet-k3`, `faith-cancel-reinf-pareto-k3`)
+  hit the audit's candidate limit; they are left in the audit for now.

@@ -157,10 +157,11 @@ export const VOTE_INFO = {
   'faith-cancel-reinf-pareto-condorcet-k3': { expected: 0, tags: ['no-solution'] },
   'faith-cancel-reinf-pareto-k3': { expected: 1 }, 'faith-pareto-neutral-reinf-k4': { expected: 1 },
   'pareto-neutral-reinf-k5': { expected: 1 },
-  // the question the original file has switched on: the first solution in a second, all of
-  // them not within a minute
-  'cancel-reinf-posresp-k4': { tags: ['original'] },
-  'pareto-neutral-cancel-reinf-k8': { tags: ['hard'] },
+  // the question the original file has switched on: the first solution in a second; all 16 with
+  // strategy s1 in about 15 minutes (exhausted, Nov 2026), so it is tagged slow. Both hard
+  // questions are too large for the audit (audit: false).
+  'cancel-reinf-posresp-k4': { expected: 16, tags: ['original', 'slow'], audit: false },
+  'pareto-neutral-cancel-reinf-k8': { tags: ['hard'], audit: false },
 };
 function voteInstances(blocks) {
   const out = [];
@@ -190,7 +191,8 @@ function voteInstances(blocks) {
       (note ? `% ${note}\n` : '');
     const info = VOTE_INFO[id] || {};
     out.push({ id, facts: head + facts.join('\n') + '\n', constants,
-      ...(info.expected !== undefined ? { expected: { solutions: info.expected } } : {}), tags: info.tags || [] });
+      ...(info.expected !== undefined ? { expected: { solutions: info.expected } } : {}), tags: info.tags || [],
+      ...(info.audit === false ? { audit: false } : {}) });
   }
   const key = (x) => [+x.constants.num_axiom_instances, +x.constants.num_profiles, +x.constants.num_voters];
   return out.sort((a, b) => { const p = key(a), q = key(b); return p[0] - q[0] || p[1] - q[1] || p[2] - q[2]; });
@@ -254,11 +256,13 @@ that *every* outcome assignment that satisfies them gives the target outcome. Th
 - Three generated questions (\`random-1\` … \`random-3\`, generator \`vote-question\`: \`a\` random
   axioms, a sorted random target profile of \`v\` voters, a random outcome). Most random questions
   have no justification within small bounds, which is itself a useful test of soundness.
-- The two hard questions have no expected count yet. \`cancel-reinf-posresp-k4\` (the question
-  the original file has switched on) finds its first justification in about a second but does not
-  finish within a minute; \`pareto-neutral-cancel-reinf-k8\` finds none within a minute. Getting
-  their ground truth (a long run of the reference variant, or \`tools/cegarcheck.py --instance ID
-  --solutions all --seconds 3600\` with Python clingo) is part of the project.
+- The two hard questions are marked \`audit: false\`: their candidate spaces are far too large to
+  enumerate, so the audit (and Fuzz) skip them; runs still use them. \`cancel-reinf-posresp-k4\` (the
+  question the original file has switched on) finds its first justification in about a second;
+  with strategy s1 the loop finishes after about 95,000 candidates and 15 minutes with
+  **16 justifications**, its expected count (tag \`slow\`). \`pareto-neutral-cancel-reinf-k8\` has
+  no ground truth yet: neither the default strategy, s1 nor Python clingo's \`tools/cegarcheck.py\`
+  finished it within 40 minutes.
 
 ## Suites
 
@@ -455,6 +459,34 @@ export function buildExamples() {
       p.settings.instance = VOTE_DEFAULT;
       p.version = 2;
       voteStrategies(p);
+      // drop the source's notes to itself: paper links, a to-do list, a commented-out
+      // constraint and a commented-out glue rule
+      const ab = frag(p, 'abstraction');
+      ab.text = cut(ab.text, `% https://staff.fnwi.uva.nl/u.endriss/pubs/files/BoixelEndrissAAMAS2020.pdf
+% https://staff.fnwi.uva.nl/u.endriss/pubs/files/NardiEtAlAAMAS2022.pdf
+
+%* *** TODO's ***
+- finish comments
+- 'Borda' constraints on choices, also for plurality, etc.
+- neutrality/3
+*************** *%
+
+`);
+      ab.text = cut(ab.text, `% %%% Redundant constraint: provide upper bound on number of profiles to use
+% %%% (SEEMS NOT TO GIVE A GOOD TRADEOFF)
+% max_num_profiles(S) :-
+%     S2 = #sum { 1,Prof1,Prof2,Axiom :
+%         use_axiom_instance(double(Prof1,Prof2),Axiom) },
+%     S3 = #sum { 2,Prof1,Prof2,Prof3,Axiom :
+%         use_axiom_instance(triple(Prof1,Prof2,Prof3),Axiom) },
+%     S = 1 + S2 + S3.
+% :- max_num_profiles(S), profile_used(S+1).
+
+`);
+      const gl = frag(p, 'glue');
+      gl.text = cut(gl.text, `
+% glue(axiom_applicable(Profiles,Axiom) :- pos_axiom_instance(Profiles,Axiom).
+`);
     }, { solutions: 1 });
   vote.settings.constants = { ...vote.instances.find((i) => i.id === VOTE_DEFAULT).constants };
   vote.readme = VOTE_README;
@@ -465,7 +497,7 @@ export function buildExamples() {
   vote.suites = [
     { name: 'questions', instances: { ids: 'all' }, limits: { seconds: 20 } },
     // every refinement strategy and loop on the questions that finish
-    { name: 'strategies', instances: { ids: vote.instances.filter((i) => i.expected).map((i) => i.id) },
+    { name: 'strategies', instances: { ids: vote.instances.filter((i) => i.expected && !i.tags.includes('slow')).map((i) => i.id) },
       variants: ['default', ...vote.variants.map((v) => v.name)], limits: { seconds: 30 } },
     // generated questions (the generator vote-question) with small bounds
     { name: 'generated', instances: { generator: 'vote-question', grid: { v: [2, 3], a: [2, 3] }, seeds: 3,

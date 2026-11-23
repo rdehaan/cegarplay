@@ -270,6 +270,9 @@ function loadInstances(list) {
     if (x.tags !== undefined && !(Array.isArray(x.tags) && x.tags.every((t) => typeof t === 'string'))) throw new ProjectError(`instance ${x.id}: tags must be a list of strings`);
     out.tags = x.tags || [];
     if (x.recipe !== undefined && !isObj(x.recipe)) throw new ProjectError(`instance ${x.id}: recipe must be an object`);
+    // audit: false keeps an instance out of the audit (too large to enumerate), not out of runs
+    if (x.audit !== undefined && typeof x.audit !== 'boolean') throw new ProjectError(`instance ${x.id}: audit must be true or false`);
+    if (x.audit === true) delete out.audit;
     return out;
   });
 }
@@ -565,6 +568,9 @@ export function runAllSummary(rows) {
 // budgets: at most this many candidates (or refinements) on that instance, which forces a
 // refinement stronger than blocking. The page's Check button and tools/grade.mjs use
 // exerciseItems and gradeItem; neither ever reports a pass for an item it could not check.
+// The instances the audit may enumerate (all but those marked audit: false).
+export const auditable = (project) => (project.instances || []).filter((x) => x.audit !== false);
+
 export function loadExercise(x, instances) {
   if (!isObj(x)) throw new ProjectError('exercise must be an object');
   const ids = new Set(instances.map((i) => i.id));

@@ -3,7 +3,8 @@ import { makeEditor } from './editors.js';
 import { IMPORTERS, importerFor, freshId, checkFacts, ImportError } from './instances.js';
 import { generate, PARAM_TYPES } from './generate.js';
 import { fuzz, shrinkInstance, diagnose, defaultSource } from './fuzz.js';
-import { INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary, exerciseItems, gradeItem, exerciseSummary } from './project.js';
+import { BatchStopped } from './control.js';
+import { auditable, INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary, exerciseItems, gradeItem, exerciseSummary } from './project.js';
 import { fmt } from './output.js';
 
 const $ = (id) => document.getElementById(id);
@@ -81,12 +82,15 @@ export class InstancesTab {
     this.optInput = el('input', { id: 'instance-optimum', size: 8, 'aria-label': 'Expected optimum (the cost of every solution; levels separated by spaces)' });
     this.tagsInput = el('input', { id: 'instance-tags', size: 20, 'aria-label': 'Tags' });
     this.constInput = el('input', { id: 'instance-constants', size: 24, 'aria-label': 'Constants' });
+    this.auditInput = el('input', { type: 'checkbox', id: 'instance-audit', 'aria-label': 'Include this instance in the audit' });
+    this.auditInput.addEventListener('change', () => this.setAudit(this.auditInput.checked));
     const editorBox = el('div', { class: 'instance-editor', id: 'instance-editor' });
     this.form.append(
       el('div', { class: 'instance-fields' },
         el('label', {}, 'Id ', this.idInput), el('label', {}, 'Constants ', this.constInput),
         el('label', {}, 'Expected solutions ', this.expInput), el('label', { title: 'For an optimisation loop that stops at its optimum: the cost of every solution (levels separated by spaces)' }, 'Expected optimum ', this.optInput),
         el('label', {}, 'Tags ', this.tagsInput),
+        el('label', { title: 'Untick for an instance too large to enumerate: the audit and Fuzz skip it; runs still use it' }, this.auditInput, ' audit'),
         el('button', { class: 'control-button small-button', id: 'delete-instance-button', onclick: () => this.remove() }, 'Delete')),
       el('p', { class: 'note' }, 'Facts of this instance. A run gives them to every solver and every glue control, as the fragment "instance".'),
       this.recipeNote = el('p', { class: 'note', id: 'instance-recipe', hidden: true }),
@@ -152,7 +156,7 @@ export class InstancesTab {
         el('td', {}, el('a', { href: '#', onclick: (e) => { e.preventDefault(); this.show(x.id); } }, x.id), x.id === sel ? ' (runs)' : ''),
         el('td', {}, x.recipe && !x.facts ? 'recipe' : `${nfacts} lines`),
         el('td', {}, constText(x.constants) || '–'),
-        el('td', {}, (x.tags || []).join(', ') || '–'),
+        el('td', {}, [...(x.tags || []), ...(x.audit === false ? ['no audit'] : [])].join(', ') || '–'),
         el('td', { class: 'num' }, expectedText(x.expected)),
         el('td', { class: 'num' }, r ? `${fmt(r.solutions)}${r.cost ? `, cost ${costText(r.cost)}${r.same ? '' : ' (differ)'}` : ''}${r.exhausted ? '' : ' (not exhausted)'}${bad ? ' ✗' : good ? ' ✓' : ''}` : '–'),
         el('td', {}, el('button', { class: 'control-button small-button', onclick: () => this.pick(x.id), disabled: x.id === sel }, 'Use')));
@@ -160,10 +164,42 @@ export class InstancesTab {
     }
   }
 
+  setAudit(on) {
+    const x = this.list.find((i) => i.id === this.current);
+    if (!x) return;
+    if (on) delete x.audit; else x.audit = false;
+    this.render();
+    this.app.dirty();
+  }
+
+  // The Audit button on an instance marked audit: false audits the auditable instances instead,
+  // one after the other (a batch), and sums up their verdicts.
+  async auditAll() {
+    const c = this.app.control;
+    const list = auditable(this.app.project);
+    if (!list.length) { this.say('No instance is marked for the audit (every one has audit off).', true); return; }
+    const b = c.beginBatch('audit');
+    if (!b) return;
+    const verdicts = [];
+    try {
+      for (const [i, x] of list.entries()) {
+        c.batchProgress(`${i + 1} of ${list.length}: ${x.id}`);
+        const r = await c.run({ instance: x.id, mode: 'audit' });
+        if (b.cancelled || !r || r.state === 'aborted') { this.say(`Audit stopped after ${verdicts.length} of ${list.length} instances.`); return; }
+        verdicts.push({ id: x.id, v: r.audit ? r.audit.verdict : r.state });
+      }
+    } finally { c.endBatch(b); }
+    const unsound = verdicts.filter((x) => x.v === 'unsound'), other = verdicts.filter((x) => x.v !== 'sound' && x.v !== 'unsound');
+    const skipped = this.list.length - list.length;
+    this.say(`Audit of ${list.length} instances (${skipped} with audit off skipped): ` +
+      (unsound.length ? `unsound on ${unsound.map((x) => x.id).join(', ')}.` : other.length ? `sound where it finished; no verdict on ${other.map((x) => `${x.id} (${x.v})`).join(', ')}.` : 'sound on every one.'), unsound.length > 0);
+  }
+
   showForm() {
     const x = this.list.find((i) => i.id === this.current);
     this.form.hidden = !x;
     if (!x) return;
+    this.auditInput.checked = x.audit !== false;
     this.idInput.value = x.id;
     this.expInput.value = x.expected && Number.isInteger(x.expected.solutions) ? String(x.expected.solutions) : '';
     this.optInput.value = x.expected && x.expected.optimum != null ? [x.expected.optimum].flat().join(' ') : '';
@@ -300,15 +336,21 @@ export class InstancesTab {
 
   async runAll() {
     const c = this.app.control;
-    if (c.busy || !this.app.ready || !this.list.length) return;
+    if (!this.list.length) return;
+    const b = c.beginBatch('all instances');
+    if (!b) return;
     this.say('Running every instance…');
     const rows = [];
-    for (const x of [...this.list]) {
-      const wantsCount = !!(x.expected && Number.isInteger(x.expected.solutions));
-      const r = await c.run({ instance: x.id, allSolutions: wantsCount });
-      if (!r || r.state === 'aborted') { this.say('Stopped.'); return; }
-      rows.push({ expected: x.expected, result: this.results.get(x.id) });
-    }
+    const list = [...this.list];
+    try {
+      for (const [i, x] of list.entries()) {
+        c.batchProgress(`${i + 1} of ${list.length}: ${x.id}`);
+        const wantsCount = !!(x.expected && Number.isInteger(x.expected.solutions));
+        const r = await c.run({ instance: x.id, allSolutions: wantsCount });
+        if (b.cancelled || !r || r.state === 'aborted') { this.say(`Stopped after ${rows.length} of ${list.length} instances.`); return; }
+        rows.push({ expected: x.expected, result: this.results.get(x.id) });
+      }
+    } finally { c.endBatch(b); }
     const s = runAllSummary(rows);
     this.say(s.text, s.bad > 0);
   }
@@ -340,12 +382,21 @@ export class InstancesTab {
 
   async checkExercise() {
     const c = this.app.control;
-    if (c.busy || !this.app.ready || !this.app.project.exercise) return;
+    if (!this.app.project.exercise) return;
+    const b = c.beginBatch('exercise check');
+    if (!b) return;
+    try { await this.checkExerciseItems(b); } finally { c.endBatch(b); }
+  }
+
+  async checkExerciseItems(b) {
+    const c = this.app.control;
     const items = exerciseItems(this.app.project);
     const graded = [];
     const runs = new Map(), audits = new Map();
     this.say('Checking the exercise…');
-    for (const it of items) {
+    for (const [k, it] of items.entries()) {
+      c.batchProgress(`${k + 1} of ${items.length}`);
+      if (b.cancelled) { this.say('Stopped.'); return; }
       const inst = this.list.find((i) => i.id === it.instance);
       let res = null;
       if (it.kind === 'audit') {
@@ -521,9 +572,12 @@ export class InstancesTab {
   // ---- fuzz (docs/spec-instances.md section 6) ----------------------------------------------
   async fuzz() {
     const app = this.app;
-    if (!app.ready || app.control.busy || this.fuzzing) return;
+    if (this.fuzzing) return;
+    const b = app.control.beginBatch('fuzz');
+    if (!b) return;
     this.fuzzing = true;
-    const env = { engineRun: (p, o) => app.engine.exec(p, o), runtime: app.runtime, modules: app.modules, luaTexts: app.genLua() };
+    // every engine call of Fuzz goes through the batch: Stop or Abort ends it at the next call
+    const env = { engineRun: app.control.batchExec(b), runtime: app.runtime, modules: app.modules, luaTexts: app.genLua() };
     // the variant picked in the run bar (its 'reference' variant, if any, stays available)
     const project = applyVariant(structuredClone(app.collect()), app.variants ? app.variants.selected() || undefined : undefined);
     const suite = (project.suites || []).find((s) => s.instances && (s.instances.generator || s.instances.constants));
@@ -543,8 +597,9 @@ export class InstancesTab {
       this.showFuzz(r.found, s, dg);
       this.say(`Fuzz: ${r.found.instance.id} is unsound (after ${r.tried} instances); shrunk to ${s.facts.length} facts.`, true);
     } catch (e) {
-      this.say(`Fuzz stopped: ${e.message || e}`, true);
-    } finally { this.fuzzing = false; }
+      if (e instanceof BatchStopped || b.cancelled) this.say('Fuzz: stopped.');
+      else this.say(`Fuzz stopped: ${e.message || e}`, true);
+    } finally { this.fuzzing = false; app.control.endBatch(b); }
   }
 
   showFuzz(found, s, dg) {

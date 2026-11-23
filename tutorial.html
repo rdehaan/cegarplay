@@ -40,7 +40,6 @@
 <p>
   CegarPlay runs such loops in your browser. The problem is written in answer set programming,
   the loop is a short script, and both run in <a href="https://potassco.org">clingo</a> compiled to WebAssembly.
-  The larger examples come from <a href="https://github.com/rdehaan/declarative-cegar">declarative-cegar</a>.
 </p>
 
 <h2 id="tut-first-run">2. Your first run</h2>
@@ -61,9 +60,19 @@
 <p>
   One clause rules out every set that contains both 2 and 4, not only this candidate. That is why 46
   refinements are enough for a search over 256 sets.
-  (Step 2 may show a candidate that the clause of step 1 already rules out. In this loop shape clasp
-  does not always apply a fresh clause to the very next candidate; the check catches it again, and the result is
-  the same.)
+  (Step 2 may show a candidate that the clause of step 1 already rules out. The check then refutes it a
+  second time, and the result is the same.)
+</p>
+<p class="side-note">
+  Why can that happen? In this loop shape (Shape 1) the whole run is one enumeration of clasp, the solver inside
+  clingo, and the check runs each time clasp reports an answer set. To list answer sets, clasp by default
+  enumerates by <i>backtracking</i> (its option <code>--enum-mode=bt</code>): after an answer set it jumps back
+  and flips its last decision, and it keeps clauses added during the enumeration only weakly, so a later
+  candidate may still violate a refinement clause. Nothing is lost, because every candidate is checked anyway;
+  the clause just prunes less than it could. With <code>options "--enum-mode=record"</code> on solver
+  <code>A</code>, clasp records every clause for good: refinements then prune as much as they can, at the
+  price of a growing clause store (the variant <code>record</code> of <code>voting-justification</code>
+  compares the two).
 </p>
 
 <h2 id="tut-fragments">3. Fragments, solvers and links</h2>

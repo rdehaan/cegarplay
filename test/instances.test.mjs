@@ -182,3 +182,15 @@ test('Run all summary: never says "match" when nothing was checked (D1)', () => 
   const s3 = P.runAllSummary([{ expected: { solutions: 2 }, result: done({}) }]);
   assert.equal(s3.text, 'Ran 1 instance; 1 of 1 checked, all match.');
 });
+
+test('instances[].audit: false keeps an instance out of the audit and Fuzz, not out of runs', async () => {
+  const { fuzzInstances } = await import('../js/fuzz.js');
+  const base = { format: 'cegarplay', fragments: [], instances: [{ id: 'small', facts: '' }, { id: 'big', facts: '', audit: false }] };
+  const p = P.load(JSON.stringify(base));
+  assert.deepEqual(P.auditable(p).map((x) => x.id), ['small']);
+  assert.throws(() => P.load(JSON.stringify({ ...base, instances: [{ id: 'a', audit: 'no' }] })), /audit must be true or false/);
+  assert.equal(P.load(JSON.stringify({ ...base, instances: [{ id: 'a', audit: true }] })).instances[0].audit, undefined);
+  assert.deepEqual(fuzzInstances(p, { ids: 'all' }).map((x) => x.id), ['small']);
+  const v = P.load(H.read('examples/voting-justification.json'));
+  assert.deepEqual(v.instances.filter((x) => x.audit === false).map((x) => x.id), ['cancel-reinf-posresp-k4', 'pareto-neutral-cancel-reinf-k8']);
+});

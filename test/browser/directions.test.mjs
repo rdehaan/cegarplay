@@ -22,7 +22,10 @@ test('S1: the Audit button shows the verdict, the witness and an audit column in
   await page.click('#run-button');
   await settled(page);
   assert.equal(await page.$eval('#audit-panel', (e) => e.hidden), true);
-  const cells = await page.$$eval('#history-table tr', (rows) => rows.slice(1).map((r) => r.lastElementChild.textContent));
+  const cells = await page.$$eval('#history-table tr', (rows) => {
+    const k = [...rows[0].children].findIndex((th) => th.textContent === 'Audit');
+    return rows.slice(1).map((r) => r.children[k].textContent);
+  });
   assert.deepEqual(cells, ['unsound (499)', 'unsound (499)']);
   await context.close();
 });
@@ -533,6 +536,57 @@ test('D5, D10: two runs side by side, a note per run and per variant', async () 
   await page.fill('#variants .variant-card[data-variant="reference"] .variant-note', 'ground truth');
   await page.dispatchEvent('#variants .variant-card[data-variant="reference"] .variant-note', 'change');
   assert.equal(await page.evaluate(() => window.cegarplay.project.variants.find((v) => v.name === 'reference').note), 'ground truth');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+// the run bar's label, collected as it changes
+const watchStatus = (page) => page.evaluate(() => {
+  window.__status = [];
+  new MutationObserver(() => window.__status.push(document.getElementById('run-status').textContent))
+    .observe(document.getElementById('run-status'), { childList: true, characterData: true, subtree: true });
+});
+
+test('the run bar says running audit during an audit', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run');
+  await watchStatus(page);
+  await page.click('#audit-button');
+  await settled(page);
+  const seen = await page.evaluate(() => window.__status);
+  assert.ok(seen.includes('running audit'), seen.join(' | '));
+  assert.equal(await page.textContent('#run-status'), 'finished');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('Run all, Fuzz and the audit of many instances name themselves and stop at one click', { timeout: 120000 }, async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=voting-justification&tab=9');
+  // Run all: one click on Abort ends the whole batch
+  await page.click('#run-all-instances-button');
+  await page.waitForFunction(() => /^running all instances \(1 of \d+: /.test(document.getElementById('run-status').textContent));
+  assert.equal(await page.isEnabled('#run-button'), false);
+  await page.click('#abort-button');
+  await page.waitForFunction(() => /Stopped after 0 of \d+ instances/.test(document.getElementById('instances-status').textContent));
+  assert.equal(await page.textContent('#run-status'), 'aborted');
+  assert.equal(await page.isEnabled('#run-button'), true);
+  // the picked instance is marked audit: false, so Audit audits the other instances one by one
+  assert.equal(await page.$eval('#instance-select', (s) => s.value), 'cancel-reinf-posresp-k4');
+  assert.match(await page.textContent('#instances-table tr[data-instance="cancel-reinf-posresp-k4"]'), /no audit/);
+  await page.click('#audit-button');
+  await page.waitForFunction(() => /^running audit \(1 of \d+: faith-k1\)$/.test(document.getElementById('run-status').textContent));
+  await page.click('#abort-button');
+  await page.waitForFunction(() => /Audit stopped after/.test(document.getElementById('instances-status').textContent));
+  // Fuzz: named in the run bar, stopped by one click
+  await page.click('#fuzz-button');
+  await page.waitForFunction(() => document.getElementById('run-status').textContent === 'running fuzz');
+  await page.click('#abort-button');
+  await page.waitForFunction(() => document.getElementById('instances-status').textContent === 'Fuzz: stopped.');
+  assert.equal(await page.isEnabled('#run-button'), true);
+  // the checkbox in the instance form switches the audit back on
+  await page.click('#instances-table a:text("cancel-reinf-posresp-k4")');
+  assert.equal(await page.isChecked('#instance-audit'), false);
+  await page.check('#instance-audit');
+  assert.equal(await page.evaluate(() => window.cegarplay.project.instances.find((x) => x.id === 'cancel-reinf-posresp-k4').audit), undefined);
   assert.deepEqual(errors, []);
   await context.close();
 });

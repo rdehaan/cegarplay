@@ -137,6 +137,7 @@ clingo about an instance fact name `instance:<line>`. The loop language does not
 | `instances[].id` | Matches `[A-Za-z0-9_-]+`; unique. |
 | `instances[].facts` | ASP text (facts, or any rules). |
 | `instances[].constants` | Object of strings; override `settings.constants`. |
+| `instances[].audit` | `false`: the audit and Fuzz skip this instance (too large to enumerate); runs, Run all and campaigns still use it. The **audit** box in the instance form sets it; the table shows `no audit`. **Audit** on such an instance audits every other instance in turn; `tools/audit.mjs --instance all` does the same headless. |
 | `instances[].expected.solutions` | Whole number or null: the solution count of an exhausted run with all solutions (checked by "Run all", `--instance all` and the library tests). |
 | `instances[].expected.optimum` | Whole number, list of whole numbers (one per priority level, as clingo reports costs; a maximised value is negated) or null: the cost of every reported solution of a finished run. For optimisation loops that `stop` at their optimum: the run need not be exhausted, but it must report at least one solution, all with this cost. With `solutions` too, both are checked (the count only when the run is exhausted). Checked by the same tools; the Instances tab has an *Expected optimum* field and shows the cost of the last run. |
 | `instances[].tags` | List of strings (`slow` instances are skipped by the default test run). |
@@ -158,7 +159,9 @@ their last run; it edits facts, constants, expected count and tags; **Import fil
 `qlit/3`), ASPARTIX (`.apx`: `arg/1`, `att/2`), Trivial Graph Format (`.tgf`: `arg/1`, `att/2`),
 PrefLib strict orders (`.soc`, `.soi`: `ballot/2` as `kemeny-control` writes them) and jaggpy
 scenarios (`.jagg`: `var/1`, `cl/1`, `pos/2`, `neg/2`); each importer is checked with clingo before
-the instance is added. **Run all** runs every instance and marks a count other than the expected one
+the instance is added. **Run all**, **Fuzz** and **Check exercise** (like **Rerun with 5 seeds**) are batches: the run bar
+says what runs (**running all instances (3 of 17: n5)**, **running fuzz**), Run and Audit wait, and one
+click on **Abort** (or **Stop**) ends the whole batch. **Run all** runs every instance and marks a count other than the expected one
 with ✗ in red. An instance with an expected count is run to all solutions, whatever the project's
 solution limit. The status line says how many instances were checked and why the others were not
 (no expectation, a run that did not finish, a run that stopped before all solutions); it never says
@@ -1017,7 +1020,9 @@ the Output tab then shows the last lines received.
 ### Audit
 
 **Audit** (next to Run) checks the refinements of a loop script against every candidate and every
-counterexample of the instance, instead of the pairs one run happens to visit.
+counterexample of the instance, instead of the pairs one run happens to visit. The run bar says **running audit** meanwhile. When the
+instance picked in the run bar is marked `audit: false`, Audit audits every instance that is not, one
+after the other (**running audit (3 of 18: …)**), and the Instances tab sums up their verdicts.
 
 1. Every candidate: the models of the abstraction without refinements, one per assignment of the
    interface atoms of the audited link (a `#minimize` is ignored here).

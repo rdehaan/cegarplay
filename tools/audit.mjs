@@ -6,21 +6,22 @@
 //   --link G          the link to audit (needed when several links leave a top solver)
 //   --limit N         stop above N candidates (default 200000; exit code 3)
 //   -c name=value     set a constant (repeatable)
-//   --instance id     audit one instance of the project (format version 2)
+//   --instance id     audit one instance of the project (format version 2); 'all': every
+//                     instance not marked audit: false, one line each
 //   --variant NAME    audit a variant of the project
 //   --seconds N       time limit (default 0 = none)
 //   --json            print the verdict as one JSON object
 //
 // Exit code: 0 sound, 1 unsound (or an error), 2 bad usage, 3 candidate or time limit.
 import fs from 'node:fs';
-import { load } from '../js/project.js';
+import { load, auditable } from '../js/project.js';
 import { runProject } from './run.mjs';
 
 const root = new URL('..', import.meta.url);
 
 function usage(msg) {
   if (msg) console.error(msg);
-  console.error('usage: node tools/audit.mjs <project.json | library id> [--link G] [--limit N] [-c name=value] [--instance id] [--variant NAME] [--seconds N] [--json]');
+  console.error('usage: node tools/audit.mjs <project.json | library id> [--link G] [--limit N] [-c name=value] [--instance id|all] [--variant NAME] [--seconds N] [--json]');
   process.exit(2);
 }
 
@@ -64,6 +65,24 @@ async function main(argv) {
   if (!target) usage();
   let project;
   try { project = loadTarget(target); } catch (e) { console.error(`cannot load ${target}: ${e.message}`); process.exit(2); }
+  // --instance all: every instance not marked audit: false, one line each
+  if (instance === 'all') {
+    const list = auditable(project);
+    const skipped = (project.instances || []).length - list.length;
+    let worst = 0;
+    for (const x of list) {
+      const a = await auditProject(project, { link, limit, seconds, instance: x.id, variant, constants: Object.keys(consts).length ? consts : undefined });
+      const v = a.verdict;
+      const what = a.problems.length ? `problem: ${a.problems[0].message}` : !v ? `no verdict (${a.done ? a.done.outcome : a.status})` : v.verdict === 'unsound' ? `UNSOUND (${v.unsound} of ${v.pairs} pairs)` : v.verdict;
+      console.log(json ? JSON.stringify({ instance: x.id, ...(v || { verdict: 'error' }) }) : `${x.id}: ${what}`);
+      const code = v && v.verdict === 'sound' ? 0 : v && v.verdict === 'unsound' ? 1 : 3;
+      worst = code === 1 || worst === 1 ? 1 : Math.max(worst, code);
+    }
+    if (!json && skipped) console.log(`(${skipped} instance${skipped === 1 ? '' : 's'} with audit off skipped)`);
+    process.exitCode = worst;
+    return;
+  }
+  if (instance && (project.instances || []).some((x) => x.id === instance && x.audit === false)) console.error(`note: instance ${instance} is marked audit: false`);
   let r;
   try { r = await auditProject(project, { link, limit, seconds, instance, variant, constants: Object.keys(consts).length ? consts : undefined }); }
   catch (e) { console.error(e.message); process.exitCode = 2; return; }

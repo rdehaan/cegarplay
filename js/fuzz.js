@@ -24,7 +24,8 @@ const size = (params) => Object.values(params || {}).reduce((a, v) => (typeof v 
 
 // The instances of a source, smallest first (by the product of their numeric parameters).
 export function fuzzInstances(project, source) {
-  const list = suiteInstances(project, { name: 'fuzz', instances: source });
+  // instances marked audit: false (too large to enumerate) are never audited
+  const list = suiteInstances(project, { name: 'fuzz', instances: source }).filter((x) => !x.instance || x.instance.audit !== false);
   return list.map((x, i) => ({ ...x, order: i })).sort((a, b) => size(a.params) - size(b.params) || a.order - b.order);
 }
 
