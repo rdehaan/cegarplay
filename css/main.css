@@ -819,6 +819,9 @@ tr.mismatch td {
 }
 
 /* Example library (Control tab) */
+.library-filter { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+.library-filter label { font-size: 14px; white-space: nowrap; }
+.library-filter select { margin-left: 4px; }
 .library-filter input {
   width: 100%;
   max-width: 420px;

@@ -741,3 +741,41 @@ export const PROJECT_CARDS = {
       'Larger instances from a generator of jobs and machines; plot the bounds against the iterations.'],
     CAMPAIGN),
 };
+
+// ---------------------------------------------------------------------------
+// Levels and a learning path (FUTURE-DIRECTIONS F2). level: 1 first steps (read with guide
+// chapters 1-4), 2 the basics of design (5-8), 3 the larger language and harder problems (9-12),
+// 4 loops from the literature and research projects (Part II). after: the guide chapter to read
+// first (null: none). Guide examples take both from their chapter; a contrib file may set
+// library.level and library.after itself.
+// ---------------------------------------------------------------------------
+export const LEVELS = {
+  starter: [1, null], 'tutorial-first-run': [1, null], 'tutorial-weak-relevant': [1, 4],
+  'lang-basics': [1, 2], 'lang-legacy': [2, 2], 'lang-clauses': [2, 6], 'lang-several-cex': [2, 6], 'lang-optimal': [2, 6],
+  'lang-second-solver': [3, 6], 'lang-two-stage': [3, 10], 'lang-core': [3, 10], 'lang-raw-lua': [4, 12],
+  'gc-shape1': [2, 8], 'gc-shape2': [2, 8], 'gc-shape3': [2, 8], 'gc-shape4': [2, 8], 'gc-reference': [2, 8],
+  'exercise-sum-free': [1, 4], 'exercise-triangles': [1, 3],
+  qbf: [2, 3], 'stable-models': [2, 3], 'strategic-companies': [2, 3], 'qbf-blame-solver': [3, 6], 'qbf-optimal': [3, 11],
+  'cegis-circuit': [3, 9], 'integer-expressions': [3, 9], 'min-dnf': [3, 9],
+  'qbf-expansion': [4, 13], 'qbf-deep': [4, 13], 'qbf-three-blocks': [4, 13],
+  'maxsat-ihs': [4, 14], 'maxsat-oll': [4, 14], 'smallest-mus': [4, 14], marco: [4, 15],
+  abduction: [2, 3], diagnosis: [2, 3], 'af-preferred': [2, 3], 'af-semi-stable': [2, 7], 'sufficient-reason': [2, 6],
+  'actual-cause': [3, 7], 'belief-update': [3, 7], 'default-extensions': [3, 7], 'abduction-two-checks': [3, 10],
+  'minimal-reasons': [3, 10], 'reasons-by-size': [3, 11], 'reasons-by-shrinking': [4, 15],
+  'graph-coloring': [2, 5], 'clique-interdiction': [2, 5], arrowing: [2, 3], choosability: [2, 3], 'clique-colouring': [2, 3],
+  'colourable-partial': [4, 10], 'triangle-free-lazy': [4, 10],
+  nash: [2, 3], 'strong-nash': [2, 3], 'subset-sum-game': [2, 3], 'fair-division': [2, 9], 'boolean-game': [3, 6],
+  'agenda-safety': [3, 7], 'hedonic-core': [3, 7], 'kemeny-control': [3, 7], 'voting-justification': [3, 12],
+  'conformant-planning': [3, 9], 'conformant-growing': [3, 9], 'knapsack-interdiction': [3, 11], 'knapsack-optimum': [3, 11],
+  'benders-tardiness': [4, 11], 'knapsack-bounds': [4, 11], 'knapsack-fortification': [4, 13],
+  'sudoku-unique': [3, 3], 'sudoku-unavoidable': [3, 6], 'fewest-clues': [3, 7], 'sudoku-symmetry': [3, 7], 'sudoku-graded': [3, 7],
+  'sudoku-hard': [3, 7], akari: [3, 7], binairo: [3, 7], futoshiki: [3, 7], slitherlink: [3, 7], 'queens-omission': [4, 12],
+};
+export const LEVEL_NAMES = { 1: 'first steps', 2: 'basics', 3: 'advanced', 4: 'literature and research' };
+export function levelOf(e) {
+  const m = /^guide-(\d\d)-/.exec(e.id);
+  if (m) { const n = Number(m[1]); return { level: n <= 4 ? 1 : n <= 8 ? 2 : n <= 12 ? 3 : 4, after: n }; }
+  const own = { level: e.level ?? null, after: e.after ?? null };
+  const t = LEVELS[e.id];
+  return { level: own.level ?? (t ? t[0] : 3), after: own.after !== null ? own.after : t ? t[1] : 12 };
+}

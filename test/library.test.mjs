@@ -23,6 +23,13 @@ test('library.json lists exactly the example files, in known groups', () => {
     assert.equal(load(H.read(`examples/${e.id}.json`)).title, e.title);
   }
   for (const g of lib.groups) assert.ok(lib.examples.some((e) => e.group === g.id), `group ${g.id} is empty`);
+  // levels and the learning path (FUTURE-DIRECTIONS F2): every example has both
+  for (const e of lib.examples) {
+    assert.ok([1, 2, 3, 4].includes(e.level), `${e.id}.level`);
+    assert.ok(e.after === null || (Number.isInteger(e.after) && e.after >= 1 && e.after <= 15), `${e.id}.after`);
+    const m = /^guide-(\d\d)-/.exec(e.id);
+    if (m) assert.equal(e.after, Number(m[1]), `${e.id}: after its own chapter`);
+  }
 });
 
 test('every Load button of the tutorial names a library example', () => {

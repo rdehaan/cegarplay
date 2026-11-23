@@ -1268,8 +1268,12 @@ Pause, Step, Stop and threads works.
 with the example's own settings, and `expected.optimum` (when present) the cost of every solution,
 both checked by `test/library.test.mjs` for every example tagged `fast`. A contrib file sets them
 with `library.expected` and `library.optimum`.
-`has` (when present) counts the project's `instances`, `generators`, `suites` and `views`; the
-Library shows them as tags, and the filter matches them (type `view` or `suite`).
+`has` (when present) counts the project's `instances`, `generators`, `suites` and `views` (and
+`readme`); the Library shows them as tags, and the filter matches them (type `view` or `suite`).
+`level` (1 first steps, 2 basics, 3 advanced, 4 literature and research) and `after` (the guide
+chapter to read first, or null) place every example on a learning path; the Library's **Level**
+and **What can I read now?** selects filter by them (`tools/library.mjs LEVELS`; a contrib file
+may set `library.level` and `library.after`).
 
 | Group | Ids |
 | --- | --- |

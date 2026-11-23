@@ -312,7 +312,9 @@ async function buildLibrary() {
       const tags = [e.shape !== 'custom' ? e.shape : null, ...e.tags,
         has.instances ? plural(has.instances, 'instance') : null, has.generators ? plural(has.generators, 'generator') : null,
         has.suites ? plural(has.suites, 'suite') : null, has.views ? 'view' : null, has.readme ? 'readme' : null].filter(Boolean);
-      const li = make('li', { class: 'library-entry', 'data-example': e.id,
+      if (e.level) tags.push(`level ${e.level}`);
+      if (e.after) tags.push(`after chapter ${e.after}`);
+      const li = make('li', { class: 'library-entry', 'data-example': e.id, 'data-level': String(e.level || ''), 'data-after': String(e.after || 0),
         'data-search': [e.id, e.title, e.summary, ...tags, g.title].join(' ').toLowerCase() });
       const text = make('div', { class: 'library-text' },
         make('span', { class: 'library-title' }, e.title), ' ',
@@ -339,18 +341,23 @@ function markLoadedExample() {
 }
 function filterLibrary() {
   const words = $('library-filter').value.toLowerCase().split(/\s+/).filter(Boolean);
+  const level = $('library-level').value, read = $('library-read').value;
+  const narrowed = words.length || level || read;
   for (const det of document.querySelectorAll('.library-group')) {
     let shown = 0;
     for (const li of det.querySelectorAll('.library-entry')) {
-      const ok = words.every((w) => li.dataset.search.includes(w));
+      // level: exactly this level; read: the guide chapter to read first is one already read
+      const ok = words.every((w) => li.dataset.search.includes(w)) && (!level || li.dataset.level === level) &&
+        (read === '' || Number(li.dataset.after) <= Number(read));
       li.hidden = !ok;
       if (ok) shown++;
     }
     det.hidden = shown === 0;
-    if (words.length && shown) det.open = true;
+    if (narrowed && shown) det.open = true;
   }
 }
 $('library-filter').addEventListener('input', filterLibrary);
+for (const id of ['library-level', 'library-read']) $(id).addEventListener('change', filterLibrary);
 
 // Load an example from any element with data-load-example (library, tutorial, manual);
 // data-tab="N" then opens tab N.

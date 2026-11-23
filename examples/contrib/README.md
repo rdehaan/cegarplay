@@ -29,6 +29,9 @@ CegarPlay project (`"format": "cegarplay"`) with one extra top-level block:
   `stops-at-optimum` and give `optimum` instead (the cost of every solution, as clingo reports
   it), here and as `expected.optimum` in its instances (`maxsat-ihs.json`).
 - `optimum` (optional): the cost of every solution of the run, checked like `expected`.
+- `level` and `after` (optional): the difficulty (1 first steps … 4 literature and research)
+  and the guide chapter to read first. Without them `tools/library.mjs LEVELS` decides (level 3,
+  after chapter 12 for an example it does not list).
 - Algorithm tags help readers find a loop by the name they know: `ihs`, `marco`, `oll`,
   `benders`, `cegis`, `expansion`, `rareqs`, `caqe`, `omission`, `bounds`, `branch-and-check`,
   `lazy-constraints`, `core-minimisation` (see the manual's *Loops from the literature*).

@@ -1299,3 +1299,6 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   grader `tools/grade.mjs` (`--exercise reference.json` grades a folder against a reference);
   two starters in a new library group `exercises` (`exercise-sum-free`, `exercise-triangles`),
   linked from tutorial lesson 12. An item that could not be checked fails.
+- F2 (done): `level` and `after` for every example in the manifest (`LEVELS`, `levelOf` in
+  `tools/library.mjs`; contrib may set `library.level/after`); the Library filters **Level** and
+  **What can I read now?**.

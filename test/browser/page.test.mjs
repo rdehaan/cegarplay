@@ -150,6 +150,15 @@ test('the library: groups from library.json, filter, ?example=, copy link, unkno
   const shown = await page.$$eval('#library .library-entry', (l) => l.filter((e) => !e.hidden).map((e) => e.dataset.example));
   assert.ok(shown.includes('gc-shape4') && !shown.includes('nash'), shown.join());
   await page.fill('#library-filter', '');
+  // levels and the learning path (F2): level 4 only; then what a reader of chapters 1-3 can read
+  await page.selectOption('#library-level', '4');
+  const lvl = await page.$$eval('#library .library-entry', (l) => l.filter((e) => !e.hidden).map((e) => e.dataset.example));
+  assert.ok(lvl.includes('marco') && !lvl.includes('qbf'), lvl.join());
+  await page.selectOption('#library-level', '');
+  await page.selectOption('#library-read', '3');
+  const readable = await page.$$eval('#library .library-entry', (l) => l.filter((e) => !e.hidden).map((e) => e.dataset.example));
+  assert.ok(readable.includes('qbf') && readable.includes('guide-03-hit-clique') && !readable.includes('guide-04-one-node') && !readable.includes('marco'), readable.join());
+  await page.selectOption('#library-read', '');
   await page.click('#library [data-copy-example="nash"]');
   await page.waitForFunction(() => /\?example=nash/.test(document.getElementById('load-status').textContent));
   await page.click('#library [data-load-example="tutorial-first-run"]');

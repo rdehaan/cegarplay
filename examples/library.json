@@ -70,7 +70,9 @@
       ],
       "expected": {
         "solutions": 4
-      }
+      },
+      "level": 1,
+      "after": null
     },
     {
       "id": "tutorial-first-run",
@@ -86,7 +88,9 @@
       },
       "has": {
         "views": 1
-      }
+      },
+      "level": 1,
+      "after": null
     },
     {
       "id": "tutorial-weak-relevant",
@@ -103,7 +107,9 @@
       "has": {
         "suites": 1,
         "views": 1
-      }
+      },
+      "level": 1,
+      "after": 4
     },
     {
       "id": "guide-01-one-program",
@@ -118,7 +124,9 @@
         "solutions": 175
       },
       "page": "guide/01-why-a-loop.html#one-program",
-      "status": "demo"
+      "status": "demo",
+      "level": 1,
+      "after": 1
     },
     {
       "id": "guide-01-guess",
@@ -141,7 +149,9 @@
         {
           "k": "4"
         }
-      ]
+      ],
+      "level": 1,
+      "after": 1
     },
     {
       "id": "guide-01-one-candidate",
@@ -156,7 +166,9 @@
         "solutions": 0
       },
       "page": "guide/01-why-a-loop.html#one-candidate",
-      "status": "demo"
+      "status": "demo",
+      "level": 1,
+      "after": 1
     },
     {
       "id": "guide-02-block",
@@ -179,7 +191,9 @@
         {
           "k": "5"
         }
-      ]
+      ],
+      "level": 1,
+      "after": 2
     },
     {
       "id": "guide-02-ex1",
@@ -195,7 +209,9 @@
       },
       "page": "guide/02-first-loop.html#exercise-1-solution",
       "status": "unsound",
-      "baseline": "guide-02-block"
+      "baseline": "guide-02-block",
+      "level": 1,
+      "after": 2
     },
     {
       "id": "guide-02-ex2",
@@ -210,7 +226,9 @@
         "solutions": 134
       },
       "page": "guide/02-first-loop.html#exercise-2-solution",
-      "status": "baseline"
+      "status": "baseline",
+      "level": 1,
+      "after": 2
     },
     {
       "id": "guide-03-relevant-all",
@@ -229,7 +247,9 @@
       "baseline": "guide-02-block",
       "has": {
         "views": 1
-      }
+      },
+      "level": 1,
+      "after": 3
     },
     {
       "id": "guide-03-hit-clique",
@@ -256,7 +276,9 @@
       ],
       "has": {
         "views": 1
-      }
+      },
+      "level": 1,
+      "after": 3
     },
     {
       "id": "guide-04-one-node",
@@ -275,7 +297,9 @@
       "baseline": "guide-02-block",
       "has": {
         "views": 1
-      }
+      },
+      "level": 1,
+      "after": 4
     },
     {
       "id": "guide-05-paley-block",
@@ -299,7 +323,9 @@
         {
           "k": "5"
         }
-      ]
+      ],
+      "level": 2,
+      "after": 5
     },
     {
       "id": "guide-05-paley-clause",
@@ -326,7 +352,9 @@
           "c": "4",
           "k": "13"
         }
-      ]
+      ],
+      "level": 2,
+      "after": 5
     },
     {
       "id": "guide-05-paley-record",
@@ -348,7 +376,9 @@
           "n": "17",
           "k": "9"
         }
-      ]
+      ],
+      "level": 2,
+      "after": 5
     },
     {
       "id": "guide-06-ex1",
@@ -370,7 +400,9 @@
           "n": "17",
           "k": "9"
         }
-      ]
+      ],
+      "level": 2,
+      "after": 6
     },
     {
       "id": "guide-06-clauses",
@@ -392,7 +424,9 @@
           "n": "17",
           "k": "9"
         }
-      ]
+      ],
+      "level": 2,
+      "after": 6
     },
     {
       "id": "guide-06-reason-block",
@@ -407,7 +441,9 @@
         "solutions": 13
       },
       "page": "guide/06-more-per-check.html#reasons",
-      "status": "baseline"
+      "status": "baseline",
+      "level": 2,
+      "after": 6
     },
     {
       "id": "guide-06-reason-clause",
@@ -423,7 +459,9 @@
       },
       "page": "guide/06-more-per-check.html#reasons",
       "status": "sound",
-      "baseline": "guide-06-reason-block"
+      "baseline": "guide-06-reason-block",
+      "level": 2,
+      "after": 6
     },
     {
       "id": "guide-06-reason-smallest",
@@ -439,7 +477,9 @@
       },
       "page": "guide/06-more-per-check.html#smallest",
       "status": "sound",
-      "baseline": "guide-06-reason-block"
+      "baseline": "guide-06-reason-block",
+      "level": 2,
+      "after": 6
     },
     {
       "id": "guide-07-spectrum",
@@ -466,7 +506,9 @@
         {
           "m": "13"
         }
-      ]
+      ],
+      "level": 2,
+      "after": 7
     },
     {
       "id": "guide-07-too-strong",
@@ -482,7 +524,9 @@
       },
       "page": "guide/07-abstraction.html#too-strong",
       "status": "unsound",
-      "baseline": "guide-05-paley-block"
+      "baseline": "guide-05-paley-block",
+      "level": 2,
+      "after": 7
     },
     {
       "id": "guide-07-ex1",
@@ -498,7 +542,9 @@
       },
       "page": "guide/07-abstraction.html#exercise-1-solution",
       "status": "sound",
-      "baseline": "guide-05-paley-block"
+      "baseline": "guide-05-paley-block",
+      "level": 2,
+      "after": 7
     },
     {
       "id": "guide-08-shape2",
@@ -521,7 +567,9 @@
           "c": "4",
           "k": "13"
         }
-      ]
+      ],
+      "level": 2,
+      "after": 8
     },
     {
       "id": "guide-08-shape4",
@@ -544,7 +592,9 @@
           "c": "4",
           "k": "13"
         }
-      ]
+      ],
+      "level": 2,
+      "after": 8
     },
     {
       "id": "guide-08-forgot-block",
@@ -560,7 +610,9 @@
       },
       "page": "guide/08-loop-shapes.html#forgot-block",
       "status": "demo",
-      "outcome": "error"
+      "outcome": "error",
+      "level": 2,
+      "after": 8
     },
     {
       "id": "guide-09-clique-rules",
@@ -576,7 +628,9 @@
       },
       "page": "guide/09-rule-refinements.html#clique-rules",
       "status": "sound",
-      "baseline": "guide-05-paley-block"
+      "baseline": "guide-05-paley-block",
+      "level": 3,
+      "after": 9
     },
     {
       "id": "guide-09-missing-k",
@@ -592,7 +646,9 @@
       },
       "page": "guide/09-rule-refinements.html#missing-k",
       "status": "demo",
-      "outcome": "error"
+      "outcome": "error",
+      "level": 3,
+      "after": 9
     },
     {
       "id": "guide-09-ex1",
@@ -608,7 +664,9 @@
       },
       "page": "guide/09-rule-refinements.html#exercise-1-solution",
       "status": "demo",
-      "outcome": "error"
+      "outcome": "error",
+      "level": 3,
+      "after": 9
     },
     {
       "id": "guide-09-fair-block",
@@ -623,7 +681,9 @@
         "solutions": 3
       },
       "page": "guide/09-rule-refinements.html#fair",
-      "status": "baseline"
+      "status": "baseline",
+      "level": 3,
+      "after": 9
     },
     {
       "id": "guide-09-fair-clause",
@@ -639,7 +699,9 @@
       },
       "page": "guide/09-rule-refinements.html#fair",
       "status": "sound",
-      "baseline": "guide-09-fair-block"
+      "baseline": "guide-09-fair-block",
+      "level": 3,
+      "after": 9
     },
     {
       "id": "guide-10-core-block",
@@ -654,7 +716,9 @@
         "solutions": 958
       },
       "page": "guide/10-witness-and-cores.html#core",
-      "status": "baseline"
+      "status": "baseline",
+      "level": 3,
+      "after": 10
     },
     {
       "id": "guide-10-core-misused",
@@ -670,7 +734,9 @@
       },
       "page": "guide/10-witness-and-cores.html#misused",
       "status": "unsound",
-      "baseline": "guide-05-paley-block"
+      "baseline": "guide-05-paley-block",
+      "level": 3,
+      "after": 10
     },
     {
       "id": "guide-10-minimal-block",
@@ -685,7 +751,9 @@
         "solutions": 4
       },
       "page": "guide/10-witness-and-cores.html#two-checks",
-      "status": "baseline"
+      "status": "baseline",
+      "level": 3,
+      "after": 10
     },
     {
       "id": "guide-11-fewest-deletions",
@@ -701,7 +769,9 @@
       },
       "page": "guide/11-optimisation.html#fewest",
       "status": "demo",
-      "exhausted": false
+      "exhausted": false,
+      "level": 3,
+      "after": 11
     },
     {
       "id": "guide-11-ex1",
@@ -717,7 +787,9 @@
       },
       "page": "guide/11-optimisation.html#exercise-1-solution",
       "status": "sound",
-      "baseline": "guide-05-paley-block"
+      "baseline": "guide-05-paley-block",
+      "level": 3,
+      "after": 11
     },
     {
       "id": "guide-12-step1-guess",
@@ -732,7 +804,9 @@
         "solutions": 4096
       },
       "page": "guide/12-your-own-loop.html#step-guess",
-      "status": "demo"
+      "status": "demo",
+      "level": 3,
+      "after": 12
     },
     {
       "id": "guide-12-step2-block",
@@ -747,7 +821,9 @@
         "solutions": 80
       },
       "page": "guide/12-your-own-loop.html#step-block",
-      "status": "baseline"
+      "status": "baseline",
+      "level": 3,
+      "after": 12
     },
     {
       "id": "guide-12-step3-clause",
@@ -763,7 +839,9 @@
       },
       "page": "guide/12-your-own-loop.html#step-clause",
       "status": "sound",
-      "baseline": "guide-12-step2-block"
+      "baseline": "guide-12-step2-block",
+      "level": 3,
+      "after": 12
     },
     {
       "id": "guide-12-step4-rules",
@@ -784,7 +862,9 @@
         {
           "t": "7"
         }
-      ]
+      ],
+      "level": 3,
+      "after": 12
     },
     {
       "id": "guide-13-qbf-block",
@@ -799,7 +879,9 @@
         "solutions": 2448
       },
       "page": "guide/13-qbf.html#block",
-      "status": "baseline"
+      "status": "baseline",
+      "level": 4,
+      "after": 13
     },
     {
       "id": "guide-13-qbf-clause",
@@ -815,7 +897,9 @@
       },
       "page": "guide/13-qbf.html#clause",
       "status": "sound",
-      "baseline": "guide-13-qbf-block"
+      "baseline": "guide-13-qbf-block",
+      "level": 4,
+      "after": 13
     },
     {
       "id": "guide-13-qbf-expansion",
@@ -831,7 +915,9 @@
       },
       "page": "guide/13-qbf.html#expansion",
       "status": "sound",
-      "baseline": "guide-13-qbf-block"
+      "baseline": "guide-13-qbf-block",
+      "level": 4,
+      "after": 13
     },
     {
       "id": "guide-13-ex1",
@@ -847,7 +933,9 @@
       },
       "page": "guide/13-qbf.html#exercise-1-solution",
       "status": "sound",
-      "baseline": "guide-13-qbf-block"
+      "baseline": "guide-13-qbf-block",
+      "level": 4,
+      "after": 13
     },
     {
       "id": "guide-14-ihs-block",
@@ -863,7 +951,9 @@
       },
       "page": "guide/14-hitting-sets.html#block",
       "status": "demo",
-      "exhausted": false
+      "exhausted": false,
+      "level": 4,
+      "after": 14
     },
     {
       "id": "guide-14-ihs-core",
@@ -879,7 +969,9 @@
       },
       "page": "guide/14-hitting-sets.html#core",
       "status": "demo",
-      "exhausted": false
+      "exhausted": false,
+      "level": 4,
+      "after": 14
     },
     {
       "id": "guide-14-ihs-minimal",
@@ -895,7 +987,9 @@
       },
       "page": "guide/14-hitting-sets.html#minimal",
       "status": "demo",
-      "exhausted": false
+      "exhausted": false,
+      "level": 4,
+      "after": 14
     },
     {
       "id": "guide-15-mus-block",
@@ -910,7 +1004,9 @@
         "solutions": 7
       },
       "page": "guide/15-marco.html#block",
-      "status": "baseline"
+      "status": "baseline",
+      "level": 4,
+      "after": 15
     },
     {
       "id": "guide-15-mus-above",
@@ -926,7 +1022,9 @@
       },
       "page": "guide/15-marco.html#shrink",
       "status": "sound",
-      "baseline": "guide-15-mus-block"
+      "baseline": "guide-15-mus-block",
+      "level": 4,
+      "after": 15
     },
     {
       "id": "guide-15-ex1",
@@ -942,7 +1040,9 @@
       },
       "page": "guide/15-marco.html#exercise-1-solution",
       "status": "sound",
-      "baseline": "guide-15-mus-block"
+      "baseline": "guide-15-mus-block",
+      "level": 4,
+      "after": 15
     },
     {
       "id": "lang-basics",
@@ -955,7 +1055,9 @@
       ],
       "expected": {
         "solutions": 61
-      }
+      },
+      "level": 1,
+      "after": 2
     },
     {
       "id": "lang-several-cex",
@@ -968,7 +1070,9 @@
       ],
       "expected": {
         "solutions": 61
-      }
+      },
+      "level": 2,
+      "after": 6
     },
     {
       "id": "lang-optimal",
@@ -981,7 +1085,9 @@
       ],
       "expected": {
         "solutions": 61
-      }
+      },
+      "level": 2,
+      "after": 6
     },
     {
       "id": "lang-two-stage",
@@ -994,7 +1100,9 @@
       ],
       "expected": {
         "solutions": 38
-      }
+      },
+      "level": 3,
+      "after": 10
     },
     {
       "id": "lang-clauses",
@@ -1007,7 +1115,9 @@
       ],
       "expected": {
         "solutions": 61
-      }
+      },
+      "level": 2,
+      "after": 6
     },
     {
       "id": "lang-core",
@@ -1020,7 +1130,9 @@
       ],
       "expected": {
         "solutions": 958
-      }
+      },
+      "level": 3,
+      "after": 10
     },
     {
       "id": "lang-second-solver",
@@ -1033,7 +1145,9 @@
       ],
       "expected": {
         "solutions": 101
-      }
+      },
+      "level": 3,
+      "after": 6
     },
     {
       "id": "lang-legacy",
@@ -1046,7 +1160,9 @@
       ],
       "expected": {
         "solutions": 61
-      }
+      },
+      "level": 2,
+      "after": 2
     },
     {
       "id": "lang-raw-lua",
@@ -1059,7 +1175,9 @@
       ],
       "expected": {
         "solutions": 61
-      }
+      },
+      "level": 4,
+      "after": 12
     },
     {
       "id": "gc-shape1",
@@ -1072,7 +1190,9 @@
       ],
       "expected": {
         "solutions": 101
-      }
+      },
+      "level": 2,
+      "after": 8
     },
     {
       "id": "gc-shape2",
@@ -1085,7 +1205,9 @@
       ],
       "expected": {
         "solutions": 101
-      }
+      },
+      "level": 2,
+      "after": 8
     },
     {
       "id": "gc-shape3",
@@ -1098,7 +1220,9 @@
       ],
       "expected": {
         "solutions": 101
-      }
+      },
+      "level": 2,
+      "after": 8
     },
     {
       "id": "gc-shape4",
@@ -1111,7 +1235,9 @@
       ],
       "expected": {
         "solutions": 101
-      }
+      },
+      "level": 2,
+      "after": 8
     },
     {
       "id": "gc-reference",
@@ -1124,7 +1250,9 @@
       ],
       "expected": {
         "solutions": 101
-      }
+      },
+      "level": 2,
+      "after": 8
     },
     {
       "id": "cegis-circuit",
@@ -1143,7 +1271,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 3,
+      "after": 9
     },
     {
       "id": "integer-expressions",
@@ -1159,7 +1289,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 3,
+      "after": 9
     },
     {
       "id": "marco",
@@ -1178,7 +1310,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 4,
+      "after": 15
     },
     {
       "id": "maxsat-ihs",
@@ -1201,7 +1335,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 4,
+      "after": 14
     },
     {
       "id": "maxsat-oll",
@@ -1223,7 +1359,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 4,
+      "after": 14
     },
     {
       "id": "min-dnf",
@@ -1240,7 +1378,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 3,
+      "after": 9
     },
     {
       "id": "qbf-blame-solver",
@@ -1257,7 +1397,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 3,
+      "after": 6
     },
     {
       "id": "qbf-deep",
@@ -1270,7 +1412,9 @@
         "several-solvers",
         "rareqs"
       ],
-      "expected": null
+      "expected": null,
+      "level": 4,
+      "after": 13
     },
     {
       "id": "qbf-expansion",
@@ -1288,7 +1432,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 4,
+      "after": 13
     },
     {
       "id": "qbf-optimal",
@@ -1304,7 +1450,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 3,
+      "after": 11
     },
     {
       "id": "qbf-three-blocks",
@@ -1319,7 +1467,9 @@
       ],
       "expected": {
         "solutions": 4
-      }
+      },
+      "level": 4,
+      "after": 13
     },
     {
       "id": "qbf",
@@ -1339,7 +1489,9 @@
         "generators": 1,
         "suites": 1,
         "views": 1
-      }
+      },
+      "level": 2,
+      "after": 3
     },
     {
       "id": "smallest-mus",
@@ -1356,7 +1508,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 4,
+      "after": 14
     },
     {
       "id": "stable-models",
@@ -1372,7 +1526,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 2,
+      "after": 3
     },
     {
       "id": "strategic-companies",
@@ -1390,7 +1546,9 @@
       "has": {
         "instances": 3,
         "readme": 1
-      }
+      },
+      "level": 2,
+      "after": 3
     },
     {
       "id": "abduction-two-checks",
@@ -1407,7 +1565,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 3,
+      "after": 10
     },
     {
       "id": "abduction",
@@ -1423,7 +1583,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 2,
+      "after": 3
     },
     {
       "id": "actual-cause",
@@ -1439,7 +1601,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "af-preferred",
@@ -1459,7 +1623,9 @@
         "generators": 1,
         "views": 1,
         "readme": 1
-      }
+      },
+      "level": 2,
+      "after": 3
     },
     {
       "id": "af-semi-stable",
@@ -1478,7 +1644,9 @@
         "instances": 1,
         "generators": 1,
         "readme": 1
-      }
+      },
+      "level": 2,
+      "after": 7
     },
     {
       "id": "belief-update",
@@ -1494,7 +1662,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "default-extensions",
@@ -1510,7 +1680,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "diagnosis",
@@ -1526,7 +1698,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 2,
+      "after": 3
     },
     {
       "id": "minimal-reasons",
@@ -1543,7 +1717,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 3,
+      "after": 10
     },
     {
       "id": "reasons-by-shrinking",
@@ -1558,7 +1734,9 @@
       ],
       "expected": {
         "solutions": 4
-      }
+      },
+      "level": 4,
+      "after": 15
     },
     {
       "id": "reasons-by-size",
@@ -1575,7 +1753,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 3,
+      "after": 11
     },
     {
       "id": "sufficient-reason",
@@ -1591,7 +1771,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 2,
+      "after": 6
     },
     {
       "id": "graph-coloring",
@@ -1605,7 +1787,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 2,
+      "after": 5
     },
     {
       "id": "arrowing",
@@ -1623,7 +1807,9 @@
         "instances": 1,
         "generators": 2,
         "views": 1
-      }
+      },
+      "level": 2,
+      "after": 3
     },
     {
       "id": "choosability",
@@ -1641,7 +1827,9 @@
         "instances": 1,
         "generators": 2,
         "views": 1
-      }
+      },
+      "level": 2,
+      "after": 3
     },
     {
       "id": "clique-colouring",
@@ -1659,7 +1847,9 @@
         "instances": 1,
         "generators": 2,
         "views": 1
-      }
+      },
+      "level": 2,
+      "after": 3
     },
     {
       "id": "clique-interdiction",
@@ -1675,7 +1865,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 2,
+      "after": 5
     },
     {
       "id": "colourable-partial",
@@ -1695,7 +1887,9 @@
       },
       "has": {
         "instances": 5
-      }
+      },
+      "level": 4,
+      "after": 10
     },
     {
       "id": "triangle-free-lazy",
@@ -1713,7 +1907,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 4,
+      "after": 10
     },
     {
       "id": "nash",
@@ -1728,7 +1924,9 @@
       "has": {
         "instances": 4,
         "readme": 1
-      }
+      },
+      "level": 2,
+      "after": 3
     },
     {
       "id": "voting-justification",
@@ -1746,7 +1944,9 @@
         "suites": 3,
         "views": 1,
         "readme": 1
-      }
+      },
+      "level": 3,
+      "after": 12
     },
     {
       "id": "agenda-safety",
@@ -1762,7 +1962,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "boolean-game",
@@ -1778,7 +1980,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 3,
+      "after": 6
     },
     {
       "id": "fair-division",
@@ -1794,7 +1998,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 2,
+      "after": 9
     },
     {
       "id": "hedonic-core",
@@ -1810,7 +2016,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "kemeny-control",
@@ -1827,7 +2035,9 @@
       "has": {
         "instances": 1,
         "generators": 2
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "strong-nash",
@@ -1845,7 +2055,9 @@
       "has": {
         "instances": 4,
         "readme": 1
-      }
+      },
+      "level": 2,
+      "after": 3
     },
     {
       "id": "subset-sum-game",
@@ -1861,7 +2073,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 2,
+      "after": 3
     },
     {
       "id": "benders-tardiness",
@@ -1884,7 +2098,9 @@
       "has": {
         "instances": 3,
         "readme": 1
-      }
+      },
+      "level": 4,
+      "after": 11
     },
     {
       "id": "conformant-growing",
@@ -1902,7 +2118,9 @@
       "has": {
         "instances": 3,
         "readme": 1
-      }
+      },
+      "level": 3,
+      "after": 9
     },
     {
       "id": "conformant-planning",
@@ -1920,7 +2138,9 @@
       "has": {
         "instances": 4,
         "readme": 1
-      }
+      },
+      "level": 3,
+      "after": 9
     },
     {
       "id": "knapsack-bounds",
@@ -1940,7 +2160,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 4,
+      "after": 11
     },
     {
       "id": "knapsack-fortification",
@@ -1958,7 +2180,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 4,
+      "after": 13
     },
     {
       "id": "knapsack-interdiction",
@@ -1974,7 +2198,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 3,
+      "after": 11
     },
     {
       "id": "knapsack-optimum",
@@ -1993,7 +2219,9 @@
       },
       "has": {
         "instances": 4
-      }
+      },
+      "level": 3,
+      "after": 11
     },
     {
       "id": "akari",
@@ -2006,7 +2234,9 @@
       "has": {
         "instances": 7,
         "views": 1
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "binairo",
@@ -2019,7 +2249,9 @@
       "has": {
         "instances": 5,
         "views": 1
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "fewest-clues",
@@ -2037,7 +2269,9 @@
       "has": {
         "instances": 4,
         "readme": 1
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "futoshiki",
@@ -2050,7 +2284,9 @@
       "has": {
         "instances": 7,
         "views": 1
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "queens-omission",
@@ -2068,7 +2304,9 @@
       },
       "has": {
         "instances": 3
-      }
+      },
+      "level": 4,
+      "after": 12
     },
     {
       "id": "slitherlink",
@@ -2081,7 +2319,9 @@
       "has": {
         "instances": 9,
         "views": 1
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "sudoku-graded",
@@ -2094,7 +2334,9 @@
       "has": {
         "instances": 8,
         "views": 1
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "sudoku-hard",
@@ -2107,7 +2349,9 @@
       "has": {
         "instances": 6,
         "views": 1
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "sudoku-symmetry",
@@ -2120,7 +2364,9 @@
       "has": {
         "instances": 4,
         "views": 1
-      }
+      },
+      "level": 3,
+      "after": 7
     },
     {
       "id": "sudoku-unavoidable",
@@ -2136,7 +2382,9 @@
         "instances": 5,
         "views": 1,
         "readme": 1
-      }
+      },
+      "level": 3,
+      "after": 6
     },
     {
       "id": "sudoku-unique",
@@ -2149,7 +2397,9 @@
       "has": {
         "instances": 5,
         "views": 1
-      }
+      },
+      "level": 3,
+      "after": 3
     },
     {
       "id": "exercise-sum-free",
@@ -2163,7 +2413,9 @@
       "expected": null,
       "has": {
         "instances": 5
-      }
+      },
+      "level": 1,
+      "after": 4
     },
     {
       "id": "exercise-triangles",
@@ -2177,7 +2429,9 @@
       "expected": null,
       "has": {
         "instances": 3
-      }
+      },
+      "level": 1,
+      "after": 3
     }
   ]
 }

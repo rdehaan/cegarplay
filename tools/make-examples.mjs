@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { importLp, load, save, template } from '../js/project.js';
 import { stripAspComments } from '../js/driver.js';
-import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS, PROJECT_CARDS, EXERCISES } from './library.mjs';
+import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS, PROJECT_CARDS, EXERCISES, levelOf } from './library.mjs';
 import { buildGuide } from './guide.mjs';
 
 const root = new URL('..', import.meta.url);
@@ -501,7 +501,9 @@ export function loadContrib(dir = new URL('examples/contrib/', root), taken = ne
     try { raw = JSON.parse(fs.readFileSync(new URL(name, dir), 'utf8')); } catch (e) { fail(`not JSON: ${e.message}`); }
     const lib = raw && raw.library;
     if (!lib || typeof lib !== 'object') fail('no "library" block');
-    const { id, group = 'other', summary, shape, tags = [], expected = null, optimum = null } = lib;
+    const { id, group = 'other', summary, shape, tags = [], expected = null, optimum = null, level = null, after = null } = lib;
+    if (level !== null && !(Number.isInteger(level) && level >= 1 && level <= 4)) fail('library.level must be 1, 2, 3 or 4');
+    if (after !== null && !(Number.isInteger(after) && after >= 1)) fail('library.after must be a guide chapter number or null');
     if (typeof id !== 'string' || !/^[A-Za-z0-9_-]+$/.test(id)) fail(`library.id must match [A-Za-z0-9_-]+, got ${JSON.stringify(id)}`);
     if (taken.has(id)) fail(`library.id '${id}' is already used`);
     if (!CONTRIB_GROUPS.includes(group)) fail(`library.group must be one of ${CONTRIB_GROUPS.join(', ')}`);
@@ -514,7 +516,7 @@ export function loadContrib(dir = new URL('examples/contrib/', root), taken = ne
     let project;
     try { project = load(JSON.stringify(rest)); } catch (e) { fail(e.message); }
     taken.add(id);
-    out.push({ id, group: contribGroup(group), summary, shape, tags, expected, optimum, project });
+    out.push({ id, group: contribGroup(group), summary, shape, tags, expected, optimum, project, ...(level !== null ? { level } : {}), ...(after !== null ? { after } : {}) });
   }
   return out;
 }
@@ -574,7 +576,7 @@ export function buildAll({ contribDir } = {}) {
         tags: e.tags, expected: e.expected == null && e.optimum == null ? null : { solutions: e.expected ?? null, ...(e.optimum != null ? { optimum: e.optimum } : {}) },
         ...(e.page ? { page: e.page, status: e.status } : {}), ...(e.baseline ? { baseline: e.baseline } : {}),
         ...(e.variants ? { variants: e.variants } : {}), ...(e.outcome ? { outcome: e.outcome } : {}),
-        ...(e.exhausted === false ? { exhausted: false } : {}), ...features(e.project) });
+        ...(e.exhausted === false ? { exhausted: false } : {}), ...features(e.project), ...levelOf(e) });
     }
   }
   // a group without examples (such as the fallback 'other') is left out
