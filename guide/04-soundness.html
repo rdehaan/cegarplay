@@ -170,6 +170,16 @@ relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
             the two. See "Refinement variants" in the manual.</p>
         </aside>
 
+        <aside class="tool-moment" id="tool-moment">
+          <h2>Tool moment: seeing the lost solution</h2>
+          <p>The audit names one witness. To see every candidate at once, the Observatory's
+            <b>Candidate space</b> draws one square per candidate of the unrefined abstraction and marks the
+            solutions a refinement removed; its blame matrix shows which atoms each clause relies on. When the
+            instance is large, <b>Fuzz</b> (Instances tab) audits instances from small to large and shrinks the
+            first unsound one to a handful of facts. The how-to <a href="howto-unsound.html">hunting an unsound
+            refinement</a> walks through both on this chapter's example.</p>
+        </aside>
+
         <section class="exercise" id="exercise-1">
           <h2>Exercise 1</h2>
           <p>Name both solutions that the loop marking one node loses, and the refinement that

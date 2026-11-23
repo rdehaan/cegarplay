@@ -1,0 +1,48 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide exercise: diagnosis, blocking",
+  "description": "A starter on a fresh problem: the loop of the library example diagnosis with every refinement replaced by a block. Find the interface, write a refinement, and compare with diagnosis. See the guide page \"Checks that look for a witness, and cores\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% A full adder: gate(Name, Kind, Input1, Input2, Output).\ngate(x1,xor,a,b,p).\ngate(x2,xor,p,c,s).\ngate(a1,and,a,b,q).\ngate(a2,and,p,c,r).\ngate(o1,or,q,r,co).\nwire(a;b;c;p;q;r;s;co).\n% Observed: with inputs a = 1, b = 0, c = 1 the adder shows sum s = 1 and carry co = 0\n% (it should show s = 0 and co = 1).\nobs(a,1). obs(b,0). obs(c,1). obs(s,1). obs(co,0).\n% Is gate x2 part of a minimal diagnosis?\n% gate(Name, Kind, Input1, Input2, Output), wire(X), obs(X,Value); the constant\n% suspect names a gate.\npart(G) :- gate(G,_,_,_,_).\n",
+      "description": "Derived facts about the circuit. Added to every solver."
+    },
+    {
+      "name": "circuit",
+      "text": "% How the circuit behaves in a world W. Solver A uses the world \"now\" (the candidate),\n% solver C the world \"alt\" (the counterexample); the rules are written once.\n% on(W,X): wire X carries 1 in world W.  broken(W,G): gate G is assumed faulty there.\nout(W,G) :- gate(G,and,X,Y,_), on(W,X), on(W,Y).\nout(W,G) :- gate(G,or,X,_,_), on(W,X).\nout(W,G) :- gate(G,or,_,Y,_), on(W,Y).\nout(W,G) :- gate(G,xor,X,Y,_), on(W,X), not on(W,Y).\nout(W,G) :- gate(G,xor,X,Y,_), on(W,Y), not on(W,X).\n% A gate that is not broken computes its function; a broken gate may output anything.\n:- world(W), gate(G,_,_,_,Z), not broken(W,G), on(W,Z), not out(W,G).\n:- world(W), gate(G,_,_,_,Z), not broken(W,G), not on(W,Z), out(W,G).\n% The observations hold.\n:- world(W), obs(X,1), not on(W,X).\n:- world(W), obs(X,0), on(W,X).\n",
+      "description": "The behaviour of the circuit in a world; used by solver A and by solver C."
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: a set of broken gates and a value for every wire that fit the\n% observations (the circuit fragment sees to that for the world \"now\").\nworld(now).\n{ broken(now,G) } :- part(G).\n{ on(now,X) } :- wire(X).\n% Is the suspect gate part of a minimal diagnosis? (Each instance sets the constant.)\n:- not broken(now,suspect).\n#show.\n#show broken(G) : broken(now,G).\n#show on(X) : on(now,X).\n",
+      "description": "Proposes candidates (solver A): broken gates and wire values that fit the observations."
+    },
+    {
+      "name": "glue",
+      "text": "glue(broken(now,G)) :- part(G).\n",
+      "description": "The interface atoms: which gates the candidate breaks. The wire values stay private to solver A."
+    },
+    {
+      "name": "check",
+      "text": "% A counterexample: the observations can also be explained in a world \"alt\" in which a\n% proper subset of the candidate's gates is broken. The wires may take other values.\nworld(alt).\n{ broken(alt,G) } :- broken(now,G).\n{ on(alt,X) } :- wire(X).\nmended(G) :- broken(now,G), not broken(alt,G).\nfewer :- mended(G).\n:- not fewer.\n#show.\n#show broken(G) : broken(alt,G).\n\n% The smaller explanation refutes every candidate that breaks its gates and at least\n% one more. Mark its gates and, as a witness, the first gate it mends.\nrelevant(broken(now,G)) :- broken(alt,G).\nrelevant(broken(now,G)) :- mended(G), not mended(H) : part(H), H < G.\n",
+      "description": "Looks for an explanation that breaks fewer gates (solver C)."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + circuit + abstraction\nsolver C = shared + circuit + check     options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+  },
+  "settings": {
+    "constants": {
+      "suspect": "x2"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

@@ -262,6 +262,14 @@ export const QUOTED = [
   { id: 'colourable-partial', variant: 'total-only' },
   { id: 'queens-omission', constants: { n: '6' } },
   { id: 'queens-omission' },
+  // B1: the solutions of the fresh-problem exercises (chapters 5-12)
+  { id: 'qbf' },
+  { id: 'qbf-expansion' },
+  { id: 'af-preferred' },
+  { id: 'strategic-companies' },
+  { id: 'af-semi-stable' },
+  { id: 'diagnosis' },
+  { id: 'abduction' },
   // chapter 21: the voting case study
   { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3' },
   { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3', variant: 's1' },
@@ -832,5 +840,25 @@ loop:
         accept M
         A.add(G.block(M))
 `, { constants: { n: '6' } }) });
+
+  // ---- B1: an exercise on a fresh problem in chapters 5-12, each with a blocking starter
+  const blockLoop = (id) => contrib(id).loop.text.replace(/G\.clauses?\([^)]*\)/g, 'G.block(M)').replace(/A\.expand\([^\n]*\)/g, 'A.add(G.block(M))');
+  const FRESH = [
+    [5, 'qbf', 'guide-05-ex2-qbf-block', '2QBF, blocking', 5, 'Reading a run'],
+    [6, 'af-preferred', 'guide-06-ex2-af-block', 'preferred extensions, blocking', 3, 'Getting more out of each check'],
+    [7, 'strategic-companies', 'guide-07-ex2-companies-block', 'strategic companies, blocking', 2, 'Designing the abstraction'],
+    [8, 'af-semi-stable', 'guide-08-ex2-semistable-block', 'semi-stable extensions, blocking', 2, 'Loop shapes'],
+    [10, 'diagnosis', 'guide-10-ex2-diagnosis-block', 'diagnosis, blocking', 2, 'Checks that look for a witness, and cores'],
+    [12, 'abduction', 'guide-12-ex2-abduction-block', 'abduction, blocking', 17, 'Your own loop: a walkthrough and a checklist'],
+  ];
+  const CH = { 5: '05-reading-a-run', 6: '06-more-per-check', 7: '07-abstraction', 8: '08-loop-shapes', 10: '10-witness-and-cores', 12: '12-your-own-loop' };
+  for (const [n, src, id, what, sols, title] of FRESH) {
+    add({ id, summary: `Exercise starter: ${what}; write the refinement yourself (the library example ${src} is a solution).`,
+      shape: 'custom', expected: sols, page: `guide/${CH[n]}.html#exercise-fresh-start`, status: 'baseline',
+      project: fromContrib(src, `Guide exercise: ${what}`, `A starter on a fresh problem: the loop of the library example ${src} with every ` +
+        `refinement replaced by a block. Find the interface, write a refinement, and compare with ${src}.` + SEE(n, title), blockLoop(src),
+      { constants: { ...(contrib(src).settings.constants || {}), ...(((contrib(src).instances || []).find((x) => x.id === 'example') || {}).constants || {}) } },
+      (name, t) => (name === 'view' ? null : t)) });
+  }
   return E;
 }

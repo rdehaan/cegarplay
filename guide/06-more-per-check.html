@@ -96,6 +96,10 @@ differs(F) :- is(F,0), x(F).
           that <code>C.solve</code> returns an optimal answer set.</p>
         <div class="changed" data-lang="asp" data-before="guide-06-reason-clause:check" data-after="guide-06-reason-smallest:check"><span class="same">relevant(keep(F)) :- differs(F).</span><ins>#minimize { 1,F : differs(F) }.</ins></div>
         <div class="changed" data-lang="loop" data-before="guide-06-reason-clause:loop" data-after="guide-06-reason-smallest:loop"><del>        X = C.solve(assume G(M))</del><ins>        X = C.solve(assume G(M), optimal)</ins></div>
+        <details class="predict">
+          <summary>Predict: one clause per counterexample needed <span data-stat="guide-06-reason-clause:candidates">29</span> candidates. If every counterexample is a smallest one, how many?</summary>
+          <p><span data-stat="guide-06-reason-smallest:candidates">22</span>. Each clause names fewer features (on average <span data-stat="guide-06-reason-smallest:meanClause">2.0</span> instead of <span data-stat="guide-06-reason-clause:meanClause">2.3</span>), so it rules out more candidates; the solutions are the same <span data-stat="guide-06-reason-smallest:solutions">13</span>.</p>
+        </details>
         <p id="smallest-run"><a class="play" href="../?example=guide-06-reason-smallest&amp;fragment=check&amp;from=guide/06-more-per-check.html%23smallest-run" target="cegarplay">Open the smallest counterexamples</a></p>
         <table class="results">
           <thead>
@@ -194,6 +198,17 @@ clause(I, del(V), true) :- q(I,V).</pre>
               one of them. The same holds for the <code>#heuristic</code> of the two-clique check, and
               for solver options in general.
               <a class="play" href="../?example=guide-06-reason-smallest&amp;fragment=loop&amp;from=guide/06-more-per-check.html%23exercise-2-solution" target="cegarplay">Open the smallest counterexamples</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-fresh">
+          <h2>Exercise 3: a fresh problem, preferred extensions</h2>
+          <p id="exercise-fresh-start">The starter looks for preferred extensions of an argumentation framework that leave out a query argument, blocking each refuted candidate. A counterexample is a larger admissible set. What could one check say about more than one candidate, and can it give more than one clause?
+            <a class="play" href="../?example=guide-06-ex2-af-block&amp;fragment=loop&amp;from=guide/06-more-per-check.html%23exercise-fresh-start" target="cegarplay">Open the starter</a></p>
+          <details class="solution" id="exercise-fresh-solution">
+            <summary>Solution</summary>
+            <p>A larger admissible set S refutes every candidate that it contains, as long as the candidate leaves S somewhere it still could. The library example writes its refinement as <code>clause/3</code> atoms: leave the larger set somewhere, or contain all of it, which is several clauses from one check (<code>G.clauses</code>). It needs <span data-stat="af-preferred:candidates">13</span> candidates where blocking needs <span data-stat="guide-06-ex2-af-block:candidates">36</span>, with the same <span data-stat="af-preferred:solutions">3</span> solutions.
+              <a class="play" href="../?example=af-preferred&amp;fragment=check&amp;from=guide/06-more-per-check.html%23exercise-fresh-solution" target="cegarplay">Open af-preferred</a></p>
           </details>
         </section>
 

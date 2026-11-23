@@ -173,6 +173,15 @@ until A.exhausted and added == 0</pre>
             clauses with <code>clause/3</code>.</li>
         </ul>
 
+        <aside class="tool-moment" id="tool-moment">
+          <h2>Tool moment: one shape against another, on many instances</h2>
+          <p>A single run says little about which shape is better: the difference may flip on the next
+            instance. Write the shapes as <b>variants</b> of one project and run a <b>campaign</b> over a grid of
+            instances: the instance × variant matrix and the cactus plot show where each shape wins, and the
+            campaign marks any instance on which two shapes disagree about the solutions. See the how-to
+            <a href="howto-campaign.html">comparing strategies with a campaign</a>.</p>
+        </aside>
+
         <section class="exercise" id="exercise-1">
           <h2>Exercise 1</h2>
           <p>Change the Shape 2 script so that it stops at the first solution.</p>
@@ -201,6 +210,17 @@ until A.exhausted and added == 0</pre>
               candidates; the clauses come when there is nothing left to prune. Small batches keep
               the clauses coming.
               <a class="play" href="../?example=guide-08-shape4&amp;fragment=loop&amp;from=guide/08-loop-shapes.html%23exercise-2-solution" target="cegarplay">Open the batches</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-fresh">
+          <h2>Exercise 3: a fresh problem, semi-stable extensions</h2>
+          <p id="exercise-fresh-start">The starter is a Shape 1 loop that blocks. Which shape would you choose if the refinement were a clause, and which if it were a rule grounded per counterexample? Then compare the starter with the library example.
+            <a class="play" href="../?example=guide-08-ex2-semistable-block&amp;fragment=loop&amp;from=guide/08-loop-shapes.html%23exercise-fresh-start" target="cegarplay">Open the starter</a></p>
+          <details class="solution" id="exercise-fresh-solution">
+            <summary>Solution</summary>
+            <p>A clause fits Shape 1: one search, clauses added on the fly. A rule needs a solver that is not searching, so Shape 2 or 3. The library example stays in Shape 1 with clauses about the range: <span data-stat="af-semi-stable:candidates">7</span> candidates where the blocking starter needs <span data-stat="guide-08-ex2-semistable-block:candidates">12</span>, the same <span data-stat="af-semi-stable:solutions">2</span> solutions.
+              <a class="play" href="../?example=af-semi-stable&amp;fragment=loop&amp;from=guide/08-loop-shapes.html%23exercise-fresh-solution" target="cegarplay">Open af-semi-stable</a></p>
           </details>
         </section>
 

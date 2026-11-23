@@ -1,0 +1,41 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide exercise: preferred extensions, blocking",
+  "description": "A starter on a fresh problem: the loop of the library example af-preferred with every refinement replaced by a block. Find the interface, write a refinement, and compare with af-preferred. See the guide page \"Getting more out of each check\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% An argumentation framework: arguments and attacks.\narg(a;b;c;d;e;f;g;h;i).\natt(a,d). att(a,e). att(a,i). att(b,g). att(c,f). att(c,g). att(d,a). att(d,g).\natt(e,a). att(e,g). att(e,i). att(f,c). att(g,c). att(i,e). att(i,f). att(i,h).\n% Is this argument in every preferred extension?\nquery(a).\n",
+      "description": "The framework and the query argument. Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: a set of arguments that is conflict-free ...\n{ in(A) } :- arg(A).\n:- in(A), in(B), att(A,B).\n% ... and defends its members: it attacks every attacker ...\nbeaten(A) :- in(B), att(B,A).\n:- in(A), att(B,A), not beaten(B).\n% ... and does not contain the query argument.\n:- query(A), in(A).\n#show in/1.\n",
+      "description": "Proposes candidates (solver A): admissible sets without the query argument."
+    },
+    {
+      "name": "glue",
+      "text": "glue(in(A)) :- arg(A).\n",
+      "description": "The interface atoms: the members of the set."
+    },
+    {
+      "name": "check",
+      "text": "% A counterexample: an admissible set that contains the candidate and one more argument\n% (it may contain the query argument). Then the candidate is not maximal.\n{ big(A) } :- arg(A).\n:- in(A), not big(A).\n:- big(A), big(B), att(A,B).\nhit(A) :- big(B), att(B,A).\n:- big(A), att(B,A), not hit(B).\nnew(A) :- big(A), not in(A).\nlarger :- new(A).\n:- not larger.\n#show big/1.\n\n% The larger set refutes each of its proper subsets. A set survives if it has an\n% argument outside the larger set, or if it contains the larger set. For each new\n% argument N, clause N says: an argument outside comes in, or N comes in.\nclause(N, in(A), true) :- new(N), arg(A), not big(A).\nclause(N, in(N), true) :- new(N).\n",
+      "description": "Looks for a larger admissible set (solver C) and states the refinement as clause/3 atoms."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The check states the refinement as clause(Id, Atom, Value) atoms, one clause per\n# argument that the larger admissible set adds; G.block(M) reads them.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.block(M)\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

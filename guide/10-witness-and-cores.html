@@ -84,6 +84,10 @@
               <td class="num"><span data-stat="lang-core:solutions">958</span></td></tr>
           </tbody>
         </table>
+        <details class="predict">
+          <summary>Predict: blocking needed <span data-stat="guide-10-core-block:clauses">66</span> clauses of <span data-stat="guide-10-core-block:meanClause">10.0</span> literals each. How long will a core be on average?</summary>
+          <p><span data-stat="lang-core:meanClause">6.1</span> literals: shorter than a block, but longer than the six edges a clique on four nodes needs, because clasp returns the first core it finds.</p>
+        </details>
         <p>On five nodes almost every graph can be coloured, so there is little to learn either way.
           But look at the lengths.</p>
 
@@ -188,6 +192,17 @@
             <a class="play" href="../?example=maxsat-oll&amp;fragment=loop&amp;from=guide/10-witness-and-cores.html%23literature" target="cegarplay">Open maxsat-oll</a>
             <a class="play" href="../?example=marco&amp;fragment=loop&amp;from=guide/10-witness-and-cores.html%23literature" target="cegarplay">Open marco</a>
             <a class="play" href="../?example=colourable-partial&amp;fragment=loop&amp;from=guide/10-witness-and-cores.html%23literature" target="cegarplay">Open colourable-partial</a></p>
+        </section>
+
+        <section class="exercise" id="exercise-fresh">
+          <h2>Exercise 2: a fresh problem, diagnosis</h2>
+          <p id="exercise-fresh-start">The starter finds diagnoses of a circuit (sets of faulty gates that explain an observation), blocking each refuted candidate. Is its check a witness check or a counterexample check, and where would the refinement come from?
+            <a class="play" href="../?example=guide-10-ex2-diagnosis-block&amp;fragment=loop&amp;from=guide/10-witness-and-cores.html%23exercise-fresh-start" target="cegarplay">Open the starter</a></p>
+          <details class="solution" id="exercise-fresh-solution">
+            <summary>Solution</summary>
+            <p>Read the loop: it rejects when the check finds a model, so the check looks for a counterexample, and the refinement comes from <code>relevant/1</code>, not from a core. With it the library example needs <span data-stat="diagnosis:candidates">8</span> candidates where blocking needs <span data-stat="guide-10-ex2-diagnosis-block:candidates">14</span>; both find <span data-stat="diagnosis:solutions">2</span>. The rule of thumb of exercise 1 decides the polarity before any code is written.
+              <a class="play" href="../?example=diagnosis&amp;fragment=check&amp;from=guide/10-witness-and-cores.html%23exercise-fresh-solution" target="cegarplay">Open diagnosis</a></p>
+          </details>
         </section>
 
         <section class="tools" id="tools">

@@ -143,6 +143,10 @@ edge(U,V) :- node(U), node(V), U &lt; V, square((V-U) \ n).</pre>
         <p>The option <code>--enum-mode=record</code> on solver A keeps the clauses
           firmly:</p>
         <div class="changed" data-lang="loop" data-before="guide-05-paley-clause:loop" data-after="guide-05-paley-record:loop"><del>solver A = shared + abstraction</del><ins>solver A = shared + abstraction    options "--enum-mode=record"</ins></div>
+        <details class="predict">
+          <summary>Predict: the clause loop needed <span data-stat="guide-05-paley-clause:candidates">96</span> candidates. With <code>--enum-mode=record</code>, more, fewer, or the same? And the solutions?</summary>
+          <p>Fewer: <span data-stat="guide-05-paley-record:candidates">84</span>, because no clause is forgotten and no triangle is found twice. The solutions stay <span data-stat="guide-05-paley-record:solutions">39</span>: the enumeration mode changes how much a clause prunes, never what is a solution.</p>
+        </details>
         <p id="record-run">It changes the number of candidates, never the solutions:
           <span data-stat="guide-05-paley-record:candidates">84</span> instead of
           <span data-stat="guide-05-paley-clause:candidates">96</span> at n = 13, but
@@ -155,6 +159,17 @@ edge(U,V) :- node(U), node(V), U &lt; V, square((V-U) \ n).</pre>
           counterexample it finds; chapter 6 uses that. Without such statements it only changes the
           order of clasp's choices. The <a href="../?manual=true&amp;tab=8">manual</a>'s section
           Settings lists the options.</p>
+
+        <aside class="tool-moment" id="tool-moment">
+          <h2>Tool moment: where the time goes</h2>
+          <p>The Statistics tab says how much time each solver took; the Observatory's <b>timeline</b> says
+            when, one bar per solver call, and its <b>cost per line</b> table charges every call to the line of
+            the loop script that made it. On the Paley graph the blocking loop makes
+            <span data-stat="guide-05-paley-block:checkCalls">4,096</span> calls of the check inside one search of
+            the abstraction, the learning loop <span data-stat="guide-05-paley-clause:checkCalls">96</span>: the
+            timeline shows where each of them went.
+            The how-to <a href="howto-time.html">finding where the time goes</a> turns this into a procedure.</p>
+        </aside>
 
         <section class="exercise" id="exercise-1">
           <h2>Exercise 1</h2>
@@ -185,6 +200,17 @@ edge(U,V) :- node(U), node(V), U &lt; V, square((V-U) \ n).</pre>
               <code>relevant/1</code>. If grounding dominates, the program, not the loop, is the
               problem. Try it on the learning loop at n = 29, c = 4, k = 13.
               <a class="play" href="../?example=guide-05-paley-clause&amp;from=guide/05-reading-a-run.html%23exercise-2-solution" target="cegarplay">Open the learning loop</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-fresh">
+          <h2>Exercise 3: a fresh problem, 2QBF</h2>
+          <p id="exercise-fresh-start">The starter solves the 2QBF of the library example <code>qbf</code> (exists x forall y, a formula in disjunctive normal form) by blocking. Read its run as this chapter does: how many candidates, how long are the clauses, and what would a good run look like? Then write a <code>relevant/1</code> rule for the check.
+            <a class="play" href="../?example=guide-05-ex2-qbf-block&amp;fragment=loop&amp;from=guide/05-reading-a-run.html%23exercise-fresh-start" target="cegarplay">Open the starter</a></p>
+          <details class="solution" id="exercise-fresh-solution">
+            <summary>Solution</summary>
+            <p>Blocking looks at all <span data-stat="guide-05-ex2-qbf-block:candidates">64</span> assignments of the six x-variables with clauses of <span data-stat="guide-05-ex2-qbf-block:meanClause">6.0</span> literals: every refinement names every variable, the sign of a weak refinement. A counterexample (a y-assignment that falsifies every term) stays one while every open term keeps a false x-literal, so those literals are relevant: <code>relevant(x(I)) :- bad(T,I), not closed(T).</code> The library example then needs <span data-stat="qbf:candidates">15</span> candidates with clauses of <span data-stat="qbf:meanClause">2.8</span> literals, and finds the same <span data-stat="qbf:solutions">5</span> solutions. Chapter 13 takes this problem further.
+              <a class="play" href="../?example=qbf&amp;fragment=check&amp;from=guide/05-reading-a-run.html%23exercise-fresh-solution" target="cegarplay">Open qbf</a></p>
           </details>
         </section>
 

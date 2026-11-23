@@ -235,6 +235,8 @@ aside.paper {
   background: var(--subtle);
 }
 aside.paper h2 { margin-top: 10px; font-size: 19px; }
+aside.tool-moment { border-left: 4px solid var(--border); padding: 2px 14px; margin: 22px 0; }
+aside.tool-moment h2 { font-size: 17px; margin-top: 8px; }
 ul.bib { padding-left: 20px; }
 ul.bib li { margin: 6px 0; }
 ul.extra-list li { margin: 4px 0; }

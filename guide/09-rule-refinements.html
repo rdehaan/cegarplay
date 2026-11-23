@@ -66,6 +66,10 @@ hit(i) :- cex(i,q(V)), del(V).
           with Shape 2 or with the batches of chapter 8, not with <code>search A:</code>.</p>
 
         <h2 id="clique-rules">Warm-up: the clique lesson as a rule</h2>
+        <details class="predict">
+          <summary>Predict: the clause version needed <span data-stat="guide-05-paley-clause:counterexamples">57</span> counterexamples. The rule version learns the same lesson per clique, but in a Shape 2 loop. More counterexamples, or fewer?</summary>
+          <p>Fewer: <span data-stat="guide-09-clique-rules:counterexamples">26</span>. A grounded rule is never forgotten (a Shape 1 clause may be, chapter 5), and every new solve of A starts from all lessons so far.</p>
+        </details>
         <p id="clique-rules-run">The part above says exactly what the clause said: one of the
           clique's nodes must be deleted. So it should need exactly the candidates of Shape 2 with
           clauses, and it does: <span data-stat="guide-09-clique-rules:candidates">65</span> and
@@ -189,6 +193,17 @@ hit(i) :- cex(i,q(V)), edge(W,V), not cex(i,q(W)), del(W).
               refine, solve again. Shape 1 adds clauses inside one search, where clasp keeps them only
               weakly (chapter 5), so it sees more candidates.
               <a class="play" href="../?example=guide-08-shape2&amp;fragment=loop&amp;from=guide/09-rule-refinements.html%23exercise-2-solution" target="cegarplay">Open Shape 2 with clauses</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-fresh">
+          <h2>Exercise 3: a fresh problem, 2QBF as rules</h2>
+          <p id="exercise-fresh-start">Start again from the blocking 2QBF starter of chapter 5. Write the refinement as a rule instead of a clause: what should a program part grounded per counterexample y-assignment say?
+            <a class="play" href="../?example=guide-05-ex2-qbf-block&amp;fragment=loop&amp;from=guide/09-rule-refinements.html%23exercise-fresh-start" target="cegarplay">Open the starter</a></p>
+          <details class="solution" id="exercise-fresh-solution">
+            <summary>Solution</summary>
+            <p>The counterexample fixes the y-variables; the part instantiates the formula with them and demands that some term the assignment leaves open is true. That is expansion: the library example <code>qbf-expansion</code> needs <span data-stat="qbf-expansion:candidates">10</span> candidates and finds the same <span data-stat="qbf-expansion:solutions">5</span> solutions. Chapter 13 compares the two refinements on a larger formula.
+              <a class="play" href="../?example=qbf-expansion&amp;fragment=refine&amp;from=guide/09-rule-refinements.html%23exercise-fresh-solution" target="cegarplay">Open qbf-expansion</a></p>
           </details>
         </section>
 

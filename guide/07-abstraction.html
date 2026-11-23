@@ -50,6 +50,10 @@
         <pre class="code" data-lang="asp" data-from="guide-07-spectrum:abstraction">:- node(U), node(V), node(W), U &lt; V, V &lt; W, W &lt; m,
    edge(U,V), edge(V,W), edge(U,W), not del(U), not del(V), not del(W).</pre>
         <p class="listing-source">From the fragment <code>abstraction</code> of <code>guide-07-spectrum</code> (written for c = 3).</p>
+        <details class="predict">
+          <summary>Predict: the constant m puts the triangles among the first m nodes into the abstraction. With m = 13, every node of the graph, how many counterexamples will the check find?</summary>
+          <p><span data-stat="guide-07-spectrum@m=13:counterexamples">0</span>. The abstraction then knows every triangle, its <span data-stat="guide-07-spectrum@m=13:candidates">39</span> candidates are exactly the solutions, and the loop has become one program: the check has nothing left to teach.</p>
+        </details>
         <p id="spectrum-run">With m = 0 the abstraction knows nothing, and this is the learning loop
           of chapter 5. With m = n it knows every triangle: every candidate is a solution, and the
           check only confirms. In between, it knows some.
@@ -170,6 +174,17 @@
               is only true that <em>some</em> solution does, which is enough for existence but not
               for the full list.
               <a class="play" href="../?example=guide-07-too-strong&amp;from=guide/07-abstraction.html%23exercise-2-solution" target="cegarplay">Open the symmetric abstraction</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-fresh">
+          <h2>Exercise 3: a fresh problem, strategic companies</h2>
+          <p id="exercise-fresh-start">The starter finds strategic sets of companies (producing every good, closed under control, and minimal) by blocking. Which of the three properties does the abstraction know in advance, and which is left to the check? Would you move one?
+            <a class="play" href="../?example=guide-07-ex2-companies-block&amp;fragment=loop&amp;from=guide/07-abstraction.html%23exercise-fresh-start" target="cegarplay">Open the starter</a></p>
+          <details class="solution" id="exercise-fresh-solution">
+            <summary>Solution</summary>
+            <p>The abstraction already knows "produces every good" and "closed under control": both are properties of one set and cost nothing to state. Minimality says something about every smaller set: a quantifier over sets, which is the check's job. Moving it into the abstraction would be the one-program encoding the loop exists to avoid. With the library example's refinement (the check writes it as <code>clause/3</code> atoms, one clause per company of the smaller set), the loop needs <span data-stat="strategic-companies:candidates">10</span> candidates where blocking needs <span data-stat="guide-07-ex2-companies-block:candidates">44</span>.
+              <a class="play" href="../?example=strategic-companies&amp;fragment=abstraction&amp;from=guide/07-abstraction.html%23exercise-fresh-solution" target="cegarplay">Open strategic-companies</a></p>
           </details>
         </section>
 

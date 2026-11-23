@@ -98,6 +98,10 @@ at(k,X2,Y2,T) :- at(k,X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).
 % ... it has to end in the goal.
 :- goal(X,Y), not at(k,X,Y,t).</pre>
         <p class="listing-source">From the fragment <code>refine</code> of <code>guide-12-step4-rules</code> (the constant here is t, so the part may use k).</p>
+        <details class="predict">
+          <summary>Predict: the plan has to work from every start cell of the room. How many counterexamples (start cells) does the rule loop need before every plan it proposes works?</summary>
+          <p><span data-stat="guide-12-step4-rules:expansions">3</span>. Once the plan works from three well-chosen start cells, it works from everywhere, and the <span data-stat="guide-12-step4-rules:solutions">80</span> solutions follow with almost no wasted candidates.</p>
+        </details>
         <p id="step-rules-run">Rule refinements need a solver that is not searching, so the shape is
           Shape 3: solve, check, expand, solve again (chapter 8). Every head contains the
           parameter (chapter 9). The result: <span data-stat="guide-12-step4-rules:candidates">83</span>
@@ -225,6 +229,15 @@ at(k,X2,Y2,T) :- at(k,X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).
             Python clingo, outside the browser.</li>
         </ul>
 
+        <aside class="tool-moment" id="tool-moment">
+          <h2>Tool moment: keeping the run</h2>
+          <p>A design session ends with a run worth showing. A <b>recording</b> keeps every step (and, with
+            solver calls, the timeline) in a file that replays without the engine; a link to a replay can open
+            it on a chosen step and view. The how-tos <a href="howto-present.html">presenting a run</a> and
+            <a href="howto-check.html">checking a loop independently</a> cover the last two steps of a project:
+            showing it, and making sure it is right.</p>
+        </aside>
+
         <section class="exercise" id="exercise-1">
           <h2>Exercise 1</h2>
           <p>Step 3 claimed that changing a single move can send the robot elsewhere. Take a plan
@@ -251,6 +264,17 @@ at(k,X2,Y2,T) :- at(k,X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).
               project gives the four fragments with comments), and check each step against the
               checklist above.
               <a class="play" href="../?example=starter&amp;from=guide/12-your-own-loop.html%23exercise-2-solution" target="cegarplay">Open the starter project</a></p>
+          </details>
+        </section>
+
+        <section class="exercise" id="exercise-fresh">
+          <h2>Exercise 3: a fresh problem, abduction from start to finish</h2>
+          <p id="exercise-fresh-start">Follow the five steps of this chapter on abduction (sets of hypotheses that explain the observations): the starter is step 2, the real check with blocking. Write step 3 (a <code>relevant/1</code> rule, tested against the starter's count), and decide whether step 4 is worth it.
+            <a class="play" href="../?example=guide-12-ex2-abduction-block&amp;fragment=loop&amp;from=guide/12-your-own-loop.html%23exercise-fresh-start" target="cegarplay">Open the starter</a></p>
+          <details class="solution" id="exercise-fresh-solution">
+            <summary>Solution</summary>
+            <p>The starter finds <span data-stat="guide-12-ex2-abduction-block:solutions">17</span> explanations after <span data-stat="guide-12-ex2-abduction-block:candidates">22</span> candidates; the library example, with a clause from the counterexample, finds the same <span data-stat="abduction:solutions">17</span> after <span data-stat="abduction:candidates">20</span>. On so small an instance step 4 does not pay: the measure, not the elegance of the refinement, decides.
+              <a class="play" href="../?example=abduction&amp;fragment=check&amp;from=guide/12-your-own-loop.html%23exercise-fresh-solution" target="cegarplay">Open abduction</a></p>
           </details>
         </section>
 

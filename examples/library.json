@@ -1177,6 +1177,108 @@
       "after": 20
     },
     {
+      "id": "guide-05-ex2-qbf-block",
+      "title": "Guide exercise: 2QBF, blocking",
+      "group": "guide",
+      "summary": "Exercise starter: 2QBF, blocking; write the refinement yourself (the library example qbf is a solution).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 5
+      },
+      "page": "guide/05-reading-a-run.html#exercise-fresh-start",
+      "status": "baseline",
+      "level": 2,
+      "after": 5
+    },
+    {
+      "id": "guide-06-ex2-af-block",
+      "title": "Guide exercise: preferred extensions, blocking",
+      "group": "guide",
+      "summary": "Exercise starter: preferred extensions, blocking; write the refinement yourself (the library example af-preferred is a solution).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 3
+      },
+      "page": "guide/06-more-per-check.html#exercise-fresh-start",
+      "status": "baseline",
+      "level": 2,
+      "after": 6
+    },
+    {
+      "id": "guide-07-ex2-companies-block",
+      "title": "Guide exercise: strategic companies, blocking",
+      "group": "guide",
+      "summary": "Exercise starter: strategic companies, blocking; write the refinement yourself (the library example strategic-companies is a solution).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "page": "guide/07-abstraction.html#exercise-fresh-start",
+      "status": "baseline",
+      "level": 2,
+      "after": 7
+    },
+    {
+      "id": "guide-08-ex2-semistable-block",
+      "title": "Guide exercise: semi-stable extensions, blocking",
+      "group": "guide",
+      "summary": "Exercise starter: semi-stable extensions, blocking; write the refinement yourself (the library example af-semi-stable is a solution).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "page": "guide/08-loop-shapes.html#exercise-fresh-start",
+      "status": "baseline",
+      "level": 2,
+      "after": 8
+    },
+    {
+      "id": "guide-10-ex2-diagnosis-block",
+      "title": "Guide exercise: diagnosis, blocking",
+      "group": "guide",
+      "summary": "Exercise starter: diagnosis, blocking; write the refinement yourself (the library example diagnosis is a solution).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "page": "guide/10-witness-and-cores.html#exercise-fresh-start",
+      "status": "baseline",
+      "level": 3,
+      "after": 10
+    },
+    {
+      "id": "guide-12-ex2-abduction-block",
+      "title": "Guide exercise: abduction, blocking",
+      "group": "guide",
+      "summary": "Exercise starter: abduction, blocking; write the refinement yourself (the library example abduction is a solution).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 17
+      },
+      "page": "guide/12-your-own-loop.html#exercise-fresh-start",
+      "status": "baseline",
+      "level": 3,
+      "after": 12
+    },
+    {
       "id": "lang-basics",
       "title": "Loop language: the basics",
       "group": "language",

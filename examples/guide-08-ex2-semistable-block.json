@@ -1,0 +1,41 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide exercise: semi-stable extensions, blocking",
+  "description": "A starter on a fresh problem: the loop of the library example af-semi-stable with every refinement replaced by a block. Find the interface, write a refinement, and compare with af-semi-stable. See the guide page \"Loop shapes\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% An argumentation framework without a stable extension (z attacks itself).\narg(a;b;c;d;e;f;g;h;i;j;z).\natt(a,b). att(b,a).                 % a and b attack each other\natt(i,j). att(j,i).                 % so do i and j\natt(b,j). att(j,b).                 % and b and j\natt(b,c). att(c,d). att(d,e). att(e,c).     % b attacks the cycle c, d, e\natt(j,f). att(f,g). att(g,h). att(h,f).     % j attacks the cycle f, g, h\natt(z,z).\n",
+      "description": "The framework. Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: an admissible set, that is, a set that is conflict-free and attacks\n% all its attackers.\n{ in(A) } :- arg(A).\n:- in(A), in(B), att(A,B).\nbeaten(A) :- in(B), att(B,A).\n:- in(A), att(B,A), not beaten(B).\n% Its range: the members and the arguments they attack.\nrange(A) :- in(A).\nrange(A) :- beaten(A).\n#show in/1.\n",
+      "description": "Proposes candidates (solver A): admissible sets, and their range."
+    },
+    {
+      "name": "glue",
+      "text": "% The check compares ranges only.\nglue(range(A)) :- arg(A).\n",
+      "description": "The interface atoms: the range of the set (derived atoms), not its members."
+    },
+    {
+      "name": "check",
+      "text": "% A counterexample: an admissible set whose range contains the candidate's range and\n% one more argument.\n{ big(A) } :- arg(A).\n:- big(A), big(B), att(A,B).\nhit(A) :- big(B), att(B,A).\n:- big(A), att(B,A), not hit(B).\nwide(A) :- big(A).\nwide(A) :- hit(A).\n:- range(A), not wide(A).\ngain(A) :- wide(A), not range(A).\nwider :- gain(A).\n:- not wider.\n#show big/1.\n\n% The counterexample refutes every set whose range stays inside its range and misses\n% one argument of it. So: an argument outside the wider range enters the candidate's\n% range, or the first gained argument does.\nrelevant(range(A)) :- arg(A), not wide(A).\nrelevant(range(A)) :- gain(A), not gain(B) : arg(B), B < A.\n",
+      "description": "Looks for an admissible set with a larger range (solver C)."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

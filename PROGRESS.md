@@ -1343,3 +1343,6 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   checks; agrees with every several-check example it models.
 - Statistics (done): a Cores block (lengths of plain and minimised cores; `S.cores`).
 - Observatory (done): tracked values (`V` events) as lanes under the solver lanes of the timeline.
+- B1, B2, B5 (done): an exercise on a fresh problem in chapters 5-12 (six blocking starters
+  `guide-NN-ex2-*`, solutions are library examples); predict boxes in chapters 5-7, 9, 10, 12;
+  "Tool moment" asides in chapters 4, 5, 8 and 12.

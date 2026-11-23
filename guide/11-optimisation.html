@@ -177,6 +177,17 @@ hit(k) :- cex(k,pack(I)), lock(I).
             <a class="play" href="../?example=knapsack-bounds&amp;fragment=loop&amp;from=guide/11-optimisation.html%23literature" target="cegarplay">Open knapsack-bounds</a></p>
         </section>
 
+        <section class="exercise" id="exercise-fresh">
+          <h2>Exercise 3: a fresh problem, knapsack interdiction</h2>
+          <p id="exercise-fresh-start">The library example <code>knapsack-interdiction</code> lists every set of locked items that keeps the follower below a goal. Turn it into an optimisation: the locked set that leaves the follower the least. What must the abstraction minimise, and why does a too-strong refinement now do more harm than before?
+            <a class="play" href="../?example=knapsack-interdiction&amp;fragment=loop&amp;from=guide/11-optimisation.html%23exercise-fresh-start" target="cegarplay">Open knapsack-interdiction</a></p>
+          <details class="solution" id="exercise-fresh-solution">
+            <summary>Solution</summary>
+            <p>The abstraction claims a value for the follower and minimises it; the check finds the follower's best reply, and a reply above the claim refutes the candidate. The first candidate that survives is optimal only if no refinement ever removed a better one: a too-strong refinement now changes the answer, not just the count. The library example <code>knapsack-optimum</code> is this loop.
+              <a class="play" href="../?example=knapsack-optimum&amp;fragment=loop&amp;from=guide/11-optimisation.html%23exercise-fresh-solution" target="cegarplay">Open knapsack-optimum</a></p>
+          </details>
+        </section>
+
         <section class="tools" id="tools">
           <h2>Tool skills for this chapter</h2>
           <ul>
