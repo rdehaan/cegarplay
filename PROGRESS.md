@@ -1066,3 +1066,13 @@ contrib JSON files are the source.
   0/1152/23040; futoshiki 3 x 3 and 4 x 4: 672, 32, 2944, 13248; akari 4 x 4 / 5 x 5: 0, 12,
   494, 23) and cegarcheck (auto and block). The fixed-layout akari counts (1, 68, 0) agree with
   cegarcheck only (7 x 7 is too big to brute-force).
+- `slitherlink`: one loop along grid edges; numbers 0..3 on cells. Rules (both solvers): degree
+  0 or 2 at every vertex, reachability from the first used vertex (in a fixed vertex order,
+  `later/2` chain, linear), non-empty. A shows `num/3` for k cells, never 4 (a 4 pins the loop
+  to one cell's square), and the loop has at least `len` edges (without it the solver picks
+  tiny loops that a few zeros pin down). **Bug found on the way:** with the interface at 0..3 but
+  A allowed to show a 4, those candidates were rejected by counterexamples that ignored the 4
+  (lost solutions; 4 instead of 8 on 2 x 2). The interface must cover every value A can show.
+  Timings: 7 x 7 k = 12 len = 28 5.6 s; k = 10 len = 28 > 120 s; k = 10 len = 0 1.7 s;
+  10 x 10 k = 30 len = 50 84 s. Counts = brute force over enclosed cell sets (3 x 3: 213 loops,
+  516; 4 x 4: 9,349 loops, 128 / 0 / printed 8 / len 12 2,104) = cegarcheck (auto, block).

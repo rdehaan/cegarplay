@@ -1,0 +1,172 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Slitherlink with a unique solution",
+  "description": "Generate a Slitherlink puzzle, one of Nikoli's: draw one closed loop along the grid lines so that every number says how many sides of its cell the loop uses. The abstraction guesses a loop of at least len edges and the k cells that show their number (0 to 3); the check looks for two different loops that fit all numbers, and the refinement asks for a number that fails for one of them. That the loop is one loop and not several is a reachability condition, in both solvers. The run stops at the first puzzle.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The grid: cells, vertices, edges and the sides of each cell. Added to every solver.",
+      "text": "% Slitherlink on an n x n grid of cells: draw one closed loop along the grid lines so that\n% a number in a cell says how many of the cell's four sides the loop uses. An instance may\n% print numbers pre(R,C,N).\n#const n = 5.\ncell(R,C) :- R = 1..n, C = 1..n.\nvertex(X,Y) :- X = 0..n, Y = 0..n.\n% The edges of the grid: h(X,Y) joins vertex X,Y to X,Y+1; v(X,Y) joins X,Y to X+1,Y.\nedge(h(X,Y)) :- vertex(X,Y), Y < n.\nedge(v(X,Y)) :- vertex(X,Y), X < n.\nends(h(X,Y),(X,Y),(X,Y+1)) :- edge(h(X,Y)).\nends(v(X,Y),(X,Y),(X+1,Y)) :- edge(v(X,Y)).\nat(E,P) :- ends(E,P,_).\nat(E,P) :- ends(E,_,P).\n% The four sides of cell R,C (its corners are the vertices R-1..R, C-1..C).\nside(R,C,h(R-1,C-1)) :- cell(R,C).\nside(R,C,h(R,C-1)) :- cell(R,C).\nside(R,C,v(R-1,C-1)) :- cell(R,C).\nside(R,C,v(R-1,C)) :- cell(R,C).\n% The vertices in a fixed order, to pick the first vertex of a loop.\nnext((X,Y),(X,Y+1)) :- vertex(X,Y), Y < n.\nnext((X,n),(X+1,0)) :- vertex(X,n), X < n.\nprinted(R,C) :- pre(R,C,_).\n"
+    },
+    {
+      "name": "rules",
+      "description": "One closed loop, for any loop a solver declares; used by solver A (one loop) and solver C (two loops).",
+      "text": "% The rules for every loop G that a solver declares with grid(G):\n% on(G,E) says that loop G uses the edge E.\n{ on(G,E) : edge(E) } :- grid(G).\n% Every vertex has two loop edges or none.\ndeg(G,P,D) :- grid(G), vertex(X,Y), P = (X,Y), D = #count { E : at(E,P), on(G,E) }.\n:- deg(G,P,D), D != 0, D != 2.\n% One loop: every vertex on the loop is reachable from the first one along loop edges.\nused(G,P) :- deg(G,P,2).\nlater(G,Q) :- used(G,P), next(P,Q).\nlater(G,Q) :- later(G,P), next(P,Q).\nreach(G,P) :- used(G,P), not later(G,P).\nreach(G,Q) :- reach(G,P), on(G,E), at(E,P), at(E,Q).\n:- used(G,P), not reach(G,P).\n% The loop is not empty.\n:- grid(G), not used(G,_).\n% Every loop respects the printed numbers.\n:- grid(G), pre(R,C,N), #count { E : side(R,C,E), on(G,E) } != N.\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): a loop and the k cells that show their number.",
+      "text": "% A candidate: a loop s of at least len edges and k cells that show their number.\ngrid(s).\n:- #count { E : on(s,E) } < len.\nk { clue(R,C) : cell(R,C), not printed(R,C) } k.\n% num(R,C,N): the puzzle shows N in cell R,C.\nnum(R,C,N) :- clue(R,C), N = #count { E : side(R,C,E), on(s,E) }.\n% Puzzles show 0..3: a 4 would give the loop away (it is the one around that cell).\n:- num(_,_,4).\n#show num/3.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the numbers shown. The loop stays private to solver A.",
+      "text": "glue(num(R,C,N)) :- cell(R,C), N = 0..3, not printed(R,C).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for two different loops that fit the numbers (solver C).",
+      "text": "% A counterexample: two different loops a and b that fit all numbers shown.\ngrid(a). grid(b).\n:- num(R,C,N), grid(G), #count { E : side(R,C,E), on(G,E) } != N.\ndiffer :- on(a,E), not on(b,E).\ndiffer :- on(b,E), not on(a,E).\n:- not differ.\n#show.\n#show a(E) : on(a,E).\n#show b(E) : on(b,E).\n\n% Both loops fit every puzzle that shows only numbers that hold for both. So the puzzle\n% must show a number that fails for a or for b.\ncount(G,R,C,N) :- grid(G), cell(R,C), N = #count { E : side(R,C,E), on(G,E) }.\nrelevant(num(R,C,N)) :- cell(R,C), N = 0..3, not printed(R,C), not count(a,R,C,N).\nrelevant(num(R,C,N)) :- cell(R,C), N = 0..3, not printed(R,C), not count(b,R,C,N).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "7",
+      "k": "12",
+      "len": "28"
+    },
+    "solutions": 1,
+    "seconds": 120,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% A 7 x 7 puzzle with 12 numbers and a loop of at least 28 edges (about 6 s).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "short-loops",
+      "facts": "% Any loop length: the solver prefers small loops, which few numbers pin down\n% (k = 10, under 2 s; with len = 28, k = 10 does not finish in two minutes).\n",
+      "constants": {
+        "k": "10",
+        "len": "0"
+      },
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    },
+    {
+      "id": "five",
+      "facts": "% 5 x 5, 6 numbers, a loop of at least 16 edges.\n",
+      "constants": {
+        "n": "5",
+        "k": "6",
+        "len": "16"
+      },
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    },
+    {
+      "id": "ten",
+      "facts": "% 10 x 10, 30 numbers, a loop of at least 50 edges (about 85 s).\n",
+      "constants": {
+        "n": "10",
+        "k": "30",
+        "len": "50"
+      },
+      "expected": {
+        "solutions": null
+      },
+      "tags": [
+        "slow"
+      ]
+    },
+    {
+      "id": "three",
+      "facts": "% All 3 x 3 puzzles with 3 numbers and one solution (213 loops; checked by brute\n% force over the cell sets that a loop encloses).\n",
+      "constants": {
+        "n": "3",
+        "k": "3",
+        "len": "0"
+      },
+      "expected": {
+        "solutions": 516
+      },
+      "tags": []
+    },
+    {
+      "id": "four",
+      "facts": "% All 4 x 4 puzzles with 3 numbers and one solution (9,349 loops; about 25 s).\n",
+      "constants": {
+        "n": "4",
+        "k": "3",
+        "len": "0"
+      },
+      "expected": {
+        "solutions": 128
+      },
+      "tags": [
+        "slow"
+      ]
+    },
+    {
+      "id": "four-two",
+      "facts": "% Two numbers never fix a loop on 4 x 4.\n",
+      "constants": {
+        "n": "4",
+        "k": "2",
+        "len": "0"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "printed",
+      "facts": "% Two corners print a 3; add two numbers (k = 2): 8 puzzles.\npre(1,1,3). pre(4,4,3).\n",
+      "constants": {
+        "n": "4",
+        "k": "2",
+        "len": "0"
+      },
+      "expected": {
+        "solutions": 8
+      },
+      "tags": []
+    },
+    {
+      "id": "four-long",
+      "facts": "% 4 x 4 with 4 numbers and a loop of at least 12 edges: 2,104 puzzles\n% (about 6 minutes).\n",
+      "constants": {
+        "n": "4",
+        "k": "4",
+        "len": "12"
+      },
+      "expected": {
+        "solutions": 2104
+      },
+      "tags": [
+        "slow"
+      ]
+    }
+  ],
+  "runs": []
+}
