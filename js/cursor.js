@@ -1,14 +1,17 @@
 // The linked cursor of the Observatory (docs/spec-views.md section 6): one model that every view
 // reads; none keeps a step of its own. No DOM except bindKeys.
 //
-//   cursor.ticks: [{ i, t, k }] the recorded steps (R events, else T events)
+//   cursor.ticks: [{ i, t, k }] the recorded steps (R events, else traceSteps: T events and the
+//                 solutions after the last of them)
 //   cursor.index: 1-based position in ticks (0 = before the first step)
 //   cursor.range: [a, b] indices of a brushed range, or null
 //   cursor.follow: stay on the last step while a run adds steps
+import { traceSteps } from './recording.js';
+
 export function ticksOf(rec) {
   if (!rec) return [];
   if (rec.steps && rec.steps.length) return rec.steps.map((s) => ({ i: s.i, t: s.t ?? 0, k: s.k }));
-  return (rec.traces || []).map((t) => ({ i: t.i, t: 0, k: t.kind }));
+  return traceSteps(rec).map((s) => ({ i: s.i, t: 0, k: s.t.kind }));
 }
 
 export class Cursor {

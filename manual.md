@@ -1065,14 +1065,17 @@ draw(note("A triangle survives.")) :- kind(reject).
 Marks: `node/1`, `edge/2`, `cell/2`, `item/2`, `rank/3`, `attr/3` (keys `fill`, `stroke`,
 `label`, `weight`; a fill or stroke value is a class, coloured by first use), `emph/1`, `ghost/1`,
 `note/1`, `layout/1` (`grid`, `list`, `circle`, `layers`, `graph`), `pos/3`. The step slider picks
-a recorded step (the trace's `T` events, or `R` events of a recording); the drawing keeps every
+a recorded step (the trace's `T` events and the solutions found after the last of them, or `R`
+events of a recording); the drawing keeps every
 position between steps; dragging a node stores its position in the project. **Suggest a view**
 writes a first view from the predicates of the interface. The view runs as plain clingo with the
 instance and the named fragments, so a mistake shows as a clingo message. Details:
 `docs/spec-views.md`. Nineteen library examples ship a view (the guide's clique examples, the
 tutorial, `clique-colouring`, `af-preferred`, `arrowing`, `choosability`, `qbf`, and the puzzle
-generators: the five `sudoku-*`, `binairo`, `futoshiki`, `akari`, `slitherlink`). A view program
-gets the project's constants: a fragment's own `#const k = default.` takes the project's value.
+generators: the five `sudoku-*`, `binairo`, `futoshiki`, `akari`, `slitherlink`); their last
+step is the puzzle the run found. A view program gets the project's constants: a fragment's own
+`#const k = default.` takes the project's value. `cand/1` holds only interface atoms that are not
+facts: draw what the instance fixes in the scene part.
 
 ### Event lines
 

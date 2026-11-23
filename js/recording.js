@@ -35,13 +35,34 @@ export function align(a, b, by = 'step') {
   return out;
 }
 
+// Without R events: the T events (i = T step number), then the solutions found after the last
+// traced step (at most TRACE_SOLUTIONS), as steps of kind 'solution' numbered on from the last T
+// step. The trace has no step for an accepted candidate; this way a view and the cursor still
+// reach the run's last solution (such as the puzzle a generator found). Solutions found between
+// traced steps are left out: they have no number of their own in the trace.
+export const TRACE_SOLUTIONS = 20;
+export function traceSteps(rec) {
+  if (!rec) return [];
+  const T = rec.traces || [];
+  const out = T.map((t) => ({ i: t.i, r: null, t }));
+  const last = T.length ? T[T.length - 1].i : 0;
+  const after = rec.solutionAfter || [];
+  let j = 0;
+  (rec.solutions || []).forEach((m, k) => {
+    if (j >= TRACE_SOLUTIONS || after[k] !== T.length) return;
+    j++;
+    out.push({ i: last + j, r: null, t: { i: last + j, kind: 'solution', solver: '', candidate: m.atoms, solution: m.n } });
+  });
+  return out;
+}
+
 // The steps of a recording with one numbering: the R steps (i = R step number; solutions count),
 // each non-solution step paired in order with its T event (the trace has the counterexample);
-// without R events, the T events alone (i = T step number). [{ i, r, t }]
+// without R events, traceSteps. [{ i, r, t }]
 export function pairSteps(rec) {
   if (!rec) return [];
   const T = rec.traces || [];
-  if (!rec.steps || !rec.steps.length) return T.map((t) => ({ i: t.i, r: null, t }));
+  if (!rec.steps || !rec.steps.length) return traceSteps(rec);
   let k = 0;
   return rec.steps.map((r) => {
     if (r.k === 's') return { i: r.i, r, t: null };
@@ -58,6 +79,7 @@ export class Recording {
     this.calls = [];        // C
     this.solutions = [];    // M
     this.traces = [];       // T
+    this.solutionAfter = [];  // per solution: the number of T events before it
     this.stats = null;      // last S
     this.done = null;       // D
     this.H = null;
@@ -70,7 +92,7 @@ export class Recording {
     switch (kind) {
       case 'R': this.steps.push(data); break;
       case 'C': this.calls.push(data); break;
-      case 'M': this.solutions.push(data); break;
+      case 'M': this.solutions.push(data); this.solutionAfter.push(this.traces.length); break;
       case 'T': this.traces.push(data); break;
       case 'S': this.stats = data; break;
       case 'D': this.done = data; break;

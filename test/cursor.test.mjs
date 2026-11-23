@@ -79,3 +79,42 @@ test('review of wave 5: R steps and T events paired (R counts solutions, T does 
   const [a, b] = await Promise.all([src.frame('main program'), src.frame('compare program', 'compare')]);
   assert.ok(a && b, 'both channels get their frame');
 });
+
+test('without R events, the solutions after the last traced step are steps of kind solution', async () => {
+  const { traceSteps, pairSteps, TRACE_SOLUTIONS } = await import('../js/recording.js');
+  const rec = new Recording();
+  rec.add('T', { i: 1, kind: 'reject', solver: 'A', candidate: 'p(1)', literals: ['p(1)'] });
+  rec.add('M', { n: 1, atoms: 'p(2)' });                         // between traced steps: left out
+  rec.add('T', { i: 2, kind: 'reject', solver: 'A', candidate: 'p(3)', literals: ['p(3)'] });
+  rec.add('M', { n: 2, atoms: 'p(4) q' });
+  rec.add('M', { n: 3, atoms: 'p(5)' });
+  const S = traceSteps(rec);
+  assert.deepEqual(S.map((s) => [s.i, s.t.kind]), [[1, 'reject'], [2, 'reject'], [3, 'solution'], [4, 'solution']]);
+  assert.deepEqual(pairSteps(rec), S);
+  assert.deepEqual(ticksOf(rec).map((t) => [t.i, t.k]), [[1, 'reject'], [2, 'reject'], [3, 'solution'], [4, 'solution']]);
+  assert.deepEqual(frameFacts(S[2].t), ['step(3).', 'kind(solution).', 'cand(p(4)).', 'cand(q).']);
+  for (let n = 4; n < 40; n++) rec.add('M', { n, atoms: `p(${n + 2})` });
+  assert.equal(traceSteps(rec).length, 2 + TRACE_SOLUTIONS);
+  // a recording with R events keeps its own numbering (solutions are R steps there)
+  assert.equal(pairSteps(recOf('af-preferred')).length, recOf('af-preferred').steps.length);
+});
+
+test('a generator run without a recording: the view\'s last step is the puzzle it found', async () => {
+  const p = load(H.read('examples/akari.json'));
+  p.settings = { ...p.settings, solutions: 1, trace: 200 };
+  const r = await H.runProject(p, { instance: 'layout' });
+  const rec = new Recording();
+  for (const e of r.events) rec.add(e.kind, e.data);
+  const { pairSteps } = await import('../js/recording.js');
+  const last = pairSteps(rec).at(-1);
+  assert.equal(last.t.kind, 'solution');
+  assert.equal(last.t.candidate, H.ofKind(r, 'M')[0].atoms);
+  const d = derive(p, { instance: 'layout' });
+  const consts = Object.entries(d.settings.constants).map(([k, v]) => `-c ${k}=${v}`).join(' ');
+  const a = viewAtoms(await H.run(viewProgram(d, d.views[0], frameFacts(last.t)), `${VIEW_OPTIONS} ${consts}`));
+  const m = parseMarks(a.atoms);
+  assert.deepEqual(m.problems, []);
+  assert.ok(m.notes.includes('One lighting: the puzzle is done.'));
+  const labels = [...m.attrs.values()].map((x) => x.label).filter((x) => /^[0-4]$/.test(x || ''));
+  assert.equal(labels.length, 2);                                 // k = 2 numbers
+});

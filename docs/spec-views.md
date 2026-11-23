@@ -28,6 +28,15 @@ Step facts (`frameFacts(step, iface)`):
 | `lit(A, true\|false)` | each literal (`-a` = false) | each signed index of `q` |
 | `fact(F)` | `facts` | `f` |
 
+`cand/1` holds the candidate's interface atoms that are not facts (in both sources): an interface
+atom that is a fact is the same in every step, so a view draws it in the scene, from the instance.
+Without `R` events the steps are the `T` events, then the solutions found after the last traced
+step (`traceSteps` in `js/recording.js`, at most 20), each as a step of kind `solution` numbered on
+from the last `T` step, with `cand(A)` for each atom of the solution (its shown atoms, which may
+include facts). The trace has no step for an accepted candidate, so this is how a view (and the
+cursor) reaches the run's last solution, such as the puzzle a generator found. Solutions found
+between traced steps have no step.
+
 ## 3. Marks
 
 `draw(M)` with M one of:

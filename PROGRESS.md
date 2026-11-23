@@ -1117,3 +1117,18 @@ counterexample leaves only a 2 x 2 rectangle empty).
   (0), sudoku-hard's stuck puzzle (0); the graded puzzle with one clue erased, k = 1: 3, 6, 9,
   equal to a Python count over every cell and value (unique, singles stuck, all solve) and to
   cegarcheck (auto, block). Without `--project` the k = 0 instance counted 189,962 models.
+
+### The final puzzle in a view (2026-11-23)
+
+Without a recording the view's steps were the T events only, and a search traces no step for an
+accepted candidate (removed on purpose in Phase 5: every T step has a refinement). Now
+`traceSteps(rec)` (`js/recording.js`; used by `pairSteps` and `ticksOf`) appends the solutions
+found after the last traced step (at most 20) as steps of kind `solution`, numbered on from the
+last T step; `Recording.add` notes for each M event how many T events came before it
+(`solutionAfter`). T numbering is unchanged (the Output tab's trace, the cursor, the guide's step
+numbers). A generator's run ends at its puzzle, so the last view step is the puzzle; checked in the
+served page with Playwright (akari: step 160 of 160; sudoku-unique and slitherlink: step 201, past
+the trace limit of 200). Facts: `cand/1` never held fact interface atoms (T candidates and R bits
+both list non-fact atoms only), so no runtime change: views draw instance facts in the scene
+(akari's fixed layout). `sudoku-unavoidable`'s view also reads `given/3` (a solution step has the
+shown atoms only).
