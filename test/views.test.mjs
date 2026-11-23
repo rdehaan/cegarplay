@@ -163,12 +163,15 @@ test('akari: a rejected step shows the two lightings and the black cells', async
   const p = ex('akari');
   p.settings = { ...p.settings, solutions: 1, trace: 3 };
   const d = derive(p, { instance: 'layout' });
-  const r = await H.runProject(d);
+  const r = await H.runProject(p, { instance: 'layout' });
   const st = H.ofKind(r, 'T').find((t) => t.kind === 'reject');
   const f = parseMarks((await runView(d, viewProgram(d, d.views[0], frameFacts(st)))).atoms);
   assert.deepEqual(f.problems, []);
+  // the instance fixes the 12 black cells (facts: drawn by the scene part, not from cand/1)
+  const black = [...f.attrs.entries()].filter(([, a]) => a.fill === 'black').map(([k]) => k);
+  assert.equal(black.length, 12);
+  assert.ok(black.includes('cell(1,3)') && black.includes('cell(7,5)'));
   const fills = [...f.attrs.values()].map((a) => a.fill).filter(Boolean);
-  assert.equal(fills.filter((x) => x === 'black').length, 12);
   assert.ok(fills.some((x) => x === 'a') && fills.some((x) => x === 'b'));
   assert.ok(f.notes.some((t) => t.startsWith('Two lightings')));
 });
