@@ -158,9 +158,10 @@ export class Control {
 
   // Validate, assemble and start. Resolves when the run is over.
   //   mode 'audit': the audit of lua/audit.lua instead of the loop (docs/spec-soundness.md).
+  //   allSolutions: look for all solutions, whatever settings.solutions says.
   //   instance, variant: the run uses the derived project (js/project.js derive); without
   //   instance, the one picked in the run bar.
-  async run({ seed, mode = 'run', instance, variant, stepping = false } = {}) {
+  async run({ seed, mode = 'run', instance, variant, stepping = false, allSolutions = false } = {}) {
     const app = this.app;
     if (this.busy || !app.ready) return null;
     this.setState('validating');
@@ -170,6 +171,8 @@ export class Control {
     if (this.fragCheck) await this.fragCheck.catch(() => {});
     let project = structuredClone(app.collect());
     if (seed !== undefined) project.settings.seed = seed;
+    // Run all: an instance with an expected count is run to all solutions (as tools/run.mjs does)
+    if (allSolutions) project.settings.solutions = 0;
     app.editors.clearAnnotations();
     let problems, instanceId = null;
     try {

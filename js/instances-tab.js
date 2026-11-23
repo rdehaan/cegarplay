@@ -3,7 +3,7 @@ import { makeEditor } from './editors.js';
 import { IMPORTERS, importerFor, freshId, checkFacts, ImportError } from './instances.js';
 import { generate, PARAM_TYPES } from './generate.js';
 import { fuzz, shrinkInstance, diagnose, defaultSource } from './fuzz.js';
-import { INSTANCE_ID, applyVariant, expectedCheck, costText } from './project.js';
+import { INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary } from './project.js';
 import { fmt } from './output.js';
 
 const $ = (id) => document.getElementById(id);
@@ -298,16 +298,15 @@ export class InstancesTab {
     const c = this.app.control;
     if (c.busy || !this.app.ready || !this.list.length) return;
     this.say('Running every instance…');
-    let bad = 0, n = 0;
+    const rows = [];
     for (const x of [...this.list]) {
-      const r = await c.run({ instance: x.id });
+      const wantsCount = !!(x.expected && Number.isInteger(x.expected.solutions));
+      const r = await c.run({ instance: x.id, allSolutions: wantsCount });
       if (!r || r.state === 'aborted') { this.say('Stopped.'); return; }
-      n++;
-      const res = this.results.get(x.id);
-      const v = expectedCheck(x.expected, res);
-      if (v.checked && !v.ok) bad++;
+      rows.push({ expected: x.expected, result: this.results.get(x.id) });
     }
-    this.say(bad ? `Ran ${n} instances: ${bad} with a count or optimum other than expected (marked ✗).` : `Ran ${n} instances; every expected count and optimum matches.`, bad > 0);
+    const s = runAllSummary(rows);
+    this.say(s.text, s.bad > 0);
   }
 
   // ---- generators (docs/spec-instances.md section 4) ------------------------------------

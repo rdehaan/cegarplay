@@ -154,7 +154,10 @@ their last run; it edits facts, constants, expected count and tags; **Import fil
 PrefLib strict orders (`.soc`, `.soi`: `ballot/2` as `kemeny-control` writes them) and jaggpy
 scenarios (`.jagg`: `var/1`, `cl/1`, `pos/2`, `neg/2`); each importer is checked with clingo before
 the instance is added. **Run all** runs every instance and marks a count other than the expected one
-with ✗ in red. The run bar's **Instance** picker (shown only for a project with instances) chooses
+with ✗ in red. An instance with an expected count is run to all solutions, whatever the project's
+solution limit. The status line says how many instances were checked and why the others were not
+(no expectation, a run that did not finish, a run that stopped before all solutions); it never says
+"all match" when nothing was compared. The run bar's **Instance** picker (shown only for a project with instances) chooses
 the instance of the next run; the run history names it in brackets.
 
 ### Variants

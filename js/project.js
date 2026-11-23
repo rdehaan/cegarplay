@@ -523,3 +523,28 @@ export function expectedCheck(expected, r) {
   const checked = solChecked || optChecked;
   return { checked, ok: checked ? (!solChecked || solOk) && (!optChecked || optOk) : null, want };
 }
+
+// The status line of Run all: rows = [{ expected, result }] in run order. It never says that
+// everything matches when nothing was checked; it names why instances went unchecked.
+export function runAllSummary(rows) {
+  let bad = 0, checked = 0, noExpect = 0, unfinished = 0, notExhausted = 0;
+  for (const { expected, result } of rows) {
+    const v = expectedCheck(expected, result);
+    if (v.checked) { checked++; if (!v.ok) bad++; continue; }
+    if (!v.want) noExpect++;
+    else if (!result || result.outcome !== 'finished') unfinished++;
+    else notExhausted++;
+  }
+  const n = rows.length;
+  const why = [
+    noExpect ? `${noExpect} without an expected count or optimum` : null,
+    unfinished ? `${unfinished} not finished (error, stop or time limit)` : null,
+    notExhausted ? `${notExhausted} stopped before all solutions were found` : null,
+  ].filter(Boolean);
+  const head = `Ran ${n} instance${n === 1 ? '' : 's'}; ${checked} of ${n} checked`;
+  const tail = why.length ? `; not checked: ${why.join(', ')}.` : '.';
+  const text = checked === 0 ? `${head}: nothing to compare${tail}`
+    : bad ? `${head}: ${bad} with a count or optimum other than expected (marked ✗)${tail}`
+    : `${head}, all match${tail}`;
+  return { text, n, checked, bad, noExpect, unfinished, notExhausted };
+}

@@ -162,3 +162,22 @@ for (const e of lib.examples) {
     });
   }
 }
+
+test('Run all summary: never says "match" when nothing was checked (D1)', () => {
+  const done = (o) => ({ outcome: 'finished', exhausted: true, solutions: 2, cost: null, same: true, ...o });
+  // the bug: a run stopped at the solution limit was not checked but reported as a match
+  const s1 = P.runAllSummary([{ expected: { solutions: 2 }, result: done({ exhausted: false, solutions: 1 }) }]);
+  assert.equal(s1.checked, 0);
+  assert.match(s1.text, /0 of 1 checked: nothing to compare; not checked: 1 stopped before all solutions were found\./);
+  assert.doesNotMatch(s1.text, /match/);
+  const s2 = P.runAllSummary([
+    { expected: { solutions: 2 }, result: done({}) },
+    { expected: { solutions: 3 }, result: done({}) },
+    { expected: null, result: done({}) },
+    { expected: { solutions: 1 }, result: done({ outcome: 'limit' }) },
+  ]);
+  assert.deepEqual([s2.n, s2.checked, s2.bad, s2.noExpect, s2.unfinished], [4, 2, 1, 1, 1]);
+  assert.match(s2.text, /^Ran 4 instances; 2 of 4 checked: 1 with a count or optimum other than expected/);
+  const s3 = P.runAllSummary([{ expected: { solutions: 2 }, result: done({}) }]);
+  assert.equal(s3.text, 'Ran 1 instance; 1 of 1 checked, all match.');
+});
