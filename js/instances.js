@@ -173,6 +173,55 @@ export function fromJagg(text, names = {}) {
   return { facts: out.join('\n') + '\n', constants: {} };
 }
 
+// CSV (.csv, .tsv): a header line, then one record per line (comma, semicolon or tab; double
+// quotes around a field allow the separator inside it). Without a column map each record becomes
+// row(I, V1, ..., Vn) (I counts from 1). A column map names predicates over header columns:
+// "edge(from,to); weight(from,to,w)" gives edge/2 and weight/3 facts per record; a column may
+// also be written by its number (1 = the first). Values become numbers, constants or strings.
+export function splitCsvLine(line, sep) {
+  const out = [];
+  let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) {
+      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; } else if (ch === '"') q = false; else cur += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === sep) { out.push(cur); cur = ''; } else cur += ch;
+  }
+  out.push(cur);
+  return out.map((x) => x.trim());
+}
+export function parseColumnMap(text) {
+  const out = [];
+  for (const part of String(text || '').split(';').map((x) => x.trim()).filter(Boolean)) {
+    const m = /^([a-z][A-Za-z0-9_]*)\s*\(([^)]*)\)$/.exec(part);
+    if (!m) throw new ImportError(`column map: expected pred(col, ...), got "${part}"`);
+    out.push({ pred: m[1], cols: m[2].split(',').map((x) => x.trim()).filter(Boolean) });
+  }
+  return out;
+}
+export function fromCsv(text, names = {}, columnMap = '') {
+  const lines = String(text).replace(/\r\n?/g, '\n').split('\n').filter((l) => l.trim() && !l.trim().startsWith('#'));
+  if (!lines.length) throw new ImportError('an empty file');
+  const sep = lines[0].includes('\t') ? '\t' : lines[0].includes(';') && !lines[0].includes(',') ? ';' : ',';
+  const header = splitCsvLine(lines[0], sep);
+  const map = parseColumnMap(columnMap);
+  const col = (name) => {
+    const k = /^\d+$/.test(name) ? Number(name) - 1 : header.indexOf(name);
+    if (k < 0 || k >= header.length) throw new ImportError(`column map: no column "${name}" (the header has ${header.join(', ')})`);
+    return k;
+  };
+  const plan = map.map((m) => ({ pred: rename(names, m.pred), ks: m.cols.map(col) }));
+  const out = [`% from a CSV file with the columns ${header.join(', ')}`];
+  lines.slice(1).forEach((l, r) => {
+    const v = splitCsvLine(l, sep);
+    if (v.length !== header.length) throw new ImportError(`line ${r + 2}: ${v.length} fields, the header has ${header.length}`);
+    if (!plan.length) out.push(`${rename(names, 'row')}(${[String(r + 1), ...v.map(term)].join(',')}).`);
+    for (const p of plan) out.push(`${p.pred}(${p.ks.map((k) => term(v[k])).join(',')}).`);
+  });
+  return { facts: out.join('\n') + '\n', constants: {} };
+}
+
 export const IMPORTERS = {
   lp: { label: 'Facts (.lp)', fn: fromFacts, ext: ['.lp', '.txt'] },
   col: { label: 'DIMACS graph (.col)', fn: fromDimacsGraph, ext: ['.col', '.dimacs'] },
@@ -181,6 +230,7 @@ export const IMPORTERS = {
   tgf: { label: 'Trivial Graph Format (.tgf)', fn: fromTgf, ext: ['.tgf'] },
   preflib: { label: 'PrefLib orders (.soc, .soi)', fn: fromPreflib, ext: ['.soc', '.soi'] },
   jagg: { label: 'jaggpy scenario (.jagg)', fn: fromJagg, ext: ['.jagg'] },
+  csv: { label: 'CSV with a column map (.csv, .tsv)', fn: fromCsv, ext: ['.csv', '.tsv'], columnMap: true },
 };
 
 export function importerFor(filename) {

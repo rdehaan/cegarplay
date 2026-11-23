@@ -158,7 +158,10 @@ their last run; it edits facts, constants, expected count and tags; **Import fil
 (`.lp`), DIMACS graphs (`.col`: `node/1`, `edge/2`), QDIMACS (`qblock/2`, `qvar/2`, `clause/1`,
 `qlit/3`), ASPARTIX (`.apx`: `arg/1`, `att/2`), Trivial Graph Format (`.tgf`: `arg/1`, `att/2`),
 PrefLib strict orders (`.soc`, `.soi`: `ballot/2` as `kemeny-control` writes them) and jaggpy
-scenarios (`.jagg`: `var/1`, `cl/1`, `pos/2`, `neg/2`); each importer is checked with clingo before
+scenarios (`.jagg`: `var/1`, `cl/1`, `pos/2`, `neg/2`) and CSV (`.csv`, `.tsv`: a header line, then
+`row(I, V1, ..., Vn)` per record, or the facts of a **column map** such as `edge(from,to); w(from,to,cost)`
+over the header's names or column numbers). Several files can be chosen at once (one instance each; a
+file that fails is named and the others are added); each importer is checked with clingo before
 the instance is added. **Run all**, **Fuzz** and **Check exercise** (like **Rerun with 5 seeds**) are batches: the run bar
 says what runs (**running all instances (3 of 17: n5)**, **running fuzz**), Run and Audit wait, and one
 click on **Abort** (or **Stop**) ends the whole batch. **Run all** runs every instance and marks a count other than the expected one

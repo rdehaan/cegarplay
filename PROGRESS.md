@@ -1330,3 +1330,5 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   `cancel-reinf-posresp-k4` now has its ground truth, 16 (s1, exhausted in ~15 min; tag `slow`).
   Two mid-size questions (`faith-cancel-reinf-pareto-condorcet-k3`, `faith-cancel-reinf-pareto-k3`)
   hit the audit's candidate limit; they are left in the audit for now.
+- D7 (done): Import file takes several files at once; a CSV importer with a column map
+  (`fromCsv`, `parseColumnMap` in `js/instances.js`).

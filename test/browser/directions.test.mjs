@@ -590,3 +590,20 @@ test('Run all, Fuzz and the audit of many instances name themselves and stop at 
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('D7: several files at once, and a CSV file with a column map', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring&tab=9');
+  const n0 = await page.evaluate(() => window.cegarplay.project.instances.length);
+  await page.fill('#instance-column-map', 'edge(u,v)');
+  await page.setInputFiles('#instance-file', [
+    { name: 'tri.csv', mimeType: 'text/csv', buffer: Buffer.from('u,v\n1,2\n2,3\n1,3\n') },
+    { name: 'path.lp', mimeType: 'text/plain', buffer: Buffer.from('edge(1,2). edge(2,3).\n') },
+    { name: 'bad.lp', mimeType: 'text/plain', buffer: Buffer.from('edge(1,.\n') },
+  ]);
+  await page.waitForFunction(() => /Imported 2 of 3 files/.test(document.getElementById('instances-status').textContent));
+  assert.match(await page.textContent('#instances-status'), /Not imported: bad\.lp: line 1/);
+  const added = await page.evaluate((n) => window.cegarplay.project.instances.slice(n).map((x) => [x.id, x.facts.split('\n').filter((l) => !l.startsWith('%')).join(' ').trim()]), n0);
+  assert.deepEqual(added, [['tri', 'edge(1,2). edge(2,3). edge(1,3).'], ['path', 'edge(1,2). edge(2,3).']]);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

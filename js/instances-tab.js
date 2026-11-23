@@ -62,7 +62,9 @@ export class InstancesTab {
     this.root.textContent = '';
     this.table = el('table', { class: 'internals-table instances-table', id: 'instances-table' });
     this.status = el('p', { id: 'instances-status', class: 'note', role: 'status', 'aria-live': 'polite' });
-    this.fileInput = el('input', { type: 'file', id: 'instance-file', hidden: true, onchange: () => this.importFile() });
+    this.fileInput = el('input', { type: 'file', id: 'instance-file', hidden: true, multiple: true, onchange: () => this.importFile() });
+    this.columnMap = el('input', { id: 'instance-column-map', size: 28, placeholder: 'CSV column map: edge(from,to); w(from,to,cost)',
+      'aria-label': 'Column map for CSV files', title: 'For CSV files: predicates over header columns. Empty: row(I, V1, ..., Vn) per record.' });
     this.format = el('select', { id: 'instance-format', 'aria-label': 'Format of the file to import' },
       ...Object.entries(IMPORTERS).map(([k, v]) => el('option', { value: k }, v.label)));
     const auto = el('option', { value: 'auto', selected: true }, 'Format from the file name');
@@ -70,7 +72,7 @@ export class InstancesTab {
     const bar = el('div', { class: 'instances-bar' },
       el('button', { class: 'control-button', id: 'add-instance-button', onclick: () => this.add() }, 'New instance'),
       el('button', { class: 'control-button', id: 'import-instance-button', onclick: () => this.fileInput.click() }, 'Import file'),
-      this.format,
+      this.format, this.columnMap,
       el('button', { class: 'control-button', id: 'run-all-instances-button', onclick: () => this.runAll() }, 'Run all'),
       this.checkButton = el('button', { class: 'control-button', id: 'check-exercise-button', hidden: true, onclick: () => this.checkExercise(),
         title: 'Check this exercise: expected counts and optima, the audit, and the budgets' }, 'Check exercise'),
@@ -309,21 +311,28 @@ export class InstancesTab {
     this.app.dirty();
   }
 
-  // Import a file as a new instance; the facts are checked with clingo --mode=gringo first.
+  // Import files (one or several at once) as new instances; the facts of each are checked with
+  // clingo --mode=gringo first. A file that fails is reported and the others are still added.
   async importFile() {
-    const f = this.fileInput.files[0];
+    const files = [...(this.fileInput.files || [])];
     this.fileInput.value = '';
-    if (!f) return;
-    const kind = this.format.value === 'auto' ? importerFor(f.name) : this.format.value;
-    let res;
-    try { res = IMPORTERS[kind].fn(await f.text()); }
-    catch (e) { this.say(`${f.name}: ${e instanceof ImportError ? e.message : e}`, true); return; }
-    if (this.app.ready && !this.app.engine.active) {
-      const problems = await checkFacts(res.facts, (p, o) => this.app.engine.exec(p, o), { ...this.app.project.settings.constants, ...res.constants });
-      if (problems.length) { this.say(`${f.name}: line ${problems[0].line}: ${problems[0].message}`, true); return; }
+    if (!files.length) return;
+    const added = [], failed = [];
+    for (const f of files) {
+      const kind = this.format.value === 'auto' ? importerFor(f.name) : this.format.value;
+      const imp = IMPORTERS[kind];
+      let res;
+      try { res = imp.columnMap ? imp.fn(await f.text(), {}, this.columnMap.value) : imp.fn(await f.text()); }
+      catch (e) { failed.push(`${f.name}: ${e instanceof ImportError ? e.message : e}`); continue; }
+      if (this.app.ready && !this.app.engine.active) {
+        const problems = await checkFacts(res.facts, (p, o) => this.app.engine.exec(p, o), { ...this.app.project.settings.constants, ...res.constants });
+        if (problems.length) { failed.push(`${f.name}: line ${problems[0].line}: ${problems[0].message}`); continue; }
+      }
+      added.push(`${this.add({ id: freshId(this.app.project, f.name), facts: res.facts, constants: res.constants, tags: ['imported'] })} (${imp.label})`);
     }
-    const id = this.add({ id: freshId(this.app.project, f.name), facts: res.facts, constants: res.constants, tags: ['imported'] });
-    this.say(`Imported ${f.name} as instance ${id} (${IMPORTERS[kind].label}).`);
+    if (files.length === 1 && added.length) this.say(`Imported ${files[0].name} as instance ${added[0]}.`);
+    else if (files.length === 1) this.say(failed[0], true);
+    else this.say(`Imported ${added.length} of ${files.length} files${added.length ? `: ${added.map((x) => x.split(' ')[0]).join(', ')}` : ''}.${failed.length ? ` Not imported: ${failed.join('; ')}` : ''}`, failed.length > 0);
   }
 
   // Record a finished run of an instance (called by the control after every run).

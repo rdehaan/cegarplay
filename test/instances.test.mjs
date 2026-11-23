@@ -194,3 +194,15 @@ test('instances[].audit: false keeps an instance out of the audit and Fuzz, not 
   const v = P.load(H.read('examples/voting-justification.json'));
   assert.deepEqual(v.instances.filter((x) => x.audit === false).map((x) => x.id), ['cancel-reinf-posresp-k4', 'pareto-neutral-cancel-reinf-k8']);
 });
+
+test('CSV import: row/N facts without a map, named predicates with a column map (D7)', async () => {
+  const I = await import('../js/instances.js');
+  const csv = 'from,to,cost\n1,2,5\n2,3,"x, y"\n';
+  assert.equal(I.fromCsv(csv).facts, '% from a CSV file with the columns from, to, cost\nrow(1,1,2,5).\nrow(2,2,3,"x, y").\n');
+  assert.equal(I.fromCsv(csv, {}, 'edge(from,to); w(1,3)').facts.split('\n').slice(1).join('\n'), 'edge(1,2).\nw(1,5).\nedge(2,3).\nw(2,"x, y").\n');
+  assert.equal(I.fromCsv('a\tb\nfoo\tBar\n').facts.split('\n')[1], 'row(1,foo,"Bar").');
+  assert.throws(() => I.fromCsv(csv, {}, 'edge(from,nope)'), /no column "nope"/);
+  assert.throws(() => I.fromCsv(csv, {}, 'edge from'), /expected pred/);
+  assert.throws(() => I.fromCsv('a,b\n1\n'), /line 2: 1 fields/);
+  assert.equal(I.importerFor('data.tsv'), 'csv');
+});
