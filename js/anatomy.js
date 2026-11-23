@@ -96,6 +96,7 @@ const secs = (t) => (t >= 10 ? t.toFixed(1) : t >= 0.1 ? t.toFixed(2) : t.toFixe
 
 const BOX_W = 190, BOX_H = 92, COL_GAP = 110, ROW_GAP = 26, PAD = 16;
 const LANE_H = 26, MARK_H = 18;
+const TRACK_COLORS = ['--chart-2', '--chart-1', '--chart-3', '--chart-4'];
 
 export class Anatomy {
   constructor(app, root) {
@@ -116,6 +117,7 @@ export class Anatomy {
     this.filterLine = null;
     this.assembled = null;
     this.rate = [];           // times of recent R events (pulse or rate)
+    this.tracks = new Map();  // track statements: name -> [{ t, v }] (V events), drawn under the lanes
     this.dirty = { diagram: true, timeline: true, table: true };
   }
 
@@ -188,6 +190,13 @@ export class Anatomy {
         break;
       case 'S': this.S = d; this.dirty.diagram = true; break;
       case 'C': this.calls.push(d); this.dirty.timeline = true; this.dirty.table = true; break;
+      case 'V':
+        if (typeof d.v === 'number' && typeof d.t === 'number') {
+          if (!this.tracks.has(d.n)) this.tracks.set(d.n, []);
+          this.tracks.get(d.n).push({ t: d.t, v: d.v });
+          this.dirty.timeline = true;
+        }
+        break;
       case 'R':
         this.steps.push({ t: d.t, k: d.k });
         this.dirty.timeline = true;
@@ -299,14 +308,16 @@ export class Anatomy {
     let t1 = 0;
     for (const c of this.calls) t1 = Math.max(t1, c.t0 + (c.dt || 0));
     for (const s of this.steps) t1 = Math.max(t1, s.t);
+    for (const pts of this.tracks.values()) for (const p of pts) t1 = Math.max(t1, p.t);
     return [0, t1 > 0 ? t1 : 1];
   }
 
   drawTimeline() {
     const cv = this.canvas;
     const lanes = Math.max(1, this.solvers.length);
+    const tracks = [...this.tracks.entries()];
     const width = Math.max(200, Math.floor(cv.parentElement.clientWidth || 600));
-    const height = MARK_H + lanes * LANE_H + 16;
+    const height = MARK_H + (lanes + tracks.length) * LANE_H + 16;
     const dpr = window.devicePixelRatio || 1;
     if (cv.width !== width * dpr || cv.height !== height * dpr) {
       cv.width = width * dpr; cv.height = height * dpr;
@@ -321,6 +332,7 @@ export class Anatomy {
     ctx.font = '11px sans-serif';
     ctx.fillStyle = css('--text-muted');
     this.solvers.forEach((s, i) => ctx.fillText(s.name, 4, MARK_H + i * LANE_H + 16));
+    tracks.forEach(([name], i) => ctx.fillText(name, 4, MARK_H + (lanes + i) * LANE_H + 16));
     const t = performance.now();
     if (!this.calls.length) {
       this.note.textContent = this.steps.length || this.S ? 'This run has no call events: tick "Record calls" and run again.' : 'Run the project to see its calls.';
@@ -367,6 +379,25 @@ export class Anatomy {
       const top = s.k === 's' ? 2 : s.k === 'e' ? 6 : 10;
       ctx.fillRect(x, top, 1, 6);
     }
+    // tracked values (track statements): one lane each, a step line from value to value, so a
+    // bound that moves lines up with the call that moved it
+    tracks.forEach(([name, pts], i) => {
+      const y0 = MARK_H + (lanes + i) * LANE_H + 4, hh = LANE_H - 8;
+      const vs = pts.map((p) => p.v), lo = Math.min(...vs), hi = Math.max(...vs);
+      const Y = (v) => y0 + hh - (hi > lo ? (v - lo) / (hi - lo) : 0.5) * hh;
+      ctx.strokeStyle = css(TRACK_COLORS[i % TRACK_COLORS.length]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      pts.forEach((p, k) => {
+        const x = (p.t - v0) * scale, y = Y(p.v);
+        if (k === 0) ctx.moveTo(x, y);
+        else { ctx.lineTo(x, Y(pts[k - 1].v)); ctx.lineTo(x, y); }
+      });
+      if (pts.length) ctx.lineTo((Math.max(pts.at(-1).t, v1) - v0) * scale, Y(pts.at(-1).v));
+      ctx.stroke();
+      ctx.fillStyle = css('--text-muted');
+      ctx.fillText(`${fmt(lo)}–${fmt(hi)}`, Math.max(2, w - 60), y0 + 9);
+    });
     // the linked cursor and its range
     const cur = this.app.cursor;
     if (cur) {

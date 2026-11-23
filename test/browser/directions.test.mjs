@@ -657,3 +657,15 @@ test('Statistics: the Cores block shows the lengths of plain and minimised cores
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('Observatory: tracked values get lanes on the call timeline', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=maxsat-ihs&tab=11');
+  await page.click('#run-button');
+  await settled(page);
+  const t = await page.evaluate(() => [...window.cegarplay.anatomy.tracks.entries()].map(([k, v]) => [k, v.length]));
+  assert.deepEqual(t.map((x) => x[0]), ['lower', 'upper']);
+  assert.ok(t.every((x) => x[1] >= 1));
+  assert.equal(await page.$eval('#anatomy-timeline', (c) => parseInt(c.style.height, 10)), 18 + (2 + 2) * 26 + 16);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

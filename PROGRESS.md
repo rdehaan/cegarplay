@@ -1342,3 +1342,4 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
 - `tools/multicheck.py` (done): a brute-force Python reference for one abstraction with several
   checks; agrees with every several-check example it models.
 - Statistics (done): a Cores block (lengths of plain and minimised cores; `S.cores`).
+- Observatory (done): tracked values (`V` events) as lanes under the solver lanes of the timeline.

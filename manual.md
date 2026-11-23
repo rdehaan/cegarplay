@@ -1138,7 +1138,7 @@ links, and one arrow per link labelled with its name and interface size (from th
 link flashes on each recorded step through it (above 30 steps per second the label shows the rate
 instead). **Timeline** (needs **Record calls**, the same setting as in the Loop tab): one lane per
 solver; a call is a bar from its start to its end coloured by result (sat, unsat, interrupted); a
-search is a thin band; marks above the lanes show solutions, refinements and expansions; calls
+search is a thin band; marks above the lanes show solutions, refinements and expansions; after a `track` statement each tracked series gets a lane of its own under the solvers, a step line between its lowest and highest value, so a bound lines up with the call that moved it; calls
 narrower than a pixel share a column split by the share of sat and unsat calls. Wheel zooms, drag
 pans, double click shows all. **Cost per line**: one row per loop line with calls, sat, unsat,
 exclusive time (nested calls subtracted) and time with nested calls, sorted by time; a click
