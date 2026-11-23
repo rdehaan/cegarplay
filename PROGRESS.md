@@ -1350,3 +1350,4 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
 - Library families (done): `maxsat-oll-weighted` (weights split into unit copies; optima 8/3/6),
   `abduction-ihs` (AbHS-style; optima 1/2/1), `robust-facilities` (2-ASP(Q) with a weak
   constraint; optimum 15, checked by brute force), `qbf-caqe` (clausal abstraction; 4 solutions).
+- Loop language (done): sign facts `NAME_false(k,T)` in expansions of cores, clauses and lists.

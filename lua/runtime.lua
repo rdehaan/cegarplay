@@ -1571,20 +1571,23 @@ local function sym_of_literal(S, l)
   for x in S.ctl.symbolic_atoms:iter() do if x.literal == abs(l) then return x.symbol end end
   return nil
 end
+-- The atoms of a list, a core or a clause, and which of them are assumed (or kept) false:
+-- returns out, neg with neg[i] = true when atom out[i] has the value false there.
 function rt.fact_atoms(v, what)
   if type(v) ~= "table" then error(what .. " must be a list of atoms, a core or a clause", 0) end
   local mt = getmetatable(v)
-  local out = array({})
+  local out, neg = array({}), {}
   if mt == Core then
     for _, l in ipairs(rawget(v, "lits")) do
       local sym = sym_of_literal(v.solver, l)
-      if sym then out[#out + 1] = sym end
+      if sym then out[#out + 1] = sym; if l < 0 then neg[#out] = true end end
     end
-    return out
+    return out, neg
   end
   if mt == nil and v.link and v.j then
-    for k = 1, #v do out[#out + 1] = v.link.sym[v.j[k]] end
-    return out
+    -- a clause: a positive literal asks for the atom true, so the candidate had it false
+    for k = 1, #v do out[#out + 1] = v.link.sym[v.j[k]]; if v[k] > 0 then neg[#out] = true end end
+    return out, neg
   end
   local links = list_links[v]
   if links and #v > 0 and math.type(v[1]) == "integer" then
@@ -1593,13 +1596,14 @@ function rt.fact_atoms(v, what)
       for _, L in ipairs(links) do local j = L.jof[abs(l)]; if j then sym = L.sym[j]; break end end
       if not sym then error(what .. ": a literal of the list belongs to no link", 0) end
       out[#out + 1] = sym
+      if l < 0 then neg[#out] = true end
     end
-    return out
+    return out, neg
   end
   for _, a in ipairs(v) do
     if type(a) ~= "userdata" then error(what .. " must be a list of atoms, a core or a clause", 0) end
   end
-  return v
+  return v, neg
 end
 
 function Solver:expand(part, facts)
@@ -1617,10 +1621,17 @@ function Solver:expand(part, facts)
   local b = self.ctl:backend()
   local ok, err = pcall(function()
     for _, name in ipairs(names) do
-      local atoms = rt.fact_atoms(facts[name], self.name .. ".expand: " .. name)
-      for _, a in ipairs(atoms) do
+      local atoms, neg = rt.fact_atoms(facts[name], self.name .. ".expand: " .. name)
+      for i, a in ipairs(atoms) do
         if type(a) ~= "userdata" then error(self.name .. ".expand: " .. name .. " must be a list of atoms", 0) end
         b:add_rule{ head = { b:add_atom(clingo.Function(name, { k, a }, true)) }, body = {} }
+        -- sign facts: NAME_false(k,T) for an atom of a core, clause or list that has the value false
+        if neg[i] then
+          local nf = name .. "_false"
+          b:add_rule{ head = { b:add_atom(clingo.Function(nf, { k, a }, true)) }, body = {} }
+          if #texts < 50 and tracing() then texts[#texts + 1] = nf .. "(" .. self.k .. "," .. tostring(a) .. ")" end
+          if REC then all_facts[#all_facts + 1] = nf .. "(" .. self.k .. "," .. tostring(a) .. ")" end
+        end
         if #texts < 50 and tracing() then texts[#texts + 1] = name .. "(" .. self.k .. "," .. tostring(a) .. ")" end
         if REC then all_facts[#all_facts + 1] = name .. "(" .. self.k .. "," .. tostring(a) .. ")" end
       end

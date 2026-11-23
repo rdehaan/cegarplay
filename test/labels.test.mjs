@@ -45,3 +45,15 @@ test('accept ... as NAME refuses the candidate of a search', async () => {
   const r = await H.runProject(p);
   assert.match(H.last(r, 'E').message, /accept \.\.\. as odd: inside a search/);
 });
+
+test('sign facts: S.expand(part, core = K) adds core_false(k,T) for the atoms the core has false', async () => {
+  const p = H.example('maxsat-oll');
+  p.settings = { ...p.settings, trace: 5 };
+  const r = await H.runProject(p);
+  const T = H.ofKind(r, 'T').find((t) => t.kind === 'expand');
+  const pos = T.facts.filter((f) => f.startsWith('core(1,'));
+  const neg = T.facts.filter((f) => f.startsWith('core_false(1,'));
+  // OLL assumes every soft constraint kept: drop(C) false, so every core atom has a sign fact
+  assert.ok(pos.length > 0);
+  assert.deepEqual(neg.map((f) => f.replace('core_false', 'core')).sort(), pos.sort());
+});
