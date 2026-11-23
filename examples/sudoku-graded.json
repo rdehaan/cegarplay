@@ -1,0 +1,172 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Sudoku graded by technique",
+  "description": "Generate a 9 x 9 Sudoku that needs pairs or locked candidates: singles alone get stuck, but singles, naked and hidden pairs and locked candidates solve it. Both conditions are about pencil marks: the techniques get stuck exactly when some set of marks closed under them leaves a cell empty. 'Singles get stuck' is such a set, guessed in the abstraction; 'the stronger techniques solve it' says that no such set exists, so the check looks for one, and its marks are the counterexample. There is no uniqueness check: a puzzle that sound deductions solve has one solution. The refinement asks for a clue the counterexample's marks do not have.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The size of the puzzle and the derived domains. Added to every solver.",
+      "text": "% A 9 x 9 Sudoku: every row, every column and each of the nine 3 x 3 boxes contains the\n% values 1..9 once. An instance may print clues pre(R,C,V) and may fix the solved grid with\n% solution(R,C,V) (Instances tab).\nrow(1..9). col(1..9). val(1..9).\nbox(R,C,(R-1)/3*3+(C-1)/3) :- row(R), col(C).\nprinted(R,C) :- pre(R,C,_).\n"
+    },
+    {
+      "name": "sudoku",
+      "description": "The rules of the puzzle for any grid; used by solver A (one grid) and solver C (two grids).",
+      "text": "% The rules of the puzzle, for every grid G that a solver declares with grid(G):\n% cell(G,R,C,V) says that grid G has the value V in row R, column C.\n1 { cell(G,R,C,V) : val(V) } 1 :- grid(G), row(R), col(C).\n:- cell(G,R,C1,V), cell(G,R,C2,V), C1 < C2.\n:- cell(G,R1,C,V), cell(G,R2,C,V), R1 < R2.\n:- cell(G,R1,C1,V), cell(G,R2,C2,V), box(R1,C1,B), box(R2,C2,B), (R1,C1) < (R2,C2).\n% Every grid respects the printed clues.\n:- grid(G), pre(R,C,V), not cell(G,R,C,V).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): a solved grid and k of its cells as clues.",
+      "text": "% A candidate: a solved grid s and k of its cells that are revealed as clues.\n% The grid is the instance's solution/3 if it gives one (then the grounder fixes it, which\n% makes every solve call cheaper), otherwise any grid.\nfixed :- solution(_,_,_).\ngrid(s) :- not fixed.\ncell(s,R,C,V) :- solution(R,C,V).\n:- fixed, pre(R,C,V), not solution(R,C,V).\nk { clue(R,C) : row(R), col(C), not printed(R,C) } k.\n% given(R,C,V): the puzzle shows the value V in row R, column C.\ngiven(R,C,V) :- clue(R,C), cell(s,R,C,V).\n#show given/3.\n"
+    },
+    {
+      "name": "notes",
+      "description": "Pencil marks closed under the techniques that leave a cell empty; in solver A (stuck with singles) and solver C (a counterexample: stuck with all techniques).",
+      "text": "% Pencil marks: out(R,C,V) says that V is crossed out in cell R,C, known(R,C,V) that V is\n% written there. The techniques of the other fragments get stuck on a puzzle exactly when\n% SOME set of marks that is closed under them leaves a cell empty: the marks they reach are\n% the smallest closed set, which lies inside every other one. Each technique below is a\n% constraint \"if the premise holds in the marks, so does the result\".\n{ out(R,C,V) } :- row(R), col(C), val(V).\n{ known(R,C,V) } :- row(R), col(C), val(V).\nfilled(R,C) :- known(R,C,_).\nempty(R,C) :- row(R), col(C), not filled(R,C).\n:- not empty(_,_).\n\n% The units: nine rows, nine columns and nine boxes.\nunit(r(R),R,C) :- row(R), col(C).\nunit(c(C),R,C) :- row(R), col(C).\nunit(b(B),R,C) :- box(R,C,B).\nother(U,R,C,R2,C2) :- unit(U,R,C), unit(U,R2,C2), (R,C) != (R2,C2).\npeer(R,C,R2,C2) :- other(_,R,C,R2,C2).\n\n% Clues are written; a written value crosses out the other values in its cell and the\n% value in the other cells of its units.\n:- given(R,C,V), not known(R,C,V).\n:- pre(R,C,V), not known(R,C,V).\n:- known(R,C,V), val(W), W != V, not out(R,C,W).\n:- known(R,C,V), peer(R,C,R2,C2), not out(R2,C2,V).\n"
+    },
+    {
+      "name": "singles",
+      "description": "Naked and hidden singles, as constraints on the marks. In both solvers.",
+      "text": "% Naked single: every other value is crossed out in the cell.\n:- row(R), col(C), val(V), out(R,C,W) : val(W), W != V; not known(R,C,V).\n% Hidden single: V is crossed out in every other cell of a unit.\n:- unit(U,R,C), val(V), out(R2,C2,V) : other(U,R,C,R2,C2); not known(R,C,V).\n"
+    },
+    {
+      "name": "pairs",
+      "description": "Naked and hidden pairs. Only in solver C.",
+      "text": "% Naked pair: two cells of a unit have only V1 and V2 left; cross them out in the rest.\nonly2(R,C,V1,V2) :- row(R), col(C), val(V1), val(V2), V1 < V2,\n    out(R,C,W) : val(W), W != V1, W != V2.\n:- unit(U,R,C), val(V1), val(V2), V1 < V2, V = (V1;V2), not out(R,C,V),\n    2 #count { R2,C2 : other(U,R,C,R2,C2), only2(R2,C2,V1,V2) }.\n% Hidden pair: V1 and V2 are crossed out in every cell of a unit but the same two cells;\n% cross out every other value in those two cells.\nexcept2(U,V,R1,C1,R2,C2) :- other(U,R1,C1,R2,C2), (R1,C1) < (R2,C2), val(V),\n    out(R,C,V) : unit(U,R,C), (R,C) != (R1,C1), (R,C) != (R2,C2).\nhidden2(R1,C1,R2,C2,V1,V2) :- except2(U,V1,R1,C1,R2,C2), except2(U,V2,R1,C1,R2,C2), V1 < V2.\nkeep2(R1,C1,V1,V2) :- hidden2(R1,C1,_,_,V1,V2).\nkeep2(R2,C2,V1,V2) :- hidden2(_,_,R2,C2,V1,V2).\n:- keep2(R,C,V1,V2), val(W), W != V1, W != V2, not out(R,C,W).\n"
+    },
+    {
+      "name": "locked",
+      "description": "Locked candidates (pointing and claiming). Only in solver C.",
+      "text": "% Locked candidates. Pointing: within box B, V is crossed out outside row R (column C);\n% cross V out in the rest of that row (column).\nboxrow(B,R) :- box(R,_,B).\nboxcol(B,C) :- box(_,C,B).\n:- boxrow(B,R), val(V), col(C2), not box(R,C2,B), not out(R,C2,V),\n    out(R3,C3,V) : box(R3,C3,B), R3 != R.\n:- boxcol(B,C), val(V), row(R2), not box(R2,C,B), not out(R2,C,V),\n    out(R3,C3,V) : box(R3,C3,B), C3 != C.\n% Claiming: within row R (column C), V is crossed out outside box B; cross V out in the\n% rest of that box.\n:- boxrow(B,R), val(V), box(R2,C2,B), R2 != R, not out(R2,C2,V),\n    out(R,C3,V) : col(C3), not box(R,C3,B).\n:- boxcol(B,C), val(V), box(R2,C2,B), C2 != C, not out(R2,C2,V),\n    out(R3,C,V) : row(R3), not box(R3,C,B).\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the clues with their values. The solved grid stays private to solver A.",
+      "text": "glue(given(R,C,V)) :- row(R), col(C), val(V), not printed(R,C).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for marks closed under all techniques with a cell left empty (solver C).",
+      "text": "% A counterexample: marks that are closed under singles, pairs and locked candidates and\n% leave a cell empty (fragment notes). Then these techniques do not solve the puzzle. If\n% no such marks exist, they solve it, and so its solution is unique.\n#show empty/2.\n\n% Every puzzle whose clues are all written in these marks leaves them closed and a cell\n% empty. So a clue must appear that the marks do not have.\nrelevant(given(R,C,V)) :- row(R), col(C), val(V), not printed(R,C), not known(R,C,V).\n% Write as much as possible: the clause then names fewer clues.\n#heuristic known(R,C,V) : row(R), col(C), val(V). [1,true]\n"
+    },
+    {
+      "name": "view",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks.",
+      "text": "% The grid, boxes in alternating borders; printed clues shaded.\n#program scene.\ndraw(layout(grid)).\ndraw(cell(R,C)) :- row(R), col(C).\ndraw(attr(cell(R,C), stroke, box)) :- box(R,C,B), B \\ 2 == 0.\ndraw(attr(cell(R,C), label, V)) :- pre(R,C,V).\ndraw(attr(cell(R,C), fill, printed)) :- pre(R,C,_).\n\n#program frame.\ndraw(attr(cell(R,C), label, V)) :- cand(given(R,C,V)).\ndraw(attr(cell(R,C), fill, clue)) :- cand(given(R,C,_)).\n% A counterexample: the cells its marks leave empty.\ndraw(attr(cell(R,C), fill, empty)) :- cex(empty(R,C)).\ndraw(emph(cell(R,C))) :- cex(empty(R,C)).\ndraw(note(\"Marks closed under all techniques leave the ringed cells empty.\")) :- kind(reject).\ndraw(note(\"The techniques solve the puzzle.\")) :- kind(solution).\n#show draw/1.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + sudoku + abstraction + notes + singles      options \"--project\"\nsolver C = shared + notes + singles + pairs + locked + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "k": "26"
+    },
+    "solutions": 1,
+    "seconds": 120,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
+    }
+  ],
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% No printed clues: a puzzle with k = 26 clues (about 15 s).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "graded",
+      "facts": "% A puzzle of this grade (from a run of the example); nothing to add (k = 0).\npre(1,2,6). pre(1,4,4).\npre(2,1,4). pre(2,2,5). pre(2,7,2). pre(2,9,6).\npre(3,5,2). pre(3,8,8).\npre(4,1,7). pre(4,2,2). pre(4,4,8). pre(4,7,9). pre(4,8,6).\npre(5,1,6). pre(5,8,1).\npre(6,1,3).\npre(7,2,4). pre(7,5,1). pre(7,6,3).\npre(8,2,8). pre(8,6,4). pre(8,7,7). pre(8,8,5).\npre(9,1,5). pre(9,3,6). pre(9,5,8).\n",
+      "constants": {
+        "k": "0"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "needs-locked",
+      "facts": "% Singles get stuck, locked candidates finish it (k = 0).\npre(1,3,3). pre(1,6,4).\npre(2,3,7). pre(2,6,2). pre(2,9,6).\npre(3,1,1). pre(3,4,9). pre(3,6,3).\npre(4,5,5). pre(4,9,7).\npre(5,2,6). pre(5,5,4). pre(5,7,3).\npre(6,6,8). pre(6,7,6).\npre(7,3,9). pre(7,5,7). pre(7,9,8).\npre(8,1,8). pre(8,4,1). pre(8,8,4).\npre(9,3,4). pre(9,7,1). pre(9,8,5). pre(9,9,9).\n",
+      "constants": {
+        "k": "0"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "too-easy",
+      "facts": "% Singles solve this one (34 clues; k = 0: no solution).\npre(1,1,6). pre(1,2,9). pre(1,3,3). pre(1,5,8). pre(1,9,2).\npre(2,1,4). pre(2,2,8). pre(2,8,3).\npre(3,2,2). pre(3,7,8).\npre(4,3,2). pre(4,4,6). pre(4,6,1). pre(4,7,4).\npre(5,2,6). pre(5,5,4). pre(5,7,3).\npre(6,3,1). pre(6,4,3). pre(6,5,9). pre(6,6,8).\npre(7,2,1). pre(7,6,5). pre(7,7,2).\npre(8,5,2). pre(8,6,9). pre(8,7,7). pre(8,8,4). pre(8,9,3).\npre(9,3,4). pre(9,4,8). pre(9,5,3). pre(9,7,1). pre(9,8,5).\n",
+      "constants": {
+        "k": "0"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "too-hard",
+      "facts": "% These techniques get stuck on this one (sudoku-hard's stuck; k = 0: no solution).\npre(1,2,9). pre(1,3,3). pre(1,6,4). pre(1,7,5).\npre(2,7,9).\npre(3,1,1). pre(3,6,3). pre(3,8,7).\npre(4,1,9). pre(4,3,2). pre(4,5,5). pre(4,6,1).\npre(5,2,6).\npre(6,1,7). pre(6,2,4). pre(6,5,9). pre(6,7,6). pre(6,9,5).\npre(7,6,5). pre(7,9,8).\npre(8,5,2). pre(8,8,4).\npre(9,3,4). pre(9,7,1).\n",
+      "constants": {
+        "k": "0"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "one-erased",
+      "facts": "% The graded puzzle with its first clue erased: 3 single clues give the grade back\n% (k = 1; counted by a Python solver over every cell and value).\npre(1,4,4).\npre(2,1,4). pre(2,2,5). pre(2,7,2). pre(2,9,6).\npre(3,5,2). pre(3,8,8).\npre(4,1,7). pre(4,2,2). pre(4,4,8). pre(4,7,9). pre(4,8,6).\npre(5,1,6). pre(5,8,1).\npre(6,1,3).\npre(7,2,4). pre(7,5,1). pre(7,6,3).\npre(8,2,8). pre(8,6,4). pre(8,7,7). pre(8,8,5).\npre(9,1,5). pre(9,3,6). pre(9,5,8).\n",
+      "constants": {
+        "k": "1"
+      },
+      "expected": {
+        "solutions": 3
+      },
+      "tags": []
+    },
+    {
+      "id": "one-erased-b",
+      "facts": "% The graded puzzle with its sixth clue erased (k = 1: 6).\npre(1,2,6). pre(1,4,4).\npre(2,1,4). pre(2,2,5). pre(2,7,2).\npre(3,5,2). pre(3,8,8).\npre(4,1,7). pre(4,2,2). pre(4,4,8). pre(4,7,9). pre(4,8,6).\npre(5,1,6). pre(5,8,1).\npre(6,1,3).\npre(7,2,4). pre(7,5,1). pre(7,6,3).\npre(8,2,8). pre(8,6,4). pre(8,7,7). pre(8,8,5).\npre(9,1,5). pre(9,3,6). pre(9,5,8).\n",
+      "constants": {
+        "k": "1"
+      },
+      "expected": {
+        "solutions": 6
+      },
+      "tags": []
+    },
+    {
+      "id": "one-erased-c",
+      "facts": "% The graded puzzle with its thirteenth clue erased (k = 1: 9).\npre(1,2,6). pre(1,4,4).\npre(2,1,4). pre(2,2,5). pre(2,7,2). pre(2,9,6).\npre(3,5,2). pre(3,8,8).\npre(4,1,7). pre(4,2,2). pre(4,4,8). pre(4,7,9).\npre(5,1,6). pre(5,8,1).\npre(6,1,3).\npre(7,2,4). pre(7,5,1). pre(7,6,3).\npre(8,2,8). pre(8,6,4). pre(8,7,7). pre(8,8,5).\npre(9,1,5). pre(9,3,6). pre(9,5,8).\n",
+      "constants": {
+        "k": "1"
+      },
+      "expected": {
+        "solutions": 9
+      },
+      "tags": []
+    }
+  ],
+  "runs": []
+}

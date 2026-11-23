@@ -1069,9 +1069,9 @@ a recorded step (the trace's `T` events, or `R` events of a recording); the draw
 position between steps; dragging a node stores its position in the project. **Suggest a view**
 writes a first view from the predicates of the interface. The view runs as plain clingo with the
 instance and the named fragments, so a mistake shows as a clingo message. Details:
-`docs/spec-views.md`. Eighteen library examples ship a view (the guide's clique examples, the
+`docs/spec-views.md`. Nineteen library examples ship a view (the guide's clique examples, the
 tutorial, `clique-colouring`, `af-preferred`, `arrowing`, `choosability`, `qbf`, and the puzzle
-generators: the four `sudoku-*`, `binairo`, `futoshiki`, `akari`, `slitherlink`). A view program
+generators: the five `sudoku-*`, `binairo`, `futoshiki`, `akari`, `slitherlink`). A view program
 gets the project's constants: a fragment's own `#const k = default.` takes the project's value.
 
 ### Event lines
@@ -1174,7 +1174,7 @@ Library shows them as tags, and the filter matches them (type `view` or `suite`)
 | `shapes` | `gc-shape1`, `gc-shape2`, `gc-shape3`, `gc-shape4`, `gc-reference` |
 | `guide` | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
 | `problems` | `graph-coloring`, `nash`, `voting-justification` |
-| `exists-forall` | `qbf`, `qbf-optimal`, `qbf-expansion`, `smallest-mus`, `min-dnf`, `integer-expressions`, `strategic-companies`, `diagnosis`, `stable-models`, `abduction`, `default-extensions`, `belief-update`, `af-preferred`, `af-semi-stable`, `conformant-planning`, `sufficient-reason`, `actual-cause`, `clique-interdiction`, `clique-colouring`, `arrowing`, `choosability`, `subset-sum-game`, `knapsack-interdiction`, `fewest-clues`, `sudoku-unique`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `binairo`, `futoshiki`, `akari`, `slitherlink`, `fair-division`, `hedonic-core`, `boolean-game`, `strong-nash`, `kemeny-control`, `agenda-safety` |
+| `exists-forall` | `qbf`, `qbf-optimal`, `qbf-expansion`, `smallest-mus`, `min-dnf`, `integer-expressions`, `strategic-companies`, `diagnosis`, `stable-models`, `abduction`, `default-extensions`, `belief-update`, `af-preferred`, `af-semi-stable`, `conformant-planning`, `sufficient-reason`, `actual-cause`, `clique-interdiction`, `clique-colouring`, `arrowing`, `choosability`, `subset-sum-game`, `knapsack-interdiction`, `fewest-clues`, `sudoku-unique`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `sudoku-graded`, `binairo`, `futoshiki`, `akari`, `slitherlink`, `fair-division`, `hedonic-core`, `boolean-game`, `strong-nash`, `kemeny-control`, `agenda-safety` |
 | `several-solvers` | `abduction-two-checks`, `minimal-reasons`, `reasons-by-size`, `qbf-blame-solver`, `knapsack-optimum`, `knapsack-bounds`, `reasons-by-shrinking`, `knapsack-fortification`, `qbf-three-blocks`, `conformant-growing`, `qbf-deep` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.

@@ -1517,6 +1517,19 @@
       }
     },
     {
+      "id": "sudoku-graded",
+      "title": "Sudoku graded by technique",
+      "group": "exists-forall",
+      "summary": "A 9 x 9 Sudoku that needs pairs or locked candidates: singles get stuck (abstraction), the stronger techniques solve it (the check looks for stuck pencil marks; uniqueness follows) (k = 26; the run stops at the first puzzle).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 8,
+        "views": 1
+      }
+    },
+    {
       "id": "sudoku-hard",
       "title": "Sudoku beyond the beginner",
       "group": "exists-forall",

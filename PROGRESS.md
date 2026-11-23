@@ -1096,3 +1096,22 @@ show the rejected steps.
   ends for a generator); now 20 candidates (only step 1 is used). New tests: the #const rewrite,
   the eight puzzle scenes (element counts), an akari frame from a real trace.
 - Checked by rendering frames headless with the module's own functions (`frameSVG`) to PNG.
+
+## Grading by technique (2026-11-23)
+
+`sudoku-graded`: puzzles that need pairs or locked candidates. Fragments `notes` (pencil marks:
+choices `out/3`, `known/3`; givens written; written values cross out; `empty/2`; `:- not empty`),
+`singles`, `pairs`, `locked`, all as closure constraints and **without the solved grid** (unlike
+`sudoku-hard`'s beginner), so the same fragments serve both solvers. A = grid + clues + notes +
+singles (stuck with singles; `--project`, the marks are a free witness). C = notes + singles +
+pairs + locked: a counterexample is a closed set of marks with an empty cell. No two-grid check:
+solved by sound deductions implies unique. Clause: a clue (R,C,V) that the marks do not write
+(sound for any closed marks: the least closed set of such a puzzle lies inside them);
+`#heuristic known [1,true]` grows the marks, so clauses are short (the default run's first
+counterexample leaves only a 2 x 2 rectangle empty).
+- k = 26 14 s, k = 30 26 s, k = 28 > 120 s (search luck). Puzzles from runs check out in the
+  Python reference (unique; singles stuck; all techniques solve).
+- Instances: k = 0 on a graded puzzle (1), one that needs locked candidates (1), a singles puzzle
+  (0), sudoku-hard's stuck puzzle (0); the graded puzzle with one clue erased, k = 1: 3, 6, 9,
+  equal to a Python count over every cell and value (unique, singles stuck, all solve) and to
+  cegarcheck (auto, block). Without `--project` the k = 0 instance counted 189,962 models.

@@ -85,9 +85,9 @@ test('marks: unknown marks and attributes are named; palette slots in order of f
   assert.deepEqual(['a', 'b', 'a', 'c'].map((x) => pal.slot(x)), [1, 2, 1, 3]);
 });
 
-test('the library examples with a view (18): step 1 of each renders without an unknown mark', async () => {
+test('the library examples with a view (19): step 1 of each renders without an unknown mark', async () => {
   const withView = lib.examples.filter((e) => (ex(e.id).views || []).length);
-  assert.ok(withView.length >= 18, `${withView.length} examples with a view`);
+  assert.ok(withView.length >= 19, `${withView.length} examples with a view`);
   for (const e of withView) {
     // step 1 is all the test needs (the puzzle generators would not finish with all solutions)
     const { d, T } = await traced(e.id, { candidates: 20 });
@@ -147,7 +147,7 @@ test('a fragment\'s own #const default gives way to the project\'s constant in a
 });
 
 test('the puzzle views draw their scene without problems', async () => {
-  const want = { 'sudoku-unique': 81, 'sudoku-hard': 81, 'sudoku-symmetry': 81, 'sudoku-unavoidable': 81, binairo: 36, futoshiki: 25 + 40, akari: 49, slitherlink: 49 + 64 + 112 };
+  const want = { 'sudoku-unique': 81, 'sudoku-hard': 81, 'sudoku-symmetry': 81, 'sudoku-unavoidable': 81, 'sudoku-graded': 81, binairo: 36, futoshiki: 25 + 40, akari: 49, slitherlink: 49 + 64 + 112 };
   for (const [id, n] of Object.entries(want)) {
     const p = ex(id);
     const d = derive(p, { instance: 'example' });
