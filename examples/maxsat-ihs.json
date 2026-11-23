@@ -49,7 +49,7 @@
     },
     {
       "id": "small-opt",
-      "facts": "% Another random instance of the same size. Optimum 3.\nsoft(1,1). pos(1,b).\nsoft(2,2). pos(2,e). pos(2,h).\nsoft(3,2). neg(3,g). neg(3,h). pos(3,f).\nsoft(4,4). pos(4,a). pos(4,g).\nsoft(5,3). neg(5,g). pos(5,e). pos(5,b).\nsoft(6,3). neg(6,c). neg(6,e).\nsoft(7,5). pos(7,h). neg(7,g).\nsoft(8,3). neg(8,f). pos(8,g).\nsoft(9,4). neg(9,d). neg(9,h). neg(9,c).\nsoft(10,3). neg(10,h). neg(10,c). pos(10,e).\nsoft(11,2). pos(11,c). neg(11,e).\nsoft(12,3). neg(12,g). pos(12,c).\nsoft(13,3). neg(13,f).\nsoft(14,2). neg(14,a).\nsoft(15,1). neg(15,d). pos(15,f).\nsoft(16,5). neg(16,e). neg(16,b).\nhard(h1). neg(h1,g).\nhard(h2). pos(h2,a).\nhard(h3). pos(h3,d). pos(h3,f).\nhard(h4). pos(h4,a).\n\n",
+      "facts": "% Another random instance of the same kind (generator wmaxsat, n = 8, s = 16, h = 4, k = 2, w = 3,\n% seed 29). Optimum 3.\nsoft(1,2). pos(1,c). pos(1,d).\nsoft(2,1). neg(2,g).\nsoft(3,1). neg(3,c). neg(3,f).\nsoft(4,3). neg(4,g). neg(4,h).\nsoft(5,1). pos(5,a).\nsoft(6,2). neg(6,c).\nsoft(7,1). pos(7,g). pos(7,h).\nsoft(8,1). neg(8,b). pos(8,b).\nsoft(9,1). pos(9,a). pos(9,h).\nsoft(10,2). pos(10,e).\nsoft(11,1). neg(11,f).\nsoft(12,1). neg(12,a). pos(12,d).\nsoft(13,1). neg(13,d).\nsoft(14,1). pos(14,a).\nsoft(15,2). pos(15,h).\nsoft(16,2). neg(16,g). pos(16,h).\nhard(h1). pos(h1,b).\nhard(h2). neg(h2,f). pos(h2,f).\nhard(h3). neg(h3,d).\nhard(h4). neg(h4,h). pos(h4,c).\n",
       "constants": {},
       "expected": {
         "solutions": null,
@@ -75,6 +75,52 @@
         "solutions": null
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "wmaxsat",
+        "params": {
+          "n": 8,
+          "s": 20,
+          "h": 3,
+          "k": 2,
+          "w": 3
+        },
+        "seed": 5
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 10
+      },
+      "audit": false
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "wmaxsat",
+        "params": {
+          "n": 8,
+          "s": 20,
+          "h": 3,
+          "k": 2,
+          "w": 3
+        },
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 10
+      },
+      "audit": false
     }
   ],
   "variants": [
@@ -94,6 +140,75 @@
       "loop": {
         "language": "loop",
         "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# The variant bounds-meet: stop as soon as the lower bound (the hitting set's cost) reaches the\n# upper bound (the best witness so far), as MaxHS does, and accept that witness. A model from a\n# solve is a snapshot, so it can be kept in a variable (best = X) and accepted later.\nupper = none\nbest = none\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"the hard clauses are unsatisfiable\"\n    track lower = M.cost\n    if upper != none and M.cost >= upper:\n        log \"the bounds meet:\", upper\n        accept best\n        stop\n    E = G(M)\n    cores = 0\n    loop:\n        X = C.solve(assume E)\n        if X:\n            if upper == none or X.cost < upper:\n                upper = X.cost\n                best = X\n            break\n        K = C.core.minimal\n        if K.on(G).size == 0: stop \"the hard clauses are unsatisfiable\"\n        A.add(K.on(G))\n        cores = cores + 1\n        count cores\n        for a in K:\n            E = E.without(a)\n    track upper = upper\n    if cores == 0:\n        accept M\n        stop\n"
+      }
+    },
+    {
+      "name": "one-core",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Implicit hitting sets (MaxHS): an optimal hitting set of the cores found so far, then a SAT\n# call with the clauses it keeps. Unsatisfiable: a new core, which the next hitting set must\n# hit. Satisfiable: the hitting set is optimal. Within a round, each core is relaxed\n# (E.without) and the oracle is asked again, so that one round finds several disjoint cores.\n# Each core is made subset-minimal first (C.core.minimal): a short core is a strong clause.\n# The variant one-core: one core per round, then a new hitting set.\nupper = none\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"the hard clauses are unsatisfiable\"\n    track lower = M.cost\n    E = G(M)\n    cores = 0\n    loop:\n        X = C.solve(assume E)\n        if X:\n            if upper == none or X.cost < upper: upper = X.cost\n            break\n        K = C.core.minimal             # no assumption of it can be left out\n        if K.on(G).size == 0: stop \"the hard clauses are unsatisfiable\"\n        A.add(K.on(G))                 # hit at least one clause of the core\n        cores = cores + 1\n        count cores\n        break                          # one core per round: no relaxation\n    track upper = upper\n    if cores == 0:\n        log \"optimum:\", M.cost\n        accept M\n        stop\n"
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "wmaxsat",
+      "description": "A random weighted MaxSAT instance: s soft clauses (weights 1..w) and h hard clauses over n variables, 1 to k literals per clause.",
+      "params": {
+        "n": "int",
+        "s": "int",
+        "h": "int",
+        "k": "int",
+        "w": "int"
+      },
+      "defaults": {
+        "n": 8,
+        "s": 20,
+        "h": 3,
+        "k": 2,
+        "w": 3
+      },
+      "text": "% wmaxsat: s soft clauses with weights 1..w and h hard clauses over the variables 1..n; each\n% clause has 1 to k literals (uniform), each on a uniform variable with a sign of probability 1/2.\nsoft(C,@int(1, w, C, weight)) :- C = 1..s.\nhard(h(J)) :- J = 1..h.\ncid(C) :- soft(C,_).\ncid(H) :- hard(H).\nlen(X,@int(1, k, X, len)) :- cid(X).\nlit(X,K,@int(1, n, X, K)) :- len(X,L), K = 1..L.\npos(X,V) :- lit(X,K,V), @flip(500, X, K, sign) = 1.\nneg(X,V) :- lit(X,K,V), @flip(500, X, K, sign) = 0.\n#show soft/2.\n#show hard/1.\n#show pos/2.\n#show neg/2.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "plain-cores",
+        "bounds-meet",
+        "one-core"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    },
+    {
+      "name": "random",
+      "instances": {
+        "generator": "wmaxsat",
+        "grid": {
+          "s": [
+            12,
+            16,
+            20,
+            24
+          ]
+        },
+        "seeds": 5
+      },
+      "variants": [
+        "default",
+        "plain-cores"
+      ],
+      "limits": {
+        "seconds": 30
       }
     }
   ],

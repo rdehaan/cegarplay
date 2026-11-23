@@ -23,6 +23,11 @@
       "name": "check",
       "description": "Looks for a smaller model of the reduct (solver C).",
       "text": "% The reduct with respect to the candidate drops every rule with \"not A\" in its body\n% for an atom A of the candidate, and the negative literals of the other rules.\ngone(R) :- neg(R,A), in(A).\n% A counterexample: a proper subset of the candidate that satisfies the reduct.\n% Then the candidate is not a minimal model of its reduct, so it is not stable.\n{ sub(A) } :- in(A).\n:- rule(R), not gone(R), sub(A) : pos(R,A); not sub(A) : head(R,A).\nleft(A) :- in(A), not sub(A).\nsmaller :- left(A).\n:- not smaller.\n#show sub/1.\n\n% What the counterexample depends on:\n% - its own atoms stay in the candidate;\nrelevant(in(A)) :- sub(A).\n% - one atom that it leaves out stays in the candidate too (the first one will do);\nrelevant(in(A)) :- left(A), not left(B) : atom(B), B < A.\n% - a rule that the subset violates must stay out of the reduct: for each such rule,\n%   the atoms that removed it stay in the candidate.\nneeded(R) :- gone(R), sub(A) : pos(R,A); not sub(A) : head(R,A).\nrelevant(in(A)) :- needed(R), neg(R,A), in(A).\n"
+    },
+    {
+      "name": "check_all",
+      "description": "Variant all-atoms: the same check, blaming every atom of the candidate.",
+      "text": "% The reduct with respect to the candidate drops every rule with \"not A\" in its body\n% for an atom A of the candidate, and the negative literals of the other rules.\ngone(R) :- neg(R,A), in(A).\n% A counterexample: a proper subset of the candidate that satisfies the reduct.\n% Then the candidate is not a minimal model of its reduct, so it is not stable.\n{ sub(A) } :- in(A).\n:- rule(R), not gone(R), sub(A) : pos(R,A); not sub(A) : head(R,A).\nleft(A) :- in(A), not sub(A).\nsmaller :- left(A).\n:- not smaller.\n#show sub/1.\n\n% What the counterexample depends on, coarsely: every atom of the candidate. While all of them\n% stay true, the subset stays a proper subset, and rules can only leave the reduct.\nrelevant(in(A)) :- in(A).\n"
     }
   ],
   "loop": {
@@ -37,16 +42,6 @@
     "trace": 200,
     "seed": 0
   },
-  "library": {
-    "id": "stable-models",
-    "group": "logic",
-    "summary": "Stable models of a disjunctive program given as facts: classical models checked against the reduct (11 atoms, 22 rules, 3 solutions).",
-    "shape": "shape1",
-    "tags": [
-      "fast"
-    ],
-    "expected": 3
-  },
   "instances": [
     {
       "id": "example",
@@ -60,12 +55,13 @@
       ]
     },
     {
-      "id": "even-loop",
-      "facts": "% 1: p :- not q.   2: q :- not p.   3: r :- p.   Two stable models, {p, r} and {q}.\nhead(1,p). neg(1,q).\nhead(2,q). neg(2,p).\nhead(3,r). pos(3,p).\n",
+      "id": "even-loops",
+      "facts": "% Three even loops and rules over them; each loop chooses on its own: 8 stable models.\n%  1: p :- not q.   2: q :- not p.   3: r :- not s.   4: s :- not r.\n%  5: t :- not u.   6: u :- not t.   7: v :- p, r.    8: v :- q, t.    9: w :- v, not u.\nhead(1,p). neg(1,q).    head(2,q). neg(2,p).\nhead(3,r). neg(3,s).    head(4,s). neg(4,r).\nhead(5,t). neg(5,u).    head(6,u). neg(6,t).\nhead(7,v). pos(7,p). pos(7,r).\nhead(8,v). pos(8,q). pos(8,t).\nhead(9,w). pos(9,v). neg(9,u).\n",
       "constants": {},
       "expected": {
-        "solutions": 2
-      }
+        "solutions": 8
+      },
+      "tags": []
     },
     {
       "id": "odd-loop",
@@ -73,15 +69,143 @@
       "constants": {},
       "expected": {
         "solutions": 0
-      }
+      },
+      "tags": []
     },
     {
       "id": "disjunction",
-      "facts": "% 1: a ; b.   2: c :- a, not d.   Many classical models (d may be true in them);\n% the stable ones are {a, c} and {b}.\nhead(1,a). head(1,b).\nhead(2,c). pos(2,a). neg(2,d).\n",
+      "facts": "% Three disjunctions, with derived atoms and an even loop on top.\n%  1: a ; b.   2: b ; c.   3: c ; a.   4: d :- a, b.   5: d :- b, c.\n%  6: e :- d, not f.   7: f :- not e.   8: g ; h :- f.\nhead(1,a). head(1,b).   head(2,b). head(2,c).   head(3,c). head(3,a).\nhead(4,d). pos(4,a). pos(4,b).\nhead(5,d). pos(5,b). pos(5,c).\nhead(6,e). pos(6,d). neg(6,f).\nhead(7,f). neg(7,e).\nhead(8,g). head(8,h). pos(8,f).\n",
       "constants": {},
+      "expected": {
+        "solutions": 8
+      },
+      "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "random-dlp",
+        "params": {
+          "n": 8,
+          "r": 14
+        },
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "random-dlp",
+        "params": {
+          "n": 8,
+          "r": 14
+        },
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
       "expected": {
         "solutions": 2
       }
     }
-  ]
+  ],
+  "generators": [
+    {
+      "name": "random-dlp",
+      "description": "A random disjunctive program: r rules over n atoms, 1 or 2 head atoms, up to 2 positive and 2 negative body atoms.",
+      "params": {
+        "n": "int",
+        "r": "int"
+      },
+      "defaults": {
+        "n": 8,
+        "r": 14
+      },
+      "text": "% random-dlp: r rules over the atoms 1..n; each rule has 1 or 2 head atoms, 0 to 2 positive\n% and 0 to 2 negative body atoms, each a uniform atom (repeats count once).\nrl(1..r).\nhlen(R,@int(1, 2, R, h)) :- rl(R).\nhead(R,@int(1, n, R, h, J)) :- hlen(R,L), J = 1..L.\nplen(R,@int(0, 2, R, p)) :- rl(R).\npos(R,@int(1, n, R, p, J)) :- plen(R,L), J = 1..L.\nnlen(R,@int(0, 2, R, q)) :- rl(R).\nneg(R,@int(1, n, R, q, J)) :- nlen(R,L), J = 1..L.\n#show head/2.\n#show pos/2.\n#show neg/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--enum-mode=record\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "all-atoms",
+      "swap": {
+        "check": "check_all"
+      },
+      "constants": {}
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "record",
+        "all-atoms"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    },
+    {
+      "name": "random",
+      "instances": {
+        "generator": "random-dlp",
+        "grid": {
+          "r": [
+            10,
+            14,
+            18
+          ]
+        },
+        "seeds": 5
+      },
+      "variants": [
+        "default",
+        "reference"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "stable-models",
+    "group": "logic",
+    "summary": "Stable models of a disjunctive program given as facts: classical models checked against the reduct (11 atoms, 22 rules, 3 solutions).",
+    "shape": "shape1",
+    "tags": [
+      "fast"
+    ],
+    "expected": 3
+  }
 }

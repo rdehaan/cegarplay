@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Loop language: two checks",
   "description": "Sum-free sets without two consecutive numbers. One check solver looks for sums, a second one for neighbours.",
   "fragments": [
@@ -44,5 +44,71 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "runs": [],
+  "instances": [
+    {
+      "id": "n8",
+      "facts": "",
+      "constants": {
+        "n": "8"
+      },
+      "expected": {
+        "solutions": 38
+      },
+      "tags": []
+    },
+    {
+      "id": "n6",
+      "facts": "",
+      "constants": {
+        "n": "6"
+      },
+      "expected": {
+        "solutions": 17
+      },
+      "tags": []
+    },
+    {
+      "id": "n10",
+      "facts": "",
+      "constants": {
+        "n": "10"
+      },
+      "expected": {
+        "solutions": 86
+      },
+      "tags": []
+    },
+    {
+      "id": "n12",
+      "facts": "",
+      "constants": {
+        "n": "12"
+      },
+      "expected": {
+        "solutions": 195
+      },
+      "tags": []
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A  = shared + abstraction\nsolver C1 = shared + sums\nsolver C2 = shared + neighbours\nlink   G1 = A -> C1 via shared + glue\nlink   G2 = A -> C2 via shared + glue\n\n# Two checks: C2 runs only when C1 finds nothing. Whichever finds a\n# counterexample, its own link turns it into the refinement.\nsearch A:\n    on candidate M:\n        X = C1.solve(assume G1(M))\n        if X:\n            reject M with G1.block(M)\n        else:\n            Y = C2.solve(assume G2(M))\n            if Y: reject M with G2.block(M)\n"
+      }
+    },
+    {
+      "name": "neighbours-first",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A  = shared + abstraction\nsolver C1 = shared + sums\nsolver C2 = shared + neighbours\nlink   G1 = A -> C1 via shared + glue\nlink   G2 = A -> C2 via shared + glue\n\n# The same two checks in the other order: neighbours first, then sums.\nsearch A:\n    on candidate M:\n        Y = C2.solve(assume G2(M))\n        if Y:\n            reject M with G2.clause(M, Y)\n        else:\n            X = C1.solve(assume G1(M))\n            if X: reject M with G1.clause(M, X)\n"
+      }
+    }
+  ]
 }

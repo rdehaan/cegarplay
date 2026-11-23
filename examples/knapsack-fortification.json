@@ -110,6 +110,109 @@
         "solutions": 1
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {
+        "fbudget": "2",
+        "abudget": "2",
+        "capacity": "12",
+        "goal": "28"
+      },
+      "recipe": {
+        "generator": "items",
+        "params": {
+          "n": 8
+        },
+        "seed": 1
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 8
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {
+        "fbudget": "2",
+        "abudget": "2",
+        "capacity": "12",
+        "goal": "31"
+      },
+      "recipe": {
+        "generator": "items",
+        "params": {
+          "n": 8
+        },
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + fortify\nsolver B = shared + attack\nsolver C = shared + pack           options \"--heuristic=Domain\"\nlink   GF = A -> B via shared + glue_fortify\nlink   GA = B -> C via shared + glue_attack\n\nif not C.solve(): stop \"the goal is out of reach even without an attack\"\n\n# The reference run: block instead of learning (sound here because a reply does not\n# depend on the fortified items).\nsearch A:\n    on candidate M:\n        loop:\n            Y = B.solve(assume GF(M))\n            if not Y: break\n            K = C.solve(assume GA(Y))\n            if K:\n                B.add(GA.block(Y))\n            else:\n                reject M with GF.block(M)\n                break\n"
+      }
+    },
+    {
+      "name": "inner-search",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + fortify\nsolver B = shared + attack\nsolver C = shared + pack           options \"--heuristic=Domain\"\nlink   GF = A -> B via shared + glue_fortify\nlink   GA = B -> C via shared + glue_attack\n\nif not C.solve(): stop \"the goal is out of reach even without an attack\"\n\n# B runs its own search inside A's check: an attack that C cannot answer is kept in Y.\nsearch A:\n    on candidate M:\n        search B assume GF(M) keep Y:\n            on candidate Y:\n                K = C.solve(assume GA(Y))\n                if K:\n                    reject Y with GA.clause(Y, K)\n        if Y:\n            reject M with GF.clause(M, Y)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + fortify\nsolver B = shared + attack\nsolver C = shared + pack           options \"--heuristic=Domain\"\nlink   GF = A -> B via shared + glue_fortify\nlink   GA = B -> C via shared + glue_attack\n\nif not C.solve(): stop \"the goal is out of reach even without an attack\"\n\n# Shape 2 at the top: A.solve in a loop, clauses added with A.add.\nloop:\n    M = A.solve()\n    if not M: stop\n    refuted = false\n    loop:\n        Y = B.solve(assume GF(M))\n        if not Y: break\n        K = C.solve(assume GA(Y))\n        if K:\n            B.add(GA.clause(Y, K))\n        else:\n            A.add(GF.clause(M, Y))\n            refuted = true\n            break\n    if not refuted:\n        accept M\n        A.add(GF.block(M))\n"
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "items",
+      "description": "n random items: weight 2..7, profit about twice the weight. Set fbudget, abudget, capacity and goal as constants.",
+      "params": {
+        "n": "int"
+      },
+      "defaults": {
+        "n": 8
+      },
+      "text": "% items: n items with a random weight (2..7) and profit (twice the weight plus 0..3)\nitem(I,W,2*W+E) :- I = 1..n, W = @int(2, 7, weight, I), E = @int(0, 3, extra, I).\n#show item/3.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "inner-search",
+        "shape2"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

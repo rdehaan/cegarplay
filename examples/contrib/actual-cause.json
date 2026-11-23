@@ -28,6 +28,11 @@
       "name": "check",
       "description": "Looks for a violation of condition (b) (solver C).",
       "text": "% A counterexample to condition (b): the cause keeps its actual value, some variables\n% of W are held at the witness values (part/1), some other variables are frozen at\n% their actual values (frozen/1), and the effect changes all the same.\nscenario(test).\nset(test,cause,1) :- val(actual,cause).\nset(test,cause,0) :- not val(actual,cause).\n{ part(V) } :- inw(V).\nset(test,V,1) :- part(V), wval(V).\nset(test,V,0) :- part(V), not wval(V).\n{ frozen(V) } :- var(V), V != cause, not inw(V).\nset(test,V,1) :- frozen(V), val(actual,V).\nset(test,V,0) :- frozen(V), not val(actual,V).\n:- effect(E), val(actual,E), val(test,E).\n:- effect(E), not val(actual,E), not val(test,E).\n#show part/1.\n#show frozen/1.\n\n% The same test applies to every witness that still holds the variables in part/1 at\n% the same values and still leaves the frozen variables out of W.\nrelevant(inw(V))  :- part(V).\nrelevant(wval(V)) :- part(V).\nrelevant(inw(V))  :- frozen(V).\n"
+    },
+    {
+      "name": "check_small",
+      "description": "The check of the variant smallest: a counterexample that holds and freezes as few variables as possible, so the clause is short.",
+      "text": "% A counterexample to condition (b): the cause keeps its actual value, some variables\n% of W are held at the witness values (part/1), some other variables are frozen at\n% their actual values (frozen/1), and the effect changes all the same.\nscenario(test).\nset(test,cause,1) :- val(actual,cause).\nset(test,cause,0) :- not val(actual,cause).\n{ part(V) } :- inw(V).\nset(test,V,1) :- part(V), wval(V).\nset(test,V,0) :- part(V), not wval(V).\n{ frozen(V) } :- var(V), V != cause, not inw(V).\nset(test,V,1) :- frozen(V), val(actual,V).\nset(test,V,0) :- frozen(V), not val(actual,V).\n:- effect(E), val(actual,E), val(test,E).\n:- effect(E), not val(actual,E), not val(test,E).\n#show part/1.\n#show frozen/1.\n% The smallest refinement: as few held and frozen variables as possible (the loop asks\n% for an optimal counterexample).\n#minimize { 1,p,V : part(V); 1,f,V : frozen(V) }.\n\n% The same test applies to every witness that still holds the variables in part/1 at\n% the same values and still leaves the frozen variables out of W.\nrelevant(inw(V))  :- part(V).\nrelevant(wval(V)) :- part(V).\nrelevant(inw(V))  :- frozen(V).\n"
     }
   ],
   "loop": {
@@ -43,16 +48,6 @@
     "candidates": 0,
     "trace": 200,
     "seed": 0
-  },
-  "library": {
-    "id": "actual-cause",
-    "group": "reasoning",
-    "summary": "Halpern-Pearl actual causation on the rock-throwing story: witnesses for Suzy's throw being a cause (cause = st, 4 solutions; cause = bt, none).",
-    "shape": "shape1",
-    "tags": [
-      "fast"
-    ],
-    "expected": 4
   },
   "instances": [
     {
@@ -85,6 +80,85 @@
       "expected": {
         "solutions": 6
       }
+    },
+    {
+      "id": "shatter-billy",
+      "facts": "% Is the bottle shattering a cause of Billy's rock not hitting? No: whatever is held, the\n% miss does not depend on the bottle.\nvar(st;bt;sh;bh;bs).\neffect(bh).\n",
+      "constants": {
+        "cause": "bs"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
     }
-  ]
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + model + abstraction\nsolver C = shared + model + check       options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The blocking loop: each refuted candidate is ruled out on its own.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + model + abstraction\nsolver C = shared + model + check       options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Shape 2: explicit solves of A; each solution is blocked by A.add.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "three-cex",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + model + abstraction\nsolver C = shared + model + check       options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three counterexamples per candidate, one clause each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "smallest",
+      "swap": {
+        "check": "check_small"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + model + abstraction\nsolver C = shared + model + check       options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The smallest refinement: an optimal counterexample (check_small minimises the\n# atoms that relevant/1 blames), so its clause is as short as possible.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M), optimal)\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shape2",
+        "three-cex",
+        "smallest"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "actual-cause",
+    "group": "reasoning",
+    "summary": "Halpern-Pearl actual causation on the rock-throwing story: witnesses for Suzy's throw being a cause (cause = st, 4 solutions; cause = bt, none).",
+    "shape": "shape1",
+    "tags": [
+      "fast"
+    ],
+    "expected": 4
+  }
 }

@@ -70,20 +70,8 @@
       },
       "tags": [
         "library"
-      ]
-    },
-    {
-      "id": "ten",
-      "facts": "% 10 x 10 with 20 black cells, 8 numbered (about 2 s).\n",
-      "constants": {
-        "n": "10",
-        "blacks": "20",
-        "k": "8"
-      },
-      "expected": {
-        "solutions": null
-      },
-      "tags": []
+      ],
+      "audit": false
     },
     {
       "id": "layout",
@@ -94,29 +82,8 @@
       "expected": {
         "solutions": 1
       },
-      "tags": []
-    },
-    {
-      "id": "layout-three",
-      "facts": "% The same black cells with three numbers: 68 puzzles.\nlayout(1,3). layout(1,4). layout(2,2). layout(2,6).\nlayout(4,2). layout(4,3). layout(4,5). layout(4,6).\nlayout(6,2). layout(6,6). layout(7,4). layout(7,5).\n",
-      "constants": {
-        "k": "3"
-      },
-      "expected": {
-        "solutions": 68
-      },
-      "tags": []
-    },
-    {
-      "id": "layout-one",
-      "facts": "% One number is never enough here.\nlayout(1,3). layout(1,4). layout(2,2). layout(2,6).\nlayout(4,2). layout(4,3). layout(4,5). layout(4,6).\nlayout(6,2). layout(6,6). layout(7,4). layout(7,5).\n",
-      "constants": {
-        "k": "1"
-      },
-      "expected": {
-        "solutions": 0
-      },
-      "tags": []
+      "tags": [],
+      "audit": false
     },
     {
       "id": "four",
@@ -132,17 +99,140 @@
       "tags": []
     },
     {
-      "id": "five",
-      "facts": "% 5 x 5 with 5 black cells, 1 numbered (checked by brute force).\n",
+      "id": "random-1",
       "constants": {
         "n": "5",
-        "blacks": "5",
+        "k": "2"
+      },
+      "recipe": {
+        "generator": "layout",
+        "params": {
+          "n": 5
+        },
+        "seed": 3
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 6
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {
+        "n": "5",
+        "k": "2"
+      },
+      "recipe": {
+        "generator": "layout",
+        "params": {
+          "n": 5
+        },
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 1
+      }
+    },
+    {
+      "id": "random-3",
+      "constants": {
+        "n": "5",
         "k": "1"
       },
-      "expected": {
-        "solutions": 23
+      "recipe": {
+        "generator": "layout",
+        "params": {
+          "n": 5
+        },
+        "seed": 1
       },
-      "tags": []
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 0
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "layout",
+      "description": "Random black cells on an n x n grid, symmetric under a half turn, each pair with probability p/1000; set the instance constant n to the same value (blacks is then ignored).",
+      "params": {
+        "n": "int",
+        "p": "permille"
+      },
+      "defaults": {
+        "n": 5,
+        "p": 200
+      },
+      "text": "% layout: black cells of an n x n grid, symmetric under a half turn; each cell of one half (with its mirror cell) is black with probability p/1000\nlayout(R,C) :- R = 1..n, C = 1..n, (R,C) <= (n+1-R,n+1-C), @flip(p, R, C) = 1.\nlayout(n+1-R,n+1-C) :- R = 1..n, C = 1..n, (R,C) <= (n+1-R,n+1-C), @flip(p, R, C) = 1.\n:- not layout(_,_).\n#show layout/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The blocking loop: every refuted candidate is blocked on its own.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to 3 counterexamples per candidate, one clause each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction   options \"--enum-mode=record\"\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": [
+          "four",
+          "random-1",
+          "random-2",
+          "random-3"
+        ]
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shape2",
+        "several",
+        "record"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

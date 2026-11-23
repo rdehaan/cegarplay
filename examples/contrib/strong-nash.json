@@ -37,16 +37,6 @@
     "trace": 200,
     "seed": 0
   },
-  "library": {
-    "id": "strong-nash",
-    "group": "games",
-    "summary": "Strong Nash equilibria of a graphical game: a counterexample is a coalition whose members all gain by deviating together (8 players, 1 solution).",
-    "shape": "shape1",
-    "tags": [
-      "fast"
-    ],
-    "expected": 1
-  },
   "instances": [
     {
       "id": "example",
@@ -85,6 +75,123 @@
         "solutions": 0
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "graphical",
+        "params": {
+          "n": 7,
+          "p": 400
+        },
+        "seed": 2
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "graphical",
+        "params": {
+          "n": 8,
+          "p": 350
+        },
+        "seed": 3
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "generated"
+      ]
     }
-  ]
+  ],
+  "generators": [
+    {
+      "name": "graphical",
+      "description": "A random graphical game with two actions: players P < Q are neighbours with probability p/1000, each direction with its own weight in -3..3; each action has a bonus in 0..2.",
+      "params": {
+        "n": "int",
+        "p": "permille"
+      },
+      "defaults": {
+        "n": 7,
+        "p": 400
+      },
+      "text": "% graphical: n players, actions 1 and 2; neighbours with probability p/1000.\nplayer(1..n).\naction(1..2).\nnb(P,Q) :- player(P), player(Q), P < Q, @flip(p, P, Q, nb) = 1.\nw(P,Q,@int(-3, 3, P, Q, w)) :- nb(P,Q).\nw(Q,P,@int(-3, 3, Q, P, w)) :- nb(P,Q).\nbonus(P,A,@int(0, 2, P, A, bonus)) :- player(P), action(A).\n#show player/1.  #show action/1.  #show w/3.  #show bonus/3.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 5):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--enum-mode=record\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shape2",
+        "several",
+        "record"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "strong-nash",
+    "group": "games",
+    "summary": "Strong Nash equilibria of a graphical game: a counterexample is a coalition whose members all gain by deviating together (8 players, 1 solution).",
+    "shape": "shape1",
+    "tags": [
+      "fast"
+    ],
+    "expected": 1
+  }
 }

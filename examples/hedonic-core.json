@@ -23,6 +23,10 @@
       "name": "check",
       "description": "Looks for a blocking coalition (solver C).",
       "text": "same(I,J) :- tog(I,J).\nsame(J,I) :- tog(I,J).\n% A counterexample: a group of agents each of whom values the group strictly more\n% than its present coalition.\n1 { s(I) : agent(I) }.\n:- s(I), #sum { V,J : s(J), value(I,J,V) ; -V,J : same(I,J), value(I,J,V) } <= 0.\n#show s/1.\n\n% The group keeps blocking unless a member becomes happier where it is. Only two\n% kinds of change can do that:\n% a companion the member dislikes leaves its coalition ...\nhelp(I,J) :- s(I), same(I,J), value(I,J,V), V < 0.\n% ... or an agent the member likes joins it.\nhelp(I,J) :- s(I), agent(J), I != J, not same(I,J), value(I,J,V), V > 0.\nrelevant(tog(I,J)) :- help(I,J), I < J.\nrelevant(tog(J,I)) :- help(I,J), J < I.\n"
+    },
+    {
+      "name": "check_members",
+      "text": "same(I,J) :- tog(I,J).\nsame(J,I) :- tog(I,J).\n% A counterexample: a group of agents each of whom values the group strictly more\n% than its present coalition.\n1 { s(I) : agent(I) }.\n:- s(I), #sum { V,J : s(J), value(I,J,V) ; -V,J : same(I,J), value(I,J,V) } <= 0.\n#show s/1.\n\n% A coarser refinement: the group keeps blocking as long as the coalitions of its members\n% stay as they are; every pair with a member in it is blamed.\nrelevant(tog(I,J)) :- s(I), agent(J), I < J.\nrelevant(tog(J,I)) :- s(I), agent(J), J < I.\n"
     }
   ],
   "loop": {
@@ -75,6 +79,121 @@
         "solutions": 1
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "additive",
+        "params": {
+          "n": 6,
+          "m": 5
+        },
+        "seed": 1
+      },
+      "expected": {
+        "solutions": 4
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "additive",
+        "params": {
+          "n": 7,
+          "m": 5
+        },
+        "seed": 1
+      },
+      "expected": {
+        "solutions": 5
+      },
+      "tags": [
+        "generated"
+      ]
+    }
+  ],
+  "generators": [
+    {
+      "name": "additive",
+      "description": "Random additive values: agent I values agent J at an integer in -m..m, uniformly and independently.",
+      "params": {
+        "n": "int",
+        "m": "int"
+      },
+      "defaults": {
+        "n": 6,
+        "m": 5
+      },
+      "text": "% additive: n agents, value(I,J,V) with V uniform in -m..m (a value 0 is left out).\nagent(1..n).\nval(I,J,@int(-m, m, I, J)) :- agent(I), agent(J), I != J.\nvalue(I,J,V) :- val(I,J,V), V != 0.\n#show agent/1.  #show value/3.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 5):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--enum-mode=record\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "members",
+      "swap": {
+        "check": "check_members"
+      },
+      "constants": {}
+    }
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shape2",
+        "several",
+        "record",
+        "members"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

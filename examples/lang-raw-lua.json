@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Loop language: raw Lua",
   "description": "The Shape 1 loop written in Lua. Use this when the loop language lacks something; \"Edit as Lua\" in the Loop tab turns any loop script into Lua like this.",
   "fragments": [
@@ -39,5 +39,71 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "runs": [],
+  "instances": [
+    {
+      "id": "n8",
+      "facts": "",
+      "constants": {
+        "n": "8"
+      },
+      "expected": {
+        "solutions": 61
+      },
+      "tags": []
+    },
+    {
+      "id": "n6",
+      "facts": "",
+      "constants": {
+        "n": "6"
+      },
+      "expected": {
+        "solutions": 24
+      },
+      "tags": []
+    },
+    {
+      "id": "n10",
+      "facts": "",
+      "constants": {
+        "n": "10"
+      },
+      "expected": {
+        "solutions": 151
+      },
+      "tags": []
+    },
+    {
+      "id": "n12",
+      "facts": "",
+      "constants": {
+        "n": "12"
+      },
+      "expected": {
+        "solutions": 369
+      },
+      "tags": []
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "loop-language",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ]
 }

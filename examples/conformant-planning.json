@@ -28,6 +28,11 @@
       "name": "check",
       "description": "Looks for a start cell from which the plan does not reach the goal (solver C).",
       "text": "% A counterexample: a start cell from which the plan ends somewhere else.\n1 { start(X,Y) : free(X,Y) } 1.\nat(X,Y,0) :- start(X,Y).\nat(X2,Y2,T) :- at(X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).\n:- goal(X,Y), at(X,Y,t).\n#show start/2.\n% No relevant/1 rules: the loop passes the start cell to the refine part.\n"
+    },
+    {
+      "name": "check_far",
+      "text": "% A counterexample: a start cell from which the plan ends somewhere else.\n1 { start(X,Y) : free(X,Y) } 1.\nat(X,Y,0) :- start(X,Y).\nat(X2,Y2,T) :- at(X,Y,T-1), do(T,D), to(X,Y,D,X2,Y2).\n:- goal(X,Y), at(X,Y,t).\n#show start/2.\n% No relevant/1 rules: the loop passes the start cell to the refine part.\n% Variant far-start: prefer the start cell farthest from the goal (with 'optimal').\n#maximize { |X-GX|+|Y-GY| : start(X,Y), goal(GX,GY) }.\n",
+      "description": "The check that prefers start cells far from the goal, for the variant far-start."
     }
   ],
   "loop": {
@@ -54,7 +59,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "audit": false
     },
     {
       "id": "short-horizon",
@@ -68,17 +74,6 @@
       "tags": []
     },
     {
-      "id": "corner-3x3",
-      "facts": "% A 3 x 3 room without a pillar; the goal is a corner.\ncell(1..3,1..3).\n#defined pillar/2.\ngoal(1,1).\n",
-      "constants": {
-        "t": "4"
-      },
-      "expected": {
-        "solutions": 6
-      },
-      "tags": []
-    },
-    {
       "id": "corridor",
       "facts": "% A corridor of 5 x 1 cells; the goal is in the middle. Moves n and s do nothing.\ncell(1..5,1).\n#defined pillar/2.\ngoal(3,1).\n",
       "constants": {
@@ -88,6 +83,118 @@
         "solutions": 2
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {
+        "t": "7"
+      },
+      "recipe": {
+        "generator": "room",
+        "params": {
+          "w": 4,
+          "h": 3,
+          "np": 1
+        },
+        "seed": 3
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 3
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {
+        "t": "6"
+      },
+      "recipe": {
+        "generator": "room",
+        "params": {
+          "w": 4,
+          "h": 3,
+          "np": 1
+        },
+        "seed": 5
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 5
+      }
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The blocking loop: every refuted plan is blocked on its own; nothing is grounded into A.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three failing start cells per plan, each simulated inside A.\nloop:\n    M = A.solve()\n    if not M: stop\n    Xs = C.models(assume G(M), limit 3)\n    if Xs.size > 0:\n        for X in Xs:\n            A.expand(refine, cex = X.atoms(start/2))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "far-start",
+      "swap": {
+        "check": "check_far"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The failing start cell farthest from the goal (optimal).\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M), optimal)\n    if X:\n        A.expand(refine, cex = X.atoms(start/2))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "room",
+      "description": "A w x h room with np random pillars and a random goal cell (not on a pillar). Choose the horizon t per instance.",
+      "params": {
+        "w": "int",
+        "h": "int",
+        "np": "int"
+      },
+      "defaults": {
+        "w": 4,
+        "h": 3,
+        "np": 1
+      },
+      "text": "% room: a w x h room, np pillars at random cells, a goal at a random cell that is no pillar\ncell(1..w,1..h).\npillar(@int(1, w, px, K),@int(1, h, py, K)) :- K = 1..np.\ngoal(@int(1, w, gx),@int(1, h, gy)).\n:- goal(X,Y), pillar(X,Y).\n#show cell/2.  #show pillar/2.  #show goal/2.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": [
+          "short-horizon",
+          "corridor",
+          "random-1",
+          "random-2"
+        ]
+      },
+      "variants": [
+        "default",
+        "reference",
+        "several",
+        "far-start"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": [],

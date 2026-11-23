@@ -28,6 +28,16 @@
       "name": "check",
       "description": "Looks for an explanation that breaks fewer gates (solver C).",
       "text": "% A counterexample: the observations can also be explained in a world \"alt\" in which a\n% proper subset of the candidate's gates is broken. The wires may take other values.\nworld(alt).\n{ broken(alt,G) } :- broken(now,G).\n{ on(alt,X) } :- wire(X).\nmended(G) :- broken(now,G), not broken(alt,G).\nfewer :- mended(G).\n:- not fewer.\n#show.\n#show broken(G) : broken(alt,G).\n\n% The smaller explanation refutes every candidate that breaks its gates and at least\n% one more. Mark its gates and, as a witness, the first gate it mends.\nrelevant(broken(now,G)) :- broken(alt,G).\nrelevant(broken(now,G)) :- mended(G), not mended(H) : part(H), H < G.\n"
+    },
+    {
+      "name": "check_all_mended",
+      "description": "The check of the variant all-mended: every mended gate is blamed, not only the first.",
+      "text": "% A counterexample: the observations can also be explained in a world \"alt\" in which a\n% proper subset of the candidate's gates is broken. The wires may take other values.\nworld(alt).\n{ broken(alt,G) } :- broken(now,G).\n{ on(alt,X) } :- wire(X).\nmended(G) :- broken(now,G), not broken(alt,G).\nfewer :- mended(G).\n:- not fewer.\n#show.\n#show broken(G) : broken(alt,G).\n\n% The smaller explanation refutes every candidate that breaks its gates and at least\n% one more. Mark its gates and all the gates it mends (weaker than naming the first one,\n% still sound).\nrelevant(broken(now,G)) :- broken(alt,G).\nrelevant(broken(now,G)) :- mended(G).\n"
+    },
+    {
+      "name": "check_small",
+      "description": "The check of the variant smallest: a smaller explanation with as few broken gates as possible, so the clause is short.",
+      "text": "% A counterexample: the observations can also be explained in a world \"alt\" in which a\n% proper subset of the candidate's gates is broken. The wires may take other values.\nworld(alt).\n{ broken(alt,G) } :- broken(now,G).\n{ on(alt,X) } :- wire(X).\nmended(G) :- broken(now,G), not broken(alt,G).\nfewer :- mended(G).\n:- not fewer.\n#show.\n#show broken(G) : broken(alt,G).\n% The smallest refinement (variant smallest): as few broken gates in alt as possible.\n#minimize { 1,G : broken(alt,G) }.\n\n% The smaller explanation refutes every candidate that breaks its gates and at least\n% one more. Mark its gates and, as a witness, the first gate it mends.\nrelevant(broken(now,G)) :- broken(alt,G).\nrelevant(broken(now,G)) :- mended(G), not mended(H) : part(H), H < G.\n"
     }
   ],
   "loop": {
@@ -79,6 +89,115 @@
         "solutions": 2
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {
+        "suspect": "5"
+      },
+      "recipe": {
+        "generator": "circuit-random",
+        "params": {},
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {
+        "suspect": "7"
+      },
+      "recipe": {
+        "generator": "circuit-random",
+        "params": {},
+        "seed": 2
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 0
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "circuit-random",
+      "description": "A random circuit: k inputs and g gates (and, or, xor), each reading two different earlier wires; random input values, the unused outputs observed and the last output flipped. Set the constant suspect to a gate number (k+1 .. k+g).",
+      "params": {
+        "k": "int",
+        "g": "int"
+      },
+      "defaults": {
+        "k": 3,
+        "g": 7
+      },
+      "text": "% circuit-random: wires 1..k are inputs, gate I (k < I <= k+g) is an and, or or xor gate\n% whose output is wire I and whose two inputs are two different earlier wires. The inputs\n% get random values; every input and every unused output is observed, with the output of\n% the last gate flipped (one fault shows). Set the constant suspect to a gate number.\ninput(1..k).\nwire(1..k+g).\nkind(I,@int(1,3,kind,I)) :- I = k+1..k+g.\nin1(I,@int(1,I-1,in1,I)) :- I = k+1..k+g.\nin2(I,(X+@int(0,I-3,gap,I))\\(I-1)+1) :- in1(I,X).\ngate(I,and,X,Y,I) :- kind(I,1), in1(I,X), in2(I,Y).\ngate(I,or,X,Y,I) :- kind(I,2), in1(I,X), in2(I,Y).\ngate(I,xor,X,Y,I) :- kind(I,3), in1(I,X), in2(I,Y).\non(I) :- input(I), @flip(500,value,I) = 1.\non(I) :- gate(I,and,X,Y,I), on(X), on(Y).\non(I) :- gate(I,or,X,Y,I), on(X).\non(I) :- gate(I,or,X,Y,I), on(Y).\non(I) :- gate(I,xor,X,Y,I), on(X), not on(Y).\non(I) :- gate(I,xor,X,Y,I), on(Y), not on(X).\nused(X) :- in1(I,X).\nused(X) :- in2(I,X).\nshown(I) :- input(I).\nshown(I) :- I = k+1..k+g-1, not used(I).\nobs(I,1) :- shown(I), on(I).\nobs(I,0) :- shown(I), not on(I).\nobs(k+g,0) :- on(k+g).\nobs(k+g,1) :- not on(k+g).\n#show gate/5.  #show wire/1.  #show obs/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + circuit + abstraction\nsolver C = shared + circuit + check     options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The blocking loop: each refuted candidate is ruled out on its own.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "three-cex",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + circuit + abstraction\nsolver C = shared + circuit + check     options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three counterexamples per candidate, one clause each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "smallest",
+      "swap": {
+        "check": "check_small"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + circuit + abstraction\nsolver C = shared + circuit + check     options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The smallest refinement: an optimal counterexample (check_small minimises the\n# atoms that relevant/1 blames), so its clause is as short as possible.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M), optimal)\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "all-mended",
+      "swap": {
+        "check": "check_all_mended"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + circuit + abstraction\nsolver C = shared + circuit + check     options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "three-cex",
+        "smallest",
+        "all-mended"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

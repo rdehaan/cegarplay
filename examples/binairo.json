@@ -69,31 +69,8 @@
       },
       "tags": [
         "library"
-      ]
-    },
-    {
-      "id": "eight",
-      "facts": "% 8 x 8 with 12 clues (about 9 s).\n",
-      "constants": {
-        "n": "8",
-        "k": "12"
-      },
-      "expected": {
-        "solutions": null
-      },
-      "tags": []
-    },
-    {
-      "id": "ten",
-      "facts": "% 10 x 10 with 24 clues (about 6 s; 20 clues do not finish in a minute).\n",
-      "constants": {
-        "n": "10",
-        "k": "24"
-      },
-      "expected": {
-        "solutions": null
-      },
-      "tags": []
+      ],
+      "audit": false
     },
     {
       "id": "four",
@@ -105,19 +82,163 @@
       "expected": {
         "solutions": 1152
       },
-      "tags": []
+      "tags": [],
+      "audit": false
     },
     {
-      "id": "four-three",
-      "facts": "% Three clues never fix a 4 x 4 grid.\n",
+      "id": "random-1",
       "constants": {
-        "n": "4",
-        "k": "3"
+        "n": "6",
+        "k": "1"
       },
+      "recipe": {
+        "generator": "printed",
+        "params": {
+          "p": 250
+        },
+        "seed": 5
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 3
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {
+        "n": "6",
+        "k": "1"
+      },
+      "recipe": {
+        "generator": "printed",
+        "params": {
+          "p": 250
+        },
+        "seed": 1
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    },
+    {
+      "id": "random-3",
+      "constants": {
+        "n": "6",
+        "k": "2"
+      },
+      "recipe": {
+        "generator": "printed",
+        "params": {
+          "p": 250
+        },
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 112
+      }
+    },
+    {
+      "id": "random-4",
+      "constants": {
+        "n": "6",
+        "k": "1"
+      },
+      "recipe": {
+        "generator": "printed",
+        "params": {
+          "p": 250
+        },
+        "seed": 3
+      },
+      "tags": [
+        "generated"
+      ],
       "expected": {
         "solutions": 0
+      }
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The blocking loop: every refuted candidate is blocked on its own.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to 3 counterexamples per candidate, one clause each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction   options \"--enum-mode=record\"\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "printed",
+      "description": "A random solved 6 x 6 grid (one of three grids, transposed, mirrored and with 0 and 1 swapped at random), each cell printed with probability p/1000. Set the instance constant n = 6.",
+      "params": {
+        "p": "permille"
       },
-      "tags": []
+      "defaults": {
+        "p": 250
+      },
+      "text": "% printed: one of three solved 6 x 6 grids (row R as a binary number), transposed, mirrored and flipped at random; each cell printed with probability p/1000\nbase(1,1,50). base(1,2,44). base(1,3,19). base(1,4,38). base(1,5,13). base(1,6,25).\nbase(2,1,42). base(2,2,22). base(2,3,37). base(2,4,11). base(2,5,52). base(2,6,25).\nbase(3,1,19). base(3,2,52). base(3,3,42). base(3,4,21). base(3,5,44). base(3,6,11).\nbd(I,R,C,(V/(2**(6-C)))\\2) :- base(I,R,V), C = 1..6.\ng0(R,C,D) :- bd(I,R,C,D), I = @int(1, 3, base).\ng1(R,C,D) :- g0(R,C,D), @int(0, 1, transpose) = 0.\ng1(C,R,D) :- g0(R,C,D), @int(0, 1, transpose) = 1.\ng2(R+M*(7-2*R),C,D) :- g1(R,C,D), M = @int(0, 1, mirrorrows).\ng3(R,C+M*(7-2*C),D) :- g2(R,C,D), M = @int(0, 1, mirrorcols).\ng(R,C,(D+@int(0, 1, swap))\\2) :- g3(R,C,D).\npre(R,C,D) :- g(R,C,D), @flip(p, R, C, show) = 1.\n#show pre/3.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": [
+          "four",
+          "random-1",
+          "random-2",
+          "random-3",
+          "random-4"
+        ]
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shape2",
+        "several",
+        "record"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

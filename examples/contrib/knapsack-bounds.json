@@ -28,6 +28,11 @@
       "name": "check",
       "description": "Looks for a packing worth more than the claim (solver C) and states its profit.",
       "text": "% A counterexample: the follower packs items that are not locked, within the capacity,\n% and gets more than the claimed value.\n{ pack(I) : item(I,_,_,_) }.\n:- pack(I), lock(I).\n:- #sum { W,I : pack(I), item(I,_,W,_) } > capacity.\n:- value(V), #sum { P,I : pack(I), item(I,_,_,P) } <= V.\n% With 'optimal' the follower's best packing comes back (the strongest counterexample).\n#minimize { -P,I : pack(I), item(I,_,_,P) }.\n#show pack/1.\n% gain(P): the profit of the packing, for the script to read.\ngain(P) :- P = #sum { Q,I : pack(I), item(I,_,_,Q) }.\n#show gain/1.\n"
+    },
+    {
+      "name": "check_clause",
+      "text": "% A counterexample: the follower packs items that are not locked, within the capacity,\n% and gets more than the claimed value.\n{ pack(I) : item(I,_,_,_) }.\n:- pack(I), lock(I).\n:- #sum { W,I : pack(I), item(I,_,W,_) } > capacity.\n:- value(V), #sum { P,I : pack(I), item(I,_,_,P) } <= V.\n% With 'optimal' the follower's best packing comes back (the strongest counterexample).\n#minimize { -P,I : pack(I), item(I,_,_,P) }.\n#show pack/1.\n% gain(P): the profit of the packing, for the script to read.\ngain(P) :- P = #sum { Q,I : pack(I), item(I,_,_,Q) }.\n#show gain/1.\n% Variant clauses: the clause asks to lock one of the packed items or to change the claim.\nrelevant(lock(I)) :- pack(I).\nrelevant(value(V)) :- value(V).\n",
+      "description": "The check with relevant/1, for the variant clauses (a clause in place of the rules of refine)."
     }
   ],
   "loop": {
@@ -44,20 +49,6 @@
     "candidates": 0,
     "trace": 200,
     "seed": 0
-  },
-  "library": {
-    "id": "knapsack-bounds",
-    "group": "planning",
-    "summary": "The bilevel knapsack optimisation with numeric bounds: M.value(value/1) and X.value(gain/1) give lower and upper bounds that are logged until they meet (optimum 25, 2 solutions).",
-    "shape": "custom",
-    "tags": [
-      "fast",
-      "several-solvers",
-      "benders",
-      "bounds"
-    ],
-    "expected": 2,
-    "optimum": 25
   },
   "instances": [
     {
@@ -102,17 +93,134 @@
       "tags": []
     },
     {
-      "id": "twelve-items",
-      "facts": "% Twelve items (the example items and four more): budget 7, capacity 16\n% (optimum 36).\nitem(1,3,4,9).  item(2,2,3,7).  item(3,4,5,12).  item(4,1,2,4).\nitem(5,3,6,13). item(6,2,4,8).  item(7,5,7,16).  item(8,1,3,5).\nitem(9,2,5,10). item(10,4,6,14). item(11,1,1,3). item(12,3,5,11).\n",
+      "id": "nine-items",
+      "facts": "% Nine items (the example items and one more): budget 6, capacity 14\n% (optimum 30).\nitem(1,3,4,9).  item(2,2,3,7).  item(3,4,5,12).  item(4,1,2,4).\nitem(5,3,6,13). item(6,2,4,8).  item(7,5,7,16).  item(8,1,3,5).\nitem(9,2,5,10).\n",
       "constants": {
-        "budget": "7",
-        "capacity": "16"
+        "budget": "6",
+        "capacity": "14"
       },
       "expected": {
-        "solutions": 1,
-        "optimum": 36
+        "solutions": 4,
+        "optimum": 30
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {
+        "budget": "6",
+        "capacity": "12"
+      },
+      "recipe": {
+        "generator": "items",
+        "params": {
+          "n": 8
+        },
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 5,
+        "optimum": 27
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {
+        "budget": "6",
+        "capacity": "12"
+      },
+      "recipe": {
+        "generator": "items",
+        "params": {
+          "n": 8
+        },
+        "seed": 8
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 3,
+        "optimum": 28
+      }
     }
-  ]
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Baseline: every refuted candidate is blocked on its own; no packing is grounded into A.\ncapped = false\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        A.add(G.block(M))\n        if not capped:\n            A.expand(cap, best = M.atoms(value/1))\n            capped = true\n"
+      }
+    },
+    {
+      "name": "clauses",
+      "swap": {
+        "check": "check_clause"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# A clause per counterexample (lock a packed item or change the claim) in place of the\n# rules of the part refine: it rules out only the claim of this candidate.\ncapped = false\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    X = C.solve(assume G(M), optimal)\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n        if not capped:\n            A.expand(cap, best = M.atoms(value/1))\n            capped = true\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Up to three packings that beat the claim per candidate (not the best one), each grounded\n# into A.\ncapped = false\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    Xs = C.models(assume G(M), limit 3)\n    if Xs.size > 0:\n        for X in Xs:\n            A.expand(refine, cex = X.atoms(pack/1))\n    else:\n        accept M\n        A.add(G.block(M))\n        if not capped:\n            A.expand(cap, best = M.atoms(value/1))\n            capped = true\n"
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "items",
+      "description": "n random items: cost 1..4, weight 2..7, profit about twice the weight. Set budget and capacity as constants.",
+      "params": {
+        "n": "int"
+      },
+      "defaults": {
+        "n": 8
+      },
+      "text": "% items: n items with a random cost (1..4), weight (2..7) and profit (twice the weight plus 0..3)\nitem(I,C,W,2*W+E) :- I = 1..n, C = @int(1, 4, cost, I), W = @int(2, 7, weight, I), E = @int(0, 3, extra, I).\n#show item/4.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "clauses",
+        "several"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "knapsack-bounds",
+    "group": "planning",
+    "summary": "The bilevel knapsack optimisation with numeric bounds: M.value(value/1) and X.value(gain/1) give lower and upper bounds that are logged until they meet (optimum 25, 2 solutions).",
+    "shape": "custom",
+    "tags": [
+      "fast",
+      "several-solvers",
+      "benders",
+      "bounds"
+    ],
+    "expected": 2,
+    "optimum": 25
+  }
 }

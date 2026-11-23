@@ -23,6 +23,10 @@
       "name": "check",
       "description": "Looks for a player with a profitable deviation (solver C).",
       "text": "% A counterexample: one player deviates ...\n1 { dev(P) : player(P) } 1.\nown(V) :- dev(P), controls(P,V).\n% ... its goal is false now: some clause of the goal is false (the first one is noted) ...\nnow(C) :- pos(C,V), t(V).\nnow(C) :- neg(C,V), not t(V).\nbroken(C) :- dev(P), goal(P,C), not now(C).\nlost :- broken(C).\n:- not lost.\n% ... and true after it changes its own variables (n/1 is the new assignment).\n{ n(V) } :- own(V).\nn(V) :- t(V), not own(V).\nmine(C)   :- pos(C,V), own(V), n(V).\nmine(C)   :- neg(C,V), own(V), not n(V).\nothers(C) :- pos(C,V), not own(V), t(V).\nothers(C) :- neg(C,V), not own(V), not t(V).\n:- dev(P), goal(P,C), not mine(C), not others(C).\n#show dev/1.\n#show n/1.\n\n% What the deviation depends on:\n% - the first broken clause stays false: all its variables keep their values;\nwitness(C) :- broken(C), not broken(D) : goal(_,D), D < C.\nrelevant(t(V)) :- witness(C), pos(C,V).\nrelevant(t(V)) :- witness(C), neg(C,V).\n% - a goal clause that the player's new values do not satisfy is satisfied by the\n%   others: their literals that are true in it keep their values.\nrelevant(t(V)) :- dev(P), goal(P,C), not mine(C), pos(C,V), not own(V), t(V).\nrelevant(t(V)) :- dev(P), goal(P,C), not mine(C), neg(C,V), not own(V), not t(V).\n"
+    },
+    {
+      "name": "check_others",
+      "text": "% A counterexample: one player deviates ...\n1 { dev(P) : player(P) } 1.\nown(V) :- dev(P), controls(P,V).\n% ... its goal is false now: some clause of the goal is false (the first one is noted) ...\nnow(C) :- pos(C,V), t(V).\nnow(C) :- neg(C,V), not t(V).\nbroken(C) :- dev(P), goal(P,C), not now(C).\nlost :- broken(C).\n:- not lost.\n% ... and true after it changes its own variables (n/1 is the new assignment).\n{ n(V) } :- own(V).\nn(V) :- t(V), not own(V).\nmine(C)   :- pos(C,V), own(V), n(V).\nmine(C)   :- neg(C,V), own(V), not n(V).\nothers(C) :- pos(C,V), not own(V), t(V).\nothers(C) :- neg(C,V), not own(V), not t(V).\n:- dev(P), goal(P,C), not mine(C), not others(C).\n#show dev/1.\n#show n/1.\n\n% A coarser refinement: the first broken clause keeps its values, and so does every\n% variable that the deviating player does not control.\nwitness(C) :- broken(C), not broken(D) : goal(_,D), D < C.\nrelevant(t(V)) :- witness(C), pos(C,V).\nrelevant(t(V)) :- witness(C), neg(C,V).\nrelevant(t(V)) :- var(V), not own(V).\n"
     }
   ],
   "loop": {
@@ -60,7 +64,7 @@
     },
     {
       "id": "coordination",
-      "facts": "% A coordination game: both players want v1 = v2. Two equilibria.\nplayer(1;2).\nvar(1;2).\ncontrols(1,1). controls(2,2).\ngoal(1,11). pos(11,1). neg(11,2).                 % v1 | ~v2\ngoal(1,12). neg(12,1). pos(12,2).                 % ~v1 | v2\ngoal(2,21). pos(21,1). neg(21,2).                 % v1 | ~v2\ngoal(2,22). neg(22,1). pos(22,2).                 % ~v1 | v2\n",
+      "facts": "% A coordination game: three players, each controls one variable and all want v1 = v2 = v3.\n% Two equilibria; in every other profile one player is the odd one out and can switch.\nplayer(1..3).\nvar(1..3).\ncontrols(P,P) :- player(P).\ngoal(P,10*P+1) :- player(P).  pos(10*P+1,1) :- player(P).  neg(10*P+1,2) :- player(P).   % v1 | ~v2\ngoal(P,10*P+2) :- player(P).  neg(10*P+2,1) :- player(P).  pos(10*P+2,2) :- player(P).   % ~v1 | v2\ngoal(P,10*P+3) :- player(P).  pos(10*P+3,2) :- player(P).  neg(10*P+3,3) :- player(P).   % v2 | ~v3\ngoal(P,10*P+4) :- player(P).  neg(10*P+4,2) :- player(P).  pos(10*P+4,3) :- player(P).   % ~v2 | v3\n",
       "constants": {},
       "expected": {
         "solutions": 2
@@ -75,6 +79,125 @@
         "solutions": 10
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "random-game",
+        "params": {
+          "p": 4,
+          "g": 5,
+          "k": 2
+        },
+        "seed": 3
+      },
+      "expected": {
+        "solutions": 63
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "random-game",
+        "params": {
+          "p": 4,
+          "g": 4,
+          "k": 3
+        },
+        "seed": 1
+      },
+      "expected": {
+        "solutions": 118
+      },
+      "tags": [
+        "generated"
+      ]
+    }
+  ],
+  "generators": [
+    {
+      "name": "random-game",
+      "description": "A random Boolean game: p players with two variables each; every goal is g clauses of k distinct literals over all variables, signs with probability 1/2.",
+      "params": {
+        "p": "int",
+        "g": "int",
+        "k": "int"
+      },
+      "defaults": {
+        "p": 4,
+        "g": 5,
+        "k": 2
+      },
+      "text": "% boolean-game: p players, each controls two variables; each goal has g clauses of k distinct literals.\nplayer(1..p).\nvar(1..2*p).\ncontrols(P,2*P-1) :- player(P).\ncontrols(P,2*P) :- player(P).\ngoal(P,10*P+J) :- player(P), J = 1..g.\ninl(C,X) :- goal(P,C), var(X), @subset(k, 2*p, X, C) = 1.\npos(C,X) :- inl(C,X), @flip(500, C, X) = 1.\nneg(C,X) :- inl(C,X), @flip(500, C, X) = 0.\n#show player/1.  #show var/1.  #show controls/2.  #show goal/2.  #show pos/2.  #show neg/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 5):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--enum-mode=record\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "others",
+      "swap": {
+        "check": "check_others"
+      },
+      "constants": {}
+    }
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shape2",
+        "several",
+        "record",
+        "others"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

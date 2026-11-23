@@ -1333,16 +1333,22 @@ Each example is at `examples/<id>.json` and loads with `?example=<id>`.
 
 Most problems keep their input in [instances](#manual-instances): an instance `example` (tag
 `library`, whose count is the entry's `expected`) and two or three more, each with a comment line
-and its expected count (a smaller one, one without solutions, a larger one); `test/instances.test.mjs`
-runs every instance with an expected count. Parametric problems (`graph-coloring`, `min-dnf`,
+and its expected count (a smaller one, one without solutions, a larger one). Every example outside
+the guide and the tutorial has three or more instances that make its loop refine several times,
+two or more [variants](#manual-variants) (the blocking loop `reference` where it can finish, other
+loop shapes, other refinements) and, where random input makes sense, a generator with recipe
+instances. `test/coverage-*.test.mjs` runs every variant on every instance with an expected count
+(instances tagged `slow`, `hard` or `original` only with `SLOW=1`), and the audit finishes within
+about a minute on every instance not marked `audit: false`. Parametric problems (`graph-coloring`, `min-dnf`,
 `clique-interdiction`) use constants-only instances and `settings.instance: ""`, so that the
-project as written runs with its own constants. `voting-justification` has seventeen instances,
+project as written runs with its own constants. `voting-justification` has fourteen instances,
 one question each. Some examples also have generators (`qbf`, `af-preferred`, `kemeny-control`, the
 graph problems), a campaign suite (`tutorial-weak-relevant`, `qbf`, `voting-justification`) or a
 domain view (fragment `view`). Every `fast` example has a recording in `examples/replays/`
-(`node tools/make-replays.mjs` after a change of the runtime or an example). `reasons-by-shrinking`
-and `qbf-three-blocks` deliberately use no format-2 keys: `test/assemble-golden.test.mjs` checks
-that such projects assemble to the same program text as before.
+(`node tools/make-replays.mjs` after a change of the runtime or an example). `test/assemble-golden.test.mjs`
+checks that a few projects (the shapes, `lang-second-solver`, `reasons-by-shrinking`,
+`qbf-three-blocks`) still assemble to the same program text (`UPDATE_GOLDEN=1` after a deliberate
+change of one of them).
 
 Examples tagged `stops-at-optimum` (`maxsat-ihs`, `maxsat-oll`, `benders-tardiness`) end their run
 with `stop` once the optimum is proven, so the run is not exhausted and their solution counts are

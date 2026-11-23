@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Loop language: several counterexamples",
   "description": "Each rejected candidate is refined with up to three counterexamples at once, so fewer candidates are needed.",
   "fragments": [
@@ -39,5 +39,80 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "runs": [],
+  "instances": [
+    {
+      "id": "n8",
+      "facts": "",
+      "constants": {
+        "n": "8"
+      },
+      "expected": {
+        "solutions": 61
+      },
+      "tags": []
+    },
+    {
+      "id": "n6",
+      "facts": "",
+      "constants": {
+        "n": "6"
+      },
+      "expected": {
+        "solutions": 24
+      },
+      "tags": []
+    },
+    {
+      "id": "n10",
+      "facts": "",
+      "constants": {
+        "n": "10"
+      },
+      "expected": {
+        "solutions": 151
+      },
+      "tags": []
+    },
+    {
+      "id": "n12",
+      "facts": "",
+      "constants": {
+        "n": "12"
+      },
+      "expected": {
+        "solutions": 369
+      },
+      "tags": []
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "limit-1",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# C.models returns a list of up to 'limit' counterexamples. Every one of them\n# refines the abstraction; the candidate is rejected once.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 1):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "limit-10",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# C.models returns a list of up to 'limit' counterexamples. Every one of them\n# refines the abstraction; the candidate is rejected once.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 10):\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ]
 }

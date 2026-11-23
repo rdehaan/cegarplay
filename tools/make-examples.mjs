@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { importLp, load, save, template } from '../js/project.js';
 import { stripAspComments } from '../js/driver.js';
-import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS, PROJECT_CARDS, EXERCISES, levelOf, VOTE_KIT } from './library.mjs';
+import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS, PROJECT_CARDS, EXERCISES, levelOf, VOTE_KIT, EXTRAS } from './library.mjs';
 import { buildGuide } from './guide.mjs';
 
 const root = new URL('..', import.meta.url);
@@ -143,19 +143,21 @@ const VOTE_AXIOMS = `%%% The axioms. An instance switches axioms on with facts u
 `;
 const VOTE_SHORT = { pareto: 'pareto', faithfulness: 'faith', unanimity: 'unanimity', cancellation: 'cancel',
   reinforcement: 'reinf', condorcet: 'condorcet', neutrality2: 'neutral', pos_responsiveness: 'posresp' };
-const VOTE_DEFAULT = 'cancel-reinf-posresp-k4';
+const VOTE_DEFAULT = 'faith-pareto-neutral-reinf-k4';
 const VOTE_NOTES = {
   UNSAT: 'No justification exists with these bounds: the run ends without a solution.',
   'FOR EFFICIENCY, NEEDS 2-STEP PROCEDURE (FIRST FINDING PROFILES)': 'Hard: the original file notes that it needs a two-step procedure (first finding the profiles).',
 };
 // Measured with node tools/run.mjs voting-justification --instance ID --solutions all.
+// Questions whose abstraction has one or two candidates (no refinement at all) are left out
+// (VOTE_TRIVIAL); the two k3 questions with thousands of candidates are too large for the
+// audit's memory (audit: false).
+export const VOTE_TRIVIAL = ['faith-k1', 'condorcet-k1', 'unanimity-k1', 'cancel-k1', 'pareto-k2-v1', 'pareto-k2',
+  'pareto-neutral-k2', 'faith-reinf-k2', 'faith-reinf-k3', 'faith-cancel-reinf-k3'];
 export const VOTE_INFO = {
-  'faith-k1': { expected: 1 }, 'condorcet-k1': { expected: 1 }, 'unanimity-k1': { expected: 1 },
-  'cancel-k1': { expected: 1 }, 'pareto-k2-v1': { expected: 1 }, 'pareto-k2': { expected: 1 },
-  'pareto-neutral-k2': { expected: 1 }, 'faith-reinf-k2': { expected: 1 }, 'cancel-posresp-k2': { expected: 2 },
-  'faith-reinf-k3': { expected: 2 }, 'faith-cancel-reinf-k3': { expected: 1 },
-  'faith-cancel-reinf-pareto-condorcet-k3': { expected: 0, tags: ['no-solution'] },
-  'faith-cancel-reinf-pareto-k3': { expected: 1 }, 'faith-pareto-neutral-reinf-k4': { expected: 1 },
+  'cancel-posresp-k2': { expected: 2 },
+  'faith-cancel-reinf-pareto-condorcet-k3': { expected: 0, tags: ['no-solution'], audit: false },
+  'faith-cancel-reinf-pareto-k3': { expected: 1, audit: false }, 'faith-pareto-neutral-reinf-k4': { expected: 1 },
   'pareto-neutral-reinf-k5': { expected: 1 },
   // the question the original file has switched on: the first solution in a second; all 16 with
   // strategy s1 in about 15 minutes (exhausted, Nov 2026), so it is tagged slow. Both hard
@@ -189,6 +191,7 @@ function voteInstances(blocks) {
       `{${outcome.join(', ')}}. Up to ${s(constants.num_voters, 'voter')} per profile, ` +
       `${s(constants.num_profiles, 'profile')}, exactly ${s(constants.num_axiom_instances, 'axiom instance')}.\n` +
       (note ? `% ${note}\n` : '');
+    if (VOTE_TRIVIAL.includes(id)) continue;
     const info = VOTE_INFO[id] || {};
     out.push({ id, facts: head + facts.join('\n') + '\n', constants,
       ...(info.expected !== undefined ? { expected: { solutions: info.expected } } : {}), tags: info.tags || [],
@@ -250,14 +253,19 @@ that *every* outcome assignment that satisfies them gives the target outcome. Th
 
 ## Instances and ground truth
 
-- 17 questions from \`explain1.lp\` (tags: \`original\`, \`hard\`, \`no-solution\`). The 15 with an
-  expected count finish in seconds; the counts agree with the reference variant and with
-  \`tools/cegarcheck.py\`.
-- Three generated questions (\`random-1\` … \`random-3\`, generator \`vote-question\`: \`a\` random
+- 7 questions from \`explain1.lp\` (tags: \`original\`, \`hard\`, \`no-solution\`); the file's ten
+  questions with one or two candidates (no refinement at all) are left out. The 5 with an expected
+  count finish in seconds; the counts agree with the reference variant and with
+  \`tools/cegarcheck.py\`. The runs look for all solutions; the default instance is
+  \`faith-pareto-neutral-reinf-k4\` (146 candidates, 1 justification).
+- Seven generated questions (\`random-1\` … \`random-7\`, generator \`vote-question\`: \`a\` random
   axioms, a sorted random target profile of \`v\` voters, a random outcome). Most random questions
-  have no justification within small bounds, which is itself a useful test of soundness.
-- The two hard questions are marked \`audit: false\`: their candidate spaces are far too large to
-  enumerate, so the audit (and Fuzz) skip them; runs still use them. \`cancel-reinf-posresp-k4\` (the
+  have no justification within small bounds, which is itself a useful test of soundness;
+  \`random-4\` … \`random-7\` were picked for having justifications (4 to 27) and 30 to 80 candidates.
+- The audit finishes on \`cancel-posresp-k2\`, \`faith-pareto-neutral-reinf-k4\`,
+  \`pareto-neutral-reinf-k5\` and \`random-3\` … \`random-7\` within a second each. The others are
+  marked \`audit: false\`: their candidate spaces are too large for the audit's memory or time,
+  so the audit (and Fuzz) skip them; runs still use them. \`cancel-reinf-posresp-k4\` (the
   question the original file has switched on) finds its first justification in about a second;
   with strategy s1 the loop finishes after about 95,000 candidates and 15 minutes with
   **16 justifications**, its expected count (tag \`slow\`). \`pareto-neutral-cancel-reinf-k8\` has
@@ -267,7 +275,7 @@ that *every* outcome assignment that satisfies them gives the target outcome. Th
 ## Suites
 
 - \`questions\`: every question, the default loop (20 s each).
-- \`strategies\`: the 15 questions with a count × every variant (30 s each). Read the
+- \`strategies\`: the questions with a count (except the slow one) × every variant (30 s each). Read the
   instance × variant matrix in the Campaign tab, or run
   \`node tools/bench.mjs voting-justification --suite strategies --out rows.jsonl\` and
   \`node tools/report.mjs rows.jsonl\`.
@@ -487,7 +495,7 @@ export function buildExamples() {
       gl.text = cut(gl.text, `
 % glue(axiom_applicable(Profiles,Axiom) :- pos_axiom_instance(Profiles,Axiom).
 `);
-    }, { solutions: 1 });
+    }, { solutions: 0 });
   vote.settings.constants = { ...vote.instances.find((i) => i.id === VOTE_DEFAULT).constants };
   vote.readme = VOTE_README;
   vote.generators = structuredClone(VOTE_KIT.generators);
@@ -504,15 +512,31 @@ export function buildExamples() {
       constants: { num_candidates: 3, num_voters: 3, num_profiles: 3, num_axiom_instances: 3 } },
       variants: ['default', 's1', 'record', 'reference'], limits: { seconds: 30 } },
   ];
-  // constants-only instances; "" = the project as written (n = 5, w = 3). Counts agree with the
-  // Reference loop (cegarcheck --mode block) and the audit is sound on each.
+  // Constants-only instances, run with all solutions (the project as written, n = 5 and w = 3,
+  // stops at its first candidate, which is a solution at every size). Counts agree with the
+  // reference variant (blocking loop), and the audit is sound on each within 15 s.
   nash.instances = [
     { id: 'n2-w1', facts: '', constants: { n: '2', w: '1' }, expected: { solutions: 12 }, tags: ['small'] },
+    { id: 'n2-w2', facts: '', constants: { n: '2', w: '2' }, expected: { solutions: 24 }, tags: [] },
     { id: 'n2', facts: '', constants: { n: '2' }, expected: { solutions: 36 }, tags: [] },
     { id: 'n3-w1', facts: '', constants: { n: '3', w: '1' }, expected: { solutions: 576 }, tags: [] },
-    { id: 'n3-w2', facts: '', constants: { n: '3', w: '2' }, expected: { solutions: 4080 }, tags: ['slow'] },
   ];
-  nash.settings.instance = '';
+  nash.settings.solutions = 0;
+  // a wider refinement: every interface atom of a deviating player (a superset of the rules
+  // above, so still sound, and weaker)
+  nash.fragments.push({ name: 'relevant_wide', description: 'The check with a wider refinement: every edge, colour and move of a deviating player (variant wide).',
+    text: frag(nash, 'check').text + `
+% Variant wide: every interface atom of a deviating player is relevant.
+relevant(edge(P,Q,W)) :- player_differs(P), player(Q), weight(W).
+relevant(color_available(P,C)) :- player_differs(P), color(C).
+relevant(plays(P,C)) :- player_differs(P), color(C).
+` });
+  const nashLoop = nash.loop.text;
+  nash.variants = [
+    { name: 'reference', swap: {}, constants: {}, loop: { language: 'loop', text: nashLoop.replace('G.clause(M, X)', 'G.block(M)') } },
+    { name: 'shape2', swap: {}, constants: {}, loop: { language: 'loop', text: template('shape2') } },
+    { name: 'wide', swap: { check: 'relevant_wide' }, constants: {} },
+  ];
   nash.version = 2;
   nash.readme = PROJECT_CARDS.nash;
   return { 'graph-coloring': gc, nash, 'voting-justification': vote };
@@ -585,6 +609,16 @@ export function buildAll({ contribDir } = {}) {
     entries.push({ id: x.id, group: 'exercises', summary: x.summary, shape: 'shape1', tags: ['exercise'], expected: null, project: p });
   }
   entries.push(...loadContrib(contribDir, new Set(entries.map((e) => e.id))));
+  const built = Object.fromEntries(entries.map((e) => [e.id, e.project]));
+  for (const e of entries) {
+    if (EXTRAS[e.id]) {
+      const x = EXTRAS[e.id](e.project, built);
+      if (x.fragments) e.project.fragments = [...e.project.fragments, ...x.fragments];
+      if (x.instances) e.project.instances = x.instances;
+      if (x.variants) e.project.variants = [...(e.project.variants || []), ...x.variants];
+      e.project.version = 2;
+    }
+  }
   for (const e of entries) {
     if (GENERATORS[e.id]) { e.project.generators = structuredClone(GENERATORS[e.id]); e.project.version = 2; }
     if (SUITES[e.id]) {

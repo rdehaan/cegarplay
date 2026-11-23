@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "3QBF by clausal abstraction (CAQE-style)",
   "description": "The exists-forall-exists formula of qbf-three-blocks, solved the way CAQE and QESTO do: the levels talk about clauses, not variables. A tells B which clauses its x-assignment satisfies (satx/1), B adds the clauses its y-assignment satisfies (sy/1), and C must satisfy the rest with z. A witness of C teaches B to leave open a clause that this witness does not satisfy; a failure of C sends its core outwards, as the clauses that x must satisfy. Cores flow outwards, clauses about clauses stay in the middle; compare the candidates and the clause lengths with qbf-three-blocks.",
   "fragments": [
     {
       "name": "shared",
-      "description": "The formula, as facts. Added to every solver.",
-      "text": "% exists x1..x4  forall y1..y3  exists z1..z3 :  C1 & ... & C10  (clauses of three literals)\n% xlit(C,I,S): clause C contains x_I (S = 1) or its negation (S = 0); ylit/3, zlit/3 likewise.\nxvar(1..4).  yvar(1..3).  zvar(1..3).  clause(1..10).\nxlit(1,4,0). zlit(1,3,0). ylit(1,1,1).      % ~x4 v ~z3 v y1\nzlit(2,2,1). ylit(2,1,0). xlit(2,1,1).      % z2 v ~y1 v x1\nxlit(3,4,0). zlit(3,1,1). ylit(3,2,0).      % ~x4 v z1 v ~y2\nylit(4,2,0). zlit(4,3,1). xlit(4,4,1).      % ~y2 v z3 v x4\nylit(5,1,0). zlit(5,2,0). xlit(5,4,1).      % ~y1 v ~z2 v x4\nylit(6,1,1). zlit(6,3,0). xlit(6,3,1).      % y1 v ~z3 v x3\nzlit(7,2,1). ylit(7,2,0). xlit(7,1,1).      % z2 v ~y2 v x1\nylit(8,2,1). zlit(8,3,1). xlit(8,3,1).      % y2 v z3 v x3\nzlit(9,1,1). ylit(9,2,1). xlit(9,2,0).      % z1 v y2 v ~x2\nylit(10,3,0). zlit(10,3,1). xlit(10,2,1).   % ~y3 v z3 v x2\n"
+      "description": "Added to every solver; the formula is in the Instances tab.",
+      "text": "% The instance (its facts) is in the Instances tab.\n"
     },
     {
       "name": "outer",
@@ -47,6 +47,164 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% exists x1..x4  forall y1..y3  exists z1..z3 :  C1 & ... & C10  (clauses of three literals)\n% xlit(C,I,S): clause C contains x_I (S = 1) or its negation (S = 0); ylit/3, zlit/3 likewise.\nxvar(1..4).  yvar(1..3).  zvar(1..3).  clause(1..10).\nxlit(1,4,0). zlit(1,3,0). ylit(1,1,1).      % ~x4 v ~z3 v y1\nzlit(2,2,1). ylit(2,1,0). xlit(2,1,1).      % z2 v ~y1 v x1\nxlit(3,4,0). zlit(3,1,1). ylit(3,2,0).      % ~x4 v z1 v ~y2\nylit(4,2,0). zlit(4,3,1). xlit(4,4,1).      % ~y2 v z3 v x4\nylit(5,1,0). zlit(5,2,0). xlit(5,4,1).      % ~y1 v ~z2 v x4\nylit(6,1,1). zlit(6,3,0). xlit(6,3,1).      % y1 v ~z3 v x3\nzlit(7,2,1). ylit(7,2,0). xlit(7,1,1).      % z2 v ~y2 v x1\nylit(8,2,1). zlit(8,3,1). xlit(8,3,1).      % y2 v z3 v x3\nzlit(9,1,1). ylit(9,2,1). xlit(9,2,0).      % z1 v y2 v ~x2\nylit(10,3,0). zlit(10,3,1). xlit(10,2,1).   % ~y3 v z3 v x2\n",
+      "constants": {},
+      "expected": {
+        "solutions": 4
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "false-5x4x4",
+      "facts": "% A random formula (generator qbf3-cnf, nx = 5, ny = 4, nz = 4, c = 14, seed 1) that is false.\nxvar(1..5).  yvar(1..4).  zvar(1..4).  clause(1..14).\nylit(1,2,0). ylit(1,4,0). zlit(1,3,1).   % ~y2 v ~y4 v z3\nxlit(2,1,0). xlit(2,4,0).                % ~x1 v ~x4\nxlit(3,2,0). xlit(3,4,1). zlit(3,2,1).   % ~x2 v x4 v z2\nxlit(4,2,1). xlit(4,5,0). zlit(4,3,0).   % x2 v ~x5 v ~z3\nxlit(5,3,0). xlit(5,5,0). zlit(5,1,0).   % ~x3 v ~x5 v ~z1\nxlit(6,1,1). ylit(6,4,0). zlit(6,3,0).   % x1 v ~y4 v ~z3\nxlit(7,1,0). xlit(7,2,1). zlit(7,1,1).   % ~x1 v x2 v z1\nxlit(8,3,0). ylit(8,3,0). ylit(8,4,1).   % ~x3 v ~y3 v y4\nxlit(9,4,1). ylit(9,1,1). zlit(9,3,0).   % x4 v y1 v ~z3\nxlit(10,4,0). ylit(10,1,0). zlit(10,2,1). % ~x4 v ~y1 v z2\nxlit(11,1,0). ylit(11,3,1). zlit(11,2,1). % ~x1 v y3 v z2\nxlit(12,3,1). zlit(12,3,0). zlit(12,3,1). % x3 v ~z3 v z3\nxlit(13,4,0). zlit(13,4,0). zlit(13,4,1). % ~x4 v ~z4 v z4\nxlit(14,4,1). xlit(14,5,0). zlit(14,1,0). % x4 v ~x5 v ~z1\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "random-5x4x4",
+      "facts": "% A random formula (generator qbf3-cnf, nx = 5, ny = 4, nz = 4, c = 14, seed 4) with 2 solutions.\nxvar(1..5).  yvar(1..4).  zvar(1..4).  clause(1..14).\nxlit(1,3,1). ylit(1,1,0). zlit(1,2,1).   % x3 v ~y1 v z2\nxlit(2,2,1). xlit(2,4,0). zlit(2,3,0).   % x2 v ~x4 v ~z3\nylit(3,1,1). zlit(3,2,1). zlit(3,3,1).   % y1 v z2 v z3\nxlit(4,1,1). xlit(4,2,0). ylit(4,4,1).   % x1 v ~x2 v y4\nylit(5,1,1). ylit(5,3,1). zlit(5,4,0).   % y1 v y3 v ~z4\nxlit(6,3,0). xlit(6,5,1). ylit(6,4,0).   % ~x3 v x5 v ~y4\nxlit(7,1,1). xlit(7,5,1). zlit(7,1,0).   % x1 v x5 v ~z1\nxlit(8,1,0). xlit(8,2,1). ylit(8,2,1).   % ~x1 v x2 v y2\nxlit(9,1,0). ylit(9,1,1). ylit(9,4,1).   % ~x1 v y1 v y4\nxlit(10,1,1). xlit(10,5,0). ylit(10,4,0). % x1 v ~x5 v ~y4\nxlit(11,3,0). xlit(11,4,0). ylit(11,2,1). % ~x3 v ~x4 v y2\nxlit(12,1,0). ylit(12,2,1). ylit(12,4,1). % ~x1 v y2 v y4\nxlit(13,5,1). zlit(13,2,0). zlit(13,3,0). % x5 v ~z2 v ~z3\nxlit(14,1,0). ylit(14,1,0). ylit(14,2,1). % ~x1 v ~y1 v y2\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "qbf3-cnf",
+        "params": {
+          "nx": 4,
+          "ny": 3,
+          "nz": 3,
+          "c": 10
+        },
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 1
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "qbf3-cnf",
+        "params": {
+          "nx": 5,
+          "ny": 4,
+          "nz": 4,
+          "c": 14
+        },
+        "seed": 2
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 4
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "qbf3-cnf",
+      "description": "A random exists-forall-exists QBF in CNF: c clauses of three literals over nx + ny + nz variables.",
+      "params": {
+        "nx": "int",
+        "ny": "int",
+        "nz": "int",
+        "c": "int"
+      },
+      "defaults": {
+        "nx": 4,
+        "ny": 3,
+        "nz": 3,
+        "c": 10
+      },
+      "text": "% qbf3-cnf: exists x1..x_nx forall y1..y_ny exists z1..z_nz : C1 & ... & Cc, three literals per clause.\n% Each literal picks one of the nx + ny + nz variables uniformly and a sign with probability 1/2.\nxvar(1..nx).\nyvar(1..ny).\nzvar(1..nz).\nclause(1..c).\nslot(1..3).\nvar(C,J,@int(1, nx+ny+nz, C, J)) :- clause(C), slot(J).\nsign(C,J,@flip(500, C, J, sign)) :- clause(C), slot(J).\nxlit(C,I,S) :- var(C,J,I), sign(C,J,S), I <= nx.\nylit(C,I-nx,S) :- var(C,J,I), sign(C,J,S), I > nx, I <= nx+ny.\nzlit(C,I-nx-ny,S) :- var(C,J,I), sign(C,J,S), I > nx+ny.\n#show xvar/1.\n#show yvar/1.\n#show zvar/1.\n#show clause/1.\n#show xlit/3.\n#show ylit/3.\n#show zlit/3.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + outer\nsolver B = shared + middle\nsolver C = shared + inner\nlink   GX  = A -> B via shared + glue_x\nlink   GXY = B -> C via shared + glue_xy\nlink   GXC = A -> C via shared + glue_x\n\n# Block-only baseline: B blocks each y-pattern that C answers, A each refuted x-pattern.\nsearch A:\n    on candidate M:\n        search B assume GX(M) keep Y:\n            on candidate Y:\n                W = C.solve(assume GXY(Y))\n                if W: reject Y with GXY.block(Y)\n        if Y: reject M with GX.block(M)\n"
+      }
+    },
+    {
+      "name": "core-minimal",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + outer\nsolver B = shared + middle\nsolver C = shared + inner\nlink   GX  = A -> B via shared + glue_x\nlink   GXY = B -> C via shared + glue_xy\nlink   GXC = A -> C via shared + glue_x\n\n# Clausal abstraction (CAQE, QESTO): the links carry clause-satisfaction atoms. A proposes the\n# clauses its x satisfies, B those its y adds, C must satisfy the rest with z.\n#   C finds z      -> y does not refute x; B learns a clause over the satisfaction atoms\n#                     z relies on (valid for every x: the satx atoms are in it).\n#   C finds none   -> y refutes x; A learns the satx part of C's unsat core: x must\n#                     satisfy one of those clauses.\n#   B has no y     -> every y has a z: the candidate is a solution.\n# B runs as a search inside A's check (phase L2): its refinements stay between the candidates\n# of A, so B needs far fewer solves than when it is solved again from scratch each time.\n# 'keep Y' ends B's search at the first y that C cannot refute (Y is none when B is exhausted).\n# GXY passes on the x-atoms that B received over GX, next to its own y-atoms. GXC is never\n# used for assumptions: it lets GXC.core(C) state the x-part of the core as a clause for A.\nsearch A:\n    on candidate M:\n        search B assume GX(M) keep Y:\n            on candidate Y:\n                W = C.solve(assume GXY(Y))\n                if W: reject Y with GXY.clause(Y, W)\n        if Y: reject M with C.core.minimal.on(GXC)\n"
+      }
+    },
+    {
+      "name": "re-solve",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + outer\nsolver B = shared + middle\nsolver C = shared + inner\nlink   GX  = A -> B via shared + glue_x\nlink   GXY = B -> C via shared + glue_xy\nlink   GXC = A -> C via shared + glue_x\n\n# B is solved again from scratch for every y (no inner search); its clauses stay.\nsearch A:\n    on candidate M:\n        loop:\n            Y = B.solve(assume GX(M))\n            if not Y: break\n            W = C.solve(assume GXY(Y))\n            if W:\n                B.add(GXY.clause(Y, W))\n            else:\n                reject M with GXC.core(C)\n                break\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "core-minimal",
+        "re-solve"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    },
+    {
+      "name": "random",
+      "instances": {
+        "generator": "qbf3-cnf",
+        "grid": {
+          "c": [
+            8,
+            10,
+            12,
+            14
+          ]
+        },
+        "seeds": 5
+      },
+      "variants": [
+        "default",
+        "reference"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
   "library": {
     "id": "qbf-caqe",
     "group": "logic",

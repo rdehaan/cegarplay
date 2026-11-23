@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Loop language: legacy glue",
   "description": "The glue fragment says pick(X) instead of glue(pick(X)), as in files written for cegar.py; the link needs the keyword legacy.",
   "fragments": [
@@ -39,5 +39,71 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "runs": [],
+  "instances": [
+    {
+      "id": "n8",
+      "facts": "",
+      "constants": {
+        "n": "8"
+      },
+      "expected": {
+        "solutions": 61
+      },
+      "tags": []
+    },
+    {
+      "id": "n6",
+      "facts": "",
+      "constants": {
+        "n": "6"
+      },
+      "expected": {
+        "solutions": 24
+      },
+      "tags": []
+    },
+    {
+      "id": "n10",
+      "facts": "",
+      "constants": {
+        "n": "10"
+      },
+      "expected": {
+        "solutions": 151
+      },
+      "tags": []
+    },
+    {
+      "id": "n12",
+      "facts": "",
+      "constants": {
+        "n": "12"
+      },
+      "expected": {
+        "solutions": 369
+      },
+      "tags": []
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\n# 'legacy': the glue fragment lists the interface atoms themselves (pick(X)), as\n# files written for cegar.py do, instead of glue(pick(X)).\nlink   G = A -> C via shared + glue legacy\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue legacy\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    }
+  ]
 }

@@ -23,6 +23,11 @@
       "name": "check",
       "text": "% Guess a(nother) Nash equilibrium\n1 { plays_alt(P,C) : color_available(P,C) } 1 :- player(P).\nscore_alt(P,C,S) :- player(P), color_available(P,C),\n    S = #sum { W,Q : edge(P,Q,W), plays_alt(Q,C) }.\n:- score_alt(P,C1,S1), score_alt(P,C2,S2),\n    color(C1), color(C2), C1 != C2,\n    plays_alt(P,C1), S2 > S1.\n\n% Try to make the difference small (gives a stronger refinement)\n#heuristic plays_alt(P,C) : plays(P,C). [10,true]\n\n% Check that the two equilibria are different\nplayer_differs(P) :- player(P), plays(P,C1), plays_alt(P,C2), C1 != C2.\nequilibrium_differs :- player_differs(P).\n:- not equilibrium_differs.\n\n% Refinement: only the neighbourhood of the difference is relevant\n% - either an edge between a differing player and another player has to change\nrelevant(edge(P,Q,W)) :- player(P), player(Q), weight(W), player_differs(P).\n% - or a color set has to change for a differing player\n% (i. on what they play in one of the two equilibria)\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    plays(P,C).\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    plays_alt(P,C).\n% (ii. or on what they don't play, but what a neighbor plays)\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    not color_available(P,C), player(Q), edge(P,Q,_), plays(Q,C).\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    not color_available(P,C), player(Q), edge(P,Q,_), plays_alt(Q,C).\n% - or the played move (in the guessed equilibrium)\n% for a non-differing player has to change\nadjacent_to_differing_player(P) :- player(P),\n    player(Q), edge(P,Q,_), player_differs(Q).\nrelevant(plays(P,C)) :- player(P), color(C), adjacent_to_differing_player(P).\n",
       "description": "Looks for a counterexample to a candidate (solver C). relevant(T) marks the interface atoms the counterexample depends on."
+    },
+    {
+      "name": "relevant_wide",
+      "description": "The check with a wider refinement: every edge, colour and move of a deviating player (variant wide).",
+      "text": "% Guess a(nother) Nash equilibrium\n1 { plays_alt(P,C) : color_available(P,C) } 1 :- player(P).\nscore_alt(P,C,S) :- player(P), color_available(P,C),\n    S = #sum { W,Q : edge(P,Q,W), plays_alt(Q,C) }.\n:- score_alt(P,C1,S1), score_alt(P,C2,S2),\n    color(C1), color(C2), C1 != C2,\n    plays_alt(P,C1), S2 > S1.\n\n% Try to make the difference small (gives a stronger refinement)\n#heuristic plays_alt(P,C) : plays(P,C). [10,true]\n\n% Check that the two equilibria are different\nplayer_differs(P) :- player(P), plays(P,C1), plays_alt(P,C2), C1 != C2.\nequilibrium_differs :- player_differs(P).\n:- not equilibrium_differs.\n\n% Refinement: only the neighbourhood of the difference is relevant\n% - either an edge between a differing player and another player has to change\nrelevant(edge(P,Q,W)) :- player(P), player(Q), weight(W), player_differs(P).\n% - or a color set has to change for a differing player\n% (i. on what they play in one of the two equilibria)\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    plays(P,C).\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    plays_alt(P,C).\n% (ii. or on what they don't play, but what a neighbor plays)\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    not color_available(P,C), player(Q), edge(P,Q,_), plays(Q,C).\nrelevant(color_available(P,C)) :- player(P), color(C), player_differs(P),\n    not color_available(P,C), player(Q), edge(P,Q,_), plays_alt(Q,C).\n% - or the played move (in the guessed equilibrium)\n% for a non-differing player has to change\nadjacent_to_differing_player(P) :- player(P),\n    player(Q), edge(P,Q,_), player_differs(Q).\nrelevant(plays(P,C)) :- player(P), color(C), adjacent_to_differing_player(P).\n\n% Variant wide: every interface atom of a deviating player is relevant.\nrelevant(edge(P,Q,W)) :- player_differs(P), player(Q), weight(W).\nrelevant(color_available(P,C)) :- player_differs(P), color(C).\nrelevant(plays(P,C)) :- player_differs(P), color(C).\n"
     }
   ],
   "loop": {
@@ -31,12 +36,11 @@
   },
   "settings": {
     "constants": {},
-    "solutions": 1,
+    "solutions": 0,
     "seconds": 60,
     "candidates": 0,
     "trace": 200,
-    "seed": 0,
-    "instance": ""
+    "seed": 0
   },
   "runs": [],
   "instances": [
@@ -53,6 +57,18 @@
       "tags": [
         "small"
       ]
+    },
+    {
+      "id": "n2-w2",
+      "facts": "",
+      "constants": {
+        "n": "2",
+        "w": "2"
+      },
+      "expected": {
+        "solutions": 24
+      },
+      "tags": []
     },
     {
       "id": "n2",
@@ -76,21 +92,34 @@
         "solutions": 576
       },
       "tags": []
-    },
-    {
-      "id": "n3-w2",
-      "facts": "",
-      "constants": {
-        "n": "3",
-        "w": "2"
-      },
-      "expected": {
-        "solutions": 4080
-      },
-      "tags": [
-        "slow"
-      ]
     }
   ],
-  "readme": "# Project: Nash equilibria of colouring games\n\n## Research question\n\nHow does the number of candidates depend on the number of players and edge weights, and does a refinement over the deviating player only pay?\n\n## Baseline\n\nThe default run stops at its first solution after one candidate (0.6 s). With all solutions: n2-w1 12, n2 36, n3-w1 576, n3-w2 4,080 (the instances' expected counts).\n\n## Things to try\n\n- A suite over the four instances with all solutions; read the matrix by candidates.\n- A refinement that names only the deviating player's colour and its neighbours.\n- Compare with `strong-nash`, which checks coalitions instead of single players.\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n"
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "wide",
+      "swap": {
+        "check": "relevant_wide"
+      },
+      "constants": {}
+    }
+  ],
+  "readme": "# Project: Nash equilibria of colouring games\n\n## Research question\n\nHow does the number of candidates depend on the number of players and edge weights, and does a refinement over the deviating player only pay?\n\n## Baseline\n\nAll solutions on the instances: n2-w1 12, n2-w2 24, n2 36, n3-w1 576 (n3-w1: 1,780 candidates, 1,204 clauses). The project as written (n = 5, w = 3, instance \"as written\") stops at its first candidate, which is already a solution.\n\n## Things to try\n\n- A suite over the four instances and the variants reference, shape2 and wide; read the matrix by candidates.\n- A refinement that names only the deviating player's colour and its neighbours (the opposite of the variant wide).\n- Compare with `strong-nash`, which checks coalitions instead of single players.\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n"
 }

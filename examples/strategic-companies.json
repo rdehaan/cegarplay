@@ -66,6 +66,150 @@
         "solutions": 2
       },
       "tags": []
+    },
+    {
+      "id": "holding-10",
+      "facts": "% A random holding (generator holding, n = 10, g = 8, m = 2, o = 5, seed 6): 10 companies,\n% 8 goods, 5 control groups. 5 strategic sets contain the query company.\ncompany(a;b;c;d;e;f;g;h;i;j).\ngood(1..8).\nmakes(c,1). makes(f,1). makes(a,2). makes(d,2). makes(c,3). makes(e,3). makes(b,4). makes(f,4). makes(b,5). makes(d,5). makes(a,6). makes(g,6). makes(f,7). makes(j,7). makes(i,8). makes(j,8).\nowner(c,1,c). owner(c,1,f). owner(j,2,a). owner(j,2,d). owner(b,3,c). owner(b,3,e). owner(d,4,b). owner(d,4,f). owner(g,5,b). owner(g,5,d).\nquery(c).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 5
+      },
+      "tags": []
+    },
+    {
+      "id": "none-10",
+      "facts": "% A random holding (generator holding, n = 10, g = 8, m = 2, o = 5, seed 1) whose query company\n% is in no strategic set.\ncompany(a;b;c;d;e;f;g;h;i;j).\ngood(1..8).\nmakes(b,1). makes(c,1). makes(d,2). makes(e,2). makes(a,3). makes(d,3). makes(a,4). makes(b,4). makes(d,5). makes(h,5). makes(f,6). makes(h,6). makes(f,7). makes(h,7). makes(d,8). makes(i,8).\nowner(d,1,b). owner(d,1,c). owner(a,2,d). owner(a,2,e). owner(i,3,a). owner(i,3,d). owner(d,4,a). owner(d,4,b). owner(i,5,d). owner(i,5,h).\nquery(g).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "holding",
+        "params": {
+          "n": 8,
+          "g": 6,
+          "m": 2,
+          "o": 4
+        },
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 4
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "holding",
+        "params": {
+          "n": 10,
+          "g": 8,
+          "m": 2,
+          "o": 5
+        },
+        "seed": 7
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 3
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "holding",
+      "description": "A random holding: n companies, g goods each made by m companies, o control groups of two owners, a query company.",
+      "params": {
+        "n": "int",
+        "g": "int",
+        "m": "int",
+        "o": "int"
+      },
+      "defaults": {
+        "n": 8,
+        "g": 6,
+        "m": 2,
+        "o": 4
+      },
+      "text": "% holding: n companies, g goods, each good made by m uniform companies (repeats count once),\n% o control groups of two uniform owners over a uniform target, and a uniform query company.\ncompany(1..n).\ngood(1..g).\nmakes(@int(1, n, G, J),G) :- good(G), J = 1..m.\nctl(K,@int(1, n, K, target)) :- K = 1..o.\nowner(T,K,@int(1, n, K, J)) :- ctl(K,T), J = 1..2.\nquery(@int(1, n, query)).\n#show company/1.\n#show good/1.\n#show makes/2.\n#show owner/3.\n#show query/1.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--enum-mode=record\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The check writes the refinement itself, as clause(Id, Atom, Value) atoms: one clause\n# per company that the smaller set leaves out. G.clauses(X) turns them into clauses.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clauses(X)\n"
+      }
+    },
+    {
+      "name": "three-per-candidate",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three smaller sets per candidate, the clauses of each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clauses(X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "record",
+        "three-per-candidate"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    },
+    {
+      "name": "random",
+      "instances": {
+        "generator": "holding",
+        "grid": {
+          "o": [
+            2,
+            4,
+            6
+          ]
+        },
+        "seeds": 5
+      },
+      "variants": [
+        "default",
+        "reference"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": [],

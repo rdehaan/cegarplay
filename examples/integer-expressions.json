@@ -51,7 +51,7 @@
     },
     {
       "id": "no-solution",
-      "facts": "% Expression 1 makes 2, 3 or 4; expression 2 makes each of them: no solution.\nnum(0..10).\nexpr(1, plus(union(1,2),union(1,2))).\nexpr(2, union(union(2,3),union(4,5))).\n",
+      "facts": "% Expression 1 makes the even numbers 4 .. 12 (four coins of 1 or 3); expression 2 (two\n% coins from 2 .. 6) makes every number from 4 to 12: no solution.\nnum(0..12).\nexpr(1, plus(plus(C,C),plus(C,C))) :- C = union(1,3).\nexpr(2, plus(C,C)) :- C = union(union(2,3),union(union(4,5),6)).\n",
       "constants": {},
       "expected": {
         "solutions": 0
@@ -60,12 +60,128 @@
     },
     {
       "id": "stamps",
-      "facts": "% Stamps: the postage that three stamps of 3 or 7 make and two stamps of 4, 6, 9\n% or 13 do not.\nnum(0..30).\nexpr(1, plus(plus(S,S),S)) :- S = union(3,7).\nexpr(2, plus(S,S)) :- S = union(union(4,6),union(9,13)).\n",
+      "facts": "% Stamps: the postage that four stamps of 3, 5 or 7 make and three stamps of 4, 6 or 9\n% do not (20, 26 and 28).\nnum(0..30).\nexpr(1, plus(plus(S,S),plus(S,S))) :- S = union(union(3,5),7).\nexpr(2, plus(plus(T,T),T)) :- T = union(union(4,6),9).\n",
       "constants": {},
       "expected": {
-        "solutions": 2
+        "solutions": 3
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "coins",
+        "params": {
+          "s": 4,
+          "v": 8,
+          "k1": 3,
+          "k2": 4
+        },
+        "seed": 1
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 5
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "coins",
+        "params": {
+          "s": 4,
+          "v": 8,
+          "k1": 3,
+          "k2": 4
+        },
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "coins",
+      "description": "Two random coin systems: expression 1 sums k1 coins, expression 2 sums k2 coins, each coin a union of s values drawn from 1..v.",
+      "params": {
+        "s": "int",
+        "v": "int",
+        "k1": "int",
+        "k2": "int"
+      },
+      "defaults": {
+        "s": 4,
+        "v": 8,
+        "k1": 3,
+        "k2": 4
+      },
+      "text": "% coins: expression E sums k1 (E = 1) or k2 (E = 2) coins, each a union of s coin values\n% drawn from 1..v (independently for the two expressions).\nnum(0..v*k1).\ncnt(1,k1).\ncnt(2,k2).\ncoin(E,J,@int(1, v, E, J)) :- E = 1..2, J = 1..s.\nun(E,1,V) :- coin(E,1,V).\nun(E,J,union(U,V)) :- un(E,J-1,U), coin(E,J,V).\npl(E,1,U) :- un(E,s,U).\npl(E,K,plus(P,U)) :- pl(E,K-1,P), un(E,s,U), cnt(E,N), K <= N.\nexpr(E,P) :- pl(E,N,P), cnt(E,N).\n#show num/1.\n#show expr/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "search-projected",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--project\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Shape 1 with projection on the shown atom value/1: each number is one candidate,\n# whatever its derivations.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "search-projected"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    },
+    {
+      "name": "random",
+      "instances": {
+        "generator": "coins",
+        "grid": {
+          "v": [
+            6,
+            8,
+            10
+          ]
+        },
+        "seeds": 5
+      },
+      "variants": [
+        "default",
+        "reference"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

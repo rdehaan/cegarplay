@@ -23,6 +23,11 @@
       "name": "check",
       "text": "% The inner level: at most one open facility fails, and some customer has no other open\n% site near (with no failure: a customer without any open site near).\n{ fail(S) : open(S) } 1.\n1 { lost(U) : customer(U) } 1.\n:- lost(U), near(U,S), open(S), not fail(S).\n#show fail/1.\n#show lost/1.\n\n% The customer stays lost while every site near it other than the failed one stays closed:\n% one of them must open.\nrelevant(open(S)) :- lost(U), near(U,S), not fail(S).\n",
       "description": "Looks for a failure that leaves a customer without service (solver C)."
+    },
+    {
+      "name": "check_short",
+      "text": "% The inner level: at most one open facility fails, and some customer has no other open\n% site near (with no failure: a customer without any open site near).\n{ fail(S) : open(S) } 1.\n1 { lost(U) : customer(U) } 1.\n:- lost(U), near(U,S), open(S), not fail(S).\n#show fail/1.\n#show lost/1.\n\n% The customer stays lost while every site near it other than the failed one stays closed:\n% one of them must open.\nrelevant(open(S)) :- lost(U), near(U,S), not fail(S).\n% Variant shortest: prefer a failure whose clause has the fewest sites.\n#minimize { 1,S : relevant(open(S)) }.\n",
+      "description": "The check with a #minimize over the relevant sites, for the variant shortest."
     }
   ],
   "loop": {
@@ -47,7 +52,134 @@
         "solutions": null,
         "optimum": 15
       },
-      "tags": []
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "sites",
+        "params": {
+          "n": 8,
+          "u": 10,
+          "k": 3
+        },
+        "seed": 1
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 17
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "sites",
+        "params": {
+          "n": 8,
+          "u": 10,
+          "k": 3
+        },
+        "seed": 2
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 29
+      }
+    },
+    {
+      "id": "random-3",
+      "constants": {},
+      "recipe": {
+        "generator": "sites",
+        "params": {
+          "n": 8,
+          "u": 10,
+          "k": 3
+        },
+        "seed": 3
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 18
+      }
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Baseline: every refuted opening is blocked on its own.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no robust opening\"\n    track lower = M.cost\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        stop\n"
+      }
+    },
+    {
+      "name": "shortest",
+      "swap": {
+        "check": "check_short"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The counterexample with the fewest relevant sites (optimal): the shortest clause.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no robust opening\"\n    track lower = M.cost\n    X = C.solve(assume G(M), optimal)\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        stop\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to four counterexamples per opening, one clause each.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no robust opening\"\n    track lower = M.cost\n    Xs = C.models(assume G(M), limit 4)\n    if Xs.size > 0:\n        for X in Xs:\n            A.add(G.clause(M, X))\n    else:\n        accept M\n        stop\n"
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "sites",
+      "description": "n sites with opening cost 2..8; u customers, each near k random sites.",
+      "params": {
+        "n": "int",
+        "u": "int",
+        "k": "int"
+      },
+      "defaults": {
+        "n": 7,
+        "u": 9,
+        "k": 3
+      },
+      "text": "% sites: n sites with a random opening cost (2..8); u customers, each near a random k-subset of the sites\nsite(S,@int(2, 8, cost, S)) :- S = 1..n.\nnear(U,S) :- U = 1..u, S = 1..n, @subset(k, n, S, U) = 1.\n#show site/2.  #show near/2.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shortest",
+        "several"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

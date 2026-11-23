@@ -62,131 +62,19 @@
   "settings": {
     "constants": {
       "num_candidates": "3",
-      "num_voters": "4",
-      "num_profiles": "4",
+      "num_voters": "3",
+      "num_profiles": "3",
       "num_axiom_instances": "4"
     },
-    "solutions": 1,
+    "solutions": 0,
     "seconds": 60,
     "candidates": 0,
     "trace": 200,
     "seed": 0,
-    "instance": "cancel-reinf-posresp-k4"
+    "instance": "faith-pareto-neutral-reinf-k4"
   },
   "runs": [],
   "instances": [
-    {
-      "id": "faith-k1",
-      "facts": "% Axioms: faithfulness. Target: a profile of 1 voter with outcome {1}. Up to 1 voter per profile, 1 profile, exactly 1 axiom instance.\nuse_axiom(faithfulness).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
-      "constants": {
-        "num_candidates": "3",
-        "num_voters": "1",
-        "num_profiles": "1",
-        "num_axiom_instances": "1"
-      },
-      "expected": {
-        "solutions": 1
-      },
-      "tags": []
-    },
-    {
-      "id": "condorcet-k1",
-      "facts": "% Axioms: condorcet. Target: a profile of 2 voters with outcome {1}. Up to 2 voters per profile, 1 profile, exactly 1 axiom instance.\nuse_axiom(condorcet).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,3,2).\ntarget_profile(2,2,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
-      "constants": {
-        "num_candidates": "3",
-        "num_voters": "2",
-        "num_profiles": "1",
-        "num_axiom_instances": "1"
-      },
-      "expected": {
-        "solutions": 1
-      },
-      "tags": []
-    },
-    {
-      "id": "unanimity-k1",
-      "facts": "% Axioms: unanimity. Target: a profile of 2 voters with outcome {1}. Up to 2 voters per profile, 1 profile, exactly 1 axiom instance.\nuse_axiom(unanimity).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,3,2).\ntarget_profile(2,2,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
-      "constants": {
-        "num_candidates": "3",
-        "num_voters": "2",
-        "num_profiles": "1",
-        "num_axiom_instances": "1"
-      },
-      "expected": {
-        "solutions": 1
-      },
-      "tags": []
-    },
-    {
-      "id": "cancel-k1",
-      "facts": "% Axioms: cancellation. Target: a profile of 2 voters with outcome {1, 2, 3}. Up to 2 voters per profile, 1 profile, exactly 1 axiom instance.\nuse_axiom(cancellation).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,3,1).\ntarget_profile(2,2,2).\ntarget_profile(2,1,3).\ntarget_outcome(1).\ntarget_outcome(2).\ntarget_outcome(3).\n",
-      "constants": {
-        "num_candidates": "3",
-        "num_voters": "2",
-        "num_profiles": "1",
-        "num_axiom_instances": "1"
-      },
-      "expected": {
-        "solutions": 1
-      },
-      "tags": []
-    },
-    {
-      "id": "pareto-k2-v1",
-      "facts": "% Axioms: pareto. Target: a profile of 1 voter with outcome {1}. Up to 1 voter per profile, 1 profile, exactly 2 axiom instances.\nuse_axiom(pareto).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
-      "constants": {
-        "num_candidates": "3",
-        "num_voters": "1",
-        "num_profiles": "1",
-        "num_axiom_instances": "2"
-      },
-      "expected": {
-        "solutions": 1
-      },
-      "tags": []
-    },
-    {
-      "id": "pareto-k2",
-      "facts": "% Axioms: pareto. Target: a profile of 2 voters with outcome {1}. Up to 2 voters per profile, 1 profile, exactly 2 axiom instances.\nuse_axiom(pareto).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,3,2).\ntarget_profile(2,2,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
-      "constants": {
-        "num_candidates": "3",
-        "num_voters": "2",
-        "num_profiles": "1",
-        "num_axiom_instances": "2"
-      },
-      "expected": {
-        "solutions": 1
-      },
-      "tags": []
-    },
-    {
-      "id": "pareto-neutral-k2",
-      "facts": "% Axioms: pareto, neutrality2. Target: a profile of 2 voters with outcome {1, 2}. Up to 2 voters per profile, 1 profile, exactly 2 axiom instances.\nuse_axiom(pareto).\nuse_axiom(neutrality2).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,2,1).\ntarget_profile(2,1,2).\ntarget_profile(2,3,3).\ntarget_outcome(1).\ntarget_outcome(2).\nrequires_polarity_axiom.\n",
-      "constants": {
-        "num_candidates": "3",
-        "num_voters": "2",
-        "num_profiles": "1",
-        "num_axiom_instances": "2"
-      },
-      "expected": {
-        "solutions": 1
-      },
-      "tags": []
-    },
-    {
-      "id": "faith-reinf-k2",
-      "facts": "% Axioms: faithfulness, reinforcement. Target: a profile of 2 voters with outcome {1}. Up to 2 voters per profile, 2 profiles, exactly 2 axiom instances.\nuse_axiom(faithfulness).\nuse_axiom(reinforcement).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,2,2).\ntarget_profile(2,3,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
-      "constants": {
-        "num_candidates": "3",
-        "num_voters": "2",
-        "num_profiles": "2",
-        "num_axiom_instances": "2"
-      },
-      "expected": {
-        "solutions": 1
-      },
-      "tags": []
-    },
     {
       "id": "cancel-posresp-k2",
       "facts": "% Axioms: cancellation, pos_responsiveness. Target: a profile of 2 voters with outcome {2}. Up to 2 voters per profile, 2 profiles, exactly 2 axiom instances.\nuse_axiom(cancellation).\nuse_axiom(pos_responsiveness).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,2,1).\ntarget_profile(2,3,2).\ntarget_profile(2,1,3).\ntarget_outcome(2).\nrequires_polarity_axiom.\n",
@@ -198,34 +86,6 @@
       },
       "expected": {
         "solutions": 2
-      },
-      "tags": []
-    },
-    {
-      "id": "faith-reinf-k3",
-      "facts": "% Axioms: faithfulness, reinforcement. Target: a profile of 2 voters with outcome {1}. Up to 2 voters per profile, 3 profiles, exactly 3 axiom instances.\nuse_axiom(faithfulness).\nuse_axiom(reinforcement).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,3,2).\ntarget_profile(2,2,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
-      "constants": {
-        "num_candidates": "3",
-        "num_voters": "2",
-        "num_profiles": "3",
-        "num_axiom_instances": "3"
-      },
-      "expected": {
-        "solutions": 2
-      },
-      "tags": []
-    },
-    {
-      "id": "faith-cancel-reinf-k3",
-      "facts": "% Axioms: faithfulness, cancellation, reinforcement. Target: a profile of 3 voters with outcome {1}. Up to 3 voters per profile, 3 profiles, exactly 3 axiom instances.\nuse_axiom(faithfulness).\nuse_axiom(cancellation).\nuse_axiom(reinforcement).\ntarget_profile(1,1,1).\ntarget_profile(1,2,2).\ntarget_profile(1,3,3).\ntarget_profile(2,1,1).\ntarget_profile(2,2,2).\ntarget_profile(2,3,3).\ntarget_profile(3,3,1).\ntarget_profile(3,2,2).\ntarget_profile(3,1,3).\ntarget_outcome(1).\nrequires_polarity_axiom.\n",
-      "constants": {
-        "num_candidates": "3",
-        "num_voters": "3",
-        "num_profiles": "3",
-        "num_axiom_instances": "3"
-      },
-      "expected": {
-        "solutions": 1
       },
       "tags": []
     },
@@ -243,7 +103,8 @@
       },
       "tags": [
         "no-solution"
-      ]
+      ],
+      "audit": false
     },
     {
       "id": "faith-cancel-reinf-pareto-k3",
@@ -257,7 +118,8 @@
       "expected": {
         "solutions": 1
       },
-      "tags": []
+      "tags": [],
+      "audit": false
     },
     {
       "id": "faith-pareto-neutral-reinf-k4",
@@ -340,7 +202,8 @@
       },
       "tags": [
         "generated"
-      ]
+      ],
+      "audit": false
     },
     {
       "constants": {
@@ -364,7 +227,8 @@
       "tags": [
         "generated",
         "no-solution"
-      ]
+      ],
+      "audit": false
     },
     {
       "constants": {
@@ -388,6 +252,98 @@
       "tags": [
         "generated",
         "no-solution"
+      ]
+    },
+    {
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "2",
+        "num_profiles": "2",
+        "num_axiom_instances": "2"
+      },
+      "id": "random-4",
+      "recipe": {
+        "generator": "vote-question",
+        "params": {
+          "v": 2,
+          "a": 3
+        },
+        "seed": 29
+      },
+      "expected": {
+        "solutions": 17
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "3",
+        "num_profiles": "2",
+        "num_axiom_instances": "2"
+      },
+      "id": "random-5",
+      "recipe": {
+        "generator": "vote-question",
+        "params": {
+          "v": 3,
+          "a": 4
+        },
+        "seed": 8
+      },
+      "expected": {
+        "solutions": 27
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "2",
+        "num_profiles": "2",
+        "num_axiom_instances": "3"
+      },
+      "id": "random-6",
+      "recipe": {
+        "generator": "vote-question",
+        "params": {
+          "v": 2,
+          "a": 4
+        },
+        "seed": 25
+      },
+      "expected": {
+        "solutions": 4
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "constants": {
+        "num_candidates": "3",
+        "num_voters": "3",
+        "num_profiles": "3",
+        "num_axiom_instances": "2"
+      },
+      "id": "random-7",
+      "recipe": {
+        "generator": "vote-question",
+        "params": {
+          "v": 3,
+          "a": 4
+        },
+        "seed": 18
+      },
+      "expected": {
+        "solutions": 10
+      },
+      "tags": [
+        "generated"
       ]
     }
   ],
@@ -448,7 +404,7 @@
       }
     }
   ],
-  "readme": "# Explaining a voting outcome by axioms\n\n## Background\n\nA *justification* of an election outcome explains it from normative principles (axioms) such\nas Pareto, faithfulness or reinforcement: given a target profile and its outcome, find a small set\nof *axiom instances* (an axiom applied to one, two or three concrete profiles) such that every\nvoting rule that satisfies them must give the target profile that outcome. The idea is from\nBoixel and Endriss (AAMAS 2020) and Nardi, Boixel and Endriss (AAMAS 2022); the ASP encoding is\n`explain1.lp` of the declarative-cegar repository.\n\nThe problem is Σ2P-shaped: *there is* a set of axiom instances (with the profiles they need) such\nthat *every* outcome assignment that satisfies them gives the target outcome. That is a CEGAR loop.\n\n## The loop\n\n- **Abstraction (A)**: guesses up to `num_profiles` profiles (profile 1 is the target) and exactly\n  `num_axiom_instances` applicable axiom instances on them, with symmetry breaking.\n- **Check (C)**: looks for outcomes of all profiles that satisfy every chosen axiom instance but\n  differ from the target outcome on profile 1. Such outcomes are the counterexample.\n- **Refinement**: a clause over the interface atoms that are `relevant/1` for the counterexample.\n  The five strategies differ in which axiom-instance atoms they call relevant (fragments\n  `relevant`, `relevant_s1` … `relevant_s5`). Strategy 2 is the default.\n\n## Baseline and variants\n\n| Variant | What changes |\n|---|---|\n| default | Shape 1 (`search A`), strategy 2 |\n| s1, s3, s4, s5 | another refinement strategy |\n| record | Shape 1 with `--enum-mode=record` on A: blocked candidates stay as nogoods |\n| shape2 | a Shape 2 loop (solve A again after each refinement) |\n| reference | the blocking loop: the ground truth on small questions |\n\n## Instances and ground truth\n\n- 17 questions from `explain1.lp` (tags: `original`, `hard`, `no-solution`). The 15 with an\n  expected count finish in seconds; the counts agree with the reference variant and with\n  `tools/cegarcheck.py`.\n- Three generated questions (`random-1` … `random-3`, generator `vote-question`: `a` random\n  axioms, a sorted random target profile of `v` voters, a random outcome). Most random questions\n  have no justification within small bounds, which is itself a useful test of soundness.\n- The two hard questions are marked `audit: false`: their candidate spaces are far too large to\n  enumerate, so the audit (and Fuzz) skip them; runs still use them. `cancel-reinf-posresp-k4` (the\n  question the original file has switched on) finds its first justification in about a second;\n  with strategy s1 the loop finishes after about 95,000 candidates and 15 minutes with\n  **16 justifications**, its expected count (tag `slow`). `pareto-neutral-cancel-reinf-k8` has\n  no ground truth yet: neither the default strategy, s1 nor Python clingo's `tools/cegarcheck.py`\n  finished it within 40 minutes.\n\n## Suites\n\n- `questions`: every question, the default loop (20 s each).\n- `strategies`: the 15 questions with a count × every variant (30 s each). Read the\n  instance × variant matrix in the Campaign tab, or run\n  `node tools/bench.mjs voting-justification --suite strategies --out rows.jsonl` and\n  `node tools/report.mjs rows.jsonl`.\n- `generated`: 12 generated questions (v = 2, 3; a = 2, 3; three seeds) × default, s1, record,\n  reference.\n\n## What \"better\" means\n\nFewer candidates (each costs a check), less time, and more questions solved within the limit.\nA variant that finds a *different* number of justifications than the reference is unsound\n(or the reference has not finished): the Campaign tab marks those cells ✗.\n\n## Measured (tools/bench.mjs, one machine, Nov 2026)\n\nSuite `strategies` (15 questions × 8 variants, 30 s limit): every cell finishes and every variant\nagrees with the reference. Eleven questions need at most 9 candidates in every variant; the four\nothers separate the strategies (candidates):\n\n| question | default | s1 | s3 | s4 | s5 | shape2 | record | reference |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|\n| faith-cancel-reinf-pareto-condorcet-k3 | 2,132 | **770** | 2,117 | 2,134 | 2,123 | 2,093 | 2,132 | 2,123 |\n| faith-cancel-reinf-pareto-k3 | 1,364 | **405** | 1,415 | 1,341 | 1,407 | 1,329 | 1,329 | 1,407 |\n| faith-pareto-neutral-reinf-k4 | 146 | **44** | 146 | 146 | 146 | 146 | 146 | 146 |\n| pareto-neutral-reinf-k5 | 48 | **38** | 48 | 48 | 48 | 48 | 48 | 48 |\n\nTotal time: s1 4.2 s, default 6.1 s, reference 6.0 s, shape2 19.9 s. Strategy 1 (the axiom\ninstances the outcomes falsify) is the only one that beats blocking; the default strategy 2 is\nno better than the reference run here. Suite `generated` (12 questions): s1 9.8 s in total,\nreference 36.9 s, record 43.0 s, default 49.6 s. Why strategy 2 gains nothing over blocking is a\ngood first question.\n\n## Open questions\n\n1. Which strategy wins on which kind of question, and why? Relate the matrix to the axioms each\n   question uses (instances whose axioms link two or three profiles behave differently).\n2. Can a refinement be *lifted* over symmetric profiles (permuting voters or candidates), so that\n   one counterexample rules out many candidates? Measure the clause lengths (Statistics tab).\n3. Does Shape 2, or a rule refinement (`G.rule`), pay on the hard questions?\n4. The hard questions (`cancel-reinf-posresp-k4`, `pareto-neutral-cancel-reinf-k8`): what\n   change to the abstraction (symmetry breaking, a bound on the profiles, a two-step search that\n   first fixes the profiles, as the original file suggests) makes them finish?\n5. Is every strategy sound? Run the audit (Audit button, or `node tools/audit.mjs\n   voting-justification --instance ID`) on small questions and grow them with Fuzz.\n",
+  "readme": "# Explaining a voting outcome by axioms\n\n## Background\n\nA *justification* of an election outcome explains it from normative principles (axioms) such\nas Pareto, faithfulness or reinforcement: given a target profile and its outcome, find a small set\nof *axiom instances* (an axiom applied to one, two or three concrete profiles) such that every\nvoting rule that satisfies them must give the target profile that outcome. The idea is from\nBoixel and Endriss (AAMAS 2020) and Nardi, Boixel and Endriss (AAMAS 2022); the ASP encoding is\n`explain1.lp` of the declarative-cegar repository.\n\nThe problem is Σ2P-shaped: *there is* a set of axiom instances (with the profiles they need) such\nthat *every* outcome assignment that satisfies them gives the target outcome. That is a CEGAR loop.\n\n## The loop\n\n- **Abstraction (A)**: guesses up to `num_profiles` profiles (profile 1 is the target) and exactly\n  `num_axiom_instances` applicable axiom instances on them, with symmetry breaking.\n- **Check (C)**: looks for outcomes of all profiles that satisfy every chosen axiom instance but\n  differ from the target outcome on profile 1. Such outcomes are the counterexample.\n- **Refinement**: a clause over the interface atoms that are `relevant/1` for the counterexample.\n  The five strategies differ in which axiom-instance atoms they call relevant (fragments\n  `relevant`, `relevant_s1` … `relevant_s5`). Strategy 2 is the default.\n\n## Baseline and variants\n\n| Variant | What changes |\n|---|---|\n| default | Shape 1 (`search A`), strategy 2 |\n| s1, s3, s4, s5 | another refinement strategy |\n| record | Shape 1 with `--enum-mode=record` on A: blocked candidates stay as nogoods |\n| shape2 | a Shape 2 loop (solve A again after each refinement) |\n| reference | the blocking loop: the ground truth on small questions |\n\n## Instances and ground truth\n\n- 7 questions from `explain1.lp` (tags: `original`, `hard`, `no-solution`); the file's ten\n  questions with one or two candidates (no refinement at all) are left out. The 5 with an expected\n  count finish in seconds; the counts agree with the reference variant and with\n  `tools/cegarcheck.py`. The runs look for all solutions; the default instance is\n  `faith-pareto-neutral-reinf-k4` (146 candidates, 1 justification).\n- Seven generated questions (`random-1` … `random-7`, generator `vote-question`: `a` random\n  axioms, a sorted random target profile of `v` voters, a random outcome). Most random questions\n  have no justification within small bounds, which is itself a useful test of soundness;\n  `random-4` … `random-7` were picked for having justifications (4 to 27) and 30 to 80 candidates.\n- The audit finishes on `cancel-posresp-k2`, `faith-pareto-neutral-reinf-k4`,\n  `pareto-neutral-reinf-k5` and `random-3` … `random-7` within a second each. The others are\n  marked `audit: false`: their candidate spaces are too large for the audit's memory or time,\n  so the audit (and Fuzz) skip them; runs still use them. `cancel-reinf-posresp-k4` (the\n  question the original file has switched on) finds its first justification in about a second;\n  with strategy s1 the loop finishes after about 95,000 candidates and 15 minutes with\n  **16 justifications**, its expected count (tag `slow`). `pareto-neutral-cancel-reinf-k8` has\n  no ground truth yet: neither the default strategy, s1 nor Python clingo's `tools/cegarcheck.py`\n  finished it within 40 minutes.\n\n## Suites\n\n- `questions`: every question, the default loop (20 s each).\n- `strategies`: the questions with a count (except the slow one) × every variant (30 s each). Read the\n  instance × variant matrix in the Campaign tab, or run\n  `node tools/bench.mjs voting-justification --suite strategies --out rows.jsonl` and\n  `node tools/report.mjs rows.jsonl`.\n- `generated`: 12 generated questions (v = 2, 3; a = 2, 3; three seeds) × default, s1, record,\n  reference.\n\n## What \"better\" means\n\nFewer candidates (each costs a check), less time, and more questions solved within the limit.\nA variant that finds a *different* number of justifications than the reference is unsound\n(or the reference has not finished): the Campaign tab marks those cells ✗.\n\n## Measured (tools/bench.mjs, one machine, Nov 2026)\n\nSuite `strategies` (15 questions × 8 variants, 30 s limit): every cell finishes and every variant\nagrees with the reference. Eleven questions need at most 9 candidates in every variant; the four\nothers separate the strategies (candidates):\n\n| question | default | s1 | s3 | s4 | s5 | shape2 | record | reference |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|\n| faith-cancel-reinf-pareto-condorcet-k3 | 2,132 | **770** | 2,117 | 2,134 | 2,123 | 2,093 | 2,132 | 2,123 |\n| faith-cancel-reinf-pareto-k3 | 1,364 | **405** | 1,415 | 1,341 | 1,407 | 1,329 | 1,329 | 1,407 |\n| faith-pareto-neutral-reinf-k4 | 146 | **44** | 146 | 146 | 146 | 146 | 146 | 146 |\n| pareto-neutral-reinf-k5 | 48 | **38** | 48 | 48 | 48 | 48 | 48 | 48 |\n\nTotal time: s1 4.2 s, default 6.1 s, reference 6.0 s, shape2 19.9 s. Strategy 1 (the axiom\ninstances the outcomes falsify) is the only one that beats blocking; the default strategy 2 is\nno better than the reference run here. Suite `generated` (12 questions): s1 9.8 s in total,\nreference 36.9 s, record 43.0 s, default 49.6 s. Why strategy 2 gains nothing over blocking is a\ngood first question.\n\n## Open questions\n\n1. Which strategy wins on which kind of question, and why? Relate the matrix to the axioms each\n   question uses (instances whose axioms link two or three profiles behave differently).\n2. Can a refinement be *lifted* over symmetric profiles (permuting voters or candidates), so that\n   one counterexample rules out many candidates? Measure the clause lengths (Statistics tab).\n3. Does Shape 2, or a rule refinement (`G.rule`), pay on the hard questions?\n4. The hard questions (`cancel-reinf-posresp-k4`, `pareto-neutral-cancel-reinf-k8`): what\n   change to the abstraction (symmetry breaking, a bound on the profiles, a two-step search that\n   first fixes the profiles, as the original file suggests) makes them finish?\n5. Is every strategy sound? Run the audit (Audit button, or `node tools/audit.mjs\n   voting-justification --instance ID`) on small questions and grow them with Fuzz.\n",
   "generators": [
     {
       "name": "vote-question",
@@ -487,24 +443,18 @@
       "name": "strategies",
       "instances": {
         "ids": [
-          "faith-k1",
-          "condorcet-k1",
-          "unanimity-k1",
-          "cancel-k1",
-          "pareto-k2-v1",
-          "pareto-k2",
-          "pareto-neutral-k2",
-          "faith-reinf-k2",
           "cancel-posresp-k2",
-          "faith-reinf-k3",
-          "faith-cancel-reinf-k3",
           "faith-cancel-reinf-pareto-condorcet-k3",
           "faith-cancel-reinf-pareto-k3",
           "faith-pareto-neutral-reinf-k4",
           "pareto-neutral-reinf-k5",
           "random-1",
           "random-2",
-          "random-3"
+          "random-3",
+          "random-4",
+          "random-5",
+          "random-6",
+          "random-7"
         ]
       },
       "variants": [

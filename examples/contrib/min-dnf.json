@@ -23,6 +23,11 @@
       "name": "check",
       "description": "Looks for an assignment on which candidate and given formula differ (solver C); states the refinement as clause/3 atoms.",
       "text": "% A counterexample: an assignment a/1 to the variables ...\n{ a(V) } :- var(V).\n% ... on which the candidate and the given formula differ.\n% covers(P): term P of the pool is true under the assignment.\noff(P) :- has(P,V,1), not a(V).\noff(P) :- has(P,V,2), a(V).\ncovers(P) :- pool(P), not off(P).\nmine :- use(P), covers(P).\ntheirs :- given(I,J), a(I), not a(J).\n:- mine, theirs.\n:- not mine, not theirs.\n#show a/1.\n\n% The assignment tells every later candidate what to do, whatever its other terms are.\n% The given formula is true here: use one of the terms that cover the assignment.\nclause(0, use(P), true) :- theirs, covers(P).\n% The given formula is false here: each used term that covers the assignment has to go.\nclause(P, use(P), false) :- not theirs, use(P), covers(P).\n"
+    },
+    {
+      "name": "check_relevant",
+      "description": "Variant relevant: the same check with relevant/1 (one covering term must flip) instead of clause/3.",
+      "text": "% A counterexample: an assignment a/1 to the variables ...\n{ a(V) } :- var(V).\n% ... on which the candidate and the given formula differ.\n% covers(P): term P of the pool is true under the assignment.\noff(P) :- has(P,V,1), not a(V).\noff(P) :- has(P,V,2), a(V).\ncovers(P) :- pool(P), not off(P).\nmine :- use(P), covers(P).\ntheirs :- given(I,J), a(I), not a(J).\n:- mine, theirs.\n:- not mine, not theirs.\n#show a/1.\n\n% The assignment refutes the candidate as long as no term that covers it changes: one of them\n% must flip (be used if the given formula is true here, go if it is false). Weaker than the\n% clauses of the check fragment, which ask for every wrong term to go.\nrelevant(use(P)) :- covers(P).\n"
     }
   ],
   "loop": {
@@ -41,21 +46,10 @@
     "seed": 0,
     "instance": ""
   },
-  "library": {
-    "id": "min-dnf",
-    "group": "logic",
-    "summary": "DNF formulas with at most k terms equivalent to a given one: counterexample assignments become clauses over a pool of terms (n = 3, k = 3, 2 solutions).",
-    "shape": "custom",
-    "tags": [
-      "fast",
-      "cegis"
-    ],
-    "expected": 2
-  },
   "instances": [
     {
       "id": "example",
-      "facts": "",
+      "facts": "% The given formula on 3 variables, answers with at most 3 terms: 2 solutions.\n",
       "constants": {
         "n": "3",
         "k": "3"
@@ -69,7 +63,7 @@
     },
     {
       "id": "n2-k2",
-      "facts": "",
+      "facts": "% 2 variables (x1 xor x2), at most 2 terms: 1 solution.\n",
       "constants": {
         "n": "2",
         "k": "2"
@@ -81,7 +75,7 @@
     },
     {
       "id": "n3-k2",
-      "facts": "",
+      "facts": "% 3 variables, at most 2 terms: none (the formula needs 3 terms).\n",
       "constants": {
         "n": "3",
         "k": "2"
@@ -93,7 +87,7 @@
     },
     {
       "id": "n3-k4",
-      "facts": "",
+      "facts": "% 3 variables, at most 4 terms: 44 solutions.\n",
       "constants": {
         "n": "3",
         "k": "4"
@@ -102,6 +96,79 @@
         "solutions": 44
       },
       "tags": []
+    },
+    {
+      "id": "n4-k3",
+      "facts": "% 4 variables, at most 3 terms: none (the formula needs 4); the pool has 80 terms.\n",
+      "constants": {
+        "n": "4",
+        "k": "3"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": [
+        "slow"
+      ]
     }
-  ]
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "relevant",
+      "swap": {
+        "check": "check_relevant"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The refinement from relevant/1: one of the terms that cover the assignment must flip.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "three-per-candidate",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three counterexample assignments per candidate, the clauses of each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clauses(X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "relevant",
+        "three-per-candidate"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "min-dnf",
+    "group": "logic",
+    "summary": "DNF formulas with at most k terms equivalent to a given one: counterexample assignments become clauses over a pool of terms (n = 3, k = 3, 2 solutions).",
+    "shape": "custom",
+    "tags": [
+      "fast",
+      "cegis"
+    ],
+    "expected": 2
+  }
 }

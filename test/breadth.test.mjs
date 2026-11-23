@@ -83,7 +83,8 @@ test('the loops from the literature: each example agrees with brute force or dir
   // counts and optima measured independently (docs/directions/breadth.md, "Examples")
   const want = {
     'maxsat-ihs': { example: 'optimum: 8', 'small-opt': 'optimum: 3', 'opt-6': 'optimum: 6' },
-    'benders-tardiness': { example: 'optimum: 20', tight: 'optimum: 16', 'three-machines': 'optimum: 18' },
+    'benders-tardiness': { example: 'optimum: 20', tight: 'optimum: 7',   // tight: 4 jobs since 2026-11-23 (was 5 jobs, 16)
+      'three-machines': 'optimum: 18' },
   };
   for (const [id, cases] of Object.entries(want)) {
     const p = all(ex(id));

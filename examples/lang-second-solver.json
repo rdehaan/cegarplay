@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Loop language: a refinement solver",
   "description": "Graph colouring at n = 5. The check fragment has no relevant/1 rules; solver R, built from the refine fragment, derives them from the candidate (link GA) and the counterexample (link GC, interface atoms color/2 from the rglue fragment).",
   "fragments": [
@@ -33,6 +33,11 @@
       "name": "refine",
       "description": "Solver R: the relevant/1 rules, given the candidate and the counterexample.",
       "text": "% Given the candidate (from A) and the colouring X (from C): which atoms must change?\nrelevant(edge(N,M)) :- node(N), node(M), N < M, not edge(N,M).\nrelevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).\nrelevant(leaf_color(N,C)) :- node(N), not leaf(N), color(C), not color(N,C).\n"
+    },
+    {
+      "name": "check_relevant",
+      "description": "The check with its relevant/1 rules (as in graph-coloring), for the one-solver variants.",
+      "text": "% Check that there is no proper 3-coloring of the entire graph\n% that agrees with the leaf coloring\n1 { color(N,C) : color(C) } 1 :- node(N).\n:- edge(N,M), color(N,C), color(M,C).\n:- leaf_color(N,C), not color(N,C), leaf(N).\n:- color(N,C), not leaf_color(N,C), leaf(N).\n\n% Any counterexample found depends only on these Stm for which relevant(Stm)\nrelevant(edge(N,M)) :- node(N), node(M), N < M, not edge(N,M).\nrelevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).\n\n% A node that is not a leaf now may become one. Giving it a leaf colour other\n% than its colour in the counterexample also breaks the counterexample.\nrelevant(leaf_color(N,C)) :- node(N), not leaf(N), color(C), not color(N,C).\n"
     }
   ],
   "loop": {
@@ -49,5 +54,65 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "runs": [],
+  "instances": [
+    {
+      "id": "n5",
+      "facts": "",
+      "constants": {
+        "n": "5"
+      },
+      "expected": {
+        "solutions": 101
+      },
+      "tags": [],
+      "audit": false
+    },
+    {
+      "id": "n3",
+      "facts": "",
+      "constants": {
+        "n": "3"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "n4",
+      "facts": "",
+      "constants": {
+        "n": "4"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {
+        "check": "check_relevant"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape1",
+      "swap": {
+        "check": "check_relevant"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ]
 }

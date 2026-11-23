@@ -365,7 +365,7 @@ const TEMPLATE_TITLE = { shape1: 'Shape 1', shape2: 'Shape 2', shape3: 'Shape 3'
 export const PROBLEMS = [
   { id: 'graph-coloring', group: 'graphs', summary: 'Graphs with a leaf colouring that no 3-colouring extends (n = 6, all 10,698 solutions).', shape: 'shape1', tags: [], expected: 10698 },
   { id: 'nash', group: 'games', summary: 'Weighted graphs whose colouring game has a Nash equilibrium (four size instances).', shape: 'shape1', tags: [], expected: null },
-  { id: 'voting-justification', group: 'games', summary: 'Explaining a voting outcome by axioms: 17 questions as instances, five refinement strategies and two loops as variants, a suite that compares them.', shape: 'shape1', tags: [], expected: null },
+  { id: 'voting-justification', group: 'games', summary: 'Explaining a voting outcome by axioms: 14 questions as instances (7 generated), five refinement strategies and two loops as variants, a suite that compares them.', shape: 'shape1', tags: [], expected: null },
 ];
 
 // ---------------------------------------------------------------------------
@@ -412,15 +412,23 @@ ${query ? 'query(@int(1, n, query)).\n' : ''}
 #show arg/1.  #show att/2.${query ? '  #show query/1.' : ''}
 `,
 });
-// voting-justification: three generated questions with small bounds; counts measured with
-// tools/run.mjs --solutions all
+// voting-justification: generated questions with small bounds; counts measured with
+// tools/run.mjs --solutions all and the same for every variant. random-1 and random-2 have
+// thousands of candidates: too large for the audit's memory. random-4..7 were picked from a
+// search over seeds 1..30 for questions with a justification and 30 to 80 candidates.
+const voteRecipe = (id, v, a, s, profiles, k, solutions) => ({ id, recipe: { generator: 'vote-question', params: { v, a }, seed: s },
+  expected: { solutions }, tags: ['generated'], constants: { num_candidates: '3', num_voters: String(v), num_profiles: String(profiles), num_axiom_instances: String(k) } });
 const VOTE_RECIPES = [
-    { id: 'random-1', recipe: { generator: 'vote-question', params: { v: 3, a: 3 }, seed: 1 }, expected: { solutions: 6 }, tags: ['generated'],
+    { id: 'random-1', recipe: { generator: 'vote-question', params: { v: 3, a: 3 }, seed: 1 }, expected: { solutions: 6 }, tags: ['generated'], audit: false,
       constants: { num_candidates: '3', num_voters: '3', num_profiles: '3', num_axiom_instances: '3' } },
-    { id: 'random-2', recipe: { generator: 'vote-question', params: { v: 2, a: 2 }, seed: 3 }, expected: { solutions: 0 }, tags: ['generated', 'no-solution'],
+    { id: 'random-2', recipe: { generator: 'vote-question', params: { v: 2, a: 2 }, seed: 3 }, expected: { solutions: 0 }, tags: ['generated', 'no-solution'], audit: false,
       constants: { num_candidates: '3', num_voters: '2', num_profiles: '3', num_axiom_instances: '3' } },
     { id: 'random-3', recipe: { generator: 'vote-question', params: { v: 3, a: 2 }, seed: 3 }, expected: { solutions: 0 }, tags: ['generated', 'no-solution'],
       constants: { num_candidates: '3', num_voters: '3', num_profiles: '2', num_axiom_instances: '2' } },
+    voteRecipe('random-4', 2, 3, 29, 2, 2, 17),
+    voteRecipe('random-5', 3, 4, 8, 2, 2, 27),
+    voteRecipe('random-6', 2, 4, 25, 2, 3, 4),
+    voteRecipe('random-7', 3, 4, 18, 3, 2, 10),
   ];
 
 // voting-justification: random questions (FUTURE-DIRECTIONS E2)
@@ -712,9 +720,9 @@ export const PROJECT_CARDS = {
     CAMPAIGN),
   nash: card('Nash equilibria of colouring games',
     'How does the number of candidates depend on the number of players and edge weights, and does a refinement over the deviating player only pay?',
-    'The default run stops at its first solution after one candidate (0.6 s). With all solutions: n2-w1 12, n2 36, n3-w1 576, n3-w2 4,080 (the instances\' expected counts).',
-    ['A suite over the four instances with all solutions; read the matrix by candidates.',
-      'A refinement that names only the deviating player\'s colour and its neighbours.',
+    'All solutions on the instances: n2-w1 12, n2-w2 24, n2 36, n3-w1 576 (n3-w1: 1,780 candidates, 1,204 clauses). The project as written (n = 5, w = 3, instance "as written") stops at its first candidate, which is already a solution.',
+    ['A suite over the four instances and the variants reference, shape2 and wide; read the matrix by candidates.',
+      'A refinement that names only the deviating player\'s colour and its neighbours (the opposite of the variant wide).',
       'Compare with `strong-nash`, which checks coalitions instead of single players.'],
     CAMPAIGN),
   'strong-nash': card('strong Nash equilibria',
@@ -770,3 +778,90 @@ export function levelOf(e) {
   const t = LEVELS[e.id];
   return { level: own.level ?? (t ? t[0] : 3), after: own.after !== null ? own.after : t ? t[1] : 12 };
 }
+
+// ---------------------------------------------------------------------------
+// Instances and variants of the built-in examples (language, shapes, graph-coloring, nash).
+// Their input is a size constant, so the instances are constants-only and there is no
+// generator. Every variant gives each instance's expected count (checked by
+// test/instances.test.mjs); `reference` is the blocking loop of the same solvers.
+// ---------------------------------------------------------------------------
+const sizes = (name, list) => list.map(([v, solutions, more = {}]) => ({ id: `${name}${v}`, facts: '', constants: { [name]: String(v) }, expected: { solutions }, tags: [], ...more }));
+const loopVariant = (name, text) => ({ name, swap: {}, constants: {}, loop: { language: 'loop', text } });
+const toBlock = (text) => text.replace(/G(\d?)\.clause\(M, [XY]\)/g, 'G$1.block(M)');
+const SUMFREE_SIZES = sizes('n', [[8, 61], [6, 24], [10, 151], [12, 369]]);
+const GC_SIZES = sizes('n', [[5, 101], [3, 0], [4, 1]]);
+const GC_SHAPES = ['shape1', 'shape2', 'shape3', 'shape4', 'reference'];
+const plain = (t) => t.replace(/ +options "--heuristic=Domain"/, '');
+
+// id -> (project, built projects by id) => { instances, variants, fragments, settings }
+export const EXTRAS = {
+  'lang-basics': (p) => ({ instances: SUMFREE_SIZES, variants: [loopVariant('reference', plain(template('reference'))), loopVariant('shape1', plain(template('shape1')))] }),
+  'lang-several-cex': (p) => ({ instances: SUMFREE_SIZES, variants: [loopVariant('reference', plain(template('reference'))),
+    loopVariant('limit-1', p.loop.text.replace('limit 3', 'limit 1')), loopVariant('limit-10', p.loop.text.replace('limit 3', 'limit 10'))] }),
+  'lang-optimal': (p) => ({ instances: SUMFREE_SIZES, variants: [loopVariant('reference', plain(template('reference'))),
+    loopVariant('any-counterexample', p.loop.text.replace('C.solve(assume G(M), optimal)', 'C.solve(assume G(M))'))] }),
+  'lang-two-stage': (p) => ({ instances: sizes('n', [[8, 38], [6, 17], [10, 86], [12, 195]]), variants: [loopVariant('reference', toBlock(p.loop.text)),
+    loopVariant('neighbours-first', `solver A  = shared + abstraction
+solver C1 = shared + sums
+solver C2 = shared + neighbours
+link   G1 = A -> C1 via shared + glue
+link   G2 = A -> C2 via shared + glue
+
+# The same two checks in the other order: neighbours first, then sums.
+search A:
+    on candidate M:
+        Y = C2.solve(assume G2(M))
+        if Y:
+            reject M with G2.clause(M, Y)
+        else:
+            X = C1.solve(assume G1(M))
+            if X: reject M with G1.clause(M, X)
+`)] }),
+  'lang-clauses': (p) => ({ instances: SUMFREE_SIZES, variants: [loopVariant('reference', plain(template('reference'))),
+    loopVariant('shape2', `solver A = shared + abstraction
+solver C = shared + check
+link   G = A -> C via shared + glue
+
+# The same refinement in a Shape 2 loop: A is solved again after each clause.
+loop:
+    M = A.solve()
+    if not M: stop
+    X = C.solve(assume G(M))
+    if X:
+        A.add(G.clauses(X))
+    else:
+        accept M
+        A.add(G.block(M))
+`)] }),
+  'lang-core': (p) => ({ instances: sizes('n', [[5, 958], [4, 63], [6, 27554]]), variants: [
+    loopVariant('reference', p.loop.text.replace(/\n# For comparison[\s\S]*$/, '\n').replace('reject M with G.core(C)', 'reject M with G.block(M)')),
+    loopVariant('minimal-core', p.loop.text.replace(/\n# For comparison[\s\S]*$/, '\n').replace('reject M with G.core(C)', 'reject M with C.core.minimal.on(G)'))] }),
+  // n5: the audit (one solve of R per pair) needs over a minute
+  'lang-second-solver': (p, built) => ({ instances: GC_SIZES.map((x) => x.id === 'n5' ? { ...x, audit: false } : x),
+    fragments: [{ name: 'check_relevant', description: 'The check with its relevant/1 rules (as in graph-coloring), for the one-solver variants.', text: built['graph-coloring'].fragments.find((f) => f.name === 'check').text }],
+    variants: [{ ...loopVariant('reference', template('reference')), swap: { check: 'check_relevant' } }, { ...loopVariant('shape1', template('shape1')), swap: { check: 'check_relevant' } }] }),
+  'lang-legacy': (p) => ({ instances: SUMFREE_SIZES, variants: [loopVariant('reference', toBlock(p.loop.text)),
+    loopVariant('shape2', `solver A = shared + abstraction
+solver C = shared + check
+link   G = A -> C via shared + glue legacy
+
+loop:
+    M = A.solve()
+    if not M: stop
+    X = C.solve(assume G(M))
+    if X:
+        A.add(G.clause(M, X))
+    else:
+        accept M
+        A.add(G.block(M))
+`)] }),
+  'lang-raw-lua': (p) => ({ instances: SUMFREE_SIZES, variants: [loopVariant('reference', plain(template('reference'))), loopVariant('loop-language', plain(template('shape1')))] }),
+  ...Object.fromEntries(['gc-shape1', 'gc-shape2', 'gc-shape3', 'gc-shape4', 'gc-reference'].map((id) => [id, () => ({ instances: GC_SIZES,
+    variants: GC_SHAPES.filter((s) => `gc-${s}` !== id).map((s) => loopVariant(s, template(s))) })])),
+  // The exercises are deliberately unfinished encodings, so a finished variant would give the
+  // answer away; the sum-free exercise gets the blocking loop (its default loop is broken on
+  // purpose), the triangle exercise already is the blocking loop.
+  'exercise-sum-free': (p) => ({ variants: [loopVariant('reference', toBlock(p.loop.text))] }),
+  'graph-coloring': (p) => ({ instances: [...sizes('n', [[3, 0]]), ...p.instances.map((x) => x.id === 'n6' ? { ...x, audit: false } : x)],  // n6: the audit needs over 90 s
+    variants: ['reference', 'shape2', 'shape4'].map((s) => loopVariant(s, template(s))) }),
+};

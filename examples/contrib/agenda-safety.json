@@ -23,6 +23,10 @@
       "name": "check",
       "description": "Looks for a model of all chosen formulas (solver C).",
       "text": "% A counterexample: a model of all chosen formulas. Then the subset is consistent.\n{ m(V) } :- var(V).\nfalse(F) :- cl(F,C), not m(V) : pos(C,V); m(V) : neg(C,V).\n:- in(F), false(F).\n#show m/1.\n\n% The model satisfies every subset of the formulas that are true in it. So a formula\n% that is false in it has to be chosen. (There always is one: the agenda contains the\n% negation of each formula.)\nrelevant(in(F)) :- formula(F), false(F).\n"
+    },
+    {
+      "name": "check_outside",
+      "text": "% A counterexample: a model of all chosen formulas. Then the subset is consistent.\n{ m(V) } :- var(V).\nfalse(F) :- cl(F,C), not m(V) : pos(C,V); m(V) : neg(C,V).\n:- in(F), false(F).\n#show m/1.\n\n% A weaker refinement: some formula that is not chosen has to be added (each formula that is\n% false in the model is outside the subset, so this clause is implied by the default one).\nrelevant(in(F)) :- formula(F), not in(F).\n"
     }
   ],
   "loop": {
@@ -36,16 +40,6 @@
     "candidates": 0,
     "trace": 200,
     "seed": 0
-  },
-  "library": {
-    "id": "agenda-safety",
-    "group": "games",
-    "summary": "Minimally inconsistent subsets of an agenda with three or more formulas, the witnesses that majority voting is unsafe (doctrinal paradox agenda, 6 solutions).",
-    "shape": "shape2",
-    "tags": [
-      "fast"
-    ],
-    "expected": 6
   },
   "instances": [
     {
@@ -74,6 +68,144 @@
       "expected": {
         "solutions": 6
       }
+    },
+    {
+      "id": "chain",
+      "facts": "% A chain of implications: the literals p, q, r, the rules \"p implies q\" and \"q implies r\",\n% and the negation of each. {p, p -> q, q -> r, not r} is minimally inconsistent with four formulas.\nvar(p;q;r).\ncl(p,1).   pos(1,p).                              % p\ncl(np,2).  neg(2,p).                              % not p\ncl(q,3).   pos(3,q).                              % q\ncl(nq,4).  neg(4,q).                              % not q\ncl(r,5).   pos(5,r).                              % r\ncl(nr,6).  neg(6,r).                              % not r\ncl(i1,7).  neg(7,p). pos(7,q).                    % p implies q\ncl(ni1,8). pos(8,p). cl(ni1,9). neg(9,q).         % p and not q\ncl(i2,10). neg(10,q). pos(10,r).                  % q implies r\ncl(ni2,11). pos(11,q). cl(ni2,12). neg(12,r).     % q and not r\n",
+      "constants": {},
+      "tags": [],
+      "expected": {
+        "solutions": 3
+      }
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "agenda",
+        "params": {
+          "v": 4,
+          "f": 4,
+          "k": 2
+        },
+        "seed": 2
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 11
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "agenda",
+        "params": {
+          "v": 5,
+          "f": 4,
+          "k": 3
+        },
+        "seed": 1
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 9
+      }
     }
-  ]
+  ],
+  "generators": [
+    {
+      "name": "agenda",
+      "description": "A random agenda closed under negation: each variable and its negation, and f clauses of k distinct literals over v variables with their negations (one unit clause per literal).",
+      "params": {
+        "v": "int",
+        "f": "int",
+        "k": "int"
+      },
+      "defaults": {
+        "v": 4,
+        "f": 4,
+        "k": 2
+      },
+      "text": "% agenda: the literals of v variables, f random clauses of k distinct literals, and the negation of each.\nvar(1..v).\nfid(1..f).\ncl(p(X),p(X)) :- var(X).\npos(p(X),X) :- var(X).\ncl(np(X),np(X)) :- var(X).\nneg(np(X),X) :- var(X).\ninl(I,X) :- fid(I), var(X), @subset(k, v, X, I) = 1.\ncl(f(I),c(I)) :- fid(I).\npos(c(I),X) :- inl(I,X), @flip(500, I, X) = 1.\nneg(c(I),X) :- inl(I,X), @flip(500, I, X) = 0.\ncl(nf(I),u(I,X)) :- inl(I,X).\nneg(u(I,X),X) :- pos(c(I),X).\npos(u(I,X),X) :- neg(c(I),X).\n#show var/1.  #show cl/2.  #show pos/2.  #show neg/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "shape1",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--project\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# A search reports every model of A; the witnesses w/2 are private, so A projects on in/1.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--project --enum-mode=record\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# A search reports every model of A; the witnesses w/2 are private, so A projects on in/1.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--project\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# A search reports every model of A; the witnesses w/2 are private, so A projects on in/1.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 4):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "outside",
+      "swap": {
+        "check": "check_outside"
+      },
+      "constants": {}
+    }
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shape1",
+        "record",
+        "several",
+        "outside"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "agenda-safety",
+    "group": "games",
+    "summary": "Minimally inconsistent subsets of an agenda with three or more formulas, the witnesses that majority voting is unsafe (doctrinal paradox agenda, 6 solutions).",
+    "shape": "shape2",
+    "tags": [
+      "fast"
+    ],
+    "expected": 6
+  }
 }

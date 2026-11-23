@@ -50,7 +50,8 @@ test('a pool with a different domain hash is skipped with a message', async () =
   const pool = await recordPool(7);
   const p = ex('gc-shape4');
   p.pools = [pool];
-  p.settings = { ...p.settings, solutions: 0, constants: { ...p.settings.constants, n: '4' } };
+  // instance '' = the project as written, with n = 4 (the pool was recorded at another n)
+  p.settings = { ...p.settings, solutions: 0, instance: '', constants: { ...p.settings.constants, n: '4' } };
   p.loop.text = p.loop.text.replace('pending = []', WARM);
   const r = await H.runProject(p);
   assert.ok(H.ofKind(r, 'W').some((w) => /pool cex skipped: it was recorded on another domain/.test(w.message)));

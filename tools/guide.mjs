@@ -195,7 +195,10 @@ const fromContrib = (id, title, description, loop, settings, edit = (n, t) => t)
   // back to the top of its shared fragment, in place of the note that points to the instance.
   const ex = (src.instances || []).find((x) => x.id === 'example');
   const frags = {}, desc = {};
+  // fragments that only a variant swaps in stay out of the guide's copy
+  const variantOnly = new Set((src.variants || []).flatMap((v) => Object.values(v.swap || {})));
   for (const f of src.fragments) {
+    if (variantOnly.has(f.name)) continue;
     const text = ex && f.name === 'shared'
       ? ex.facts + f.text.replace('% The instance (its facts) is in the Instances tab.\n', '') : f.text;
     const t = edit(f.name, text);

@@ -23,6 +23,11 @@
       "name": "check",
       "description": "Looks for a model that shows the query does not follow, or that one more default fits (solver C).",
       "text": "% A model of the hard knowledge and the chosen defaults ...\n{ m(A) } :- atom(A).\nsat(C) :- pos(C,A), m(A).\nsat(C) :- neg(C,A), not m(A).\n:- hard(C), not sat(C).\n:- on(D), not sat(D).\n% ... is a counterexample in two cases:\n% (1) the query is false in it: the chosen defaults do not entail the query;\nopen :- query(A), not m(A).\n% (2) it satisfies a default that was left out: the set is not maximal.\nfits(D) :- default(D), not on(D), sat(D).\nmore :- fits(D).\n:- not open, not more.\n#show m/1.\n\n% In both cases the model refutes every set of defaults that are all true in it,\n% so a default that is false in the model has to be chosen ...\nrelevant(on(D)) :- default(D), not sat(D).\n% ... or, in case (2) only, the default that fits has to be chosen (the first, if several).\nrelevant(on(D)) :- not open, fits(D), not fits(E) : default(E), E < D.\n% If the query is false although every default holds in the model, no set of defaults\n% entails the query: blame the atom that is always true.\nbroken :- default(D), not sat(D).\nrelevant(always) :- open, not broken.\n"
+    },
+    {
+      "name": "check_all_fits",
+      "description": "The check of the variant all-fits: every default that fits is blamed, not only the first.",
+      "text": "% A model of the hard knowledge and the chosen defaults ...\n{ m(A) } :- atom(A).\nsat(C) :- pos(C,A), m(A).\nsat(C) :- neg(C,A), not m(A).\n:- hard(C), not sat(C).\n:- on(D), not sat(D).\n% ... is a counterexample in two cases:\n% (1) the query is false in it: the chosen defaults do not entail the query;\nopen :- query(A), not m(A).\n% (2) it satisfies a default that was left out: the set is not maximal.\nfits(D) :- default(D), not on(D), sat(D).\nmore :- fits(D).\n:- not open, not more.\n#show m/1.\n\n% In both cases the model refutes every set of defaults that are all true in it,\n% so a default that is false in the model has to be chosen ...\nrelevant(on(D)) :- default(D), not sat(D).\n% ... or, in case (2) only, one of the defaults that fit has to be chosen (all of them are\n% named: weaker than naming the first one, still sound).\nrelevant(on(D)) :- not open, fits(D).\n% If the query is false although every default holds in the model, no set of defaults\n% entails the query: blame the atom that is always true.\nbroken :- default(D), not sat(D).\nrelevant(always) :- open, not broken.\n"
     }
   ],
   "loop": {
@@ -66,6 +71,113 @@
         "solutions": 2
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "dl-random",
+        "params": {},
+        "seed": 7
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "dl-random",
+        "params": {},
+        "seed": 12
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "dl-random",
+      "description": "Random hard literals and default rules: n atoms, h hard literals and k defaults \"X implies (not) Y\" between two random atoms (the conclusion positive with probability q/1000); the query is the conclusion of a random positive default.",
+      "params": {
+        "n": "int",
+        "h": "int",
+        "k": "int",
+        "q": "permille"
+      },
+      "defaults": {
+        "n": 6,
+        "h": 2,
+        "k": 8,
+        "q": 500
+      },
+      "text": "% dl-random: atoms 1..n. The hard knowledge c(1..h) is h literals (true or false with\n% probability 1/2, consistent); the defaults c(h+1..h+k) are rules \"X implies Y\" or\n% \"X implies not Y\" (positive with probability q/1000) between two different random atoms.\n% The query is the conclusion of a random positive default.\nhard(c(1..h)).\ndefault(c(h+1..h+k)).\nfact(I,@int(1,n,atom,I),@flip(500,sign,I)) :- I = 1..h.\n:- fact(I,A,1), fact(J,A,0).\npos(c(I),A) :- fact(I,A,1).\nneg(c(I),A) :- fact(I,A,0).\nrule(I,X,(X+@int(0,n-2,gap,I))\\n+1,@flip(q,sign,I)) :- I = h+1..h+k, X = @int(1,n,premise,I).\nneg(c(I),X) :- rule(I,X,Y,S).\npos(c(I),Y) :- rule(I,X,Y,1).\nneg(c(I),Y) :- rule(I,X,Y,0).\nquery(Y) :- rule(I,X,Y,1), I = h + @int(1,k,query).\nasked :- query(Y).\n:- not asked.\n#show hard/1.  #show default/1.  #show pos/2.  #show neg/2.  #show query/1.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The blocking loop: each refuted candidate is ruled out on its own.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "search-project",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--project\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Shape 1: A's own search, projected on the shown atoms (--project), so each candidate\n# comes once whatever the hidden witness w/1.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "three-cex",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three counterexamples per candidate, one clause each.\nloop:\n    M = A.solve()\n    if not M: stop\n    XS = C.models(assume G(M), limit 3)\n    if XS.size > 0:\n        for X in XS: A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "all-fits",
+      "swap": {
+        "check": "check_all_fits"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "search-project",
+        "three-cex",
+        "all-fits"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

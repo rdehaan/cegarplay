@@ -19,6 +19,11 @@
     {
       "name": "check",
       "text": "% The subproblem: sequence the jobs on each machine to minimise the total tardiness\n% (solved with 'optimal'). before(A,B): A runs before B on their machine.\nsame(A,B) :- assign(A,M), assign(B,M), A < B.\n{ before(A,B) } :- same(A,B).\nbefore(B,A) :- same(A,B), not before(A,B).\n:- before(A,B), before(B,C), before(C,A).\nwait(J,S) :- assign(J,_), S = #sum { Q,I : before(I,J), job(I,Q,_) }.\ndone(J,F) :- wait(J,S), job(J,P,_), F = S + P.\nlate(J,L) :- done(J,F), job(J,_,D), L = F - D, L > 0.\n#minimize { L,J,late : late(J,L) }.\n% A machine whose estimate is below its real tardiness (a comparison, not a computed sum:\n% the sums stay out of the grounding) gets a cut, built from its jobs and their lateness.\nbad(M) :- est(M,E), #sum { L,J : late(J,L), assign(J,M) } > E.\nhas(M,J) :- bad(M), assign(J,M).\n#show bad/1.\n#show has/2.\n#show late/2.\n"
+    },
+    {
+      "name": "abstraction_exact",
+      "text": "% The master problem: which machine runs each job, and an estimate est(M,V) of the total\n% tardiness on machine M. The estimate starts free (0 is cheapest); optimality cuts from the\n% subproblem raise it.\n1 { assign(J,M) : machine(M) } 1 :- job(J,_,_).\n1 { est(M,V) : V = 0..T } 1 :- machine(M), top(T).\n% The tags assign and est keep the two sums apart: without them, a cost and an estimate\n% with the same (value, number) tuple would be counted once.\n#minimize { C,J,assign : assign(J,M), cost(J,M,C) }.\n#minimize { V,M,est : est(M,V) }.\n#show assign/2.\n#show est/2.\n\n#program refine(k).\n% A Benders optimality cut from the k-th subproblem. cut(k,has(M,J)): machine M ran job J;\n% lateness(k,late(J,L)): job J was L late. Variant exact-cuts: the cut holds only if machine M\n% gets exactly these jobs again (a no-good cut, weaker than the default's \"at least\").\nneed(k,M,V) :- machine(M), cut(k,has(M,_)), V = #sum { L,J : lateness(k,late(J,L)), cut(k,has(M,J)) }.\ncovered(k,M) :- need(k,M,_), assign(J,M) : cut(k,has(M,J)); not assign(J,M) : job(J,_,_), not cut(k,has(M,J)).\n:- covered(k,M), need(k,M,V), est(M,E), E < V.\n",
+      "description": "The master with no-good cuts (exactly the same jobs), for the variant exact-cuts."
     }
   ],
   "loop": {
@@ -34,6 +39,129 @@
     "seed": 0,
     "instance": "example"
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% 6 jobs (time, due date), 2 machines with different costs per job.\njob(1,4,5). job(2,3,4). job(3,5,9). job(4,2,3). job(5,6,10). job(6,3,7).\ncost(1,1,2). cost(1,2,4). cost(2,1,3). cost(2,2,2). cost(3,1,4). cost(3,2,3).\ncost(4,1,1). cost(4,2,3). cost(5,1,5). cost(5,2,4). cost(6,1,2). cost(6,2,2).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 20
+      },
+      "tags": [
+        "library"
+      ],
+      "audit": false
+    },
+    {
+      "id": "tight",
+      "facts": "% 4 jobs whose due dates equal their processing times, equal costs: every job but the\n% first on a machine is late.\njob(1,3,3). job(2,2,2). job(3,2,2). job(4,1,1).\ncost(1,1,1). cost(1,2,1). cost(2,1,1). cost(2,2,1).\ncost(3,1,1). cost(3,2,1). cost(4,1,1). cost(4,2,1).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 7
+      },
+      "tags": []
+    },
+    {
+      "id": "three-machines",
+      "facts": "% 7 jobs on 3 machines.\njob(1,4,5). job(2,3,4). job(3,5,9). job(4,2,3). job(5,6,10). job(6,3,7). job(7,4,8).\ncost(1,1,2). cost(1,2,4). cost(1,3,3). cost(2,1,3). cost(2,2,2). cost(2,3,3).\ncost(3,1,4). cost(3,2,3). cost(3,3,5). cost(4,1,1). cost(4,2,3). cost(4,3,2).\ncost(5,1,5). cost(5,2,4). cost(5,3,4). cost(6,1,2). cost(6,2,2). cost(6,3,1).\ncost(7,1,3). cost(7,2,3). cost(7,3,2).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 18
+      },
+      "tags": [],
+      "audit": false
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "jobs",
+        "params": {
+          "n": 4,
+          "m": 2
+        },
+        "seed": 2
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 9
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "jobs",
+        "params": {
+          "n": 4,
+          "m": 2
+        },
+        "seed": 5
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 12
+      }
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Baseline: no cuts. A candidate whose estimate is too low on some machine is blocked on\n# its own (its assignment and estimates), so the master climbs through the estimates one\n# candidate at a time. The first candidate without a bad machine is optimal.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no assignment\"\n    X = C.solve(assume G(M), optimal)\n    if X.count(bad/1) == 0:\n        log \"optimum:\", M.cost\n        accept M\n        stop\n    A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "exact-cuts",
+      "swap": {
+        "abstraction": "abstraction_exact"
+      },
+      "constants": {}
+    }
+  ],
+  "generators": [
+    {
+      "name": "jobs",
+      "description": "n jobs with processing time 1..2 and due date 0..1 after it, m machines with costs 1..4 per job (small: the audit enumerates every estimate up to n times the total time).",
+      "params": {
+        "n": "int",
+        "m": "int"
+      },
+      "defaults": {
+        "n": 4,
+        "m": 2
+      },
+      "text": "% jobs: n jobs (processing time 1..2, due date the time plus 0..1), m machines (cost 1..4 per job)\njob(J,P,P+@int(0, 1, slack, J)) :- J = 1..n, P = @int(1, 2, time, J).\ncost(J,M,@int(1, 4, cost, J, M)) :- J = 1..n, M = 1..m.\n#show job/3.  #show cost/3.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "exact-cuts"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
   "library": {
     "id": "benders-tardiness",
     "group": "planning",
@@ -48,39 +176,5 @@
     ],
     "expected": null,
     "optimum": 20
-  },
-  "instances": [
-    {
-      "id": "example",
-      "facts": "% 6 jobs (time, due date), 2 machines with different costs per job.\njob(1,4,5). job(2,3,4). job(3,5,9). job(4,2,3). job(5,6,10). job(6,3,7).\ncost(1,1,2). cost(1,2,4). cost(2,1,3). cost(2,2,2). cost(3,1,4). cost(3,2,3).\ncost(4,1,1). cost(4,2,3). cost(5,1,5). cost(5,2,4). cost(6,1,2). cost(6,2,2).\n",
-      "constants": {},
-      "expected": {
-        "solutions": null,
-        "optimum": 20
-      },
-      "tags": [
-        "library"
-      ]
-    },
-    {
-      "id": "tight",
-      "facts": "% 5 jobs whose due dates equal their processing times, equal costs: every job but the\n% first on a machine is late.\njob(1,4,4). job(2,3,3). job(3,5,5). job(4,2,2). job(5,6,6).\ncost(1,1,1). cost(1,2,1). cost(2,1,1). cost(2,2,1). cost(3,1,1). cost(3,2,1).\ncost(4,1,1). cost(4,2,1). cost(5,1,1). cost(5,2,1).\n",
-      "constants": {},
-      "expected": {
-        "solutions": null,
-        "optimum": 16
-      },
-      "tags": []
-    },
-    {
-      "id": "three-machines",
-      "facts": "% 7 jobs on 3 machines.\njob(1,4,5). job(2,3,4). job(3,5,9). job(4,2,3). job(5,6,10). job(6,3,7). job(7,4,8).\ncost(1,1,2). cost(1,2,4). cost(1,3,3). cost(2,1,3). cost(2,2,2). cost(2,3,3).\ncost(3,1,4). cost(3,2,3). cost(3,3,5). cost(4,1,1). cost(4,2,3). cost(4,3,2).\ncost(5,1,5). cost(5,2,4). cost(5,3,4). cost(6,1,2). cost(6,2,2). cost(6,3,1).\ncost(7,1,3). cost(7,2,3). cost(7,3,2).\n",
-      "constants": {},
-      "expected": {
-        "solutions": null,
-        "optimum": 18
-      },
-      "tags": []
-    }
-  ]
+  }
 }

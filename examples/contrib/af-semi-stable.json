@@ -23,6 +23,11 @@
       "name": "check",
       "description": "Looks for an admissible set with a larger range (solver C).",
       "text": "% A counterexample: an admissible set whose range contains the candidate's range and\n% one more argument.\n{ big(A) } :- arg(A).\n:- big(A), big(B), att(A,B).\nhit(A) :- big(B), att(B,A).\n:- big(A), att(B,A), not hit(B).\nwide(A) :- big(A).\nwide(A) :- hit(A).\n:- range(A), not wide(A).\ngain(A) :- wide(A), not range(A).\nwider :- gain(A).\n:- not wider.\n#show big/1.\n\n% The counterexample refutes every set whose range stays inside its range and misses\n% one argument of it. So: an argument outside the wider range enters the candidate's\n% range, or the first gained argument does.\nrelevant(range(A)) :- arg(A), not wide(A).\nrelevant(range(A)) :- gain(A), not gain(B) : arg(B), B < A.\n"
+    },
+    {
+      "name": "check_all_gains",
+      "description": "The check of the variant all-gains: every gained argument is blamed, not only the first.",
+      "text": "% A counterexample: an admissible set whose range contains the candidate's range and\n% one more argument.\n{ big(A) } :- arg(A).\n:- big(A), big(B), att(A,B).\nhit(A) :- big(B), att(B,A).\n:- big(A), att(B,A), not hit(B).\nwide(A) :- big(A).\nwide(A) :- hit(A).\n:- range(A), not wide(A).\ngain(A) :- wide(A), not range(A).\nwider :- gain(A).\n:- not wider.\n#show big/1.\n\n% The counterexample refutes every set whose range stays inside its range and misses\n% one argument of it. So: an argument outside the wider range enters the candidate's\n% range, or one of the gained arguments does (weaker than naming the first one, still sound).\nrelevant(range(A)) :- arg(A), not wide(A).\nrelevant(range(A)) :- gain(A).\n"
     }
   ],
   "loop": {
@@ -48,6 +53,60 @@
       "tags": [
         "library"
       ]
+    },
+    {
+      "id": "pairs",
+      "facts": "% Three pairs of arguments that attack each other, guarding the odd cycle c, d, e, and a\n% self-attacking z between a1 and b1.\narg(a1;b1;a2;b2;a3;b3;c;d;e;z).\natt(a1,b1). att(b1,a1). att(a2,b2). att(b2,a2). att(a3,b3). att(b3,a3).\natt(c,d). att(d,e). att(e,c).\natt(a1,c). att(b2,d). att(a3,e).\natt(z,z). att(z,a1). att(b1,z).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": []
+    },
+    {
+      "id": "two-odd-cycles",
+      "facts": "% Two odd cycles and an argument g that fights a member of each: no stable extension.\narg(a;b;c;d;e;f;g).\natt(a,b). att(b,c). att(c,a).\natt(d,e). att(e,f). att(f,d).\natt(g,a). att(g,d). att(a,g). att(d,g).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "af-gnp",
+        "params": {
+          "n": 10,
+          "p": 180
+        },
+        "seed": 1
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "af-gnp",
+        "params": {
+          "n": 10,
+          "p": 180
+        },
+        "seed": 9
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 1
+      }
     }
   ],
   "generators": [
@@ -63,6 +122,64 @@
         "p": 250
       },
       "text": "% af-gnp: arguments 1..n; each ordered pair (also X = Y) attacks with probability p/1000\narg(1..n).\natt(X,Y) :- arg(X), arg(Y), @flip(p, X, Y) = 1.\n\n#show arg/1.  #show att/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The blocking loop: each refuted candidate is ruled out on its own.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "three-cex",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three counterexamples per candidate, one clause each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "all-gains",
+      "swap": {
+        "check": "check_all_gains"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--enum-mode=record\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The default loop with --enum-mode=record on A, which keeps the refinements.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "three-cex",
+        "all-gains",
+        "record"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "library": {

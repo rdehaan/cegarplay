@@ -28,6 +28,11 @@
       "name": "check",
       "description": "Looks for a start cell from which the plan does not reach the goal (solver C).",
       "text": "% A counterexample: a start cell from which the plan ends somewhere else at the horizon.\n1 { start(X,Y) : free(X,Y) } 1.\nat(X,Y,0) :- start(X,Y).\n#program step(t).\nat(X2,Y2,t) :- at(X,Y,t-1), do(t,D), to(X,Y,D,X2,Y2).\n#external query(t).\n:- goal(X,Y), at(X,Y,T), query(T).\n#show start/2.\n"
+    },
+    {
+      "name": "check_far",
+      "text": "% A counterexample: a start cell from which the plan ends somewhere else at the horizon.\n1 { start(X,Y) : free(X,Y) } 1.\nat(X,Y,0) :- start(X,Y).\n% Variant far-start: prefer the start cell farthest from the goal (with 'optimal').\n#maximize { |X-GX|+|Y-GY| : start(X,Y), goal(GX,GY) }.\n#program step(t).\nat(X2,Y2,t) :- at(X,Y,t-1), do(t,D), to(X,Y,D,X2,Y2).\n#external query(t).\n:- goal(X,Y), at(X,Y,T), query(T).\n#show start/2.\n",
+      "description": "The check that prefers start cells far from the goal, for the variant far-start."
     }
   ],
   "loop": {
@@ -71,6 +76,99 @@
         "solutions": 2
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "room",
+        "params": {
+          "w": 4,
+          "h": 3,
+          "np": 1
+        },
+        "seed": 3
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 3
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "room",
+        "params": {
+          "w": 4,
+          "h": 3,
+          "np": 1
+        },
+        "seed": 5
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 5
+      }
+    }
+  ],
+  "variants": [
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three failing start cells per plan, each simulated inside A.\n# No bound constant: the horizon t grows until a plan exists. Each round grounds step t in\n# A, makes the new do(t,D) atoms interface atoms (G.extend, before C grounds the step that\n# reads them), grounds step t in C, and moves the external query from t - 1 to t.\n# Refinements of shorter horizons stay: a start cell refutes a plan prefix only through\n# query(T), so they are inactive at the new horizon (sound, only weaker).\nt = 0\nfound = false\nwhile not found:\n    t = t + 1\n    A.ground(step, t)\n    G.extend(step, t)\n    C.ground(step, t)\n    if t > 1:\n        A.set(A.atom(\"query\", t - 1), false)\n        C.set(C.atom(\"query\", t - 1), false)\n    A.set(A.atom(\"query\", t), true)\n    C.set(C.atom(\"query\", t), true)\n    loop:\n        M = A.solve()\n        if not M: break\n        Xs = C.models(assume G(M), limit 3)\n        if Xs.size > 0:\n            for X in Xs:\n                A.expand(refine, cex = X.atoms(start/2))\n        else:\n            accept M\n            A.add(G.block(M))\n            found = true\nlog \"shortest horizon:\", t\n"
+      }
+    },
+    {
+      "name": "far-start",
+      "swap": {
+        "check": "check_far"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The failing start cell farthest from the goal (optimal).\n# No bound constant: the horizon t grows until a plan exists. Each round grounds step t in\n# A, makes the new do(t,D) atoms interface atoms (G.extend, before C grounds the step that\n# reads them), grounds step t in C, and moves the external query from t - 1 to t.\n# Refinements of shorter horizons stay: a start cell refutes a plan prefix only through\n# query(T), so they are inactive at the new horizon (sound, only weaker).\nt = 0\nfound = false\nwhile not found:\n    t = t + 1\n    A.ground(step, t)\n    G.extend(step, t)\n    C.ground(step, t)\n    if t > 1:\n        A.set(A.atom(\"query\", t - 1), false)\n        C.set(C.atom(\"query\", t - 1), false)\n    A.set(A.atom(\"query\", t), true)\n    C.set(C.atom(\"query\", t), true)\n    loop:\n        M = A.solve()\n        if not M: break\n        X = C.solve(assume G(M), optimal)\n        if X:\n            A.expand(refine, cex = X.atoms(start/2))\n        else:\n            accept M\n            A.add(G.block(M))\n            found = true\nlog \"shortest horizon:\", t\n"
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "room",
+      "description": "A w x h room with np random pillars and a random goal cell (not on a pillar).",
+      "params": {
+        "w": "int",
+        "h": "int",
+        "np": "int"
+      },
+      "defaults": {
+        "w": 4,
+        "h": 3,
+        "np": 1
+      },
+      "text": "% room: a w x h room, np pillars at random cells, a goal at a random cell that is no pillar\ncell(1..w,1..h).\npillar(@int(1, w, px, K),@int(1, h, py, K)) :- K = 1..np.\ngoal(@int(1, w, gx),@int(1, h, gy)).\n:- goal(X,Y), pillar(X,Y).\n#show cell/2.  #show pillar/2.  #show goal/2.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "several",
+        "far-start"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": [],

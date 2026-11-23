@@ -23,6 +23,16 @@
       "name": "check",
       "description": "Looks for a world of the new information that is closer to the old world (solver C).",
       "text": "% A counterexample: another world alt/1 of the new information ...\n{ alt(A) } :- atom(A).\n:- new(C), not alt(A) : pos(C,A); alt(A) : neg(C,A).\n% ... that changes fewer atoms of the old world: far(A) says the candidate's new world\n% changes A, near(A) that alt/1 does. near/1 must be a proper subset of far/1.\nfar(A)  :- was(A), not now(A).\nfar(A)  :- now(A), not was(A).\nnear(A) :- was(A), not alt(A).\nnear(A) :- alt(A), not was(A).\n:- near(A), not far(A).\nspared(A) :- far(A), not near(A).\ncloser :- spared(A).\n:- not closer.\n#show alt/1.\n\n% alt/1 stays closer for every candidate that\n% - has the old value where alt/1 agrees with the old world;\nrelevant(was(A)) :- atom(A), not near(A).\n% - has the new value where alt/1 changes the old world (the two new worlds agree there);\nrelevant(now(A)) :- near(A).\n% - still changes one atom that alt/1 leaves alone (the first one will do).\nrelevant(now(A)) :- spared(A), not spared(B) : atom(B), B < A.\n"
+    },
+    {
+      "name": "check_all_spared",
+      "description": "The check of the variant all-spared: every atom that alt/1 spares is blamed, not only the first.",
+      "text": "% A counterexample: another world alt/1 of the new information ...\n{ alt(A) } :- atom(A).\n:- new(C), not alt(A) : pos(C,A); alt(A) : neg(C,A).\n% ... that changes fewer atoms of the old world: far(A) says the candidate's new world\n% changes A, near(A) that alt/1 does. near/1 must be a proper subset of far/1.\nfar(A)  :- was(A), not now(A).\nfar(A)  :- now(A), not was(A).\nnear(A) :- was(A), not alt(A).\nnear(A) :- alt(A), not was(A).\n:- near(A), not far(A).\nspared(A) :- far(A), not near(A).\ncloser :- spared(A).\n:- not closer.\n#show alt/1.\n\n% alt/1 stays closer for every candidate that\n% - has the old value where alt/1 agrees with the old world;\nrelevant(was(A)) :- atom(A), not near(A).\n% - has the new value where alt/1 changes the old world (the two new worlds agree there);\nrelevant(now(A)) :- near(A).\n% - still changes one of the atoms that alt/1 leaves alone (all of them are named:\n%   weaker than naming the first one, still sound).\nrelevant(now(A)) :- spared(A).\n"
+    },
+    {
+      "name": "check_small",
+      "description": "The check of the variant smallest: a closer world that changes as few atoms as possible, so the clause is short.",
+      "text": "% A counterexample: another world alt/1 of the new information ...\n{ alt(A) } :- atom(A).\n:- new(C), not alt(A) : pos(C,A); alt(A) : neg(C,A).\n% ... that changes fewer atoms of the old world: far(A) says the candidate's new world\n% changes A, near(A) that alt/1 does. near/1 must be a proper subset of far/1.\nfar(A)  :- was(A), not now(A).\nfar(A)  :- now(A), not was(A).\nnear(A) :- was(A), not alt(A).\nnear(A) :- alt(A), not was(A).\n:- near(A), not far(A).\nspared(A) :- far(A), not near(A).\ncloser :- spared(A).\n:- not closer.\n#show alt/1.\n% The smallest refinement (variant smallest): as few changed atoms as possible.\n#minimize { 1,A : near(A) }.\n\n% alt/1 stays closer for every candidate that\n% - has the old value where alt/1 agrees with the old world;\nrelevant(was(A)) :- atom(A), not near(A).\n% - has the new value where alt/1 changes the old world (the two new worlds agree there);\nrelevant(now(A)) :- near(A).\n% - still changes one atom that alt/1 leaves alone (the first one will do).\nrelevant(now(A)) :- spared(A), not spared(B) : atom(B), B < A.\n"
     }
   ],
   "loop": {
@@ -36,16 +46,6 @@
     "candidates": 0,
     "trace": 200,
     "seed": 0
-  },
-  "library": {
-    "id": "belief-update",
-    "group": "reasoning",
-    "summary": "Updating beliefs by minimal change (possible-models approach): old and new worlds that refute a query, checked against closer worlds (7 atoms, 8 solutions).",
-    "shape": "shape1",
-    "tags": [
-      "fast"
-    ],
-    "expected": 8
   },
   "instances": [
     {
@@ -61,19 +61,21 @@
     },
     {
       "id": "query-holds",
-      "facts": "% The book was on the table (a) and not on the shelf (b); now it is learnt that it is on\n% the shelf or on the table. Minimal change keeps it on the table: the query a holds.\natom(a;b).\npos(1,a). old(1).                     % a\nneg(2,b). old(2).                     % ~b\npos(3,a). pos(3,b). new(3).           % a | b\npos(4,a). query(4).                   % a\n",
+      "facts": "% a was believed, and the new information speaks only about b, c, d and e. Minimal change\n% never touches a: the query a holds after the update.\natom(a;b;c;d;e).\npos(1,a). old(1).                     % a\nneg(2,b). neg(2,c). old(2).           % ~b | ~c\npos(3,d). pos(3,e). old(3).           % d | e\npos(4,b). pos(4,c). new(4).           % b | c\nneg(5,d). pos(5,b). new(5).           % ~d | b\npos(6,a). query(6).                   % a\n",
       "constants": {},
       "expected": {
         "solutions": 0
-      }
+      },
+      "tags": []
     },
     {
       "id": "door-or-window",
-      "facts": "% Door (d) and window (w) were both closed; now one of them is open. Does the door\n% stay closed? Not after every minimal change.\natom(d;w).\nneg(1,d). old(1).                     % ~d\nneg(2,w). old(2).                     % ~w\npos(3,d). pos(3,w). new(3).           % d | w\nneg(4,d). query(4).                   % ~d\n",
+      "facts": "% Door (d), window (w) and hatch (h) were closed; the fan (f) may have been on or off.\n% Now one of the three is open, and an open hatch means the fan runs. Does the door stay\n% closed? Not after every minimal change: opening only the door is minimal.\natom(d;w;h;f).\nneg(1,d). old(1).                     % ~d\nneg(2,w). old(2).                     % ~w\nneg(3,h). old(3).                     % ~h\npos(4,d). pos(4,w). pos(4,h). new(4). % d | w | h\nneg(5,h). pos(5,f). new(5).           % ~h | f\nneg(6,d). query(6).                   % ~d\n",
       "constants": {},
       "expected": {
-        "solutions": 1
-      }
+        "solutions": 2
+      },
+      "tags": []
     },
     {
       "id": "switch",
@@ -82,6 +84,135 @@
       "expected": {
         "solutions": 1
       }
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "bu-random",
+        "params": {},
+        "seed": 5
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 4
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "bu-random",
+        "params": {},
+        "seed": 3
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 0
+      }
     }
-  ]
+  ],
+  "generators": [
+    {
+      "name": "bu-random",
+      "description": "Random beliefs in clause form: n atoms, o old clauses, w new clauses and a query clause; each atom occurs in a clause positively or negatively with probability p/1000 each.",
+      "params": {
+        "n": "int",
+        "o": "int",
+        "w": "int",
+        "p": "permille"
+      },
+      "defaults": {
+        "n": 6,
+        "o": 3,
+        "w": 3,
+        "p": 200
+      },
+      "text": "% bu-random: atoms 1..n; clauses 1..o are the old beliefs, the next w the new information\n% and the last one the query. An atom occurs in a clause positively or negatively with\n% probability p/1000 each; every clause has a literal.\natom(1..n).\nold(1..o).\nnew(o+1..o+w).\nquery(o+w+1).\nsign(C,A,@weighted((1000-2*p, p, p), C, A)) :- C = 1..o+w+1, atom(A).\npos(C,A) :- sign(C,A,2).\nneg(C,A) :- sign(C,A,3).\nused(C) :- sign(C,A,S), S > 1.\n:- C = 1..o+w+1, not used(C).\n#show atom/1.  #show old/1.  #show new/1.  #show query/1.  #show pos/2.  #show neg/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The blocking loop: each refuted candidate is ruled out on its own.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Shape 2: explicit solves of A; each solution is blocked by A.add.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "three-cex",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three counterexamples per candidate, one clause each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "smallest",
+      "swap": {
+        "check": "check_small"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The smallest refinement: an optimal counterexample (check_small minimises the\n# atoms that relevant/1 blames), so its clause is as short as possible.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M), optimal)\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "all-spared",
+      "swap": {
+        "check": "check_all_spared"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shape2",
+        "three-cex",
+        "smallest",
+        "all-spared"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "belief-update",
+    "group": "reasoning",
+    "summary": "Updating beliefs by minimal change (possible-models approach): old and new worlds that refute a query, checked against closer worlds (7 atoms, 8 solutions).",
+    "shape": "shape1",
+    "tags": [
+      "fast"
+    ],
+    "expected": 8
+  }
 }

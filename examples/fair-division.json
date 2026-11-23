@@ -65,21 +65,122 @@
     },
     {
       "id": "opposite-tastes",
-      "facts": "% Two agents with opposite tastes: each prefers the goods the other cares little\n% about, so there is one fair and efficient allocation.\nagent(1..2).\ngood(1..4).\nvalue(1,1,5). value(1,2,5). value(1,3,1). value(1,4,1).\nvalue(2,1,1). value(2,2,1). value(2,3,5). value(2,4,5).\n",
+      "facts": "% Two agents with opposite tastes over eight goods: each prefers the goods the other\n% cares little about, and two goods (7, 8) both like.\nagent(1..2).\ngood(1..8).\nvalue(1,1,6). value(1,2,5). value(1,3,4). value(1,4,1). value(1,5,1). value(1,6,2). value(1,7,5). value(1,8,3).\nvalue(2,1,1). value(2,2,2). value(2,3,1). value(2,4,6). value(2,5,5). value(2,6,4). value(2,7,5). value(2,8,3).\n",
       "constants": {},
+      "tags": [],
       "expected": {
-        "solutions": 1
-      },
-      "tags": []
+        "solutions": 4
+      }
     },
     {
       "id": "four-agents",
-      "facts": "% Four agents divide six goods.\nagent(1..4).\ngood(1..6).\nvalue(1,1,6). value(1,2,3). value(1,3,7). value(1,4,1). value(1,5,2). value(1,6,9).\nvalue(2,1,2). value(2,2,6). value(2,3,1). value(2,4,9). value(2,5,4). value(2,6,1).\nvalue(3,1,2). value(3,2,7). value(3,3,7). value(3,4,2). value(3,5,4). value(3,6,2).\nvalue(4,1,9). value(4,2,7). value(4,3,1). value(4,4,2). value(4,5,4). value(4,6,1).\n",
+      "facts": "% Four agents divide eight goods.\nagent(1..4).\ngood(1..8).\nvalue(1,1,6). value(1,2,3). value(1,3,7). value(1,4,1). value(1,5,2). value(1,6,9). value(1,7,4). value(1,8,2).\nvalue(2,1,2). value(2,2,6). value(2,3,1). value(2,4,9). value(2,5,4). value(2,6,1). value(2,7,3). value(2,8,5).\nvalue(3,1,2). value(3,2,7). value(3,3,7). value(3,4,2). value(3,5,4). value(3,6,2). value(3,7,6). value(3,8,1).\nvalue(4,1,9). value(4,2,7). value(4,3,1). value(4,4,2). value(4,5,4). value(4,6,1). value(4,7,2). value(4,8,6).\n",
       "constants": {},
+      "tags": [],
       "expected": {
-        "solutions": 3
+        "solutions": 16
+      }
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "additive",
+        "params": {
+          "a": 3,
+          "g": 9,
+          "m": 9
+        },
+        "seed": 1
       },
-      "tags": []
+      "expected": {
+        "solutions": 12
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "additive",
+        "params": {
+          "a": 2,
+          "g": 10,
+          "m": 9
+        },
+        "seed": 2
+      },
+      "expected": {
+        "solutions": 8
+      },
+      "tags": [
+        "generated"
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three dominating allocations per candidate, one rule each.\nloop:\n    M = A.solve()\n    if not M: stop\n    L = C.models(assume G(M), limit 3)\n    if L.size == 0:\n        accept M\n        A.add(G.block(M))\n    for X in L:\n        A.expand(refine, cex = X.atoms(alt/2))\n"
+      }
+    },
+    {
+      "name": "lift",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# No relevant/1: the clause is lifted from the ground programs of both ends.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.lift(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "additive",
+      "description": "Random additive values: every good is worth 1..m to every agent, uniformly and independently.",
+      "params": {
+        "a": "int",
+        "g": "int",
+        "m": "int"
+      },
+      "defaults": {
+        "a": 3,
+        "g": 9,
+        "m": 9
+      },
+      "text": "% additive: a agents, g goods, value(A,G,V) with V uniform in 1..m.\nagent(1..a).\ngood(1..g).\nvalue(A,G,@int(1, m, A, G)) :- agent(A), good(G).\n#show agent/1.  #show good/1.  #show value/3.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "several",
+        "lift"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

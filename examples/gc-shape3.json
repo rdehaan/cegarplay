@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Graph colouring, Shape 3",
   "description": "Graph colouring at n = 5 with the Shape 3 template. Shape 3: ground the #program refine(k) part once per counterexample (rules instead of clauses).",
   "fragments": [
@@ -39,5 +39,78 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "runs": [],
+  "instances": [
+    {
+      "id": "n5",
+      "facts": "",
+      "constants": {
+        "n": "5"
+      },
+      "expected": {
+        "solutions": 101
+      },
+      "tags": []
+    },
+    {
+      "id": "n3",
+      "facts": "",
+      "constants": {
+        "n": "3"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "n4",
+      "facts": "",
+      "constants": {
+        "n": "4"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    }
+  ],
+  "variants": [
+    {
+      "name": "shape1",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "shape4",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\npending = []\nrepeat:\n    search A:\n        on candidate M:\n            X = C.solve(assume G(M))\n            if X:\n                pending.push(X)\n                reject M with G.block(M)\n                if pending.size >= 20: restart\n    grounded = pending.size\n    for X in pending:\n        A.expand(refine, cex = X.atoms(color/2))\n    pending.clear()\nuntil A.exhausted and grounded == 0\n"
+      }
+    },
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    }
+  ]
 }

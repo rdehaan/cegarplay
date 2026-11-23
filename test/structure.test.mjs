@@ -48,6 +48,7 @@ function project({ blocks, clauses }) {
   let facts = blocks.flatMap((vs, b) => vs.map((v) => `var(${v},${b + 1}).`)).join(' ');
   clauses.forEach((c, k) => { facts += `\nclause(${k + 1}). ` + c.map(([v, s]) => `lit(${k + 1},${v},${s}).`).join(' '); });
   p.fragments.find((f) => f.name === 'shared').text = facts + '\n';
+  p.instances = [];          // the formula above replaces the instance 'example'
   return all(p, { constants: { depth: String(blocks.length) } });
 }
 

@@ -34,22 +34,6 @@
     "seed": 0,
     "instance": "example"
   },
-  "library": {
-    "id": "maxsat-oll",
-    "group": "logic",
-    "summary": "Core-guided MaxSAT (OLL): unsat cores raise a lower bound, each core is relaxed and grounded as a totaliser (C.expand with a core); the first satisfiable call is optimal (40 soft clauses, optimum 6, 1 solution).",
-    "shape": "custom",
-    "tags": [
-      "fast",
-      "oll",
-      "core-guided",
-      "cores",
-      "bounds",
-      "stops-at-optimum"
-    ],
-    "expected": null,
-    "optimum": 6
-  },
   "instances": [
     {
       "id": "example",
@@ -91,6 +75,140 @@
         "solutions": null
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "maxsat",
+        "params": {
+          "n": 5,
+          "s": 30,
+          "h": 2,
+          "k": 3
+        },
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 7
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "maxsat",
+        "params": {
+          "n": 6,
+          "s": 30,
+          "h": 2,
+          "k": 2
+        },
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 10
+      }
     }
-  ]
+  ],
+  "generators": [
+    {
+      "name": "maxsat",
+      "description": "A random unweighted MaxSAT instance: s soft clauses and h hard clauses over n variables, 1 to k literals per clause.",
+      "params": {
+        "n": "int",
+        "s": "int",
+        "h": "int",
+        "k": "int"
+      },
+      "defaults": {
+        "n": 5,
+        "s": 30,
+        "h": 2,
+        "k": 3
+      },
+      "text": "% maxsat: s soft clauses (weight 1) and h hard clauses over the variables 1..n; each\n% clause has 1 to k literals (uniform), each on a uniform variable with a sign of probability 1/2.\nsoft(C) :- C = 1..s.\nhard(h(J)) :- J = 1..h.\ncid(C) :- soft(C).\ncid(H) :- hard(H).\nlen(X,@int(1, k, X, len)) :- cid(X).\nlit(X,K,@int(1, n, X, K)) :- len(X,L), K = 1..L.\npos(X,V) :- lit(X,K,V), @flip(500, X, K, sign) = 1.\nneg(X,V) :- lit(X,K,V), @flip(500, X, K, sign) = 0.\n#show soft/1.\n#show hard/1.\n#show pos/2.\n#show neg/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "minimal-cores",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Core-guided MaxSAT (OLL, Morgado, Dodaro and Marques-Silva): one solver, called under\n# assumptions \"every soft constraint holds\". Each unsat core raises the lower bound by one;\n# its soft constraints are relaxed (no longer assumed) and replaced by the totaliser outputs\n# over(k,J) of relax(k), assumed false. The first satisfiable call is optimal.\nE = G(A.solve(optimal))            # every soft clause assumed kept\nlower = 0\nloop:\n    track lower = lower\n    X = C.solve(assume E)\n    if X:\n        log \"optimum:\", lower, \"violated:\", X.count(unsat/1)\n        accept X\n        stop\n    K = C.core.minimal             # subset-minimal: a smaller totaliser\n    if K.size == 0: stop \"the hard clauses are unsatisfiable\"\n    lower = lower + 1\n    for a in K:                    # relax the core's soft constraints\n        E = E.without(a)\n    C.expand(relax, core = K)      # facts core(k,T): the core's atoms (B2)\n    j = 2\n    while j <= K.size:             # the new soft constraints: not over(k,j)\n        o = C.atom(\"over\", C.step, j)\n        for a in o:\n            E.push(a)\n            E = E.flip(a)\n        j = j + 1\n"
+      }
+    },
+    {
+      "name": "hitting-sets",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# The MaxHS loop of maxsat-ihs on the same fragments: optimal hitting sets of minimised cores;\n# the relax part is never used.\nupper = none\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"the hard clauses are unsatisfiable\"\n    track lower = M.cost\n    E = G(M)\n    cores = 0\n    loop:\n        X = C.solve(assume E)\n        if X:\n            if upper == none or X.cost < upper: upper = X.cost\n            break\n        K = C.core.minimal             # no assumption of it can be left out\n        if K.on(G).size == 0: stop \"the hard clauses are unsatisfiable\"\n        A.add(K.on(G))                 # hit at least one clause of the core\n        cores = cores + 1\n        count cores\n        for a in K:                    # relax the core's clauses, look for a disjoint one\n            E = E.without(a)\n    track upper = upper\n    if cores == 0:\n        log \"optimum:\", M.cost\n        accept M\n        stop\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "minimal-cores",
+        "hitting-sets"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    },
+    {
+      "name": "random",
+      "instances": {
+        "generator": "maxsat",
+        "grid": {
+          "s": [
+            20,
+            30,
+            40
+          ]
+        },
+        "seeds": 5
+      },
+      "variants": [
+        "default",
+        "minimal-cores"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "maxsat-oll",
+    "group": "logic",
+    "summary": "Core-guided MaxSAT (OLL): unsat cores raise a lower bound, each core is relaxed and grounded as a totaliser (C.expand with a core); the first satisfiable call is optimal (40 soft clauses, optimum 6, 1 solution).",
+    "shape": "custom",
+    "tags": [
+      "fast",
+      "oll",
+      "core-guided",
+      "cores",
+      "bounds",
+      "stops-at-optimum"
+    ],
+    "expected": null,
+    "optimum": 6
+  }
 }

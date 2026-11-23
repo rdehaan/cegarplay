@@ -1,19 +1,7 @@
 #script (lua)
 FRAGMENTS = {}
 FRAGMENTS["shared"] = [==[
-% exists x1..x4  forall y1..y3  exists z1..z3 :  C1 & ... & C10  (clauses of three literals)
-% xlit(C,I,S): clause C contains x_I (S = 1) or its negation (S = 0); ylit/3, zlit/3 likewise.
-xvar(1..4).  yvar(1..3).  zvar(1..3).  clause(1..10).
-xlit(1,4,0). zlit(1,3,0). ylit(1,1,1).      % ~x4 v ~z3 v y1
-zlit(2,2,1). ylit(2,1,0). xlit(2,1,1).      % z2 v ~y1 v x1
-xlit(3,4,0). zlit(3,1,1). ylit(3,2,0).      % ~x4 v z1 v ~y2
-ylit(4,2,0). zlit(4,3,1). xlit(4,4,1).      % ~y2 v z3 v x4
-ylit(5,1,0). zlit(5,2,0). xlit(5,4,1).      % ~y1 v ~z2 v x4
-ylit(6,1,1). zlit(6,3,0). xlit(6,3,1).      % y1 v ~z3 v x3
-zlit(7,2,1). ylit(7,2,0). xlit(7,1,1).      % z2 v ~y2 v x1
-ylit(8,2,1). zlit(8,3,1). xlit(8,3,1).      % y2 v z3 v x3
-zlit(9,1,1). ylit(9,2,1). xlit(9,2,0).      % z1 v y2 v ~x2
-ylit(10,3,0). zlit(10,3,1). xlit(10,2,1).   % ~y3 v z3 v x2
+% The instance (its facts) is in the Instances tab.
 ]==]
 FRAGMENTS["outer"] = [==[
 { x(I) } :- xvar(I).
@@ -86,5 +74,5 @@ function main(prg)
     end }
   end)
 end
-LOOP_LINES = { 67, 86 }
+LOOP_LINES = { 55, 74 }
 #end.

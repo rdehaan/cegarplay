@@ -3674,7 +3674,7 @@ An **instance** is a set of facts and constant values that a run puts on top of 
 - The **Instances** tab lists them with their tags, the expected solution count and the count of the last run, and edits their facts and constants. **Run all** runs each one and marks a count other than the expected one with ✗. (The instance `n6` is tagged `slow`.)
 - **Import file** turns a file into an instance: facts, DIMACS graphs, QDIMACS formulas, argumentation frameworks, PrefLib elections.
 
-Most examples of the library keep their input in instances. The voting example has seventeen: each is one question, a set of axioms with a target profile and its outcome, from a single axiom up to five. One of them has no justification at all; its run ends with 0 solutions.
+Most examples of the library keep their input in instances. The voting example has fourteen: each is one question, a set of axioms with a target profile and its outcome, from two axioms up to five. One of them has no justification at all; its run ends with 0 solutions.
 
 [Playground: voting-justification]{.play}
 

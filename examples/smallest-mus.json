@@ -52,6 +52,17 @@
       ]
     },
     {
+      "id": "example-k5",
+      "facts": "% The formula of example with k = 5: every unsatisfiable set of at most 5 of its clauses.\nneg(1,1).                             % ~v1\npos(2,1). neg(2,2).                   % v1 | ~v2\nneg(3,2). neg(3,4).                   % ~v2 | ~v4\npos(4,2). neg(4,3).                   % v2 | ~v3\npos(5,2). pos(5,3).                   % v2 | v3\npos(6,2). neg(6,4).                   % v2 | ~v4\nneg(7,3). pos(7,5).                   % ~v3 | v5\npos(8,3). neg(8,4).                   % v3 | ~v4\npos(9,3). pos(9,4).                   % v3 | v4\npos(10,3). pos(10,5).                 % v3 | v5\npos(11,1). pos(11,2). pos(11,4).      % v1 | v2 | v4\npos(12,1). pos(12,3). pos(12,4).      % v1 | v3 | v4\n",
+      "constants": {
+        "k": "5"
+      },
+      "expected": {
+        "solutions": 23
+      },
+      "tags": []
+    },
+    {
       "id": "satisfiable",
       "facts": "% A satisfiable formula: it has no unsatisfiable subset at all.\npos(1,1). pos(1,2).                   % v1 | v2\nneg(2,1). pos(2,3).                   % ~v1 | v3\nneg(3,2). neg(3,3).                   % ~v2 | ~v3\n",
       "constants": {},
@@ -68,6 +79,128 @@
         "solutions": 7
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "random-cnf",
+        "params": {
+          "v": 4,
+          "c": 10,
+          "l": 2
+        },
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 19
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "random-cnf",
+        "params": {
+          "v": 5,
+          "c": 12,
+          "l": 2
+        },
+        "seed": 3
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 67
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "random-cnf",
+      "description": "A random CNF: c clauses over the variables 1..v, each with 1 to l literals.",
+      "params": {
+        "v": "int",
+        "c": "int",
+        "l": "int"
+      },
+      "defaults": {
+        "v": 4,
+        "c": 10,
+        "l": 2
+      },
+      "text": "% random-cnf: c clauses over the variables 1..v; clause C has 1 to l literals (uniform), each\n% on a uniform variable with a sign of probability 1/2 (a repeated literal counts once).\nclause(1..c).\nlen(C,@int(1, l, C, len)) :- clause(C).\nlit(C,J,@int(1, v, C, J)) :- len(C,N), J = 1..N.\npos(C,V) :- lit(C,J,V), @flip(500, C, J, sign) = 1.\nneg(C,V) :- lit(C,J,V), @flip(500, C, J, sign) = 0.\n#show pos/2.\n#show neg/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--enum-mode=record\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "three-per-candidate",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three satisfying assignments per candidate, one clause each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "record",
+        "three-per-candidate"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    },
+    {
+      "name": "random",
+      "instances": {
+        "generator": "random-cnf",
+        "grid": {
+          "c": [
+            8,
+            10,
+            12
+          ]
+        },
+        "seeds": 5
+      },
+      "variants": [
+        "default",
+        "reference"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

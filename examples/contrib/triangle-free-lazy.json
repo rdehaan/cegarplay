@@ -2,7 +2,7 @@
   "format": "cegarplay",
   "version": 2,
   "title": "Triangle-free graphs: lazy constraints at partial assignments",
-  "description": "Graphs on n nodes with at least m edges and no triangle. The abstraction has no triangle constraint; the check finds a triangle, and G.clause(X) adds it as a clause inside the search (lazy constraint generation). With on partial (G5) the check also runs at partial assignments, with the open edges taken as absent (G(P, false)): a triangle among the edges chosen so far cuts the subtree before the candidate is complete. The variant total-only checks total candidates only. Counts checked against clingo with the triangle constraint written out.",
+  "description": "Graphs on n nodes with at least m edges and no triangle. The abstraction has no triangle constraint; the check finds a triangle, and G.clause(X) adds it as a clause inside the search (lazy constraint generation). With on partial (G5) the check also runs at partial assignments, with the open edges taken as absent (G(P, false)): a triangle among the edges chosen so far cuts the subtree before the candidate is complete. The variant total-only checks total candidates only; every-1 checks at every fixpoint, and several takes up to three triangles per check. Counts checked against clingo with the triangle constraint written out.",
   "fragments": [
     {
       "name": "shared",
@@ -36,18 +36,6 @@
     "trace": 200,
     "seed": 0,
     "instance": ""
-  },
-  "library": {
-    "id": "triangle-free-lazy",
-    "group": "graphs",
-    "summary": "Lazy constraint generation at partial assignments (on partial, G(P, false)): graphs with at least m edges and no triangle (n = 8, m = 16, 35 solutions).",
-    "shape": "custom",
-    "tags": [
-      "fast",
-      "lazy-constraints",
-      "partial"
-    ],
-    "expected": 35
   },
   "instances": [
     {
@@ -86,7 +74,8 @@
       "expected": {
         "solutions": 3416
       },
-      "tags": []
+      "tags": [],
+      "audit": false
     },
     {
       "id": "n7-none",
@@ -98,13 +87,85 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "audit": false
+    },
+    {
+      "id": "n6-none",
+      "facts": "% n = 6, at least 10 edges: none (at most 9 edges without a triangle, K(3,3)).\n",
+      "constants": {
+        "n": "6",
+        "m": "10"
+      },
+      "tags": [],
+      "expected": {
+        "solutions": 0
+      }
+    },
+    {
+      "id": "n5",
+      "facts": "% n = 5, at least 5 edges.\n",
+      "constants": {
+        "n": "5",
+        "m": "5"
+      },
+      "tags": [],
+      "expected": {
+        "solutions": 82
+      }
     }
   ],
   "variants": [
     {
       "name": "total-only",
       "loop": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Lazy constraint generation: the \"no triangle\" constraint is not in the abstraction; each\n# triangle the check finds becomes a clause, inside the search of A.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clause(M, X)\n"
+    },
+    {
+      "name": "every-1",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Lazy constraint generation: the \"no triangle\" constraint is not in the abstraction; each\n# triangle the check finds becomes a clause, inside the search of A.\nsearch A:\n    # G5: also at partial assignments, with the open edges taken as absent (G(P, false)).\n    # A triangle found there consists of edges A has already chosen: G.clause(X) is false at\n    # once and cuts the subtree. G.clause(X) is sound on a partial candidate: it holds for\n    # every graph with these three edges.\n    # every 8: at every 8th propagation fixpoint, to keep the number of check calls down.\n    on partial P every 1:\n        X = C.solve(assume G(P, false))\n        if X: reject P with G.clause(X)\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Up to three triangles per check, each one a clause, at partial and total candidates.\nsearch A:\n    on partial P every 8:\n        for X in C.models(assume G(P, false), limit 3):\n            reject P with G.clause(X)\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clause(M, X)\n"
+      }
     }
-  ]
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "total-only",
+        "every-1",
+        "several"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "triangle-free-lazy",
+    "group": "graphs",
+    "summary": "Lazy constraint generation at partial assignments (on partial, G(P, false)): graphs with at least m edges and no triangle (n = 8, m = 16, 35 solutions).",
+    "shape": "custom",
+    "tags": [
+      "fast",
+      "lazy-constraints",
+      "partial"
+    ],
+    "expected": 35
+  }
 }

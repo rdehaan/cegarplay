@@ -23,6 +23,11 @@
       "name": "check",
       "description": "Looks for an input that agrees on the kept features and gets the other answer (solver C).",
       "text": "% A counterexample: another input x/1 that agrees with the given one on the kept\n% features ...\n{ x(F) } :- feature(F).\n:- keep(F), is(F,1), not x(F).\n:- keep(F), is(F,0), x(F).\n% ... but gets the other answer from the network.\nfires(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), x(F) } >= T.\nyes :- #sum { V,U : vote(U,V), fires(U) } >= 3.\n:- yes, yes0.\n:- not yes, not yes0.\ndiffers(F) :- is(F,1), not x(F).\ndiffers(F) :- is(F,0), x(F).\n#show x/1.\n#show differs/1.\n\n% The input refutes every set of kept features on which it agrees with the given\n% input. So one of the features on which it differs has to be kept.\nrelevant(keep(F)) :- differs(F).\n"
+    },
+    {
+      "name": "check_small",
+      "description": "The check of the variant smallest: an input that differs from the given one in as few features as possible, so the clause is short.",
+      "text": "% A counterexample: another input x/1 that agrees with the given one on the kept\n% features ...\n{ x(F) } :- feature(F).\n:- keep(F), is(F,1), not x(F).\n:- keep(F), is(F,0), x(F).\n% ... but gets the other answer from the network.\nfires(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), x(F) } >= T.\nyes :- #sum { V,U : vote(U,V), fires(U) } >= 3.\n:- yes, yes0.\n:- not yes, not yes0.\ndiffers(F) :- is(F,1), not x(F).\ndiffers(F) :- is(F,0), x(F).\n#show x/1.\n#show differs/1.\n% The smallest refinement (variant smallest): an input that differs in as few features\n% as possible.\n#minimize { 1,F : differs(F) }.\n\n% The input refutes every set of kept features on which it agrees with the given\n% input. So one of the features on which it differs has to be kept.\nrelevant(keep(F)) :- differs(F).\n"
     }
   ],
   "loop": {
@@ -38,16 +43,6 @@
     "candidates": 0,
     "trace": 200,
     "seed": 0
-  },
-  "library": {
-    "id": "sufficient-reason",
-    "group": "reasoning",
-    "summary": "Smallest sets of features that force a small neural network's answer on a given input (8 features, k = 3, 2 solutions).",
-    "shape": "shape1",
-    "tags": [
-      "fast"
-    ],
-    "expected": 2
   },
   "instances": [
     {
@@ -78,6 +73,121 @@
         "solutions": 4
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "net-random",
+        "params": {},
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 14
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "net-random",
+        "params": {},
+        "seed": 10
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 0
+      }
     }
-  ]
+  ],
+  "generators": [
+    {
+      "name": "net-random",
+      "description": "A random network: n features, u hidden units; each unit sees each feature with probability p/1000 (weight in -3..-1 or 1..3), thresholds and votes in 1..3, and a random input.",
+      "params": {
+        "n": "int",
+        "u": "int",
+        "p": "permille"
+      },
+      "defaults": {
+        "n": 8,
+        "u": 3,
+        "p": 500
+      },
+      "text": "% net-random: features 1..n and hidden units 1..u. Unit U sees feature F with probability\n% p/1000, with a weight in -3..-1 or 1..3; thresholds are in 1..3 and votes in 1..3 (the\n% answer is \"yes\" when the votes of the firing units reach 3). The input is random.\nfeature(1..n).\nunit(1..u).\nweight(U,F,@int(1,3,size,U,F)*(1-2*@flip(500,sign,U,F))) :- unit(U), feature(F), @flip(p,edge,U,F) = 1.\nthreshold(U,@int(1,3,threshold,U)) :- unit(U).\nvote(U,@int(1,3,vote,U)) :- unit(U).\nis(F,@flip(500,input,F)) :- feature(F).\n#show feature/1.  #show unit/1.  #show weight/3.  #show threshold/2.  #show vote/2.  #show is/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The blocking loop: each refuted candidate is ruled out on its own.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Shape 2: explicit solves of A; each solution is blocked by A.add.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "three-cex",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three counterexamples per candidate, one clause each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "smallest",
+      "swap": {
+        "check": "check_small"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The smallest refinement: an optimal counterexample (check_small minimises the\n# atoms that relevant/1 blames), so its clause is as short as possible.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M), optimal)\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shape2",
+        "three-cex",
+        "smallest"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "sufficient-reason",
+    "group": "reasoning",
+    "summary": "Smallest sets of features that force a small neural network's answer on a given input (8 features, k = 3, 2 solutions).",
+    "shape": "shape1",
+    "tags": [
+      "fast"
+    ],
+    "expected": 2
+  }
 }

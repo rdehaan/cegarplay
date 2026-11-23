@@ -71,6 +71,7 @@ node tools/vendor.mjs                        # copy the engine into vendor/
 node tools/make-examples.mjs                 # rebuild examples/*.json (+ examples/contrib/*.json)
 node tools/make-replays.mjs                  # rebuild examples/replays/*.cprec (after a runtime or example change)
 node tools/audit.mjs <id> [--json]           # audit a project (exit 0 sound, 1 unsound)
+node tools/survey.mjs [id ...] [--variants]  # per instance: counts, refinements, audit time; variants vs expected
 node tools/make-chat-package.mjs             # dist/chat-package/: docs for writing examples in web chat
 node tools/guide-numbers.mjs [--check]       # measure the guide's examples into guide/numbers.json
 python3 tools/cegarcheck.py <project.json>   # check a project with Python clingo

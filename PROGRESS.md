@@ -1376,3 +1376,50 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
 - `tools/_t.mjs`, a scratch runner committed by mistake in 28c81f0, is removed.
 - `FUTURE-DIRECTIONS.md` now lists only what is still open (owner items, the blocked runtime
   items, checker coverage, the k8 ground truth, figures in the booklet).
+
+## Library breadth: instances, variants, generators (2026-11-23, on request)
+
+Request: every encoding outside the guide and the tutorial gets several instances, several loops
+and refinements (as variants) and, where reasonable, a generator; the audit of each finishes
+within about a minute and the instances are small but nontrivial.
+
+- **Result:** 81 examples, 435 instances (at least 3 each), 259 variants (at least 2 each, except
+  the exercises), 57 with a generator. Every variant gives every instance's expected count
+  (`node tools/survey.mjs <id> --variants`); where the audit cannot check a loop (cores, chains,
+  several links, raw Lua) the `reference` (blocking) variant or a brute-force/Python check is the
+  cross-check. 46 instances are `audit: false` (candidate spaces too large for the audit's time or
+  memory: most puzzle `example`s, `graph-coloring/n6`, `lang-second-solver/n5`, the large voting
+  questions, `arrowing/example`, ...); every other audit finishes within a minute (most under 5 s).
+- **Generators moved:** contrib examples carry their own generators, recipes and suites in their
+  file (`GENERATORS`, `RECIPES` in `tools/library.mjs` are empty); `test/draw.test.mjs` reads the
+  generators from the example files. New generators must have one rule per line (the shuffle test).
+- **Built-in examples** (`EXTRAS` in `tools/library.mjs`, applied by `buildAll`): constants-only
+  instances (sum-free n = 8, 6, 10, 12; graph colouring n = 5, 3, 4; `lang-core` n = 5, 4, 6) and
+  variants (`reference`, other shapes, `limit-1`, `minimal-core`, ...); no generators (the input is a
+  size constant). `nash` now runs with all solutions (it stopped at its first candidate, a solution
+  at every size): instances n2-w1, n2-w2, n2, n3-w1 (n3-w2 dropped: audit > 60 s), variants
+  reference, shape2, wide. `voting-justification`: all solutions, default instance
+  `faith-pareto-neutral-reinf-k4`; the ten questions with one or two candidates were dropped
+  (`VOTE_TRIVIAL`), four generated questions added (`random-4..7`, 4 to 27 justifications, audit
+  under 1 s). The exercises get no finished variant (it would give the answer away); the sum-free
+  exercise has `reference`.
+- **Guide:** `fromContrib` (tools/guide.mjs) leaves out fragments that only a variant swaps in.
+  `guide-numbers --check` holds.
+- **Golden fixtures** regenerated for `lang-second-solver` (one added fragment),
+  `reasons-by-shrinking` and `qbf-three-blocks` (facts moved into an `example` instance).
+- **Tests:** `test/coverage-[1-4].test.mjs` (shards of `test/coverage.mjs`): structure (≥ 3
+  instances, ≥ 2 variants) and every instance with an expected count on the default loop and
+  `reference` (all variants with `SLOW=1`; instances tagged slow/hard/original only then); 1.5 min.
+  `test/structure.test.mjs` G7 clears qbf-deep's instances; the maxsat-ihs browser test expects 6.
+- **Tools:** `tools/survey.mjs` (per instance: counts, refinements, run and audit time;
+  `--variants`; honours `audit: false`).
+- **Found, not fixed:** `exact` in `tools/draw.py` / `lua/generate.lua` is always true (the
+  generator control reads one model only), so a generator whose facts the solver completes is not
+  flagged; the library generators avoid this. `robust-facilities` ends with "relevant/1 derived
+  nothing" on an instance without a robust opening (`G.clause(X)` would end it cleanly).
+  `tools/make-replays.mjs` treats the `ground` time in the H line as content, so it rewrites every
+  replay; only replays of changed examples were committed.
+- Variants not added (they cannot finish): `reference` for cegis-circuit, maxsat-ihs,
+  conformant-growing, triangle-free-lazy, slitherlink and the sudoku examples (blocking copies or
+  `cegarcheck --mode block` checked their small instances instead). No generator where the input is
+  a fixed structure or a size constant (24 examples, listed by `survey`).

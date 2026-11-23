@@ -1,12 +1,12 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "QBF with any number of blocks",
   "description": "A quantified Boolean formula in conjunctive normal form with depth alternating blocks (exists first). One solver family S[1..depth], one link family G, and a recursive procedure refute: level i answers a candidate of level i - 1 with a clause, or with none when the candidate stands.",
   "fragments": [
     {
       "name": "shared",
-      "text": "% The formula: var(V,B) puts variable V in block B (block 1 exists, block 2 for all, ...);\n% clause C contains lit(C,V,S): V if S = 1, not V if S = 0.\nvar(1,1). var(2,1). var(3,2). var(4,2). var(5,3). var(6,3).\nclause(1). lit(1,1,1). lit(1,3,0). lit(1,5,1).\nclause(2). lit(2,2,0). lit(2,4,1). lit(2,6,0).\nclause(3). lit(3,1,0). lit(3,4,0). lit(3,5,0).\nclause(4). lit(4,2,1). lit(4,3,1). lit(4,6,1).\nclause(5). lit(5,1,1). lit(5,2,1). lit(5,6,0).\nclause(6). lit(6,3,0). lit(6,4,0).\n"
+      "text": "% The instance (its facts) is in the Instances tab.\n"
     },
     {
       "name": "level",
@@ -35,5 +35,146 @@
     "trace": 200,
     "seed": 0
   },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% The formula: var(V,B) puts variable V in block B (block 1 exists, block 2 for all, ...);\n% clause C contains lit(C,V,S): V if S = 1, not V if S = 0.\nvar(1,1). var(2,1). var(3,2). var(4,2). var(5,3). var(6,3).\nclause(1). lit(1,1,1). lit(1,3,0). lit(1,5,1).\nclause(2). lit(2,2,0). lit(2,4,1). lit(2,6,0).\nclause(3). lit(3,1,0). lit(3,4,0). lit(3,5,0).\nclause(4). lit(4,2,1). lit(4,3,1). lit(4,6,1).\nclause(5). lit(5,1,1). lit(5,2,1). lit(5,6,0).\nclause(6). lit(6,3,0). lit(6,4,0).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "example-depth4",
+      "facts": "% The formula of example read with four blocks: block 4 is empty, so the innermost\n% level is universal and has nothing to choose (depth = 4).\n% The formula: var(V,B) puts variable V in block B (block 1 exists, block 2 for all, ...);\n% clause C contains lit(C,V,S): V if S = 1, not V if S = 0.\nvar(1,1). var(2,1). var(3,2). var(4,2). var(5,3). var(6,3).\nclause(1). lit(1,1,1). lit(1,3,0). lit(1,5,1).\nclause(2). lit(2,2,0). lit(2,4,1). lit(2,6,0).\nclause(3). lit(3,1,0). lit(3,4,0). lit(3,5,0).\nclause(4). lit(4,2,1). lit(4,3,1). lit(4,6,1).\nclause(5). lit(5,1,1). lit(5,2,1). lit(5,6,0).\nclause(6). lit(6,3,0). lit(6,4,0).\n",
+      "constants": {
+        "depth": "4"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "random-3x3",
+      "facts": "% A random formula (generator qbf-blocks, b = 3, v = 3, c = 10, seed 1): 3 blocks of 3 variables.\nvar(1,1). var(2,1). var(3,1). var(4,2). var(5,2). var(6,2). var(7,3). var(8,3). var(9,3).\nclause(1). lit(1,6,1). lit(1,8,0).\nclause(2). lit(2,6,0). lit(2,8,0).\nclause(3). lit(3,1,0). lit(3,1,1). lit(3,9,1).\nclause(4). lit(4,5,0). lit(4,7,1).\nclause(5). lit(5,3,0). lit(5,4,0). lit(5,5,0).\nclause(6). lit(6,1,0). lit(6,1,1). lit(6,9,0).\nclause(7). lit(7,6,0). lit(7,6,1). lit(7,8,1).\nclause(8). lit(8,3,0). lit(8,5,0). lit(8,5,1).\nclause(9). lit(9,1,1). lit(9,9,0).\nclause(10). lit(10,2,0). lit(10,4,0). lit(10,5,1).\n",
+      "constants": {
+        "depth": "3"
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "random-4x2",
+      "facts": "% A random formula (generator qbf-blocks, b = 4, v = 2, c = 10, seed 5): 4 blocks of 2 variables.\nvar(1,1). var(2,1). var(3,2). var(4,2). var(5,3). var(6,3). var(7,4). var(8,4).\nclause(1). lit(1,1,0). lit(1,3,1). lit(1,7,0).\nclause(2). lit(2,2,0). lit(2,3,0). lit(2,3,1).\nclause(3). lit(3,3,0). lit(3,5,1). lit(3,8,1).\nclause(4). lit(4,3,0). lit(4,3,1). lit(4,4,0).\nclause(5). lit(5,3,0). lit(5,3,1). lit(5,8,1).\nclause(6). lit(6,2,1). lit(6,4,1). lit(6,6,1).\nclause(7). lit(7,3,1). lit(7,7,0). lit(7,7,1).\nclause(8). lit(8,4,1). lit(8,5,1). lit(8,8,0).\nclause(9). lit(9,4,0). lit(9,4,1). lit(9,7,1).\nclause(10). lit(10,2,0). lit(10,4,0). lit(10,5,1).\n",
+      "constants": {
+        "depth": "4"
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {
+        "depth": "3"
+      },
+      "recipe": {
+        "generator": "qbf-blocks",
+        "params": {
+          "b": 3,
+          "v": 3,
+          "c": 10
+        },
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {
+        "depth": "4"
+      },
+      "recipe": {
+        "generator": "qbf-blocks",
+        "params": {
+          "b": 4,
+          "v": 2,
+          "c": 10
+        },
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 0
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "qbf-blocks",
+      "description": "A random QBF in CNF: b alternating blocks of v variables (exists first), c clauses of three literals. Give the instance the constant depth = b.",
+      "params": {
+        "b": "int",
+        "v": "int",
+        "c": "int"
+      },
+      "defaults": {
+        "b": 3,
+        "v": 3,
+        "c": 10
+      },
+      "text": "% qbf-blocks: a QBF in CNF with b alternating blocks of v variables each (block 1 exists) and\n% c clauses of three literals; each literal picks a variable uniformly and a sign with probability 1/2.\n% Set the constant depth of the instance to b.\nvar(V,(V-1)/v+1) :- V = 1..b*v.\nclause(1..c).\nslot(1..3).\nlit(C,@int(1, b*v, C, J),@flip(500, C, J, sign)) :- clause(C), slot(J).\n#show var/2.\n#show clause/1.\n#show lit/3.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver S[i in 1..depth] = shared + level + inner\nlink   G[i in 1..depth-1] = S[i] -> S[i+1] via shared + glue\n\n# Block-only baseline: every answer blocks the candidate it refutes.\n# refute(i, M): a clause that removes the candidate M of level i - 1, or none if M stands.\n# Level i looks for an answer Y. At the innermost level an answer refutes M by its relevant\n# atoms. Otherwise level i + 1 tries to refute Y: if it cannot, Y refutes M, and the reason\n# has two parts, what made Y legal and what made level i + 1 fail (its core, on the atoms of\n# level i - 1). If it can, level i learns the clause (it names outer atoms too, so it stays\n# valid) and looks again.\ndef refute(i, M):\n    loop:\n        Y = S[i].solve(assume G[i-1](M))\n        if not Y: return none\n        if i == S.size: return G[i-1].block(M)\n        c = refute(i + 1, Y)\n        if not c: return G[i-1].block(M)\n        S[i].add(c)\n\nloop:\n    M = S[1].solve()\n    if not M: stop\n    c = refute(2, M)\n    if c: S[1].add(c)\n    else:\n        accept M\n        S[1].add(G[1].block(M))\n"
+      }
+    },
+    {
+      "name": "search",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver S[i in 1..depth] = shared + level + inner\nlink   G[i in 1..depth-1] = S[i] -> S[i+1] via shared + glue\n\n# refute(i, M): a clause that removes the candidate M of level i - 1, or none if M stands.\n# Level i looks for an answer Y. At the innermost level an answer refutes M by its relevant\n# atoms. Otherwise level i + 1 tries to refute Y: if it cannot, Y refutes M, and the reason\n# has two parts, what made Y legal and what made level i + 1 fail (its core, on the atoms of\n# level i - 1). If it can, level i learns the clause (it names outer atoms too, so it stays\n# valid) and looks again.\ndef refute(i, M):\n    loop:\n        Y = S[i].solve(assume G[i-1](M))\n        if not Y: return none\n        if i == S.size: return G[i-1].clause(Y)\n        c = refute(i + 1, Y)\n        if not c: return G[i-1].clause(Y) + S[i+1].core.on(G[i-1])\n        S[i].add(c)\n\nsearch S[1]:\n    on candidate M:\n        c = refute(2, M)\n        if c: reject M with c\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "search"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
   "runs": []
 }

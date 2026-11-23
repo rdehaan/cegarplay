@@ -19,6 +19,11 @@
     {
       "name": "check",
       "text": "% A counterexample: the full program says no. violated(D): two queens on diagonal D.\nviolated(D) :- diag(R1,C1,D), diag(R2,C2,D), q(R1,C1), q(R2,C2), R1 < R2.\nbad :- violated(_).\n:- not bad.\n#show violated/1.\n"
+    },
+    {
+      "name": "check_clause",
+      "text": "% A counterexample: the full program says no. violated(D): two queens on diagonal D.\nviolated(D) :- diag(R1,C1,D), diag(R2,C2,D), q(R1,C1), q(R2,C2), R1 < R2.\nbad :- violated(_).\n:- not bad.\n#show violated/1.\n% Variant clauses: the queens on a broken diagonal are relevant; one of them must move.\nrelevant(q(R,C)) :- violated(D), diag(R,C,D), q(R,C).\n",
+      "description": "The check with relevant/1, for the variant clauses."
     }
   ],
   "loop": {
@@ -35,18 +40,6 @@
     "trace": 200,
     "seed": 0,
     "instance": ""
-  },
-  "library": {
-    "id": "queens-omission",
-    "group": "puzzles",
-    "summary": "n queens by omission-based abstraction: the diagonal constraints start switched off (#external) and are switched on (A.set) when a candidate breaks them (n = 8, 92 solutions).",
-    "shape": "custom",
-    "tags": [
-      "fast",
-      "omission",
-      "externals"
-    ],
-    "expected": 92
   },
   "instances": [
     {
@@ -83,6 +76,138 @@
         "solutions": 0
       },
       "tags": []
+    },
+    {
+      "id": "n7",
+      "facts": "% n = 7: 40 placements.\n",
+      "constants": {
+        "n": "7"
+      },
+      "expected": {
+        "solutions": 40
+      },
+      "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {
+        "n": "8"
+      },
+      "recipe": {
+        "generator": "given",
+        "params": {
+          "n": 8,
+          "k": 2
+        },
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {
+        "n": "8"
+      },
+      "recipe": {
+        "generator": "given",
+        "params": {
+          "n": 8,
+          "k": 2
+        },
+        "seed": 2
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 1
+      }
     }
-  ]
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# The blocking loop: no diagonal is ever switched on; every bad placement is blocked.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "one-diagonal",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Switch on only one broken diagonal per counterexample.\nactive = 0\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        for v in X.atoms(violated/1):\n            A.set(A.atom(\"active\", v.arg(1)), true)\n            active = active + 1\n            break\n        track constraints = active\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "clauses",
+      "swap": {
+        "check": "check_clause"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Plain CEGAR instead of omission: a clause per counterexample (one of the queens on a broken\n# diagonal moves); no diagonal is switched on.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "given",
+      "description": "k queens given in rows 1..k (random distinct columns, no two on a diagonal) on an n x n board; set the instance constant n to the same value.",
+      "params": {
+        "n": "int",
+        "k": "int"
+      },
+      "defaults": {
+        "n": 8,
+        "k": 2
+      },
+      "text": "% given: queens in rows 1..k at the columns of a random permutation of 1..n, redrawn if two share a diagonal\nq(R,@perm(n, R, cols)) :- R = 1..k.\n:- q(R1,C1), q(R2,C2), R1 < R2, R2 - R1 = |C2 - C1|.\n#show q/2.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": [
+          "n6",
+          "n3",
+          "n7",
+          "random-1",
+          "random-2"
+        ]
+      },
+      "variants": [
+        "default",
+        "reference",
+        "one-diagonal",
+        "clauses"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "queens-omission",
+    "group": "puzzles",
+    "summary": "n queens by omission-based abstraction: the diagonal constraints start switched off (#external) and are switched on (A.set) when a candidate breaks them (n = 8, 92 solutions).",
+    "shape": "custom",
+    "tags": [
+      "fast",
+      "omission",
+      "externals"
+    ],
+    "expected": 92
+  }
 }

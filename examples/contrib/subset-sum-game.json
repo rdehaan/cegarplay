@@ -23,6 +23,14 @@
       "name": "check",
       "description": "Looks for y-numbers that complete the sum to the target (solver C).",
       "text": "% A counterexample: a set of y-numbers that adds exactly the missing amount.\n{ take(J) : ynum(J,_) }.\n:- xsum(S), target(T), #sum { W,J : take(J), ynum(J,W) } != T - S.\n#show take/1.\n\n% It depends on the sum only: no set with this sum is a solution.\nrelevant(xsum(S)) :- xsum(S).\n"
+    },
+    {
+      "name": "glue_pick",
+      "text": "% The interface is the set itself, not its sum.\nglue(pick(I)) :- xnum(I,_).\n"
+    },
+    {
+      "name": "check_pick",
+      "text": "% The sum of the picked x-numbers, computed here from pick/1.\nxsum(S) :- S = #sum { W,I : pick(I), xnum(I,W) }.\n% A counterexample: a set of y-numbers that adds exactly the missing amount.\n{ take(J) : ynum(J,_) }.\n:- xsum(S), target(T), #sum { W,J : take(J), ynum(J,W) } != T - S.\n#show take/1.\n\n% Every pick/1 atom is blamed: one refinement per set.\nrelevant(pick(I)) :- xnum(I,_).\n"
     }
   ],
   "loop": {
@@ -36,16 +44,6 @@
     "candidates": 0,
     "trace": 200,
     "seed": 0
-  },
-  "library": {
-    "id": "subset-sum-game",
-    "group": "games",
-    "summary": "Sets of x-numbers that no set of y-numbers completes to the target; the interface is the derived sum, so one clause removes all sets with that sum (7 + 7 numbers, 11 solutions).",
-    "shape": "shape1",
-    "tags": [
-      "fast"
-    ],
-    "expected": 11
   },
   "instances": [
     {
@@ -85,6 +83,130 @@
         "solutions": 16
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "numbers",
+        "params": {
+          "nx": 7,
+          "ny": 6,
+          "m": 20,
+          "q": 600
+        },
+        "seed": 1
+      },
+      "expected": {
+        "solutions": 43
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "numbers",
+        "params": {
+          "nx": 8,
+          "ny": 6,
+          "m": 15,
+          "q": 500
+        },
+        "seed": 1
+      },
+      "expected": {
+        "solutions": 51
+      },
+      "tags": [
+        "generated"
+      ]
     }
-  ]
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 5):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--enum-mode=record\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "per-set",
+      "swap": {
+        "glue": "glue_pick",
+        "check": "check_pick"
+      },
+      "constants": {}
+    }
+  ],
+  "generators": [
+    {
+      "name": "numbers",
+      "description": "Random lists: nx x-numbers and ny y-numbers in 1..m, and the target q/1000 of the total of both lists.",
+      "params": {
+        "nx": "int",
+        "ny": "int",
+        "m": "int",
+        "q": "permille"
+      },
+      "defaults": {
+        "nx": 7,
+        "ny": 6,
+        "m": 20,
+        "q": 600
+      },
+      "text": "% numbers: xnum(I,W) and ynum(J,W) uniform in 1..m; the target is q/1000 of the total.\nxnum(I,@int(1, m, I, x)) :- I = 1..nx.\nynum(J,@int(1, m, J, y)) :- J = 1..ny.\ntotal(T) :- T = #sum { W,I,x : xnum(I,W) ; W,J,y : ynum(J,W) }.\ntarget(T*q/1000) :- total(T).\n#show xnum/2.  #show ynum/2.  #show target/1.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "several",
+        "record",
+        "per-set"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "subset-sum-game",
+    "group": "games",
+    "summary": "Sets of x-numbers that no set of y-numbers completes to the target; the interface is the derived sum, so one clause removes all sets with that sum (7 + 7 numbers, 11 solutions).",
+    "shape": "shape1",
+    "tags": [
+      "fast"
+    ],
+    "expected": 11
+  }
 }

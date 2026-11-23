@@ -37,19 +37,6 @@
     "seed": 0,
     "instance": ""
   },
-  "library": {
-    "id": "cegis-circuit",
-    "group": "logic",
-    "summary": "CEGIS: circuits of and/or/nand gates that compute the majority, synthesised from the counterexample inputs a verifier returns; each input is grounded as a simulation in the synthesiser (3 inputs, 4 gates, 27 solutions).",
-    "shape": "shape3",
-    "tags": [
-      "fast",
-      "cegis",
-      "synthesis",
-      "expansion"
-    ],
-    "expected": 27
-  },
   "instances": [
     {
       "id": "g4",
@@ -75,7 +62,8 @@
       "expected": {
         "solutions": 789
       },
-      "tags": []
+      "tags": [],
+      "audit": false
     },
     {
       "id": "g3",
@@ -86,6 +74,31 @@
       },
       "expected": {
         "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "m4-g5",
+      "facts": "% At least 3 of 4 inputs with 5 gates: none (brute force); 12 counterexample inputs to show it.\n",
+      "constants": {
+        "m": "4",
+        "g": "5"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": [],
+      "audit": false
+    },
+    {
+      "id": "m2-g3",
+      "facts": "% Both of 2 inputs (and) with 3 gates: 23 circuits.\n",
+      "constants": {
+        "m": "2",
+        "g": "3"
+      },
+      "expected": {
+        "solutions": 23
       },
       "tags": []
     },
@@ -101,5 +114,54 @@
       },
       "tags": []
     }
-  ]
+  ],
+  "variants": [
+    {
+      "name": "shape4",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Shape 4: search, collect the counterexample inputs, ground them in batches of four.\npending = []\nrepeat:\n    search A:\n        on candidate M:\n            X = C.solve(assume G(M))\n            if X:\n                pending.push(X)\n                reject M with G.block(M)\n                if pending.size >= 4: restart\n    grounded = pending.size\n    for X in pending:\n        A.expand(refine, cex = X.atoms(inval/2), goal = X.atoms(want/1))\n        count inputs\n    pending.clear()\nuntil A.exhausted and grounded == 0\n"
+      }
+    },
+    {
+      "name": "two-per-candidate",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Up to two counterexample inputs per circuit, each grounded in the synthesiser.\nloop:\n    M = A.solve()\n    if not M: stop\n    XS = C.models(assume G(M), limit 2)\n    for X in XS:\n        A.expand(refine, cex = X.atoms(inval/2), goal = X.atoms(want/1))\n        count inputs\n    if XS.size == 0:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "shape4",
+        "two-per-candidate"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "cegis-circuit",
+    "group": "logic",
+    "summary": "CEGIS: circuits of and/or/nand gates that compute the majority, synthesised from the counterexample inputs a verifier returns; each input is grounded as a simulation in the synthesiser (3 inputs, 4 gates, 27 solutions).",
+    "shape": "shape3",
+    "tags": [
+      "fast",
+      "cegis",
+      "synthesis",
+      "expansion"
+    ],
+    "expected": 27
+  }
 }

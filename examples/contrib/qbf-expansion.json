@@ -42,18 +42,6 @@
     "trace": 200,
     "seed": 0
   },
-  "library": {
-    "id": "qbf-expansion",
-    "group": "logic",
-    "summary": "The 2QBF example with Shape 3: each counterexample y-assignment instantiates the formula in the abstraction (5 solutions).",
-    "shape": "shape3",
-    "tags": [
-      "fast",
-      "expansion",
-      "areqs"
-    ],
-    "expected": 5
-  },
   "instances": [
     {
       "id": "example",
@@ -67,15 +55,6 @@
       ]
     },
     {
-      "id": "one-solution",
-      "facts": "% A small true formula with one solution:\n% exists x1 x2  forall y1 : (x1 & y1) v (x2 & ~y1).\nxvar(1..2).  yvar(1).\nxlit(1,1,1). ylit(1,1,1).\nxlit(2,2,1). ylit(2,1,0).\n",
-      "constants": {},
-      "expected": {
-        "solutions": 1
-      },
-      "tags": []
-    },
-    {
       "id": "false-formula",
       "facts": "% A false formula: y1 = y2 = 0 makes every term false, whatever the x-variables are.\n% exists x1 x2  forall y1 y2 : (x1 & y1) v (x2 & y1) v (~x2 & y2).\nxvar(1..2).  yvar(1..2).\nxlit(1,1,1). ylit(1,1,1).\nxlit(2,2,1). ylit(2,1,1).\nxlit(3,2,0). ylit(3,2,1).\n",
       "constants": {},
@@ -85,13 +64,146 @@
       "tags": []
     },
     {
-      "id": "random-5x4",
-      "facts": "% A random formula with 5 x-variables, 4 y-variables and 10 terms (random-3 of qbf).\nxvar(1..5).  yvar(1..4).\nxlit(1,4,0). ylit(1,1,0).\nxlit(2,1,0). ylit(2,1,0).\nxlit(3,3,0). ylit(3,1,0).\nxlit(4,3,0). ylit(4,1,0).\nxlit(5,2,0). ylit(5,1,1).\nxlit(6,1,0). ylit(6,1,0).\nxlit(7,1,0). ylit(7,1,0).\nxlit(8,3,0). ylit(8,1,0).\nxlit(9,3,0). ylit(9,1,0).\nxlit(10,4,0). xlit(10,5,0). ylit(10,1,0).\n",
+      "id": "random-6x5",
+      "facts": "% A random formula (generator qbf-dnf, nx = 6, ny = 5, t = 12, seed 4) with 8 solutions.\nxvar(1..6).  yvar(1..5).\nxlit(1,3,1). xlit(1,4,0). ylit(1,5,1).   % x3 & ~x4 & y5\nxlit(2,2,1). ylit(2,3,0). ylit(2,4,0).   % x2 & ~y3 & ~y4\nxlit(3,4,1). xlit(3,5,1). ylit(3,5,1).   % x4 & x5 & y5\nxlit(4,4,1). ylit(4,1,1). ylit(4,4,0).   % x4 & y1 & ~y4\nxlit(5,6,1). ylit(5,1,0). ylit(5,1,1).   % x6 & ~y1 & y1\nxlit(6,1,1). xlit(6,5,0). ylit(6,5,0).   % x1 & ~x5 & ~y5\nxlit(7,5,1). ylit(7,2,1). ylit(7,4,0).   % x5 & y2 & ~y4\nxlit(8,1,0). xlit(8,4,1). ylit(8,1,1).   % ~x1 & x4 & y1\nxlit(9,3,1). ylit(9,4,1). ylit(9,5,0).   % x3 & y4 & ~y5\nxlit(10,2,1). ylit(10,1,0). ylit(10,2,0). % x2 & ~y1 & ~y2\nxlit(11,3,0). xlit(11,5,0). ylit(11,3,1). % ~x3 & ~x5 & y3\nylit(12,1,1). ylit(12,2,1). ylit(12,4,0). % y1 & y2 & ~y4\n",
       "constants": {},
       "expected": {
-        "solutions": 14
+        "solutions": 8
       },
       "tags": []
+    },
+    {
+      "id": "false-6x6",
+      "facts": "% A random formula (generator qbf-dnf, nx = 6, ny = 6, t = 14, seed 3) that is false:\n% no x-assignment survives, but it takes several counterexamples to show it.\nxvar(1..6).  yvar(1..6).\nylit(1,2,0). ylit(1,4,1). ylit(1,6,0).   % ~y2 & y4 & ~y6\nxlit(2,5,0). ylit(2,4,1). ylit(2,5,1).   % ~x5 & y4 & y5\nxlit(3,1,0). xlit(3,6,1). ylit(3,4,1).   % ~x1 & x6 & y4\nxlit(4,2,1). xlit(4,5,0). ylit(4,2,0).   % x2 & ~x5 & ~y2\nylit(5,1,1). ylit(5,5,0). ylit(5,5,1).   % y1 & ~y5 & y5\nxlit(6,3,1). ylit(6,2,1). ylit(6,6,0).   % x3 & y2 & ~y6\nxlit(7,1,0). xlit(7,3,0). ylit(7,4,1).   % ~x1 & ~x3 & y4\nxlit(8,6,1). ylit(8,1,1). ylit(8,2,1).   % x6 & y1 & y2\nxlit(9,1,1). ylit(9,4,1). ylit(9,5,1).   % x1 & y4 & y5\nxlit(10,3,1). ylit(10,1,1). ylit(10,3,1). % x3 & y1 & y3\nylit(11,1,1). ylit(11,3,1). ylit(11,4,0). % y1 & y3 & ~y4\nxlit(12,1,0). xlit(12,1,1). xlit(12,5,1). % ~x1 & x1 & x5\nxlit(13,6,1). ylit(13,4,1). ylit(13,6,1). % x6 & y4 & y6\nxlit(14,4,1). ylit(14,3,0). ylit(14,4,0). % x4 & ~y3 & ~y4\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "qbf-dnf",
+        "params": {
+          "nx": 6,
+          "ny": 8,
+          "t": 16
+        },
+        "seed": 1
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 9
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "qbf-dnf",
+        "params": {
+          "nx": 6,
+          "ny": 8,
+          "t": 16
+        },
+        "seed": 5
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 4
+      }
     }
-  ]
+  ],
+  "generators": [
+    {
+      "name": "qbf-dnf",
+      "description": "A random exists-forall QBF with a DNF matrix: t terms of three literals over nx + ny variables.",
+      "params": {
+        "nx": "int",
+        "ny": "int",
+        "t": "int"
+      },
+      "defaults": {
+        "nx": 5,
+        "ny": 4,
+        "t": 10
+      },
+      "text": "% qbf-dnf: exists x1..x_nx forall y1..y_ny : T1 v ... v Tt, three literals per term.\n% Each literal picks one of the nx + ny variables uniformly and a sign with probability 1/2.\nxvar(1..nx).  yvar(1..ny).\nterm(1..t).  slot(1..3).\nvar(T,J,@int(1, nx+ny, T, J)) :- term(T), slot(J).\nsign(T,J,@flip(500, T, J, sign)) :- term(T), slot(J).\nxlit(T,I,S) :- var(T,J,I), sign(T,J,S), I <= nx.\nylit(T,I-nx,S) :- var(T,J,I), sign(T,J,S), I > nx.\n\n#show xvar/1.  #show yvar/1.  #show xlit/3.  #show ylit/3.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "two-per-candidate",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to two counterexamples per candidate, each instantiates the formula.\nloop:\n    M = A.solve()\n    if not M: stop\n    XS = C.models(assume G(M), limit 2)\n    for X in XS:\n        A.expand(refine, cex = X.atoms(yval/2))\n    if XS.size == 0:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "two-per-candidate"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    },
+    {
+      "name": "random",
+      "instances": {
+        "generator": "qbf-dnf",
+        "grid": {
+          "ny": [
+            4,
+            6,
+            8
+          ]
+        },
+        "seeds": 5
+      },
+      "variants": [
+        "default",
+        "reference"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "qbf-expansion",
+    "group": "logic",
+    "summary": "The 2QBF example with Shape 3: each counterexample y-assignment instantiates the formula in the abstraction (5 solutions).",
+    "shape": "shape3",
+    "tags": [
+      "fast",
+      "expansion",
+      "areqs"
+    ],
+    "expected": 5
+  }
 }

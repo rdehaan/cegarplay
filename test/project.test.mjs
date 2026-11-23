@@ -7,7 +7,7 @@ import os from 'node:os';
 import nodePath from 'node:path';
 import * as H from './helpers.mjs';
 import * as P from '../js/project.js';
-import { buildExamples, nashFix } from '../tools/make-examples.mjs';
+import { buildExamples, buildAll, nashFix } from '../tools/make-examples.mjs';
 
 const lp = (f) => H.read(`reference/declarative-cegar/${f}`);
 const withSettings = (p, s) => ({ ...p, settings: { ...p.settings, seconds: 0, trace: 0, ...s } });
@@ -66,7 +66,9 @@ test('importLp: explain1.lp is split despite its comments', () => {
 });
 
 test('the example files are up to date', () => {
-  for (const [name, p] of Object.entries(buildExamples())) {
+  const { files } = buildAll();
+  for (const name of Object.keys(buildExamples())) {
+    const p = files[name];
     assert.equal(H.read(`examples/${name}.json`), P.save(p), `${name}.json: run node tools/make-examples.mjs`);
     assert.deepEqual(P.load(H.read(`examples/${name}.json`)), JSON.parse(P.save(p)));
   }
@@ -77,7 +79,8 @@ test('row 11: nash.lp legacy import (with the edge/3 fix) equals examples/nash.j
   const check = imported.fragments.find((f) => f.name === 'check');
   check.text = nashFix(check.text);
   const a = await H.runProject(withSettings(imported, { solutions: 1 }));
-  const b = await H.runProject(withSettings(H.example('nash'), { solutions: 1 }));
+  // instance '' = the project as written (n = 5), as the legacy file
+  const b = await H.runProject(withSettings(H.example('nash'), { solutions: 1, instance: '' }));
   assert.equal(H.last(b, 'E'), undefined);
   assert.equal(H.stripTimes(H.finalStats(a)), H.stripTimes(H.finalStats(b)));
   assert.equal(H.finalStats(a).solutions, 1);
@@ -97,10 +100,11 @@ test('graph-coloring.json: 10,698 with shape 1 and with shape 4', async () => {
   assert.equal(H.finalStats(b).solutions, 10698);
 });
 
-test('voting-justification.json runs to one solution', async () => {
+test('voting-justification.json: the default question has one justification (all solutions)', async () => {
   const r = await H.runProject(withSettings(H.example('voting-justification'), {}));
   assert.equal(H.last(r, 'E'), undefined);
-  assert.equal(H.done(r).outcome, 'solutions');
+  assert.equal(H.done(r).outcome, 'finished');
+  assert.equal(H.finalStats(r).solutions, 1);
 });
 
 test('standalone export runs in the engine (plain output)', async () => {

@@ -60,7 +60,7 @@
     },
     {
       "id": "n13-k5",
-      "facts": "",
+      "facts": "% The Paley graph on 13 nodes with only 5 deletions: some triangle always survives, no solution.\n",
       "constants": {
         "n": "13",
         "k": "5",
@@ -73,7 +73,7 @@
     },
     {
       "id": "n5-edges",
-      "facts": "",
+      "facts": "% The 5-cycle (Paley graph on 5 nodes) with c = 2: delete a vertex cover of at most 3 nodes.\n",
       "constants": {
         "n": "5",
         "k": "3",
@@ -86,7 +86,7 @@
     },
     {
       "id": "n17-k9",
-      "facts": "",
+      "facts": "% The Paley graph on 17 nodes, 9 deletions (the guide quotes this count).\n",
       "constants": {
         "n": "17",
         "k": "9",
@@ -95,7 +95,87 @@
       "expected": {
         "solutions": 51
       },
-      "tags": []
+      "tags": [],
+      "audit": false
+    },
+    {
+      "id": "n13-k7",
+      "facts": "% The Paley graph on 13 nodes with up to 7 deletions.\n",
+      "constants": {
+        "n": "13",
+        "k": "7",
+        "c": "3"
+      },
+      "tags": [],
+      "expected": {
+        "solutions": 286
+      }
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "one-clique",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "all-cliques",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 0):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    L = C.models(assume G(M), limit 3)\n    if L.size == 0:\n        accept M\n        A.add(G.block(M))\n    for X in L:\n        A.add(G.clause(M, X))\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--enum-mode=record\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three surviving cliques per candidate; each gives one clause\n# (\"delete one of these nodes\"). The candidate is rejected once.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "one-clique",
+        "all-cliques",
+        "shape2",
+        "record"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

@@ -48,12 +48,13 @@ test('the voting example: a relevant fragment per strategy, a variant per other 
   assert.ok(s.instances.ids.every((id) => p.instances.find((x) => x.id === id).expected), 'only instances that finish');
 });
 
-test('the voting kit: a readme, a generator with three recipe questions, a generated suite, a view (E2)', () => {
+test('the voting kit: a readme, a generator with seven recipe questions, a generated suite, a view (E2)', () => {
   const p = vote();
   assert.match(p.readme, /^# Explaining a voting outcome by axioms/);
   assert.match(p.readme, /## Open questions/);
   assert.deepEqual(p.generators.map((g) => g.name), ['vote-question']);
-  assert.deepEqual(p.instances.filter((x) => x.recipe).map((x) => [x.id, x.expected.solutions]), [['random-1', 6], ['random-2', 0], ['random-3', 0]]);
+  assert.deepEqual(p.instances.filter((x) => x.recipe).map((x) => [x.id, x.expected.solutions]), [['random-1', 6], ['random-2', 0], ['random-3', 0],
+    ['random-4', 17], ['random-5', 27], ['random-6', 4], ['random-7', 10]]);
   const g = p.suites.find((x) => x.name === 'generated');
   assert.equal(g.instances.generator, 'vote-question');
   assert.equal(g.instances.constants.num_voters, 3);

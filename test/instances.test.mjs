@@ -108,9 +108,10 @@ test('af-preferred gives 3 solutions with its facts in an instance; run.mjs --in
   assert.match(r.stdout.toString(), /Solutions: 3;/);
   const all = spawnSync('node', [tool, 'graph-coloring', '--instance', 'all']);
   const lines = all.stdout.toString().trim().split('\n');
-  assert.equal(lines.length, 3);
-  assert.match(lines[1], /^n5: 101 solutions.*as expected/);
-  assert.match(lines[2], /^n6: 10698 solutions.*as expected/);
+  assert.equal(lines.length, 4);
+  assert.match(lines[0], /^n3: 0 solutions.*as expected/);
+  assert.match(lines[2], /^n5: 101 solutions.*as expected/);
+  assert.match(lines[3], /^n6: 10698 solutions.*as expected/);
   assert.equal(all.status, 0);
   const one = spawnSync('node', [tool, 'graph-coloring', '--instance', 'n4', '--quiet']);
   assert.match(one.stdout.toString(), /Solutions: 1;/);
@@ -192,7 +193,8 @@ test('instances[].audit: false keeps an instance out of the audit and Fuzz, not 
   assert.equal(P.load(JSON.stringify({ ...base, instances: [{ id: 'a', audit: true }] })).instances[0].audit, undefined);
   assert.deepEqual(fuzzInstances(p, { ids: 'all' }).map((x) => x.id), ['small']);
   const v = P.load(H.read('examples/voting-justification.json'));
-  assert.deepEqual(v.instances.filter((x) => x.audit === false).map((x) => x.id), ['cancel-reinf-posresp-k4', 'pareto-neutral-cancel-reinf-k8']);
+  assert.deepEqual(v.instances.filter((x) => x.audit === false).map((x) => x.id), ['faith-cancel-reinf-pareto-condorcet-k3',
+    'faith-cancel-reinf-pareto-k3', 'cancel-reinf-posresp-k4', 'pareto-neutral-cancel-reinf-k8', 'random-1', 'random-2']);
 });
 
 test('CSV import: row/N facts without a map, named predicates with a column map (D7)', async () => {

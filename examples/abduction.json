@@ -23,6 +23,11 @@
       "name": "check",
       "description": "Looks for a model of theory and hypotheses in which a manifestation is false (solver C).",
       "text": "% A counterexample: a model of the theory and the assumed hypotheses in which some\n% manifestation is false. Then the hypotheses do not entail the manifestations.\n{ m(A) } :- atom(A).\n:- clause(C), not m(A) : pos(C,A); m(A) : neg(C,A).\n:- assume(H), not m(H).\n:- m(A) : manifestation(A).\n#show m/1.\n\n% The model refutes every set of hypotheses that are all true in it. So a hypothesis\n% that is false in the model has to be assumed.\nrelevant(assume(H)) :- hypothesis(H), not m(H).\n% If all hypotheses are true in the model, nothing explains the manifestations: blame\n% the atom that is always true.\nmissing :- hypothesis(H), not m(H).\nrelevant(always) :- not missing.\n"
+    },
+    {
+      "name": "check_small",
+      "description": "The check of the variant smallest: a counterexample with as few false hypotheses as possible, so the clause is short.",
+      "text": "% A counterexample: a model of the theory and the assumed hypotheses in which some\n% manifestation is false. Then the hypotheses do not entail the manifestations.\n{ m(A) } :- atom(A).\n:- clause(C), not m(A) : pos(C,A); m(A) : neg(C,A).\n:- assume(H), not m(H).\n:- m(A) : manifestation(A).\n#show m/1.\n% The smallest refinement: as few hypotheses false in the model as possible (the loop asks\n% for an optimal counterexample).\n#minimize { 1,H : hypothesis(H), not m(H) }.\n\n% The model refutes every set of hypotheses that are all true in it. So a hypothesis\n% that is false in the model has to be assumed.\nrelevant(assume(H)) :- hypothesis(H), not m(H).\n% If all hypotheses are true in the model, nothing explains the manifestations: blame\n% the atom that is always true.\nmissing :- hypothesis(H), not m(H).\nrelevant(always) :- not missing.\n"
     }
   ],
   "loop": {
@@ -68,6 +73,117 @@
         "solutions": 0
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "abd-random",
+        "params": {},
+        "seed": 1
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "abd-random",
+        "params": {},
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 4
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "abd-random",
+      "description": "A random theory: n hypotheses and m effects; a hypothesis causes an effect with probability p/1000, a pair of hypotheses causes one jointly with probability q/1000, a pair excludes each other with probability x/1000; the first s effects are the manifestations, each with at least one cause.",
+      "params": {
+        "n": "int",
+        "m": "int",
+        "s": "int",
+        "p": "permille",
+        "q": "permille",
+        "x": "permille"
+      },
+      "defaults": {
+        "n": 7,
+        "m": 4,
+        "s": 2,
+        "p": 250,
+        "q": 60,
+        "x": 150
+      },
+      "text": "% abd-random: hypotheses h(1..n) and effects e(1..m). Each h(I) causes e(J) with probability p/1000,\n% each pair of hypotheses causes e(J) jointly with probability q/1000, and each pair excludes\n% each other with probability x/1000. The effects 1..s are the manifestations; each has a cause.\nhypothesis(h(1..n)).\ncause(I,J) :- I = 1..n, J = 1..m, @flip(p, cause, I, J) = 1.\njoint(I,K,J) :- I = 1..n, K = 1..n, I < K, J = 1..m, @flip(q, joint, I, K, J) = 1.\nclash(I,K) :- I = 1..n, K = 1..n, I < K, @flip(x, clash, I, K) = 1.\nneg(c(I,J),h(I)) :- cause(I,J).\npos(c(I,J),e(J)) :- cause(I,J).\nneg(j(I,K,J),h(I)) :- joint(I,K,J).\nneg(j(I,K,J),h(K)) :- joint(I,K,J).\npos(j(I,K,J),e(J)) :- joint(I,K,J).\nneg(x(I,K),h(I)) :- clash(I,K).\nneg(x(I,K),h(K)) :- clash(I,K).\nmanifestation(e(1..s)).\ncaused(J) :- cause(I,J).\ncaused(J) :- joint(I,K,J).\n:- J = 1..s, not caused(J).\n#show hypothesis/1.  #show manifestation/1.  #show pos/2.  #show neg/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The blocking loop: each refuted candidate is ruled out on its own.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "search-project",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--project\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Shape 1: A's own search, projected on the shown atoms (--project), so each set of\n# hypotheses comes once whatever the hidden witness w/1.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "three-cex",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three counterexamples per candidate, one clause each.\nloop:\n    M = A.solve()\n    if not M: stop\n    XS = C.models(assume G(M), limit 3)\n    if XS.size > 0:\n        for X in XS: A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "smallest",
+      "swap": {
+        "check": "check_small"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The smallest refinement: an optimal counterexample has as few false hypotheses as\n# possible (check_small), so its clause is as short as possible.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M), optimal)\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "search-project",
+        "three-cex",
+        "smallest"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

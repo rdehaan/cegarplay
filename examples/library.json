@@ -1290,6 +1290,9 @@
       "expected": {
         "solutions": 61
       },
+      "has": {
+        "instances": 4
+      },
       "level": 1,
       "after": 2
     },
@@ -1304,6 +1307,9 @@
       ],
       "expected": {
         "solutions": 61
+      },
+      "has": {
+        "instances": 4
       },
       "level": 2,
       "after": 6
@@ -1320,6 +1326,9 @@
       "expected": {
         "solutions": 61
       },
+      "has": {
+        "instances": 4
+      },
       "level": 2,
       "after": 6
     },
@@ -1334,6 +1343,9 @@
       ],
       "expected": {
         "solutions": 38
+      },
+      "has": {
+        "instances": 4
       },
       "level": 3,
       "after": 10
@@ -1350,6 +1362,9 @@
       "expected": {
         "solutions": 61
       },
+      "has": {
+        "instances": 4
+      },
       "level": 2,
       "after": 6
     },
@@ -1364,6 +1379,9 @@
       ],
       "expected": {
         "solutions": 958
+      },
+      "has": {
+        "instances": 3
       },
       "level": 3,
       "after": 10
@@ -1380,6 +1398,9 @@
       "expected": {
         "solutions": 101
       },
+      "has": {
+        "instances": 3
+      },
       "level": 3,
       "after": 6
     },
@@ -1394,6 +1415,9 @@
       ],
       "expected": {
         "solutions": 61
+      },
+      "has": {
+        "instances": 4
       },
       "level": 2,
       "after": 2
@@ -1410,6 +1434,9 @@
       "expected": {
         "solutions": 61
       },
+      "has": {
+        "instances": 4
+      },
       "level": 4,
       "after": 12
     },
@@ -1424,6 +1451,9 @@
       ],
       "expected": {
         "solutions": 101
+      },
+      "has": {
+        "instances": 3
       },
       "level": 2,
       "after": 8
@@ -1440,6 +1470,9 @@
       "expected": {
         "solutions": 101
       },
+      "has": {
+        "instances": 3
+      },
       "level": 2,
       "after": 8
     },
@@ -1454,6 +1487,9 @@
       ],
       "expected": {
         "solutions": 101
+      },
+      "has": {
+        "instances": 3
       },
       "level": 2,
       "after": 8
@@ -1470,6 +1506,9 @@
       "expected": {
         "solutions": 101
       },
+      "has": {
+        "instances": 3
+      },
       "level": 2,
       "after": 8
     },
@@ -1484,6 +1523,9 @@
       ],
       "expected": {
         "solutions": 101
+      },
+      "has": {
+        "instances": 3
       },
       "level": 2,
       "after": 8
@@ -1504,7 +1546,8 @@
         "solutions": 27
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "suites": 1
       },
       "level": 3,
       "after": 9
@@ -1522,7 +1565,9 @@
         "solutions": 22
       },
       "has": {
-        "instances": 3
+        "instances": 5,
+        "generators": 1,
+        "suites": 2
       },
       "level": 3,
       "after": 9
@@ -1543,7 +1588,9 @@
         "solutions": 7
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 2
       },
       "level": 4,
       "after": 15
@@ -1568,7 +1615,9 @@
         "optimum": 8
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 2
       },
       "level": 4,
       "after": 14
@@ -1592,7 +1641,9 @@
         "optimum": 8
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 2
       },
       "level": 4,
       "after": 17
@@ -1616,7 +1667,9 @@
         "optimum": 6
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 2
       },
       "level": 4,
       "after": 14
@@ -1635,7 +1688,8 @@
         "solutions": 2
       },
       "has": {
-        "instances": 4
+        "instances": 5,
+        "suites": 1
       },
       "level": 3,
       "after": 9
@@ -1654,7 +1708,9 @@
         "solutions": 5
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 6
@@ -1673,6 +1729,11 @@
       "expected": {
         "solutions": 4
       },
+      "has": {
+        "instances": 5,
+        "generators": 1,
+        "suites": 2
+      },
       "level": 4,
       "after": 19
     },
@@ -1687,7 +1748,14 @@
         "several-solvers",
         "rareqs"
       ],
-      "expected": null,
+      "expected": {
+        "solutions": 0
+      },
+      "has": {
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
+      },
       "level": 4,
       "after": 13
     },
@@ -1706,7 +1774,9 @@
         "solutions": 5
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 2
       },
       "level": 4,
       "after": 13
@@ -1724,7 +1794,9 @@
         "solutions": 5
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 11
@@ -1742,6 +1814,11 @@
       ],
       "expected": {
         "solutions": 4
+      },
+      "has": {
+        "instances": 5,
+        "generators": 1,
+        "suites": 2
       },
       "level": 4,
       "after": 13
@@ -1762,7 +1839,7 @@
       "has": {
         "instances": 5,
         "generators": 1,
-        "suites": 1,
+        "suites": 2,
         "views": 1
       },
       "level": 2,
@@ -1782,7 +1859,9 @@
         "solutions": 2
       },
       "has": {
-        "instances": 3
+        "instances": 6,
+        "generators": 1,
+        "suites": 2
       },
       "level": 4,
       "after": 14
@@ -1800,7 +1879,9 @@
         "solutions": 3
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 2
       },
       "level": 2,
       "after": 3
@@ -1819,7 +1900,9 @@
         "solutions": 2
       },
       "has": {
-        "instances": 3,
+        "instances": 7,
+        "generators": 1,
+        "suites": 2,
         "readme": 1
       },
       "level": 2,
@@ -1844,7 +1927,9 @@
         "optimum": 1
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 4,
       "after": 14
@@ -1863,7 +1948,9 @@
         "solutions": 17
       },
       "has": {
-        "instances": 3
+        "instances": 5,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 10
@@ -1881,7 +1968,9 @@
         "solutions": 17
       },
       "has": {
-        "instances": 3
+        "instances": 5,
+        "generators": 1,
+        "suites": 1
       },
       "level": 2,
       "after": 3
@@ -1899,7 +1988,8 @@
         "solutions": 4
       },
       "has": {
-        "instances": 3
+        "instances": 4,
+        "suites": 1
       },
       "level": 3,
       "after": 7
@@ -1918,8 +2008,9 @@
         "solutions": 3
       },
       "has": {
-        "instances": 4,
+        "instances": 6,
         "generators": 1,
+        "suites": 1,
         "views": 1,
         "readme": 1
       },
@@ -1940,8 +2031,9 @@
         "solutions": 2
       },
       "has": {
-        "instances": 1,
+        "instances": 5,
         "generators": 1,
+        "suites": 1,
         "readme": 1
       },
       "level": 2,
@@ -1960,7 +2052,9 @@
         "solutions": 8
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 7
@@ -1978,7 +2072,9 @@
         "solutions": 3
       },
       "has": {
-        "instances": 3
+        "instances": 5,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 7
@@ -1996,7 +2092,9 @@
         "solutions": 2
       },
       "has": {
-        "instances": 3
+        "instances": 5,
+        "generators": 1,
+        "suites": 1
       },
       "level": 2,
       "after": 3
@@ -2015,7 +2113,9 @@
         "solutions": 4
       },
       "has": {
-        "instances": 3
+        "instances": 5,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 10
@@ -2034,6 +2134,11 @@
       "expected": {
         "solutions": 4
       },
+      "has": {
+        "instances": 5,
+        "generators": 1,
+        "suites": 1
+      },
       "level": 4,
       "after": 15
     },
@@ -2051,7 +2156,9 @@
         "solutions": 4
       },
       "has": {
-        "instances": 3
+        "instances": 5,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 11
@@ -2069,7 +2176,9 @@
         "solutions": 2
       },
       "has": {
-        "instances": 3
+        "instances": 5,
+        "generators": 1,
+        "suites": 1
       },
       "level": 2,
       "after": 6
@@ -2085,7 +2194,7 @@
         "solutions": 10698
       },
       "has": {
-        "instances": 3
+        "instances": 4
       },
       "level": 2,
       "after": 5
@@ -2103,8 +2212,9 @@
         "solutions": 100
       },
       "has": {
-        "instances": 1,
+        "instances": 7,
         "generators": 2,
+        "suites": 1,
         "views": 1
       },
       "level": 2,
@@ -2123,8 +2233,9 @@
         "solutions": 36
       },
       "has": {
-        "instances": 1,
+        "instances": 7,
         "generators": 2,
+        "suites": 1,
         "views": 1
       },
       "level": 2,
@@ -2143,8 +2254,9 @@
         "solutions": 44
       },
       "has": {
-        "instances": 1,
+        "instances": 7,
         "generators": 2,
+        "suites": 1,
         "views": 1
       },
       "level": 2,
@@ -2163,7 +2275,8 @@
         "solutions": 39
       },
       "has": {
-        "instances": 4
+        "instances": 5,
+        "suites": 1
       },
       "level": 2,
       "after": 5
@@ -2185,7 +2298,8 @@
         "solutions": 105
       },
       "has": {
-        "instances": 5
+        "instances": 7,
+        "suites": 1
       },
       "level": 4,
       "after": 10
@@ -2205,7 +2319,8 @@
         "solutions": 35
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "suites": 1
       },
       "level": 4,
       "after": 10
@@ -2231,14 +2346,14 @@
       "id": "voting-justification",
       "title": "Voting: justifications",
       "group": "games",
-      "summary": "Explaining a voting outcome by axioms: 17 questions as instances, five refinement strategies and two loops as variants, a suite that compares them.",
+      "summary": "Explaining a voting outcome by axioms: 14 questions as instances (7 generated), five refinement strategies and two loops as variants, a suite that compares them.",
       "shape": "shape1",
       "tags": [
         "project"
       ],
       "expected": null,
       "has": {
-        "instances": 20,
+        "instances": 14,
         "generators": 1,
         "suites": 3,
         "views": 1,
@@ -2260,7 +2375,9 @@
         "solutions": 6
       },
       "has": {
-        "instances": 3
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 7
@@ -2278,7 +2395,9 @@
         "solutions": 6
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 6
@@ -2296,7 +2415,9 @@
         "solutions": 3
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 2,
       "after": 9
@@ -2314,7 +2435,9 @@
         "solutions": 2
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 7
@@ -2332,8 +2455,9 @@
         "solutions": 3
       },
       "has": {
-        "instances": 1,
-        "generators": 2
+        "instances": 6,
+        "generators": 2,
+        "suites": 1
       },
       "level": 3,
       "after": 7
@@ -2352,7 +2476,9 @@
         "solutions": 1
       },
       "has": {
-        "instances": 4,
+        "instances": 6,
+        "generators": 1,
+        "suites": 1,
         "readme": 1
       },
       "level": 2,
@@ -2371,7 +2497,9 @@
         "solutions": 11
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 2,
       "after": 3
@@ -2395,7 +2523,9 @@
         "optimum": 20
       },
       "has": {
-        "instances": 3,
+        "instances": 5,
+        "generators": 1,
+        "suites": 1,
         "readme": 1
       },
       "level": 4,
@@ -2415,7 +2545,9 @@
       ],
       "expected": null,
       "has": {
-        "instances": 3,
+        "instances": 5,
+        "generators": 1,
+        "suites": 1,
         "readme": 1
       },
       "level": 3,
@@ -2435,7 +2567,9 @@
         "solutions": 3
       },
       "has": {
-        "instances": 4,
+        "instances": 5,
+        "generators": 1,
+        "suites": 1,
         "readme": 1
       },
       "level": 3,
@@ -2458,7 +2592,9 @@
         "optimum": 25
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 4,
       "after": 11
@@ -2478,7 +2614,9 @@
         "solutions": 2
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 4,
       "after": 13
@@ -2496,7 +2634,9 @@
         "solutions": 2
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 11
@@ -2517,7 +2657,9 @@
         "optimum": 25
       },
       "has": {
-        "instances": 4
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 11
@@ -2539,7 +2681,9 @@
         "optimum": 15
       },
       "has": {
-        "instances": 1
+        "instances": 4,
+        "generators": 1,
+        "suites": 1
       },
       "level": 3,
       "after": 11
@@ -2553,7 +2697,9 @@
       "tags": [],
       "expected": null,
       "has": {
-        "instances": 7,
+        "instances": 6,
+        "generators": 1,
+        "suites": 1,
         "views": 1
       },
       "level": 3,
@@ -2568,7 +2714,9 @@
       "tags": [],
       "expected": null,
       "has": {
-        "instances": 5,
+        "instances": 6,
+        "generators": 1,
+        "suites": 1,
         "views": 1
       },
       "level": 3,
@@ -2588,7 +2736,9 @@
         "solutions": 64
       },
       "has": {
-        "instances": 4,
+        "instances": 6,
+        "generators": 1,
+        "suites": 1,
         "readme": 1
       },
       "level": 3,
@@ -2604,6 +2754,8 @@
       "expected": null,
       "has": {
         "instances": 7,
+        "generators": 1,
+        "suites": 1,
         "views": 1
       },
       "level": 3,
@@ -2624,7 +2776,9 @@
         "solutions": 92
       },
       "has": {
-        "instances": 3
+        "instances": 6,
+        "generators": 1,
+        "suites": 1
       },
       "level": 4,
       "after": 12
@@ -2638,7 +2792,9 @@
       "tags": [],
       "expected": null,
       "has": {
-        "instances": 9,
+        "instances": 7,
+        "generators": 1,
+        "suites": 1,
         "views": 1
       },
       "level": 3,
@@ -2653,7 +2809,9 @@
       "tags": [],
       "expected": null,
       "has": {
-        "instances": 8,
+        "instances": 6,
+        "generators": 1,
+        "suites": 1,
         "views": 1
       },
       "level": 3,
@@ -2668,7 +2826,9 @@
       "tags": [],
       "expected": null,
       "has": {
-        "instances": 6,
+        "instances": 5,
+        "generators": 1,
+        "suites": 1,
         "views": 1
       },
       "level": 3,
@@ -2683,7 +2843,9 @@
       "tags": [],
       "expected": null,
       "has": {
-        "instances": 4,
+        "instances": 6,
+        "generators": 1,
+        "suites": 1,
         "views": 1
       },
       "level": 3,
@@ -2700,7 +2862,9 @@
       ],
       "expected": null,
       "has": {
-        "instances": 5,
+        "instances": 6,
+        "generators": 1,
+        "suites": 1,
         "views": 1,
         "readme": 1
       },
@@ -2716,7 +2880,9 @@
       "tags": [],
       "expected": null,
       "has": {
-        "instances": 5,
+        "instances": 6,
+        "generators": 1,
+        "suites": 1,
         "views": 1
       },
       "level": 3,

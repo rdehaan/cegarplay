@@ -23,6 +23,10 @@
       "name": "check",
       "description": "Looks for a copy of a pattern in its colour (solver C).",
       "text": "% A counterexample: choose a colour and map the nodes of its pattern to different\n% nodes of the host graph ...\n1 { mono(C) : colour(C) } 1.\n1 { map(P,V) : node(V) } 1 :- mono(C), pnode(C,P).\n:- map(P,V), map(Q,V), P < Q.\n% ... so that every edge of the pattern lands on an edge of that colour.\nused(U,V) :- mono(C), pedge(C,P,Q), map(P,U), map(Q,V), U < V.\nused(U,V) :- mono(C), pedge(C,P,Q), map(P,V), map(Q,U), U < V.\n:- used(U,V), not edge(U,V).\n:- used(U,V), mono(red), not red(U,V).\n:- used(U,V), mono(blue), red(U,V).\n#show mono/1.\n#show used/2.\n\n% The copy stays as long as the edges it uses keep their colour.\nrelevant(red(U,V)) :- used(U,V).\n"
+    },
+    {
+      "name": "check_fewest",
+      "text": "% A counterexample: choose a colour and map the nodes of its pattern to different\n% nodes of the host graph ...\n1 { mono(C) : colour(C) } 1.\n1 { map(P,V) : node(V) } 1 :- mono(C), pnode(C,P).\n:- map(P,V), map(Q,V), P < Q.\n% ... so that every edge of the pattern lands on an edge of that colour.\nused(U,V) :- mono(C), pedge(C,P,Q), map(P,U), map(Q,V), U < V.\nused(U,V) :- mono(C), pedge(C,P,Q), map(P,V), map(Q,U), U < V.\n:- used(U,V), not edge(U,V).\n:- used(U,V), mono(red), not red(U,V).\n:- used(U,V), mono(blue), red(U,V).\n#show mono/1.\n#show used/2.\n\n% The copy stays as long as the edges it uses keep their colour.\nrelevant(red(U,V)) :- used(U,V).\n\n% Prefer the copy with the fewest edges: shorter refinement clauses.\n#minimize { 1,U,V : used(U,V) }.\n"
     }
   ],
   "loop": {
@@ -49,6 +53,86 @@
       },
       "tags": [
         "library"
+      ],
+      "audit": false
+    },
+    {
+      "id": "k7",
+      "facts": "% The complete graph on 7 nodes: every colouring has a red triangle or a blue 4-cycle (R(K3,C4) = 7).\nnode(1..n).\nedge(U,V) :- node(U), node(V), U < V.\n",
+      "constants": {
+        "n": "7"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": [
+        "slow"
+      ],
+      "audit": false
+    },
+    {
+      "id": "k5",
+      "facts": "% The complete graph on 5 nodes.\nnode(1..n).\nedge(U,V) :- node(U), node(V), U < V.\n",
+      "constants": {
+        "n": "5"
+      },
+      "tags": [],
+      "expected": {
+        "solutions": 97
+      }
+    },
+    {
+      "id": "wheel6",
+      "facts": "% The wheel with 6 spokes: a hub 7 joined to every node of the cycle 1-2-3-4-5-6.\nnode(1..7).\nedge(I,I+1) :- I = 1..5.  edge(1,6).\nedge(I,7) :- I = 1..6.\n",
+      "constants": {},
+      "tags": [],
+      "expected": {
+        "solutions": 1159
+      }
+    },
+    {
+      "id": "k33plus",
+      "facts": "% The complete bipartite graph K(3,3) plus a triangle on one side (12 edges).\nnode(1..6).\nedge(U,V) :- U = 1..3, V = 4..6.\nedge(1,2). edge(2,3). edge(1,3).\n",
+      "constants": {},
+      "tags": [],
+      "expected": {
+        "solutions": 307
+      }
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "gnp",
+        "params": {
+          "n": 7,
+          "p": 500
+        },
+        "seed": 1
+      },
+      "expected": {
+        "solutions": 1676
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "gnm",
+        "params": {
+          "n": 7,
+          "m": 12
+        },
+        "seed": 2
+      },
+      "expected": {
+        "solutions": 1520
+      },
+      "tags": [
+        "generated"
       ]
     }
   ],
@@ -78,6 +162,74 @@
         "m": 10
       },
       "text": "% gnm: m edges chosen uniformly among the pairs of n nodes (pair I is the I-th pair X < Y)\nnode(1..n).\npair(X,Y,(X-1)*n - (X-1)*X/2 + Y - X) :- node(X), node(Y), X < Y.\nedge(X,Y) :- pair(X,Y,I), @subset(m, n*(n-1)/2, I, edges) = 1.\n\n#show node/1.  #show edge/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 5):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--enum-mode=record\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "fewest-edges",
+      "swap": {
+        "check": "check_fewest"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M), optimal)\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shape2",
+        "several",
+        "record",
+        "fewest-edges"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "library": {

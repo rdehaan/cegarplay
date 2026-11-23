@@ -1,6 +1,6 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Loop language: unsat cores",
   "description": "Graphs on n nodes that can be 3-coloured. Here a candidate is good when the check is satisfiable; a bad candidate is refined with the core of the failed check. Compare with the Reference run in the comment at the end of the loop script.",
   "fragments": [
@@ -35,5 +35,60 @@
     "trace": 200,
     "seed": 0
   },
-  "runs": []
+  "runs": [],
+  "instances": [
+    {
+      "id": "n5",
+      "facts": "",
+      "constants": {
+        "n": "5"
+      },
+      "expected": {
+        "solutions": 958
+      },
+      "tags": []
+    },
+    {
+      "id": "n4",
+      "facts": "",
+      "constants": {
+        "n": "4"
+      },
+      "expected": {
+        "solutions": 63
+      },
+      "tags": []
+    },
+    {
+      "id": "n6",
+      "facts": "",
+      "constants": {
+        "n": "6"
+      },
+      "expected": {
+        "solutions": 27554
+      },
+      "tags": []
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Here the check looks for a witness. A candidate without one is rejected;\n# G.core(C) is the refinement built from the unsatisfiable core of the last\n# C.solve: the edges that together make 3-colouring impossible.\nsearch A:\n    on candidate M:\n        if not C.solve(assume G(M)):\n            reject M with G.block(M)\n\n"
+      }
+    },
+    {
+      "name": "minimal-core",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Here the check looks for a witness. A candidate without one is rejected;\n# G.core(C) is the refinement built from the unsatisfiable core of the last\n# C.solve: the edges that together make 3-colouring impossible.\nsearch A:\n    on candidate M:\n        if not C.solve(assume G(M)):\n            reject M with C.core.minimal.on(G)\n\n"
+      }
+    }
+  ]
 }

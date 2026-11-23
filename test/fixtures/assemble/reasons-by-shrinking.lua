@@ -1,20 +1,8 @@
 #script (lua)
 FRAGMENTS = {}
 FRAGMENTS["shared"] = [==[
-% A small network over 8 binary features. A hidden unit fires when the weighted sum of
-% its inputs reaches its threshold; the answer is "yes" when the weighted sum of the
-% firing units reaches 3.
-feature(1..8).
-unit(1..3).
-% weight(U,F,W): unit U sees feature F with weight W.
-weight(1,1,-2). weight(1,3,1). weight(1,4,-1). weight(1,6,-3). weight(1,7,-3). weight(1,8,-1).
-weight(2,1,-3). weight(2,3,2). weight(2,4,-2). weight(2,5,-3). weight(2,6,-2). weight(2,7,-1).
-weight(2,8,3).
-weight(3,1,-2). weight(3,2,3). weight(3,3,2).  weight(3,5,-3). weight(3,7,-1). weight(3,8,3).
-threshold(1,2). threshold(2,1). threshold(3,2).
-vote(1,1). vote(2,1). vote(3,3).
-% The input to be explained: is(F,B) says that feature F has the value B.
-is(1,0). is(2,1). is(3,1). is(4,0). is(5,1). is(6,0). is(7,0). is(8,1).
+% The instance (its facts) is in the Instances tab.
+% feature(F), unit(U), weight(U,F,W), threshold(U,T), vote(U,V), and the input is(F,B).
 % The network's answer on this input.
 fires0(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), is(F,1) } >= T.
 yes0 :- #sum { V,U : vote(U,V), fires0(U) } >= 3.
@@ -84,5 +72,5 @@ function main(prg)
     end
   end)
 end
-LOOP_LINES = { 56, 84 }
+LOOP_LINES = { 44, 72 }
 #end.

@@ -50,6 +50,82 @@
       "tags": [
         "library"
       ]
+    },
+    {
+      "id": "n5",
+      "facts": "% n = 5: the complement of the 5-cycle is a 5-cycle; its maximal cliques are its edges, so no solution.\nnode(0..n-1).\nedge(U,V) :- node(U), node(V), U != V, (U-V+n) \\ n != 1, (V-U+n) \\ n != 1.\n",
+      "constants": {
+        "n": "5"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "n10",
+      "facts": "% The complement of the 10-cycle.\nnode(0..n-1).\nedge(U,V) :- node(U), node(V), U != V, (U-V+n) \\ n != 1, (V-U+n) \\ n != 1.\n",
+      "constants": {
+        "n": "10"
+      },
+      "expected": {
+        "solutions": 330
+      },
+      "tags": []
+    },
+    {
+      "id": "petersen",
+      "facts": "% The Petersen graph: triangle-free, so every edge is a maximal clique and a solution is a\n% proper 2-colouring; the graph has 5-cycles, so there is none.\nnode(0..9).\nedge(I,(I+1)\\5) :- I = 0..4.\nedge(I,I+5) :- I = 0..4.\nedge(5+I,5+(I+2)\\5) :- I = 0..4.\nedge(V,U) :- edge(U,V).          % the check reads edges in both directions\n",
+      "constants": {},
+      "tags": [],
+      "expected": {
+        "solutions": 0
+      }
+    },
+    {
+      "id": "wheel-fan",
+      "facts": "% A wheel with 7 spokes (hub 0, rim 1-7) and a pendant triangle 7-8-9.\nnode(0..9).\nedge(0,I) :- I = 1..7.\nedge(I,I+1) :- I = 1..6.  edge(1,7).\nedge(7,8). edge(8,9). edge(7,9).\nedge(V,U) :- edge(U,V).          % the check reads edges in both directions\n",
+      "constants": {},
+      "tags": [],
+      "expected": {
+        "solutions": 174
+      }
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "gnp",
+        "params": {
+          "n": 10,
+          "p": 400
+        },
+        "seed": 1
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 406
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "gnm",
+        "params": {
+          "n": 10,
+          "m": 20
+        },
+        "seed": 2
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 14
+      }
     }
   ],
   "generators": [
@@ -78,6 +154,62 @@
         "m": 10
       },
       "text": "% gnm: m edges chosen uniformly among the pairs of n nodes (pair I is the I-th pair X < Y)\nnode(1..n).\npair(X,Y,(X-1)*n - (X-1)*X/2 + Y - X) :- node(X), node(Y), X < Y.\nedge(X,Y) :- pair(X,Y,I), @subset(m, n*(n-1)/2, I, edges) = 1.\n% the example's check reads edges in both directions\nedge(Y,X) :- edge(X,Y).\n\n#show node/1.  #show edge/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 5):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction   options \"--enum-mode=record\"\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shape2",
+        "several",
+        "record"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "library": {

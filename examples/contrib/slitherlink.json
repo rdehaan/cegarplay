@@ -70,19 +70,8 @@
       },
       "tags": [
         "library"
-      ]
-    },
-    {
-      "id": "short-loops",
-      "facts": "% Any loop length: the solver prefers small loops, which few numbers pin down\n% (k = 10, under 2 s; with len = 28, k = 10 does not finish in two minutes).\n",
-      "constants": {
-        "k": "10",
-        "len": "0"
-      },
-      "expected": {
-        "solutions": null
-      },
-      "tags": []
+      ],
+      "audit": false
     },
     {
       "id": "five",
@@ -95,22 +84,8 @@
       "expected": {
         "solutions": null
       },
-      "tags": []
-    },
-    {
-      "id": "ten",
-      "facts": "% 10 x 10, 30 numbers, a loop of at least 50 edges (about 85 s).\n",
-      "constants": {
-        "n": "10",
-        "k": "30",
-        "len": "50"
-      },
-      "expected": {
-        "solutions": null
-      },
-      "tags": [
-        "slow"
-      ]
+      "tags": [],
+      "audit": false
     },
     {
       "id": "three",
@@ -126,60 +101,157 @@
       "tags": []
     },
     {
-      "id": "four",
-      "facts": "% All 4 x 4 puzzles with 3 numbers and one solution (9,349 loops; about 25 s).\n",
+      "id": "random-1",
       "constants": {
         "n": "4",
-        "k": "3",
+        "k": "1",
         "len": "0"
       },
-      "expected": {
-        "solutions": 128
+      "recipe": {
+        "generator": "printed",
+        "params": {
+          "n": 4
+        },
+        "seed": 1
       },
       "tags": [
-        "slow"
-      ]
+        "generated"
+      ],
+      "expected": {
+        "solutions": 1
+      }
     },
     {
-      "id": "four-two",
-      "facts": "% Two numbers never fix a loop on 4 x 4.\n",
+      "id": "random-2",
+      "constants": {
+        "n": "4",
+        "k": "1",
+        "len": "0"
+      },
+      "recipe": {
+        "generator": "printed",
+        "params": {
+          "n": 4
+        },
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 1
+      }
+    },
+    {
+      "id": "random-3",
       "constants": {
         "n": "4",
         "k": "2",
         "len": "0"
       },
+      "recipe": {
+        "generator": "printed",
+        "params": {
+          "n": 4
+        },
+        "seed": 8
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 22
+      }
+    },
+    {
+      "id": "random-4",
+      "constants": {
+        "n": "4",
+        "k": "1",
+        "len": "0"
+      },
+      "recipe": {
+        "generator": "printed",
+        "params": {
+          "n": 4
+        },
+        "seed": 8
+      },
+      "tags": [
+        "generated"
+      ],
       "expected": {
         "solutions": 0
-      },
-      "tags": []
+      }
+    }
+  ],
+  "variants": [
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
     },
     {
-      "id": "printed",
-      "facts": "% Two corners print a 3; add two numbers (k = 2): 8 puzzles.\npre(1,1,3). pre(4,4,3).\n",
-      "constants": {
-        "n": "4",
-        "k": "2",
-        "len": "0"
-      },
-      "expected": {
-        "solutions": 8
-      },
-      "tags": []
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to 2 counterexamples per candidate, one clause each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 2):\n            reject M with G.clause(M, X)\n"
+      }
     },
     {
-      "id": "four-long",
-      "facts": "% 4 x 4 with 4 numbers and a loop of at least 12 edges: 2,104 puzzles\n% (about 6 minutes).\n",
-      "constants": {
-        "n": "4",
-        "k": "4",
-        "len": "12"
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction   options \"--enum-mode=record\"\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "printed",
+      "description": "The loop around a random region of an n x n grid (each cell in with probability p/1000; redrawn unless the region and the rest are connected and the loop has no crossing), its count printed in each cell with probability q/1000. Set the instance constant n to the same value.",
+      "params": {
+        "n": "int",
+        "p": "permille",
+        "q": "permille"
       },
-      "expected": {
-        "solutions": 2104
+      "defaults": {
+        "n": 4,
+        "p": 500,
+        "q": 250
       },
-      "tags": [
-        "slow"
-      ]
+      "text": "% printed: the boundary of a random region (connected, no holes, no cells touching only at a corner) is the loop; a cell shows its count with probability q/1000\ncell(R,C) :- R = 1..n, C = 1..n.\nin(R,C) :- cell(R,C), @flip(p, R, C) = 1.\n:- not in(_,_).\nnb(R,C,R2,C2) :- cell(R,C), cell(R2,C2), |R-R2|+|C-C2| = 1.\nsmaller(R,C) :- in(R,C), in(R2,C2), (R2,C2) < (R,C).\nreach(R,C) :- in(R,C), not smaller(R,C).\nreach(R2,C2) :- reach(R,C), nb(R,C,R2,C2), in(R2,C2).\n:- in(R,C), not reach(R,C).\noutside(R,C) :- cell(R,C), not in(R,C), R = (1;n).\noutside(R,C) :- cell(R,C), not in(R,C), C = (1;n).\noutside(R2,C2) :- outside(R,C), nb(R,C,R2,C2), not in(R2,C2).\n:- cell(R,C), not in(R,C), not outside(R,C).\n:- in(R,C), in(R+1,C+1), not in(R+1,C), not in(R,C+1).\n:- in(R,C+1), in(R+1,C), not in(R,C), not in(R+1,C+1).\ndir(0,1). dir(0,-1). dir(1,0). dir(-1,0).\nside(R,C,DR,DC) :- in(R,C), dir(DR,DC), not in(R+DR,C+DC).\nside(R,C,DR,DC) :- cell(R,C), not in(R,C), dir(DR,DC), in(R+DR,C+DC).\npre(R,C,N) :- cell(R,C), @flip(q, R, C, show) = 1, N = #count { DR,DC : side(R,C,DR,DC) }.\n#show pre/3.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": [
+          "three",
+          "random-1",
+          "random-2",
+          "random-3",
+          "random-4"
+        ]
+      },
+      "variants": [
+        "default",
+        "shape2",
+        "several",
+        "record"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "library": {

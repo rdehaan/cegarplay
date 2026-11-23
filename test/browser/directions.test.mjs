@@ -77,7 +77,7 @@ test('I1: Run all marks a wrong expected count in red', async () => {
   await page.press('#instance-expected', 'Enter');
   await page.dispatchEvent('#instance-expected', 'change');
   await page.click('#run-all-instances-button');
-  await page.waitForFunction(() => /Ran 4 instances/.test(document.getElementById('instances-status').textContent));
+  await page.waitForFunction(() => /Ran 6 instances/.test(document.getElementById('instances-status').textContent));
   const marked = await page.$$eval('#instances-table tr[data-mismatch]', (r) => r.map((x) => x.dataset.instance));
   assert.deepEqual(marked, ['random-1']);
   assert.match(await page.textContent('#instances-status'), /1 with a count or optimum other than expected/);
@@ -92,7 +92,7 @@ test('I1: Run all checks expected optima; a wrong optimum is marked', async () =
   await page.fill('#instance-optimum', '4');
   await page.dispatchEvent('#instance-optimum', 'change');
   await page.click('#run-all-instances-button');
-  await page.waitForFunction(() => /Ran 4 instances/.test(document.getElementById('instances-status').textContent));
+  await page.waitForFunction(() => /Ran 6 instances/.test(document.getElementById('instances-status').textContent));
   const marked = await page.$$eval('#instances-table tr[data-mismatch]', (r) => r.map((x) => x.dataset.instance));
   assert.deepEqual(marked, ['small-opt']);
   assert.match(await page.textContent('#instances-table tr[data-instance="example"]'), /1, cost 8.*✓/);
@@ -120,7 +120,7 @@ test('V1: ?replay= replays a library recording without running the engine', asyn
   await page.waitForFunction(() => document.getElementById('run-status').dataset.state === 'replayed');
   assert.equal(await page.evaluate(() => window.cegarplay.exampleId), 'gc-shape1');
   assert.equal(await solutionsOf(page), 101);
-  assert.match(await page.textContent('#result-line'), /^Replayed: Finished: 101 solutions/);
+  assert.match(await page.textContent('#result-line'), /^Replayed \(instance n5\): Finished: 101 solutions/);
   assert.equal(await page.$$eval('#solutions li', (l) => l.length), 101);
   // a path outside examples/replays/ is refused
   await page.goto(server.url + 'index.html?nocoi=1&replay=../secret.cprec');
@@ -560,7 +560,7 @@ test('the run bar says running audit during an audit', async () => {
 });
 
 test('Run all, Fuzz and the audit of many instances name themselves and stop at one click', { timeout: 120000 }, async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=voting-justification&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=voting-justification&tab=9&instance=cancel-reinf-posresp-k4');
   // Run all: one click on Abort ends the whole batch
   await page.click('#run-all-instances-button');
   await page.waitForFunction(() => /^running all instances \(1 of \d+: /.test(document.getElementById('run-status').textContent));
@@ -573,7 +573,7 @@ test('Run all, Fuzz and the audit of many instances name themselves and stop at 
   assert.equal(await page.$eval('#instance-select', (s) => s.value), 'cancel-reinf-posresp-k4');
   assert.match(await page.textContent('#instances-table tr[data-instance="cancel-reinf-posresp-k4"]'), /no audit/);
   await page.click('#audit-button');
-  await page.waitForFunction(() => /^running audit \(1 of \d+: faith-k1\)$/.test(document.getElementById('run-status').textContent));
+  await page.waitForFunction(() => /^running audit \(1 of \d+: cancel-posresp-k2\)$/.test(document.getElementById('run-status').textContent));
   await page.click('#abort-button');
   await page.waitForFunction(() => /Audit stopped after/.test(document.getElementById('instances-status').textContent));
   // Fuzz: named in the run bar, stopped by one click

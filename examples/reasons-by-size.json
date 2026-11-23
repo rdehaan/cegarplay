@@ -23,6 +23,11 @@
       "name": "check",
       "description": "Looks for an input that agrees on the kept features and gets the other answer (solver C).",
       "text": "% A counterexample: another input x/1 that agrees with the given one on the kept\n% features ...\n{ x(F) } :- feature(F).\n:- keep(F), is(F,1), not x(F).\n:- keep(F), is(F,0), x(F).\n% ... but gets the other answer from the network.\nfires(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), x(F) } >= T.\nyes :- #sum { V,U : vote(U,V), fires(U) } >= 3.\n:- yes, yes0.\n:- not yes, not yes0.\ndiffers(F) :- is(F,1), not x(F).\ndiffers(F) :- is(F,0), x(F).\n#show x/1.\n#show differs/1.\n\n% The input refutes every set of kept features on which it agrees with the given\n% input. So one of the features on which it differs has to be kept.\nrelevant(keep(F)) :- differs(F).\n"
+    },
+    {
+      "name": "check_small",
+      "description": "The check of the variant smallest: an input that differs from the given one in as few features as possible, so the clause is short.",
+      "text": "% A counterexample: another input x/1 that agrees with the given one on the kept\n% features ...\n{ x(F) } :- feature(F).\n:- keep(F), is(F,1), not x(F).\n:- keep(F), is(F,0), x(F).\n% ... but gets the other answer from the network.\nfires(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), x(F) } >= T.\nyes :- #sum { V,U : vote(U,V), fires(U) } >= 3.\n:- yes, yes0.\n:- not yes, not yes0.\ndiffers(F) :- is(F,1), not x(F).\ndiffers(F) :- is(F,0), x(F).\n#show x/1.\n#show differs/1.\n% The smallest refinement (variant smallest): an input that differs in as few features\n% as possible.\n#minimize { 1,F : differs(F) }.\n\n% The input refutes every set of kept features on which it agrees with the given\n% input. So one of the features on which it differs has to be kept.\nrelevant(keep(F)) :- differs(F).\n"
     }
   ],
   "loop": {
@@ -66,6 +71,101 @@
         "solutions": 3
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "net-random",
+        "params": {},
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 3
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "net-random",
+        "params": {},
+        "seed": 10
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "net-random",
+      "description": "A random network: n features, u hidden units; each unit sees each feature with probability p/1000 (weight in -3..-1 or 1..3), thresholds and votes in 1..3, and a random input.",
+      "params": {
+        "n": "int",
+        "u": "int",
+        "p": "permille"
+      },
+      "defaults": {
+        "n": 8,
+        "u": 3,
+        "p": 500
+      },
+      "text": "% net-random: features 1..n and hidden units 1..u. Unit U sees feature F with probability\n% p/1000, with a weight in -3..-1 or 1..3; thresholds are in 1..3 and votes in 1..3 (the\n% answer is \"yes\" when the votes of the firing units reach 3). The input is random.\nfeature(1..n).\nunit(1..u).\nweight(U,F,@int(1,3,size,U,F)*(1-2*@flip(500,sign,U,F))) :- unit(U), feature(F), @flip(p,edge,U,F) = 1.\nthreshold(U,@int(1,3,threshold,U)) :- unit(U).\nvote(U,@int(1,3,vote,U)) :- unit(U).\nis(F,@flip(500,input,F)) :- feature(F).\n#show feature/1.  #show unit/1.  #show weight/3.  #show threshold/2.  #show vote/2.  #show is/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G  = A -> C via shared + glue\n\n# The baseline: smallest candidates first, but a refuted candidate is blocked on its\n# own. An accepted set still removes its supersets (G.above), which are not minimal.\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        A.add(G.above(M))\n"
+      }
+    },
+    {
+      "name": "three-cex",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G  = A -> C via shared + glue\n\n# Up to three counterexamples per candidate, one clause each.\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    XS = C.models(assume G(M), limit 3)\n    if XS.size > 0:\n        for X in XS: A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.above(M))\n"
+      }
+    },
+    {
+      "name": "smallest",
+      "swap": {
+        "check": "check_small"
+      },
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G  = A -> C via shared + glue\n\n# The smallest refinement: an optimal counterexample (check_small) differs in as few\n# features as possible, so its clause is short.\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    X = C.solve(assume G(M), optimal)\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.above(M))\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "three-cex",
+        "smallest"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

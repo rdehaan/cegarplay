@@ -73,6 +73,115 @@
         "solutions": 0
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "abd-random",
+        "params": {},
+        "seed": 1
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "abd-random",
+        "params": {},
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 4
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "abd-random",
+      "description": "A random theory: n hypotheses and m effects; a hypothesis causes an effect with probability p/1000, a pair of hypotheses causes one jointly with probability q/1000, a pair excludes each other with probability x/1000; the first s effects are the manifestations, each with at least one cause.",
+      "params": {
+        "n": "int",
+        "m": "int",
+        "s": "int",
+        "p": "permille",
+        "q": "permille",
+        "x": "permille"
+      },
+      "defaults": {
+        "n": 7,
+        "m": 4,
+        "s": 2,
+        "p": 250,
+        "q": 60,
+        "x": 150
+      },
+      "text": "% abd-random: hypotheses h(1..n) and effects e(1..m). Each h(I) causes e(J) with probability p/1000,\n% each pair of hypotheses causes e(J) jointly with probability q/1000, and each pair excludes\n% each other with probability x/1000. The effects 1..s are the manifestations; each has a cause.\nhypothesis(h(1..n)).\ncause(I,J) :- I = 1..n, J = 1..m, @flip(p, cause, I, J) = 1.\njoint(I,K,J) :- I = 1..n, K = 1..n, I < K, J = 1..m, @flip(q, joint, I, K, J) = 1.\nclash(I,K) :- I = 1..n, K = 1..n, I < K, @flip(x, clash, I, K) = 1.\nneg(c(I,J),h(I)) :- cause(I,J).\npos(c(I,J),e(J)) :- cause(I,J).\nneg(j(I,K,J),h(I)) :- joint(I,K,J).\nneg(j(I,K,J),h(K)) :- joint(I,K,J).\npos(j(I,K,J),e(J)) :- joint(I,K,J).\nneg(x(I,K),h(I)) :- clash(I,K).\nneg(x(I,K),h(K)) :- clash(I,K).\nmanifestation(e(1..s)).\ncaused(J) :- cause(I,J).\ncaused(J) :- joint(I,K,J).\n:- J = 1..s, not caused(J).\n#show hypothesis/1.  #show manifestation/1.  #show pos/2.  #show neg/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A  = shared + abstraction\nsolver C1 = shared + consistent\nsolver C2 = shared + entails       options \"--heuristic=Domain\"\nlink   G1 = A -> C1 via shared + glue\nlink   G2 = A -> C2 via shared + glue\n\n# The blocking loop: the same two checks, but each refuted candidate is ruled out on\n# its own.\nsearch A:\n    on candidate M:\n        if not C1.solve(assume G1(M)):\n            reject M with G1.block(M)\n        else:\n            X = C2.solve(assume G2(M))\n            if X: reject M with G2.block(M)\n"
+      }
+    },
+    {
+      "name": "minimal-cores",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A  = shared + abstraction\nsolver C1 = shared + consistent\nsolver C2 = shared + entails       options \"--heuristic=Domain\"\nlink   G1 = A -> C1 via shared + glue\nlink   G2 = A -> C2 via shared + glue\n\n# The same loop with subset-minimal cores: a clause names only hypotheses that\n# together contradict the theory.\nsearch A:\n    on candidate M:\n        if not C1.solve(assume G1(M)):\n            reject M with C1.core.minimal.on(G1)\n        else:\n            X = C2.solve(assume G2(M))\n            if X: reject M with G2.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "entails-first",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A  = shared + abstraction\nsolver C1 = shared + consistent\nsolver C2 = shared + entails       options \"--heuristic=Domain\"\nlink   G1 = A -> C1 via shared + glue\nlink   G2 = A -> C2 via shared + glue\n\n# The checks in the other order: the counterexample to the entailment first, the\n# consistency witness only for candidates that entail the manifestations.\nsearch A:\n    on candidate M:\n        X = C2.solve(assume G2(M))\n        if X:\n            reject M with G2.clause(M, X)\n        elif not C1.solve(assume G1(M)):\n            reject M with G1.core(C1)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A  = shared + abstraction\nsolver C1 = shared + consistent\nsolver C2 = shared + entails       options \"--heuristic=Domain\"\nlink   G1 = A -> C1 via shared + glue\nlink   G2 = A -> C2 via shared + glue\n\n# Shape 2: the same two checks with explicit solves of A and A.add.\nloop:\n    M = A.solve()\n    if not M: stop\n    if not C1.solve(assume G1(M)):\n        A.add(G1.core(C1))\n    else:\n        X = C2.solve(assume G2(M))\n        if X:\n            A.add(G2.clause(M, X))\n        else:\n            accept M\n            A.add(G1.block(M))\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "minimal-cores",
+        "entails-first",
+        "shape2"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

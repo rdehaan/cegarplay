@@ -42,24 +42,6 @@
     "trace": 200,
     "seed": 0
   },
-  "library": {
-    "id": "abduction-ihs",
-    "group": "reasoning",
-    "summary": "Cost-optimal abduction by implicit hitting sets (AbHS): a cheapest hypothesis set, refined by minimal cores of a consistency witness and by counterexamples to the entailment.",
-    "shape": "custom",
-    "tags": [
-      "fast",
-      "ihs",
-      "cores",
-      "bounds",
-      "stops-at-optimum",
-      "several-solvers"
-    ],
-    "expected": null,
-    "optimum": 1,
-    "level": 4,
-    "after": 14
-  },
   "instances": [
     {
       "id": "example",
@@ -98,6 +80,123 @@
       "id": "no-explanation",
       "facts": "% The only hypothesis that would explain the symptom contradicts the theory.\nneg(1,leak).  pos(1,wet).                         % a leak: a wet floor\npos(2,dry).                                       % the pipes are dry ...\nneg(3,dry).   neg(3,leak).                        % ... so there is no leak\nneg(4,spill). pos(4,sticky).                      % a spill: a sticky floor\nhypothesis(leak; spill).\nmanifestation(wet).\n",
       "constants": {}
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "abd-random",
+        "params": {
+          "n": 8,
+          "m": 4,
+          "s": 3
+        },
+        "seed": 1
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 2
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "abd-random",
+        "params": {
+          "n": 8,
+          "m": 4,
+          "s": 3
+        },
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 3
+      }
     }
-  ]
+  ],
+  "generators": [
+    {
+      "name": "abd-random",
+      "description": "A random theory: n hypotheses and m effects; a hypothesis causes an effect with probability p/1000, a pair of hypotheses causes one jointly with probability q/1000, a pair excludes each other with probability x/1000; the first s effects are the manifestations, each with at least one cause.",
+      "params": {
+        "n": "int",
+        "m": "int",
+        "s": "int",
+        "p": "permille",
+        "q": "permille",
+        "x": "permille"
+      },
+      "defaults": {
+        "n": 7,
+        "m": 4,
+        "s": 2,
+        "p": 250,
+        "q": 60,
+        "x": 150
+      },
+      "text": "% abd-random: hypotheses h(1..n) and effects e(1..m). Each h(I) causes e(J) with probability p/1000,\n% each pair of hypotheses causes e(J) jointly with probability q/1000, and each pair excludes\n% each other with probability x/1000. The effects 1..s are the manifestations; each has a cause.\nhypothesis(h(1..n)).\ncause(I,J) :- I = 1..n, J = 1..m, @flip(p, cause, I, J) = 1.\njoint(I,K,J) :- I = 1..n, K = 1..n, I < K, J = 1..m, @flip(q, joint, I, K, J) = 1.\nclash(I,K) :- I = 1..n, K = 1..n, I < K, @flip(x, clash, I, K) = 1.\nneg(c(I,J),h(I)) :- cause(I,J).\npos(c(I,J),e(J)) :- cause(I,J).\nneg(j(I,K,J),h(I)) :- joint(I,K,J).\nneg(j(I,K,J),h(K)) :- joint(I,K,J).\npos(j(I,K,J),e(J)) :- joint(I,K,J).\nneg(x(I,K),h(I)) :- clash(I,K).\nneg(x(I,K),h(K)) :- clash(I,K).\nmanifestation(e(1..s)).\ncaused(J) :- cause(I,J).\ncaused(J) :- joint(I,K,J).\n:- J = 1..s, not caused(J).\n#show hypothesis/1.  #show manifestation/1.  #show pos/2.  #show neg/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A  = shared + abstraction\nsolver C1 = shared + consistent\nsolver C2 = shared + entails       options \"--heuristic=Domain\"\nlink   G1 = A -> C1 via shared + glue\nlink   G2 = A -> C2 via shared + glue\n\n# The baseline: cheapest candidates first, but each refuted set is blocked on its own\n# (no cores, no relevant/1). The first set that passes both checks is still optimal.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no explanation\"\n    track lower = M.cost\n    if not C1.solve(assume G1(M)):\n        A.add(G1.block(M))\n    else:\n        X = C2.solve(assume G2(M))\n        if X:\n            A.add(G2.block(M))\n        else:\n            log \"a cheapest explanation, cost\", M.cost\n            accept M\n            stop\n"
+      }
+    },
+    {
+      "name": "plain-cores",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A  = shared + abstraction\nsolver C1 = shared + consistent\nsolver C2 = shared + entails       options \"--heuristic=Domain\"\nlink   G1 = A -> C1 via shared + glue\nlink   G2 = A -> C2 via shared + glue\n\n# The loop without core minimisation: the whole core of a failed witness check.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"no explanation\"\n    track lower = M.cost\n    if not C1.solve(assume G1(M)):\n        A.add(G1.core(C1))\n    else:\n        X = C2.solve(assume G2(M))\n        if X:\n            A.add(G2.clause(M, X))\n        else:\n            log \"a cheapest explanation, cost\", M.cost\n            accept M\n            stop\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "plain-cores"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "abduction-ihs",
+    "group": "reasoning",
+    "summary": "Cost-optimal abduction by implicit hitting sets (AbHS): a cheapest hypothesis set, refined by minimal cores of a consistency witness and by counterexamples to the entailment.",
+    "shape": "custom",
+    "tags": [
+      "fast",
+      "ihs",
+      "cores",
+      "bounds",
+      "stops-at-optimum",
+      "several-solvers"
+    ],
+    "expected": null,
+    "optimum": 1,
+    "level": 4,
+    "after": 14
+  }
 }

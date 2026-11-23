@@ -1,13 +1,13 @@
 {
   "format": "cegarplay",
-  "version": 1,
+  "version": 2,
   "title": "Reasons by shrinking",
   "description": "Subset-minimal sufficient reasons in raw Lua: any candidate that passes the check is shrunk by dropping kept features one at a time while the check still fails, the remainder is reported, and all its supersets are excluded. The assumption lists and the superset clause are built by hand from G:of and G:block, which the loop language does not offer. The 4 solutions are those of Reasons by size and Minimal sufficient reasons.",
   "fragments": [
     {
       "name": "shared",
-      "description": "The network and the input to be explained. Added to every solver.",
-      "text": "% A small network over 8 binary features. A hidden unit fires when the weighted sum of\n% its inputs reaches its threshold; the answer is \"yes\" when the weighted sum of the\n% firing units reaches 3.\nfeature(1..8).\nunit(1..3).\n% weight(U,F,W): unit U sees feature F with weight W.\nweight(1,1,-2). weight(1,3,1). weight(1,4,-1). weight(1,6,-3). weight(1,7,-3). weight(1,8,-1).\nweight(2,1,-3). weight(2,3,2). weight(2,4,-2). weight(2,5,-3). weight(2,6,-2). weight(2,7,-1).\nweight(2,8,3).\nweight(3,1,-2). weight(3,2,3). weight(3,3,2).  weight(3,5,-3). weight(3,7,-1). weight(3,8,3).\nthreshold(1,2). threshold(2,1). threshold(3,2).\nvote(1,1). vote(2,1). vote(3,3).\n% The input to be explained: is(F,B) says that feature F has the value B.\nis(1,0). is(2,1). is(3,1). is(4,0). is(5,1). is(6,0). is(7,0). is(8,1).\n% The network's answer on this input.\nfires0(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), is(F,1) } >= T.\nyes0 :- #sum { V,U : vote(U,V), fires0(U) } >= 3.\n"
+      "description": "The network's answer on the input. Added to every solver.",
+      "text": "% The instance (its facts) is in the Instances tab.\n% feature(F), unit(U), weight(U,F,W), threshold(U,T), vote(U,V), and the input is(F,B).\n% The network's answer on this input.\nfires0(U) :- threshold(U,T), #sum { W,F : weight(U,F,W), is(F,1) } >= T.\nyes0 :- #sum { V,U : vote(U,V), fires0(U) } >= 3.\n"
     },
     {
       "name": "abstraction",
@@ -37,5 +37,119 @@
     "trace": 200,
     "seed": 0
   },
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The baseline: the same shrinking loop, but a candidate with a counterexample is blocked\n# on its own.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        E = G(M)\n        shrunk = false\n        for a in E:\n            if a.true and not C.solve(assume E.flip(a)):\n                E = E.flip(a)\n                shrunk = true\n        # G(M) given back to A: a model of A with exactly the kept features of E\n        if shrunk: accept A.solve(assume E)\n        else: accept M\n        A.add(G.above(E))\n"
+      }
+    },
+    {
+      "name": "three-cex",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The same shrinking loop with up to three counterexamples per candidate, one clause each.\nloop:\n    M = A.solve()\n    if not M: stop\n    XS = C.models(assume G(M), limit 3)\n    if XS.size > 0:\n        for X in XS: A.add(G.clause(M, X))\n    else:\n        E = G(M)\n        shrunk = false\n        for a in E:\n            if a.true and not C.solve(assume E.flip(a)):\n                E = E.flip(a)\n                shrunk = true\n        # G(M) given back to A: a model of A with exactly the kept features of E\n        if shrunk: accept A.solve(assume E)\n        else: accept M\n        A.add(G.above(E))\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "three-cex"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% A small network over 8 binary features. A hidden unit fires when the weighted sum of\n% its inputs reaches its threshold; the answer is \"yes\" when the weighted sum of the\n% firing units reaches 3.\nfeature(1..8).\nunit(1..3).\n% weight(U,F,W): unit U sees feature F with weight W.\nweight(1,1,-2). weight(1,3,1). weight(1,4,-1). weight(1,6,-3). weight(1,7,-3). weight(1,8,-1).\nweight(2,1,-3). weight(2,3,2). weight(2,4,-2). weight(2,5,-3). weight(2,6,-2). weight(2,7,-1).\nweight(2,8,3).\nweight(3,1,-2). weight(3,2,3). weight(3,3,2).  weight(3,5,-3). weight(3,7,-1). weight(3,8,3).\nthreshold(1,2). threshold(2,1). threshold(3,2).\nvote(1,1). vote(2,1). vote(3,3).\n% The input to be explained: is(F,B) says that feature F has the value B.\nis(1,0). is(2,1). is(3,1). is(4,0). is(5,1). is(6,0). is(7,0). is(8,1).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 4
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "other-input",
+      "facts": "% The same network, another input (answer \"no\").\n% A small network over 8 binary features. A hidden unit fires when the weighted sum of\n% its inputs reaches its threshold; the answer is \"yes\" when the weighted sum of the\n% firing units reaches 3.\nfeature(1..8).\nunit(1..3).\n% weight(U,F,W): unit U sees feature F with weight W.\nweight(1,1,-2). weight(1,3,1). weight(1,4,-1). weight(1,6,-3). weight(1,7,-3). weight(1,8,-1).\nweight(2,1,-3). weight(2,3,2). weight(2,4,-2). weight(2,5,-3). weight(2,6,-2). weight(2,7,-1).\nweight(2,8,3).\nweight(3,1,-2). weight(3,2,3). weight(3,3,2).  weight(3,5,-3). weight(3,7,-1). weight(3,8,3).\nthreshold(1,2). threshold(2,1). threshold(3,2).\nvote(1,1). vote(2,1). vote(3,3).\n% Another input, on which the network answers \"no\".\nis(1,0). is(2,0). is(3,0). is(4,0). is(5,0). is(6,0). is(7,1). is(8,0).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "majority-of-three",
+      "facts": "% Majority of three: one unit fires when at least two features are 1, and its vote\n% of 3 decides. On the input 1 1 1 any two features force the answer \"yes\".\nfeature(1..3).\nunit(1).\nweight(1,F,1) :- feature(F).\nthreshold(1,2).\nvote(1,3).\nis(1,1). is(2,1). is(3,1).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "net-random",
+        "params": {},
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 3
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "net-random",
+        "params": {},
+        "seed": 10
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "net-random",
+      "description": "A random network: n features, u hidden units; each unit sees each feature with probability p/1000 (weight in -3..-1 or 1..3), thresholds and votes in 1..3, and a random input.",
+      "params": {
+        "n": "int",
+        "u": "int",
+        "p": "permille"
+      },
+      "defaults": {
+        "n": 8,
+        "u": 3,
+        "p": 500
+      },
+      "text": "% net-random: features 1..n and hidden units 1..u. Unit U sees feature F with probability\n% p/1000, with a weight in -3..-1 or 1..3; thresholds are in 1..3 and votes in 1..3 (the\n% answer is \"yes\" when the votes of the firing units reach 3). The input is random.\nfeature(1..n).\nunit(1..u).\nweight(U,F,@int(1,3,size,U,F)*(1-2*@flip(500,sign,U,F))) :- unit(U), feature(F), @flip(p,edge,U,F) = 1.\nthreshold(U,@int(1,3,threshold,U)) :- unit(U).\nvote(U,@int(1,3,vote,U)) :- unit(U).\nis(F,@flip(500,input,F)) :- feature(F).\n#show feature/1.  #show unit/1.  #show weight/3.  #show threshold/2.  #show vote/2.  #show is/2.\n"
+    }
+  ],
   "runs": []
 }

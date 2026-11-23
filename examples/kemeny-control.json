@@ -55,6 +55,72 @@
       "tags": [
         "library"
       ]
+    },
+    {
+      "id": "budget1",
+      "facts": "% The election of the example with a budget of one deletion: not enough.\ncand(a;b;c;d).\nballot(1,(d,c,b,a)).\nballot(2,(a,c,d,b)).\nballot(3,(c,d,a,b)).\nballot(4,(b,d,c,a)).\nballot(5,(c,a,b,d)).\nballot(6,(a,d,c,b)).\nballot(7,(b,a,d,c)).\n% The chair wants this candidate to win.\nfavourite(b).\n",
+      "constants": {
+        "budget": "1"
+      },
+      "tags": [],
+      "expected": {
+        "solutions": 0
+      }
+    },
+    {
+      "id": "budget3",
+      "facts": "% The election of the example with a budget of three deletions.\ncand(a;b;c;d).\nballot(1,(d,c,b,a)).\nballot(2,(a,c,d,b)).\nballot(3,(c,d,a,b)).\nballot(4,(b,d,c,a)).\nballot(5,(c,a,b,d)).\nballot(6,(a,d,c,b)).\nballot(7,(b,a,d,c)).\n% The chair wants this candidate to win.\nfavourite(b).\n",
+      "constants": {
+        "budget": "3"
+      },
+      "tags": [],
+      "expected": {
+        "solutions": 28
+      }
+    },
+    {
+      "id": "nine-voters",
+      "facts": "% Nine voters; the favourite c is ranked last by four of them.\ncand(a;b;c;d).\nballot(1,(a,b,c,d)).\nballot(2,(a,b,d,c)).\nballot(3,(b,a,d,c)).\nballot(4,(d,a,b,c)).\nballot(5,(c,d,a,b)).\nballot(6,(c,b,a,d)).\nballot(7,(b,c,d,a)).\nballot(8,(d,c,a,b)).\nballot(9,(a,c,b,d)).\nfavourite(c).\n",
+      "constants": {},
+      "tags": [],
+      "expected": {
+        "solutions": 17
+      }
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "ballots-ic",
+        "params": {
+          "v": 7
+        },
+        "seed": 1
+      },
+      "expected": {
+        "solutions": 32
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "ballots-mallows",
+        "params": {
+          "v": 8,
+          "phi": 600
+        },
+        "seed": 1
+      },
+      "expected": {
+        "solutions": 16
+      },
+      "tags": [
+        "generated"
+      ]
     }
   ],
   "generators": [
@@ -81,6 +147,52 @@
         "phi": 500
       },
       "text": "% ballots-mallows: voter V places candidate I at position @mallows(4, phi, I, V)\ncand(a;b;c;d).\nc(1,a). c(2,b). c(3,c). c(4,d).\nvoter(1..v).\nat(V,@mallows(4, phi, I, V),X) :- voter(V), c(I,X).\nballot(V,(A,B,C,D)) :- at(V,1,A), at(V,2,B), at(V,3,C), at(V,4,D).\nfavourite(b).\n\n#show cand/1.  #show ballot/2.  #show favourite/1.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "shape3",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Ground every counterexample at once (Shape 3).\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.expand(refine, cex = X.atoms(over/2))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "batch5",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\npending = []\nrepeat:\n    search A:\n        on candidate M:\n            X = C.solve(assume G(M))\n            if X:\n                pending.push(X)\n                reject M with G.block(M)\n                if pending.size >= 5: restart\n    grounded = pending.size\n    for X in pending:\n        A.expand(refine, cex = X.atoms(over/2))\n    pending.clear()\nuntil A.exhausted and grounded == 0\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "shape3",
+        "batch5"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

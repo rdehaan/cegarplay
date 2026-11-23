@@ -23,6 +23,10 @@
       "name": "check",
       "description": "Looks for a packing of the remaining items that beats the bound (solver C).",
       "text": "% A counterexample: the follower packs items that are not locked, within the capacity,\n% with a profit above the bound.\n{ pack(I) : item(I,_,_,_) }.\n:- pack(I), lock(I).\n:- #sum { W,I : pack(I), item(I,_,W,_) } > capacity.\n:- #sum { P,I : pack(I), item(I,_,_,P) } <= bound.\n#show pack/1.\n\n% The packing stays possible as long as none of its items is locked.\nrelevant(lock(I)) :- pack(I).\n% A packing with few items gives a short clause.\n#minimize { 1,I : pack(I) }.\n"
+    },
+    {
+      "name": "check_best",
+      "text": "% The follower's best response: a packing of unlocked items within the capacity with the\n% largest profit, if that profit is above the bound (variant best-response).\n{ pack(I) : item(I,_,_,_) }.\n:- pack(I), lock(I).\n:- #sum { W,I : pack(I), item(I,_,W,_) } > capacity.\n:- #sum { P,I : pack(I), item(I,_,_,P) } <= bound.\n#show pack/1.\n\nrelevant(lock(I)) :- pack(I).\n#maximize { P,I : pack(I), item(I,_,_,P) }.\n"
     }
   ],
   "loop": {
@@ -40,16 +44,6 @@
     "candidates": 0,
     "trace": 200,
     "seed": 0
-  },
-  "library": {
-    "id": "knapsack-interdiction",
-    "group": "planning",
-    "summary": "Bilevel knapsack: locked item sets that keep the follower's best profit at or below a bound, with smallest counterexample packings (8 items, 2 solutions).",
-    "shape": "custom",
-    "tags": [
-      "fast"
-    ],
-    "expected": 2
   },
   "instances": [
     {
@@ -82,14 +76,14 @@
     },
     {
       "id": "six-items",
-      "facts": "% Six items: budget 3, capacity 8, bound 14.\nitem(1,2,3,6). item(2,1,2,3). item(3,3,4,8).\nitem(4,2,5,9). item(5,1,1,2). item(6,2,3,5).\n",
+      "facts": "% Six items: budget 4, capacity 9, bound 16.\nitem(1,2,3,6). item(2,1,2,3). item(3,3,4,8).\nitem(4,2,5,9). item(5,1,1,2). item(6,2,3,5).\n",
       "constants": {
-        "budget": "3",
-        "capacity": "8",
-        "bound": "14"
+        "budget": "4",
+        "capacity": "9",
+        "bound": "16"
       },
       "expected": {
-        "solutions": 2
+        "solutions": 4
       },
       "tags": []
     },
@@ -105,6 +99,135 @@
         "solutions": 1
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {
+        "budget": "6",
+        "capacity": "12",
+        "bound": "26"
+      },
+      "recipe": {
+        "generator": "items",
+        "params": {
+          "n": 8
+        },
+        "seed": 2
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 3
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {
+        "budget": "6",
+        "capacity": "12",
+        "bound": "30"
+      },
+      "recipe": {
+        "generator": "items",
+        "params": {
+          "n": 8
+        },
+        "seed": 7
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 5
+      }
     }
-  ]
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "any-packing",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Any packing above the bound, not the one with the fewest items.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "best-response",
+      "swap": {
+        "check": "check_best"
+      },
+      "constants": {}
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to three packings per candidate, one clause each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "shape2",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M), optimal)\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "items",
+      "description": "n random items: cost 1..4, weight 2..7, profit about twice the weight. Set budget, capacity and bound as constants.",
+      "params": {
+        "n": "int"
+      },
+      "defaults": {
+        "n": 8
+      },
+      "text": "% items: n items with a random cost (1..4), weight (2..7) and profit (twice the weight plus 0..3)\nitem(I,C,W,2*W+E) :- I = 1..n, C = @int(1, 4, cost, I), W = @int(2, 7, weight, I), E = @int(0, 3, extra, I).\n#show item/4.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "any-packing",
+        "best-response",
+        "several",
+        "shape2"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    }
+  ],
+  "library": {
+    "id": "knapsack-interdiction",
+    "group": "planning",
+    "summary": "Bilevel knapsack: locked item sets that keep the follower's best profit at or below a bound, with smallest counterexample packings (8 items, 2 solutions).",
+    "shape": "custom",
+    "tags": [
+      "fast"
+    ],
+    "expected": 2
+  }
 }

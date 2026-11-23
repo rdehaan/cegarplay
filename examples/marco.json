@@ -72,6 +72,118 @@
         "solutions": 0
       },
       "tags": []
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "random-cnf",
+        "params": {
+          "v": 4,
+          "c": 10,
+          "k": 2
+        },
+        "seed": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 5
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "random-cnf",
+        "params": {
+          "v": 5,
+          "c": 12,
+          "k": 2
+        },
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 8
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "random-cnf",
+      "description": "A random CNF: c clauses over the variables 1..v, each with 1 to k literals.",
+      "params": {
+        "v": "int",
+        "c": "int",
+        "k": "int"
+      },
+      "defaults": {
+        "v": 4,
+        "c": 10,
+        "k": 2
+      },
+      "text": "% random-cnf: c clauses over the variables 1..v; clause C has 1 to k literals (uniform), each\n% on a uniform variable with a sign of probability 1/2 (a repeated literal counts once).\nclause(1..c).\nlen(C,@int(1, k, C, len)) :- clause(C).\nlit(C,J,@int(1, v, C, J)) :- len(C,N), J = 1..N.\npos(C,V) :- lit(C,J,V), @flip(500, C, J, sign) = 1.\nneg(C,V) :- lit(C,J,V), @flip(500, C, J, sign) = 0.\n#show pos/2.\n#show neg/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "no-grow",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction    options \"--heuristic=Domain\"\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# MARCO without growing: a satisfiable seed blocks only itself and its subsets (no MSS is\n# reported); unsatisfiable seeds still shrink to MUSes.\nloop:\n    M = A.solve()\n    if not M: stop\n    E = G(M)\n    if C.solve(assume E):\n        A.add(G.below(E))\n    else:\n        for a in E:\n            if a.true and not C.solve(assume E.flip(a)): E = E.flip(a)\n        accept A.solve(assume E)\n        A.add(G.above(E))\n"
+      }
+    },
+    {
+      "name": "no-heuristic",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# MARCO with the map solver's default heuristic: seeds are not maximal first.\nloop:\n    M = A.solve()\n    if not M: stop\n    E = G(M)\n    if C.solve(assume E):\n        for a in E:\n            if not a.true and C.solve(assume E.flip(a)): E = E.flip(a)\n        accept A.solve(assume E) as mss\n        A.add(G.below(E))\n    else:\n        for a in E:\n            if a.true and not C.solve(assume E.flip(a)): E = E.flip(a)\n        accept A.solve(assume E)\n        A.add(G.above(E))\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "no-grow",
+        "no-heuristic"
+      ],
+      "limits": {
+        "seconds": 30
+      }
+    },
+    {
+      "name": "random",
+      "instances": {
+        "generator": "random-cnf",
+        "grid": {
+          "c": [
+            8,
+            10,
+            12
+          ]
+        },
+        "seeds": 5
+      },
+      "variants": [
+        "default",
+        "no-heuristic"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []

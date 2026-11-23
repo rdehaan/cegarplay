@@ -69,6 +69,22 @@ relevant(edge(N,M)) :- node(N), node(M), N < M, not edge(N,M).
 relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).
 relevant(leaf_color(N,C)) :- node(N), not leaf(N), color(C), not color(N,C).
 ]==]
+FRAGMENTS["check_relevant"] = [==[
+% Check that there is no proper 3-coloring of the entire graph
+% that agrees with the leaf coloring
+1 { color(N,C) : color(C) } 1 :- node(N).
+:- edge(N,M), color(N,C), color(M,C).
+:- leaf_color(N,C), not color(N,C), leaf(N).
+:- color(N,C), not leaf_color(N,C), leaf(N).
+
+% Any counterexample found depends only on these Stm for which relevant(Stm)
+relevant(edge(N,M)) :- node(N), node(M), N < M, not edge(N,M).
+relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).
+
+% A node that is not a leaf now may become one. Giving it a leaf colour other
+% than its colour in the counterexample also breaks the counterexample.
+relevant(leaf_color(N,C)) :- node(N), not leaf(N), color(C), not color(N,C).
+]==]
 CONSTS = { "n=5" }
 SETTINGS = { solutions = 0, seconds = 60, candidates = 0, trace = 200, seed = 0, poll = false, plain = false }
 local rt = {}
@@ -92,5 +108,5 @@ function main(prg)
     end }
   end)
 end
-LOOP_LINES = { 78, 92 }
+LOOP_LINES = { 94, 108 }
 #end.

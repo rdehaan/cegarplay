@@ -70,31 +70,8 @@
       },
       "tags": [
         "library"
-      ]
-    },
-    {
-      "id": "with-values",
-      "facts": "% One value and six signs.\n",
-      "constants": {
-        "givens": "1",
-        "signs": "6"
-      },
-      "expected": {
-        "solutions": null
-      },
-      "tags": []
-    },
-    {
-      "id": "six",
-      "facts": "% 6 x 6 with signs only: 12 of them (about 13 s).\n",
-      "constants": {
-        "n": "6",
-        "signs": "12"
-      },
-      "expected": {
-        "solutions": null
-      },
-      "tags": []
+      ],
+      "audit": false
     },
     {
       "id": "three",
@@ -134,19 +111,137 @@
       "tags": []
     },
     {
-      "id": "four",
-      "facts": "% 4 x 4 with one value and three signs: 13,248 puzzles (about 90 s).\n",
+      "id": "random-1",
       "constants": {
         "n": "4",
-        "givens": "1",
-        "signs": "3"
+        "givens": "0",
+        "signs": "1"
       },
-      "expected": {
-        "solutions": 13248
+      "recipe": {
+        "generator": "printed",
+        "params": {
+          "n": 4
+        },
+        "seed": 3
       },
       "tags": [
-        "slow"
-      ]
+        "generated"
+      ],
+      "expected": {
+        "solutions": 2
+      }
+    },
+    {
+      "id": "random-2",
+      "constants": {
+        "n": "4",
+        "givens": "0",
+        "signs": "1"
+      },
+      "recipe": {
+        "generator": "printed",
+        "params": {
+          "n": 4
+        },
+        "seed": 6
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 7
+      }
+    },
+    {
+      "id": "random-3",
+      "constants": {
+        "n": "4",
+        "givens": "0",
+        "signs": "2"
+      },
+      "recipe": {
+        "generator": "printed",
+        "params": {
+          "n": 4
+        },
+        "seed": 3
+      },
+      "tags": [
+        "generated"
+      ],
+      "expected": {
+        "solutions": 71
+      }
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The blocking loop: every refuted candidate is blocked on its own.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "several",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Up to 3 counterexamples per candidate, one clause each.\nsearch A:\n    on candidate M:\n        for X in C.models(assume G(M), limit 3):\n            reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "record",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + rules + abstraction   options \"--enum-mode=record\"\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "generators": [
+    {
+      "name": "printed",
+      "description": "A random n x n Latin square (the cyclic square with its rows, columns and values permuted); each cell printed with probability p/1000 and each neighbouring pair gets its sign with probability q/1000. Set the instance constant n to the same value.",
+      "params": {
+        "n": "int",
+        "p": "permille",
+        "q": "permille"
+      },
+      "defaults": {
+        "n": 4,
+        "p": 150,
+        "q": 150
+      },
+      "text": "% printed: the cyclic Latin square with rows, columns and values permuted at random; values printed with probability p/1000, signs with q/1000\nrow(1..n). col(1..n).\ng(@perm(n, R, rows),@perm(n, C, cols),@perm(n, (R+C-2)\\n+1, vals)) :- row(R), col(C).\npre(R,C,V) :- g(R,C,V), @flip(p, R, C, show) = 1.\npair(R,C,R,C+1) :- row(R), col(C), C < n.\npair(R,C,R+1,C) :- row(R), col(C), R < n.\nprelt(R1,C1,R2,C2) :- pair(R1,C1,R2,C2), g(R1,C1,V1), g(R2,C2,V2), V1 < V2, @flip(q, R1, C1, R2, C2) = 1.\nprelt(R2,C2,R1,C1) :- pair(R1,C1,R2,C2), g(R1,C1,V1), g(R2,C2,V2), V1 > V2, @flip(q, R1, C1, R2, C2) = 1.\n#show pre/3.  #show prelt/4.\n"
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": [
+          "three",
+          "three-two",
+          "three-mixed",
+          "random-1",
+          "random-2",
+          "random-3"
+        ]
+      },
+      "variants": [
+        "default",
+        "reference",
+        "several",
+        "record"
+      ],
+      "limits": {
+        "seconds": 30
+      }
     }
   ],
   "runs": []
