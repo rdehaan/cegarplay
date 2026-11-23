@@ -389,7 +389,7 @@ export function loadContrib(dir = new URL('examples/contrib/', root), taken = ne
     try { raw = JSON.parse(fs.readFileSync(new URL(name, dir), 'utf8')); } catch (e) { fail(`not JSON: ${e.message}`); }
     const lib = raw && raw.library;
     if (!lib || typeof lib !== 'object') fail('no "library" block');
-    const { id, group = 'other', summary, shape, tags = [], expected = null } = lib;
+    const { id, group = 'other', summary, shape, tags = [], expected = null, optimum = null } = lib;
     if (typeof id !== 'string' || !/^[A-Za-z0-9_-]+$/.test(id)) fail(`library.id must match [A-Za-z0-9_-]+, got ${JSON.stringify(id)}`);
     if (taken.has(id)) fail(`library.id '${id}' is already used`);
     if (!CONTRIB_GROUPS.includes(group)) fail(`library.group must be one of ${CONTRIB_GROUPS.join(', ')}`);
@@ -397,11 +397,12 @@ export function loadContrib(dir = new URL('examples/contrib/', root), taken = ne
     if (typeof shape !== 'string' || !shape) fail('library.shape is missing');
     if (!Array.isArray(tags) || tags.some((t) => typeof t !== 'string')) fail('library.tags must be a list of strings');
     if (expected !== null && !(Number.isInteger(expected) && expected >= 0)) fail('library.expected must be a whole number or null');
+    if (optimum !== null && !(Number.isInteger(optimum) || (Array.isArray(optimum) && optimum.length && optimum.every(Number.isInteger)))) fail('library.optimum must be a whole number, a list of them, or null');
     const { library, ...rest } = raw;
     let project;
     try { project = load(JSON.stringify(rest)); } catch (e) { fail(e.message); }
     taken.add(id);
-    out.push({ id, group: contribGroup(group), summary, shape, tags, expected, project });
+    out.push({ id, group: contribGroup(group), summary, shape, tags, expected, optimum, project });
   }
   return out;
 }
@@ -443,7 +444,7 @@ export function buildAll({ contribDir } = {}) {
     for (const e of entries.filter((x) => x.group === g.id)) {
       files[e.id] = e.project;
       examples.push({ id: e.id, title: e.project.title, group: e.group, summary: e.summary, shape: e.shape,
-        tags: e.tags, expected: e.expected == null ? null : { solutions: e.expected },
+        tags: e.tags, expected: e.expected == null && e.optimum == null ? null : { solutions: e.expected ?? null, ...(e.optimum != null ? { optimum: e.optimum } : {}) },
         ...(e.page ? { page: e.page, status: e.status } : {}), ...(e.baseline ? { baseline: e.baseline } : {}),
         ...(e.variants ? { variants: e.variants } : {}), ...(e.outcome ? { outcome: e.outcome } : {}),
         ...(e.exhausted === false ? { exhausted: false } : {}), ...features(e.project) });

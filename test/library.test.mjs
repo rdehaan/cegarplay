@@ -34,14 +34,21 @@ test('every Load button of the tutorial names a library example', () => {
 });
 
 for (const e of lib.examples.filter((x) => x.tags.includes('fast') && x.expected)) {
-  test(`library: ${e.id} gives ${e.expected.solutions} solutions`, async () => {
+  const what = [Number.isInteger(e.expected.solutions) ? `${e.expected.solutions} solutions` : null, e.expected.optimum != null ? `optimum ${e.expected.optimum}` : null].filter(Boolean).join(', ');
+  test(`library: ${e.id} gives ${what}`, async () => {
     const p = H.example(e.id);
     p.settings = { ...p.settings, solutions: 0, trace: 0 };
     const r = await H.runProject(p);
     // A guide example may show a guard on purpose (outcome 'error' in the manifest).
     const outcome = e.outcome || 'finished';
     if (outcome === 'finished') assert.equal(H.last(r, 'E'), undefined, JSON.stringify(H.last(r, 'E')));
-    assert.equal(H.finalStats(r).solutions, e.expected.solutions);
+    if (Number.isInteger(e.expected.solutions)) assert.equal(H.finalStats(r).solutions, e.expected.solutions);
+    if (e.expected.optimum != null) {
+      // every reported solution has the optimum's cost (a loop that stops at its optimum)
+      const costs = H.ofKind(r, 'M').map((m) => JSON.stringify(m.cost));
+      assert.ok(costs.length > 0, 'no solution');
+      for (const c of costs) assert.equal(c, JSON.stringify([e.expected.optimum].flat()));
+    }
     assert.equal(H.done(r).outcome, outcome);
   });
 }

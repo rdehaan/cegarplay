@@ -133,6 +133,7 @@ clingo about an instance fact name `instance:<line>`. The loop language does not
 | `instances[].facts` | ASP text (facts, or any rules). |
 | `instances[].constants` | Object of strings; override `settings.constants`. |
 | `instances[].expected.solutions` | Whole number or null: the solution count of an exhausted run with all solutions (checked by "Run all", `--instance all` and the library tests). |
+| `instances[].expected.optimum` | Whole number, list of whole numbers (one per priority level, as clingo reports costs; a maximised value is negated) or null: the cost of every reported solution of a finished run. For optimisation loops that `stop` at their optimum: the run need not be exhausted, but it must report at least one solution, all with this cost. With `solutions` too, both are checked (the count only when the run is exhausted). Checked by the same tools; the Instances tab has an *Expected optimum* field and shows the cost of the last run. |
 | `instances[].tags` | List of strings (`slow` instances are skipped by the default test run). |
 | `instances[].recipe` | `{ generator, params, seed }`: the facts come from a generator (below) when a run uses the instance; a file stores the recipe only. |
 | `variants[].name` | Matches `[A-Za-z0-9_-]+`; unique; not `default`. |
@@ -1243,7 +1244,9 @@ Pause, Step, Stop and threads works.
 ```
 
 `shape` is a template key or `custom`; `expected.solutions` (when present) is the solution count
-with the example's own settings, checked by `test/library.test.mjs` for every example tagged `fast`.
+with the example's own settings, and `expected.optimum` (when present) the cost of every solution,
+both checked by `test/library.test.mjs` for every example tagged `fast`. A contrib file sets them
+with `library.expected` and `library.optimum`.
 `has` (when present) counts the project's `instances`, `generators`, `suites` and `views`; the
 Library shows them as tags, and the filter matches them (type `view` or `suite`).
 
@@ -1276,8 +1279,10 @@ and `qbf-three-blocks` deliberately use no format-2 keys: `test/assemble-golden.
 that such projects assemble to the same program text as before.
 
 Examples tagged `stops-at-optimum` (`maxsat-ihs`, `maxsat-oll`, `benders-tardiness`) end their run
-with `stop` once the optimum is proven, so the run is not exhausted and their `expected` counts are
-null; `test/breadth.test.mjs` checks their optima against clingo's own optimisation.
+with `stop` once the optimum is proven, so the run is not exhausted and their solution counts are
+null; their instances carry `expected.optimum` instead (the optima of clingo's own optimisation),
+and the manifest entry `expected: { solutions: null, optimum: 8 }`. `knapsack-optimum` and
+`knapsack-bounds` carry both a count and an optimum.
 
 Entries of the group `guide` have three more fields: `page` (the guide page and anchor that link
 it), `status` (`baseline`, `sound` or `unsound`) and `baseline` (the id of the blocking run of the

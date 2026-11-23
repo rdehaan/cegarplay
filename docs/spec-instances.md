@@ -7,7 +7,9 @@ added in later phases (I3, I5).
 
 Keys (all optional; see the manual, "Instances", for the field table):
 
-- `instances[]`: `{ id, facts, constants, expected: { solutions }, tags, recipe }`.
+- `instances[]`: `{ id, facts, constants, expected: { solutions, optimum }, tags, recipe }`. `optimum`
+  (whole number, list of them, or null) is the cost of every solution of a finished run, for
+  optimisation loops that stop at their optimum (`expectedCheck` in `js/project.js`).
 - `variants[]`: `{ name, loop, swap, constants, settings }`.
 - `settings.instance`: the instance a run uses; absent = the first, `""` = none.
 
@@ -64,7 +66,7 @@ exit status (20 = unsatisfiable = violated).
 `slow`), with `settings.instance = ""` (the project as written, n = 6). `af-preferred`, `qbf` and
 `kemeny-control` keep their former facts as the instance `example`; `af-preferred` and `qbf` also
 have three generated instances (`random-1..3`) whose counts agree between the loop and the
-reference run. `test/instances.test.mjs` runs every instance with an expected count.
+reference run. `test/instances.test.mjs` runs every instance with an expected count or optimum.
 
 ## 4. Generators
 

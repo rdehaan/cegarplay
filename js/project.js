@@ -256,6 +256,10 @@ function loadInstances(list) {
       if (!isObj(x.expected)) throw new ProjectError(`instance ${x.id}: expected must be an object`);
       const n = x.expected.solutions;
       if (!(n === null || n === undefined || (Number.isInteger(n) && n >= 0))) throw new ProjectError(`instance ${x.id}: expected.solutions must be a whole number or null`);
+      const o = x.expected.optimum;
+      if (!(o === null || o === undefined || Number.isInteger(o) || (Array.isArray(o) && o.length > 0 && o.every(Number.isInteger)))) {
+        throw new ProjectError(`instance ${x.id}: expected.optimum must be a whole number, a list of whole numbers (one per priority level) or null`);
+      }
     }
     if (x.tags !== undefined && !(Array.isArray(x.tags) && x.tags.every((t) => typeof t === 'string'))) throw new ProjectError(`instance ${x.id}: tags must be a list of strings`);
     out.tags = x.tags || [];
@@ -488,4 +492,34 @@ export function exportStandalone(project, runtimeLua, modules = {}) {
     '',
   ].join('\n');
   return header + program;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Expected results of an instance (manual, "Instances"): expected.solutions, the solution count
+// of an exhausted run; expected.optimum, the cost of every reported solution of a finished run
+// (an optimisation loop that stops at its optimum need not be exhausted). A cost is clingo's
+// list, one number per priority level; a single number means a one-level cost.
+export const costList = (c) => (c === null || c === undefined ? null : Array.isArray(c) ? c.map(Number) : [Number(c)]);
+const sameCost = (a, b) => !!a && !!b && a.length === b.length && a.every((v, i) => v === b[i]);
+export const costText = (c) => { const l = costList(c); return l ? l.join(' ') : '–'; };
+
+// A running summary of the costs of a run's solutions: add(cost) per M event.
+export function costTracker() {
+  return { cost: null, same: true, n: 0, add(c) { const l = costList(c); if (this.n === 0) this.cost = l; else if (!sameCost(this.cost, l)) this.same = false; this.n++; } };
+}
+
+// r = { outcome, exhausted, solutions, cost, same } (cost and same from a costTracker).
+// Returns { checked, ok, want } : checked when some expectation applies to this run.
+export function expectedCheck(expected, r) {
+  if (!expected || !r) return { checked: false, ok: null, want: '' };
+  const sol = Number.isInteger(expected.solutions) ? expected.solutions : null;
+  const opt = expected.optimum === null || expected.optimum === undefined ? null : costList(expected.optimum);
+  const want = [sol !== null ? `${sol} solutions` : null, opt ? `optimum ${opt.join(' ')}` : null].filter(Boolean).join(', ');
+  const finished = r.outcome === 'finished';
+  const solChecked = sol !== null && finished && r.exhausted === true;
+  const optChecked = opt !== null && finished;
+  const solOk = r.solutions === sol;
+  const optOk = r.solutions > 0 && r.same !== false && sameCost(costList(r.cost), opt);
+  const checked = solChecked || optChecked;
+  return { checked, ok: checked ? (!solChecked || solOk) && (!optChecked || optOk) : null, want };
 }

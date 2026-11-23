@@ -1246,3 +1246,18 @@ non-list (today it silently runs zero times: an endless MaxHS loop); B2 cores as
 - Docs: manual (Python checker scope), spec-loop-language (`C.core.minimal`), contrib README
   (new tags, comparison variants), guide chapter 10 (minimal cores), chat-package checklist,
   breadth.md (G5 numbers marked as plain cores). 701 tests pass, 10 skipped.
+
+## expected.optimum (2026-11-23, on request)
+
+- `instances[].expected.optimum` (whole number, list per priority level, or null): the cost of
+  every reported solution of a finished run; no exhaustion needed (a count still needs it).
+  `expectedCheck`, `costTracker`, `costText` in `js/project.js` (DOM-free), used by
+  `tools/run.mjs --instance all` (prints the cost; `MISMATCH: expected optimum 7`), the Instances
+  tab (Expected column, "Expected optimum" field, cost in Last count, Run all), and
+  `test/instances.test.mjs`. Contrib `library.optimum` -> manifest `expected.optimum`, checked by
+  `test/library.test.mjs`; the Library panel shows "Optimum: 8" (it crashed on a null count).
+- Instances: maxsat-ihs (8, 3, 6), maxsat-oll (6, 3, 4; its check now has
+  `#minimize { 1,C : unsat(C) }` so the accepted model carries its cost), benders-tardiness
+  (20, 16, 18), knapsack-optimum and knapsack-bounds (25, 14, 11, 36 next to their counts).
+- Docs: manual (project format, library, stops-at-optimum), spec-instances, contrib README,
+  chat-package guide, breadth.md.

@@ -309,7 +309,8 @@ async function buildLibrary() {
         make('code', { class: 'library-id' }, e.id),
         ...tags.map((t) => make('span', { class: 'library-tag' }, t)),
         make('div', { class: 'library-summary' }, e.summary +
-          (e.expected ? ` Solutions: ${e.expected.solutions.toLocaleString('en')}.` : ''),
+          (e.expected && Number.isInteger(e.expected.solutions) ? ` Solutions: ${e.expected.solutions.toLocaleString('en')}.` : '') +
+          (e.expected && e.expected.optimum != null ? ` Optimum: ${[e.expected.optimum].flat().join(' ')}.` : ''),
           ...(e.page && FROM_PATTERN.test(e.page)
             ? [make('a', { class: 'library-guide-link', href: e.page, target: 'cegarplay-guide' }, 'Guide page')] : [])));
       const load = make('button', { class: 'control-button small-button', 'data-load-example': e.id }, 'Load');

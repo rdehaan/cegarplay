@@ -100,7 +100,9 @@ breaks as `\n`. After the block, give two or three sentences on what the example
   *Instances*; `example-af-preferred.json`, `example-voting-justification.json`). `shared` then
   keeps the encoding's domains and derived rules. Give two to four instances: the `example`
   (its count is `library.expected`), a smaller one, one with no solution, a larger one; each
-  with a comment line and its `expected.solutions`. A parametric problem without data uses
+  with a comment line and its `expected.solutions`. An optimisation loop that `stop`s at its
+  optimum gives `"expected": { "solutions": null, "optimum": 8 }` instead (the cost of every
+  solution), and `"optimum": 8` next to `"expected": null` in the `library` block. A parametric problem without data uses
   constants-only instances (`"facts": ""`, `"constants": {"n": "5"}`, as in
   `example-graph-coloring.json`). Keep `settings.constants` equal to the `example`'s values so
   the project as written still runs in seconds.

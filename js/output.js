@@ -1,5 +1,6 @@
 // Output tab: result line, solutions, messages, trace.
 import { TraceView } from './trace.js';
+import { costTracker } from './project.js';
 
 const SHOW_SOLUTIONS = 1000;
 const MAX_MESSAGES = 2000;
@@ -23,6 +24,7 @@ export class Output {
 
   clear() {
     this.solutions = 0;
+    this.costs = costTracker();      // the costs of this run's solutions (expected.optimum)
     this.pendingSolutions = [];
     this.kept = [];
     this.warnings = new Map();
@@ -117,6 +119,7 @@ export class Output {
 
   solution(m) {
     this.solutions++;
+    this.costs.add(m.cost);
     if (this.kept.length < KEEP_SOLUTIONS) this.kept.push(m);
     if (this.solutions <= SHOW_SOLUTIONS) this.pendingSolutions.push(m);
     this.schedule();

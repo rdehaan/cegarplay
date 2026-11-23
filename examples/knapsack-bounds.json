@@ -54,7 +54,8 @@
         "capacity": "12"
       },
       "expected": {
-        "solutions": 2
+        "solutions": 2,
+        "optimum": 25
       },
       "tags": [
         "library"
@@ -68,7 +69,8 @@
         "capacity": "8"
       },
       "expected": {
-        "solutions": 2
+        "solutions": 2,
+        "optimum": 14
       },
       "tags": []
     },
@@ -80,7 +82,8 @@
         "capacity": "6"
       },
       "expected": {
-        "solutions": 14
+        "solutions": 14,
+        "optimum": 11
       },
       "tags": []
     },
@@ -92,7 +95,8 @@
         "capacity": "16"
       },
       "expected": {
-        "solutions": 1
+        "solutions": 1,
+        "optimum": 36
       },
       "tags": []
     }

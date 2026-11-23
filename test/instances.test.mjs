@@ -117,6 +117,24 @@ test('af-preferred gives 3 solutions with its facts in an instance; run.mjs --in
   assert.equal(spawnSync('node', [tool, 'graph-coloring', '--instance', 'nope']).status, 2);
 });
 
+test('expected.optimum: validated, and checked on finished runs without needing exhaustion', () => {
+  const inst = (expected) => ({ format: 'cegarplay', fragments: [], instances: [{ id: 'a', expected }] });
+  assert.doesNotThrow(() => P.load(inst({ solutions: null, optimum: 8 })));
+  assert.doesNotThrow(() => P.load(inst({ solutions: 2, optimum: [1, -3] })));
+  for (const bad of [1.5, 'x', [], [1, 'a']]) assert.throws(() => P.load(inst({ optimum: bad })), /expected\.optimum must be/);
+  const t = P.costTracker(); t.add([8]); t.add([8]);
+  const run = (o) => ({ outcome: 'finished', exhausted: false, solutions: 2, cost: t.cost, same: t.same, ...o });
+  assert.deepEqual(P.expectedCheck({ optimum: 8 }, run({})), { checked: true, ok: true, want: 'optimum 8' });
+  assert.equal(P.expectedCheck({ optimum: 7 }, run({})).ok, false);
+  assert.equal(P.expectedCheck({ optimum: 8 }, run({ same: false })).ok, false, 'solutions of different cost');
+  assert.equal(P.expectedCheck({ optimum: 8 }, run({ solutions: 0, cost: null })).ok, false, 'no solution');
+  assert.equal(P.expectedCheck({ optimum: 8 }, run({ outcome: 'limit' })).checked, false, 'a run cut short says nothing');
+  // a count still needs an exhausted run; together, both must hold
+  assert.equal(P.expectedCheck({ solutions: 2, optimum: 8 }, run({})).checked, true);
+  assert.equal(P.expectedCheck({ solutions: 3, optimum: 8 }, run({})).ok, true, 'count not checked: not exhausted');
+  assert.equal(P.expectedCheck({ solutions: 3, optimum: 8 }, run({ exhausted: true })).ok, false);
+});
+
 test('three library examples carry three or more instances with expected counts', () => {
   const many = lib.examples.map((e) => P.load(H.read(`examples/${e.id}.json`)))
     .filter((p) => (p.instances || []).filter((x) => x.expected && Number.isInteger(x.expected.solutions)).length >= 3);
@@ -126,15 +144,21 @@ test('three library examples carry three or more instances with expected counts'
 for (const e of lib.examples) {
   const p = P.load(H.read(`examples/${e.id}.json`));
   for (const x of p.instances || []) {
-    if (!x.expected || !Number.isInteger(x.expected.solutions)) continue;
+    if (!x.expected || (!Number.isInteger(x.expected.solutions) && x.expected.optimum == null)) continue;
     const slow = (x.tags || []).includes('slow');
-    test(`instance ${e.id}/${x.id} gives ${x.expected.solutions} solutions`, { skip: slow && !H.SLOW && 'slow (SLOW=1)' }, async () => {
+    const what = P.expectedCheck(x.expected, { outcome: 'finished', exhausted: true, solutions: 0 }).want;
+    test(`instance ${e.id}/${x.id} gives ${what}`, { skip: slow && !H.SLOW && 'slow (SLOW=1)' }, async () => {
       const q = structuredClone(p);
       q.settings = { ...q.settings, solutions: 0, trace: 0, seconds: 0 };
       const r = await H.runProject(q, { instance: x.id });
       assert.equal(H.done(r).outcome, 'finished');
-      assert.equal(H.done(r).exhausted, true);
-      assert.equal(H.finalStats(r).solutions, x.expected.solutions);
+      // a solution count needs an exhausted run; an optimum only a finished one
+      if (Number.isInteger(x.expected.solutions)) assert.equal(H.done(r).exhausted, true);
+      const t = P.costTracker();
+      for (const m of H.ofKind(r, 'M')) t.add(m.cost);
+      const v = P.expectedCheck(x.expected, { outcome: H.done(r).outcome, exhausted: H.done(r).exhausted, solutions: H.finalStats(r).solutions, cost: t.cost, same: t.same });
+      assert.equal(v.checked, true);
+      assert.equal(v.ok, true, `${what}: ${H.finalStats(r).solutions} solutions, cost ${JSON.stringify(t.cost)}${t.same ? '' : ' (costs differ)'}`);
     });
   }
 }

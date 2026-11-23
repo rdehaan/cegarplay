@@ -209,11 +209,12 @@ as the optimum and is left unchanged.
 
 Nothing from this note. Possible next steps:
 
-- an `expected.optimum` for instances of optimisation loops;
 - a stop rule when the bounds meet.
+
+`expected.optimum` was added afterwards: the instances of the three optimisation loops (and of
+the two knapsack loops) carry their optima, and "Run all", `--instance all` and the instance and
+library tests check them.
 - **A stop rule for bounds.** IHS and Benders could stop as soon as the lower and upper bound
   meet. Both examples already reach the optimum by accepting the first candidate that passes
   the check, so this is left to the script.
-- **Optimisation loops and "Run all".** Their instances have no expected counts. A field such as
-  `expected.optimum` would let "Run all" check them too. It was not added, to keep the instance
-  format as it is.
+- **Optimisation loops and "Run all".** Done: `expected.optimum` (see above).

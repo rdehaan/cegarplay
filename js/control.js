@@ -315,7 +315,7 @@ export class Control {
     }
     if (this.audit) info.audit = this.audit;
     app.stats.done(this.D, this.D ? info : null);
-    if (info.mode !== 'audit' && app.instancesTab) app.instancesTab.noteRun(info.instance, app.stats.S, this.D);
+    if (info.mode !== 'audit' && app.instancesTab) app.instancesTab.noteRun(info.instance, app.stats.S, this.D, app.output.costs);
     app.editors.setReadOnly(false);
     if (this.marks.length) app.editors.annotate(this.marks);
     if (app.anatomy) app.anatomy.done();

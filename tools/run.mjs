@@ -23,7 +23,7 @@ import { resolveProject } from '../js/instances.js';
 import fs from 'node:fs';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import factory from '../vendor/clingo-wasm/clingo.js';
-import { load, derive, pickedVariant, ProjectError } from '../js/project.js';
+import { load, derive, pickedVariant, ProjectError, expectedCheck, costTracker, costText } from '../js/project.js';
 import { Recording } from '../js/recording.js';
 import { hashText } from '../js/stats.js';
 import { assemble, parseEvent, validate, auditPlan, auditBody, modulesFor } from '../js/driver.js';
@@ -147,14 +147,15 @@ async function main(argv) {
       const r = await runProject(project, { backstop: true, instance: x.id, variant, constants });
       const S = r.events.filter((e) => e.kind === 'S').at(-1)?.data;
       const D = r.events.filter((e) => e.kind === 'D').at(-1)?.data;
-      const want = x.expected && Number.isInteger(x.expected.solutions) ? x.expected.solutions : null;
       const got = S ? S.solutions : null;
-      const exhausted = D && D.outcome === 'finished' && D.exhausted === true;
-      const mismatch = want !== null && exhausted && got !== want;
+      const t = costTracker();
+      for (const e of r.events) if (e.kind === 'M') t.add(e.data.cost);
+      const v = expectedCheck(x.expected, D && { outcome: D.outcome, exhausted: D.exhausted === true, solutions: got, cost: t.cost, same: t.same });
+      const mismatch = v.checked && !v.ok;
       if (mismatch || (r.problems && r.problems.length) || !D || D.outcome === 'error') bad++;
       const what = r.problems && r.problems.length ? `problem: ${r.problems[0].message}` : !D ? `no result (${r.status})`
-        : `${got} solutions; ${D.outcome}${D.exhausted ? ' (exhausted)' : ''}; ${S ? S.candidates : '?'} candidates; ${S ? S.t : '?'} s`;
-      console.log(`${x.id}: ${what}${want !== null ? (mismatch ? `; MISMATCH: expected ${want}` : exhausted ? '; as expected' : `; expected ${want}`) : ''}`);
+        : `${got} solutions${t.n ? `, cost ${costText(t.cost)}${t.same ? '' : ' (costs differ)'}` : ''}; ${D.outcome}${D.exhausted ? ' (exhausted)' : ''}; ${S ? S.candidates : '?'} candidates; ${S ? S.t : '?'} s`;
+      console.log(`${x.id}: ${what}${v.want ? (mismatch ? `; MISMATCH: expected ${v.want}` : v.checked ? '; as expected' : `; expected ${v.want}`) : ''}`);
     }
     process.exitCode = bad ? 1 : 0;
     return;

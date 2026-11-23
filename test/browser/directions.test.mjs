@@ -77,7 +77,23 @@ test('I1: Run all marks a wrong expected count in red', async () => {
   await page.waitForFunction(() => /Ran 4 instances/.test(document.getElementById('instances-status').textContent));
   const marked = await page.$$eval('#instances-table tr[data-mismatch]', (r) => r.map((x) => x.dataset.instance));
   assert.deepEqual(marked, ['random-1']);
-  assert.match(await page.textContent('#instances-status'), /1 with a count other than expected/);
+  assert.match(await page.textContent('#instances-status'), /1 with a count or optimum other than expected/);
+  await context.close();
+});
+
+test('I1: Run all checks expected optima; a wrong optimum is marked', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=maxsat-ihs&tab=9');
+  assert.match(await page.textContent('#instances-table tr[data-instance="example"]'), /optimum 8/);
+  await page.click('#instances-table a:text("small-opt")');
+  assert.equal(await page.inputValue('#instance-optimum'), '3');
+  await page.fill('#instance-optimum', '4');
+  await page.dispatchEvent('#instance-optimum', 'change');
+  await page.click('#run-all-instances-button');
+  await page.waitForFunction(() => /Ran 4 instances/.test(document.getElementById('instances-status').textContent));
+  const marked = await page.$$eval('#instances-table tr[data-mismatch]', (r) => r.map((x) => x.dataset.instance));
+  assert.deepEqual(marked, ['small-opt']);
+  assert.match(await page.textContent('#instances-table tr[data-instance="example"]'), /1, cost 8.*✓/);
+  assert.deepEqual(errors, []);
   await context.close();
 });
 

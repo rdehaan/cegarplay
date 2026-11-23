@@ -3,10 +3,12 @@ import { makeEditor } from './editors.js';
 import { IMPORTERS, importerFor, freshId, checkFacts, ImportError } from './instances.js';
 import { generate, PARAM_TYPES } from './generate.js';
 import { fuzz, shrinkInstance, diagnose, defaultSource } from './fuzz.js';
-import { INSTANCE_ID, applyVariant } from './project.js';
+import { INSTANCE_ID, applyVariant, expectedCheck, costText } from './project.js';
 import { fmt } from './output.js';
 
 const $ = (id) => document.getElementById(id);
+// the Expected column: "12", "optimum 8" or both
+const expectedText = (e) => !e ? '–' : [Number.isInteger(e.solutions) ? fmt(e.solutions) : null, e.optimum != null ? `optimum ${costText(e.optimum)}` : null].filter(Boolean).join(', ') || '–';
 const el = (tag, attrs = {}, ...kids) => {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
@@ -74,18 +76,20 @@ export class InstancesTab {
     this.form = el('div', { class: 'instance-form', id: 'instance-form', hidden: true });
     this.idInput = el('input', { id: 'instance-id', size: 16, 'aria-label': 'Instance id' });
     this.expInput = el('input', { id: 'instance-expected', size: 8, inputmode: 'numeric', 'aria-label': 'Expected number of solutions' });
+    this.optInput = el('input', { id: 'instance-optimum', size: 8, 'aria-label': 'Expected optimum (the cost of every solution; levels separated by spaces)' });
     this.tagsInput = el('input', { id: 'instance-tags', size: 20, 'aria-label': 'Tags' });
     this.constInput = el('input', { id: 'instance-constants', size: 24, 'aria-label': 'Constants' });
     const editorBox = el('div', { class: 'instance-editor', id: 'instance-editor' });
     this.form.append(
       el('div', { class: 'instance-fields' },
         el('label', {}, 'Id ', this.idInput), el('label', {}, 'Constants ', this.constInput),
-        el('label', {}, 'Expected solutions ', this.expInput), el('label', {}, 'Tags ', this.tagsInput),
+        el('label', {}, 'Expected solutions ', this.expInput), el('label', { title: 'For an optimisation loop that stops at its optimum: the cost of every solution (levels separated by spaces)' }, 'Expected optimum ', this.optInput),
+        el('label', {}, 'Tags ', this.tagsInput),
         el('button', { class: 'control-button small-button', id: 'delete-instance-button', onclick: () => this.remove() }, 'Delete')),
       el('p', { class: 'note' }, 'Facts of this instance. A run gives them to every solver and every glue control, as the fragment "instance".'),
       this.recipeNote = el('p', { class: 'note', id: 'instance-recipe', hidden: true }),
       editorBox);
-    for (const [inp, fn] of [[this.idInput, 'rename'], [this.expInput, 'setExpected'], [this.tagsInput, 'setTags'], [this.constInput, 'setConstants']]) {
+    for (const [inp, fn] of [[this.idInput, 'rename'], [this.expInput, 'setExpected'], [this.optInput, 'setOptimum'], [this.tagsInput, 'setTags'], [this.constInput, 'setConstants']]) {
       inp.addEventListener('change', () => this[fn](inp.value));
     }
     this.root.append(
@@ -135,9 +139,9 @@ export class InstancesTab {
     }
     for (const x of list) {
       const r = this.results.get(x.id);
-      const want = x.expected && Number.isInteger(x.expected.solutions) ? x.expected.solutions : null;
-      const bad = r && want !== null && r.exhausted && r.solutions !== want;
-      const good = r && want !== null && r.exhausted && r.solutions === want;
+      const v = expectedCheck(x.expected, r);
+      const bad = v.checked && !v.ok;
+      const good = v.checked && v.ok;
       const nfacts = (x.facts || '').split('\n').filter((l) => l.trim() && !l.trim().startsWith('%')).length;
       const tr = el('tr', { 'data-instance': x.id, class: [x.id === this.current ? 'selected' : '', bad ? 'mismatch' : good ? 'match' : ''].filter(Boolean).join(' '),
         ...(bad ? { 'data-mismatch': 'true' } : {}) },
@@ -145,8 +149,8 @@ export class InstancesTab {
         el('td', {}, x.recipe && !x.facts ? 'recipe' : `${nfacts} lines`),
         el('td', {}, constText(x.constants) || '–'),
         el('td', {}, (x.tags || []).join(', ') || '–'),
-        el('td', { class: 'num' }, want === null ? '–' : fmt(want)),
-        el('td', { class: 'num' }, r ? `${fmt(r.solutions)}${r.exhausted ? '' : ' (not exhausted)'}${bad ? ' ✗' : good ? ' ✓' : ''}` : '–'),
+        el('td', { class: 'num' }, expectedText(x.expected)),
+        el('td', { class: 'num' }, r ? `${fmt(r.solutions)}${r.cost ? `, cost ${costText(r.cost)}${r.same ? '' : ' (differ)'}` : ''}${r.exhausted ? '' : ' (not exhausted)'}${bad ? ' ✗' : good ? ' ✓' : ''}` : '–'),
         el('td', {}, el('button', { class: 'control-button small-button', onclick: () => this.pick(x.id), disabled: x.id === sel }, 'Use')));
       this.table.append(tr);
     }
@@ -158,6 +162,7 @@ export class InstancesTab {
     if (!x) return;
     this.idInput.value = x.id;
     this.expInput.value = x.expected && Number.isInteger(x.expected.solutions) ? String(x.expected.solutions) : '';
+    this.optInput.value = x.expected && x.expected.optimum != null ? [x.expected.optimum].flat().join(' ') : '';
     this.tagsInput.value = (x.tags || []).join(', ');
     this.constInput.value = constText(x.constants);
     this.recipeNote.hidden = !x.recipe;
@@ -224,9 +229,26 @@ export class InstancesTab {
     const x = this.list.find((i) => i.id === this.current);
     if (!x) return;
     v = v.trim();
-    if (v === '') delete x.expected;
-    else if (/^\d+$/.test(v)) x.expected = { solutions: Number(v) };
+    const opt = x.expected && x.expected.optimum != null ? x.expected.optimum : null;
+    if (v === '') { if (opt === null) delete x.expected; else x.expected = { solutions: null, optimum: opt }; }
+    else if (/^\d+$/.test(v)) x.expected = { solutions: Number(v), ...(opt !== null ? { optimum: opt } : {}) };
     else { this.say('The expected count must be a whole number (or empty).', true); return; }
+    this.render();
+    this.app.dirty();
+  }
+
+  // expected.optimum: the cost of every solution of a finished run ("8", or "2 5" for two levels)
+  setOptimum(v) {
+    const x = this.list.find((i) => i.id === this.current);
+    if (!x) return;
+    v = v.trim();
+    const sol = x.expected && Number.isInteger(x.expected.solutions) ? x.expected.solutions : null;
+    if (v === '') {
+      if (sol === null) delete x.expected; else x.expected = { solutions: sol };
+    } else if (/^-?\d+(\s+-?\d+)*$/.test(v)) {
+      const l = v.split(/\s+/).map(Number);
+      x.expected = { solutions: sol, optimum: l.length === 1 ? l[0] : l };
+    } else { this.say('The expected optimum must be whole numbers separated by spaces (or empty).', true); return; }
     this.render();
     this.app.dirty();
   }
@@ -265,9 +287,10 @@ export class InstancesTab {
   }
 
   // Record a finished run of an instance (called by the control after every run).
-  noteRun(id, S, D) {
+  noteRun(id, S, D, costs) {
     if (!id || !S || !D) return;
-    this.results.set(id, { solutions: S.solutions, exhausted: D.outcome === 'finished' && D.exhausted === true, outcome: D.outcome });
+    this.results.set(id, { solutions: S.solutions, exhausted: D.outcome === 'finished' && D.exhausted === true, outcome: D.outcome,
+      cost: costs && costs.n ? costs.cost : null, same: costs ? costs.same : true });
     this.render();
   }
 
@@ -281,10 +304,10 @@ export class InstancesTab {
       if (!r || r.state === 'aborted') { this.say('Stopped.'); return; }
       n++;
       const res = this.results.get(x.id);
-      const want = x.expected && Number.isInteger(x.expected.solutions) ? x.expected.solutions : null;
-      if (res && want !== null && res.exhausted && res.solutions !== want) bad++;
+      const v = expectedCheck(x.expected, res);
+      if (v.checked && !v.ok) bad++;
     }
-    this.say(bad ? `Ran ${n} instances: ${bad} with a count other than expected (marked ✗).` : `Ran ${n} instances; every expected count matches.`, bad > 0);
+    this.say(bad ? `Ran ${n} instances: ${bad} with a count or optimum other than expected (marked ✗).` : `Ran ${n} instances; every expected count and optimum matches.`, bad > 0);
   }
 
   // ---- generators (docs/spec-instances.md section 4) ------------------------------------
