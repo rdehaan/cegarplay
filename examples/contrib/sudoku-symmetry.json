@@ -1,0 +1,106 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Sudoku with symmetry breaking",
+  "description": "sudoku-unique with symmetry breaking in the abstraction: the solved grid's first row reads 1..9 and its rows are ordered within bands, which leaves one grid of every class of relabelled and row-reordered grids. It does not make fewer clues reachable: the hard part is the choice of the clue cells, and every grid has many puzzles. In single runs (seed 0) k = 24 took 19 s without and did not finish in 120 s with these constraints; with the relabelling alone it took 9 s, with the row order alone 17 s. Delete a part of the symmetry fragment to try others.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The size of the puzzle and the derived domains. Added to every solver.",
+      "text": "% A 9 x 9 Sudoku: every row, every column and each of the nine 3 x 3 boxes contains the\n% values 1..9 once. An instance may print clues pre(R,C,V) and may fix the solved grid with\n% solution(R,C,V) (Instances tab).\nrow(1..9). col(1..9). val(1..9).\nbox(R,C,(R-1)/3*3+(C-1)/3) :- row(R), col(C).\nprinted(R,C) :- pre(R,C,_).\n"
+    },
+    {
+      "name": "sudoku",
+      "description": "The rules of the puzzle for any grid; used by solver A (one grid) and solver C (two grids).",
+      "text": "% The rules of the puzzle, for every grid G that a solver declares with grid(G):\n% cell(G,R,C,V) says that grid G has the value V in row R, column C.\n1 { cell(G,R,C,V) : val(V) } 1 :- grid(G), row(R), col(C).\n:- cell(G,R,C1,V), cell(G,R,C2,V), C1 < C2.\n:- cell(G,R1,C,V), cell(G,R2,C,V), R1 < R2.\n:- cell(G,R1,C1,V), cell(G,R2,C2,V), box(R1,C1,B), box(R2,C2,B), (R1,C1) < (R2,C2).\n% Every grid respects the printed clues.\n:- grid(G), pre(R,C,V), not cell(G,R,C,V).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): a solved grid and k of its cells as clues.",
+      "text": "% A candidate: a solved grid s and k of its cells that are revealed as clues.\n% The grid is the instance's solution/3 if it gives one (then the grounder fixes it, which\n% makes every solve call cheaper), otherwise any grid.\nfixed :- solution(_,_,_).\ngrid(s) :- not fixed.\ncell(s,R,C,V) :- solution(R,C,V).\n:- fixed, pre(R,C,V), not solution(R,C,V).\nk { clue(R,C) : row(R), col(C), not printed(R,C) } k.\n% given(R,C,V): the puzzle shows the value V in row R, column C.\ngiven(R,C,V) :- clue(R,C), cell(s,R,C,V).\n#show given/3.\n"
+    },
+    {
+      "name": "symmetry",
+      "description": "Also in solver A: one grid out of each class of relabelled and row-reordered grids.",
+      "text": "% Symmetry breaking. Relabelling the values, or reordering rows within a band and the\n% last two bands, turns a puzzle into another one with as many clues and still one\n% solution. So it suffices to look for grids in one order. This holds only when the\n% instance prints no clues and fixes no grid; otherwise the constraints are off.\nfree :- not fixed, not printed(_,_).\n% Relabel the values: the first row of s reads 1..9.\n:- free, col(C), not cell(s,1,C,C).\n% Within each band, the rows below row 1 are ordered by their first cell (row 1 stays,\n% since it is fixed already).\n:- free, R = (2;4;5;7;8), cell(s,R,1,V), cell(s,R+1,1,W), V > W.\n% Bands 2 and 3 are ordered by their first cell.\n:- free, cell(s,4,1,V), cell(s,7,1,W), V > W.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the clues with their values. The solved grid stays private to solver A.",
+      "text": "glue(given(R,C,V)) :- row(R), col(C), val(V), not printed(R,C).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for two different grids that agree with all clues (solver C).",
+      "text": "% A counterexample: two different grids a and b that both agree with the clues.\n% (One of them may be the candidate's own grid.)\ngrid(a). grid(b).\n:- given(R,C,V), not cell(a,R,C,V).\n:- given(R,C,V), not cell(b,R,C,V).\ndiffer :- cell(a,R,C,V), not cell(b,R,C,V).\n:- not differ.\n#show.\n#show a(R,C,V) : cell(a,R,C,V).\n#show b(R,C,V) : cell(b,R,C,V).\n\n% Both grids fit every puzzle that shows only values on which they agree. So a clue\n% has to appear that contradicts one of them: any value in a cell where a or b has\n% another value.\nboth(R,C,V) :- cell(a,R,C,V), cell(b,R,C,V).\nrelevant(given(R,C,V)) :- row(R), col(C), val(V), not printed(R,C), not both(R,C,V).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + sudoku + abstraction + symmetry\nsolver C = shared + sudoku + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "k": "26"
+    },
+    "solutions": 1,
+    "seconds": 120,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "sudoku-symmetry",
+    "group": "exists-forall",
+    "summary": "sudoku-unique with symmetry breaking on the solved grid (values relabelled, rows ordered); it does not reach fewer clues (k = 26; the run stops at the first puzzle).",
+    "shape": "shape1",
+    "tags": [],
+    "expected": null
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% No printed clues and no fixed grid, so the symmetry breaking applies (k = 26).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "one-clue-missing",
+      "facts": "% sudoku-unique's instance of the same name (k = 1: 7 solutions).\npre(1,2,9). pre(1,3,3). pre(1,6,4). pre(1,7,5).\npre(2,7,9).\npre(3,1,1). pre(3,6,3). pre(3,8,7).\npre(4,1,9). pre(4,3,2). pre(4,6,1).\npre(5,2,6).\npre(6,1,7). pre(6,2,4). pre(6,5,9). pre(6,7,6). pre(6,9,5).\npre(7,6,5). pre(7,9,8).\npre(8,5,2). pre(8,8,4).\npre(9,3,4). pre(9,7,1).\n",
+      "constants": {
+        "k": "1"
+      },
+      "expected": {
+        "solutions": 7
+      },
+      "tags": []
+    },
+    {
+      "id": "rectangle",
+      "facts": "% sudoku-unique's instance of the same name (k = 0: no solution).\npre(1,1,6). pre(1,2,9). pre(1,3,3). pre(1,4,7). pre(1,5,8). pre(1,6,4). pre(1,7,5). pre(1,8,1). pre(1,9,2).\npre(2,1,4). pre(2,2,8). pre(2,3,7). pre(2,4,5). pre(2,5,1). pre(2,6,2). pre(2,9,6).\npre(3,1,1). pre(3,2,2). pre(3,3,5). pre(3,4,9). pre(3,5,6). pre(3,6,3). pre(3,7,8). pre(3,8,7). pre(3,9,4).\npre(4,1,9). pre(4,2,3). pre(4,3,2). pre(4,4,6). pre(4,5,5). pre(4,6,1). pre(4,7,4). pre(4,8,8). pre(4,9,7).\npre(5,1,5). pre(5,2,6). pre(5,3,8). pre(5,4,2). pre(5,5,4). pre(5,6,7). pre(5,9,1).\npre(6,1,7). pre(6,2,4). pre(6,3,1). pre(6,4,3). pre(6,5,9). pre(6,6,8). pre(6,7,6). pre(6,8,2). pre(6,9,5).\npre(7,1,3). pre(7,2,1). pre(7,3,9). pre(7,4,4). pre(7,5,7). pre(7,6,5). pre(7,7,2). pre(7,8,6). pre(7,9,8).\npre(8,1,8). pre(8,2,5). pre(8,3,6). pre(8,4,1). pre(8,5,2). pre(8,6,9). pre(8,7,7). pre(8,8,4). pre(8,9,3).\npre(9,1,2). pre(9,2,7). pre(9,3,4). pre(9,4,8). pre(9,5,3). pre(9,6,6). pre(9,7,1). pre(9,8,5). pre(9,9,9).\n",
+      "constants": {
+        "k": "0"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "rectangle-one",
+      "facts": "% sudoku-unique's instance of the same name (k = 1: 8 solutions).\npre(1,1,6). pre(1,2,9). pre(1,3,3). pre(1,4,7). pre(1,5,8). pre(1,6,4). pre(1,7,5). pre(1,8,1). pre(1,9,2).\npre(2,1,4). pre(2,2,8). pre(2,3,7). pre(2,4,5). pre(2,5,1). pre(2,6,2). pre(2,9,6).\npre(3,1,1). pre(3,2,2). pre(3,3,5). pre(3,4,9). pre(3,5,6). pre(3,6,3). pre(3,7,8). pre(3,8,7). pre(3,9,4).\npre(4,1,9). pre(4,2,3). pre(4,3,2). pre(4,4,6). pre(4,5,5). pre(4,6,1). pre(4,7,4). pre(4,8,8). pre(4,9,7).\npre(5,1,5). pre(5,2,6). pre(5,3,8). pre(5,4,2). pre(5,5,4). pre(5,6,7). pre(5,9,1).\npre(6,1,7). pre(6,2,4). pre(6,3,1). pre(6,4,3). pre(6,5,9). pre(6,6,8). pre(6,7,6). pre(6,8,2). pre(6,9,5).\npre(7,1,3). pre(7,2,1). pre(7,3,9). pre(7,4,4). pre(7,5,7). pre(7,6,5). pre(7,7,2). pre(7,8,6). pre(7,9,8).\npre(8,1,8). pre(8,2,5). pre(8,3,6). pre(8,4,1). pre(8,5,2). pre(8,6,9). pre(8,7,7). pre(8,8,4). pre(8,9,3).\npre(9,1,2). pre(9,2,7). pre(9,3,4). pre(9,4,8). pre(9,5,3). pre(9,6,6). pre(9,7,1). pre(9,8,5). pre(9,9,9).\n",
+      "constants": {
+        "k": "1"
+      },
+      "expected": {
+        "solutions": 8
+      },
+      "tags": []
+    }
+  ]
+}

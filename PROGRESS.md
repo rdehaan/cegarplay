@@ -1031,3 +1031,18 @@ grids that agree with the clues; same clause refinement).
   ones that need only pairs, only locked candidates, both). Small instances: engine = Python
   clingo (clause and block modes) = brute force (one-clue-missing: 7 unique / 3 also hard;
   rectangle-one: 8 / 0). `tools/audit.mjs` runs out of memory on these (9 x 9).
+- `sudoku-symmetry` (requested: symmetry breaking): fragment `symmetry` in A, on only without
+  printed clues or a fixed grid (`free`): first row of s = 1..9, rows 2-3 / 4-6 / 7-9 ordered by
+  column 1, bands 2-3 by their first cell (all compatible: the row moves never touch row 1). Does
+  **not** help: single runs (seed 0) at k = 24: plain 19 s, full symmetry > 120 s, relabelling only
+  9 s, row order only 17 s; k = 25: 47 s full vs 2.3 s plain. The hard part is choosing clue cells.
+- `sudoku-unavoidable` (requested: smarter loop): interface = grid cells + clue cells; C finds a grid
+  b equal to s on the clue cells, `moved` = the unavoidable set D; clause "s changes on D or a
+  cell of D is a clue" holds for every grid with s's values on D (sound: in each unit s and b hold
+  the same values on D). Loop: up to 3 disjoint sets per candidate (`fix/2` assumptions built with
+  `C.atom("fix", ...)` into a list; loop constants are not allowed outside family ranges, so the 3
+  is literal). k = 22 free grid 13 s (plain: k = 23 > 120 s), k = 21 fixed grid 9 s; k = 20 > 5 min
+  in every variant tried. Tried and dropped: `#minimize` + `optimal` (smallest set; 5-10x slower),
+  a `#heuristic` preferring b = s, 1 vs 3 vs 6 sets (1 and 3 similar), adding symmetry breaking or
+  deadly-rectangle lemmas (no consistent gain; one lucky k = 21 in 14 s with symmetry).
+  Small instances: engine = cegarcheck (auto and block) = brute force (7, 0, 8).

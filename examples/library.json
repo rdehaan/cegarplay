@@ -1477,6 +1477,30 @@
       }
     },
     {
+      "id": "sudoku-symmetry",
+      "title": "Sudoku with symmetry breaking",
+      "group": "exists-forall",
+      "summary": "sudoku-unique with symmetry breaking on the solved grid (values relabelled, rows ordered); it does not reach fewer clues (k = 26; the run stops at the first puzzle).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "sudoku-unavoidable",
+      "title": "Sudoku by unavoidable sets",
+      "group": "exists-forall",
+      "summary": "sudoku-unique refined by unavoidable sets of the guessed grid, up to 3 disjoint ones per candidate: fewer clues in reasonable time (k = 22; the run stops at the first puzzle).",
+      "shape": "custom",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 5
+      }
+    },
+    {
       "id": "sudoku-unique",
       "title": "Sudoku with a unique solution",
       "group": "exists-forall",
