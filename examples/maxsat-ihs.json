@@ -86,6 +86,15 @@
       },
       "swap": {},
       "constants": {}
+    },
+    {
+      "name": "bounds-meet",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# The variant bounds-meet: stop as soon as the lower bound (the hitting set's cost) reaches the\n# upper bound (the best witness so far), as MaxHS does, and accept that witness. A model from a\n# solve is a snapshot, so it can be kept in a variable (best = X) and accepted later.\nupper = none\nbest = none\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"the hard clauses are unsatisfiable\"\n    track lower = M.cost\n    if upper != none and M.cost >= upper:\n        log \"the bounds meet:\", upper\n        accept best\n        stop\n    E = G(M)\n    cores = 0\n    loop:\n        X = C.solve(assume E)\n        if X:\n            if upper == none or X.cost < upper:\n                upper = X.cost\n                best = X\n            break\n        K = C.core.minimal\n        if K.on(G).size == 0: stop \"the hard clauses are unsatisfiable\"\n        A.add(K.on(G))\n        cores = cores + 1\n        count cores\n        for a in K:\n            E = E.without(a)\n    track upper = upper\n    if cores == 0:\n        accept M\n        stop\n"
+      }
     }
   ],
   "runs": []

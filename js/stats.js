@@ -251,6 +251,7 @@ export class Stats {
     for (const [k, v] of last) rows.push([`${k} (tracked, last value)`, fmt(v)]);
     if (this.S && this.S.partials) rows.unshift(['partial checks (on partial)', fmt(this.S.partials)]);
     if (this.S && this.S.minimised) rows.unshift(['minimised cores (core.minimal)', fmt(this.S.minimised)]);
+    for (const [k, v] of Object.entries((this.S && this.S.labels) || {}).reverse()) rows.unshift([`accepted as ${k}`, fmt(v)]);
     this.table('counters-table', ['Counter', 'Value'], rows.length ? rows : [['(none: use count or track in the loop script)', '']], [1]);
   }
 

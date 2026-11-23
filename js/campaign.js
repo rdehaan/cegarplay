@@ -215,6 +215,7 @@ export class Reducer {
       }
     }
     if (this.costs.n) { row.cost = this.costs.cost; row.sameCost = this.costs.same; }
+    if (S.labels && Object.keys(S.labels).length) row.labels = { ...S.labels };
     return row;
   }
 }

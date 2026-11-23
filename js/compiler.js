@@ -3,7 +3,7 @@
 
 export const KEYWORDS = new Set(('solver link via options legacy compat lift keep def return if elif else loop while repeat until for in ' +
   'search on candidate partial every reject with accept restart stop break continue count by track log assume limit optimal and or not ' +
-  'true false none').split(' '));
+  'true false none as').split(' '));
 const LUA_RESERVED = new Set(('and break do else elseif end false for function goto if in local nil not or repeat return ' +
   'then true until while').split(' '));
 const RESERVED = new Set([...LUA_RESERVED, 'rt', 'clingo', 'FRAGMENTS', 'CONSTS', 'SETTINGS', 'main', 'LOOP_LINES', 'ipairs', '_']);
@@ -298,7 +298,15 @@ class Parser {
           this.endLine();
           return { t: 'reject', ...at, v, e };
         }
-        case 'accept': { this.next(); const e = this.expr(); this.endLine(); return { t: 'accept', ...at, e }; }
+        case 'accept': {
+          this.next();
+          const e = this.expr();
+          // accept M as NAME: a second kind of solution, reported and counted under its own name
+          let label = null;
+          if (this.peek().type === 'kw' && this.peek().value === 'as') { this.next(); label = this.name('a name for this kind of solution'); }
+          this.endLine();
+          return { t: 'accept', ...at, e, label };
+        }
         case 'restart': case 'break': case 'continue':
           this.next(); this.endLine(); return { t: t.value, ...at };
         case 'stop': {
@@ -971,7 +979,7 @@ export function compile(source, { fragments = [] } = {}) {
         emit(`${s.v.value}:reject(${ex(s.e)})`, s.line, depth);
         break;
       }
-      case 'accept': emit(`rt.accept(${ex(s.e)})`, s.line, depth); break;
+      case 'accept': emit(s.label ? `rt.accept(${ex(s.e)}, ${JSON.stringify(s.label.value)})` : `rt.accept(${ex(s.e)})`, s.line, depth); break;
       case 'restart':
         if (!ctx.cand) err(s, "'restart' works only inside 'on candidate'");
         emit('rt.restart()', s.line, depth);

@@ -1306,3 +1306,7 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   constraints and omission, the voting case study, from a paper to a loop. Seven more guide
   examples (with replays); QUOTED runs may name an instance and a variant (key
   `id[instance](variant)`); `rulesA` falls back to the first solver.
+- Loop language (done): `accept M as NAME` (a second kind of solution: `N` events, `S.labels`,
+  counted next to Solutions and in Statistics, not a solution; `as` is a keyword; MARCO's MSSes use
+  it); stopping when the bounds meet works with a kept snapshot (`best = X`, `accept best`), shown
+  in the manual and the `maxsat-ihs` variant `bounds-meet`.

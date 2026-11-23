@@ -386,7 +386,7 @@ The compiler runs 500 ms after each edit in the Loop tab and marks errors at onc
   and `\\` escapes.
 - Keywords: `solver link via options legacy compat if elif else loop while repeat until for in
   search on candidate partial every reject with accept restart stop break continue count by track log assume limit
-  optimal and or not true false none`, and `lift keep def return`.
+  optimal and or not true false none as`, and `lift keep def return`.
 - Reserved names (cannot be declared or assigned): every Lua keyword, `rt`, `clingo`, `FRAGMENTS`,
   `CONSTS`, `SETTINGS`, `main`, `ipairs`, `_`, and names starting with `__`.
 
@@ -406,7 +406,7 @@ stmt    := NAME "=" expr NEWLINE
          | "search" NAME ":" NEWLINE INDENT [ "on" "partial" NAME [ "every" expr ] ":" block ]
            "on" "candidate" NAME ":" block DEDENT
          | "reject" NAME "with" expr NEWLINE
-         | "accept" NAME NEWLINE
+         | "accept" NAME [ "as" NAME ] NEWLINE
          | "restart" NEWLINE | "break" NEWLINE | "continue" NEWLINE
          | "stop" [ STRING ] NEWLINE
          | "count" NAME [ "by" expr ] NEWLINE
@@ -460,6 +460,7 @@ before the link is declared (declarations are processed in order, then all solve
 | `on partial P every n:` / block | Before `on candidate`: also call the block at partial assignments of the search, at every n-th propagation fixpoint (default 1). See [Checks on partial candidates](#manual-checks-on-partial-candidates). |
 | `reject M with e` | Add the clause (or list of clauses) `e` to the searching solver. Only inside `on candidate`, naming its candidate variable. Several `reject`s of one candidate are allowed: the first clause is added at once, the rest at the next check. |
 | `accept M` | Count the model `M` as a solution and print it (for models from `solve`/`models`). Inside a search it does nothing: not rejecting already accepts. When the wanted number of solutions is reached, the run ends with outcome `solutions`. |
+| `accept M as NAME` | A second kind of solution (MARCO's MSSes next to its MUSes): `M` is listed in Messages as `NAME n: atoms`, counted next to Solutions ("7; also 12 mss") and in the Statistics tab (`accepted as NAME`), and in the `S` event's `labels`. It is not a solution: it does not count towards the solution limit or the expected count. `M` must be a snapshot (the model of a `solve`), not the candidate of a search. |
 | `restart` | Only inside `on candidate`: end the current search early. The next `search` starts afresh; the solutions found so far are not reported again. |
 | `stop` | End the run with outcome `finished`. |
 | `stop "msg"` | End the run with outcome `stopped` and the message as detail. |
@@ -646,6 +647,19 @@ calls it the *blocking loop*.
 | `S.atom("bound", n)` | The atom `bound(n)` of S as a one-element assumption list (an error names a missing atom). |
 | `A.solve(assume G(M))` | A list of link G given to G's source means the same values on the source's atoms. |
 | `X.value(p/1)`, `X.count(p/n)`, `X.cost`, `a.arg(i)` | The argument of the one true `p` atom (an error when there are none or several), the number of true atoms, the cost, the i-th argument of an atom. |
+
+**Stopping when the bounds meet.** A model returned by `solve` is a snapshot: it can be kept in a
+variable and accepted later (a candidate of a search cannot). An optimisation loop can therefore
+stop as soon as its lower bound reaches the best upper bound and accept the witness that set it,
+as MaxHS does:
+
+```loop
+if upper != none and M.cost >= upper:
+    accept best                       # best = X when X.cost lowered upper
+    stop
+```
+
+The variant `bounds-meet` of `maxsat-ihs` is the full loop.
 
 A solve under assumptions no longer counts for the "no progress" guard (it may return the same
 candidate on purpose). `reasons-by-shrinking` and `knapsack-bounds` are loop scripts now,
@@ -1183,9 +1197,10 @@ prints them as `{"kind": ..., "data": ...}`.
 | Kind | When | Fields |
 | --- | --- | --- |
 | `H` | after grounding | `solvers` (`name`, `fragments`, `options`, `atoms`, `ground`), `links` (`name`, `from`, `to`, `atoms` = non-fact interface atoms), `settings` |
-| `S` | every 0.25 s and at the end | `t`, `candidates`, `counterexamples`, `solutions`, `clauses`, `literals`, `maxlen`, `hist`, `expansions`, `restarts`, `blocks`, `solvers` (per solver: `calls`, `sat`, `unsat`, `time`, `ground`, `busy`, `choices`, `conflicts`, `restarts`, `atoms`, `rules`, `vars`, `constraints`, `k`), `counters`, `tracked` (only after a `track`: the last value per name), `partials` (only after an `on partial` call: their number), `minimised` (only after a `C.core.minimal`: their number) |
+| `S` | every 0.25 s and at the end | `t`, `candidates`, `counterexamples`, `solutions`, `clauses`, `literals`, `maxlen`, `hist`, `expansions`, `restarts`, `blocks`, `solvers` (per solver: `calls`, `sat`, `unsat`, `time`, `ground`, `busy`, `choices`, `conflicts`, `restarts`, `atoms`, `rules`, `vars`, `constraints`, `k`), `counters`, `tracked` (only after a `track`: the last value per name), `partials` (only after an `on partial` call: their number), `minimised` (only after a `C.core.minimal`: their number), `labels` (only after an `accept … as NAME`: the count per name) |
 | `V` | each `track` (the first 2,000 values per name) | `n` name, `i` round, `v` value, `t` |
 | `M` | each solution | `n`, `atoms`, `cost` |
+| `N` | each `accept … as NAME` | `label`, `n` (per label), `atoms`, `cost` |
 | `T` | each traced step | `i`, `kind` (`reject`, `partial`, `add`, `expand`, `accept`, `error`), `solver`, `candidate`, `counterexample`, `literals`, `facts` |
 | `W` | clingo message | `solver`, `code`, `message`, `fragment`, `line`, `col` |
 | `L` | `log` | `text` |

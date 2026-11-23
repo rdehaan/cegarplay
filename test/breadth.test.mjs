@@ -92,12 +92,12 @@ test('the loops from the literature: each example agrees with brute force or dir
       assert.ok(logs(r).includes(line), `${id}/${inst}: ${logs(r).join('|')}`);
     }
   }
-  // MARCO: MUSes are the solutions, MSSes are counted (brute force over all subsets)
+  // MARCO: MUSes are the solutions, MSSes a second kind (accept ... as mss; brute force over all subsets)
   const m = all(ex('marco'));
   for (const [inst, mus, mss] of [['example', 7, 12], ['nine-mus', 9, 3], ['four-mus', 4, 6], ['satisfiable', 0, 1]]) {
     const r = await H.runProject({ ...m, settings: { ...m.settings, instance: inst } });
     assert.equal(H.finalStats(r).solutions, mus, inst);
-    assert.equal(H.finalStats(r).counters.mss, mss, inst);
+    assert.equal((H.finalStats(r).labels || {}).mss || 0, mss, inst);   // accept ... as mss
     assert.equal(H.done(r).exhausted, true, inst);
   }
 });

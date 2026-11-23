@@ -20,7 +20,7 @@ export const GRAPH = {
 // The keywords of the loop language (the same list as KEYWORDS in js/compiler.js).
 export const LOOP_KEYWORDS = new Set(('solver link via options legacy compat lift keep def return if elif else loop while repeat until for in ' +
   'search on candidate partial every reject with accept restart stop break continue count by track log assume limit optimal and or not ' +
-  'true false none').split(' '));
+  'true false none as').split(' '));
 const SPECIAL = new Set(['glue', 'relevant', 'cex', 'clause']);
 const DIRECTIVE = /^#(program|show|minimize|maximize|const|external|heuristic|include|project|defined)\b/;
 

@@ -17,7 +17,7 @@ four example scripts below were run as the hand-written Lua shown in
   `STRING`: double quotes, with `\"` and `\\` escapes.
 - Keywords: `solver link via options legacy compat if elif else loop while
   repeat until for in search on candidate partial every reject with accept restart stop
-  break continue count by track log assume limit optimal and or not true false none`.
+  break continue count by track log assume limit optimal and or not true false none as`.
 - A name may not be a Lua keyword, nor `rt`, `clingo`, `FRAGMENTS`, `CONSTS`,
   `SETTINGS`, `main`, nor start with `__`.
 
@@ -37,7 +37,7 @@ stmt    := NAME "=" expr NEWLINE
          | "search" NAME ":" NEWLINE INDENT [ "on" "partial" NAME [ "every" expr ] ":" block ]
            "on" "candidate" NAME ":" block DEDENT
          | "reject" NAME "with" expr NEWLINE
-         | "accept" NAME NEWLINE
+         | "accept" NAME [ "as" NAME ] NEWLINE
          | "restart" NEWLINE | "break" NEWLINE | "continue" NEWLINE
          | "stop" [ STRING ] NEWLINE
          | "count" NAME [ "by" expr ] NEWLINE
@@ -95,6 +95,7 @@ variables).
 | `C.core.minimal` | `rt.minimal(C:core())`: a subset-minimal core (deletion with clause-set refinement) |
 | `reject M with e` | `M:reject(e)` |
 | `accept M` | `rt.accept(M)` |
+| `accept M as mss` | `rt.accept(M, "mss")`: an `N` event, counted per name, not a solution |
 | `restart` | `rt.restart()` |
 | `stop "msg"` | `rt.stop("msg")` |
 | `count n by e` | `rt.count("n", e)` |

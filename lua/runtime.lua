@@ -178,6 +178,11 @@ local function stats_event()
     solutions = rt.solutions, clauses = rt.clauses, literals = rt.literals, maxlen = rt.maxlen, hist = hist,
     expansions = rt.expansions, restarts = rt.restarts, blocks = rt.blocks, solvers = sv, counters = counters }
   if rt.partials > 0 then e.partials = rt.partials end
+  if rt.labels and #rt.label_order > 0 then
+    local lb = {}
+    for k, v in pairs(rt.labels) do lb[k] = v end
+    e.labels = lb
+  end
   if rt.minimised then e.minimised = rt.minimised end
   if #rt.track_order > 0 then
     local tr = {}
@@ -1811,9 +1816,19 @@ function rt.restart()
   s.ctl:interrupt()
 end
 
-function rt.accept(M)
+-- accept M as NAME (label): a second kind of solution. It is reported as an N event and counted
+-- per name (S event: labels); it does not count as a solution and never ends the run.
+rt.labels, rt.label_order = {}, {}
+function rt.accept(M, label)
   if getmetatable(M) ~= Model then fail("accept: expected a model") end
   if M.lazy and M.done then stale("accept", "a counterexample or the model of a solve") end
+  if label ~= nil then
+    if M.lazy then fail("accept ... as " .. tostring(label) .. ": inside a search, accept the snapshot of a solve, not the candidate") end
+    if rt.labels[label] == nil then rt.label_order[#rt.label_order + 1] = label; rt.labels[label] = 0 end
+    rt.labels[label] = rt.labels[label] + 1
+    emit("N", { label = label, n = rt.labels[label], atoms = M.shown or candidate_text(M), cost = M.cost and array(M.cost) or nil })
+    return
+  end
   if M.lazy then return end
   emit_solution(M.shown or candidate_text(M), M.cost, M.solver, M)
   if SETTINGS.solutions ~= 0 and rt.solutions >= SETTINGS.solutions then rt.finish("solutions", "", false) end

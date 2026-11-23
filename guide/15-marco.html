@@ -93,14 +93,12 @@ sat(C) :- neg(C,V), not t(V).
         <pre class="code" data-lang="loop" data-from="marco:loop">    if C.solve(assume E):
         for a in E:
             if not a.true and C.solve(assume E.flip(a)): E = E.flip(a)
-        log "MSS", A.solve(assume E).atoms(pick/1)
-        count mss
+        accept A.solve(assume E) as mss
         A.add(G.below(E))
     else:
         for a in E:
             if a.true and not C.solve(assume E.flip(a)): E = E.flip(a)
         accept A.solve(assume E)
-        count mus
         A.add(G.above(E))</pre>
         <p class="listing-source">From the loop script of <code>marco</code>.</p>
         <details class="predict">
@@ -138,8 +136,10 @@ sat(C) :- neg(C,V), not t(V).
 
         <h2 id="second-kind">A second kind of solution</h2>
         <p>The MSSes are answers too: their complements are the minimal correction sets, the smallest
-          ways to repair the formula. The loop reports MUSes as solutions and MSSes as
-          <code>log</code> lines and a <code>count</code>; both appear in the Output tab. The MUSes and
+          ways to repair the formula. The loop reports MUSes as solutions and MSSes as a second kind of
+          solution: <code>accept … as mss</code> lists each one in the Output tab's messages and counts
+          them next to the solutions ("7; also 12 mss") and in the Statistics tab, without counting them
+          as solutions. The MUSes and
           the minimal correction sets are each other's minimal hitting sets, the duality that
           the exercise of chapter 14 met from the other side.</p>
 

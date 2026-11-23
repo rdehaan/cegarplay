@@ -24,6 +24,7 @@ export class Output {
 
   clear() {
     this.solutions = 0;
+    this.namedCounts = {};          // accept M as NAME: count per name
     this.costs = costTracker();      // the costs of this run's solutions (expected.optimum)
     this.pendingSolutions = [];
     this.kept = [];
@@ -111,7 +112,8 @@ export class Output {
       this.solEl.append(frag);
       this.pendingSolutions = [];
     }
-    this.solCount.textContent = this.solutions ? `(${fmt(this.solutions)})` : '';
+    const named = Object.entries(this.namedCounts || {}).map(([k, n]) => `${fmt(n)} ${k}`).join(', ');
+    this.solCount.textContent = this.solutions || named ? `(${fmt(this.solutions)}${named ? `; also ${named}` : ''})` : '';
     this.dlButton.hidden = this.solutions === 0;
     this.solNote.textContent = this.solutions > SHOW_SOLUTIONS ? `The first ${fmt(SHOW_SOLUTIONS)} solutions are shown.` : '';
     this.trace.render();
@@ -176,6 +178,13 @@ export class Output {
   }
 
   log(text) { this.message(text); }
+
+  // a second kind of solution (accept M as NAME): a message line, and a count next to Solutions
+  named(d) {
+    this.namedCounts[d.label] = d.n;
+    this.message(`${d.label} ${d.n}: ${d.atoms || '(no shown atoms)'}${d.cost && d.cost.length ? `  cost ${d.cost.join(' ')}` : ''}`, 'named');
+    this.schedule();
+  }
 
   line(text, isErr) {
     this.lastLines.push(text);

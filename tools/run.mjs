@@ -192,6 +192,7 @@ async function main(argv) {
     for (const e of r.events) {
       const d = e.data;
       if (e.kind === 'M' && !quiet) console.log(`Solution ${d.n}: ${d.atoms}${d.cost ? `  cost ${JSON.stringify(d.cost)}` : ''}`);
+      else if (e.kind === 'N' && !quiet) console.log(`${d.label} ${d.n}: ${d.atoms}${d.cost ? `  cost ${JSON.stringify(d.cost)}` : ''}`);
       else if (e.kind === 'L') console.log(`log: ${d.text}`);
       else if (e.kind === 'W') console.log(`clingo (${d.solver}): ${d.message}`);
       else if (e.kind === 'E') console.log(`error: ${d.message}`);
@@ -203,6 +204,7 @@ async function main(argv) {
     if (S) {
       console.log(`Solutions: ${S.solutions}; candidates: ${S.candidates}; counterexamples: ${S.counterexamples}; clauses: ${S.clauses}; time: ${S.t} s`);
       if (S.counters && Object.keys(S.counters).length) console.log(`Counters: ${JSON.stringify(S.counters)}`);
+      if (S.labels && Object.keys(S.labels).length) console.log(`Accepted as: ${Object.entries(S.labels).map(([k, v]) => `${k} ${v}`).join(', ')}`);
       if (S.partials) console.log(`Partial checks: ${S.partials}`);
       if (S.minimised) console.log(`Minimised cores: ${S.minimised}`);
     }

@@ -268,6 +268,7 @@ export class Control {
       case 'H': app.stats.header(data); app.internals && app.internals.header(data); break;
       case 'S': app.stats.update(data); break;
       case 'M': app.output.solution(data); break;
+      case 'N': app.output.named(data); break;
       case 'W': {
         app.output.warning(data);
         if (data.fragment && this.marks.length < 200) {
