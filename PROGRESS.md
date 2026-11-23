@@ -1086,8 +1086,10 @@ cells and the unavoidable set ringed; binairo as sudoku; futoshiki on a (2n-1) g
 slots (<, >, ^, v; slots without a sign ghosted); akari (black cells ■ or their number, lights
 a / b / ab); slitherlink (corners as ghosted nodes at fixed `pos`, grid lines as edges coloured
 by loop a, b or both, unshown numbers ghosted). Colours come by first use, so notes name labels
-and rings, not colours. Solutions have no T event (a search reports them as M events): the views
-show the rejected steps.
+and rings, not colours. The trace (T events) has no step for an accepted candidate, but a
+recording (Loop tab, Recording on) has one (R event, k = s): its frame shows the final puzzle,
+with the note "the puzzle is done". Interface atoms that are facts are not in R events, so
+akari's view draws a fixed `layout/2` in the scene (fix after the first commit).
 - **Fix in `js/views.js`:** a fragment's own `#const n = 5.` kept its default in view programs
   while the run used the project's `n = 7` (a 5 x 5 drawing). `viewText` now rewrites such a
   definition to the project's value, and checks `own` only over the fragments the view includes.
