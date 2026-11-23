@@ -70,7 +70,8 @@
       "tags": [
         "library"
       ],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "four",
@@ -83,7 +84,8 @@
         "solutions": 1152
       },
       "tags": [],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -103,7 +105,8 @@
       ],
       "expected": {
         "solutions": 3
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -123,7 +126,8 @@
       ],
       "expected": {
         "solutions": 2
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-3",
@@ -143,7 +147,8 @@
       ],
       "expected": {
         "solutions": 112
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-4",
@@ -163,7 +168,8 @@
       ],
       "expected": {
         "solutions": 0
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "variants": [

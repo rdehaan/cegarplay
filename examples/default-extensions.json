@@ -52,7 +52,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "tweety",
@@ -61,7 +62,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "two-extensions",
@@ -70,7 +72,8 @@
       "expected": {
         "solutions": 2
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -85,7 +88,8 @@
       ],
       "expected": {
         "solutions": 2
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -100,7 +104,8 @@
       ],
       "expected": {
         "solutions": 2
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -180,5 +185,19 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "theories",
+      "description": "A hard clause and size defaults over size atoms, with at most one query atom.",
+      "text": "% every default theory: one hard clause, the defaults d(1..size), clauses over the atoms 1..size\nhard(h).  default(d(1..size)).  at(1..size).\ncl(h).  cl(D) :- default(D).\n{ pos(C,A) : cl(C), at(A) }.\n{ neg(C,A) : cl(C), at(A) }.\n{ query(A) : at(A) } 1.\n",
+      "params": {
+        "size": "int"
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
+    }
+  ]
 }

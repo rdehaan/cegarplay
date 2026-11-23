@@ -52,7 +52,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "even-loops",
@@ -61,7 +62,8 @@
       "expected": {
         "solutions": 8
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "odd-loop",
@@ -70,7 +72,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "disjunction",
@@ -79,7 +82,8 @@
       "expected": {
         "solutions": 8
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -97,7 +101,8 @@
       ],
       "expected": {
         "solutions": 2
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -115,7 +120,8 @@
       ],
       "expected": {
         "solutions": 2
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -198,5 +204,19 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "programs",
+      "description": "Every program with size rules over size atoms (each atom occurs).",
+      "text": "% every normal or disjunctive program with the rules 1..size over the atoms 1..size\nrl(1..size).  at(1..size).\n{ head(R,A) : rl(R), at(A) }.\n{ pos(R,A) : rl(R), at(A) }.\n{ neg(R,A) : rl(R), at(A) }.\n:- at(A), not head(_,A), not pos(_,A), not neg(_,A).\n",
+      "params": {
+        "size": "int"
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
+    }
+  ]
 }

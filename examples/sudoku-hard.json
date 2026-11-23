@@ -74,7 +74,8 @@
       "tags": [
         "library"
       ],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "stuck",
@@ -85,7 +86,8 @@
       "expected": {
         "solutions": 1
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "one-clue-missing",
@@ -97,7 +99,8 @@
         "solutions": 3
       },
       "tags": [],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -116,7 +119,8 @@
       ],
       "expected": {
         "solutions": 0
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -135,7 +139,8 @@
       ],
       "expected": {
         "solutions": 0
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "variants": [

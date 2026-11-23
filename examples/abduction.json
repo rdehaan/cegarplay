@@ -54,7 +54,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "two-symptoms",
@@ -63,7 +64,8 @@
       "expected": {
         "solutions": 5
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "no-explanation",
@@ -72,7 +74,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -87,7 +90,8 @@
       ],
       "expected": {
         "solutions": 2
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -102,7 +106,8 @@
       ],
       "expected": {
         "solutions": 4
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -186,5 +191,19 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "theories",
+      "description": "Theories with size clauses over size hypotheses and size manifestations.",
+      "text": "% every theory: clauses 1..size over the hypotheses h(1..size) and manifestations e(1..size)\nhypothesis(h(1..size)).  manifestation(e(1..size)).\nat(A) :- hypothesis(A).  at(A) :- manifestation(A).\ncid(1..size).\n{ pos(C,A) : cid(C), at(A) }.\n{ neg(C,A) : cid(C), at(A) }.\n",
+      "params": {
+        "size": "int"
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
+    }
+  ]
 }

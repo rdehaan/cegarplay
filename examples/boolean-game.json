@@ -51,7 +51,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "matching-pennies",
@@ -60,7 +61,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "coordination",
@@ -69,7 +71,8 @@
       "expected": {
         "solutions": 2
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "three-players",
@@ -78,7 +81,8 @@
       "expected": {
         "solutions": 10
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -97,7 +101,8 @@
       },
       "tags": [
         "generated"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -116,7 +121,8 @@
       },
       "tags": [
         "generated"
-      ]
+      ],
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -200,5 +206,19 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "games",
+      "description": "Two players, size variables, one goal clause per player.",
+      "text": "% every two-player game over the variables 1..size: who controls what, one goal clause each\nplayer(1..2).  var(1..size).\n1 { controls(P,V) : player(P) } 1 :- var(V).\ngoal(P,P) :- player(P).\n{ pos(C,V) : player(C), var(V) }.\n{ neg(C,V) : player(C), var(V) }.\n",
+      "params": {
+        "size": "int"
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
+    }
+  ]
 }

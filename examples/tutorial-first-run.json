@@ -53,5 +53,20 @@
         "view"
       ]
     }
+  ],
+  "spaces": [
+    {
+      "name": "n",
+      "description": "The numbers 1..n for n = 1, 2, ...: the constants family of the example.",
+      "text": "",
+      "params": {
+        "n": "int"
+      },
+      "bound": "n",
+      "expected": {
+        "verdict": "sound",
+        "k": 10
+      }
+    }
   ]
 }

@@ -59,7 +59,8 @@
       "tags": [
         "library"
       ],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "k7",
@@ -73,7 +74,8 @@
       "tags": [
         "slow"
       ],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "k5",
@@ -84,7 +86,8 @@
       "tags": [],
       "expected": {
         "solutions": 97
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "wheel6",
@@ -93,7 +96,8 @@
       "tags": [],
       "expected": {
         "solutions": 1159
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "k33plus",
@@ -102,7 +106,8 @@
       "tags": [],
       "expected": {
         "solutions": 307
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -120,7 +125,8 @@
       },
       "tags": [
         "generated"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -138,7 +144,8 @@
       },
       "tags": [
         "generated"
-      ]
+      ],
+      "symbolic": "sound"
     }
   ],
   "generators": [

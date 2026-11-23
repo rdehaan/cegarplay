@@ -69,7 +69,8 @@
       "tags": [
         "library"
       ],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "one-clue-missing",
@@ -81,7 +82,8 @@
         "solutions": 7
       },
       "tags": [],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "rectangle",
@@ -92,7 +94,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -111,7 +114,8 @@
       ],
       "expected": {
         "solutions": 8
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -130,7 +134,8 @@
       ],
       "expected": {
         "solutions": 10
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-3",
@@ -149,7 +154,8 @@
       ],
       "expected": {
         "solutions": 2
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "variants": [
@@ -207,5 +213,20 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "k",
+      "description": "Puzzles with k = 1, 2, ... clues on a 9 x 9 grid.",
+      "text": "",
+      "params": {
+        "k": "int"
+      },
+      "bound": "k",
+      "expected": {
+        "verdict": "sound",
+        "k": 8
+      }
+    }
+  ]
 }

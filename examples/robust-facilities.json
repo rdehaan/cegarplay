@@ -54,7 +54,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -74,7 +75,8 @@
       "expected": {
         "solutions": null,
         "optimum": 17
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -94,7 +96,8 @@
       "expected": {
         "solutions": null,
         "optimum": 29
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-3",
@@ -114,7 +117,8 @@
       "expected": {
         "solutions": null,
         "optimum": 18
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "no-robust",
@@ -125,7 +129,8 @@
       },
       "tags": [
         "no-solution"
-      ]
+      ],
+      "symbolic": "sound"
     }
   ],
   "variants": [
@@ -193,5 +198,19 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "maps",
+      "description": "Size sites and size customers.",
+      "text": "% every map: sites 1..size with opening cost 1..2, customers 1..size near some sites\nsid(1..size).  uid(1..size).\n1 { site(S,C) : C = 1..2 } 1 :- sid(S).\n{ near(U,S) : uid(U), sid(S) }.\n",
+      "params": {
+        "size": "int"
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
+    }
+  ]
 }

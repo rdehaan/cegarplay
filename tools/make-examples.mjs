@@ -2,7 +2,9 @@
 import fs from 'node:fs';
 import { importLp, load, save, template } from '../js/project.js';
 import { stripAspComments } from '../js/driver.js';
-import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS, PROJECT_CARDS, EXERCISES, levelOf, VOTE_KIT, EXTRAS } from './library.mjs';
+import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS, PROJECT_CARDS, EXERCISES, levelOf, VOTE_KIT, EXTRAS, SPACES, SYMBOLIC } from './library.mjs';
+import { compile } from '../js/compiler.js';
+import { boundedPlan } from '../js/driver.js';
 import { buildGuide } from './guide.mjs';
 
 const root = new URL('..', import.meta.url);
@@ -585,12 +587,20 @@ export function loadContrib(dir = new URL('examples/contrib/', root), taken = ne
 // What a project has beyond fragments and a loop, for the library list: { has: { instances: 3, ... } }.
 function features(p) {
   const has = {};
-  for (const k of ['instances', 'generators', 'suites', 'views']) if ((p[k] || []).length) has[k] = p[k].length;
+  for (const k of ['instances', 'generators', 'suites', 'views', 'spaces']) if ((p[k] || []).length) has[k] = p[k].length;
   if (typeof p.readme === 'string' && p.readme.trim()) has.readme = 1;
   return Object.keys(has).length ? { has } : {};
 }
 
 // All examples and the manifest: { files: { id: project }, manifest }.
+// Whether the symbolic audit covers a project's loop (G.clause or G.clauses on one link).
+function symbolicTarget(p) {
+  if (!p.loop || p.loop.language !== 'loop') return false;
+  const c = compile(p.loop.text, { fragments: p.fragments.map((f) => f.name) });
+  const b = boundedPlan(c);
+  return !b.error && !b.unsupported && !!(b.clause || b.clauses);
+}
+
 export function buildAll({ contribDir } = {}) {
   const problems = buildExamples();
   const entries = buildLibrary(problems['graph-coloring']);
@@ -637,6 +647,12 @@ export function buildAll({ contribDir } = {}) {
     if (PROJECT_CARDS[e.id]) e.project.readme = PROJECT_CARDS[e.id];
     if (e.project.readme && !(e.tags || []).includes('project')) e.tags = [...(e.tags || []), 'project'];
     if (RECIPES[e.id]) e.project.instances = [...(e.project.instances || []), ...structuredClone(RECIPES[e.id]).map((x) => ({ constants: {}, ...x }))];
+    // PLAN3: spaces (S7) and the expected symbolic-audit verdict of every instance (S6)
+    if (SPACES[e.id]) { e.project.spaces = structuredClone(SPACES[e.id]); e.project.version = 2; }
+    if ((e.project.instances || []).length && symbolicTarget(e.project)) {
+      const table = SYMBOLIC[e.id] || {};
+      e.project.instances = e.project.instances.map((x) => (table[x.id] === null ? x : { ...x, symbolic: table[x.id] || 'sound' }));
+    }
   }
   const files = {};
   const examples = [];

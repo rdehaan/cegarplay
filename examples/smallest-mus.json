@@ -49,7 +49,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "example-k5",
@@ -60,7 +61,8 @@
       "expected": {
         "solutions": 23
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "satisfiable",
@@ -69,7 +71,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "chains",
@@ -78,7 +81,8 @@
       "expected": {
         "solutions": 7
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -97,7 +101,8 @@
       ],
       "expected": {
         "solutions": 19
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -116,7 +121,8 @@
       ],
       "expected": {
         "solutions": 67
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -203,5 +209,24 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "formulas",
+      "description": "Every CNF with size non-empty clauses over size variables; MUSes of at most k clauses.",
+      "text": "% every CNF with the clauses 1..size over the variables 1..size; no clause is empty\ncid(1..size).  vid(1..size).\n{ pos(C,V) : cid(C), vid(V) }.\n{ neg(C,V) : cid(C), vid(V) }.\n:- cid(C), not pos(C,_), not neg(C,_).\n",
+      "params": {
+        "size": "int",
+        "k": "int"
+      },
+      "bound": "size",
+      "defaults": {
+        "k": 2
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
+    }
+  ]
 }

@@ -51,7 +51,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "premises-only",
@@ -60,7 +61,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "disjunction",
@@ -69,7 +71,8 @@
       "expected": {
         "solutions": 6
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "chain",
@@ -78,7 +81,8 @@
       "tags": [],
       "expected": {
         "solutions": 3
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -97,7 +101,8 @@
       ],
       "expected": {
         "solutions": 11
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -116,7 +121,8 @@
       ],
       "expected": {
         "solutions": 9
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -200,5 +206,19 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "agendas",
+      "description": "Agendas of size one-clause formulas over two variables.",
+      "text": "% every agenda of size formulas (one clause each) over the variables 1 and 2\nfid(1..size).  cl(F,F) :- fid(F).  var(1..2).\n{ pos(C,V) : fid(C), var(V) }.\n{ neg(C,V) : fid(C), var(V) }.\n",
+      "params": {
+        "size": "int"
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
+    }
+  ]
 }

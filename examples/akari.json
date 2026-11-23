@@ -71,7 +71,8 @@
       "tags": [
         "library"
       ],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "layout",
@@ -83,7 +84,8 @@
         "solutions": 1
       },
       "tags": [],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "four",
@@ -96,7 +98,8 @@
       "expected": {
         "solutions": 494
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -116,7 +119,8 @@
       ],
       "expected": {
         "solutions": 6
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -136,7 +140,8 @@
       ],
       "expected": {
         "solutions": 1
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-3",
@@ -156,7 +161,8 @@
       ],
       "expected": {
         "solutions": 0
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -235,5 +241,26 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "n",
+      "description": "Grids of n x n cells for n = 1, 2, ..., with 2 black cells and 2 numbers.",
+      "text": "",
+      "params": {
+        "n": "int",
+        "blacks": "int",
+        "k": "int"
+      },
+      "bound": "n",
+      "defaults": {
+        "blacks": 2,
+        "k": 2
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 8
+      }
+    }
+  ]
 }

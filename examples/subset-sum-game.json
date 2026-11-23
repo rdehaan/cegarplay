@@ -55,7 +55,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "small",
@@ -64,7 +65,8 @@
       "expected": {
         "solutions": 3
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "binary",
@@ -73,7 +75,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "out-of-reach",
@@ -82,7 +85,8 @@
       "expected": {
         "solutions": 16
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -102,7 +106,8 @@
       },
       "tags": [
         "generated"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -122,7 +127,8 @@
       },
       "tags": [
         "generated"
-      ]
+      ],
+      "symbolic": "sound"
     }
   ],
   "variants": [

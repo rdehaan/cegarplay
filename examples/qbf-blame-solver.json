@@ -62,7 +62,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "false-formula",
@@ -71,7 +72,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-5x4",
@@ -80,7 +82,8 @@
       "expected": {
         "solutions": 14
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-6x5",
@@ -89,7 +92,8 @@
       "expected": {
         "solutions": 8
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "false-6x6",
@@ -98,7 +102,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -117,7 +122,8 @@
       ],
       "expected": {
         "solutions": 15
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -181,5 +187,19 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "formulas",
+      "description": "Every exists-forall DNF with size terms over size x- and size y-variables.",
+      "text": "% every DNF matrix with size terms over size x-variables and size y-variables\nxvar(1..size).  yvar(1..size).  tid(1..size).\n{ xlit(T,I,S) : tid(T), xvar(I), S = 0..1 }.\n{ ylit(T,J,S) : tid(T), yvar(J), S = 0..1 }.\n",
+      "params": {
+        "size": "int"
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
+    }
+  ]
 }

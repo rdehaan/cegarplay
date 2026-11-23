@@ -66,7 +66,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "adder-correct",
@@ -77,7 +78,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "ripple-x4",
@@ -88,7 +90,8 @@
       "expected": {
         "solutions": 2
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -105,7 +108,8 @@
       ],
       "expected": {
         "solutions": 2
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -122,7 +126,8 @@
       ],
       "expected": {
         "solutions": 0
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [

@@ -47,7 +47,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "coordination",
@@ -56,7 +57,8 @@
       "expected": {
         "solutions": 2
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "matching-pennies",
@@ -65,7 +67,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "nash-not-strong",
@@ -74,7 +77,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -92,7 +96,8 @@
       },
       "tags": [
         "generated"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -110,7 +115,8 @@
       },
       "tags": [
         "generated"
-      ]
+      ],
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -185,5 +191,19 @@
     }
   ],
   "runs": [],
-  "readme": "# Project: strong Nash equilibria\n\n## Research question\n\nDeciding whether a strong Nash equilibrium exists is Σ2P-complete. Which refinement (the coalition, its members' actions, the neighbourhood) cuts the most candidates?\n\n## Baseline\n\n1 solution (exhausted) after 70 candidates and 69 clauses (0.1 s) on the example.\n\n## Things to try\n\n- Variants with the three refinements and a campaign over the instances.\n- A generator of random graphical games and a scaling plot.\n- A loop with two checks: Nash first (cheap), then coalitions (see `lang-two-stage`).\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n"
+  "readme": "# Project: strong Nash equilibria\n\n## Research question\n\nDeciding whether a strong Nash equilibrium exists is Σ2P-complete. Which refinement (the coalition, its members' actions, the neighbourhood) cuts the most candidates?\n\n## Baseline\n\n1 solution (exhausted) after 70 candidates and 69 clauses (0.1 s) on the example.\n\n## Things to try\n\n- Variants with the three refinements and a campaign over the instances.\n- A generator of random graphical games and a scaling plot.\n- A loop with two checks: Nash first (cheap), then coalitions (see `lang-two-stage`).\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n",
+  "spaces": [
+    {
+      "name": "games",
+      "description": "Coordination games with size players and two actions.",
+      "text": "% every coordination game: players 1..size, two actions, weights 0 or 1, bonuses 0 or 1\nplayer(1..size).  action(1..2).\n{ w(P,Q,1) : player(P), player(Q), P != Q }.\n1 { bonus(P,A,B) : B = 0..1 } 1 :- player(P), action(A).\n",
+      "params": {
+        "size": "int"
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 5
+      }
+    }
+  ]
 }

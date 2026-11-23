@@ -56,7 +56,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "n13-k5",
@@ -69,7 +70,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "n5-edges",
@@ -82,7 +84,8 @@
       "expected": {
         "solutions": 5
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "n17-k9",
@@ -96,7 +99,8 @@
         "solutions": 51
       },
       "tags": [],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "n13-k7",
@@ -109,7 +113,8 @@
       "tags": [],
       "expected": {
         "solutions": 286
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "variants": [
@@ -178,5 +183,26 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "n",
+      "description": "The circulant graphs on n = 1, 2, ... nodes; k deletions, cliques of c nodes.",
+      "text": "",
+      "params": {
+        "n": "int",
+        "k": "int",
+        "c": "int"
+      },
+      "bound": "n",
+      "defaults": {
+        "k": 4,
+        "c": 3
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
+    }
+  ]
 }

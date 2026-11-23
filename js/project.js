@@ -5,7 +5,7 @@ import { assemble, DEFAULT_SETTINGS, stripAspComments, modulesFor } from './driv
 export const FORMAT = 'cegarplay';
 export const VERSION = 2;
 // Keys of format version 2 (docs/spec-instances.md). A project that uses none saves as version 1.
-export const V2_KEYS = ['instances', 'generators', 'variants', 'suites', 'views', 'pools'];
+export const V2_KEYS = ['instances', 'generators', 'variants', 'suites', 'views', 'pools', 'spaces'];
 export const INSTANCE_ID = /^[A-Za-z0-9_-]+$/;
 // The fragment a run gets from its instance; no user fragment may have this name.
 export const INSTANCE_FRAGMENT = 'instance';
@@ -197,6 +197,7 @@ export function load(json) {
   if ('instances' in p) out.instances = loadInstances(p.instances);
   if ('variants' in p) out.variants = loadVariants(p.variants, names);
   if ('generators' in p) out.generators = loadGenerators(p.generators);
+  if ('spaces' in p) out.spaces = loadSpaces(p.spaces);
   if ('pools' in p) {
     if (!Array.isArray(p.pools)) throw new ProjectError('pools must be a list');
     const seen = new Set();
@@ -273,6 +274,8 @@ function loadInstances(list) {
     // audit: false keeps an instance out of the audit (too large to enumerate), not out of runs
     if (x.audit !== undefined && typeof x.audit !== 'boolean') throw new ProjectError(`instance ${x.id}: audit must be true or false`);
     if (x.audit === true) delete out.audit;
+    // symbolic (PLAN3 S6): the expected verdict of the symbolic audit on this instance
+    if (x.symbolic !== undefined && x.symbolic !== 'sound' && x.symbolic !== 'unsound') throw new ProjectError(`instance ${x.id}: symbolic must be "sound" or "unsound"`);
     return out;
   });
 }
@@ -296,6 +299,73 @@ function loadGenerators(list) {
     if (g.defaults !== undefined && !isObj(g.defaults)) throw new ProjectError(`generator ${g.name}: defaults must be an object`);
     return { ...g, params };
   });
+}
+
+// Spaces (docs/spec-instances.md section 8, optional): every instance up to a bound, for the
+// bounded verification of a strategy. { name, text, params: { name: "int" }, bound, defaults,
+// description, expected: { verdict, k } }.
+export const SPACE_VERDICTS = ['sound', 'unsound', 'budget', 'unsupported'];
+function loadSpaces(list) {
+  if (!Array.isArray(list)) throw new ProjectError('spaces must be a list');
+  const seen = new Set();
+  return list.map((x, i) => {
+    if (!isObj(x)) throw new ProjectError(`space ${i + 1} is not an object`);
+    if (typeof x.name !== 'string' || !INSTANCE_ID.test(x.name)) throw new ProjectError(`space ${i + 1}: name must match [A-Za-z0-9_-]+`);
+    if (seen.has(x.name)) throw new ProjectError(`duplicate space name '${x.name}'`);
+    seen.add(x.name);
+    if (typeof x.text !== 'string') throw new ProjectError(`space ${x.name}: text must be a string`);
+    const params = x.params === undefined ? {} : x.params;
+    if (!isObj(params)) throw new ProjectError(`space ${x.name}: params must be an object`);
+    for (const [k, t] of Object.entries(params)) {
+      if (!/^[a-z][A-Za-z0-9_]*$/.test(k)) throw new ProjectError(`space ${x.name}: parameter name '${k}' must start with a lower case letter`);
+      if (t !== 'int') throw new ProjectError(`space ${x.name}: parameter ${k} has type '${t}' (use int)`);
+    }
+    const names = Object.keys(params);
+    if (!names.length) throw new ProjectError(`space ${x.name}: needs at least one parameter (the bound)`);
+    if (x.bound !== undefined && !names.includes(x.bound)) throw new ProjectError(`space ${x.name}: the bound '${x.bound}' is not a parameter`);
+    if (x.defaults !== undefined) {
+      if (!isObj(x.defaults)) throw new ProjectError(`space ${x.name}: defaults must be an object`);
+      for (const [k, v] of Object.entries(x.defaults)) {
+        if (!names.includes(k)) throw new ProjectError(`space ${x.name}: default for unknown parameter ${k}`);
+        if (!Number.isInteger(Number(v))) throw new ProjectError(`space ${x.name}: default ${k} must be a whole number`);
+      }
+    }
+    if (x.description !== undefined && typeof x.description !== 'string') throw new ProjectError(`space ${x.name}: description must be a string`);
+    if (x.from !== undefined && !(Number.isInteger(x.from) && x.from >= 0)) throw new ProjectError(`space ${x.name}: from must be a whole number (the first k)`);
+    if (x.expected !== undefined) {
+      const e = x.expected;
+      if (!isObj(e) || !SPACE_VERDICTS.includes(e.verdict) || !(Number.isInteger(e.k) && e.k >= 0)) {
+        throw new ProjectError(`space ${x.name}: expected must be { verdict: sound | unsound | budget | unsupported, k: whole number }`);
+      }
+    }
+    return { ...x, params };
+  });
+}
+
+// The bound parameter of a space (its `bound`, else the first parameter).
+export function spaceBound(space) { return space.bound || Object.keys(space.params || {})[0]; }
+
+// The plain project of one bounded run: the fragment `instance` = the space text (+ the project's
+// `schema` fragment), the constants = the space's defaults, params, and the bound at k.
+export function deriveSpace(project, name, params = {}, { variant } = {}) {
+  const sp = (project.spaces || []).find((x) => x.name === name);
+  if (!sp) throw new ProjectError(`no space named '${name}'`);
+  const base = applyVariant(project, variant);
+  const schema = base.fragments.find((f) => f.name === 'schema');
+  const consts = {};
+  for (const [k, v] of Object.entries(sp.defaults || {})) consts[k] = String(v);
+  for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null) consts[k] = String(v);
+  for (const k of Object.keys(sp.params)) if (consts[k] === undefined) throw new ProjectError(`space ${name}: no value for parameter ${k}`);
+  const text = schema ? `${sp.text}\n${schema.text}` : sp.text;
+  const p = applyInstance(base, { id: `space-${name}`, facts: text, constants: consts });
+  // a plain project: no instance or variant is applied again by a run
+  p.instances = [];
+  p.variants = [];
+  p.settings = { ...p.settings };
+  delete p.settings.instance;
+  delete p.settings.variant;
+  p.space = name;
+  return p;
 }
 
 function loadVariants(list, fragmentNames) {

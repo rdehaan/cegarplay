@@ -87,5 +87,20 @@
         "view"
       ]
     }
+  ],
+  "spaces": [
+    {
+      "name": "n",
+      "description": "The numbers 1..n for n = 1, 2, ...: the too-weak relevant/1 first loses a solution at n = 2.",
+      "text": "",
+      "params": {
+        "n": "int"
+      },
+      "bound": "n",
+      "expected": {
+        "verdict": "unsound",
+        "k": 2
+      }
+    }
   ]
 }

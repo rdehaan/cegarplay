@@ -56,7 +56,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "k24",
@@ -69,7 +70,8 @@
       "tags": [],
       "expected": {
         "solutions": 144
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "c5",
@@ -80,7 +82,8 @@
       "tags": [],
       "expected": {
         "solutions": 3
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "c6",
@@ -91,7 +94,8 @@
       "tags": [],
       "expected": {
         "solutions": 0
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "theta224",
@@ -102,7 +106,8 @@
       "tags": [],
       "expected": {
         "solutions": 0
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -120,7 +125,8 @@
       ],
       "expected": {
         "solutions": 171
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -138,7 +144,8 @@
       ],
       "expected": {
         "solutions": 261
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -233,6 +240,25 @@
         "shared",
         "view"
       ]
+    }
+  ],
+  "spaces": [
+    {
+      "name": "graphs",
+      "description": "Every graph on size nodes, lists of 2 out of p colours.",
+      "text": "% every graph on the nodes 1..size (edges listed in both directions)\nnode(1..size).\n{ edge(U,V) : node(U), node(V), U < V }.\nedge(V,U) :- edge(U,V), U < V.\n",
+      "params": {
+        "size": "int",
+        "p": "int"
+      },
+      "bound": "size",
+      "defaults": {
+        "p": 3
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
     }
   ]
 }

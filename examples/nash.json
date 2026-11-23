@@ -56,7 +56,8 @@
       },
       "tags": [
         "small"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "n2-w2",
@@ -68,7 +69,8 @@
       "expected": {
         "solutions": 24
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "n2",
@@ -79,7 +81,8 @@
       "expected": {
         "solutions": 36
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "n3-w1",
@@ -91,7 +94,8 @@
       "expected": {
         "solutions": 576
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     }
   ],
   "variants": [
@@ -121,5 +125,24 @@
       "constants": {}
     }
   ],
-  "readme": "# Project: Nash equilibria of colouring games\n\n## Research question\n\nHow does the number of candidates depend on the number of players and edge weights, and does a refinement over the deviating player only pay?\n\n## Baseline\n\nAll solutions on the instances: n2-w1 12, n2-w2 24, n2 36, n3-w1 576 (n3-w1: 1,780 candidates, 1,204 clauses). The project as written (n = 5, w = 3, instance \"as written\") stops at its first candidate, which is already a solution.\n\n## Things to try\n\n- A suite over the four instances and the variants reference, shape2 and wide; read the matrix by candidates.\n- A refinement that names only the deviating player's colour and its neighbours (the opposite of the variant wide).\n- Compare with `strong-nash`, which checks coalitions instead of single players.\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n"
+  "readme": "# Project: Nash equilibria of colouring games\n\n## Research question\n\nHow does the number of candidates depend on the number of players and edge weights, and does a refinement over the deviating player only pay?\n\n## Baseline\n\nAll solutions on the instances: n2-w1 12, n2-w2 24, n2 36, n3-w1 576 (n3-w1: 1,780 candidates, 1,204 clauses). The project as written (n = 5, w = 3, instance \"as written\") stops at its first candidate, which is already a solution.\n\n## Things to try\n\n- A suite over the four instances and the variants reference, shape2 and wide; read the matrix by candidates.\n- A refinement that names only the deviating player's colour and its neighbours (the opposite of the variant wide).\n- Compare with `strong-nash`, which checks coalitions instead of single players.\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n",
+  "spaces": [
+    {
+      "name": "n",
+      "description": "Games with n = 1, 2, ... players, weights up to w.",
+      "text": "",
+      "params": {
+        "n": "int",
+        "w": "int"
+      },
+      "bound": "n",
+      "defaults": {
+        "w": 1
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 3
+      }
+    }
+  ]
 }

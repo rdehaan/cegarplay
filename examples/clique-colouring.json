@@ -54,7 +54,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "n5",
@@ -65,7 +66,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "n10",
@@ -76,7 +78,8 @@
       "expected": {
         "solutions": 330
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "petersen",
@@ -85,7 +88,8 @@
       "tags": [],
       "expected": {
         "solutions": 0
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "wheel-fan",
@@ -94,7 +98,8 @@
       "tags": [],
       "expected": {
         "solutions": 174
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -112,7 +117,8 @@
       ],
       "expected": {
         "solutions": 406
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -130,7 +136,8 @@
       ],
       "expected": {
         "solutions": 14
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -225,6 +232,20 @@
         "shared",
         "view"
       ]
+    }
+  ],
+  "spaces": [
+    {
+      "name": "graphs",
+      "description": "Every graph on size nodes.",
+      "text": "% every graph on the nodes 1..size (edges listed in both directions)\nnode(1..size).\n{ edge(U,V) : node(U), node(V), U < V }.\nedge(V,U) :- edge(U,V), U < V.\n",
+      "params": {
+        "size": "int"
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
     }
   ]
 }

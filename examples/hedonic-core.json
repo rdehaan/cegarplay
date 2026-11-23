@@ -51,7 +51,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "empty-core",
@@ -60,7 +61,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "five-agents",
@@ -69,7 +71,8 @@
       "expected": {
         "solutions": 4
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "friends",
@@ -78,7 +81,8 @@
       "expected": {
         "solutions": 1
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -96,7 +100,8 @@
       },
       "tags": [
         "generated"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -114,7 +119,8 @@
       },
       "tags": [
         "generated"
-      ]
+      ],
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -196,5 +202,20 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "games",
+      "description": "Additive hedonic games with size agents and values -1, 0, 1 (from 2 agents: one agent has no pair).",
+      "text": "% every additive hedonic game with the agents 1..size and values -1..1\nagent(1..size).\n1 { value(I,J,V) : V = -1..1 } 1 :- agent(I), agent(J), I != J.\n",
+      "params": {
+        "size": "int"
+      },
+      "from": 2,
+      "expected": {
+        "verdict": "sound",
+        "k": 5
+      }
+    }
+  ]
 }

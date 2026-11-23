@@ -59,7 +59,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "one-clue",
@@ -70,7 +71,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "diagonal-three",
@@ -81,7 +83,8 @@
       "expected": {
         "solutions": 4
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "first-row",
@@ -92,7 +95,8 @@
       "expected": {
         "solutions": 112
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -111,7 +115,8 @@
       ],
       "expected": {
         "solutions": 6
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -130,7 +135,8 @@
       ],
       "expected": {
         "solutions": 48
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "variants": [

@@ -47,7 +47,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "not-strategic",
@@ -56,7 +57,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "control",
@@ -65,7 +67,8 @@
       "expected": {
         "solutions": 2
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "holding-10",
@@ -74,7 +77,8 @@
       "expected": {
         "solutions": 5
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "none-10",
@@ -83,7 +87,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -103,7 +108,8 @@
       ],
       "expected": {
         "solutions": 4
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -123,7 +129,8 @@
       ],
       "expected": {
         "solutions": 3
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -213,5 +220,19 @@
     }
   ],
   "runs": [],
-  "readme": "# Project: strategic companies\n\n## Research question\n\nStrategic companies is a classic Σ2P benchmark of ASP competitions. How does the CEGAR loop scale against the disjunctive encoding solved by clingo alone?\n\n## Baseline\n\n2 solutions (exhausted) after 10 candidates and 8 clauses (0.06 s) on the example.\n\n## Things to try\n\n- Write a generator of random company structures (goods, producers, control) and a suite over its size.\n- Write the disjunctive encoding as the `reference` variant (or run it with Export for clingo) and compare the times.\n- Try one clause per smaller closed set against a clause over all companies.\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n"
+  "readme": "# Project: strategic companies\n\n## Research question\n\nStrategic companies is a classic Σ2P benchmark of ASP competitions. How does the CEGAR loop scale against the disjunctive encoding solved by clingo alone?\n\n## Baseline\n\n2 solutions (exhausted) after 10 candidates and 8 clauses (0.06 s) on the example.\n\n## Things to try\n\n- Write a generator of random company structures (goods, producers, control) and a suite over its size.\n- Write the disjunctive encoding as the `reference` variant (or run it with Export for clingo) and compare the times.\n- Try one clause per smaller closed set against a clause over all companies.\n\n## How to measure\n\nAdd the variants, write a suite over the instances (Campaign tab, Advanced mode), and read the instance × variant matrix; headless: `node tools/bench.mjs <id> --suite NAME --out rows.jsonl` and `node tools/report.mjs rows.jsonl`. Check every variant against the `reference` loop (or the audit) on small instances before trusting its numbers.\n",
+  "spaces": [
+    {
+      "name": "holdings",
+      "description": "Every holding with size companies and size goods.",
+      "text": "% every holding: companies and goods 1..size, who makes what, one controlling group per company\ncompany(1..size).  good(1..size).\n{ makes(C,G) : company(C), good(G) }.\n:- good(G), not makes(_,G).\n{ owner(T,1,O) : company(T), company(O), T != O }.\n{ query(C) : company(C) } 1.\n",
+      "params": {
+        "size": "int"
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
+    }
+  ]
 }

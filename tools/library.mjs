@@ -865,3 +865,84 @@ loop:
   'graph-coloring': (p) => ({ instances: [...sizes('n', [[3, 0]]), ...p.instances.map((x) => x.id === 'n6' ? { ...x, audit: false } : x)],  // n6: the audit needs over 90 s
     variants: ['reference', 'shape2', 'shape4'].map((s) => loopVariant(s, template(s))) }),
 };
+
+// ---------------------------------------------------------------------------
+// Spaces (PLAN3 phase S7, docs/spec-instances.md section 8): every instance up to a bound, for
+// the bounded verification of an example's refinement strategy. Shared texts are written once.
+// Each space's `expected` is the verdict and k measured with `node tools/audit.mjs <id> --space
+// NAME --bound K` (the largest K whose last step finishes within 60 s, capped for the tests).
+// ---------------------------------------------------------------------------
+export const SPACE_TEXTS = {
+  // graphs on the nodes 1..size, edges in both directions
+  graphs: '% every graph on the nodes 1..size (edges listed in both directions)\nnode(1..size).\n{ edge(U,V) : node(U), node(V), U < V }.\nedge(V,U) :- edge(U,V), U < V.\n',
+  // argumentation frameworks with arguments 1..size
+  af: '% every argumentation framework with the arguments 1..size (self-attacks included)\narg(1..size).\n{ att(X,Y) : arg(X), arg(Y) }.\n',
+  // exists-forall formulas in DNF: size x-variables, size y-variables, size terms
+  qbf: '% every DNF matrix with size terms over size x-variables and size y-variables\nxvar(1..size).  yvar(1..size).  tid(1..size).\n{ xlit(T,I,S) : tid(T), xvar(I), S = 0..1 }.\n{ ylit(T,J,S) : tid(T), yvar(J), S = 0..1 }.\n',
+  // CNF formulas with clauses 1..size over the variables 1..size, no clause empty
+  cnf: '% every CNF with the clauses 1..size over the variables 1..size; no clause is empty\ncid(1..size).  vid(1..size).\n{ pos(C,V) : cid(C), vid(V) }.\n{ neg(C,V) : cid(C), vid(V) }.\n:- cid(C), not pos(C,_), not neg(C,_).\n',
+};
+// networks of two units (weights -1..1, thresholds 0..2, votes 2) over the features 1..size,
+// and every input
+const REASON_SPACE = '% every network of two units over the features 1..size, and every input\nfeature(1..size).  unit(1..2).\n' +
+  '1 { weight(U,F,W) : W = -1..1 } 1 :- unit(U), feature(F).\n1 { threshold(U,T) : T = 0..2 } 1 :- unit(U).\nvote(U,2) :- unit(U).\n1 { is(F,0..1) } 1 :- feature(F).\n';
+const space = (name, text, description, expected, extra = {}) => ({ name, description, text, params: { size: 'int' }, ...extra, expected });
+const constantsSpace = (param, k, description, defaults) => ({ name: param, description, text: '',
+  params: { [param]: 'int', ...Object.fromEntries(Object.keys(defaults || {}).map((x) => [x, 'int'])) }, bound: param,
+  ...(defaults ? { defaults } : {}), expected: { verdict: 'sound', k } });
+
+// example id -> its spaces
+export const SPACES = {
+  'tutorial-first-run': [constantsSpace('n', 10, 'The numbers 1..n for n = 1, 2, ...: the constants family of the example.')],
+  'tutorial-weak-relevant': [{ ...constantsSpace('n', 2, 'The numbers 1..n for n = 1, 2, ...: the too-weak relevant/1 first loses a solution at n = 2.'), expected: { verdict: 'unsound', k: 2 } }],
+  'lang-basics': [constantsSpace('n', 12, 'The numbers 1..n for n = 1, 2, ...')],
+  'lang-several-cex': [constantsSpace('n', 12, 'The numbers 1..n for n = 1, 2, ...')],
+  'lang-optimal': [constantsSpace('n', 12, 'The numbers 1..n for n = 1, 2, ...')],
+  'lang-clauses': [constantsSpace('n', 12, 'The numbers 1..n for n = 1, 2, ...')],
+  'lang-legacy': [constantsSpace('n', 12, 'The numbers 1..n for n = 1, 2, ...')],
+  'graph-coloring': [constantsSpace('n', 12, 'The example\'s graph family for n = 1, 2, ...')],
+  'gc-shape1': [constantsSpace('n', 12, 'The example\'s graph family for n = 1, 2, ...')],
+  'gc-shape2': [constantsSpace('n', 12, 'The example\'s graph family for n = 1, 2, ...')],
+  'lang-second-solver': [constantsSpace('n', 12, 'The example\'s graph family for n = 1, 2, ... (the refinement computed by the second solver)')],
+  'qbf-blame-solver': [space('formulas', SPACE_TEXTS.qbf, 'Every exists-forall DNF with size terms over size x- and size y-variables.', { verdict: 'sound', k: 12 })],
+  'akari': [constantsSpace('n', 8, 'Grids of n x n cells for n = 1, 2, ..., with 2 black cells and 2 numbers.', { blacks: 2, k: 2 })],
+  'slitherlink': [constantsSpace('n', 5, 'Grids of n x n cells for n = 1, 2, ..., loops of length 8, 3 clues.', { k: 3, len: 8 })],
+  'sudoku-unique': [constantsSpace('k', 8, 'Puzzles with k = 1, 2, ... clues on a 9 x 9 grid.')],
+  'min-dnf': [constantsSpace('n', 8, 'Boolean functions on n = 1, 2, ... variables, at most k terms.', { k: 3 })],
+  'triangle-free-lazy': [{ ...constantsSpace('n', 12, 'Graphs on n = 2, 3, ... nodes with at least m edges (n = 1 has no node pair, so no interface).', { m: 6 }), from: 2 }],
+  'clique-interdiction': [constantsSpace('n', 12, 'The circulant graphs on n = 1, 2, ... nodes; k deletions, cliques of c nodes.', { k: 4, c: 3 })],
+  'nash': [constantsSpace('n', 3, 'Games with n = 1, 2, ... players, weights up to w.', { w: 1 })],
+  'af-preferred': [space('frameworks', SPACE_TEXTS.af + '1 { query(X) : arg(X) } 1.\n', 'Every argumentation framework with size arguments and one query argument.', { verdict: 'sound', k: 12 })],
+  'af-semi-stable': [space('frameworks', SPACE_TEXTS.af, 'Every argumentation framework with size arguments.', { verdict: 'sound', k: 12 })],
+  'clique-colouring': [space('graphs', SPACE_TEXTS.graphs, 'Every graph on size nodes.', { verdict: 'sound', k: 12 })],
+  'choosability': [space('graphs', SPACE_TEXTS.graphs, 'Every graph on size nodes, lists of 2 out of p colours.', { verdict: 'sound', k: 12 }, { params: { size: 'int', p: 'int' }, bound: 'size', defaults: { p: 3 } })],
+  'qbf': [space('formulas', SPACE_TEXTS.qbf, 'Every exists-forall DNF with size terms over size x- and size y-variables.', { verdict: 'sound', k: 12 })],
+  'qbf-optimal': [space('formulas', SPACE_TEXTS.qbf, 'Every exists-forall DNF with size terms over size x- and size y-variables.', { verdict: 'sound', k: 12 })],
+  'smallest-mus': [space('formulas', SPACE_TEXTS.cnf, 'Every CNF with size non-empty clauses over size variables; MUSes of at most k clauses.', { verdict: 'sound', k: 12 }, { params: { size: 'int', k: 'int' }, bound: 'size', defaults: { k: 2 } })],
+  'stable-models': [space('programs', '% every normal or disjunctive program with the rules 1..size over the atoms 1..size\nrl(1..size).  at(1..size).\n{ head(R,A) : rl(R), at(A) }.\n{ pos(R,A) : rl(R), at(A) }.\n{ neg(R,A) : rl(R), at(A) }.\n:- at(A), not head(_,A), not pos(_,A), not neg(_,A).\n', 'Every program with size rules over size atoms (each atom occurs).', { verdict: 'sound', k: 12 })],
+  'belief-update': [space('theories', '% every old theory (clause 1), new theory (clause 2) and query (clause 3) over the atoms 1..size\natom(1..size).  old(1).  new(2).  query(3).\n{ pos(C,A) : C = 1..3, atom(A) }.\n{ neg(C,A) : C = 1..3, atom(A) }.\n', 'One old clause, one new clause and a query clause over size atoms.', { verdict: 'sound', k: 12 })],
+  'default-extensions': [space('theories', '% every default theory: one hard clause, the defaults d(1..size), clauses over the atoms 1..size\nhard(h).  default(d(1..size)).  at(1..size).\ncl(h).  cl(D) :- default(D).\n{ pos(C,A) : cl(C), at(A) }.\n{ neg(C,A) : cl(C), at(A) }.\n{ query(A) : at(A) } 1.\n', 'A hard clause and size defaults over size atoms, with at most one query atom.', { verdict: 'sound', k: 12 })],
+  'abduction': [space('theories', '% every theory: clauses 1..size over the hypotheses h(1..size) and manifestations e(1..size)\nhypothesis(h(1..size)).  manifestation(e(1..size)).\nat(A) :- hypothesis(A).  at(A) :- manifestation(A).\ncid(1..size).\n{ pos(C,A) : cid(C), at(A) }.\n{ neg(C,A) : cid(C), at(A) }.\n', 'Theories with size clauses over size hypotheses and size manifestations.', { verdict: 'sound', k: 12 })],
+  'strategic-companies': [space('holdings', '% every holding: companies and goods 1..size, who makes what, one controlling group per company\ncompany(1..size).  good(1..size).\n{ makes(C,G) : company(C), good(G) }.\n:- good(G), not makes(_,G).\n{ owner(T,1,O) : company(T), company(O), T != O }.\n{ query(C) : company(C) } 1.\n', 'Every holding with size companies and size goods.', { verdict: 'sound', k: 12 })],
+  'boolean-game': [space('games', '% every two-player game over the variables 1..size: who controls what, one goal clause each\nplayer(1..2).  var(1..size).\n1 { controls(P,V) : player(P) } 1 :- var(V).\ngoal(P,P) :- player(P).\n{ pos(C,V) : player(C), var(V) }.\n{ neg(C,V) : player(C), var(V) }.\n', 'Two players, size variables, one goal clause per player.', { verdict: 'sound', k: 12 })],
+  'agenda-safety': [space('agendas', '% every agenda of size formulas (one clause each) over the variables 1 and 2\nfid(1..size).  cl(F,F) :- fid(F).  var(1..2).\n{ pos(C,V) : fid(C), var(V) }.\n{ neg(C,V) : fid(C), var(V) }.\n', 'Agendas of size one-clause formulas over two variables.', { verdict: 'sound', k: 12 })],
+  'hedonic-core': [space('games', '% every additive hedonic game with the agents 1..size and values -1..1\nagent(1..size).\n1 { value(I,J,V) : V = -1..1 } 1 :- agent(I), agent(J), I != J.\n', 'Additive hedonic games with size agents and values -1, 0, 1 (from 2 agents: one agent has no pair).', { verdict: 'sound', k: 5 }, { from: 2 })],
+  'strong-nash': [space('games', '% every coordination game: players 1..size, two actions, weights 0 or 1, bonuses 0 or 1\nplayer(1..size).  action(1..2).\n{ w(P,Q,1) : player(P), player(Q), P != Q }.\n1 { bonus(P,A,B) : B = 0..1 } 1 :- player(P), action(A).\n', 'Coordination games with size players and two actions.', { verdict: 'sound', k: 5 })],
+  'knapsack-interdiction': [space('items', '% every item list: items 1..size with cost 1..2, weight 1..3 and profit 1..3\niid(1..size).\n1 { item(I,C,W,P) : C = 1..2, W = 1..3, P = 1..3 } 1 :- iid(I).\n', 'Size items with small costs, weights and profits.', { verdict: 'sound', k: 12 },
+    { params: { size: 'int', budget: 'int', capacity: 'int', bound: 'int' }, bound: 'size', defaults: { budget: 2, capacity: 4, bound: 4 } })],
+  'robust-facilities': [space('maps', '% every map: sites 1..size with opening cost 1..2, customers 1..size near some sites\nsid(1..size).  uid(1..size).\n1 { site(S,C) : C = 1..2 } 1 :- sid(S).\n{ near(U,S) : uid(U), sid(S) }.\n', 'Size sites and size customers.', { verdict: 'sound', k: 12 })],
+  'sufficient-reason': [space('networks', REASON_SPACE, 'Networks of two units over size features, and every input.', { verdict: 'sound', k: 12 })],
+  'reasons-by-size': [space('networks', REASON_SPACE, 'Networks of two units over size features, and every input.', { verdict: 'sound', k: 12 })],
+  'reasons-by-shrinking': [space('networks', REASON_SPACE, 'Networks of two units over size features, and every input.', { verdict: 'sound', k: 12 })],
+};
+
+// The symbolic audit's verdict per library instance where it is not 'sound' (null: no verdict
+// within 60 s, the field is left out). Every other instance of a clause-based example is sound.
+// Measured with spike3/sweep.mjs (PROGRESS.md, phase S6).
+export const SYMBOLIC = {
+  'exercise-sum-free': { n4: 'unsound', n5: 'unsound', n6: 'unsound', n7: 'unsound', n8: 'unsound' },   // broken on purpose
+  'slitherlink': { example: null },
+  'sudoku-graded': { example: null },
+  'sudoku-unavoidable': { example: null, 'one-clue-missing': null },
+  'voting-justification': { 'pareto-neutral-cancel-reinf-k8': null, 'cancel-reinf-posresp-k4': null, 'random-1': null },
+};

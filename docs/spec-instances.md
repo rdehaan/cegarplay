@@ -238,3 +238,40 @@ recorded under seed 7: 101 solutions, 101 check calls against 327 cold; at n = 4
 skipped; mining qbf (t = 6, 8, 10, 12, eight seeds, 60 runs): the best instance has 10 candidates
 per solution, 1.9 times the median of its cell. The importers apx, tgf, preflib and jagg were
 built in I1 (`test/instances.test.mjs`).
+
+## 8. Spaces (PLAN3 phase S7, optional)
+
+A **space** describes every instance up to a bound, for the bounded verification of a loop's
+refinement strategy (`docs/spec-soundness.md` section 8). Nothing else uses spaces; a project
+without them loads, saves (byte-identical) and runs as before.
+
+`spaces[]`: `{ name, text, params: { name: "int" }, bound, defaults, from, description,
+expected: { verdict, k } }`.
+
+- `text` replaces the instance: choice rules and constraints over the instance predicates
+  (`node(1..size). { edge(U,V) : node(U), node(V), U < V }.`). A project's `schema` fragment is
+  added to it. An empty text with one parameter is the constants family (n = 1, 2, ...).
+- `params`: at least one, all `int`. They are passed as constants to every solver (as generator
+  parameters are): pick names that no fragment uses as a constant. `bound` names the bound
+  parameter (default: the first); `defaults` give the others; `from` is the first k (default 1;
+  for a space whose smallest instances have no interface, such as one node and no pair).
+- `expected` (library): the bounded verdict (`sound`, `unsound`, `budget`, `unsupported`) and the
+  k it is reached at (`sound`: the last k checked).
+
+`load` validates the keys (format version 2; `usesV2` counts `spaces`); `save` drops an empty
+list. `deriveSpace(project, name, params, { variant })` (`js/project.js`) is the plain project of
+one bound: the fragment `instance` = the space text (+ schema), constants = defaults, then params;
+no instance or variant left to apply. `validateSpace` (`js/driver.js`) runs clingo in gringo mode
+on the text with the parameters as constants before any `ctl:add`; `spaceProblems` (`js/bounded.js`)
+calls it at the space's first k. `verifySpace(project, { space, from, to, seconds, env })`
+(`js/bounded.js`, DOM-free) runs one symbolic audit per k and returns `{ verdict, k, witness,
+reason, perK: [{ k, verdict, rounds, refinements, t }] }`.
+
+Library: `SPACES` and `SPACE_TEXTS` in `tools/library.mjs`, attached by `tools/make-examples.mjs`.
+The instance field `symbolic: "sound" | "unsound"` (written by `make-examples` from `SYMBOLIC`)
+is the expected verdict of the symbolic audit on that instance.
+
+The page: Audit's mode select (Enumerate, Symbolic, Space; Space only for a project with spaces,
+with the space and the bound k); the Instances tab lists the spaces (name, bound, description,
+text, parameters, Check). A space audit's witness instance can be saved as a regression
+instance. The CLI: `node tools/audit.mjs <id> --space NAME --bound K [--from K0]`.

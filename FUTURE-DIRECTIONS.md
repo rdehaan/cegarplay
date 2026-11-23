@@ -60,6 +60,18 @@ as D9 or F1 in code comments refer to that version (`git show 652e5bb:FUTURE-DIR
   checked once by hand (`cegarcheck.py --mode block` or a temporary blocking copy). A checker
   family that handles them would turn that into a test.
 
+## Bounded verification (PLAN3, out of scope)
+
+- The symbolic audit and spaces cover `G.clause` and `G.clauses` on one link. Not covered:
+  `expand` (rule refinements), chains and several links, `lift` links (certified per clause
+  already).
+- Unbounded proofs (every instance): undecidable in general; would need proofs by hand or in Lean.
+- An independent Python twin of the verifier (today the enumerative audit is the oracle in tests).
+- Spaces derived automatically from an instance's predicates (today they are written by hand).
+- Spaces for the examples whose interface depends on the instance (arrowing, subset-sum-game,
+  voting-justification, the puzzles with printed cells): the verifier would need instance atoms
+  inside the interface.
+
 ## Library
 
 - **Graded random puzzles.** The `erased` generators of `sudoku-hard` and `sudoku-graded` give

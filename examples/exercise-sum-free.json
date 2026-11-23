@@ -51,7 +51,8 @@
       "expected": {
         "solutions": 9
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "unsound"
     },
     {
       "id": "n5",
@@ -62,7 +63,8 @@
       "expected": {
         "solutions": 16
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "unsound"
     },
     {
       "id": "n6",
@@ -73,7 +75,8 @@
       "expected": {
         "solutions": 24
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "unsound"
     },
     {
       "id": "n7",
@@ -84,7 +87,8 @@
       "expected": {
         "solutions": 42
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "unsound"
     },
     {
       "id": "n8",
@@ -95,7 +99,8 @@
       "expected": {
         "solutions": 61
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "unsound"
     }
   ],
   "exercise": {

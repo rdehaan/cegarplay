@@ -105,7 +105,8 @@
       "expected": {
         "solutions": 1
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "one-erased",
@@ -117,7 +118,8 @@
         "solutions": 3
       },
       "tags": [],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "one-erased-b",
@@ -129,7 +131,8 @@
         "solutions": 6
       },
       "tags": [],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "one-erased-c",
@@ -141,7 +144,8 @@
         "solutions": 9
       },
       "tags": [],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -160,7 +164,8 @@
       ],
       "expected": {
         "solutions": 0
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "variants": [

@@ -83,7 +83,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "other-input",
@@ -92,7 +93,8 @@
       "expected": {
         "solutions": 2
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "majority-of-three",
@@ -101,7 +103,8 @@
       "expected": {
         "solutions": 3
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -116,7 +119,8 @@
       ],
       "expected": {
         "solutions": 3
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -131,7 +135,8 @@
       ],
       "expected": {
         "solutions": 2
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -151,5 +156,19 @@
       "text": "% net-random: features 1..n and hidden units 1..u. Unit U sees feature F with probability\n% p/1000, with a weight in -3..-1 or 1..3; thresholds are in 1..3 and votes in 1..3 (the\n% answer is \"yes\" when the votes of the firing units reach 3). The input is random.\nfeature(1..n).\nunit(1..u).\nweight(U,F,@int(1,3,size,U,F)*(1-2*@flip(500,sign,U,F))) :- unit(U), feature(F), @flip(p,edge,U,F) = 1.\nthreshold(U,@int(1,3,threshold,U)) :- unit(U).\nvote(U,@int(1,3,vote,U)) :- unit(U).\nis(F,@flip(500,input,F)) :- feature(F).\n#show feature/1.  #show unit/1.  #show weight/3.  #show threshold/2.  #show vote/2.  #show is/2.\n"
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "networks",
+      "description": "Networks of two units over size features, and every input.",
+      "text": "% every network of two units over the features 1..size, and every input\nfeature(1..size).  unit(1..2).\n1 { weight(U,F,W) : W = -1..1 } 1 :- unit(U), feature(F).\n1 { threshold(U,T) : T = 0..2 } 1 :- unit(U).\nvote(U,2) :- unit(U).\n1 { is(F,0..1) } 1 :- feature(F).\n",
+      "params": {
+        "size": "int"
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
+    }
+  ]
 }

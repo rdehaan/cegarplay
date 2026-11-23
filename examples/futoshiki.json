@@ -71,7 +71,8 @@
       "tags": [
         "library"
       ],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "three",
@@ -83,7 +84,8 @@
       "expected": {
         "solutions": 672
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "three-two",
@@ -95,7 +97,8 @@
       "expected": {
         "solutions": 32
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "three-mixed",
@@ -108,7 +111,8 @@
       "expected": {
         "solutions": 2944
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -129,7 +133,8 @@
       ],
       "expected": {
         "solutions": 2
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -150,7 +155,8 @@
       ],
       "expected": {
         "solutions": 7
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-3",
@@ -171,7 +177,8 @@
       ],
       "expected": {
         "solutions": 71
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "variants": [

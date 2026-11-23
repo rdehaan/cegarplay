@@ -66,7 +66,8 @@
         "solutions": 101
       },
       "tags": [],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "n3",
@@ -77,7 +78,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "n4",
@@ -88,7 +90,8 @@
       "expected": {
         "solutions": 1
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     }
   ],
   "variants": [
@@ -112,6 +115,21 @@
       "loop": {
         "language": "loop",
         "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "spaces": [
+    {
+      "name": "n",
+      "description": "The example's graph family for n = 1, 2, ... (the refinement computed by the second solver)",
+      "text": "",
+      "params": {
+        "n": "int"
+      },
+      "bound": "n",
+      "expected": {
+        "verdict": "sound",
+        "k": 12
       }
     }
   ]

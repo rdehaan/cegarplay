@@ -50,7 +50,8 @@
       "expected": {
         "solutions": 61
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "n6",
@@ -61,7 +62,8 @@
       "expected": {
         "solutions": 24
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "n10",
@@ -72,7 +74,8 @@
       "expected": {
         "solutions": 151
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "n12",
@@ -83,7 +86,8 @@
       "expected": {
         "solutions": 369
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     }
   ],
   "variants": [
@@ -103,6 +107,21 @@
       "loop": {
         "language": "loop",
         "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# The same refinement in a Shape 2 loop: A is solved again after each clause.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clauses(X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    }
+  ],
+  "spaces": [
+    {
+      "name": "n",
+      "description": "The numbers 1..n for n = 1, 2, ...",
+      "text": "",
+      "params": {
+        "n": "int"
+      },
+      "bound": "n",
+      "expected": {
+        "verdict": "sound",
+        "k": 12
       }
     }
   ]

@@ -51,7 +51,8 @@
       "expected": {
         "solutions": 0
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "n4",
@@ -64,7 +65,8 @@
       },
       "tags": [
         "small"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "n5",
@@ -75,7 +77,8 @@
       "expected": {
         "solutions": 101
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "n6",
@@ -89,7 +92,8 @@
       "tags": [
         "slow"
       ],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     }
   ],
   "variants": [
@@ -118,6 +122,21 @@
       "loop": {
         "language": "loop",
         "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\npending = []\nrepeat:\n    search A:\n        on candidate M:\n            X = C.solve(assume G(M))\n            if X:\n                pending.push(X)\n                reject M with G.block(M)\n                if pending.size >= 20: restart\n    grounded = pending.size\n    for X in pending:\n        A.expand(refine, cex = X.atoms(color/2))\n    pending.clear()\nuntil A.exhausted and grounded == 0\n"
+      }
+    }
+  ],
+  "spaces": [
+    {
+      "name": "n",
+      "description": "The example's graph family for n = 1, 2, ...",
+      "text": "",
+      "params": {
+        "n": "int"
+      },
+      "bound": "n",
+      "expected": {
+        "verdict": "sound",
+        "k": 12
       }
     }
   ]

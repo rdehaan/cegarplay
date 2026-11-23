@@ -85,7 +85,8 @@
         "solutions": null
       },
       "tags": [],
-      "audit": false
+      "audit": false,
+      "symbolic": "sound"
     },
     {
       "id": "three",
@@ -98,7 +99,8 @@
       "expected": {
         "solutions": 516
       },
-      "tags": []
+      "tags": [],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -119,7 +121,8 @@
       ],
       "expected": {
         "solutions": 1
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -140,7 +143,8 @@
       ],
       "expected": {
         "solutions": 1
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-3",
@@ -161,7 +165,8 @@
       ],
       "expected": {
         "solutions": 22
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-4",
@@ -182,7 +187,8 @@
       ],
       "expected": {
         "solutions": 0
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "variants": [
@@ -254,5 +260,26 @@
       }
     }
   ],
-  "runs": []
+  "runs": [],
+  "spaces": [
+    {
+      "name": "n",
+      "description": "Grids of n x n cells for n = 1, 2, ..., loops of length 8, 3 clues.",
+      "text": "",
+      "params": {
+        "n": "int",
+        "k": "int",
+        "len": "int"
+      },
+      "bound": "n",
+      "defaults": {
+        "k": 3,
+        "len": 8
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 5
+      }
+    }
+  ]
 }

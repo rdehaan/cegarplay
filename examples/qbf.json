@@ -52,7 +52,8 @@
       },
       "tags": [
         "library"
-      ]
+      ],
+      "symbolic": "sound"
     },
     {
       "id": "random-1",
@@ -63,7 +64,8 @@
       ],
       "expected": {
         "solutions": 16
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-2",
@@ -74,7 +76,8 @@
       ],
       "expected": {
         "solutions": 0
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "id": "random-3",
@@ -85,7 +88,8 @@
       ],
       "expected": {
         "solutions": 14
-      }
+      },
+      "symbolic": "sound"
     },
     {
       "constants": {},
@@ -104,7 +108,8 @@
       ],
       "expected": {
         "solutions": 8
-      }
+      },
+      "symbolic": "sound"
     }
   ],
   "generators": [
@@ -206,6 +211,20 @@
         "shared",
         "view"
       ]
+    }
+  ],
+  "spaces": [
+    {
+      "name": "formulas",
+      "description": "Every exists-forall DNF with size terms over size x- and size y-variables.",
+      "text": "% every DNF matrix with size terms over size x-variables and size y-variables\nxvar(1..size).  yvar(1..size).  tid(1..size).\n{ xlit(T,I,S) : tid(T), xvar(I), S = 0..1 }.\n{ ylit(T,J,S) : tid(T), yvar(J), S = 0..1 }.\n",
+      "params": {
+        "size": "int"
+      },
+      "expected": {
+        "verdict": "sound",
+        "k": 12
+      }
     }
   ]
 }
