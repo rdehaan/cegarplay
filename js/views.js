@@ -140,20 +140,28 @@ export function viewProject(project, instanceId) {
 }
 
 const viewText = (project, view) => {
-  const parts = [];
-  // the project's constants as #const lines, so the text alone decides the frame (and its hash)
-  for (const [k, v] of Object.entries((project.settings && project.settings.constants) || {})) {
-    const own = (project.fragments || []).some((f) => new RegExp(`#const\\s+${k}\\b`).test(f.text || ''));
-    if (!own && /^[a-z][A-Za-z0-9_]*$/.test(k) && /^[^\s"']+$/.test(String(v))) parts.push(`#const ${k} = ${v}.`);
-  }
+  const texts = [];
   const inst = project.fragments.find((f) => f.name === 'instance');
-  if (inst && !(view.fragments || []).includes('instance')) parts.push(inst.text);
+  if (inst && !(view.fragments || []).includes('instance')) texts.push(inst.text);
   for (const n of view.fragments || []) {
     const f = project.fragments.find((x) => x.name === n);
     if (!f) throw new Error(`view ${view.name}: no fragment named ${n}`);
-    parts.push(f.text);
+    texts.push(f.text || '');
   }
-  return parts.join('\n');
+  // the project's constants as #const lines, so the text alone decides the frame (and its hash);
+  // a fragment's own '#const k = default.' gets the project's value instead (as -c k=v would)
+  const parts = [];
+  for (const [k, v] of Object.entries((project.settings && project.settings.constants) || {})) {
+    if (!/^[a-z][A-Za-z0-9_]*$/.test(k) || !/^[^\s"']+$/.test(String(v))) continue;
+    const def = new RegExp(`#const\\s+${k}\\s*=[^.]*\\.(?!\\d)`, 'g');
+    let own = false;
+    for (let i = 0; i < texts.length; i++) {
+      if (def.test(texts[i])) { own = true; texts[i] = texts[i].replace(def, `#const ${k} = ${v}.`); }
+      def.lastIndex = 0;
+    }
+    if (!own) parts.push(`#const ${k} = ${v}.`);
+  }
+  return [...parts, ...texts].join('\n');
 };
 // The scene: base and scene parts (frame parts are left out: plain clingo grounds base only).
 export function sceneProgram(project, view) {

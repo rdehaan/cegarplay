@@ -28,6 +28,11 @@
       "name": "check",
       "description": "Looks for a second grid that agrees with the candidate grid on the clue cells (solver C); the cells where they differ form an unavoidable set.",
       "text": "% A counterexample: a second grid b that agrees with the candidate's grid s on every\n% clue cell. The cells D where they differ form an unavoidable set of s: in every unit,\n% s and b hold the same values on D. So any grid that has s's values on D can swap them\n% for b's, and a puzzle on such a grid needs a clue in D.\ngrid(b).\n:- clue(R,C), cell(s,R,C,V), not cell(b,R,C,V).\nmoved(R,C) :- cell(s,R,C,V), not cell(b,R,C,V).\n:- not moved(_,_).\n% fix(R,C): the loop asks b to keep s's value in these cells, to find a second set that\n% is disjoint from the first.\n{ fix(R,C) : row(R), col(C) }.\n:- fix(R,C), moved(R,C).\n#show moved/2.\n\n% The clause: s changes on D, or a cell of D becomes a clue. It holds for every grid that\n% has s's values on D, not only for this candidate's grid.\nrelevant(cell(s,R,C,V)) :- moved(R,C), cell(s,R,C,V).\nrelevant(clue(R,C)) :- moved(R,C), not printed(R,C).\n"
+    },
+    {
+      "name": "view",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks.",
+      "text": "% The grid of the candidate with its clue cells shaded; the unavoidable set of a\n% counterexample in another colour and ringed (the cells the clause asks a clue for).\n#program scene.\ndraw(layout(grid)).\ndraw(cell(R,C)) :- row(R), col(C).\ndraw(attr(cell(R,C), stroke, box)) :- box(R,C,B), B \\ 2 == 0.\ndraw(attr(cell(R,C), label, V)) :- pre(R,C,V).\ndraw(attr(cell(R,C), fill, printed)) :- pre(R,C,_).\n\n#program frame.\ndraw(attr(cell(R,C), label, V)) :- cand(cell(s,R,C,V)).\ndraw(attr(cell(R,C), fill, clue)) :- cand(clue(R,C)).\ndraw(attr(cell(R,C), fill, unavoidable)) :- cex(moved(R,C)).\ndraw(emph(cell(R,C))) :- lit(clue(R,C), _).\ndraw(note(\"A second grid differs only in the ringed cells, so one of them must become a clue.\")) :- kind(reject).\ndraw(note(\"One solution: the puzzle is done.\")) :- kind(solution).\n#show draw/1.\n"
     }
   ],
   "loop": {
@@ -44,6 +49,15 @@
     "trace": 200,
     "seed": 0
   },
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
+    }
+  ],
   "instances": [
     {
       "id": "example",

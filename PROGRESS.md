@@ -1076,3 +1076,23 @@ contrib JSON files are the source.
   Timings: 7 x 7 k = 12 len = 28 5.6 s; k = 10 len = 28 > 120 s; k = 10 len = 0 1.7 s;
   10 x 10 k = 30 len = 50 84 s. Counts = brute force over enclosed cell sets (3 x 3: 213 loops,
   516; 4 x 4: 9,349 loops, 128 / 0 / printed 8 / len 12 2,104) = cegarcheck (auto, block).
+
+## Puzzle views (2026-11-23)
+
+Domain views for the eight puzzle examples (fragment `view`, `views` entry, in the contrib files):
+sudoku grids (boxes in alternating borders, clues shaded, the cells where the two solutions
+differ coloured and labelled (a, b)); `sudoku-unavoidable` shows the candidate grid, the clue
+cells and the unavoidable set ringed; binairo as sudoku; futoshiki on a (2n-1) grid with sign
+slots (<, >, ^, v; slots without a sign ghosted); akari (black cells ■ or their number, lights
+a / b / ab); slitherlink (corners as ghosted nodes at fixed `pos`, grid lines as edges coloured
+by loop a, b or both, unshown numbers ghosted). Colours come by first use, so notes name labels
+and rings, not colours. Solutions have no T event (a search reports them as M events): the views
+show the rejected steps.
+- **Fix in `js/views.js`:** a fragment's own `#const n = 5.` kept its default in view programs
+  while the run used the project's `n = 7` (a 5 x 5 drawing). `viewText` now rewrites such a
+  definition to the project's value, and checks `own` only over the fragments the view includes.
+  No existing example is affected (no hash change for `examples/views/*.json`).
+- `test/views.test.mjs`: the "ten examples ship a view" test ran each with all solutions (never
+  ends for a generator); now 20 candidates (only step 1 is used). New tests: the #const rewrite,
+  the eight puzzle scenes (element counts), an akari frame from a real trace.
+- Checked by rendering frames headless with the module's own functions (`frameSVG`) to PNG.

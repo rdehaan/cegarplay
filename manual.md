@@ -1069,8 +1069,10 @@ a recorded step (the trace's `T` events, or `R` events of a recording); the draw
 position between steps; dragging a node stores its position in the project. **Suggest a view**
 writes a first view from the predicates of the interface. The view runs as plain clingo with the
 instance and the named fragments, so a mistake shows as a clingo message. Details:
-`docs/spec-views.md`. Ten library examples ship a view (the guide's clique examples, the
-tutorial, `clique-colouring`, `af-preferred`, `arrowing`, `choosability`, `qbf`).
+`docs/spec-views.md`. Eighteen library examples ship a view (the guide's clique examples, the
+tutorial, `clique-colouring`, `af-preferred`, `arrowing`, `choosability`, `qbf`, and the puzzle
+generators: the four `sudoku-*`, `binairo`, `futoshiki`, `akari`, `slitherlink`). A view program
+gets the project's constants: a fragment's own `#const k = default.` takes the project's value.
 
 ### Event lines
 

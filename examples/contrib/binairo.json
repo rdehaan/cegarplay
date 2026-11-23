@@ -28,6 +28,11 @@
       "name": "check",
       "description": "Looks for two different grids that agree with all clues (solver C).",
       "text": "% A counterexample: two different grids a and b that both agree with the clues.\ngrid(a). grid(b).\n:- given(R,C,D), not cell(a,R,C,D).\n:- given(R,C,D), not cell(b,R,C,D).\ndiffer :- cell(a,R,C,D), not cell(b,R,C,D).\n:- not differ.\n#show.\n#show a(R,C,D) : cell(a,R,C,D).\n#show b(R,C,D) : cell(b,R,C,D).\n\n% Both grids fit every puzzle that shows only digits on which they agree. So a clue has\n% to appear that contradicts one of them: any digit in a cell where a or b has the other.\nboth(R,C,D) :- cell(a,R,C,D), cell(b,R,C,D).\nrelevant(given(R,C,D)) :- row(R), col(C), dig(D), not printed(R,C), not both(R,C,D).\n"
+    },
+    {
+      "name": "view",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks.",
+      "text": "% The grid; printed clues shaded.\n#program scene.\ndraw(layout(grid)).\ndraw(cell(R,C)) :- row(R), col(C).\ndraw(attr(cell(R,C), label, D)) :- pre(R,C,D).\ndraw(attr(cell(R,C), fill, printed)) :- pre(R,C,_).\n\n#program frame.\n% The candidate's clues.\ndraw(attr(cell(R,C), label, V)) :- cand(given(R,C,V)).\ndraw(attr(cell(R,C), fill, clue)) :- cand(given(R,C,_)).\n% A counterexample: two solutions a and b; the cells where they differ show (a, b).\ndiffers(R,C,(V,W)) :- cex(a(R,C,V)), cex(b(R,C,W)), V != W.\ndraw(attr(cell(R,C), fill, differ)) :- differs(R,C,_).\ndraw(attr(cell(R,C), label, L)) :- differs(R,C,L).\ndraw(note(\"Two solutions fit the clues; they differ in the coloured cells (a, b).\")) :- kind(reject).\ndraw(note(\"One solution: the puzzle is done.\")) :- kind(solution).\n#show draw/1.\n"
     }
   ],
   "loop": {
@@ -45,14 +50,15 @@
     "trace": 200,
     "seed": 0
   },
-  "library": {
-    "id": "binairo",
-    "group": "exists-forall",
-    "summary": "A binary puzzle (Binairo) with k clues and a unique solution; a counterexample is a pair of solutions (6 x 6, k = 6; the run stops at the first puzzle).",
-    "shape": "shape1",
-    "tags": [],
-    "expected": null
-  },
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
+    }
+  ],
   "instances": [
     {
       "id": "example",
@@ -113,5 +119,13 @@
       },
       "tags": []
     }
-  ]
+  ],
+  "library": {
+    "id": "binairo",
+    "group": "exists-forall",
+    "summary": "A binary puzzle (Binairo) with k clues and a unique solution; a counterexample is a pair of solutions (6 x 6, k = 6; the run stops at the first puzzle).",
+    "shape": "shape1",
+    "tags": [],
+    "expected": null
+  }
 }

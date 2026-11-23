@@ -139,3 +139,5 @@ large captions, the arrow keys moving the cursor. `tools/make-replays.mjs` also 
 steps, at most 200) for the examples with a view; the page loads them with the example, so a
 replay shows its picture before the engine has loaded (the frame engine starts only on a miss).
 View programs now carry the project's constants as `#const` lines (the page did not pass them).
+A `#const k = v.` in a fragment the view includes is rewritten to the project's value instead
+(before, such a constant kept its default in the view: a 5 x 5 drawing of a 7 x 7 run).

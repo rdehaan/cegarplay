@@ -28,6 +28,11 @@
       "name": "check",
       "description": "Looks for two different grids that fit the shown values and signs (solver C).",
       "text": "% A counterexample: two different grids a and b that both fit the shown values and signs.\ngrid(a). grid(b).\n:- given(R,C,V), not cell(a,R,C,V).\n:- given(R,C,V), not cell(b,R,C,V).\n:- less(R1,C1,R2,C2), cell(G,R1,C1,V1), cell(G,R2,C2,V2), V1 > V2.\ndiffer :- cell(a,R,C,V), not cell(b,R,C,V).\n:- not differ.\n#show.\n#show a(R,C,V) : cell(a,R,C,V).\n#show b(R,C,V) : cell(b,R,C,V).\n\n% Both grids fit every puzzle that shows only values and signs that hold in both. So the\n% puzzle must show a value or a sign that fails in a or in b.\nboth(R,C,V) :- cell(a,R,C,V), cell(b,R,C,V).\nrelevant(given(R,C,V)) :- row(R), col(C), val(V), not printed(R,C), not both(R,C,V).\nsmaller(G,R1,C1,R2,C2) :- adj(R1,C1,R2,C2), cell(G,R1,C1,V1), cell(G,R2,C2,V2), V1 < V2.\nrelevant(less(R1,C1,R2,C2)) :- adj(R1,C1,R2,C2), not signed(R1,C1,R2,C2),\n    not smaller(a,R1,C1,R2,C2).\nrelevant(less(R1,C1,R2,C2)) :- adj(R1,C1,R2,C2), not signed(R1,C1,R2,C2),\n    not smaller(b,R1,C1,R2,C2).\n"
+    },
+    {
+      "name": "view",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks.",
+      "text": "% Cells at odd rows and columns; between two neighbours a slot for the sign.\n#program scene.\ndraw(layout(grid)).\ndraw(cell(2*R-1,2*C-1)) :- row(R), col(C).\nslot(R,C,2*R-1,2*C) :- row(R), col(C), C < n.\nslot(R,C,2*R,2*C-1) :- row(R), col(C), R < n.\ndraw(cell(X,Y)) :- slot(_,_,X,Y).\ndraw(attr(cell(2*R-1,2*C-1), label, V)) :- pre(R,C,V).\ndraw(attr(cell(2*R-1,2*C-1), fill, printed)) :- pre(R,C,_).\n% A sign: < or > between columns, ^ or v between rows (pointing at the smaller cell).\nsign(X,Y,\"<\") :- slot(R,C,X,Y), X \\ 2 == 1, prelt(R,C,R,C+1).\nsign(X,Y,\">\") :- slot(R,C,X,Y), X \\ 2 == 1, prelt(R,C+1,R,C).\nsign(X,Y,\"^\") :- slot(R,C,X,Y), X \\ 2 == 0, prelt(R,C,R+1,C).\nsign(X,Y,\"v\") :- slot(R,C,X,Y), X \\ 2 == 0, prelt(R+1,C,R,C).\n\n#program frame.\nsign(X,Y,\"<\") :- slot(R,C,X,Y), X \\ 2 == 1, cand(less(R,C,R,C+1)).\nsign(X,Y,\">\") :- slot(R,C,X,Y), X \\ 2 == 1, cand(less(R,C+1,R,C)).\nsign(X,Y,\"^\") :- slot(R,C,X,Y), X \\ 2 == 0, cand(less(R,C,R+1,C)).\nsign(X,Y,\"v\") :- slot(R,C,X,Y), X \\ 2 == 0, cand(less(R+1,C,R,C)).\ndraw(attr(cell(X,Y), label, S)) :- sign(X,Y,S).\ndraw(attr(cell(X,Y), fill, sign)) :- sign(X,Y,_).\ndraw(ghost(cell(X,Y))) :- slot(_,_,X,Y), not sign(X,Y,_).\ndraw(attr(cell(2*R-1,2*C-1), label, V)) :- cand(given(R,C,V)).\ndraw(attr(cell(2*R-1,2*C-1), fill, clue)) :- cand(given(R,C,_)).\ndiffers(R,C,(V,W)) :- cex(a(R,C,V)), cex(b(R,C,W)), V != W.\ndraw(attr(cell(2*R-1,2*C-1), fill, differ)) :- differs(R,C,_).\ndraw(attr(cell(2*R-1,2*C-1), label, L)) :- differs(R,C,L).\ndraw(note(\"Two solutions fit the values and signs; they differ in the coloured cells (a, b).\")) :- kind(reject).\ndraw(note(\"One solution: the puzzle is done.\")) :- kind(solution).\n#show draw/1.\n"
     }
   ],
   "loop": {
@@ -46,6 +51,15 @@
     "trace": 200,
     "seed": 0
   },
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
+    }
+  ],
   "instances": [
     {
       "id": "example",

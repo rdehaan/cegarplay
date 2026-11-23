@@ -85,11 +85,12 @@ test('marks: unknown marks and attributes are named; palette slots in order of f
   assert.deepEqual(['a', 'b', 'a', 'c'].map((x) => pal.slot(x)), [1, 2, 1, 3]);
 });
 
-test('ten library examples ship a view; step 1 of each renders without an unknown mark', async () => {
+test('the library examples with a view (18): step 1 of each renders without an unknown mark', async () => {
   const withView = lib.examples.filter((e) => (ex(e.id).views || []).length);
-  assert.ok(withView.length >= 10, `${withView.length} examples with a view`);
+  assert.ok(withView.length >= 18, `${withView.length} examples with a view`);
   for (const e of withView) {
-    const { d, T } = await traced(e.id);
+    // step 1 is all the test needs (the puzzle generators would not finish with all solutions)
+    const { d, T } = await traced(e.id, { candidates: 20 });
     const v = d.views[0];
     const scene = await runView(d, sceneProgram(d, v));
     assert.equal(scene.error, null, e.id);
@@ -132,4 +133,42 @@ test('suggestView output parses for every clause-based fast example', async () =
 test('review of wave 3: frameFacts on expansion steps and deeply nested atoms', () => {
   const f = frameFacts({ i: 3, kind: 'expand', solver: 'A', candidate: 'p(f(g(1))) q((1,(2,3))) s("a b")', counterexample: 'c(1)', facts: ['cex(1,color(1,2))'] });
   assert.deepEqual(f, ['step(3).', 'kind(expand).', 'cand(p(f(g(1)))).', 'cand(q((1,(2,3)))).', 'cand(s("a b")).', 'cex(c(1)).', 'fact(cex(1,color(1,2))).']);
+});
+
+test('a fragment\'s own #const default gives way to the project\'s constant in a view program', async () => {
+  const p = ex('slitherlink');
+  const d = { ...derive(p, { instance: 'example' }), settings: { ...p.settings, constants: { ...p.settings.constants, n: '4' } } };
+  const prog = sceneProgram(d, d.views[0]);
+  assert.match(prog, /#const n = 4\./);
+  assert.doesNotMatch(prog, /#const n = 5\./);
+  const scene = parseMarks((await runView(d, prog)).atoms);
+  assert.equal([...scene.elements.keys()].filter((k) => k.startsWith('node(n(')).length, 16);
+  assert.equal([...scene.elements.keys()].filter((k) => k.startsWith('node(p(')).length, 25);
+});
+
+test('the puzzle views draw their scene without problems', async () => {
+  const want = { 'sudoku-unique': 81, 'sudoku-hard': 81, 'sudoku-symmetry': 81, 'sudoku-unavoidable': 81, binairo: 36, futoshiki: 25 + 40, akari: 49, slitherlink: 49 + 64 + 112 };
+  for (const [id, n] of Object.entries(want)) {
+    const p = ex(id);
+    const d = derive(p, { instance: 'example' });
+    const r = await runView(d, sceneProgram(d, d.views[0]));
+    assert.equal(r.error, null, id);
+    const scene = parseMarks(r.atoms);
+    assert.deepEqual(scene.problems, [], id);
+    assert.equal(scene.elements.size, n, id);
+  }
+});
+
+test('akari: a rejected step shows the two lightings and the black cells', async () => {
+  const p = ex('akari');
+  p.settings = { ...p.settings, solutions: 1, trace: 3 };
+  const d = derive(p, { instance: 'layout' });
+  const r = await H.runProject(d);
+  const st = H.ofKind(r, 'T').find((t) => t.kind === 'reject');
+  const f = parseMarks((await runView(d, viewProgram(d, d.views[0], frameFacts(st)))).atoms);
+  assert.deepEqual(f.problems, []);
+  const fills = [...f.attrs.values()].map((a) => a.fill).filter(Boolean);
+  assert.equal(fills.filter((x) => x === 'black').length, 12);
+  assert.ok(fills.some((x) => x === 'a') && fills.some((x) => x === 'b'));
+  assert.ok(f.notes.some((t) => t.startsWith('Two lightings')));
 });

@@ -28,6 +28,11 @@
       "name": "check",
       "description": "Looks for two different loops that fit the numbers (solver C).",
       "text": "% A counterexample: two different loops a and b that fit all numbers shown.\ngrid(a). grid(b).\n:- num(R,C,N), grid(G), #count { E : side(R,C,E), on(G,E) } != N.\ndiffer :- on(a,E), not on(b,E).\ndiffer :- on(b,E), not on(a,E).\n:- not differ.\n#show.\n#show a(E) : on(a,E).\n#show b(E) : on(b,E).\n\n% Both loops fit every puzzle that shows only numbers that hold for both. So the puzzle\n% must show a number that fails for a or for b.\ncount(G,R,C,N) :- grid(G), cell(R,C), N = #count { E : side(R,C,E), on(G,E) }.\nrelevant(num(R,C,N)) :- cell(R,C), N = 0..3, not printed(R,C), not count(a,R,C,N).\nrelevant(num(R,C,N)) :- cell(R,C), N = 0..3, not printed(R,C), not count(b,R,C,N).\n"
+    },
+    {
+      "name": "view",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks.",
+      "text": "% The corners of the grid as nodes, its lines as edges, the numbers at the cell centres;\n% the two loops of a counterexample in colour.\n#program scene.\ndraw(node(p(X,Y))) :- vertex(X,Y).\ndraw(attr(node(p(X,Y)), label, \"\")) :- vertex(X,Y).\ndraw(ghost(node(p(X,Y)))) :- vertex(X,Y).\ndraw(pos(node(p(X,Y)), Y*1000/n, X*1000/n)) :- vertex(X,Y).\ndraw(edge(p(X1,Y1),p(X2,Y2))) :- ends(_,(X1,Y1),(X2,Y2)).\ndraw(node(n(R,C))) :- cell(R,C).\ndraw(attr(node(n(R,C)), label, \"\")) :- cell(R,C), not pre(R,C,_), not shown(R,C).\ndraw(pos(node(n(R,C)), (2*C-1)*500/n, (2*R-1)*500/n)) :- cell(R,C).\ndraw(attr(node(n(R,C)), label, N)) :- pre(R,C,N).\n\n#program frame.\nshown(R,C) :- cand(num(R,C,_)).\ndraw(attr(node(n(R,C)), label, N)) :- cand(num(R,C,N)).\ndraw(ghost(node(n(R,C)))) :- cell(R,C), not shown(R,C), not pre(R,C,_), kind(_).\nuses(a,E) :- cex(a(E)).\nuses(b,E) :- cex(b(E)).\nline(E,p(X1,Y1),p(X2,Y2)) :- ends(E,(X1,Y1),(X2,Y2)).\ndraw(attr(edge(P,Q), stroke, a)) :- line(E,P,Q), uses(a,E), not uses(b,E).\ndraw(attr(edge(P,Q), stroke, b)) :- line(E,P,Q), uses(b,E), not uses(a,E).\ndraw(attr(edge(P,Q), stroke, both)) :- line(E,P,Q), uses(a,E), uses(b,E).\ndraw(attr(edge(P,Q), weight, 10)) :- line(E,P,Q), uses(_,E).\ndraw(ghost(edge(P,Q))) :- line(E,P,Q), not uses(_,E), kind(_).\ndraw(note(\"Two loops fit the numbers: the edges of only a, only b, and both in three colours.\")) :- kind(reject).\ndraw(note(\"One loop fits the numbers: the puzzle is done.\")) :- kind(solution).\n#show draw/1.\n"
     }
   ],
   "loop": {
@@ -46,14 +51,15 @@
     "trace": 200,
     "seed": 0
   },
-  "library": {
-    "id": "slitherlink",
-    "group": "exists-forall",
-    "summary": "A Slitherlink puzzle with a unique solution: one loop (reachability) and k numbers (7 x 7, 12 numbers, a loop of at least 28 edges; the run stops at the first puzzle).",
-    "shape": "shape1",
-    "tags": [],
-    "expected": null
-  },
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
+    }
+  ],
   "instances": [
     {
       "id": "example",
@@ -175,5 +181,13 @@
         "slow"
       ]
     }
-  ]
+  ],
+  "library": {
+    "id": "slitherlink",
+    "group": "exists-forall",
+    "summary": "A Slitherlink puzzle with a unique solution: one loop (reachability) and k numbers (7 x 7, 12 numbers, a loop of at least 28 edges; the run stops at the first puzzle).",
+    "shape": "shape1",
+    "tags": [],
+    "expected": null
+  }
 }

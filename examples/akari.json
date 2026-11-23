@@ -28,6 +28,11 @@
       "name": "check",
       "description": "Looks for two different lightings of the puzzle (solver C).",
       "text": "% A counterexample: two different lightings a and b of the same puzzle.\ngrid(a). grid(b).\ndiffer :- light(a,R,C), not light(b,R,C).\ndiffer :- light(b,R,C), not light(a,R,C).\n:- not differ.\n#show.\n#show a(R,C) : light(a,R,C).\n#show b(R,C) : light(b,R,C).\n\n% Both lightings fit every puzzle with the same black cells that shows only numbers that\n% hold for both. So the black cells must change, or the puzzle must show a number that\n% fails for a or for b.\nrelevant(black(R,C)) :- row(R), col(C).\naround(G,R,C,N) :- grid(G), black(R,C), N = #count { R2,C2 : nb(R,C,R2,C2), light(G,R2,C2) }.\nrelevant(num(R,C,N)) :- black(R,C), N = 0..4, not around(a,R,C,N).\nrelevant(num(R,C,N)) :- black(R,C), N = 0..4, not around(b,R,C,N).\n"
+    },
+    {
+      "name": "view",
+      "description": "A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks.",
+      "text": "% The grid; the candidate's black cells and numbers; the lights of a counterexample.\n#program scene.\ndraw(layout(grid)).\ndraw(cell(R,C)) :- row(R), col(C).\n\n#program frame.\ndraw(attr(cell(R,C), fill, black)) :- cand(black(R,C)).\ndraw(attr(cell(R,C), label, N)) :- cand(num(R,C,N)).\ndraw(attr(cell(R,C), label, \"■\")) :- cand(black(R,C)), not cand(num(R,C,_)).\ndraw(attr(cell(R,C), fill, a)) :- cex(a(R,C)), not cex(b(R,C)).\ndraw(attr(cell(R,C), fill, b)) :- cex(b(R,C)), not cex(a(R,C)).\ndraw(attr(cell(R,C), fill, both)) :- cex(a(R,C)), cex(b(R,C)).\ndraw(attr(cell(R,C), label, \"a\")) :- cex(a(R,C)), not cex(b(R,C)).\ndraw(attr(cell(R,C), label, \"b\")) :- cex(b(R,C)), not cex(a(R,C)).\ndraw(attr(cell(R,C), label, \"ab\")) :- cex(a(R,C)), cex(b(R,C)).\ndraw(note(\"Two lightings fit the black cells (■) and numbers: a, b mark their lights, ab both.\")) :- kind(reject).\ndraw(note(\"One lighting: the puzzle is done.\")) :- kind(solution).\n#show draw/1.\n"
     }
   ],
   "loop": {
@@ -46,6 +51,15 @@
     "trace": 200,
     "seed": 0
   },
+  "views": [
+    {
+      "name": "view",
+      "fragments": [
+        "shared",
+        "view"
+      ]
+    }
+  ],
   "instances": [
     {
       "id": "example",
