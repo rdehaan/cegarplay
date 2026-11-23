@@ -1339,3 +1339,5 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   check is shared as `check_pairs`); `compiled.minimalCore` makes it shrink cores as the loop does.
 - certcheck (done): proof logs of witness checks are checked (polarity flipped; refinements must
   be blocks or level-1 cores).
+- `tools/multicheck.py` (done): a brute-force Python reference for one abstraction with several
+  checks; agrees with every several-check example it models.

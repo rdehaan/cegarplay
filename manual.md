@@ -1441,6 +1441,18 @@ exhausted runs compare with the page. `--variant` applies a variant first (witho
 `settings.variant`); `tools/certcheck.py` takes the variant (and instance) from the proof log's
 header, so a log of a variant run is checked against that variant.
 
+### Several checks: multicheck.py
+
+```sh
+python3 tools/multicheck.py <project.json> [--instance ID] [--variant NAME] [-c name=value] [--limit N] [--json]
+```
+
+A brute-force reference for loops with one abstraction and several checks, each linked from the
+abstraction (`boolean-game`, `abduction-two-checks`, `minimal-reasons`, `lang-two-stage`, also single
+checks): it enumerates every candidate on the interface atoms of all links and asks each check
+(`if not C.solve(...)` marks a witness check). It ignores the loop's refinements, so its count is the
+ground truth for an exhausted run. Chains, searches of a check and optimisation are refused.
+
 ### Driving the page
 
 - The page sets `body[data-ready="true"]` when the engine is ready.
