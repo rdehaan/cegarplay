@@ -18,6 +18,7 @@ import { SpaceView } from './space-view.js';
 import { Cursor, bindKeys } from './cursor.js';
 import { ObservatoryBar, lectureMode } from './observatory.js';
 import { renderMarkdown } from './markdown.js';
+import { Workspace, WS_INDEX, WS_NAME } from './workspace.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
 
 const $ = (id) => document.getElementById(id);
@@ -408,6 +409,53 @@ const guard = () => {
 };
 // Before replacing a project that was edited.
 const replaceOk = () => !app.edited || window.confirm('Replace the current project? Your changes to it are lost unless you download it first.');
+
+// ---- the workspace: named projects in this browser (FUTURE-DIRECTIONS D9) ---------------
+let workspace = null;
+try { workspace = new Workspace(localStorage); localStorage.getItem(WS_INDEX); } catch { workspace = null; }
+function renderWorkspace() {
+  const ul = $('workspace-list');
+  ul.textContent = '';
+  if (!workspace) { status('workspace-status', 'Browser storage is not available here.', true); return; }
+  for (const x of workspace.list()) {
+    const li = make('li', { 'data-name': x.name });
+    const open = make('button', { class: 'control-button small-button' }, 'Open');
+    open.addEventListener('click', () => {
+      if (!guard() || !replaceOk()) return;
+      try {
+        app.setProject(Project.load(workspace.load(x.name)));
+        urlForgetProject();
+        $('workspace-name').value = x.name;
+        status('workspace-status', `Opened ${x.name} from the workspace.`);
+      } catch (e) { status('workspace-status', `${x.name}: ${e.message || e}`, true); }
+    });
+    const del = make('button', { class: 'control-button small-button' }, 'Delete');
+    del.addEventListener('click', () => {
+      if (!window.confirm(`Delete ${x.name} from the workspace?`)) return;
+      workspace.remove(x.name);
+      renderWorkspace();
+      status('workspace-status', `Deleted ${x.name}.`);
+    });
+    li.append(make('b', {}, x.name), ` ${x.title ? `(${x.title}) ` : ''}`, make('span', { class: 'note' }, String(x.saved).slice(0, 16).replace('T', ' ')), ' ', open, ' ', del);
+    ul.append(li);
+  }
+}
+$('workspace-save-button').addEventListener('click', () => {
+  if (!workspace) return;
+  const name = $('workspace-name').value.trim();
+  if (!WS_NAME.test(name)) { status('workspace-status', 'Give a name of letters, digits, spaces, _ . and - (at most 60).', true); return; }
+  if (workspace.has(name) && !window.confirm(`The workspace already has a project called ${name}. Overwrite it?`)) return;
+  const p = structuredClone(app.collect());
+  p.runs = app.stats.history;
+  try { workspace.save(name, Project.save(p), p.title || ''); }
+  catch (e) {
+    try { workspace.save(name, Project.save(p, { runs: false }), p.title || ''); status('workspace-status', `Saved ${name} without the run history: storage is full.`, true); renderWorkspace(); return; }
+    catch { status('workspace-status', 'Not saved: browser storage is full.', true); return; }
+  }
+  renderWorkspace();
+  status('workspace-status', `Saved ${name} in the workspace.`);
+});
+renderWorkspace();
 
 // ---- Control tab ----------------------------------------------------------------
 $('new-button').addEventListener('click', () => {

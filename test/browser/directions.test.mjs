@@ -622,3 +622,26 @@ test('D8: Mine hard instances in the generator panel, and add one', { timeout: 1
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('D9: the workspace keeps several projects by name and asks before overwriting', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run');
+  page.on('dialog', (d) => d.accept());
+  await page.fill('#workspace-name', 'baseline');
+  await page.click('#workspace-save-button');
+  await page.evaluate(() => window.cegarplay.loadExample('qbf'));
+  await page.waitForFunction(() => window.cegarplay.project.title === '2QBF');
+  await page.fill('#workspace-name', 'experiment');
+  await page.click('#workspace-save-button');
+  assert.deepEqual(await page.$$eval('#workspace-list li', (l) => l.map((x) => x.dataset.name)), ['experiment', 'baseline']);
+  // overwriting asks (accepted here) and keeps one entry
+  let asked = false;
+  page.once('dialog', (d) => { asked = /already has a project called experiment/.test(d.message()); });
+  await page.click('#workspace-save-button');
+  assert.equal(asked, true);
+  assert.equal(await page.$$eval('#workspace-list li', (l) => l.length), 2);
+  await page.click('#workspace-list li[data-name="baseline"] button:text("Open")');
+  await page.waitForFunction(() => window.cegarplay.project.title === 'Sum-free sets');
+  assert.match(await page.textContent('#workspace-status'), /Opened baseline/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

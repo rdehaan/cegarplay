@@ -1333,3 +1333,5 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
 - D7 (done): Import file takes several files at once; a CSV importer with a column map
   (`fromCsv`, `parseColumnMap` in `js/instances.js`).
 - D8 (done): Mine hard instances (generator panel, a batch) and `tools/mine.mjs`.
+- D9 (done): the Workspace in the Control tab (`js/workspace.js`): named projects in browser
+  storage, with a warning before an overwrite.

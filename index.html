@@ -175,6 +175,16 @@
       &nbsp;
       <label class="inline-label"><input type="checkbox" id="include-history"> include run history</label>
 
+      <h3>Workspace</h3>
+      <p class="note">Several projects kept in this browser by name, for instance a baseline next to an
+        experiment. They stay in this browser only: download a project to keep it for good.</p>
+      <div class="inline-controls">
+        <input type="text" id="workspace-name" placeholder="name" size="20" aria-label="Name in the workspace">
+        <button class="control-button" id="workspace-save-button">Save in workspace</button>
+      </div>
+      <ul id="workspace-list" class="workspace-list"></ul>
+      <p id="workspace-status" class="status-line"></p>
+
       <h3>Recordings</h3>
       <button class="control-button" id="download-recording-button" disabled>Download recording</button>
       <button type="button" class="control-button" id="open-recording-button">Open recording</button>

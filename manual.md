@@ -1262,6 +1262,9 @@ Browser storage (`localStorage`, per browser and site):
   change and restored at start-up (unless `?example`, `?file`, `#p=` or `?fresh=1`). When the
   browser refuses (storage full or blocked), the project is kept without its run history, and if
   that fails too, the Control tab says "Not kept in this browser"; download the project then.
+- `cegarplay.ws` and `cegarplay.ws.<name>`: the **Workspace** (Control tab): projects saved by name
+  (**Save in workspace** asks before it overwrites a name; **Open** asks before it replaces an edited
+  project; **Delete**). Only in this browser: download a project to keep it.
 - `cegarplay.manual`: `"1"` when "Show the technical manual" is ticked.
 - `cegarplay.advanced`: `"1"` when Advanced mode is on (absent when off).
 - `cegarplay.tutorial`: `"0"` when the Tutorial tab is hidden (absent when shown).
