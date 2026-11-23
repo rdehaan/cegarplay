@@ -171,6 +171,9 @@
 
         <section id="literature">
           <h2>Cores in the literature</h2>
+          <p>A core as clasp returns it need not be minimal. <code>C.core.minimal</code> shrinks it
+            until no assumption can be left out, at the price of a few more solves of the check; a
+            short core is a strong clause.</p>
           <p>Cores drive several well-known algorithms, and each is a short loop script. The
             implicit hitting set loop of MaxHS asks an optimal abstraction for the cheapest set of
             soft clauses to give up and learns one core per failed check; it walks the core as a

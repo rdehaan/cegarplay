@@ -28,8 +28,10 @@ CegarPlay project (`"format": "cegarplay"`) with one extra top-level block:
   `stop` once it has proved an optimum is not exhausted, so its counts are `null`: tag it
   `stops-at-optimum` and check the optimum in a test instead (`test/breadth.test.mjs`).
 - Algorithm tags help readers find a loop by the name they know: `ihs`, `marco`, `oll`,
-  `benders`, `cegis`, `expansion`, `rareqs`, `caqe`, `omission`, `bounds` (see the manual's
-  *Loops from the literature*).
+  `benders`, `cegis`, `expansion`, `rareqs`, `caqe`, `omission`, `bounds`, `branch-and-check`,
+  `lazy-constraints`, `core-minimisation` (see the manual's *Loops from the literature*).
+- A loop with a variant that switches a technique off (`total-only` without `on partial`,
+  `plain-cores` without `C.core.minimal`) lets readers compare the two in the Statistics tab.
 
 Put the problem's input (graph, formula, items, ...) in `instances` (format version 2, see the
 manual's *Instances*): an instance `example` tagged `library` whose `expected.solutions` equals

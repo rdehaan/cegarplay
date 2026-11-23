@@ -92,6 +92,7 @@ variables).
 | `search A:` / `on candidate M:` / block | `A:search{ on_candidate = function(M)` ... `end }` |
 | `on partial P every n:` / block (G5) | `on_partial = function(P)` ... `end, every = n, ` before `on_candidate` in the same table; the propagator checks at every fixpoint (`clingo.PropagatorCheckMode.Fixpoint`) while such a search runs |
 | `G(P, v)` | `G:of(P, v)`: on a partial candidate, the open atoms get the value `v` |
+| `C.core.minimal` | `rt.minimal(C:core())`: a subset-minimal core (deletion with clause-set refinement) |
 | `reject M with e` | `M:reject(e)` |
 | `accept M` | `rt.accept(M)` |
 | `restart` | `rt.restart()` |

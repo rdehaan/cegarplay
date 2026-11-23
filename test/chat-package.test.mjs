@@ -53,6 +53,20 @@ test('cegarcheck: reports relevant/1 that derives nothing', { skip: !HAVE_CLINGO
   assert.match(r.out, /relevant\/1 derived nothing for link G/);
 });
 
+test('cegarcheck: models C.core.minimal and refuses loops it does not model', { skip: !HAVE_CLINGO && 'no Python clingo' }, () => {
+  const r = check(ex('colourable-partial'), '--solutions', 'all');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /Mode: core/);
+  assert.equal(r.solutions, 105);
+  for (const [id, why] of [['maxsat-ihs', /uses 'track'/], ['marco', /uses '\.flip\('/], ['guide-11-fewest-deletions', /stops after its first accepted candidate/],
+    ['knapsack-optimum', /asks A for optimal candidates/], ['guide-08-forgot-block', /accepts candidates without blocking/]]) {
+    const q = check(ex(id));
+    assert.equal(q.code, 1, id);
+    assert.match(q.out, why, id);
+    assert.match(q.out, /check this one with tools\/run\.mjs/, id);
+  }
+});
+
 test('cegarcheck: a check rule that projects interface atoms away sees all of them (7 of 8 sets)', { skip: !HAVE_CLINGO && 'no Python clingo' }, () => {
   // "b :- q(X)." over backend-only interface atoms got one instance in clingo 5.8 (CLAUDE.md rule 10)
   const p = { format: 'cegarplay', version: 1, title: 't', description: '', runs: [],

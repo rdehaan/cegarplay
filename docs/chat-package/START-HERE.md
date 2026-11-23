@@ -129,7 +129,9 @@ breaks as `\n`. After the block, give two or three sentences on what the example
 7. Keep the ground program small: constants small, domains bounded. Avoid `V = #sum { ... }`
    over atoms the solver guesses (each possible sum is grounded); compare instead
    (`#sum { ... } > E`).
-8. Two `#minimize` statements add up only distinct tuples: tag them (`{ C,J,cost : ... }`,
+8. A witness check refined by cores learns much more from short ones: use
+   `reject M with C.core.minimal.on(G)` (`example-colourable-partial.json`).
+9. Two `#minimize` statements add up only distinct tuples: tag them (`{ C,J,cost : ... }`,
    `{ V,M,est : ... }`), else equal tuples are counted once.
 
 ## Verification

@@ -164,7 +164,9 @@ The loops are pointed to from these places:
 - **Recording.** A partial reject is an `r` step whose candidate is the counterexample's
   interface. `certcheck.py` certifies such a log: `triangle-free-lazy`, n = 6, 115 solutions,
   65 refinements at level 2.
-- **What it gains.** Fewer total candidates, but more time, because each call is a solve:
+- **What it gains.** Fewer total candidates, but more time, because each call is a solve. The
+  measurements below use plain cores; with `C.core.minimal` (built after) `colourable-partial`
+  needs 537 candidates at n = 7, and `on partial` matters less than the core length:
 
   | Example | Total candidates, total-only | With `on partial` |
   | --- | --- | --- |

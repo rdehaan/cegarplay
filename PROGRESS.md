@@ -1232,3 +1232,17 @@ non-list (today it silently runs zero times: an endless MaxHS loop); B2 cores as
   `plain-cores`). Same optima and counts. Docs: manual (Values, Checks on partial candidates,
   literature table, S event), tutorial lesson 10 snippet, breadth.md. Tests in `breadth.test.mjs`
   (minimality checked by re-solving: the core is unsatisfiable, each proper subset satisfiable).
+
+## Consolidation after G5 and core minimisation (2026-11-23)
+
+- `tools/cegarcheck.py`: models `C.core.minimal` (deletion, as in the runtime) and detects
+  `C.core...` as core mode (colourable-partial: 105 from 156 candidates instead of a silent block
+  fallback with 27,896); refuses loops it does not model (track, def, keep, flip/without/above/below,
+  model reads, externals, an optimal abstraction, a stop after the first accepted candidate,
+  several expanded parts, accepting without blocking) with the statement named. Over the 98
+  library examples with a count: 78 agree, `tutorial-weak-relevant` differs as documented, the
+  rest are refused with a reason or fail as designed (guide-09 missing k). Tests in
+  `chat-package.test.mjs`.
+- Docs: manual (Python checker scope), spec-loop-language (`C.core.minimal`), contrib README
+  (new tags, comparison variants), guide chapter 10 (minimal cores), chat-package checklist,
+  breadth.md (G5 numbers marked as plain cores). 701 tests pass, 10 skipped.

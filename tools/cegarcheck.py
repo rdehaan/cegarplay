@@ -36,7 +36,11 @@ clasp's projective enumeration when A shows its interface atoms (as sudoku-hard 
 
 Only the solution count of an exhausted run can be compared with the page; candidate
 counts and statistics differ from Shapes 1 and 4. Raw Lua projects and scripts with more
-than two solvers or one link are refused: check those with tools/run.mjs.
+than two solvers or one link are refused: check those with tools/run.mjs. So are loops whose
+statements this checker does not model (track, def, keep, walks over assumption lists,
+model reads, externals, an optimal abstraction, a stop after the first accepted candidate,
+several expanded parts, accepting without blocking); the error names the statement.
+C.core.minimal is modelled (deletion, as in the runtime).
 
 Exit code: 0 when the run ends without an error, 1 on an error, 2 on bad usage.
 """
@@ -110,8 +114,25 @@ def parse_script(text):
             raise CheckError(f"link {L['name']}: unknown solver {end}")
     info = {"link": L, "A": solvers[L["from"]], "C": solvers[L["to"]], "code": code,
             "search": re.search(r"^\s*search\s", code, re.M) is not None,
-            "optimal": re.search(r"\.solve\([^)]*\boptimal\b", code) is not None}
+            "optimal": re.search(r"\.solve\([^)]*\boptimal\b", code) is not None,
+            "minimal": re.search(r"\.core\.minimal\b", code) is not None}
     g = re.escape(L["name"])
+    # statements whose effect this checker does not model (optimisation loops that stop at an
+    # optimum, walks over assumption lists, bounds, externals, procedures): refuse rather than
+    # report a count of another loop
+    body = "\n".join(l.split("#", 1)[0] for l in code.split("\n"))
+    m = re.search(r"\b(track|def|keep)\b|\.(above|below|flip|without|value|set|release|ground|extend|atom)\(|\.cost\b", body, re.M)
+    why = f"the loop uses '{m.group(0).strip()}'" if m else None
+    if not why and re.search(r"\baccept\s+\w+\s*\n\s*stop\b", body):
+        why = "the loop stops after its first accepted candidate (an optimum)"
+    if not why and re.search(r"\b" + re.escape(L["from"]) + r"\.solve\([^)]*\boptimal\b", body):
+        why = f"the loop asks {L['from']} for optimal candidates"
+    if not why and len(set(re.findall(r"\.expand\(\s*(\w+)", body))) > 1:
+        why = "the loop grounds more than one program part"
+    if not why and re.search(r"^\s*accept\s", body, re.M) and not re.search(r"^\s*search\s", body, re.M) and ".block(" not in body:
+        why = "the loop accepts candidates without blocking them"
+    if why:
+        raise CheckError(f"{why}, which cegarcheck does not model; check this one with tools/run.mjs")
     # a witness check: the candidate is bad when C has no model ('if not C.solve(...)')
     info["witness"] = re.search(r"\bnot\s+" + re.escape(L["to"]) + r"\.solve\(", code) is not None
     m = re.search(r"\.expand\(\s*(\w+)\s*((?:,\s*\w+\s*=\s*\w+\.atoms\(\s*\w+\s*/\s*\d+\s*\)\s*)+)\)", code)
@@ -122,7 +143,7 @@ def parse_script(text):
                        re.findall(r"(\w+)\s*=\s*\w+\.atoms\(\s*(\w+)\s*/\s*(\d+)\s*\)", m.group(2))]
     elif re.search(g + r"\.clauses\(", code):
         info["mode"] = "clauses"
-    elif re.search(g + r"\.core\(", code):
+    elif re.search(g + r"\.core\(", code) or re.search(re.escape(L["to"]) + r"\.core\b", code):
         info["mode"] = "core"
     elif re.search(g + r"\.clause\(", code):
         info["mode"] = "clause"
@@ -256,6 +277,20 @@ class Checker:
                 core = list(h.core())
         return X, core
 
+    def minimal_core(self, core):
+        """C.core.minimal: deletion with clause-set refinement, as in the runtime."""
+        K, i = list(core), 0
+        while i < len(K):
+            trial = K[:i] + K[i + 1:]
+            with self.c.solve(yield_=True, assumptions=trial) as h:
+                sat = any(True for _ in h)
+                c = None if sat else set(h.core())
+            if c is None:
+                i += 1
+            else:
+                K = [l for l in trial if l in c]
+        return K
+
     def block_interface(self, M):
         return [-l if v else l for l, v in zip(self.src, M["v"])]
 
@@ -291,6 +326,8 @@ class Checker:
                 raise CheckError(f"{Ln}.clauses: solver {self.info['C']['name']} derives no clause/3 atoms")
             return list(byid.values())
         if mode == "core":
+            if self.info.get("minimal"):
+                core = self.minimal_core(core)
             jof = {d: j for j, d in enumerate(self.dst)}
             c, seen = [], set()
             for l in core:

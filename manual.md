@@ -1363,7 +1363,11 @@ python3 tools/cegarcheck.py <project.json> [--mode auto|block|clause|clauses|cor
 Runs a project with Python clingo (`pip install clingo`) where the page's engine is not available.
 It copies the runtime's link semantics for one abstraction, one check and one link, in a
 solve-check-refine loop (Shape 2); the mode is read from the loop script, and `--mode block` is the
-reference run. Raw Lua and scripts with more solvers or links are refused. Only solution counts of
+reference run. Raw Lua and scripts with more solvers or links are refused, and so are statements
+it does not model (`track`, `def`, `keep`, `flip`/`without`/`above`/`below`, model reads, externals,
+an optimal abstraction, a stop after the first accepted candidate, several expanded parts,
+accepting without blocking): the error names the statement. `C.core.minimal` and `on partial`
+are modelled (the latter is ignored: it prunes, it does not change the solutions). Only solution counts of
 exhausted runs compare with the page. `--variant` applies a variant first (without it,
 `settings.variant`); `tools/certcheck.py` takes the variant (and instance) from the proof log's
 header, so a log of a variant run is checked against that variant.
