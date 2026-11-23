@@ -1,0 +1,142 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Akari with a unique solution",
+  "description": "Generate an Akari (Light Up) puzzle, one of Nikoli's: place lights on white cells so that every white cell is lit, no light shines on another, and every numbered black cell has that many lights next to it. The abstraction designs the puzzle: blacks black cells, symmetric under a half turn, a lighting, and the k black cells that show their number (an instance may fix the black cells with layout/2). The check looks for two different lightings of the puzzle; the refinement asks for other black cells or a number that fails for one of them. The run stops at the first puzzle; the solution lists the black cells and the numbers.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The size of the grid and the neighbours of a cell. Added to every solver.",
+      "text": "% Akari (Light Up) on an n x n grid. Place lights on white cells so that every white cell\n% is lit (a light shines along its row and column up to a black cell or the edge), no\n% light shines on another, and a numbered black cell has that many lights next to it.\n% An instance may fix the black cells with layout(R,C).\n#const n = 7.\nrow(1..n). col(1..n).\nnb(R,C,R+D,C) :- row(R), col(C), D = (-1;1), row(R+D).\nnb(R,C,R,C+D) :- row(R), col(C), D = (-1;1), col(C+D).\n"
+    },
+    {
+      "name": "rules",
+      "description": "The rules of the puzzle for any lighting; used by solver A (one lighting) and solver C (two).",
+      "text": "% The rules for every lighting G that a solver declares with grid(G):\n% light(G,R,C) says that G has a light in row R, column C.\nwhite(R,C) :- row(R), col(C), not black(R,C).\n{ light(G,R,C) } :- grid(G), white(R,C).\n% Light travels right, left, down and up from a light until a black cell.\nright(G,R,C) :- light(G,R,C).\nright(G,R,C+1) :- right(G,R,C), white(R,C+1).\nleft(G,R,C) :- light(G,R,C).\nleft(G,R,C-1) :- left(G,R,C), white(R,C-1).\ndown(G,R,C) :- light(G,R,C).\ndown(G,R+1,C) :- down(G,R,C), white(R+1,C).\nup(G,R,C) :- light(G,R,C).\nup(G,R-1,C) :- up(G,R,C), white(R-1,C).\nlit(G,R,C) :- right(G,R,C).\nlit(G,R,C) :- left(G,R,C).\nlit(G,R,C) :- down(G,R,C).\nlit(G,R,C) :- up(G,R,C).\n% Every white cell is lit.\n:- grid(G), white(R,C), not lit(G,R,C).\n% No light shines on another: light from the left or from above reaches a light.\n:- light(G,R,C), right(G,R,C-1).\n:- light(G,R,C), down(G,R-1,C).\n% A number counts the lights next to its cell.\n:- grid(G), num(R,C,N), #count { R2,C2 : nb(R,C,R2,C2), light(G,R2,C2) } != N.\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): black cells, a lighting and the numbers shown.",
+      "text": "% A candidate: the black cells (unless the instance fixes them), a lighting s, and the k\n% black cells that show their number.\ngrid(s).\nfixed :- layout(_,_).\nblack(R,C) :- layout(R,C).\n% blacks black cells, symmetric under a half turn (as in Nikoli's puzzles).\n{ black(R,C) : row(R), col(C), (R,C) <= (n+1-R,n+1-C) } :- not fixed.\nblack(n+1-R,n+1-C) :- black(R,C), not fixed.\n:- not fixed, #count { R,C : black(R,C) } != blacks.\nk { shown(R,C) : black(R,C) } k.\nnum(R,C,N) :- shown(R,C), N = #count { R2,C2 : nb(R,C,R2,C2), light(s,R2,C2) }.\n#show black/2.\n#show num/3.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the black cells and the numbers shown. The lighting stays private to solver A.",
+      "text": "glue(black(R,C)) :- row(R), col(C).\nglue(num(R,C,N)) :- row(R), col(C), N = 0..4.\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for two different lightings of the puzzle (solver C).",
+      "text": "% A counterexample: two different lightings a and b of the same puzzle.\ngrid(a). grid(b).\ndiffer :- light(a,R,C), not light(b,R,C).\ndiffer :- light(b,R,C), not light(a,R,C).\n:- not differ.\n#show.\n#show a(R,C) : light(a,R,C).\n#show b(R,C) : light(b,R,C).\n\n% Both lightings fit every puzzle with the same black cells that shows only numbers that\n% hold for both. So the black cells must change, or the puzzle must show a number that\n% fails for a or for b.\nrelevant(black(R,C)) :- row(R), col(C).\naround(G,R,C,N) :- grid(G), black(R,C), N = #count { R2,C2 : nb(R,C,R2,C2), light(G,R2,C2) }.\nrelevant(num(R,C,N)) :- black(R,C), N = 0..4, not around(a,R,C,N).\nrelevant(num(R,C,N)) :- black(R,C), N = 0..4, not around(b,R,C,N).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "7",
+      "blacks": "12",
+      "k": "4"
+    },
+    "solutions": 1,
+    "seconds": 120,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "akari",
+    "group": "exists-forall",
+    "summary": "An Akari (Light Up) puzzle with a unique solution: the abstraction places the black cells, the lights and the numbers shown (7 x 7, 12 black cells, 4 numbers; the run stops at the first puzzle).",
+    "shape": "shape1",
+    "tags": [],
+    "expected": null
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% A 7 x 7 puzzle with 12 black cells, 4 of them numbered.\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "ten",
+      "facts": "% 10 x 10 with 20 black cells, 8 numbered (about 2 s).\n",
+      "constants": {
+        "n": "10",
+        "blacks": "20",
+        "k": "8"
+      },
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    },
+    {
+      "id": "layout",
+      "facts": "% These black cells (from a run of the example) with only two numbers: one\n% puzzle.\nlayout(1,3). layout(1,4). layout(2,2). layout(2,6).\nlayout(4,2). layout(4,3). layout(4,5). layout(4,6).\nlayout(6,2). layout(6,6). layout(7,4). layout(7,5).\n",
+      "constants": {
+        "k": "2"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "layout-three",
+      "facts": "% The same black cells with three numbers: 68 puzzles.\nlayout(1,3). layout(1,4). layout(2,2). layout(2,6).\nlayout(4,2). layout(4,3). layout(4,5). layout(4,6).\nlayout(6,2). layout(6,6). layout(7,4). layout(7,5).\n",
+      "constants": {
+        "k": "3"
+      },
+      "expected": {
+        "solutions": 68
+      },
+      "tags": []
+    },
+    {
+      "id": "layout-one",
+      "facts": "% One number is never enough here.\nlayout(1,3). layout(1,4). layout(2,2). layout(2,6).\nlayout(4,2). layout(4,3). layout(4,5). layout(4,6).\nlayout(6,2). layout(6,6). layout(7,4). layout(7,5).\n",
+      "constants": {
+        "k": "1"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "four",
+      "facts": "% All 4 x 4 puzzles with 4 black cells, 2 numbered (checked by brute force).\n",
+      "constants": {
+        "n": "4",
+        "blacks": "4",
+        "k": "2"
+      },
+      "expected": {
+        "solutions": 494
+      },
+      "tags": []
+    },
+    {
+      "id": "five",
+      "facts": "% 5 x 5 with 5 black cells, 1 numbered (checked by brute force).\n",
+      "constants": {
+        "n": "5",
+        "blacks": "5",
+        "k": "1"
+      },
+      "expected": {
+        "solutions": 23
+      },
+      "tags": []
+    }
+  ]
+}

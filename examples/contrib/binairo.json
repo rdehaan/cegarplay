@@ -1,0 +1,117 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Binary puzzle with a unique solution",
+  "description": "Generate a binary puzzle (Binairo, Takuzu): fill an n x n grid with 0s and 1s, with no three equal digits next to each other in a row or a column, as many 0s as 1s in every row and column, and no two equal rows or columns. The abstraction guesses a solved grid and the k cells to reveal; the check looks for two different grids that agree with all clues, and the refinement asks for a clue that contradicts one of them (as in sudoku-unique). The run stops at the first puzzle.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The size of the grid and the domains. Added to every solver.",
+      "text": "% A binary puzzle (Binairo, Takuzu) on an n x n grid, n even: fill every cell with 0 or 1.\n% An instance may print clues pre(R,C,D).\n#const n = 6.\nrow(1..n). col(1..n). dig(0;1).\nprinted(R,C) :- pre(R,C,_).\n"
+    },
+    {
+      "name": "rules",
+      "description": "The rules of the puzzle for any grid; used by solver A (one grid) and solver C (two grids).",
+      "text": "% The rules for every grid G that a solver declares with grid(G):\n% cell(G,R,C,D) says that grid G has the digit D in row R, column C.\n1 { cell(G,R,C,D) : dig(D) } 1 :- grid(G), row(R), col(C).\n% No three equal digits next to each other in a row or a column.\n:- cell(G,R,C,D), cell(G,R,C+1,D), cell(G,R,C+2,D).\n:- cell(G,R,C,D), cell(G,R+1,C,D), cell(G,R+2,C,D).\n% As many 0s as 1s in every row and every column.\n:- grid(G), row(R), #count { C : cell(G,R,C,1) } != n/2.\n:- grid(G), col(C), #count { R : cell(G,R,C,1) } != n/2.\n% No two rows are equal, and no two columns.\n:- grid(G), row(R1), row(R2), R1 < R2, #count { C : cell(G,R1,C,D), cell(G,R2,C,D) } = n.\n:- grid(G), col(C1), col(C2), C1 < C2, #count { R : cell(G,R,C1,D), cell(G,R,C2,D) } = n.\n% Every grid respects the printed clues.\n:- grid(G), pre(R,C,D), not cell(G,R,C,D).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): a solved grid and k of its cells as clues.",
+      "text": "% A candidate: a solved grid s and k of its cells that are revealed as clues.\ngrid(s).\nk { clue(R,C) : row(R), col(C), not printed(R,C) } k.\n% given(R,C,D): the puzzle shows the digit D in row R, column C.\ngiven(R,C,D) :- clue(R,C), cell(s,R,C,D).\n#show given/3.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the clues with their digits. The solved grid stays private to solver A.",
+      "text": "glue(given(R,C,D)) :- row(R), col(C), dig(D), not printed(R,C).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for two different grids that agree with all clues (solver C).",
+      "text": "% A counterexample: two different grids a and b that both agree with the clues.\ngrid(a). grid(b).\n:- given(R,C,D), not cell(a,R,C,D).\n:- given(R,C,D), not cell(b,R,C,D).\ndiffer :- cell(a,R,C,D), not cell(b,R,C,D).\n:- not differ.\n#show.\n#show a(R,C,D) : cell(a,R,C,D).\n#show b(R,C,D) : cell(b,R,C,D).\n\n% Both grids fit every puzzle that shows only digits on which they agree. So a clue has\n% to appear that contradicts one of them: any digit in a cell where a or b has the other.\nboth(R,C,D) :- cell(a,R,C,D), cell(b,R,C,D).\nrelevant(given(R,C,D)) :- row(R), col(C), dig(D), not printed(R,C), not both(R,C,D).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "6",
+      "k": "6"
+    },
+    "solutions": 1,
+    "seconds": 120,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "binairo",
+    "group": "exists-forall",
+    "summary": "A binary puzzle (Binairo) with k clues and a unique solution; a counterexample is a pair of solutions (6 x 6, k = 6; the run stops at the first puzzle).",
+    "shape": "shape1",
+    "tags": [],
+    "expected": null
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% No printed clues: a 6 x 6 puzzle with k = 6 clues.\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "eight",
+      "facts": "% 8 x 8 with 12 clues (about 9 s).\n",
+      "constants": {
+        "n": "8",
+        "k": "12"
+      },
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    },
+    {
+      "id": "ten",
+      "facts": "% 10 x 10 with 24 clues (about 6 s; 20 clues do not finish in a minute).\n",
+      "constants": {
+        "n": "10",
+        "k": "24"
+      },
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    },
+    {
+      "id": "four",
+      "facts": "% All 4 x 4 puzzles with 4 clues and one solution (72 grids; checked by brute force).\n",
+      "constants": {
+        "n": "4",
+        "k": "4"
+      },
+      "expected": {
+        "solutions": 1152
+      },
+      "tags": []
+    },
+    {
+      "id": "four-three",
+      "facts": "% Three clues never fix a 4 x 4 grid.\n",
+      "constants": {
+        "n": "4",
+        "k": "3"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    }
+  ]
+}

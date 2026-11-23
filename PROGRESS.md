@@ -1046,3 +1046,23 @@ grids that agree with the clues; same clause refinement).
   a `#heuristic` preferring b = s, 1 vs 3 vs 6 sets (1 and 3 similar), adding symmetry breaking or
   deadly-rectangle lemmas (no consistent gain; one lucky k = 21 in 14 s with symmetry).
   Small instances: engine = cegarcheck (auto and block) = brute force (7, 0, 8).
+
+## Puzzle generators (2026-11-23)
+
+Three more contrib examples in the `sudoku-unique` pattern (guess a solution and the clues; C
+looks for two solutions; clause = a clue that one of them violates). Group `exists-forall`,
+`expected: null` (runs stop at the first puzzle). Generator source kept out of the repo; the
+contrib JSON files are the source.
+- `binairo`: n x n binary puzzle (no three in a row, balanced, distinct rows/columns). 6 x 6 k = 6
+  0.8 s; 6 x 6 k = 5 21 s; 8 x 8 k = 12 9 s; 10 x 10 k = 24 6 s (k = 20 > 60 s).
+- `futoshiki`: Latin square with values (`givens`) and signs (`signs`, `less/4` atoms in both
+  orientations; relevant = signs that fail in a or b). 5 x 5 with 7 signs only 0.8 s (6 signs
+  > 120 s); 6 x 6 12 signs 13 s; 7 x 7 18 signs > 120 s.
+- `akari` (Light Up): A also designs the black cells (half-turn symmetric, `blacks` of them, or
+  `layout/2` from the instance) and chooses `k` numbered ones; the lighting stays private.
+  Relevant: every `black/2` atom (the lighting depends on the whole layout) and the numbers that
+  fail for a or b. 7 x 7 12 blacks k = 4 0.4 s; 10 x 10 20 blacks k = 8 1.6 s.
+- Every counted instance equals a Python brute force (binairo 4 x 4: 72 grids, k = 3/4/5 ->
+  0/1152/23040; futoshiki 3 x 3 and 4 x 4: 672, 32, 2944, 13248; akari 4 x 4 / 5 x 5: 0, 12,
+  494, 23) and cegarcheck (auto and block). The fixed-layout akari counts (1, 68, 0) agree with
+  cegarcheck only (7 x 7 is too big to brute-force).

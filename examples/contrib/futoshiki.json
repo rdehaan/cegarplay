@@ -1,0 +1,146 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Futoshiki with a unique solution",
+  "description": "Generate a Futoshiki puzzle: an n x n Latin square (every row and column holds 1..n once) with some values shown and some inequality signs between neighbouring cells. The abstraction guesses a solved grid, the cells to show (givens) and the neighbouring pairs that get a sign (signs); the sign points the way the grid does. The check looks for two different grids that fit all shown values and signs; the refinement asks for a value or a sign that fails in one of them. The run stops at the first puzzle.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The size of the grid, the neighbouring cells and the printed clues. Added to every solver.",
+      "text": "% Futoshiki on an n x n grid: every row and every column holds 1..n once, and an\n% inequality sign between two neighbouring cells must hold. An instance may print values\n% pre(R,C,V) and signs prelt(R1,C1,R2,C2) (the cell R1,C1 is smaller).\n#const n = 5.\nrow(1..n). col(1..n). val(1..n).\n% Neighbouring cells, in both orders.\nadj(R,C,R,C+1) :- row(R), col(C), C < n.\nadj(R,C,R+1,C) :- row(R), col(C), R < n.\nadj(R2,C2,R1,C1) :- adj(R1,C1,R2,C2), (R1,C1) < (R2,C2).\nprinted(R,C) :- pre(R,C,_).\nsigned(R1,C1,R2,C2) :- prelt(R1,C1,R2,C2).\nsigned(R2,C2,R1,C1) :- prelt(R1,C1,R2,C2).\n"
+    },
+    {
+      "name": "rules",
+      "description": "The rules of the puzzle for any grid; used by solver A (one grid) and solver C (two grids).",
+      "text": "% The rules for every grid G that a solver declares with grid(G).\n1 { cell(G,R,C,V) : val(V) } 1 :- grid(G), row(R), col(C).\n:- cell(G,R,C1,V), cell(G,R,C2,V), C1 < C2.\n:- cell(G,R1,C,V), cell(G,R2,C,V), R1 < R2.\n% Every grid respects the printed values and signs.\n:- grid(G), pre(R,C,V), not cell(G,R,C,V).\n:- prelt(R1,C1,R2,C2), cell(G,R1,C1,V1), cell(G,R2,C2,V2), V1 > V2.\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): a solved grid, the cells shown and the pairs that get a sign.",
+      "text": "% A candidate: a solved grid s, the cells whose values are shown, and the neighbouring\n% pairs that get a sign.\ngrid(s).\ngivens { clue(R,C) : row(R), col(C), not printed(R,C) } givens.\nsigns { sign(R1,C1,R2,C2) : adj(R1,C1,R2,C2), (R1,C1) < (R2,C2), not signed(R1,C1,R2,C2) } signs.\n% given(R,C,V): the puzzle shows V in row R, column C.\ngiven(R,C,V) :- clue(R,C), cell(s,R,C,V).\n% less(R1,C1,R2,C2): the puzzle shows that cell R1,C1 is smaller than cell R2,C2.\nless(R1,C1,R2,C2) :- sign(R1,C1,R2,C2), cell(s,R1,C1,V1), cell(s,R2,C2,V2), V1 < V2.\nless(R2,C2,R1,C1) :- sign(R1,C1,R2,C2), cell(s,R1,C1,V1), cell(s,R2,C2,V2), V1 > V2.\n#show given/3.\n#show less/4.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the shown values and the signs. The solved grid stays private to solver A.",
+      "text": "glue(given(R,C,V)) :- row(R), col(C), val(V), not printed(R,C).\nglue(less(R1,C1,R2,C2)) :- adj(R1,C1,R2,C2), not signed(R1,C1,R2,C2).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for two different grids that fit the shown values and signs (solver C).",
+      "text": "% A counterexample: two different grids a and b that both fit the shown values and signs.\ngrid(a). grid(b).\n:- given(R,C,V), not cell(a,R,C,V).\n:- given(R,C,V), not cell(b,R,C,V).\n:- less(R1,C1,R2,C2), cell(G,R1,C1,V1), cell(G,R2,C2,V2), V1 > V2.\ndiffer :- cell(a,R,C,V), not cell(b,R,C,V).\n:- not differ.\n#show.\n#show a(R,C,V) : cell(a,R,C,V).\n#show b(R,C,V) : cell(b,R,C,V).\n\n% Both grids fit every puzzle that shows only values and signs that hold in both. So the\n% puzzle must show a value or a sign that fails in a or in b.\nboth(R,C,V) :- cell(a,R,C,V), cell(b,R,C,V).\nrelevant(given(R,C,V)) :- row(R), col(C), val(V), not printed(R,C), not both(R,C,V).\nsmaller(G,R1,C1,R2,C2) :- adj(R1,C1,R2,C2), cell(G,R1,C1,V1), cell(G,R2,C2,V2), V1 < V2.\nrelevant(less(R1,C1,R2,C2)) :- adj(R1,C1,R2,C2), not signed(R1,C1,R2,C2),\n    not smaller(a,R1,C1,R2,C2).\nrelevant(less(R1,C1,R2,C2)) :- adj(R1,C1,R2,C2), not signed(R1,C1,R2,C2),\n    not smaller(b,R1,C1,R2,C2).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + rules + abstraction\nsolver C = shared + rules + check      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "5",
+      "givens": "0",
+      "signs": "7"
+    },
+    "solutions": 1,
+    "seconds": 120,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "library": {
+    "id": "futoshiki",
+    "group": "exists-forall",
+    "summary": "A Futoshiki puzzle (Latin square with inequality signs) with a unique solution; clues are values and signs (5 x 5 with 7 signs and no values; the run stops at the first puzzle).",
+    "shape": "shape1",
+    "tags": [],
+    "expected": null
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% No printed clues: a 5 x 5 puzzle with no values and 7 signs (6 do not finish in\n% two minutes).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "with-values",
+      "facts": "% One value and six signs.\n",
+      "constants": {
+        "givens": "1",
+        "signs": "6"
+      },
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    },
+    {
+      "id": "six",
+      "facts": "% 6 x 6 with signs only: 12 of them (about 13 s).\n",
+      "constants": {
+        "n": "6",
+        "signs": "12"
+      },
+      "expected": {
+        "solutions": null
+      },
+      "tags": []
+    },
+    {
+      "id": "three",
+      "facts": "% All 3 x 3 puzzles with three signs and one solution (checked by brute force).\n",
+      "constants": {
+        "n": "3",
+        "signs": "3"
+      },
+      "expected": {
+        "solutions": 672
+      },
+      "tags": []
+    },
+    {
+      "id": "three-two",
+      "facts": "% 3 x 3 with two signs: 32 puzzles.\n",
+      "constants": {
+        "n": "3",
+        "signs": "2"
+      },
+      "expected": {
+        "solutions": 32
+      },
+      "tags": []
+    },
+    {
+      "id": "three-mixed",
+      "facts": "% 3 x 3 with one value and two signs: 2,944 puzzles.\n",
+      "constants": {
+        "n": "3",
+        "givens": "1",
+        "signs": "2"
+      },
+      "expected": {
+        "solutions": 2944
+      },
+      "tags": []
+    },
+    {
+      "id": "four",
+      "facts": "% 4 x 4 with one value and three signs: 13,248 puzzles (about 90 s).\n",
+      "constants": {
+        "n": "4",
+        "givens": "1",
+        "signs": "3"
+      },
+      "expected": {
+        "solutions": 13248
+      },
+      "tags": [
+        "slow"
+      ]
+    }
+  ]
+}

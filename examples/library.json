@@ -1071,6 +1071,18 @@
       }
     },
     {
+      "id": "akari",
+      "title": "Akari with a unique solution",
+      "group": "exists-forall",
+      "summary": "An Akari (Light Up) puzzle with a unique solution: the abstraction places the black cells, the lights and the numbers shown (7 x 7, 12 black cells, 4 numbers; the run stops at the first puzzle).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 7
+      }
+    },
+    {
       "id": "arrowing",
       "title": "Ramsey arrowing",
       "group": "exists-forall",
@@ -1102,6 +1114,18 @@
       },
       "has": {
         "instances": 4
+      }
+    },
+    {
+      "id": "binairo",
+      "title": "Binary puzzle with a unique solution",
+      "group": "exists-forall",
+      "summary": "A binary puzzle (Binairo) with k clues and a unique solution; a counterexample is a pair of solutions (6 x 6, k = 6; the run stops at the first puzzle).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 5
       }
     },
     {
@@ -1250,6 +1274,18 @@
       },
       "has": {
         "instances": 4
+      }
+    },
+    {
+      "id": "futoshiki",
+      "title": "Futoshiki with a unique solution",
+      "group": "exists-forall",
+      "summary": "A Futoshiki puzzle (Latin square with inequality signs) with a unique solution; clues are values and signs (5 x 5 with 7 signs and no values; the run stops at the first puzzle).",
+      "shape": "shape1",
+      "tags": [],
+      "expected": null,
+      "has": {
+        "instances": 7
       }
     },
     {
