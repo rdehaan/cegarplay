@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Bibliography · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <h1>Bibliography</h1>
+        <p class="lead">The papers behind the loops of Part II and of the manual's table "Loops from
+          the literature", grouped by loop. Each group names the library examples that implement
+          it.</p>
+
+        <h2 id="cegar">CEGAR</h2>
+        <ul class="bib">
+          <li id="clarke2000">E. Clarke, O. Grumberg, S. Jha, Y. Lu and H. Veith. Counterexample-guided
+            abstraction refinement. <i>CAV 2000</i>.</li>
+        </ul>
+
+        <h2 id="qbf">2QBF and QBF</h2>
+        <p>Examples: <code>qbf</code>, <code>qbf-expansion</code>, <code>qbf-deep</code>,
+          <code>qbf-three-blocks</code>; chapter <a href="13-qbf.html">13</a>.</p>
+        <ul class="bib">
+          <li id="janota2011">M. Janota and J. Marques-Silva. Abstraction-based algorithm for 2QBF.
+            <i>SAT 2011</i>.</li>
+          <li id="janota2012">M. Janota, W. Klieber, J. Marques-Silva and E. Clarke. Solving QBF with
+            counterexample guided refinement. <i>SAT 2012</i>; journal version in
+            <i>Artificial Intelligence</i> 234 (2016). (AReQS and RAReQS.)</li>
+          <li id="rabe2015">M. N. Rabe and L. Tentrup. CAQE: a certifying QBF solver.
+            <i>FMCAD 2015</i>.</li>
+          <li id="janota2015">M. Janota and J. Marques-Silva. Solving QBF by clause selection.
+            <i>IJCAI 2015</i>. (QESTO.)</li>
+        </ul>
+
+        <h2 id="exists-forall">Other ∃∀ problems in ASP</h2>
+        <p>Examples: <code>af-preferred</code>, <code>af-semi-stable</code>,
+          <code>stable-models</code>.</p>
+        <ul class="bib">
+          <li id="bogaerts2016">B. Bogaerts, T. Janhunen and S. Tasharrofi. Stable-unstable semantics:
+            beyond NP with normal logic programs. <i>Theory and Practice of Logic Programming</i>
+            16(5–6) (2016).</li>
+          <li id="lehtonen2021">T. Lehtonen, J. P. Wallner and M. Järvisalo. Declarative algorithms and
+            complexity results for assumption-based argumentation. <i>Journal of Artificial
+            Intelligence Research</i> 71 (2021).</li>
+        </ul>
+
+        <h2 id="cegis">CEGIS</h2>
+        <p>Examples: <code>cegis-circuit</code>, <code>min-dnf</code>.</p>
+        <ul class="bib">
+          <li id="solarlezama2006">A. Solar-Lezama, L. Tancau, R. Bodík, S. Seshia and V. Saraswat.
+            Combinatorial sketching for finite programs. <i>ASPLOS 2006</i>.</li>
+        </ul>
+
+        <h2 id="ihs">Implicit hitting sets</h2>
+        <p>Examples: <code>maxsat-ihs</code>, <code>smallest-mus</code>; chapter
+          <a href="14-hitting-sets.html">14</a>.</p>
+        <ul class="bib">
+          <li id="davies2011">J. Davies and F. Bacchus. Solving MAXSAT by solving a sequence of simpler
+            SAT instances. <i>CP 2011</i>.</li>
+          <li id="davies2013">J. Davies and F. Bacchus. Exploiting the power of MIP solvers in MAXSAT.
+            <i>SAT 2013</i>.</li>
+          <li id="moreno2013">E. Moreno-Centeno and R. M. Karp. The implicit hitting set approach to
+            solve combinatorial optimization problems with an application to multigenome alignment.
+            <i>Operations Research</i> 61(2) (2013).</li>
+          <li id="saikko2016">P. Saikko, J. P. Wallner and M. Järvisalo. Implicit hitting set
+            algorithms for reasoning beyond NP. <i>KR 2016</i>.</li>
+        </ul>
+
+        <h2 id="marco">MUS and MSS enumeration</h2>
+        <p>Examples: <code>marco</code>, <code>reasons-by-shrinking</code>; chapter
+          <a href="15-marco.html">15</a>.</p>
+        <ul class="bib">
+          <li id="liffiton2013">M. H. Liffiton and A. Malik. Enumerating infeasibility: finding
+            multiple MUSes quickly. <i>CPAIOR 2013</i>.</li>
+          <li id="liffiton2016">M. H. Liffiton, A. Previti, A. Malik and J. Marques-Silva. Fast,
+            flexible MUS enumeration. <i>Constraints</i> 21(2) (2016).</li>
+          <li id="previti2013">A. Previti and J. Marques-Silva. Partial MUS enumeration.
+            <i>AAAI 2013</i>.</li>
+        </ul>
+
+        <h2 id="core-guided">Core-guided optimisation</h2>
+        <p>Example: <code>maxsat-oll</code>.</p>
+        <ul class="bib">
+          <li id="fu2006">Z. Fu and S. Malik. On solving the partial MAX-SAT problem. <i>SAT 2006</i>.</li>
+          <li id="andres2012">B. Andres, B. Kaufmann, O. Matheis and T. Schaub. Unsatisfiability-based
+            optimization in clasp. <i>ICLP 2012 (Technical Communications)</i>.</li>
+          <li id="morgado2014">A. Morgado, C. Dodaro and J. Marques-Silva. Core-guided MaxSAT with soft
+            cardinality constraints. <i>CP 2014</i>.</li>
+        </ul>
+
+        <h2 id="benders">Benders decomposition and branch-and-check</h2>
+        <p>Examples: <code>benders-tardiness</code>, <code>knapsack-bounds</code>,
+          <code>colourable-partial</code>, <code>triangle-free-lazy</code>.</p>
+        <ul class="bib">
+          <li id="hooker2003">J. N. Hooker and G. Ottosson. Logic-based Benders decomposition.
+            <i>Mathematical Programming</i> 96(1) (2003).</li>
+          <li id="thorsteinsson2001">E. S. Thorsteinsson. Branch-and-check: a hybrid framework
+            integrating mixed integer programming and constraint logic programming. <i>CP 2001</i>.</li>
+        </ul>
+
+        <h2 id="omission">Omission-based abstraction</h2>
+        <p>Examples: <code>queens-omission</code>, <code>conformant-growing</code>.</p>
+        <ul class="bib">
+          <li id="saribatur2018">Z. G. Saribatur and T. Eiter. Omission-based abstraction for answer set
+            programs. <i>KR 2018</i>; journal version in <i>Theory and Practice of Logic
+            Programming</i> 21(2) (2021).</li>
+        </ul>
+
+        <h2 id="voting">Justifying collective decisions</h2>
+        <p>Example: <code>voting-justification</code> (a project kit; see its readme).</p>
+        <ul class="bib">
+          <li id="boixel2020">A. Boixel and U. Endriss. Automated justification of collective
+            decisions via constraint solving. <i>AAMAS 2020</i>.</li>
+          <li id="nardi2022">O. Nardi, A. Boixel and U. Endriss. A graph-based algorithm for the
+            automated justification of collective decisions. <i>AAMAS 2022</i>.</li>
+        </ul>
+
+        <p id="playground-link">The examples are in the playground's library.
+          <a class="play" href="../?example=qbf&amp;fragment=loop&amp;from=guide/bibliography.html%23playground-link" target="cegarplay">Open qbf</a></p>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="index.html">&larr; Contents</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,41 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide: MUSes by shrinking",
+  "description": "An unsatisfiable seed is shrunk to a MUS by dropping clauses while the check still fails; the MUS and every superset leave the map. Satisfiable seeds are still blocked one at a time. See the guide page \"MARCO: two kinds of answer\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% Random CNF: 4 variables, 10 clauses. 7 MUSes, 12 MSSes (brute force).\nneg(1,c).\nneg(2,b).\npos(3,b).\npos(4,b). pos(4,d). pos(4,a).\npos(5,d).\nneg(6,a).\nneg(7,d). neg(7,b). pos(7,c).\nneg(8,d).\npos(9,a). pos(9,c).\nneg(10,d).\n% The instance (Instances tab): pos(C,V) and neg(C,V) are the literals of clause C.\ncl(C) :- pos(C,_).\ncl(C) :- neg(C,_).\nvar(V) :- pos(_,V).\nvar(V) :- neg(_,V).\n",
+      "description": "Part of the library example marco."
+    },
+    {
+      "name": "abstraction",
+      "text": "% The map: a seed is any set of clauses (pick/1) not yet explored. Grown seeds (MSSes) block\n% their subsets, shrunk seeds (MUSes) block their supersets; the map learns only these clauses.\n{ pick(C) : cl(C) }.\n% Maximal seeds first (Liffiton and Malik's getUnexploredMax): with --heuristic=Domain the\n% solver decides every pick to true first.\n#heuristic pick(C) : cl(C). [1,true]\n#show pick/1.\n",
+      "description": "Part of the library example marco."
+    },
+    {
+      "name": "glue",
+      "text": "glue(pick(C)) :- cl(C).\n",
+      "description": "Part of the library example marco."
+    },
+    {
+      "name": "check",
+      "text": "% Is the seed satisfiable? An assignment that satisfies every picked clause.\n{ t(V) } :- var(V).\nsat(C) :- pos(C,V), t(V).\nsat(C) :- neg(C,V), not t(V).\n:- pick(C), not sat(C).\n#show t/1.\n",
+      "description": "Part of the library example marco."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction    options \"--heuristic=Domain\"\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Unsatisfiable: shrink to a MUS, report it, and remove it and its supersets from the map.\nloop:\n    M = A.solve()\n    if not M: stop\n    E = G(M)\n    if C.solve(assume E):\n        A.add(G.block(M))\n    else:\n        for a in E:\n            if a.true and not C.solve(assume E.flip(a)): E = E.flip(a)\n        accept A.solve(assume E)\n        A.add(G.above(E))\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

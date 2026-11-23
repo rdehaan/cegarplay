@@ -1,0 +1,41 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide: MaxSAT, minimal cores",
+  "description": "Each core is made subset-minimal (C.core.minimal) before it refines the hitting-set solver; the cost of each hitting set is a lower bound (track). See the guide page \"Implicit hitting sets\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% Random weighted MaxSAT: 8 variables, 16 soft clauses (weights 1 to 5), 4 hard clauses. Optimum 8.\nsoft(1,2). pos(1,e).\nsoft(2,4). pos(2,g). pos(2,h). neg(2,b).\nsoft(3,4). pos(3,h).\nsoft(4,2). pos(4,f).\nsoft(5,1). neg(5,g).\nsoft(6,4). neg(6,d).\nsoft(7,4). neg(7,f). neg(7,b).\nsoft(8,3). neg(8,g).\nsoft(9,5). neg(9,c).\nsoft(10,3). neg(10,f).\nsoft(11,5). neg(11,d). neg(11,c). neg(11,g).\nsoft(12,5). neg(12,a). pos(12,d). neg(12,b).\nsoft(13,3). neg(13,b). pos(13,d).\nsoft(14,2). pos(14,f). pos(14,d). neg(14,h).\nsoft(15,5). pos(15,c). pos(15,b). pos(15,e).\nsoft(16,5). pos(16,g). neg(16,e).\nhard(h1). neg(h1,h). neg(h1,c).\nhard(h2). neg(h2,g).\nhard(h3). neg(h3,d). pos(h3,h).\nhard(h4). pos(h4,d). neg(h4,e).\n\n% The instance (Instances tab): soft(C,W) is a soft clause C with weight W, hard(C) a hard\n% clause; pos(C,V) and neg(C,V) are the literals of clause C.\ncl(C) :- soft(C,_).\ncl(C) :- hard(C).\nvar(V) :- pos(_,V).\nvar(V) :- neg(_,V).\n",
+      "description": "Part of the library example maxsat-ihs."
+    },
+    {
+      "name": "abstraction",
+      "text": "% The hitting-set solver: which soft clauses to give up (drop). It knows nothing of the\n% formula; it only learns the cores, as clauses \"drop at least one clause of this core\".\n{ drop(C) : soft(C,_) }.\n% Each call is optimal (A.solve(optimal)): the cheapest set that hits every core so far.\n% Its cost is a lower bound on the optimum.\n#minimize { W,C : drop(C), soft(C,W) }.\n#show drop/1.\n",
+      "description": "Part of the library example maxsat-ihs."
+    },
+    {
+      "name": "glue",
+      "text": "glue(drop(C)) :- soft(C,_).\n",
+      "description": "Part of the library example maxsat-ihs."
+    },
+    {
+      "name": "check",
+      "text": "% The SAT oracle: an assignment that satisfies the hard clauses and every soft clause that is\n% not dropped. It is a witness: if it exists, the hitting set is optimal; if not, the unsat\n% core names the soft clauses (assumed not dropped) that cannot all hold.\n{ t(V) } :- var(V).\nsat(C) :- pos(C,V), t(V).\nsat(C) :- neg(C,V), not t(V).\n:- hard(C), not sat(C).\n:- soft(C,_), not drop(C), not sat(C).\n#show t/1.\n",
+      "description": "Part of the library example maxsat-ihs."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# A minimal core is a short clause: fewer hitting sets to try.\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"the hard clauses are unsatisfiable\"\n    track lower = M.cost\n    if C.solve(assume G(M)):\n        accept M\n        stop\n    A.add(C.core.minimal.on(G))\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as H from './helpers.mjs';
-import { CHAPTERS } from '../guide/chapters.js';
+import { CHAPTERS, EXTRAS } from '../guide/chapters.js';
 import { GRAPH, LOOP_KEYWORDS } from '../guide/guide.js';
 import { KEYWORDS } from '../js/compiler.js';
 import { SMALL_EDGES } from '../tools/guide.mjs';
@@ -13,7 +13,8 @@ const lib = JSON.parse(H.read('examples/library.json'));
 const byId = new Map(lib.examples.map((e) => [e.id, e]));
 const GUIDE = lib.examples.filter((e) => e.group === 'guide');
 const PAGES = fs.readdirSync(H.path('guide/')).filter((f) => f.endsWith('.html')).sort();
-const CHAPTER_PAGES = PAGES.filter((f) => f !== 'index.html');
+const EXTRA_PAGES = new Set(EXTRAS.map((x) => x.file));
+const CHAPTER_PAGES = PAGES.filter((f) => f !== 'index.html' && !EXTRA_PAGES.has(f));
 const READY = CHAPTERS.filter((c) => c.ready);
 const FROM = /^guide\/[a-z0-9-]+\.html(#[a-z0-9-]+)?$/;
 
@@ -239,6 +240,14 @@ test('every page has the skeleton, a recap, an exercise with a solution, and the
     assert.equal(all.filter((e) => e.tag === 'h1').length, 1, `${f}: one h1`);
     const pager = find((e) => e.tag === 'nav' && has(e, 'pager'));
     assert.ok(pager, `${f}: pager`);
+    if (EXTRA_PAGES.has(f)) {
+      // a page that is not a chapter: the skeleton, its title, and a link back to the contents
+      const x = EXTRAS.find((e) => e.file === f);
+      assert.equal(text(find((e) => e.tag === 'h1')).trim(), x.title, `${f}: h1`);
+      assert.ok(all.some((e) => e.tag === 'a' && e.attrs.href === 'index.html' && [...ancestors(e)].includes(pager)), `${f}: back to the contents`);
+      assert.ok(ids('index.html') && page.get('index.html').all.some((e) => e.tag === 'a' && e.attrs.href === f), `${f}: not linked from the contents page`);
+      continue;
+    }
     const link = (c) => all.find((e) => e.tag === 'a' && has(e, c) && [...ancestors(e)].includes(pager));
     const order = ['index.html', ...READY.map((c) => c.file)];
     const i = order.indexOf(f);

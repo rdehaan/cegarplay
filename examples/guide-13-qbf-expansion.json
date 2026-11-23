@@ -1,0 +1,46 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide: 2QBF by expansion",
+  "description": "Each counterexample y-assignment instantiates the formula in the abstraction (#program refine(k)): later candidates must make a term true that the assignment leaves open. See the guide page \"2QBF, by clauses and by expansion\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% A random 2QBF: exists x1..x12 forall y1..y5 : T1 v ... v T16, three literals per\n% term (generator qbf-dnf of the library example qbf, nx = 12, ny = 5, t = 16, seed 1).\nxvar(1..12).  yvar(1..5).\nxlit(1,1,0). xlit(1,8,1). ylit(1,1,0).\nxlit(2,4,0). xlit(2,5,0). xlit(2,6,0).\nxlit(3,6,1). xlit(3,12,1). ylit(3,4,0).\nxlit(4,5,0). xlit(4,6,0). ylit(4,3,1).\nxlit(5,4,0). xlit(5,5,0). ylit(5,5,0).\nxlit(6,3,1). xlit(6,9,0). xlit(6,11,0).\nxlit(7,10,0). ylit(7,3,1). ylit(7,5,1).\nylit(8,1,0). ylit(8,1,1). ylit(8,4,0).\nxlit(9,5,1). xlit(9,11,0).\nxlit(10,1,1). xlit(10,4,0). ylit(10,2,0).\nxlit(11,4,1). ylit(11,2,0). ylit(11,2,1).\nxlit(12,5,1). xlit(12,6,0). xlit(12,9,1).\nxlit(13,3,0). xlit(13,8,0). ylit(13,4,1).\nxlit(14,2,1). xlit(14,4,0). ylit(14,1,0).\nxlit(15,10,0). ylit(15,2,1). ylit(15,3,0).\nxlit(16,6,0). xlit(16,7,1). xlit(16,10,0).\nterm(T) :- xlit(T,_,_).\nterm(T) :- ylit(T,_,_).\n",
+      "description": "The formula, as facts. Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: any assignment to the x-variables (x(I) means that x_I is true).\n{ x(I) } :- xvar(I).\n#show x/1.\n",
+      "description": "Proposes candidates (solver A): assignments to the x-variables."
+    },
+    {
+      "name": "refine",
+      "text": "#program refine(k).\n% cex(k,yval(J,B)): the k-th counterexample gives y_J the value B.\n% It closes the terms that have a y-literal with the other value ...\nclosed(k,T) :- ylit(T,J,S), cex(k,yval(J,1-S)).\n% ... and the candidate has to make one of the remaining terms true.\nholds(k,T) :- term(T), not closed(k,T), x(I) : xlit(T,I,1); not x(I) : xlit(T,I,0).\n:- not holds(k,T) : term(T).\n",
+      "description": "Grounded once per counterexample: the formula instantiated with that y-assignment."
+    },
+    {
+      "name": "glue",
+      "text": "% The check has to know the value of every x-variable.\nglue(x(I)) :- xvar(I).\n",
+      "description": "The interface atoms: the x-variables."
+    },
+    {
+      "name": "check",
+      "text": "% A counterexample: an assignment to the y-variables under which every term is false.\n1 { yval(J,0); yval(J,1) } 1 :- yvar(J).\n% The y-assignment closes a term when it makes one of its y-literals false.\nclosed(T) :- ylit(T,J,S), yval(J,1-S).\n% A term that stays open must be false because of the candidate: bad(T,I) says that\n% the literal on x_I in term T is false.\nbad(T,I) :- xlit(T,I,1), not x(I).\nbad(T,I) :- xlit(T,I,0), x(I).\nfalsified(T) :- closed(T).\nfalsified(T) :- bad(T,_).\n:- term(T), not falsified(T).\n#show yval/2.\n\n% No relevant/1 here: the loop hands the whole y-assignment (the yval/2 atoms) to the\n% refine part of the abstraction.\n",
+      "description": "Looks for a y-assignment that falsifies the formula (solver C)."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction + refine\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.expand(refine, cex = X.atoms(yval/2))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

@@ -1269,3 +1269,24 @@ grounding report, trap report, Firefox, deployment), language and runtime (stop 
 labelled solutions, sign facts, faster minimisation, cheaper partial checks, clauses across links,
 parallel checks), checking tools (cegarcheck scope, witness checks in certcheck, audit of core
 loops, optima in campaigns), views and the library.
+
+## Implementing FUTURE-DIRECTIONS.md (2026-11-23, on request, most impactful first)
+
+One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/chrome-linux64/chrome npm test`
+(the preinstalled Chromium; Playwright's own download is not there). The full suite takes about
+25 minutes there; the row-27 recording-overhead check is timing-sensitive under load.
+
+- D1 (done): Run all reports "k of n checked" and why the rest were not (`runAllSummary` in
+  `js/project.js`); an instance with an expected count runs to all solutions (`allSolutions`).
+- D2-D4 (done): the instance × variant matrix (Campaign tab; `resultMatrix`, `matrixCSV`,
+  `matrixMarkdown` in `js/campaign.js`), CSV export, grid tooltips, scatter pickers, a cactus
+  plot; rows carry `cost`/`sameCost`, `meanClause`, per-solver calls/time/conflicts; differing
+  optima are inconsistencies; `tools/report.mjs` (Markdown, CSV, SVG); `bench.mjs --seconds`.
+- E1-E3 (done): `readme` (Markdown) in projects, shown in the Control tab; the voting kit
+  (generator `vote-question`, `random-1..3`, suite `generated`, variant `record`, view, replay,
+  readme with measured numbers); project cards for ten examples; a Projects library group.
+  Ground truth for the two hard voting questions is still open: Python clingo's cegarcheck did
+  not finish either within 40 minutes in this container.
+- Guide Part II, chapters 13-15 (done): 2QBF by clauses and by expansion, implicit hitting sets,
+  MARCO; `part` in `guide/chapters.js` (sidebar and contents grouped by part), `EXTRAS` for pages
+  that are not chapters (the bibliography); QUOTED runs may carry `exhausted: false`.

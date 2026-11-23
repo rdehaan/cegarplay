@@ -56,7 +56,7 @@ export function runs(entries = guideEntries()) {
     out.push({ key: e.id, id: e.id, outcome: e.outcome, exhausted: e.exhausted });
     for (const c of e.variants || []) out.push({ key: runKey(e.id, c), id: e.id, constants: c });
   }
-  for (const q of QUOTED) out.push({ key: runKey(q.id, q.constants), id: q.id, constants: q.constants });
+  for (const q of QUOTED) out.push({ key: runKey(q.id, q.constants), id: q.id, constants: q.constants, exhausted: q.exhausted });
   return out;
 }
 

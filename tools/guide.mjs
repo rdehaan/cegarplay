@@ -71,6 +71,25 @@ const PAGE = { 1: '01-why-a-loop', 2: '02-first-loop', 3: '03-learning', 4: '04-
 const page = (n, anchor) => `guide/${PAGE[n]}.html#${anchor}`;
 const SEE = (n, title) => ` See the guide page "${title}".`;
 
+// ---- chapter 13: a random 2QBF (generator qbf-dnf, nx = 12, ny = 5, t = 16, seed 1), one line per term
+const QBF_GUIDE = `xvar(1..12).  yvar(1..5).
+xlit(1,1,0). xlit(1,8,1). ylit(1,1,0).
+xlit(2,4,0). xlit(2,5,0). xlit(2,6,0).
+xlit(3,6,1). xlit(3,12,1). ylit(3,4,0).
+xlit(4,5,0). xlit(4,6,0). ylit(4,3,1).
+xlit(5,4,0). xlit(5,5,0). ylit(5,5,0).
+xlit(6,3,1). xlit(6,9,0). xlit(6,11,0).
+xlit(7,10,0). ylit(7,3,1). ylit(7,5,1).
+ylit(8,1,0). ylit(8,1,1). ylit(8,4,0).
+xlit(9,5,1). xlit(9,11,0).
+xlit(10,1,1). xlit(10,4,0). ylit(10,2,0).
+xlit(11,4,1). ylit(11,2,0). ylit(11,2,1).
+xlit(12,5,1). xlit(12,6,0). xlit(12,9,1).
+xlit(13,3,0). xlit(13,8,0). ylit(13,4,1).
+xlit(14,2,1). xlit(14,4,0). ylit(14,1,0).
+xlit(15,10,0). ylit(15,2,1). ylit(15,3,0).
+xlit(16,6,0). xlit(16,7,1). xlit(16,10,0).`;
+
 // ---- the Paley graph of pages 5-11 ------------------------------------------------------
 // The same fragments as the library example clique-interdiction (examples/contrib/).
 const PALEY = `% The Paley graph on n nodes (n a prime of the form 4m + 1): two nodes are joined when
@@ -229,7 +248,9 @@ export const QUOTED = [
   { id: 'knapsack-interdiction' },
   { id: 'knapsack-optimum' },
   { id: 'conformant-planning' },
-];
+  { id: 'maxsat-ihs', exhausted: false },   // stops at its optimum
+  { id: 'marco' },
+]; 
 
 // Every entry: id, summary, shape, tags, expected, page, status, baseline, project; optionally
 // variants: constants to measure the example with as well (key ID@name=value).
@@ -581,5 +602,133 @@ loop:
     variants: [{ t: '7' }],
     project: plan('Guide: plans, rules', 'Each counterexample start cell is grounded into the abstraction as a copy ' +
       'of the robot that must reach the goal too (Shape 3).', contrib('conformant-planning').loop.text) });
+
+  // ==== Part II: loops from the literature =================================================
+  const P2 = { 13: '13-qbf', 14: '14-hitting-sets', 15: '15-marco' };
+  const RP = (n, anchor) => `guide/${P2[n]}.html#${anchor}`;
+  const T13 = '2QBF, by clauses and by expansion', T14 = 'Implicit hitting sets', T15 = 'MARCO: two kinds of answer';
+
+  // ---- 13 2QBF: one random formula, 12 x-variables, 5 y-variables, 16 terms
+  const qbfFacts = '% A random 2QBF: exists x1..x12 forall y1..y5 : T1 v ... v T16, three literals per\n' +
+    '% term (generator qbf-dnf of the library example qbf, nx = 12, ny = 5, t = 16, seed 1).\n' + QBF_GUIDE + '\n';
+  const qbfShared = (t) => t.replace(/^[\s\S]*?(term\(T\) :- xlit)/, qbfFacts + '$1');
+  const qbfFrom = (id, title, description, loop, edit = (n, t) => t) => fromContrib(id, title, description + SEE(13, T13), loop, {},
+    (n, t) => (n === 'view' ? null : n === 'shared' ? qbfShared(t) : edit(n, t)));
+  const qbfLoop = contrib('qbf').loop.text;
+  add({ id: 'guide-13-qbf-block', summary: '2QBF on a random formula: every x-assignment that a y-assignment refutes is blocked.',
+    shape: 'shape1', expected: 2448, page: RP(13, 'block'), status: 'baseline',
+    project: qbfFrom('qbf', 'Guide: 2QBF, blocking', 'Exists x forall y: the abstraction guesses the x-variables, the check a ' +
+      'y-assignment that falsifies every term, and a refuted candidate is blocked on its own.', qbfLoop.replace('G.clause(X)', 'G.block(M)')) });
+  add({ id: 'guide-13-qbf-clause', summary: '2QBF with a clause over the x-literals that keep the open terms false.',
+    shape: 'shape1', expected: 2448, page: RP(13, 'clause'), status: 'sound', baseline: 'guide-13-qbf-block',
+    project: qbfFrom('qbf', 'Guide: 2QBF, clauses', 'The same loop with the refinement of the library example qbf: one ' +
+      'of the x-literals that keep an open term false must flip.', qbfLoop) });
+  add({ id: 'guide-13-qbf-expansion', summary: '2QBF by expansion: each counterexample adds a copy of the formula, instantiated with its y-values.',
+    shape: 'shape3', expected: 2448, page: RP(13, 'expansion'), status: 'sound', baseline: 'guide-13-qbf-block',
+    project: qbfFrom('qbf-expansion', 'Guide: 2QBF by expansion', 'Each counterexample y-assignment instantiates the ' +
+      'formula in the abstraction (#program refine(k)): later candidates must make a term true that the assignment leaves open.',
+    contrib('qbf-expansion').loop.text) });
+  add({ id: 'guide-13-ex1', summary: 'Exercise: one false x-literal per open term is enough for a sound clause.',
+    shape: 'shape1', expected: 2448, page: RP(13, 'exercise-1-solution'), status: 'sound', baseline: 'guide-13-qbf-block',
+    project: qbfFrom('qbf', 'Guide: 2QBF, one literal per open term', 'The clause names, for each open term, only the ' +
+      'false x-literal with the smallest index: while it stays false, the term stays false.', qbfLoop,
+    (n, t) => (n === 'check' ? t.replace('relevant(x(I)) :- bad(T,I), not closed(T).',
+      '% One false x-literal per open term is enough: the smallest one.\nrelevant(x(I)) :- bad(T,I), not closed(T), I = #min { J : bad(T,J) }.') : t)) });
+
+  // ---- 14 Implicit hitting sets: the instance 'example' of maxsat-ihs (optimum 8)
+  const ihsHead = `solver A = shared + abstraction
+solver C = shared + check
+link   G = A -> C via shared + glue
+`;
+  const ihs = (title, description, body) => fromContrib('maxsat-ihs', title, description + SEE(14, T14), ihsHead + body,
+    {}, (n, t) => (n === 'check' ? t.replace(/% Not needed for correctness[\s\S]*?#minimize[^\n]*\n/, '') : t));
+  add({ id: 'guide-14-ihs-block', summary: 'MaxSAT: the cheapest set of soft clauses to give up, blocking every set the SAT check refutes.',
+    shape: 'custom', expected: 1, page: RP(14, 'block'), status: 'demo', exhausted: false,
+    project: ihs('Guide: MaxSAT, blocking', 'The abstraction proposes the cheapest set of soft clauses to give up ' +
+      '(A.solve(optimal)); the check looks for an assignment that satisfies the rest. A refuted set is blocked; the first set ' +
+      'with a witness is optimal.', `
+# The cheapest drop set first; the first one the check satisfies is optimal.
+loop:
+    M = A.solve(optimal)
+    if not M: stop "the hard clauses are unsatisfiable"
+    if C.solve(assume G(M)):
+        accept M
+        stop
+    A.add(G.block(M))
+`) });
+  add({ id: 'guide-14-ihs-core', summary: 'The same loop refined by the unsat core: the next drop set must hit it.',
+    shape: 'custom', expected: 1, page: RP(14, 'core'), status: 'demo', exhausted: false,
+    project: ihs('Guide: MaxSAT, cores', 'A refuted drop set is refined by the core of the failed check: at least one ' +
+      'soft clause of the core must be dropped. The abstraction becomes an optimal hitting set of the cores.', `
+# A refuted drop set: its core is a set of soft clauses that cannot all hold.
+loop:
+    M = A.solve(optimal)
+    if not M: stop "the hard clauses are unsatisfiable"
+    if C.solve(assume G(M)):
+        accept M
+        stop
+    A.add(G.core(C))
+`) });
+  add({ id: 'guide-14-ihs-minimal', summary: 'Minimal cores: each core shrunk until no clause can be left out, and the lower bound tracked.',
+    shape: 'custom', expected: 1, page: RP(14, 'minimal'), status: 'demo', exhausted: false,
+    project: ihs('Guide: MaxSAT, minimal cores', 'Each core is made subset-minimal (C.core.minimal) before it refines the ' +
+      'hitting-set solver; the cost of each hitting set is a lower bound (track).', `
+# A minimal core is a short clause: fewer hitting sets to try.
+loop:
+    M = A.solve(optimal)
+    if not M: stop "the hard clauses are unsatisfiable"
+    track lower = M.cost
+    if C.solve(assume G(M)):
+        accept M
+        stop
+    A.add(C.core.minimal.on(G))
+`) });
+  // ---- 15 MARCO: the instance 'example' of marco (7 MUSes, 12 MSSes)
+  const marcoHead = `solver A = shared + abstraction    options "--heuristic=Domain"
+solver C = shared + check
+link   G = A -> C via shared + glue
+`;
+  const marco = (title, description, body, edit) => fromContrib('marco', title, description + SEE(15, T15), marcoHead + body, {}, edit);
+  add({ id: 'guide-15-mus-block', summary: 'Every MUS of a CNF formula, looking at every subset of its clauses once.',
+    shape: 'custom', expected: 7, page: RP(15, 'block'), status: 'baseline',
+    project: marco('Guide: MUSes, every subset', 'The map proposes any set of clauses; an unsatisfiable set is a MUS when ' +
+      'every set with one clause less is satisfiable. Every set is blocked after its check.', `
+# Every seed is looked at once: an unsatisfiable seed is a MUS when every seed with one
+# clause less is satisfiable.
+loop:
+    M = A.solve()
+    if not M: stop
+    E = G(M)
+    if not C.solve(assume E):
+        minimal = true
+        for a in E:
+            if a.true and not C.solve(assume E.flip(a)): minimal = false
+        if minimal: accept M
+    A.add(G.block(M))
+`) });
+  add({ id: 'guide-15-mus-above', summary: 'Shrink an unsatisfiable seed to a MUS and block all its supersets (G.above).',
+    shape: 'custom', expected: 7, page: RP(15, 'shrink'), status: 'sound', baseline: 'guide-15-mus-block',
+    project: marco('Guide: MUSes by shrinking', 'An unsatisfiable seed is shrunk to a MUS by dropping clauses while the check ' +
+      'still fails; the MUS and every superset leave the map. Satisfiable seeds are still blocked one at a time.', `
+# Unsatisfiable: shrink to a MUS, report it, and remove it and its supersets from the map.
+loop:
+    M = A.solve()
+    if not M: stop
+    E = G(M)
+    if C.solve(assume E):
+        A.add(G.block(M))
+    else:
+        for a in E:
+            if a.true and not C.solve(assume E.flip(a)): E = E.flip(a)
+        accept A.solve(assume E)
+        A.add(G.above(E))
+`) });
+  add({ id: 'guide-15-ex1', summary: 'Exercise: MARCO with the smallest seeds first.',
+    shape: 'custom', expected: 7, page: RP(15, 'exercise-1-solution'), status: 'sound', baseline: 'guide-15-mus-block',
+    project: fromContrib('marco', 'Guide: MARCO, smallest seeds first', 'The MARCO loop with the map deciding every clause ' +
+      'to false first: unexplored seeds come smallest first.' + SEE(15, T15), contrib('marco').loop.text, {},
+    (n, t) => (n === 'abstraction' ? t.replace('#heuristic pick(C) : cl(C). [1,true]', '#heuristic pick(C) : cl(C). [1,false]')
+      .replace("% Maximal seeds first (Liffiton and Malik's getUnexploredMax): with --heuristic=Domain the\n% solver decides every pick to true first.",
+        '% Minimal seeds first: with --heuristic=Domain the solver decides every pick to false first.') : t)) });
   return E;
 }

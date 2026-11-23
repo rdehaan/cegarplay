@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>2QBF, by clauses and by expansion · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 13 · Part II</p>
+        <h1>2QBF, by clauses and by expansion</h1>
+        <p class="lead">Part II takes loops from the research literature and derives each one from a
+          blocking loop, as Part I did for its running example. The first is the problem every CEGAR
+          loop in this guide reduces to: a quantified Boolean formula with two blocks. Its quantifiers
+          are given, so finding the interface is easy; the interesting choice is what to learn from a
+          counterexample: a clause, or a copy of the formula.</p>
+
+        <h2 id="problem">The problem</h2>
+        <p>A 2QBF asks for an assignment to the variables x<sub>1</sub> … x<sub>n</sub> such that
+          <em>for every</em> assignment to y<sub>1</sub> … y<sub>m</sub> a formula holds. Here the
+          formula is in disjunctive normal form: a disjunction of terms, each a conjunction of up to
+          three literals. The formula of this chapter is random, with twelve x-variables, five
+          y-variables and sixteen terms; the facts <code>xlit(T,I,S)</code> and
+          <code>ylit(T,J,S)</code> say that term T has the literal on x<sub>I</sub> or
+          y<sub>J</sub> with sign S.</p>
+        <p>The exists block is the abstraction (any x-assignment), the forall block the check. A
+          counterexample is a y-assignment under which every term is false:</p>
+        <pre class="code" data-lang="asp" data-from="guide-13-qbf-block:check">1 { yval(J,0); yval(J,1) } 1 :- yvar(J).
+% The y-assignment closes a term when it makes one of its y-literals false.
+closed(T) :- ylit(T,J,S), yval(J,1-S).
+% A term that stays open must be false because of the candidate: bad(T,I) says that
+% the literal on x_I in term T is false.
+bad(T,I) :- xlit(T,I,1), not x(I).
+bad(T,I) :- xlit(T,I,0), x(I).
+falsified(T) :- closed(T).
+falsified(T) :- bad(T,_).
+:- term(T), not falsified(T).</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-13-qbf-block</code>.</p>
+        <p>A term is false when the y-assignment <em>closes</em> it (one of its y-literals is false) or
+          when the candidate makes one of its x-literals false (<code>bad/2</code>).</p>
+
+        <h2 id="block">The blocking loop</h2>
+        <p>The baseline blocks every refuted candidate on its own:</p>
+        <pre class="code" data-lang="loop" data-from="guide-13-qbf-block:loop">search A:
+    on candidate M:
+        X = C.solve(assume G(M))
+        if X:
+            reject M with G.block(M)</pre>
+        <p class="listing-source">From the loop script of <code>guide-13-qbf-block</code>.</p>
+        <p id="block-run">It looks at all <span data-stat="guide-13-qbf-block:candidates">4,096</span> x-assignments,
+          finds <span data-stat="guide-13-qbf-block:solutions">2,448</span> solutions and blocks the
+          other <span data-stat="guide-13-qbf-block:refinements">1,648</span>, each with a clause of
+          <span data-stat="guide-13-qbf-block:meanClause">12.0</span> literals.
+          <a class="play" href="../?example=guide-13-qbf-block&amp;fragment=loop&amp;from=guide/13-qbf.html%23block-run" target="cegarplay">Open the blocking loop</a></p>
+
+        <h2 id="clause">A clause from the counterexample</h2>
+        <p>Chapter 3's question applies unchanged: for which other candidates is this y-assignment
+          still a counterexample? The terms it closes stay false whatever x does. Every other term
+          is false only because of a false x-literal, and it stays false as long as those literals
+          stay false. So the clause "flip one of the false x-literals of an open term" holds for every
+          solution:</p>
+        <pre class="code" data-lang="asp" data-from="guide-13-qbf-clause:check">relevant(x(I)) :- bad(T,I), not closed(T).</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-13-qbf-clause</code>.</p>
+        <p id="clause-run">With <code>reject M with G.clause(X)</code> the loop needs
+          <span data-stat="guide-13-qbf-clause:candidates">3,168</span> candidates and
+          <span data-stat="guide-13-qbf-clause:clauses">720</span> clauses of
+          <span data-stat="guide-13-qbf-clause:meanClause">8.4</span> literals on average.
+          <a class="play" href="../?example=guide-13-qbf-clause&amp;fragment=check&amp;from=guide/13-qbf.html%23clause-run" target="cegarplay">Open the clause loop</a></p>
+        <p>This is the loop of Part I, and it is also a published algorithm: the CEGAR procedure for
+          2QBF of Janota and Marques-Silva learns exactly such a clause (they call it a
+          <em>strategy</em> clause) from each counterexample.</p>
+
+        <h2 id="expansion">Learning a copy of the formula</h2>
+        <p>A counterexample y-assignment says more than "these literals must change". It says: under
+          these y-values, the formula must still be true. That is a formula over x alone, the
+          formula <em>instantiated</em> with the counterexample. Adding it to the abstraction rules
+          out every candidate this y-assignment refutes, now and later, not only those that agree on
+          the named literals.</p>
+        <p>A program part does this (chapter 9): it is grounded once per counterexample, with the
+          counterexample's <code>yval/2</code> atoms as facts <code>cex(k,…)</code>:</p>
+        <pre class="code" data-lang="asp" data-from="guide-13-qbf-expansion:refine">#program refine(k).
+% cex(k,yval(J,B)): the k-th counterexample gives y_J the value B.
+% It closes the terms that have a y-literal with the other value ...
+closed(k,T) :- ylit(T,J,S), cex(k,yval(J,1-S)).
+% ... and the candidate has to make one of the remaining terms true.
+holds(k,T) :- term(T), not closed(k,T), x(I) : xlit(T,I,1); not x(I) : xlit(T,I,0).
+:- not holds(k,T) : term(T).</pre>
+        <p class="listing-source">From the fragment <code>refine</code> of <code>guide-13-qbf-expansion</code>.</p>
+        <pre class="code" data-lang="loop" data-from="guide-13-qbf-expansion:loop">    X = C.solve(assume G(M))
+    if X:
+        A.expand(refine, cex = X.atoms(yval/2))
+    else:
+        accept M
+        A.add(G.block(M))</pre>
+        <p class="listing-source">From the loop script of <code>guide-13-qbf-expansion</code>.</p>
+        <details class="predict">
+          <summary>Before you press Run: the clause loop met <span data-stat="guide-13-qbf-clause:counterexamples">720</span>
+            counterexamples. How many will expansion meet?</summary>
+          <p><span data-stat="guide-13-qbf-expansion:counterexamples">6</span>. After six copies the
+            abstraction holds the formula for six y-assignments, and every x-assignment that
+            satisfies those six satisfies all thirty-two: the check never fails again.</p>
+        </details>
+        <p id="expansion-run">The loop meets <span data-stat="guide-13-qbf-expansion:expansions">6</span>
+          counterexamples and looks at <span data-stat="guide-13-qbf-expansion:candidates">2,454</span>
+          candidates: the 2,448 solutions and the six refuted ones. The price is in the abstraction:
+          its ground program grows from <span data-stat="guide-13-qbf-block:rulesA">92</span> to
+          <span data-stat="guide-13-qbf-expansion:rulesA">266</span> rules, a copy of the formula per
+          counterexample. The loop is a Shape 2 loop (chapter 8) because a program part needs a
+          fresh solve of A.
+          <a class="play" href="../?example=guide-13-qbf-expansion&amp;fragment=refine&amp;from=guide/13-qbf.html%23expansion-run" target="cegarplay">Open the expansion loop</a></p>
+
+        <h2 id="compare">Clauses or copies</h2>
+        <table class="results">
+          <thead>
+            <tr><th>Refinement</th><th class="num">Candidates</th><th class="num">Counterexamples</th>
+              <th class="num">Mean clause</th><th class="num">Rules of A</th><th class="num">Solutions</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Block</td>
+              <td class="num"><span data-stat="guide-13-qbf-block:candidates">4,096</span></td>
+              <td class="num"><span data-stat="guide-13-qbf-block:counterexamples">1,648</span></td>
+              <td class="num"><span data-stat="guide-13-qbf-block:meanClause">12.0</span></td>
+              <td class="num"><span data-stat="guide-13-qbf-block:rulesA">92</span></td>
+              <td class="num"><span data-stat="guide-13-qbf-block:solutions">2,448</span></td></tr>
+            <tr><td>Clause</td>
+              <td class="num"><span data-stat="guide-13-qbf-clause:candidates">3,168</span></td>
+              <td class="num"><span data-stat="guide-13-qbf-clause:counterexamples">720</span></td>
+              <td class="num"><span data-stat="guide-13-qbf-clause:meanClause">8.4</span></td>
+              <td class="num"><span data-stat="guide-13-qbf-clause:rulesA">92</span></td>
+              <td class="num"><span data-stat="guide-13-qbf-clause:solutions">2,448</span></td></tr>
+            <tr><td>Expansion</td>
+              <td class="num"><span data-stat="guide-13-qbf-expansion:candidates">2,454</span></td>
+              <td class="num"><span data-stat="guide-13-qbf-expansion:counterexamples">6</span></td>
+              <td class="num">–</td>
+              <td class="num"><span data-stat="guide-13-qbf-expansion:rulesA">266</span></td>
+              <td class="num"><span data-stat="guide-13-qbf-expansion:solutions">2,448</span></td></tr>
+          </tbody>
+        </table>
+        <p>Here most candidates are solutions, so no loop can look at fewer than 2,448 of them; the
+          difference is in the wrong ones. A clause is cheap but weak: it names the literals that
+          made <em>this</em> candidate fail. A copy is strong but grows the abstraction by the size of
+          the formula. With few y-variables, as here, there are few distinct counterexamples to copy,
+          and expansion wins. With many y-variables and a large formula the copies fill the memory,
+          and solvers such as RAReQS mix the two: they expand only the part of the formula that the
+          counterexample touches.</p>
+
+        <aside class="paper" id="paper">
+          <h2>The paper</h2>
+          <p>Expansion with counterexamples is the core of <b>AReQS</b> (Janota, Klieber,
+            Marques-Silva and Clarke, "Solving QBF with counterexample guided refinement", SAT 2012;
+            journal version in Artificial Intelligence 234, 2016). The clause loop is the 2QBF
+            algorithm of Janota and Marques-Silva ("Abstraction-based algorithm for 2QBF", SAT 2011).
+            AReQS for two levels, in the paper's notation, and the loop script line by line:</p>
+          <table class="results">
+            <thead><tr><th>Paper</th><th>Loop script</th></tr></thead>
+            <tbody>
+              <tr><td>α ← true</td><td>solver A = shared + abstraction + refine</td></tr>
+              <tr><td>τ ← SAT(α); if none, return false</td><td><code>M = A.solve()</code>; <code>if not M: stop</code></td></tr>
+              <tr><td>μ ← SAT(¬φ[τ]); if none, return τ</td><td><code>X = C.solve(assume G(M))</code>; <code>accept M</code></td></tr>
+              <tr><td>α ← α ∧ φ[μ]</td><td><code>A.expand(refine, cex = X.atoms(yval/2))</code></td></tr>
+            </tbody>
+          </table>
+          <p>The paper stops at the first τ (is the formula true?); the guide's loop blocks it and goes
+            on, to count all solutions. The full bibliography is on the <a href="bibliography.html">bibliography page</a>.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>The clause names every false x-literal of every open term. Is that more than needed?
+            Find a shorter clause that is still satisfied by every solution, and predict its effect on
+            the number of candidates.</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>One false x-literal per open term is enough: while it stays false, the term stays false,
+              and so the y-assignment stays a counterexample. Pick, say, the one with the smallest
+              index:</p>
+            <pre class="code" data-lang="asp" data-from="guide-13-ex1:check">relevant(x(I)) :- bad(T,I), not closed(T), I = #min { J : bad(T,J) }.</pre>
+            <p>The clauses get shorter (<span data-stat="guide-13-ex1:meanClause">6.4</span> literals
+              instead of <span data-stat="guide-13-qbf-clause:meanClause">8.4</span>) and the loop
+              needs <span data-stat="guide-13-ex1:candidates">2,732</span> candidates instead of
+              <span data-stat="guide-13-qbf-clause:candidates">3,168</span>, with the same
+              <span data-stat="guide-13-ex1:solutions">2,448</span> solutions. Which literal to pick
+              is a free choice; a different rule gives a different, equally sound clause.
+              <a class="play" href="../?example=guide-13-ex1&amp;fragment=check&amp;from=guide/13-qbf.html%23exercise-1-solution" target="cegarplay">Open the shorter clause</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-quantifiers-given">In a QBF the quantifier blocks are the abstraction and the
+              check; the loop of Part I is a known 2QBF algorithm.</li>
+            <li id="rule-expansion">A counterexample can be learnt as a clause (cheap, weak) or as a
+              copy of the problem instantiated with it (strong, grows the abstraction).</li>
+            <li id="rule-shortest-clause">A clause needs only enough literals to keep the
+              counterexample a counterexample; often one per reason suffices.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="12-your-own-loop.html">&larr; Your own loop: a walkthrough and a checklist</a>
+        <a class="next" href="14-hitting-sets.html">Implicit hitting sets &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

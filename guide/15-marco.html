@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>MARCO: two kinds of answer · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 15 · Part II</p>
+        <h1>MARCO: two kinds of answer</h1>
+        <p class="lead">So far a check either refuted a candidate or let it through. In MARCO both
+          outcomes are answers worth keeping, and both refine the abstraction, in opposite directions.
+          The chapter enumerates the minimal unsatisfiable subsets of a formula, starting from a loop
+          that looks at every subset.</p>
+
+        <h2 id="problem">The problem</h2>
+        <p>A CNF formula with ten clauses over four variables is unsatisfiable. Which subsets of its
+          clauses are <em>minimal unsatisfiable subsets</em> (MUSes): unsatisfiable, but satisfiable as
+          soon as any one clause is left out? MUSes are the explanations of unsatisfiability, and
+          debugging tools for specifications and configurations enumerate them. Their partners are
+          the <em>maximal satisfiable subsets</em> (MSSes): satisfiable, but unsatisfiable as soon as
+          any other clause is added.</p>
+        <p>The abstraction, here called the <em>map</em>, guesses a subset of the clauses (a
+          <em>seed</em>); the check asks whether the seed is satisfiable:</p>
+        <pre class="code" data-lang="asp" data-from="guide-15-mus-block:check">{ t(V) } :- var(V).
+sat(C) :- pos(C,V), t(V).
+sat(C) :- neg(C,V), not t(V).
+:- pick(C), not sat(C).</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-15-mus-block</code>.</p>
+
+        <h2 id="block">Every subset once</h2>
+        <p>A seed is a MUS when the check fails on it and succeeds on every seed with
+          one clause less. The baseline tests exactly that, and blocks every seed after looking at
+          it:</p>
+        <pre class="code" data-lang="loop" data-from="guide-15-mus-block:loop">    if not C.solve(assume E):
+        minimal = true
+        for a in E:
+            if a.true and not C.solve(assume E.flip(a)): minimal = false
+        if minimal: accept M
+    A.add(G.block(M))</pre>
+        <p class="listing-source">From the loop script of <code>guide-15-mus-block</code>.</p>
+        <p id="block-run"><code>E = G(M)</code> is the seed as a list of assumptions, and <code>E.flip(a)</code> the
+          same list with one clause taken out (or put in). The loop finds the
+          <span data-stat="guide-15-mus-block:solutions">7</span> MUSes after looking at all
+          <span data-stat="guide-15-mus-block:candidates">1,024</span> subsets, with
+          <span data-stat="guide-15-mus-block:checkCalls">4,614</span> check calls.
+          <a class="play" href="../?example=guide-15-mus-block&amp;fragment=loop&amp;from=guide/15-marco.html%23block-run" target="cegarplay">Open the baseline</a></p>
+
+        <h2 id="shrink">Shrink, and block upwards</h2>
+        <p>An unsatisfiable seed need not be minimal, but it contains a MUS: drop clauses one by one,
+          keeping each drop that leaves the seed unsatisfiable. What is left is a MUS. And every
+          superset of a MUS is unsatisfiable and not minimal, so none of them need ever be proposed
+          again: <code>G.above(E)</code> is the clause "leave out at least one clause of E".</p>
+        <pre class="code" data-lang="loop" data-from="guide-15-mus-above:loop">    else:
+        for a in E:
+            if a.true and not C.solve(assume E.flip(a)): E = E.flip(a)
+        accept A.solve(assume E)
+        A.add(G.above(E))</pre>
+        <p class="listing-source">From the loop script of <code>guide-15-mus-above</code>.</p>
+        <p id="shrink-run">Each MUS is now found once, from whichever unsatisfiable seed leads to it,
+          and the loop needs <span data-stat="guide-15-mus-above:candidates">410</span> seeds. Most of
+          them are satisfiable seeds, still blocked one at a time.
+          <a class="play" href="../?example=guide-15-mus-above&amp;fragment=loop&amp;from=guide/15-marco.html%23shrink-run" target="cegarplay">Open the shrinking loop</a></p>
+
+        <h2 id="grow">Grow, and block downwards</h2>
+        <p>The satisfiable seeds have the mirror image. Add clauses one by one, keeping each addition
+          that leaves the seed satisfiable; what is left is an MSS. Every subset of an MSS is
+          satisfiable, so none needs to be proposed again: <code>G.below(E)</code> is the clause "add
+          at least one clause outside E". That is the MARCO loop:</p>
+        <pre class="code" data-lang="loop" data-from="marco:loop">    if C.solve(assume E):
+        for a in E:
+            if not a.true and C.solve(assume E.flip(a)): E = E.flip(a)
+        log "MSS", A.solve(assume E).atoms(pick/1)
+        count mss
+        A.add(G.below(E))
+    else:
+        for a in E:
+            if a.true and not C.solve(assume E.flip(a)): E = E.flip(a)
+        accept A.solve(assume E)
+        count mus
+        A.add(G.above(E))</pre>
+        <p class="listing-source">From the loop script of <code>marco</code>.</p>
+        <details class="predict">
+          <summary>Before you press Run: there are 7 MUSes and 12 MSSes. Every seed MARCO proposes
+            ends in one of them. How many seeds will it propose?</summary>
+          <p><span data-stat="marco:candidates">38</span> calls of the map, of which
+            <span data-stat="marco:refinements">19</span> become an answer (7 MUSes and 12 MSSes,
+            each found exactly once, because its clause removes it from the map). The other calls
+            are the <code>A.solve(assume E)</code> inside the loop, which turn the shrunk or grown
+            list back into atoms for the output.</p>
+        </details>
+        <p id="grow-run">Both kinds of answer refine the map, one upwards and one downwards, and the
+          map is empty after <span data-stat="marco:refinements">19</span> clauses of
+          <span data-stat="marco:meanClause">3.5</span> literals on average.
+          <a class="play" href="../?example=marco&amp;fragment=loop&amp;from=guide/15-marco.html%23grow-run" target="cegarplay">Open marco</a></p>
+        <table class="results">
+          <thead>
+            <tr><th>Loop</th><th class="num">Map calls</th><th class="num">Clauses</th><th class="num">Check calls</th><th class="num">MUSes</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Every subset</td><td class="num"><span data-stat="guide-15-mus-block:candidates">1,024</span></td>
+              <td class="num"><span data-stat="guide-15-mus-block:clauses">1,024</span></td>
+              <td class="num"><span data-stat="guide-15-mus-block:checkCalls">4,614</span></td>
+              <td class="num"><span data-stat="guide-15-mus-block:solutions">7</span></td></tr>
+            <tr><td>Shrink, block upwards</td><td class="num"><span data-stat="guide-15-mus-above:candidates">410</span></td>
+              <td class="num"><span data-stat="guide-15-mus-above:clauses">403</span></td>
+              <td class="num"><span data-stat="guide-15-mus-above:checkCalls">456</span></td>
+              <td class="num"><span data-stat="guide-15-mus-above:solutions">7</span></td></tr>
+            <tr><td>MARCO: also grow, block downwards</td><td class="num"><span data-stat="marco:candidates">38</span></td>
+              <td class="num"><span data-stat="marco:clauses">19</span></td>
+              <td class="num"><span data-stat="marco:checkCalls">118</span></td>
+              <td class="num"><span data-stat="marco:solutions">7</span></td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="second-kind">A second kind of solution</h2>
+        <p>The MSSes are answers too: their complements are the minimal correction sets, the smallest
+          ways to repair the formula. The loop reports MUSes as solutions and MSSes as
+          <code>log</code> lines and a <code>count</code>; both appear in the Output tab. The MUSes and
+          the minimal correction sets are each other's minimal hitting sets, the duality that
+          the exercise of chapter 14 met from the other side.</p>
+
+        <aside class="paper" id="paper">
+          <h2>The paper</h2>
+          <p>MARCO is from Liffiton and Malik ("Enumerating infeasibility: finding multiple MUSes
+            quickly", CPAIOR 2013) and Liffiton, Previti, Malik and Marques-Silva ("Fast, flexible MUS
+            enumeration", Constraints 21, 2016). Previti and Marques-Silva's eMUS ("Partial MUS
+            enumeration", AAAI 2013) is the same loop.</p>
+          <table class="results">
+            <thead><tr><th>Paper</th><th>Loop script</th></tr></thead>
+            <tbody>
+              <tr><td>while map is satisfiable: seed ← getUnexplored()</td><td><code>M = A.solve()</code>; <code>if not M: stop</code></td></tr>
+              <tr><td>if sat(seed): MSS ← grow(seed); block down</td><td>the <code>for a in E</code> walk; <code>A.add(G.below(E))</code></td></tr>
+              <tr><td>else: MUS ← shrink(seed); block up</td><td>the other walk; <code>A.add(G.above(E))</code></td></tr>
+              <tr><td>getUnexploredMax (maximal seeds first)</td><td><code>#heuristic pick(C) : cl(C). [1,true]</code> with <code>--heuristic=Domain</code></td></tr>
+            </tbody>
+          </table>
+          <p>More papers are on the <a href="bibliography.html">bibliography page</a>.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>The map proposes maximal seeds first, as the paper's <code>getUnexploredMax</code> does.
+            Change the heuristic so that it proposes the smallest seeds first. What happens to the
+            number of seeds and to the number of check calls?</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>Change the sign of the heuristic to <code>false</code>:</p>
+            <pre class="code" data-lang="asp" data-from="guide-15-ex1:abstraction">#heuristic pick(C) : cl(C). [1,false]</pre>
+            <p>The map still makes <span data-stat="guide-15-ex1:candidates">38</span> calls: every
+              answer is found once whatever the order. But small seeds are mostly satisfiable and must
+              be grown a long way, so the check is called
+              <span data-stat="guide-15-ex1:checkCalls">132</span> times instead of
+              <span data-stat="marco:checkCalls">118</span>. With many clauses and few MUSes, the
+              order decides which kind of answer comes first; MARCO's authors prefer maximal seeds
+              when MUSes are what is wanted.
+              <a class="play" href="../?example=guide-15-ex1&amp;fragment=abstraction&amp;from=guide/15-marco.html%23exercise-1-solution" target="cegarplay">Open the smallest-first map</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-both-outcomes">When both outcomes of a check are answers, both can refine the
+              abstraction: an answer and everything it implies leave the map.</li>
+            <li id="rule-shrink-grow">Shrink a failing candidate and grow a passing one before learning
+              from it: the clause then covers a whole up-set or down-set.</li>
+            <li id="rule-seed-order">The order of the seeds does not change the answers, but it changes
+              the cost of reaching them.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="14-hitting-sets.html">&larr; Implicit hitting sets</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

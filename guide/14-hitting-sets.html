@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Implicit hitting sets · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 14 · Part II</p>
+        <h1>Implicit hitting sets</h1>
+        <p class="lead">Chapter 10 refined a witness check with its unsatisfiable core, and chapter 11
+          asked the abstraction for an optimal candidate. Put the two together and you get one of the
+          most successful MaxSAT algorithms, the implicit hitting set loop of MaxHS. This chapter
+          derives it in three steps from a blocking loop, and shows what the bounds say along the
+          way.</p>
+
+        <h2 id="problem">The problem</h2>
+        <p>Weighted MaxSAT: a CNF formula with <em>hard</em> clauses that must hold and
+          <em>soft</em> clauses with weights. Find an assignment that satisfies the hard clauses and
+          falsifies soft clauses of the smallest total weight. The instance has eight variables,
+          sixteen soft clauses with weights 1 to 5 and four hard clauses; the optimum is 8.</p>
+        <p>Turn it into a loop by naming what the abstraction guesses: the set of soft clauses to
+          give up. It prefers cheap sets:</p>
+        <pre class="code" data-lang="asp" data-from="guide-14-ihs-block:abstraction">{ drop(C) : soft(C,_) }.
+% Each call is optimal (A.solve(optimal)): the cheapest set that hits every core so far.
+% Its cost is a lower bound on the optimum.
+#minimize { W,C : drop(C), soft(C,W) }.</pre>
+        <p class="listing-source">From the fragment <code>abstraction</code> of <code>guide-14-ihs-block</code>.</p>
+        <p>The check is a SAT call on the clauses that are kept: a <em>witness</em> check
+          (chapter 10). If it finds an assignment, the drop set is good; if not, it is wrong.</p>
+        <pre class="code" data-lang="asp" data-from="guide-14-ihs-block:check">{ t(V) } :- var(V).
+sat(C) :- pos(C,V), t(V).
+sat(C) :- neg(C,V), not t(V).
+:- hard(C), not sat(C).
+:- soft(C,_), not drop(C), not sat(C).</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-14-ihs-block</code>.</p>
+
+        <h2 id="block">Step 1: block</h2>
+        <p>Ask for the cheapest drop set, check it, block it if the rest is
+          unsatisfiable. The first drop set with a witness is optimal, because every cheaper one was
+          refuted (chapter 11):</p>
+        <pre class="code" data-lang="loop" data-from="guide-14-ihs-block:loop">loop:
+    M = A.solve(optimal)
+    if not M: stop "the hard clauses are unsatisfiable"
+    if C.solve(assume G(M)):
+        accept M
+        stop
+    A.add(G.block(M))</pre>
+        <p class="listing-source">From the loop script of <code>guide-14-ihs-block</code>.</p>
+        <p id="block-run">It finds the optimum after <span data-stat="guide-14-ihs-block:candidates">198</span> drop
+          sets, each blocked by a clause of all
+          <span data-stat="guide-14-ihs-block:maxClause">16</span> soft clauses.
+          <a class="play" href="../?example=guide-14-ihs-block&amp;fragment=loop&amp;from=guide/14-hitting-sets.html%23block-run" target="cegarplay">Open step 1</a></p>
+
+        <h2 id="core">Step 2: learn the core</h2>
+        <p>A failed SAT call has a core: a set of kept soft clauses that cannot all hold together
+          with the hard clauses. Every drop set that keeps all of them fails too, so the next one must
+          drop at least one clause of the core. <code>G.core(C)</code> is that clause:</p>
+        <pre class="code" data-lang="loop" data-from="guide-14-ihs-core:loop">    if C.solve(assume G(M)):
+        accept M
+        stop
+    A.add(G.core(C))</pre>
+        <p class="listing-source">From the loop script of <code>guide-14-ihs-core</code>.</p>
+        <p id="core-run">Now look at what the abstraction has become. It knows nothing about the
+          formula; it holds a list of sets (the cores) and finds the cheapest set of soft clauses that
+          meets every one of them: an optimal <em>hitting set</em>. The cores are never listed in
+          advance, only discovered one at a time; hence "implicit" hitting sets. The loop needs
+          <span data-stat="guide-14-ihs-core:candidates">57</span> drop sets; the clauses have
+          <span data-stat="guide-14-ihs-core:meanClause">10.7</span> literals on average.
+          <a class="play" href="../?example=guide-14-ihs-core&amp;fragment=loop&amp;from=guide/14-hitting-sets.html%23core-run" target="cegarplay">Open step 2</a></p>
+
+        <h2 id="bounds">Two bounds</h2>
+        <p>Each hitting set is optimal for the cores found so far, and the true optimum must hit all
+          cores, found or not. So the cost of each hitting set is a <em>lower bound</em> on the
+          optimum, and the bound never drops. Any assignment the check finds, on the other hand,
+          falsifies some soft clauses, and their weight is an <em>upper bound</em>. The loop is done
+          when the two meet. In the playground, <code>track lower = M.cost</code> draws the lower bound
+          in the Statistics tab, call by call.</p>
+
+        <h2 id="minimal">Step 3: minimal cores</h2>
+        <p>clasp's cores are not minimal (chapter 10), and a core with extra clauses is a weak
+          constraint for the hitting-set solver. <code>C.core.minimal</code> shrinks the core until no
+          clause can be left out:</p>
+        <pre class="code" data-lang="loop" data-from="guide-14-ihs-minimal:loop">    track lower = M.cost
+    if C.solve(assume G(M)):
+        accept M
+        stop
+    A.add(C.core.minimal.on(G))</pre>
+        <p class="listing-source">From the loop script of <code>guide-14-ihs-minimal</code>.</p>
+        <details class="predict">
+          <summary>Before you press Run: step 2 needed <span data-stat="guide-14-ihs-core:candidates">57</span>
+            hitting sets. How many with minimal cores, and what do they cost?</summary>
+          <p><span data-stat="guide-14-ihs-minimal:candidates">6</span> hitting sets, from cores of
+            <span data-stat="guide-14-ihs-minimal:meanClause">2.8</span> clauses on average. The
+            price is paid in the check: shrinking takes up to one solve per clause of the core, so the
+            check is called <span data-stat="guide-14-ihs-minimal:checkCalls">65</span> times
+            against <span data-stat="guide-14-ihs-core:checkCalls">57</span>. The check calls are
+            cheap SAT calls; the hitting-set calls are optimisation problems, which is why MaxHS
+            prefers to spend effort on the cores.</p>
+        </details>
+        <p id="minimal-run">
+          <a class="play" href="../?example=guide-14-ihs-minimal&amp;fragment=loop&amp;from=guide/14-hitting-sets.html%23minimal-run" target="cegarplay">Open step 3</a></p>
+
+        <h2 id="maxhs">The full loop: several cores per round</h2>
+        <p>One more idea makes each hitting-set call count. After a core is found, relax it (take its
+          clauses out of the assumptions) and ask the SAT oracle again in the same round: any core it
+          now finds is disjoint from the first. One round can deliver several cores before the
+          expensive optimal call.</p>
+        <pre class="code" data-lang="loop" data-from="maxsat-ihs:loop">    loop:
+        X = C.solve(assume E)
+        if X:
+            if upper == none or X.cost &lt; upper: upper = X.cost
+            break
+        K = C.core.minimal             # no assumption of it can be left out
+        if K.on(G).size == 0: stop "the hard clauses are unsatisfiable"
+        A.add(K.on(G))                 # hit at least one clause of the core
+        cores = cores + 1
+        count cores
+        for a in K:                    # relax the core's clauses, look for a disjoint one
+            E = E.without(a)</pre>
+        <p class="listing-source">From the loop script of <code>maxsat-ihs</code>.</p>
+        <p id="maxhs-run">The library example <code>maxsat-ihs</code> needs
+          <span data-stat="maxsat-ihs:candidates">5</span> hitting sets and
+          <span data-stat="maxsat-ihs:checkCalls">67</span> check calls, and it also tracks the upper
+          bound from each witness's cost. In the Statistics tab the two lines meet at 8.
+          <a class="play" href="../?example=maxsat-ihs&amp;fragment=loop&amp;from=guide/14-hitting-sets.html%23maxhs-run" target="cegarplay">Open maxsat-ihs</a></p>
+        <table class="results">
+          <thead>
+            <tr><th>Step</th><th class="num">Hitting sets</th><th class="num">Check calls</th><th class="num">Mean clause</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Block</td><td class="num"><span data-stat="guide-14-ihs-block:candidates">198</span></td>
+              <td class="num"><span data-stat="guide-14-ihs-block:checkCalls">198</span></td>
+              <td class="num"><span data-stat="guide-14-ihs-block:meanClause">16.0</span></td></tr>
+            <tr><td>Core</td><td class="num"><span data-stat="guide-14-ihs-core:candidates">57</span></td>
+              <td class="num"><span data-stat="guide-14-ihs-core:checkCalls">57</span></td>
+              <td class="num"><span data-stat="guide-14-ihs-core:meanClause">10.7</span></td></tr>
+            <tr><td>Minimal core</td><td class="num"><span data-stat="guide-14-ihs-minimal:candidates">6</span></td>
+              <td class="num"><span data-stat="guide-14-ihs-minimal:checkCalls">65</span></td>
+              <td class="num"><span data-stat="guide-14-ihs-minimal:meanClause">2.8</span></td></tr>
+            <tr><td>Disjoint minimal cores</td><td class="num"><span data-stat="maxsat-ihs:candidates">5</span></td>
+              <td class="num"><span data-stat="maxsat-ihs:checkCalls">67</span></td>
+              <td class="num"><span data-stat="maxsat-ihs:meanClause">2.8</span></td></tr>
+          </tbody>
+        </table>
+
+        <aside class="paper" id="paper">
+          <h2>The paper</h2>
+          <p>The implicit hitting set loop for MaxSAT is due to Davies and Bacchus ("Solving MAXSAT by
+            solving a sequence of simpler SAT instances", CP 2011); MaxHS, their solver, uses an
+            integer programming solver for the hitting sets ("Exploiting the power of MIP solvers in
+            MAXSAT", SAT 2013). The general scheme is Moreno-Centeno and Karp's ("The implicit hitting
+            set approach to solve combinatorial optimization problems", Operations Research 2013).</p>
+          <table class="results">
+            <thead><tr><th>Paper</th><th>Loop script</th></tr></thead>
+            <tbody>
+              <tr><td>K ← ∅</td><td>solver A starts with no clause on <code>drop/1</code></td></tr>
+              <tr><td>hs ← Opt-HS(K)</td><td><code>M = A.solve(optimal)</code></td></tr>
+              <tr><td>(sat, κ) ← SAT(F<sub>h</sub> ∪ F<sub>s</sub> \ hs)</td><td><code>C.solve(assume G(M))</code>, <code>C.core.minimal</code></td></tr>
+              <tr><td>if sat: return hs's assignment</td><td><code>accept M</code>; <code>stop</code></td></tr>
+              <tr><td>K ← K ∪ {κ}</td><td><code>A.add(K.on(G))</code></td></tr>
+            </tbody>
+          </table>
+          <p>More papers are on the <a href="bibliography.html">bibliography page</a>.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>The library example <code>smallest-mus</code> looks for a set of at most k clauses of a
+            formula that are unsatisfiable together. It is the dual of MaxSAT. What plays the role of
+            the cores there, and what is the hitting-set problem?</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>The abstraction picks clauses; the check looks for an assignment that satisfies all the
+              picked ones. Such an assignment falsifies some other clauses, and one of those must be
+              picked next: the set of clauses an assignment falsifies is a correction set, and the
+              picked set must hit every correction set. So the roles swap: in MaxSAT the abstraction
+              hits cores, in the smallest-MUS loop it hits correction sets. This duality between
+              unsatisfiable cores and correction sets is the hitting-set duality behind MARCO, the
+              next chapter.
+              <a class="play" href="../?example=smallest-mus&amp;fragment=check&amp;from=guide/14-hitting-sets.html%23exercise-1-solution" target="cegarplay">Open smallest-mus</a></p>
+          </details>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-ihs">An optimal abstraction refined by cores of a witness check is an implicit
+              hitting set loop: each candidate's cost is a lower bound.</li>
+            <li id="rule-bounds-meet">A witness's cost is an upper bound; the loop may stop when the
+              bounds meet.</li>
+            <li id="rule-spend-on-cores">When the abstraction's calls are the expensive ones, spend
+              check calls on short (minimal, disjoint) cores.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="13-qbf.html">&larr; 2QBF, by clauses and by expansion</a>
+        <a class="next" href="15-marco.html">MARCO: two kinds of answer &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

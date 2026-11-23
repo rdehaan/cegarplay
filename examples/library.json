@@ -782,6 +782,164 @@
       ]
     },
     {
+      "id": "guide-13-qbf-block",
+      "title": "Guide: 2QBF, blocking",
+      "group": "guide",
+      "summary": "2QBF on a random formula: every x-assignment that a y-assignment refutes is blocked.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2448
+      },
+      "page": "guide/13-qbf.html#block",
+      "status": "baseline"
+    },
+    {
+      "id": "guide-13-qbf-clause",
+      "title": "Guide: 2QBF, clauses",
+      "group": "guide",
+      "summary": "2QBF with a clause over the x-literals that keep the open terms false.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2448
+      },
+      "page": "guide/13-qbf.html#clause",
+      "status": "sound",
+      "baseline": "guide-13-qbf-block"
+    },
+    {
+      "id": "guide-13-qbf-expansion",
+      "title": "Guide: 2QBF by expansion",
+      "group": "guide",
+      "summary": "2QBF by expansion: each counterexample adds a copy of the formula, instantiated with its y-values.",
+      "shape": "shape3",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2448
+      },
+      "page": "guide/13-qbf.html#expansion",
+      "status": "sound",
+      "baseline": "guide-13-qbf-block"
+    },
+    {
+      "id": "guide-13-ex1",
+      "title": "Guide: 2QBF, one literal per open term",
+      "group": "guide",
+      "summary": "Exercise: one false x-literal per open term is enough for a sound clause.",
+      "shape": "shape1",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2448
+      },
+      "page": "guide/13-qbf.html#exercise-1-solution",
+      "status": "sound",
+      "baseline": "guide-13-qbf-block"
+    },
+    {
+      "id": "guide-14-ihs-block",
+      "title": "Guide: MaxSAT, blocking",
+      "group": "guide",
+      "summary": "MaxSAT: the cheapest set of soft clauses to give up, blocking every set the SAT check refutes.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 1
+      },
+      "page": "guide/14-hitting-sets.html#block",
+      "status": "demo",
+      "exhausted": false
+    },
+    {
+      "id": "guide-14-ihs-core",
+      "title": "Guide: MaxSAT, cores",
+      "group": "guide",
+      "summary": "The same loop refined by the unsat core: the next drop set must hit it.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 1
+      },
+      "page": "guide/14-hitting-sets.html#core",
+      "status": "demo",
+      "exhausted": false
+    },
+    {
+      "id": "guide-14-ihs-minimal",
+      "title": "Guide: MaxSAT, minimal cores",
+      "group": "guide",
+      "summary": "Minimal cores: each core shrunk until no clause can be left out, and the lower bound tracked.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 1
+      },
+      "page": "guide/14-hitting-sets.html#minimal",
+      "status": "demo",
+      "exhausted": false
+    },
+    {
+      "id": "guide-15-mus-block",
+      "title": "Guide: MUSes, every subset",
+      "group": "guide",
+      "summary": "Every MUS of a CNF formula, looking at every subset of its clauses once.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 7
+      },
+      "page": "guide/15-marco.html#block",
+      "status": "baseline"
+    },
+    {
+      "id": "guide-15-mus-above",
+      "title": "Guide: MUSes by shrinking",
+      "group": "guide",
+      "summary": "Shrink an unsatisfiable seed to a MUS and block all its supersets (G.above).",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 7
+      },
+      "page": "guide/15-marco.html#shrink",
+      "status": "sound",
+      "baseline": "guide-15-mus-block"
+    },
+    {
+      "id": "guide-15-ex1",
+      "title": "Guide: MARCO, smallest seeds first",
+      "group": "guide",
+      "summary": "Exercise: MARCO with the smallest seeds first.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 7
+      },
+      "page": "guide/15-marco.html#exercise-1-solution",
+      "status": "sound",
+      "baseline": "guide-15-mus-block"
+    },
+    {
       "id": "lang-basics",
       "title": "Loop language: the basics",
       "group": "language",

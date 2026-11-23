@@ -826,7 +826,9 @@ satisfiable solves of both `B` and `C`.
 
 Most CEGAR-style algorithms in the literature are a few lines of loop script. The table names
 the algorithm, the CegarPlay pattern that writes it, and a library example to load; the library
-filter also finds the tag in the last column.
+filter also finds the tag in the last column. The papers are listed in the guide's
+[bibliography](guide/bibliography.html); Part II of the [guide](guide/index.html) derives several
+of these loops step by step (2QBF, implicit hitting sets, MARCO, ...).
 
 | Algorithm (literature) | Pattern | Example | Tag |
 | --- | --- | --- | --- |
