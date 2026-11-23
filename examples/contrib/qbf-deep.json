@@ -37,11 +37,12 @@
   },
   "library": {
     "id": "qbf-deep",
-    "group": "several-solvers",
+    "group": "logic",
     "summary": "A QBF with any number of quantifier blocks: a solver family, a link family and a recursive procedure (def refute) answer each level (depth = 3 here).",
     "shape": "custom",
     "tags": [
-      "fast"
+      "fast",
+      "several-solvers"
     ],
     "expected": null
   }

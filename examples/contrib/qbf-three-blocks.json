@@ -49,11 +49,12 @@
   },
   "library": {
     "id": "qbf-three-blocks",
-    "group": "several-solvers",
+    "group": "logic",
     "summary": "An exists-forall-exists formula: three solvers in a chain, clauses for the middle solver from witnesses and for the outer one from unsat cores (4 solutions).",
     "shape": "custom",
     "tags": [
-      "fast"
+      "fast",
+      "several-solvers"
     ],
     "expected": 4
   }

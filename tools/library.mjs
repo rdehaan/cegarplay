@@ -234,13 +234,12 @@ export const GROUPS = [
   { id: 'guide', title: 'Guide', description: 'The examples of the design guide, in reading order.' },
   { id: 'language', title: 'The loop language', description: 'One feature of the loop language each, with comments in the loop script.' },
   { id: 'shapes', title: 'Loop shapes', description: 'Graph colouring at n = 5 with each of the five templates; all give the same solutions.' },
-  { id: 'logic', title: 'Logic and QBF', description: 'Quantified Boolean formulas, minimal formulas and unsatisfiable cores, stable models.' },
+  { id: 'logic', title: 'Logic and QBF', description: 'Quantified Boolean formulas (also with more quantifier blocks), minimal formulas and unsatisfiable cores, stable models.' },
   { id: 'reasoning', title: 'Knowledge representation and explanation', description: 'Abduction, defaults, belief update, diagnosis, causality, argumentation, reasons for a classifier.' },
   { id: 'graphs', title: 'Graphs', description: 'Colourings, list colourings, cliques and Ramsey-type arrowing.' },
   { id: 'games', title: 'Games and social choice', description: 'Equilibria, stable coalitions, fair division and voting.' },
-  { id: 'planning', title: 'Planning and optimisation', description: 'Conformant planning and bilevel optimisation.' },
+  { id: 'planning', title: 'Planning and optimisation', description: 'Conformant planning, bilevel and trilevel knapsack problems.' },
   { id: 'puzzles', title: 'Puzzles', description: 'Generating puzzles with a unique solution: Sudoku, Binairo, Futoshiki, Akari, Slitherlink.' },
-  { id: 'several-solvers', title: 'Several solvers or raw Lua', description: 'More than one check, a solver that computes the refinement, staged searches, or raw Lua.' },
   { id: 'other', title: 'Other problems', description: 'Contributed problems without a category.' },
 ];
 

@@ -47,11 +47,12 @@
   },
   "library": {
     "id": "knapsack-bounds",
-    "group": "several-solvers",
+    "group": "planning",
     "summary": "The bilevel knapsack optimisation with numeric bounds: M.value(value/1) and X.value(gain/1) give lower and upper bounds that are logged until they meet (optimum 25, 2 solutions).",
     "shape": "custom",
     "tags": [
-      "fast"
+      "fast",
+      "several-solvers"
     ],
     "expected": 2
   },

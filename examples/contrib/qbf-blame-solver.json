@@ -49,11 +49,12 @@
   },
   "library": {
     "id": "qbf-blame-solver",
-    "group": "several-solvers",
+    "group": "logic",
     "summary": "The 2QBF example with a refinement solver that minimises the blamed x-variables for the counterexample at hand (5 solutions).",
     "shape": "custom",
     "tags": [
-      "fast"
+      "fast",
+      "several-solvers"
     ],
     "expected": 5
   },

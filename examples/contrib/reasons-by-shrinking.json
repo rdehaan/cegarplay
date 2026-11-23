@@ -39,11 +39,12 @@
   },
   "library": {
     "id": "reasons-by-shrinking",
-    "group": "several-solvers",
+    "group": "reasoning",
     "summary": "Minimal sufficient reasons by shrinking accepted candidates: the assumption list G(M) is walked and edited (a.true, E.flip(a)), and G.above removes the supersets (8 features, 4 solutions).",
     "shape": "custom",
     "tags": [
-      "fast"
+      "fast",
+      "several-solvers"
     ],
     "expected": 4
   }

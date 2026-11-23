@@ -18,9 +18,9 @@ CegarPlay project (`"format": "cegarplay"`) with one extra top-level block:
 - `group`: the category of the problem: `logic` (QBF, minimal formulas, stable models),
   `reasoning` (abduction, defaults, diagnosis, causality, argumentation, explanation), `graphs`,
   `games` (equilibria, coalitions, fair division, voting), `planning` (planning, bilevel
-  optimisation) or `puzzles`; or `several-solvers` (more solvers, staged searches or raw Lua).
-  The older `exists-forall` and `problems` are still accepted: they go to the group `other`, or
-  to `several-solvers` for a `problems` example with raw Lua or more than two solvers.
+  optimisation) or `puzzles`. The older `exists-forall`, `problems` and `several-solvers` are
+  still accepted: they go to the group `other`. Tag a loop with more than one check, staged
+  searches or raw Lua `several-solvers` (the library filter finds the tag).
 - `shape`: `shape1` … `shape4`, `reference` or `custom`.
 - `tags`: `fast` makes `test/library.test.mjs` run the example and check `expected`
   (the solution count with `solutions = all`); use it when the run takes under ~2 s.

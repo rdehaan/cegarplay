@@ -25,7 +25,7 @@
     {
       "id": "logic",
       "title": "Logic and QBF",
-      "description": "Quantified Boolean formulas, minimal formulas and unsatisfiable cores, stable models."
+      "description": "Quantified Boolean formulas (also with more quantifier blocks), minimal formulas and unsatisfiable cores, stable models."
     },
     {
       "id": "reasoning",
@@ -45,17 +45,12 @@
     {
       "id": "planning",
       "title": "Planning and optimisation",
-      "description": "Conformant planning and bilevel optimisation."
+      "description": "Conformant planning, bilevel and trilevel knapsack problems."
     },
     {
       "id": "puzzles",
       "title": "Puzzles",
       "description": "Generating puzzles with a unique solution: Sudoku, Binairo, Futoshiki, Akari, Slitherlink."
-    },
-    {
-      "id": "several-solvers",
-      "title": "Several solvers or raw Lua",
-      "description": "More than one check, a solver that computes the refinement, staged searches, or raw Lua."
     }
   ],
   "examples": [
@@ -1001,6 +996,35 @@
       }
     },
     {
+      "id": "qbf-blame-solver",
+      "title": "2QBF, blame by a third solver",
+      "group": "logic",
+      "summary": "The 2QBF example with a refinement solver that minimises the blamed x-variables for the counterexample at hand (5 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers"
+      ],
+      "expected": {
+        "solutions": 5
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "qbf-deep",
+      "title": "QBF with any number of blocks",
+      "group": "logic",
+      "summary": "A QBF with any number of quantifier blocks: a solver family, a link family and a recursive procedure (def refute) answer each level (depth = 3 here).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers"
+      ],
+      "expected": null
+    },
+    {
       "id": "qbf-expansion",
       "title": "2QBF by expansion",
       "group": "logic",
@@ -1030,6 +1054,20 @@
       },
       "has": {
         "instances": 4
+      }
+    },
+    {
+      "id": "qbf-three-blocks",
+      "title": "3QBF",
+      "group": "logic",
+      "summary": "An exists-forall-exists formula: three solvers in a chain, clauses for the middle solver from witnesses and for the outer one from unsat cores (4 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers"
+      ],
+      "expected": {
+        "solutions": 4
       }
     },
     {
@@ -1094,6 +1132,23 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 3
+      }
+    },
+    {
+      "id": "abduction-two-checks",
+      "title": "Abduction with two checks",
+      "group": "reasoning",
+      "summary": "Propositional abduction with a witness check (refined by unsat cores) and a counterexample check (7 hypotheses, k = 2, 17 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers"
+      ],
+      "expected": {
+        "solutions": 17
       },
       "has": {
         "instances": 3
@@ -1209,6 +1264,54 @@
       ],
       "expected": {
         "solutions": 2
+      },
+      "has": {
+        "instances": 3
+      }
+    },
+    {
+      "id": "minimal-reasons",
+      "title": "Minimal sufficient reasons",
+      "group": "reasoning",
+      "summary": "Subset-minimal sufficient reasons with two checks: a counterexample for sufficiency, a witness with unsat cores for minimality (8 features, 4 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers"
+      ],
+      "expected": {
+        "solutions": 4
+      },
+      "has": {
+        "instances": 3
+      }
+    },
+    {
+      "id": "reasons-by-shrinking",
+      "title": "Reasons by shrinking",
+      "group": "reasoning",
+      "summary": "Minimal sufficient reasons by shrinking accepted candidates: the assumption list G(M) is walked and edited (a.true, E.flip(a)), and G.above removes the supersets (8 features, 4 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers"
+      ],
+      "expected": {
+        "solutions": 4
+      }
+    },
+    {
+      "id": "reasons-by-size",
+      "title": "Reasons by size",
+      "group": "reasoning",
+      "summary": "Minimal sufficient reasons in order of size: an optimal abstraction, and G.above removes the supersets of each solution (8 features, 4 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers"
+      ],
+      "expected": {
+        "solutions": 4
       },
       "has": {
         "instances": 3
@@ -1453,6 +1556,21 @@
       }
     },
     {
+      "id": "conformant-growing",
+      "title": "Conformant planning, growing horizon",
+      "group": "planning",
+      "summary": "Conformant planning without a bound constant: the horizon grows (A.ground, G.extend, externals) until the first plans appear, which are the shortest.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 3
+      }
+    },
+    {
       "id": "conformant-planning",
       "title": "Conformant planning",
       "group": "planning",
@@ -1469,6 +1587,40 @@
       }
     },
     {
+      "id": "knapsack-bounds",
+      "title": "Knapsack bounds in Lua",
+      "group": "planning",
+      "summary": "The bilevel knapsack optimisation with numeric bounds: M.value(value/1) and X.value(gain/1) give lower and upper bounds that are logged until they meet (optimum 25, 2 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "knapsack-fortification",
+      "title": "Knapsack interdiction with fortification",
+      "group": "planning",
+      "summary": "A trilevel knapsack (Sigma-3-complete): three solvers in a chain, with hitting-set clauses learned at both levels (2 solutions of 37 candidates).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
       "id": "knapsack-interdiction",
       "title": "Knapsack interdiction",
       "group": "planning",
@@ -1476,6 +1628,23 @@
       "shape": "custom",
       "tags": [
         "fast"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "has": {
+        "instances": 4
+      }
+    },
+    {
+      "id": "knapsack-optimum",
+      "title": "Knapsack interdiction, optimum",
+      "group": "planning",
+      "summary": "Bilevel knapsack optimisation: an optimal abstraction gives lower bounds, the follower's best replies are grounded as rules, and a second part caps the claims (optimum 25, 2 solutions).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers"
       ],
       "expected": {
         "solutions": 2
@@ -1615,169 +1784,6 @@
       "has": {
         "instances": 5,
         "views": 1
-      }
-    },
-    {
-      "id": "abduction-two-checks",
-      "title": "Abduction with two checks",
-      "group": "several-solvers",
-      "summary": "Propositional abduction with a witness check (refined by unsat cores) and a counterexample check (7 hypotheses, k = 2, 17 solutions).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 17
-      },
-      "has": {
-        "instances": 3
-      }
-    },
-    {
-      "id": "conformant-growing",
-      "title": "Conformant planning, growing horizon",
-      "group": "several-solvers",
-      "summary": "Conformant planning without a bound constant: the horizon grows (A.ground, G.extend, externals) until the first plans appear, which are the shortest.",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": null,
-      "has": {
-        "instances": 3
-      }
-    },
-    {
-      "id": "knapsack-bounds",
-      "title": "Knapsack bounds in Lua",
-      "group": "several-solvers",
-      "summary": "The bilevel knapsack optimisation with numeric bounds: M.value(value/1) and X.value(gain/1) give lower and upper bounds that are logged until they meet (optimum 25, 2 solutions).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 2
-      },
-      "has": {
-        "instances": 4
-      }
-    },
-    {
-      "id": "knapsack-fortification",
-      "title": "Knapsack interdiction with fortification",
-      "group": "several-solvers",
-      "summary": "A trilevel knapsack (Sigma-3-complete): three solvers in a chain, with hitting-set clauses learned at both levels (2 solutions of 37 candidates).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 2
-      },
-      "has": {
-        "instances": 4
-      }
-    },
-    {
-      "id": "knapsack-optimum",
-      "title": "Knapsack interdiction, optimum",
-      "group": "several-solvers",
-      "summary": "Bilevel knapsack optimisation: an optimal abstraction gives lower bounds, the follower's best replies are grounded as rules, and a second part caps the claims (optimum 25, 2 solutions).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 2
-      },
-      "has": {
-        "instances": 4
-      }
-    },
-    {
-      "id": "minimal-reasons",
-      "title": "Minimal sufficient reasons",
-      "group": "several-solvers",
-      "summary": "Subset-minimal sufficient reasons with two checks: a counterexample for sufficiency, a witness with unsat cores for minimality (8 features, 4 solutions).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 4
-      },
-      "has": {
-        "instances": 3
-      }
-    },
-    {
-      "id": "qbf-blame-solver",
-      "title": "2QBF, blame by a third solver",
-      "group": "several-solvers",
-      "summary": "The 2QBF example with a refinement solver that minimises the blamed x-variables for the counterexample at hand (5 solutions).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 5
-      },
-      "has": {
-        "instances": 4
-      }
-    },
-    {
-      "id": "qbf-deep",
-      "title": "QBF with any number of blocks",
-      "group": "several-solvers",
-      "summary": "A QBF with any number of quantifier blocks: a solver family, a link family and a recursive procedure (def refute) answer each level (depth = 3 here).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": null
-    },
-    {
-      "id": "qbf-three-blocks",
-      "title": "3QBF",
-      "group": "several-solvers",
-      "summary": "An exists-forall-exists formula: three solvers in a chain, clauses for the middle solver from witnesses and for the outer one from unsat cores (4 solutions).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 4
-      }
-    },
-    {
-      "id": "reasons-by-shrinking",
-      "title": "Reasons by shrinking",
-      "group": "several-solvers",
-      "summary": "Minimal sufficient reasons by shrinking accepted candidates: the assumption list G(M) is walked and edited (a.true, E.flip(a)), and G.above removes the supersets (8 features, 4 solutions).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 4
-      }
-    },
-    {
-      "id": "reasons-by-size",
-      "title": "Reasons by size",
-      "group": "several-solvers",
-      "summary": "Minimal sufficient reasons in order of size: an optimal abstraction, and G.above removes the supersets of each solution (8 features, 4 solutions).",
-      "shape": "custom",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 4
-      },
-      "has": {
-        "instances": 3
       }
     }
   ]

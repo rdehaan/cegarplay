@@ -371,17 +371,12 @@ export function buildExamples() {
 
 // Contributed examples: examples/contrib/*.json, each a project with a top-level
 // 'library' block { id, group, summary, shape, tags, expected }. Returns library entries.
-// The group is a category (CATEGORIES) or several-solvers. The older names exists-forall and
-// problems still load: problems with raw Lua or more than two solvers -> several-solvers, the
-// rest -> other.
+// The group is a category (CATEGORIES). The older names exists-forall, problems and
+// several-solvers still load, into the group other.
 export const CATEGORIES = ['logic', 'reasoning', 'graphs', 'games', 'planning', 'puzzles'];
-export const CONTRIB_GROUPS = [...CATEGORIES, 'several-solvers', 'other', 'exists-forall', 'problems'];
-function contribGroup(group, project) {
-  if (group === 'exists-forall') return 'other';
-  if (group !== 'problems') return group;
-  const l = project.loop;
-  const solvers = l.language === 'lua' ? Infinity : (l.text.match(/^\s*solver\s/gm) || []).length;
-  return solvers > 2 ? 'several-solvers' : 'other';
+export const CONTRIB_GROUPS = [...CATEGORIES, 'other', 'exists-forall', 'problems', 'several-solvers'];
+function contribGroup(group) {
+  return CATEGORIES.includes(group) ? group : 'other';
 }
 export function loadContrib(dir = new URL('examples/contrib/', root), taken = new Set()) {
   if (!fs.existsSync(dir)) return [];
@@ -406,7 +401,7 @@ export function loadContrib(dir = new URL('examples/contrib/', root), taken = ne
     let project;
     try { project = load(JSON.stringify(rest)); } catch (e) { fail(e.message); }
     taken.add(id);
-    out.push({ id, group: contribGroup(group, project), summary, shape, tags, expected, project });
+    out.push({ id, group: contribGroup(group), summary, shape, tags, expected, project });
   }
   return out;
 }

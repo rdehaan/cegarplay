@@ -44,11 +44,12 @@
   },
   "library": {
     "id": "minimal-reasons",
-    "group": "several-solvers",
+    "group": "reasoning",
     "summary": "Subset-minimal sufficient reasons with two checks: a counterexample for sufficiency, a witness with unsat cores for minimality (8 features, 4 solutions).",
     "shape": "custom",
     "tags": [
-      "fast"
+      "fast",
+      "several-solvers"
     ],
     "expected": 4
   },

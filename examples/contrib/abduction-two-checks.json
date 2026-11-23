@@ -46,11 +46,12 @@
   },
   "library": {
     "id": "abduction-two-checks",
-    "group": "several-solvers",
+    "group": "reasoning",
     "summary": "Propositional abduction with a witness check (refined by unsat cores) and a counterexample check (7 hypotheses, k = 2, 17 solutions).",
     "shape": "custom",
     "tags": [
-      "fast"
+      "fast",
+      "several-solvers"
     ],
     "expected": 17
   },

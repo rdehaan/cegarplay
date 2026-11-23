@@ -1176,13 +1176,12 @@ Library shows them as tags, and the filter matches them (type `view` or `suite`)
 | `language` | `lang-basics`, `lang-several-cex`, `lang-optimal`, `lang-two-stage`, `lang-clauses`, `lang-core`, `lang-second-solver`, `lang-legacy`, `lang-raw-lua` |
 | `shapes` | `gc-shape1`, `gc-shape2`, `gc-shape3`, `gc-shape4`, `gc-reference` |
 | `guide` | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
-| `logic` | `integer-expressions`, `min-dnf`, `qbf-expansion`, `qbf-optimal`, `qbf`, `smallest-mus`, `stable-models`, `strategic-companies` |
-| `reasoning` | `abduction`, `actual-cause`, `af-preferred`, `af-semi-stable`, `belief-update`, `default-extensions`, `diagnosis`, `sufficient-reason` |
+| `logic` | `integer-expressions`, `min-dnf`, `qbf-blame-solver`, `qbf-deep`, `qbf-expansion`, `qbf-optimal`, `qbf-three-blocks`, `qbf`, `smallest-mus`, `stable-models`, `strategic-companies` |
+| `reasoning` | `abduction-two-checks`, `abduction`, `actual-cause`, `af-preferred`, `af-semi-stable`, `belief-update`, `default-extensions`, `diagnosis`, `minimal-reasons`, `reasons-by-shrinking`, `reasons-by-size`, `sufficient-reason` |
 | `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction` |
 | `games` | `nash`, `voting-justification`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `kemeny-control`, `strong-nash`, `subset-sum-game` |
-| `planning` | `conformant-planning`, `knapsack-interdiction` |
+| `planning` | `conformant-growing`, `conformant-planning`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-interdiction`, `knapsack-optimum` |
 | `puzzles` | `akari`, `binairo`, `fewest-clues`, `futoshiki`, `slitherlink`, `sudoku-graded`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `sudoku-unique` |
-| `several-solvers` | `abduction-two-checks`, `conformant-growing`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-optimum`, `minimal-reasons`, `qbf-blame-solver`, `qbf-deep`, `qbf-three-blocks`, `reasons-by-shrinking`, `reasons-by-size` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.
 
@@ -1211,8 +1210,8 @@ count in `expected`.
 
 Without editing the tools: put a project file with a top-level `library` block
 (`{ "id", "group", "summary", "shape", "tags", "expected" }`, where `group` is a category
-(`logic`, `reasoning`, `graphs`, `games`, `planning`, `puzzles`) or `several-solvers` and
-`expected` is the solution count or `null`), with its input in instances, in
+(`logic`, `reasoning`, `graphs`, `games`, `planning`, `puzzles`), a tag `several-solvers` for a
+loop with more than one check, staged searches or raw Lua, and `expected` is the solution count or `null`), with its input in instances, in
 `examples/contrib/`; `node tools/make-examples.mjs` adds it to the
 library (the block is dropped from `examples/<id>.json`). See `examples/contrib/README.md`.
 `node tools/make-chat-package.mjs` writes `dist/chat-package/`, a flat folder (this manual, the

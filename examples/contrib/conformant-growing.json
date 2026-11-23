@@ -44,11 +44,12 @@
   },
   "library": {
     "id": "conformant-growing",
-    "group": "several-solvers",
+    "group": "planning",
     "summary": "Conformant planning without a bound constant: the horizon grows (A.ground, G.extend, externals) until the first plans appear, which are the shortest.",
     "shape": "custom",
     "tags": [
-      "fast"
+      "fast",
+      "several-solvers"
     ],
     "expected": null
   },

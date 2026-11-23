@@ -39,11 +39,12 @@
   },
   "library": {
     "id": "reasons-by-size",
-    "group": "several-solvers",
+    "group": "reasoning",
     "summary": "Minimal sufficient reasons in order of size: an optimal abstraction, and G.above removes the supersets of each solution (8 features, 4 solutions).",
     "shape": "custom",
     "tags": [
-      "fast"
+      "fast",
+      "several-solvers"
     ],
     "expected": 4
   },

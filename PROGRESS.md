@@ -1144,3 +1144,7 @@ technique group) without "Contributed:". The three older problems carry their ca
 `exists-forall` and `problems` (-> `other`, a fallback group "Other problems", or
 `several-solvers` for raw Lua / more than two solvers); the chat-package template uses `other`
 and START-HERE lists the categories. Example files are unchanged; only `examples/library.json`.
+- Follow-up (on request): `several-solvers` is gone as a group; its 11 examples are in `logic`
+  (qbf-blame-solver, qbf-three-blocks, qbf-deep), `reasoning` (abduction-two-checks and the three
+  reasons examples) and `planning` (the three knapsack examples, conformant-growing), each with a
+  tag `several-solvers`. `loadContrib` maps every older group name to `other`.
