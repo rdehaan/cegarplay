@@ -1261,3 +1261,11 @@ non-list (today it silently runs zero times: an endless MaxHS loop); B2 cores as
   (20, 16, 18), knapsack-optimum and knapsack-bounds (25, 14, 11, 36 next to their counts).
 - Docs: manual (project format, library, stops-at-optimum), spec-instances, contrib README,
   chat-package guide, breadth.md.
+
+## Future directions (2026-11-23)
+
+`FUTURE-DIRECTIONS.md` lists what was considered and not built: items for the owner (upstream
+grounding report, trap report, Firefox, deployment), language and runtime (stop rule on bounds,
+labelled solutions, sign facts, faster minimisation, cheaper partial checks, clauses across links,
+parallel checks), checking tools (cegarcheck scope, witness checks in certcheck, audit of core
+loops, optima in campaigns), views and the library.

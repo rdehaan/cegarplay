@@ -8,6 +8,7 @@ programming, solved with clingo compiled to WebAssembly.
 - Both implementation plans (PLAN.md, PLAN2.md) are done and were removed; they are in
   the git history. `docs/directions/*.md` holds the design behind PLAN2's features; the `spike2/`
   prototypes it cites were removed too (git history).
+- `FUTURE-DIRECTIONS.md`: what was considered and not built (language, tools, views, library).
 - `PROGRESS.md`: what is done and what is next. **Read it first after any
   context clear. Update it at every checkpoint.**
 - `docs/spec-*.md`: specifications. Read only the ones the current phase names.
