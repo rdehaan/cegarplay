@@ -1,0 +1,97 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Exercise: learn from a triangle",
+  "description": "Delete at most k nodes of the small graph of the guide so that no triangle is left. The loop blocks every refuted candidate on its own. Write relevant/1 in the check and use G.clause(M, X) in the loop (guide, chapter 3), then press Check exercise in the Instances tab.",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The graph of the guide's figures: ten nodes, fifteen edges.\nnode(1..10).\nedge(1,2). edge(1,3). edge(1,4). edge(2,3). edge(2,4). edge(3,4).\nedge(4,5). edge(4,6). edge(5,6). edge(6,7). edge(6,8). edge(7,8).\nedge(8,9). edge(8,10). edge(9,10).\n",
+      "description": "The graph. Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% A candidate: at most k nodes to delete.\n{ del(V) : node(V) } k.\n#show del/1.\n",
+      "description": "Proposes candidates (solver A): at most k deleted nodes."
+    },
+    {
+      "name": "glue",
+      "text": "% The check sees which nodes are deleted.\nglue(del(V)) :- node(V).\n",
+      "description": "The interface atoms: the deleted nodes."
+    },
+    {
+      "name": "check",
+      "text": "% A counterexample: a triangle none of whose nodes is deleted.\n3 { q(V) : node(V) } 3.\n:- q(V), del(V).\n:- q(U), q(V), U < V, not edge(U,V).\n#show q/1.\n",
+      "description": "Looks for a triangle that survives the deletions (solver C)."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.block(M)\n"
+  },
+  "settings": {
+    "constants": {
+      "k": "3"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0,
+    "instance": "k2"
+  },
+  "runs": [],
+  "instances": [
+    {
+      "id": "k2",
+      "facts": "",
+      "constants": {
+        "k": "2"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "k3",
+      "facts": "",
+      "constants": {
+        "k": "3"
+      },
+      "expected": {
+        "solutions": 3
+      },
+      "tags": []
+    },
+    {
+      "id": "k4",
+      "facts": "",
+      "constants": {
+        "k": "4"
+      },
+      "expected": {
+        "solutions": 45
+      },
+      "tags": []
+    }
+  ],
+  "exercise": {
+    "text": "Make the loop learn from each surviving triangle: write relevant/1 in the check and reject with G.clause(M, X). The counts must stay the same, the audit must be sound on k = 2 and 3, and k = 3 must need at most 13 candidates (k = 4 at most 65).",
+    "instances": "all",
+    "audit": [
+      "k2",
+      "k3"
+    ],
+    "budgets": [
+      {
+        "instance": "k3",
+        "candidates": 13
+      },
+      {
+        "instance": "k4",
+        "candidates": 65
+      }
+    ]
+  }
+}

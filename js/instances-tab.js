@@ -3,7 +3,7 @@ import { makeEditor } from './editors.js';
 import { IMPORTERS, importerFor, freshId, checkFacts, ImportError } from './instances.js';
 import { generate, PARAM_TYPES } from './generate.js';
 import { fuzz, shrinkInstance, diagnose, defaultSource } from './fuzz.js';
-import { INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary } from './project.js';
+import { INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary, exerciseItems, gradeItem, exerciseSummary } from './project.js';
 import { fmt } from './output.js';
 
 const $ = (id) => document.getElementById(id);
@@ -71,6 +71,8 @@ export class InstancesTab {
       el('button', { class: 'control-button', id: 'import-instance-button', onclick: () => this.fileInput.click() }, 'Import file'),
       this.format,
       el('button', { class: 'control-button', id: 'run-all-instances-button', onclick: () => this.runAll() }, 'Run all'),
+      this.checkButton = el('button', { class: 'control-button', id: 'check-exercise-button', hidden: true, onclick: () => this.checkExercise(),
+        title: 'Check this exercise: expected counts and optima, the audit, and the budgets' }, 'Check exercise'),
       el('button', { class: 'control-button', id: 'fuzz-button', onclick: () => this.fuzz(), title: 'Audit instances from small to large; shrink the first unsound one and name the refinement that loses a solution' }, 'Fuzz'),
       this.fileInput);
     this.form = el('div', { class: 'instance-form', id: 'instance-form', hidden: true });
@@ -92,8 +94,9 @@ export class InstancesTab {
     for (const [inp, fn] of [[this.idInput, 'rename'], [this.expInput, 'setExpected'], [this.optInput, 'setOptimum'], [this.tagsInput, 'setTags'], [this.constInput, 'setConstants']]) {
       inp.addEventListener('change', () => this[fn](inp.value));
     }
+    this.exerciseBox = el('div', { id: 'exercise-box', class: 'audit-panel exercise-box', hidden: true });
     this.root.append(
-      bar, this.status, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table), this.form);
+      bar, this.status, this.exerciseBox, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table), this.form);
     this.buildGenerators();
     this.editor = makeEditor(editorBox, 'ace/mode/gringo');
     this.editor.on('change', () => {
@@ -105,6 +108,7 @@ export class InstancesTab {
 
   load() {
     this.results = new Map();
+    this.showExercise();
     this.gen = (this.app.project.generators || [])[0] ? this.app.project.generators[0].name : null;
     this.renderGenerators();
     this.current = this.list.length ? this.selectedId() || this.list[0].id : null;
@@ -307,6 +311,66 @@ export class InstancesTab {
     }
     const s = runAllSummary(rows);
     this.say(s.text, s.bad > 0);
+  }
+
+  // ---- self-checking exercises (FUTURE-DIRECTIONS F1) ---------------------------------------
+  showExercise(graded = null, done = true) {
+    const x = this.app.project.exercise;
+    this.checkButton.hidden = !x;
+    this.exerciseBox.hidden = !x;
+    this.exerciseBox.textContent = '';
+    if (!x) return;
+    const items = exerciseItems(this.app.project);
+    this.exerciseBox.append(el('h3', {}, 'Exercise'));
+    if (x.text) this.exerciseBox.append(el('p', { id: 'exercise-text' }, x.text));
+    const ul = el('ul', { id: 'exercise-items', class: 'exercise-items' });
+    items.forEach((it, i) => {
+      const g = graded && graded[i];
+      ul.append(el('li', { 'data-kind': it.kind, 'data-state': g ? (g.ok ? 'pass' : 'fail') : 'open', class: g ? (g.ok ? 'pass' : 'fail') : '' },
+        `${g ? (g.ok ? '✓ ' : '✗ ') : '○ '}${it.label}${g ? ` (${g.detail})` : ''}`));
+    });
+    this.exerciseBox.append(ul);
+    if (graded && done) {
+      const sum = exerciseSummary(graded);
+      this.exerciseBox.append(el('p', { id: 'exercise-summary', class: sum.pass ? 'note' : 'error' }, sum.text));
+    } else {
+      this.exerciseBox.append(el('p', { class: 'note' }, 'Check exercise runs each instance with all solutions, audits where asked, and compares the counts with the budgets.'));
+    }
+  }
+
+  async checkExercise() {
+    const c = this.app.control;
+    if (c.busy || !this.app.ready || !this.app.project.exercise) return;
+    const items = exerciseItems(this.app.project);
+    const graded = [];
+    const runs = new Map(), audits = new Map();
+    this.say('Checking the exercise…');
+    for (const it of items) {
+      const inst = this.list.find((i) => i.id === it.instance);
+      let res = null;
+      if (it.kind === 'audit') {
+        if (!audits.has(it.instance)) {
+          const r = await c.run({ instance: it.instance, mode: 'audit' });
+          if (r && r.state === 'aborted') { this.say('Stopped.'); return; }
+          audits.set(it.instance, r && r.audit ? r.audit : r ? { outcome: r.state } : null);
+        }
+        res = audits.get(it.instance);
+      } else {
+        if (!runs.has(it.instance)) {
+          const r = await c.run({ instance: it.instance, allSolutions: true });
+          if (r && r.state === 'aborted') { this.say('Stopped.'); return; }
+          const last = this.results.get(it.instance);
+          runs.set(it.instance, r && r.D && last ? { ...last, candidates: r.S ? r.S.candidates : undefined,
+            refinements: r.S ? (r.S.clauses || 0) + (r.S.expansions || 0) : undefined } : r ? { outcome: r.state } : null);
+        }
+        res = runs.get(it.instance);
+      }
+      graded.push(gradeItem(it, inst, res));
+      this.showExercise(graded, false);
+    }
+    this.showExercise(graded);
+    const sum = exerciseSummary(graded);
+    this.say(`Exercise: ${sum.text}`, !sum.pass);
   }
 
   // ---- generators (docs/spec-instances.md section 4) ------------------------------------

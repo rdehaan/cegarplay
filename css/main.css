@@ -1076,3 +1076,7 @@ body[data-last-mode="audit"] .audit-only { display: block; }
 .campaign-matrix td.best { font-weight: 700; background: var(--border-faint); }
 .campaign-matrix td.unsolved { color: var(--text-faint); font-style: italic; }
 .campaign-matrix td.disagree { color: var(--error); }
+.exercise-box h3 { margin: 4px 0; }
+.exercise-items { list-style: none; padding-left: 4px; margin: 6px 0; }
+.exercise-items li.pass { color: var(--ok, inherit); }
+.exercise-items li.fail { color: var(--error); }

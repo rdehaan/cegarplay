@@ -51,6 +51,11 @@
       "id": "puzzles",
       "title": "Puzzles",
       "description": "Generating puzzles with a unique solution: Sudoku, Binairo, Futoshiki, Akari, Slitherlink."
+    },
+    {
+      "id": "exercises",
+      "title": "Exercises",
+      "description": "Starter projects that check themselves: Check exercise (Instances tab) runs the instances, the audit and the budgets."
     }
   ],
   "examples": [
@@ -2144,6 +2149,34 @@
       "has": {
         "instances": 5,
         "views": 1
+      }
+    },
+    {
+      "id": "exercise-sum-free",
+      "title": "Exercise: a sound refinement for sum-free sets",
+      "group": "exercises",
+      "summary": "Fix relevant/1 so that every count matches, the audit is sound, and n = 8 needs at most 107 candidates.",
+      "shape": "shape1",
+      "tags": [
+        "exercise"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 5
+      }
+    },
+    {
+      "id": "exercise-triangles",
+      "title": "Exercise: learn from a triangle",
+      "group": "exercises",
+      "summary": "Replace blocking by a clause from relevant/1 so that k = 3 needs at most 13 candidates.",
+      "shape": "shape1",
+      "tags": [
+        "exercise"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 3
       }
     }
   ]

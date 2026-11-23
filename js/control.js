@@ -330,7 +330,7 @@ export class Control {
       this.runMessage(this.E ? `Error: ${this.E.message}${line ? ` (loop script, line ${line})` : ''}` : app.output.resultEl.textContent);
     }
     this.setState(state);
-    return { state, D: this.D, E: this.E };
+    return { state, D: this.D, E: this.E, audit: this.audit, S: app.stats.S };
   }
 
   describe(D) {

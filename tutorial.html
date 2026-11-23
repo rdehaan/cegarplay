@@ -521,6 +521,16 @@ if Y: reject M with GXC.core(C)</div>
 <p>If a counterexample has no relevant atom, the run stops with <code>relevant/1 derived nothing for link G</code>,
   and the trace shows that candidate and counterexample. Your project is kept in this browser and comes back after a
   reload; download it (Control tab) to keep it for good, or <b>Copy share link</b> to send it.</p>
+<h3 id="tut-exercises">Exercises that check themselves</h3>
+<p>An exercise is a project with a task and its own checks. <b>Check exercise</b> (Instances tab) runs every
+  instance with all solutions and compares the counts, audits where the task asks for it, and compares the number
+  of candidates with a budget, which a blocking loop cannot meet. Each item is marked ✓ or ✗, and an item that could
+  not be checked counts as ✗.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="exercise-sum-free">Load: Exercise, sum-free sets</button>
+  <button class="control-button small-button" data-load-example="exercise-triangles">Load: Exercise, triangles</button></p>
+<p>Teachers can grade a folder of submissions with <code>node tools/grade.mjs submissions/ --exercise
+  exercise-triangles</code>: the exercise and its instances come from the reference, the fragments and the loop
+  from each submission.</p>
 
 <h2 id="tut-next">13. Where next</h2>
 <p>The <b>technical manual</b> is the complete reference: the <a href="#manual-the-loop-language">loop language</a>

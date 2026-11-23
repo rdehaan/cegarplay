@@ -231,6 +231,7 @@ export function load(json) {
       return { ...x };
     });
   }
+  if ('exercise' in p) out.exercise = loadExercise(p.exercise, out.instances || []);
   if ('instance' in st && st.instance !== null && st.instance !== '' && typeof st.instance !== 'string') throw new ProjectError('settings.instance must be an instance id or ""');
   if ('variant' in st && st.variant !== null && typeof st.variant !== 'string') throw new ProjectError('settings.variant must be a variant name or ""');
   out.version = usesV2(out) ? 2 : 1;
@@ -553,4 +554,85 @@ export function runAllSummary(rows) {
     : bad ? `${head}: ${bad} with a count or optimum other than expected (marked ✗)${tail}`
     : `${head}, all match${tail}`;
   return { text, n, checked, bad, noExpect, unfinished, notExhausted };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Self-checking exercises (FUTURE-DIRECTIONS F1). A project's exercise block:
+//   { text, instances: [ids] | "all", audit: true | [ids], budgets: [{ instance, candidates, refinements }] }
+// instances: whose expected count or optimum must match (default "all": every instance with an
+// expectation); audit: the instances whose audit must say "sound" (true = the same instances);
+// budgets: at most this many candidates (or refinements) on that instance, which forces a
+// refinement stronger than blocking. The page's Check button and tools/grade.mjs use
+// exerciseItems and gradeItem; neither ever reports a pass for an item it could not check.
+export function loadExercise(x, instances) {
+  if (!isObj(x)) throw new ProjectError('exercise must be an object');
+  const ids = new Set(instances.map((i) => i.id));
+  const known = (id, what) => { if (!ids.has(id)) throw new ProjectError(`exercise: ${what} names no instance '${id}'`); return id; };
+  const out = { ...x };
+  if (x.text !== undefined && typeof x.text !== 'string') throw new ProjectError('exercise.text must be a string');
+  if (x.instances !== undefined && x.instances !== 'all') {
+    if (!Array.isArray(x.instances)) throw new ProjectError('exercise.instances must be a list of instance ids or "all"');
+    x.instances.forEach((id) => known(id, 'instances'));
+  }
+  if (x.audit !== undefined && typeof x.audit !== 'boolean') {
+    if (!Array.isArray(x.audit)) throw new ProjectError('exercise.audit must be true, false or a list of instance ids');
+    x.audit.forEach((id) => known(id, 'audit'));
+  }
+  if (x.budgets !== undefined) {
+    if (!Array.isArray(x.budgets)) throw new ProjectError('exercise.budgets must be a list');
+    x.budgets.forEach((b, i) => {
+      if (!isObj(b)) throw new ProjectError(`exercise.budgets[${i + 1}] must be an object`);
+      known(b.instance, `budgets[${i + 1}]`);
+      for (const k of ['candidates', 'refinements']) {
+        if (b[k] !== undefined && !(Number.isInteger(b[k]) && b[k] >= 0)) throw new ProjectError(`exercise.budgets[${i + 1}].${k} must be a whole number`);
+      }
+      if (b.candidates === undefined && b.refinements === undefined) throw new ProjectError(`exercise.budgets[${i + 1}]: give candidates or refinements`);
+    });
+  }
+  return out;
+}
+
+// The items to check, in order: [{ kind: 'expected' | 'audit' | 'budget', instance, key, max, label }].
+export function exerciseItems(project) {
+  const x = project.exercise;
+  if (!x) return [];
+  const list = project.instances || [];
+  const hasExp = (i) => i.expected && (Number.isInteger(i.expected.solutions) || (i.expected.optimum !== null && i.expected.optimum !== undefined));
+  const ids = x.instances === undefined || x.instances === 'all' ? list.filter(hasExp).map((i) => i.id) : x.instances;
+  const items = ids.map((id) => ({ kind: 'expected', instance: id, label: `${id}: ${expectedCheck(list.find((i) => i.id === id).expected, { outcome: 'x' }).want || 'no expectation'}` }));
+  const aud = x.audit === true ? ids : Array.isArray(x.audit) ? x.audit : [];
+  for (const id of aud) items.push({ kind: 'audit', instance: id, label: `${id}: the audit finds no unsound refinement` });
+  for (const b of x.budgets || []) {
+    for (const key of ['candidates', 'refinements']) {
+      if (b[key] !== undefined) items.push({ kind: 'budget', instance: b.instance, key, max: b[key], label: `${b.instance}: at most ${b[key]} ${key}` });
+    }
+  }
+  return items;
+}
+
+// result: for 'expected' and 'budget' a run { outcome, exhausted, solutions, cost, same, candidates,
+// refinements } (all solutions), for 'audit' { verdict } (or null when the run failed).
+// Returns { ok: true | false, detail }; ok is false whenever the item could not be checked.
+export function gradeItem(item, instance, result) {
+  if (!result) return { ok: false, detail: 'not checked: the run did not start' };
+  if (item.kind === 'audit') {
+    if (result.verdict === 'sound') return { ok: true, detail: 'sound' };
+    if (result.verdict === 'unsound') return { ok: false, detail: `unsound: ${result.unsound} refinements would remove a solution` };
+    return { ok: false, detail: `not checked: the audit ended without a verdict (${result.verdict || result.outcome || 'error'})` };
+  }
+  if (result.outcome !== 'finished') return { ok: false, detail: `not checked: the run ended with ${result.outcome || 'an error'}` };
+  if (item.kind === 'expected') {
+    const v = expectedCheck(instance && instance.expected, result);
+    if (!v.checked) return { ok: false, detail: `not checked: ${v.want ? 'the run stopped before all solutions were found' : 'the instance has no expectation'}` };
+    return v.ok ? { ok: true, detail: `${result.solutions} solutions${result.cost ? `, cost ${costText(result.cost)}` : ''}` }
+      : { ok: false, detail: `got ${result.solutions} solutions${result.cost ? `, cost ${costText(result.cost)}` : ''}; expected ${v.want}` };
+  }
+  const got = result[item.key];
+  if (typeof got !== 'number') return { ok: false, detail: `not checked: no ${item.key} count` };
+  return got <= item.max ? { ok: true, detail: `${got} ${item.key}` } : { ok: false, detail: `${got} ${item.key}, more than ${item.max}` };
+}
+
+export function exerciseSummary(graded) {
+  const n = graded.length, ok = graded.filter((g) => g.ok).length;
+  return { n, ok, pass: n > 0 && ok === n, text: n === 0 ? 'Nothing to check.' : ok === n ? `All ${n} checks pass.` : `${ok} of ${n} checks pass.` };
 }

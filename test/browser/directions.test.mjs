@@ -494,3 +494,21 @@ test('V5: comparing two recordings: two alive curves, the second domain view bes
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('F1: Check exercise runs counts, audits and budgets, and never passes what it could not check', { timeout: 120000 }, async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=exercise-triangles&tab=9');
+  assert.equal(await page.isVisible('#check-exercise-button'), true);
+  assert.match(await page.textContent('#exercise-text'), /G\.clause\(M, X\)/);
+  assert.equal(await page.$$eval('#exercise-items li', (l) => l.length), 7);
+  await page.click('#check-exercise-button');
+  await page.waitForSelector('#exercise-summary', { timeout: 100000 });
+  assert.equal(await page.textContent('#exercise-summary'), '3 of 7 checks pass.');
+  const states = await page.$$eval('#exercise-items li', (l) => l.map((x) => `${x.dataset.kind}:${x.dataset.state}`));
+  assert.deepEqual(states, ['expected:pass', 'expected:pass', 'expected:pass', 'audit:fail', 'audit:fail', 'budget:fail', 'budget:fail']);
+  assert.match(await page.textContent('#instances-status'), /Exercise: 3 of 7 checks pass\./);
+  // a project without an exercise has no button
+  await page.evaluate(() => window.cegarplay.loadExample('tutorial-first-run'));
+  await page.waitForFunction(() => document.getElementById('check-exercise-button').hidden);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

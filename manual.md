@@ -93,6 +93,7 @@ two-space indentation.
 | `version` | number | 1 | 1, or 2 when a key of format version 2 is used (see [Instances](#manual-instances)). A version above 2 is rejected (newer than this CegarPlay). |
 | `title` | string | `"Untitled"` | Shown in the Control tab and the page title. |
 | `description` | string | `""` | Shown under the title; one paragraph, also the library's text. |
+| `exercise` | object | absent | A self-checking exercise: `text` (the task), `instances` (ids or `"all"`: their expected count or optimum must match), `audit` (`true` or ids: the audit must be sound), `budgets` (`[{ instance, candidates, refinements }]`: at most this many). **Check exercise** (Instances tab) and `node tools/grade.mjs <files or folder> [--exercise reference.json] [--json]` check every item; an item that could not be checked fails. |
 | `readme` | string (Markdown) | absent | A project kit: background, what the abstraction and the check model, the baseline and the variants, what "better" means, open questions. Shown folded under the description (**Readme**), edited with **Edit**; the library tags such examples `project` and lists them under **Projects**. |
 | `fragments` | list | (required) | Ordered (tab order in the Programs tab). |
 | `fragments[].name` | string | (required) | Matches `[a-z][a-z0-9_]*`; unique. |
@@ -1281,6 +1282,7 @@ Library shows them as tags, and the filter matches them (type `view` or `suite`)
 | `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction`, `colourable-partial`, `triangle-free-lazy` |
 | `games` | `nash`, `voting-justification`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `kemeny-control`, `strong-nash`, `subset-sum-game` |
 | `planning` | `benders-tardiness`, `conformant-growing`, `conformant-planning`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-interdiction`, `knapsack-optimum` |
+| `exercises` | `exercise-sum-free`, `exercise-triangles` |
 | `puzzles` | `akari`, `binairo`, `fewest-clues`, `futoshiki`, `queens-omission`, `slitherlink`, `sudoku-graded`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `sudoku-unique` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.

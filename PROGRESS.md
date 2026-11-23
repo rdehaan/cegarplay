@@ -1294,3 +1294,8 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   `reading-order.html`, listed in `EXTRAS` (groups How-to and More in the sidebar and the
   contents page); every chapter ends with "Tool skills for this chapter"; the tutorial and the
   manual link the how-tos.
+- F1 (done): an `exercise` block in projects (`loadExercise`, `exerciseItems`, `gradeItem`,
+  `exerciseSummary` in `js/project.js`); **Check exercise** in the Instances tab; the headless
+  grader `tools/grade.mjs` (`--exercise reference.json` grades a folder against a reference);
+  two starters in a new library group `exercises` (`exercise-sum-free`, `exercise-triangles`),
+  linked from tutorial lesson 12. An item that could not be checked fails.

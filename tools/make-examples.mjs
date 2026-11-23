@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { importLp, load, save, template } from '../js/project.js';
 import { stripAspComments } from '../js/driver.js';
-import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS, PROJECT_CARDS } from './library.mjs';
+import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS, PROJECT_CARDS, EXERCISES } from './library.mjs';
 import { buildGuide } from './guide.mjs';
 
 const root = new URL('..', import.meta.url);
@@ -533,6 +533,18 @@ export function buildAll({ contribDir } = {}) {
   const entries = buildLibrary(problems['graph-coloring']);
   for (const e of PROBLEMS) entries.push({ ...e, project: problems[e.id] });
   entries.push(...buildGuide());
+  for (const x of EXERCISES) {
+    const base = entries.find((e) => e.id === x.base);
+    const p = structuredClone(base.project);
+    p.title = x.title;
+    p.description = x.description;
+    p.fragments = p.fragments.filter((f) => f.name !== 'view');
+    p.instances = structuredClone(x.instances);
+    p.settings = { ...p.settings, instance: x.instances[0].id };
+    p.exercise = { text: x.text, ...structuredClone(x.exercise) };
+    p.version = 2;
+    entries.push({ id: x.id, group: 'exercises', summary: x.summary, shape: 'shape1', tags: ['exercise'], expected: null, project: p });
+  }
   entries.push(...loadContrib(contribDir, new Set(entries.map((e) => e.id))));
   for (const e of entries) {
     if (GENERATORS[e.id]) { e.project.generators = structuredClone(GENERATORS[e.id]); e.project.version = 2; }

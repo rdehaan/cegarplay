@@ -241,6 +241,30 @@ export const GROUPS = [
   { id: 'planning', title: 'Planning and optimisation', description: 'Conformant planning, bilevel and trilevel knapsack problems.' },
   { id: 'puzzles', title: 'Puzzles', description: 'Generating puzzles with a unique solution: Sudoku, Binairo, Futoshiki, Akari, Slitherlink.' },
   { id: 'other', title: 'Other problems', description: 'Contributed problems without a category.' },
+  { id: 'exercises', title: 'Exercises', description: 'Starter projects that check themselves: Check exercise (Instances tab) runs the instances, the audit and the budgets.' },
+];
+
+// Self-checking exercises (FUTURE-DIRECTIONS F1), built from two existing examples by
+// tools/make-examples.mjs: (id, base, title, description, edit(project)).
+export const EXERCISES = [
+  { id: 'exercise-sum-free', base: 'tutorial-weak-relevant', title: 'Exercise: a sound refinement for sum-free sets',
+    summary: 'Fix relevant/1 so that every count matches, the audit is sound, and n = 8 needs at most 107 candidates.',
+    description: 'Sets of numbers in 1..n in which no two members add up to a third. The check marks too little as relevant, ' +
+      'and the loop loses solutions. Change relevant/1 in the check, then press Check exercise in the Instances tab.',
+    text: 'Fix relevant/1 in the fragment check. Every instance must give its expected count with all solutions, the audit ' +
+      'must find no unsound refinement on n = 4, 5 and 6, and n = 8 must need at most 107 candidates.',
+    instances: [[4, 9], [5, 16], [6, 24], [7, 42], [8, 61]].map(([n, c]) => ({ id: `n${n}`, facts: '', constants: { n: String(n) }, expected: { solutions: c }, tags: [] })),
+    exercise: { instances: 'all', audit: ['n4', 'n5', 'n6'], budgets: [{ instance: 'n8', candidates: 107 }] } },
+  { id: 'exercise-triangles', base: 'guide-02-block', title: 'Exercise: learn from a triangle',
+    summary: 'Replace blocking by a clause from relevant/1 so that k = 3 needs at most 13 candidates.',
+    description: 'Delete at most k nodes of the small graph of the guide so that no triangle is left. The loop blocks every ' +
+      'refuted candidate on its own. Write relevant/1 in the check and use G.clause(M, X) in the loop (guide, chapter 3), ' +
+      'then press Check exercise in the Instances tab.',
+    text: 'Make the loop learn from each surviving triangle: write relevant/1 in the check and reject with G.clause(M, X). ' +
+      'The counts must stay the same, the audit must be sound on k = 2 and 3, and k = 3 must need at most 13 candidates ' +
+      '(k = 4 at most 65).',
+    instances: [[2, 0], [3, 3], [4, 45]].map(([k, c]) => ({ id: `k${k}`, facts: '', constants: { k: String(k) }, expected: { solutions: c }, tags: [] })),
+    exercise: { instances: 'all', audit: ['k2', 'k3'], budgets: [{ instance: 'k3', candidates: 13 }, { instance: 'k4', candidates: 65 }] } },
 ];
 
 // Every entry: id, group, summary, shape (template or 'custom'), tags, expected solutions.
