@@ -1,6 +1,6 @@
 // Campaign tab (tab 10, docs/spec-instances.md section 5): a suite editor, Start / Pause /
 // Resume / Abort, a progress grid, four plots and a growth fit, on rows kept in IndexedDB.
-import { runSuite, expandSuite, cellKey, inconsistencies, scaling, growthFit, solvedCurves, SuiteError, engineTag } from './campaign.js';
+import { runSuite, expandSuite, cellKey, inconsistencies, scaling, growthFit, solvedCurves, SuiteError, engineTag, resultMatrix, matrixCSV } from './campaign.js';
 import { Pool, defaultPoolSize } from './pool.js';
 import { IdbStore, MemoryStore, exportRows, importRows } from './store.js';
 import { fmt } from './output.js';
@@ -56,12 +56,17 @@ export class CampaignTab {
     this.grid = h('canvas', { id: 'campaign-grid', class: 'campaign-grid', 'aria-label': 'Progress: one square per cell' });
     this.plots = h('div', { id: 'campaign-plots', class: 'campaign-plots' });
     this.summary = h('div', { id: 'campaign-summary' });
+    this.matrixBox = h('div', { id: 'campaign-matrix-box' });
+    this.metric = 'time';
+    this.sortBy = null;           // null (suite order) | 'instance' | a variant name
+    this.scatterPick = [null, null];
+    this.grid.addEventListener('mousemove', (e) => this.gridTip(e));
     this.root.append(
       h('div', { class: 'instances-bar' }, this.select, b('campaign-new', 'New suite', () => this.addSuite()),
         h('label', {}, 'Engines ', this.jobs), this.startB, this.pauseB, this.abortB,
-        b('campaign-export', 'Export rows', () => this.exportFile()), b('campaign-import', 'Import rows', () => this.fileInput.click()),
+        b('campaign-export', 'Export rows', () => this.exportFile()), b('campaign-export-csv', 'Export matrix (CSV)', () => this.exportCSV()), b('campaign-import', 'Import rows', () => this.fileInput.click()),
         b('campaign-clear', 'Forget rows', () => this.clearRows()), this.fileInput),
-      this.text, this.status, this.grid, this.summary, this.plots);
+      this.text, this.status, this.grid, this.summary, this.matrixBox, this.plots);
     this.setRunning(false);
   }
 
@@ -215,6 +220,13 @@ export class CampaignTab {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
+  exportCSV() {
+    const blob = new Blob([matrixCSV(resultMatrix(this.rows, this.metric))], { type: 'text/csv' });
+    const a = h('a', { href: URL.createObjectURL(blob), download: `${this.current || 'campaign'}-${this.metric}.csv` });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
   async importFile() {
     const f = this.fileInput.files[0];
     this.fileInput.value = '';
@@ -240,7 +252,50 @@ export class CampaignTab {
     if (label) label.querySelector('.tab-text').textContent = bad.length ? `Campaign (${bad.length} ✗)` : 'Campaign';
     this.drawGrid(bad);
     this.drawSummary(bad);
+    this.drawMatrix();
     this.drawPlots();
+  }
+
+  // the instance x variant matrix (FUTURE-DIRECTIONS D2): one row per instance, one column per
+  // variant; time or candidates; the best solved cell of a row highlighted; sortable.
+  drawMatrix() {
+    this.matrixBox.textContent = '';
+    if (!this.rows.length) return;
+    const m = resultMatrix(this.rows, this.metric);
+    const pick = h('select', { id: 'campaign-metric', 'aria-label': 'Matrix metric' },
+      ...[['time', 'time (s)'], ['candidates', 'candidates'], ['refinements', 'refinements']].map(([v, l]) => h('option', { value: v, selected: v === this.metric }, l)));
+    pick.addEventListener('change', () => { this.metric = pick.value; this.drawMatrix(); });
+    const rows = m.rows.slice();
+    if (this.sortBy === 'instance') rows.sort((a, b) => String(a.instance).localeCompare(String(b.instance), undefined, { numeric: true }));
+    else if (this.sortBy) {
+      const key = (r) => { const c = r.cells[this.sortBy]; return !c ? Infinity : c.solved && c.value !== null ? c.value : 1e300; };
+      rows.sort((a, b) => key(a) - key(b));
+    }
+    const th = (label, key) => h('th', { 'data-sort': key, class: 'sortable', title: 'Sort by this column', onclick: () => { this.sortBy = this.sortBy === key ? null : key; this.drawMatrix(); } },
+      label + (this.sortBy === key ? ' ▲' : ''));
+    const t = h('table', { class: 'internals-table campaign-matrix', id: 'campaign-matrix', 'data-metric': this.metric });
+    t.append(h('tr', {}, th('Instance', 'instance'), ...m.variants.map((v) => th(v, v))));
+    for (const r of rows) {
+      t.append(h('tr', { 'data-instance': r.instance }, h('td', {}, r.instance || '(project)'), ...m.variants.map((v) => {
+        const c = r.cells[v];
+        if (!c) return h('td', {}, '');
+        const text = !c.solved ? c.outcome : c.value === null ? '–' : this.metric === 'time' ? `${c.value.toFixed(3)}` : fmt(Math.round(c.value));
+        const cls = ['num', r.best === v ? 'best' : '', c.disagree ? 'disagree' : '', c.solved ? '' : 'unsolved'].filter(Boolean).join(' ');
+        const tip = `${r.instance} / ${v}: ${c.outcome}, ${fmt(c.solutions)} solutions${c.cost ? `, cost ${c.cost.join(' ')}` : ''}${c.n > 1 ? `, median of ${c.n} seeds` : ''}${c.disagree ? '; disagrees with another variant' : ''}`;
+        return h('td', { class: cls, title: tip, 'data-variant': v }, text + (c.disagree ? ' ✗' : ''));
+      })));
+    }
+    this.matrixBox.append(h('div', { class: 'instances-bar' }, h('b', {}, 'Instance × variant '), h('label', {}, 'Show ', pick),
+      h('span', { class: 'note' }, ' best solved cell per row in bold; click a heading to sort')), t);
+  }
+
+  // the progress grid's tooltip: the cell under the mouse
+  gridTip(e) {
+    const cv = this.grid, sq = Number(cv.dataset.sq || 10), per = Number(cv.dataset.per || 1);
+    const r0 = cv.getBoundingClientRect();
+    const i = Math.floor((e.clientY - r0.top) / (sq + 1)) * per + Math.floor((e.clientX - r0.left) / (sq + 1));
+    const r = (this.sortedRows || [])[i];
+    cv.title = r ? `${r.instance || '(project)'} / ${r.variant} / seed ${r.seed}: ${r.outcome}${r.skipped ? '' : `, ${fmt(r.solutions)} solutions, ${Number(r.time || 0).toFixed(3)} s`}` : '';
   }
 
   drawGrid(bad) {
@@ -257,6 +312,8 @@ export class CampaignTab {
     ctx.clearRect(0, 0, width, height);
     const red = new Set(bad.flatMap((b) => b.rows.map((r) => r.key)));
     const rows = this.rows.slice().sort((a, b) => String(a.instance).localeCompare(String(b.instance)) || String(a.variant).localeCompare(String(b.variant)) || a.seed - b.seed);
+    this.sortedRows = rows;
+    cv.dataset.sq = String(sq); cv.dataset.per = String(per);
     for (let i = 0; i < n; i++) {
       const r = rows[i];
       const x = (i % per) * (sq + 1), y = Math.floor(i / per) * (sq + 1);
@@ -286,8 +343,8 @@ export class CampaignTab {
     }
     this.summary.append(t);
     const p = h('p', { id: 'campaign-consistency', class: bad.length ? 'error' : 'note' },
-      bad.length ? `${bad.length} instances where exhausted variants disagree: ` + bad.map((b) => `${b.instance} (${b.rows.map((r) => `${r.variant} ${fmt(r.solutions)}`).join(' vs ')})`).join('; ')
-        : 'Every instance: the exhausted variants agree.');
+      bad.length ? `${bad.length} instances where variants disagree: ` + bad.map((b) => `${b.instance} (${b.kind === 'optimum' ? 'optimum ' : ''}${b.rows.map((r) => `${r.variant} ${b.kind === 'optimum' ? r.cost.join(' ') : fmt(r.solutions)}`).join(' vs ')})`).join('; ')
+        : 'Every instance: the finished variants agree on counts and optima.');
     this.summary.append(p);
   }
 
@@ -314,9 +371,20 @@ export class CampaignTab {
     const keys = [...new Set(this.rows.flatMap((r) => Object.keys(r.params || {})))].filter((k) => new Set(this.rows.map((r) => r.params && r.params[k])).size > 1);
     if (keys.length >= 2) this.plots.append(fig(`Median time over ${keys[0]} and ${keys[1]} (${variants[0]})`, this.heatMap(keys[0], keys[1], variants[0]), 'plot-heat'));
     // 3. scatter: one variant against another, per instance
-    if (variants.length >= 2) this.plots.append(fig(`Time per instance: ${variants[0]} (x) against ${variants[1]} (y)`, this.scatter(variants[0], variants[1]), 'plot-scatter'));
-    // 4. solved within time
-    this.plots.append(fig('Cells solved (exhausted) within a time', this.solvedPlot(solvedCurves(this.rows), color), 'plot-solved'));
+    if (variants.length >= 2) {
+      const [a0, b0] = this.scatterPick;
+      const va = variants.includes(a0) ? a0 : variants[0];
+      const vb = variants.includes(b0) && b0 !== va ? b0 : variants.find((v) => v !== va);
+      const sel = (id, cur, i) => {
+        const e = h('select', { id, 'aria-label': i ? 'Scatter y variant' : 'Scatter x variant' }, ...variants.map((v) => h('option', { value: v, selected: v === cur }, v)));
+        e.addEventListener('change', () => { this.scatterPick[i] = e.value; this.drawPlots(); });
+        return e;
+      };
+      const cap = h('figcaption', {}, 'Time per instance: ', sel('scatter-x', va, 0), ' (x) against ', sel('scatter-y', vb, 1), ' (y)');
+      this.plots.append(h('figure', { id: 'plot-scatter' }, cap, this.scatter(va, vb)));
+    }
+    // 4. a cactus plot: the i-th fastest solved cell per variant against its time
+    this.plots.append(fig('Cactus plot: cells solved (finished) against time', this.solvedPlot(solvedCurves(this.rows), color), 'plot-solved'));
   }
 
   frame(W = 360, H = 220) {
@@ -393,13 +461,13 @@ export class CampaignTab {
     const f = this.frame();
     const tmax = Math.max(1e-3, ...Object.values(curves).flatMap((c) => c.times));
     const nmax = Math.max(1, ...Object.values(curves).map((c) => c.total));
-    const X = (t) => f.x0 + t / tmax * (f.x1 - f.x0), Y = (n) => f.y0 - n / nmax * (f.y0 - f.y1);
+    const X = (n) => f.x0 + n / nmax * (f.x1 - f.x0), Y = (t) => f.y0 - t / tmax * (f.y0 - f.y1);
     for (const [v, c] of Object.entries(curves)) {
-      const pts = [`${X(0)},${Y(0)}`];
-      c.times.forEach((t, i) => { pts.push(`${X(t)},${Y(i)}`, `${X(t)},${Y(i + 1)}`); });
-      f.s.append(svg('polyline', { points: pts.join(' '), fill: 'none', stroke: color(v), 'stroke-width': 2 }));
+      const pts = c.times.map((t, i) => `${X(i + 1)},${Y(t)}`);
+      if (pts.length > 1) f.s.append(svg('polyline', { points: pts.join(' '), fill: 'none', stroke: color(v), 'stroke-width': 2 }));
+      c.times.forEach((t, i) => f.s.append(svg('circle', { cx: X(i + 1), cy: Y(t), r: 2.5, fill: color(v) })));
     }
-    f.s.append(svg('text', { x: f.x1, y: f.H - 6, 'text-anchor': 'end', class: 'plot-label' }, `${tmax.toPrecision(2)} s`), svg('text', { x: 2, y: f.y1 + 8, class: 'plot-label' }, String(nmax)));
+    f.s.append(svg('text', { x: f.x1, y: f.H - 6, 'text-anchor': 'end', class: 'plot-label' }, `${nmax} solved`), svg('text', { x: 2, y: f.y1 + 8, class: 'plot-label' }, `${tmax.toPrecision(2)} s`));
     this.legend(f, Object.keys(curves), color);
     return f.s;
   }

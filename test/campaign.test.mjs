@@ -94,7 +94,8 @@ test('tools/bench.mjs: two shards together give the rows of an unsharded run; --
   const all = run('--out', `${dir}/all.jsonl`);
   assert.equal(all.status, 0, all.stderr);
   for (const s of ['0/2', '1/2']) assert.equal(run('--shard', s, '--out', `${dir}/s${s[0]}.jsonl`).status, 0);
-  const strip = (r) => JSON.stringify({ ...r, time: undefined, candidates: r.candidates });
+  const strip = (r) => JSON.stringify({ ...r, time: undefined, candidates: r.candidates,
+    solvers: r.solvers && Object.fromEntries(Object.entries(r.solvers).map(([k, v]) => [k, { ...v, time: undefined }])) });
   const rows = (f) => importRows(fs.readFileSync(`${dir}/${f}`, 'utf8')).map(strip).sort();
   const A = rows('all.jsonl'), B = [...rows('s0.jsonl'), ...rows('s1.jsonl')].sort();
   assert.equal(A.length, 20);

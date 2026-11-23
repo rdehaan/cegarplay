@@ -82,6 +82,17 @@ export class Variants {
       this.root.append(el('p', { class: 'note' }, 'No variants. A variant runs the same project with other fragments, another loop script or other constants; ',
         'the run bar then gets a Variant picker, and a campaign suite can compare variants on the same instances.'));
     }
+    if (this.list.length) {
+      // the Campaign tab compares variants on many instances; it is shown only in Advanced mode
+      const open = el('a', { href: '#', id: 'variants-campaign-link', onclick: (e) => {
+        e.preventDefault();
+        if (this.app.showTabs) this.app.showTabs('advanced', true, { store: false });
+        const t = document.getElementById('tab10');
+        if (t) { t.checked = true; t.dispatchEvent(new Event('change', { bubbles: true })); }
+      } }, 'Campaign tab');
+      this.root.append(el('p', { class: 'note' }, 'To compare the variants on many instances (a table per instance and variant, plots, CSV), use the ', open,
+        ' (an Advanced tab; this link shows it for this visit).'));
+    }
     this.list.forEach((v, i) => this.root.append(this.card(v, i, fragments)));
     this.root.append(el('p', { class: 'inline-controls' },
       el('button', { class: 'control-button', id: 'add-variant-button', onclick: () => this.add() }, '+ Add variant')));

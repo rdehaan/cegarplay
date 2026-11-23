@@ -1,7 +1,10 @@
 // Run a campaign suite headless (docs/spec-instances.md section 5), the twin of the Campaign tab.
 //
 //   node tools/bench.mjs <project.json | library id> --suite NAME [--jobs N] [--shard i/n]
-//                        [--out file.jsonl] [--resume] [--quiet]
+//                        [--out file.jsonl] [--resume] [--seconds N] [--quiet]
+//
+// --seconds N replaces the suite's time limit per cell (N > 0). Turn the rows into a table and a
+// plot with tools/report.mjs.
 //
 // One row per cell as a JSON line (stdout, or --out). --resume skips the cells whose key is
 // already in the --out file and appends. Exit code 0, 1 on a problem, 2 on bad usage.
@@ -72,13 +75,14 @@ export class ThreadPool {
 
 function usage(msg) {
   if (msg) console.error(msg);
-  console.error('usage: node tools/bench.mjs <project.json | library id> --suite NAME [--jobs N] [--shard i/n] [--out file.jsonl] [--resume] [--quiet]');
+  console.error('usage: node tools/bench.mjs <project.json | library id> --suite NAME [--jobs N] [--shard i/n] [--out file.jsonl] [--resume] [--seconds N] [--quiet]');
   process.exit(2);
 }
 
-export async function bench(project, suiteName, { jobs = 1, shard = null, store = new MemoryStore(), onRow = () => {} } = {}) {
-  const suite = (project.suites || []).find((s) => s.name === suiteName);
+export async function bench(project, suiteName, { jobs = 1, shard = null, store = new MemoryStore(), onRow = () => {}, seconds = 0 } = {}) {
+  let suite = (project.suites || []).find((s) => s.name === suiteName);
   if (!suite) throw new Error(`no suite named ${suiteName}`);
+  if (seconds > 0) suite = { ...suite, limits: { ...(suite.limits || {}), seconds } };
   const pool = new ThreadPool(jobs);
   try {
     return await runSuite(project, suite, {
@@ -94,7 +98,7 @@ export const engineVersion = () => {
 
 async function main(argv) {
   const args = [...argv];
-  let target = null, suite = null, jobs = Math.max(1, Math.min(8, os.cpus().length - 1)), shard = null, out = null, resume = false, quiet = false;
+  let target = null, suite = null, jobs = Math.max(1, Math.min(8, os.cpus().length - 1)), shard = null, out = null, resume = false, quiet = false, seconds = 0;
   while (args.length) {
     const a = args.shift();
     if (a === '--suite') suite = args.shift() || usage('--suite needs a name');
@@ -102,6 +106,7 @@ async function main(argv) {
     else if (a === '--shard') { try { shard = parseShard(args.shift()); } catch (e) { usage(e.message); } }
     else if (a === '--out') out = args.shift() || usage('--out needs a file');
     else if (a === '--resume') resume = true;
+    else if (a === '--seconds') { seconds = Number(args.shift()); if (!(seconds > 0)) usage('--seconds needs a number > 0'); }
     else if (a === '--quiet') quiet = true;
     else if (a === '-h' || a === '--help') usage();
     else if (a.startsWith('-')) usage(`unknown option ${a}`);
@@ -119,7 +124,7 @@ async function main(argv) {
   let r;
   try {
     r = await bench(project, suite, {
-      jobs, shard, store,
+      jobs, shard, store, seconds,
       onRow: (row, done, total) => {
         const line = JSON.stringify(row) + '\n';
         if (out) fs.appendFileSync(out, line); else process.stdout.write(line);

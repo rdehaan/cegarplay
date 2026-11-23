@@ -277,6 +277,15 @@ test('I3: tutorial-weak-relevant with a reference variant marks n = 8 red; impor
   assert.match(text, /n8 \((default 11 vs reference 61|reference 61 vs default 11)\)/);
   assert.match(await page.textContent('#label-campaign'), /Campaign \(5 ✗\)/);
   for (const id of ['plot-scaling', 'plot-scatter', 'plot-solved']) assert.equal(await page.$$eval(`#${id} svg`, (x) => x.length), 1, id);
+  // the instance x variant matrix (D2): a row per instance, the n8 cells marked, sortable, metric switch
+  assert.equal(await page.$$eval('#campaign-matrix tr[data-instance]', (r) => r.length), 5);
+  assert.equal(await page.$$eval('#campaign-matrix tr[data-instance="n8"] td.disagree', (r) => r.length), 2);
+  await page.click('#campaign-matrix th[data-sort="instance"]');
+  assert.match(await page.textContent('#campaign-matrix th[data-sort="instance"]'), /▲/);
+  await page.selectOption('#campaign-metric', 'candidates');
+  assert.equal(await page.$eval('#campaign-matrix', (t) => t.dataset.metric), 'candidates');
+  await page.selectOption('#scatter-x', 'reference');
+  assert.equal(await page.$eval('#scatter-y', (e) => e.value), 'default');
   // rows written by tools/bench.mjs, imported: the same plots
   const { spawnSync } = await import('node:child_process');
   const rows = spawnSync('node', [new URL('../../tools/bench.mjs', import.meta.url).pathname, 'tutorial-weak-relevant', '--suite', 'scaling', '--jobs', '2', '--quiet'], { encoding: 'utf8' }).stdout;

@@ -186,12 +186,23 @@ The **Campaign** tab (tab 10) runs a suite: a grid of instances (instance ids, a
 with seeds, or a grid over constants) × variants × solver seeds, every cell with all solutions,
 several engines at a time. Rows are kept in this browser (IndexedDB), so **Start** after a reload
 runs only the missing cells; an edit of a fragment, the loop or a constant changes the keys of
-exactly the cells it touches. Instances whose exhausted variants disagree are marked red (the run
-history's ⚠, for a whole grid). Plots: time against a parameter (median and interquartile band),
-a heat map over two parameters, one variant against another, solved within time; a growth factor
-per variant with a 90% interval. `node tools/bench.mjs <project> --suite NAME [--jobs N]
-[--shard i/n] [--out rows.jsonl] [--resume]` runs the same suite headless; **Import rows** reads
-its file. Format: `docs/spec-instances.md` section 5.
+exactly the cells it touches. Instances whose exhausted variants disagree on the solutions, or
+whose finished variants report different optima, are marked red (the run history's ⚠, for a whole
+grid); hover a square of the progress grid to see its cell. The **instance × variant matrix** has
+one row per instance and one column per variant, showing time, candidates or refinements (median
+over seeds); the best finished cell of a row is bold, a cell that did not finish shows its outcome,
+a disagreement is marked ✗, and a click on a heading sorts by that column. **Export matrix (CSV)**
+saves it. Plots: time against a parameter (median and interquartile band), a heat map over two
+parameters, one variant against another (pick both), and a cactus plot (the i-th fastest finished
+cell against its time); a growth factor per variant with a 90% interval. A row holds the outcome,
+solutions, candidates, refinements and time, plus the cost of the solutions (`cost`, `sameCost`),
+the mean clause length (`meanClause`) and per solver the calls, time and conflicts (`solvers`).
+`node tools/bench.mjs <project> --suite NAME [--jobs N] [--shard i/n] [--out rows.jsonl]
+[--resume] [--seconds N]` runs the same suite headless (`--seconds` replaces the suite's time
+limit); **Import rows** reads its file. `node tools/report.mjs rows.jsonl [--metric
+time|candidates|refinements] [--limit S] [--out PREFIX]` turns rows into a report: per-variant
+totals (solved, total time, PAR2), the matrix as Markdown and CSV, the disagreements, and a cactus
+plot as SVG. Format: `docs/spec-instances.md` section 5.
 
 ```json
 "suites": [ { "name": "scaling", "instances": { "constants": { "n": [4, 5, 6, 7, 8] } },
@@ -1354,7 +1365,7 @@ variant exits with 2. Example: `node tools/run.mjs tutorial-first-run --quiet`.
 
 ```sh
 node tools/audit.mjs <project.json | library id> [--link G] [--limit N] [-c name=value]
-                     [--seconds N] [--json]
+                     [--instance ID] [--variant NAME] [--seconds N] [--json]
 ```
 
 Runs the [audit](#manual-audit) headless. Prints the counts and the verdict, with the witness when
