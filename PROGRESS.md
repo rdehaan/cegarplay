@@ -1015,8 +1015,8 @@ grids that agree with the clues; same clause refinement).
   `solution/3` (`grid(s) :- not fixed.`, so the grounder makes the grid facts: each solve is
   much cheaper). Engine times (seed 0): free grid k = 26 0.4 s, 25 2.3 s, 24 14.5 s, 28 56 s
   (search luck, not monotone); k <= 21 does not finish in 4 min, also with a fixed grid at
-  k <= 19, so **17 is out of reach** of this loop. Instance `seventeen`: a 17-clue puzzle from
-  Royle's list with 14 clues printed, k = 3: 4 s; all solutions 17 s, exactly 1 (the known one).
+  k <= 19, so **17 is out of reach** of this loop. (An instance that printed 14 clues of a known
+  17-clue puzzle, k = 3, was dropped on request.)
   Uniqueness lemmas in A (deadly rectangles, two clueless rows in a band, two unshown values)
   did not help reliably; not used.
 - `sudoku-hard`: also not solvable by naked/hidden singles, naked/hidden pairs and locked
