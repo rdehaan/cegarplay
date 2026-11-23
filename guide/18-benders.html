@@ -72,7 +72,7 @@ covered(k,M) :- need(k,M,_), assign(J,M) : cut(k,has(M,J)).
         <pre class="code" data-lang="asp" data-from="guide-18-benders-exact:abstraction">covered(k,M) :- need(k,M,_), assign(J,M) : cut(k,has(M,J)); not assign(J,M) : job(J,_,_), not cut(k,has(M,J)).</pre>
         <p class="listing-source">From the fragment <code>abstraction</code> of <code>guide-18-benders-exact</code>.</p>
         <details class="predict">
-          <summary>Before you press Run: the superset cut needed <span data-stat="benders-tardiness:candidates">26</span>
+          <summary><span class="web-only">Before you press Run: </span><span class="book-only">Predict: </span>the superset cut needed <span data-stat="benders-tardiness:candidates">26</span>
             master solutions. How many with the exact-set cut?</summary>
           <p><span data-stat="guide-18-benders-exact:candidates">57</span>. Every set of jobs on a machine
             now needs its own cut, even when a subset was already known to be too late.</p>
@@ -116,7 +116,7 @@ covered(k,M) :- need(k,M,_), assign(J,M) : cut(k,has(M,J)).
           </details>
         </section>
 
-        <section class="tools" id="tools">
+        <section class="tools web-only" id="tools">
           <h2>Tool skills for this chapter</h2>
           <ul>
             <li><a href="../?tab=2#tut-lang-growing">Tutorial: growing programs</a></li>

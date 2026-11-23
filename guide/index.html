@@ -35,12 +35,16 @@
           goes wrong, and which loop to choose.</p>
 
         <h2 id="what">What this guide is</h2>
-        <p>New to both the guide and the playground? Follow the
+        <p class="web-only">New to both the guide and the playground? Follow the
           <a href="reading-order.html">combined reading order</a>; unsure of a term, see the
           <a href="glossary.html">glossary</a>.</p>
-        <p>The guide teaches the design of a loop, not the use of the tool. For a tour of the
+        <p class="web-only">The guide teaches the design of a loop, not the use of the tool. For a tour of the
           playground's tabs, take the <a href="../?tab=2">Tutorial</a>; for the loop language and
           every option, look in the <a href="../?manual=true&amp;tab=8">Manual</a>.</p>
+        <p class="book-only">Part I of this book teaches the design of a loop. Part II is a tour of the
+          playground, the browser application in which every example of Part I runs. A
+          <a href="glossary.html">glossary</a> and a <a href="bibliography.html">bibliography</a> close
+          Part I.</p>
         <p>You should know answer set programming: choice rules, constraints, <code>#show</code>,
           and running clingo. You need not know anything about CEGAR.</p>
 
@@ -71,21 +75,26 @@
           <figcaption>Propose, test, learn, repeat.</figcaption>
         </figure>
 
-        <h2 id="links">How the links work</h2>
-        <p id="links-example">Every step of the guide is an example of the playground. A link marked
+        <h2 id="links" class="web-only">How the links work</h2>
+        <p id="links-example" class="web-only">Every step of the guide is an example of the playground. A link marked
           <a class="play" href="../?example=guide-03-hit-clique&amp;fragment=check&amp;from=guide/index.html%23links-example" target="cegarplay">Open</a>
           loads the example in the playground and shows the program the text talks about. All such
           links use the same browser tab, so the guide stays where it is. In the playground, press
           Run; the link "Back to the guide" at the top left brings you back to the paragraph you came
           from. Loading an example does not replace the project you are editing in the playground
           until you change it.</p>
-        <p>The numbers on the pages (candidates, counterexamples, solutions) were measured with the
+        <p class="web-only">The numbers on the pages (candidates, counterexamples, solutions) were measured with the
           same engine the playground uses, and a test keeps them up to date: your run shows the same
           numbers.</p>
+        <h2 id="examples" class="book-only">The examples</h2>
+        <p class="book-only">Every step of Part I is an example of the playground, named where it
+          appears, as in [Playground: guide-03-hit-clique]. The numbers in the text (candidates,
+          counterexamples, solutions) were measured with the engine the playground uses, and a test keeps
+          them up to date, so a run of an example shows the same numbers.</p>
 
-        <h2 id="chapters-list">Chapters</h2>
-        <h3 id="part-1">Part I: Design</h3>
-        <ol class="chapter-list">
+        <h2 class="web-only" id="chapters-list">Chapters</h2>
+        <h3 class="web-only" id="part-1">Part I: Design</h3>
+        <ol class="web-only" class="chapter-list">
           <li><span class="num">01</span><a href="01-why-a-loop.html">Why a loop</a>
             <span class="summary">A problem with one quantifier too many for one program, and the idea of the loop.</span></li>
           <li><span class="num">02</span><a href="02-first-loop.html">The first loop: guess, check, block</a>
@@ -111,10 +120,10 @@
           <li><span class="num">12</span><a href="12-your-own-loop.html">Your own loop: a walkthrough and a checklist</a>
             <span class="summary">A fresh problem from start to finish, and the rules of the guide in one list.</span></li>
         </ol>
-        <h3 id="part-2">Part II: Loops from the literature</h3>
-        <p>Each chapter starts from a problem and a blocking loop and derives a published algorithm
+        <h3 class="web-only" id="part-2">Part II: Loops from the literature</h3>
+        <p class="web-only">Each chapter starts from a problem and a blocking loop and derives a published algorithm
           in steps, with a box that maps the paper's pseudocode onto the loop script.</p>
-        <ol class="chapter-list" start="13">
+        <ol class="web-only" class="chapter-list" start="13">
           <li><span class="num">13</span><a href="13-qbf.html">2QBF, by clauses and by expansion</a>
             <span class="summary">The loop of Part I is a known QBF algorithm; expansion learns a copy of the formula instead of a clause.</span></li>
           <li><span class="num">14</span><a href="14-hitting-sets.html">Implicit hitting sets</a>
@@ -136,10 +145,10 @@
           <li><span class="num">22</span><a href="22-from-a-paper.html">From a paper to a loop</a>
             <span class="summary">A checklist from pseudocode to loop script, and which loop for which problem.</span></li>
         </ol>
-        <h2 id="howto">How-to pages</h2>
-        <p>Short pages with one goal each: how to use the playground's tools to answer a design
+        <h2 class="web-only" id="howto">How-to pages</h2>
+        <p class="web-only">Short pages with one goal each: how to use the playground's tools to answer a design
           question.</p>
-        <ul class="extra-list">
+        <ul class="web-only" class="extra-list">
           <li><a href="howto-campaign.html">How to compare refinement strategies with a campaign</a>: Variants, a suite, the instance × variant matrix and the plots.</li>
           <li><a href="howto-time.html">How to find where the time goes</a>: Solvers, candidates, clause lengths, the timeline and the cost per line.</li>
           <li><a href="howto-unsound.html">How to hunt an unsound refinement</a>: The audit, the candidate space, Fuzz and a regression instance.</li>
@@ -150,8 +159,8 @@
           <li><a href="howto-present.html">How to record and present a run</a>: Recordings, replays, storyboards and lecture links.</li>
           <li><a href="howto-paper.html">How to turn a paper into a loop</a>: A checklist from pseudocode to loop script, and what to do when CegarPlay lacks something.</li>
         </ul>
-        <h2 id="more">More</h2>
-        <ul class="extra-list">
+        <h2 class="web-only" id="more">More</h2>
+        <ul class="web-only" class="extra-list">
           <li><a href="reading-order.html">Reading the guide and the tutorial together</a>: One order for both, so that each tool appears when a design question calls for it.</li>
           <li><a href="instructors.html">Notes for instructors</a>: A twelve-week course plan, replays for the key moments, graded exercises and project kits by size.</li>
           <li><a href="glossary.html">Glossary</a>: The terms of the guide, each with the chapter that introduces it.</li>

@@ -1,5 +1,5 @@
-<h2 id="tut-contents">Contents</h2>
-<ol>
+<h2 id="tut-contents" class="web-only">Contents</h2>
+<ol class="web-only">
   <li><a href="#tut-cegar">What CEGAR is</a></li>
   <li><a href="#tut-first-run">Your first run</a></li>
   <li><a href="#tut-fragments">Fragments, solvers and links</a></li>
@@ -14,17 +14,24 @@
   <li><a href="#tut-own">Your own problem</a></li>
   <li><a href="#tut-next">Where next</a></li>
 </ol>
-<p>Every lesson has a <b>Load</b> button. It replaces the project you are editing (the page asks first
+<p class="book-only">The playground (CegarPlay) is the browser application in which every example of this book
+  runs. A project has <b>fragments</b> of ASP text, a <b>loop script</b> that says how the solvers call each other,
+  and <b>instances</b> (the input of the problem). Its tabs follow the work: a project is written in the Programs,
+  Loop and Instances tabs, run, and looked at in the Output, Statistics and Observatory tabs; the Campaign tab
+  compares many runs. Each lesson below names the library example it uses, as in [Playground: tutorial-first-run],
+  and describes what a run of it shows. The Observatory and the Campaign tab belong to the playground's Advanced
+  mode.</p>
+<p class="web-only">Every lesson has a <b>Load</b> button. It replaces the project you are editing (the page asks first
   if you changed it), and you stay in this tab. Press <b>Run</b> or <b>Ctrl+Enter</b> (<b>Cmd+Enter</b> on a
   Mac): the run bar at the top shows the counts while you read on. All examples are also in the
   Library in the Control tab.</p>
-<p>The tabs follow the work: you <b>write</b> a project (Programs, Loop, Instances), <b>run</b> it and
+<p class="web-only">The tabs follow the work: you <b>write</b> a project (Programs, Loop, Instances), <b>run</b> it and
   <b>look</b> at the run (Output, Statistics, Observatory), and <b>compare</b> many runs (Campaign).
   Lessons 2 to 6 use one small problem throughout; lessons 7 to 11 add the tools for larger ones.</p>
-<p>The Observatory and the Campaign tab appear in <b>Advanced mode</b>: tick it at the top of this tab or under
+<p class="web-only">The Observatory and the Campaign tab appear in <b>Advanced mode</b>: tick it at the top of this tab or under
   <b>Tabs</b> in the Control tab (lessons 5, 6 and 8 use them). There you can also hide this tab once you no longer
   need it; the page remembers both choices.</p>
-<p>This tutorial shows where each tool is. The <a href="guide/index.html#howto" target="cegarplay-guide">how-to
+<p class="web-only">This tutorial shows where each tool is. The <a href="guide/index.html#howto" target="cegarplay-guide">how-to
   pages</a> of the design guide show how to use the tools to answer a question (compare strategies, find
   where the time goes, hunt an unsound refinement, ...), and its <a href="guide/reading-order.html"
   target="cegarplay-guide">reading order</a> interleaves the guide's chapters with these lessons.</p>
@@ -49,8 +56,8 @@
   <code>C</code> looks for a sum inside it. On a first visit the page opens with it already loaded.
 </p>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="tutorial-first-run">Load: Sum-free sets</button></p>
-<p>Run it. It takes a fraction of a second, and the run bar shows
-  <b>107 candidates, 46 counterexamples, 46 refinements, 61 solutions</b>. Then open the <b>Output</b> tab:</p>
+<p><span class="web-only">Run it. It takes a fraction of a second, and the run bar shows</span><span class="book-only">A run takes a fraction of a second and counts</span>
+  <b>107 candidates, 46 counterexamples, 46 refinements, 61 solutions</b>. <span class="web-only">Then open the <b>Output</b> tab:</span><span class="book-only">The <b>Output</b> tab then has:</span></p>
 <ul>
   <li><b>Solutions</b> lists the 61 sets (the first one is the empty set).</li>
   <li><b>Trace</b> shows the run one step at a time. Step 1: the candidate is <code>pick(2) pick(4)</code>;
@@ -76,7 +83,7 @@
 </p>
 
 <h2 id="tut-fragments">3. Fragments, solvers and links</h2>
-<p>Open the <b>Programs</b> tab. The problem is split into four <b>fragments</b>, named pieces of ASP text:</p>
+<p><span class="web-only">Open the <b>Programs</b> tab.</span><span class="book-only">The <b>Programs</b> tab holds the problem.</span> The problem is split into four <b>fragments</b>, named pieces of ASP text:</p>
 <ul>
   <li><b>shared</b>: <code>num(1..n).</code> Every solver needs it. <code>n</code> is set in the Constants table
     of the Loop tab (here <code>n = 8</code>), which overrides a <code>#const</code> in the text.</li>
@@ -94,7 +101,7 @@ relevant(pick(X)) :- sum(X,Y).
 relevant(pick(Y)) :- sum(X,Y).
 relevant(pick(X+Y)) :- sum(X,Y).</div>
 <p>(The project has a fifth fragment, <b>view</b>, which draws the run as a picture. Lesson 5 uses it.)</p>
-<p>Now open the <b>Loop</b> tab. The loop script first declares the <b>solvers</b> (clingo instances, each grounding
+<p><span class="web-only">Now open the <b>Loop</b> tab.</span><span class="book-only">The <b>Loop</b> tab holds the loop script.</span> The loop script first declares the <b>solvers</b> (clingo instances, each grounding
   a list of fragments) and a <b>link</b> between them:</p>
 <div class="example-code" data-mode="loop">solver A = shared + abstraction
 solver C = shared + check
@@ -139,8 +146,7 @@ search A:
 </ul>
 
 <h2 id="tut-observatory">5. Watching a run: the Observatory</h2>
-<p>The <b>Observatory</b> tab shows a run as pictures. Turn on <b>Advanced mode</b> (at the top of this tab) to see it.
-  Load the sum-free sets again, run them, and open it.</p>
+<p>The <b>Observatory</b> tab shows a run as pictures. <span class="web-only">Turn on <b>Advanced mode</b> (at the top of this tab) to see it. Load the sum-free sets again, run them, and open it.</span><span class="book-only">Here it shows a run of the sum-free sets:</span></p>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="tutorial-first-run">Load: Sum-free sets</button></p>
 <ul>
   <li><b>Loop anatomy</b>: one box per solver, one arrow per link. Here <code>A</code> made 1 search call, and
@@ -154,7 +160,7 @@ search A:
     trace in the Output tab too. The arrow keys move it; <b>follow the run</b> keeps it on the last step.
     <b>Export view</b> and <b>Storyboard</b> save pictures for slides; <code>?lecture=1</code> in the address shows the view
     alone, with its notes as captions.</li>
-  <li><b>Timeline</b> and <b>Cost per line</b>: tick <b>Record calls</b> and run again. Every solve call becomes a bar
+  <li><b>Timeline</b> and <b>Cost per line</b>: <span class="web-only">tick <b>Record calls</b> and run again.</span><span class="book-only">they need a run with <b>Record calls</b> on.</span> Every solve call becomes a bar
     on its solver's lane, and the table says which line of the loop script spent the time. After such a run the
     Loop tab shows the same figures beside the lines.</li>
 </ul>
@@ -170,12 +176,12 @@ search A:
 relevant(pick(X+Y)) :- sum(X,Y).</div>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="tutorial-weak-relevant">Load: Sum-free sets (too weak relevant/1)</button></p>
 <p>
-  Run it: <b>11 solutions</b> instead of 61. After the counterexample <code>sum(2,2)</code>, the refinement says
+  <span class="web-only">Run it:</span><span class="book-only">The run finds</span> <b>11 solutions</b> instead of 61. After the counterexample <code>sum(2,2)</code>, the refinement says
   "never pick 4", also for sets without 2. (This example uses Shape 2, explained in lesson 9: with Shape 1 the
   loss may not show at this size, for the reason mentioned in lesson 2.)
 </p>
 <h3 id="tut-audit">The audit</h3>
-<p>Press <b>Audit</b>, next to Run. Instead of the pairs of candidate and counterexample that one run happens to
+<p><span class="web-only">Press <b>Audit</b>, next to Run.</span><span class="book-only">The <b>Audit</b> is the second way to run a project.</span> Instead of the pairs of candidate and counterexample that one run happens to
   meet, the audit takes <em>every</em> candidate and every counterexample of the instance, and asks of each
   refinement whether it removes a solution. Here: 256 candidates, 61 solutions, 499 different refinements, and
   every one of them removes a solution. The Output tab shows a witness:</p>
@@ -186,23 +192,23 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
     removes it too;</li>
   <li>the atoms on which they differ, <code>{pick(2)}</code>: one of them should have been relevant.</li>
 </ul>
-<p>Load the first example again and press Audit: it is sound. Make the audit a habit on a small instance of every
+<p><span class="web-only">Load the first example again and press Audit: it is sound.</span><span class="book-only">The audit of the first example is sound.</span> Make the audit a habit on a small instance of every
   new problem. It needs no change to the project, and it works for rule refinements too (lesson 9).</p>
 <h3 id="tut-reference">The reference run</h3>
 <p>
   A second way to find out, which works for any loop: <code>G.block(M)</code> removes only the candidate itself, so a
   loop that refines with <code>G.block</code> is always sound (the design guide calls it the <i>blocking loop</i>). In the
-  Loop tab, choose the template <b>Reference run</b>,
-  press <b>Insert</b>, and run again: 61 solutions (and 256 candidates, one per set). Both runs are in the run
+  Loop tab, <span class="web-only">choose the template <b>Reference run</b>, press <b>Insert</b>, and run again:</span><span class="book-only">the template <b>Reference run</b> is this loop, and its run finds</span> 61 solutions (and 256 candidates, one per set). Both runs are in the run
   history of the Statistics tab, and since both ran to the end with different counts, they are marked ⚠.
 </p>
 <h3 id="tut-space">Which refinement went wrong</h3>
-<p>Go back to the project's own loop (Load it again), open the Observatory and press <b>Compute</b> under
+<p><span class="web-only">Go back to the project's own loop (Load it again), open the Observatory and press <b>Compute</b> under
   <b>Candidate space</b>. The map needs a run with every step recorded; the button <b>Record every step, run,
   compute</b> sets Recording to every step in the Loop tab, runs and draws the map. Each square is one of the 256
   sets, coloured by what the run's refinements have done to it so far; move the <b>Refinement</b> slider through
-  the run. The summary names the first unsound refinement: number 6, which removes 13 solutions at once. Click a
-  square to jump to the step that removed it. The blame matrix below shows which atoms the refinements relied on.</p>
+  the run.</span><span class="book-only">The Observatory's <b>Candidate space</b> draws the project's own loop as a map, from a run with every
+  step recorded. Each square is one of the 256 sets, marked by what the run's refinements have done to it so far
+  (alive, removed, a lost solution), step by step through the run.</span> The summary names the first unsound refinement: number 6, which removes 13 solutions at once. <span class="web-only">Click a square to jump to the step that removed it.</span> The blame matrix below shows which atoms the refinements relied on.</p>
 
 <h2 id="tut-instances">7. One project, many instances</h2>
 <p>An <b>instance</b> is a set of facts and constant values that a run puts on top of the project: the input of
@@ -222,14 +228,13 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="voting-justification">Load: Voting justifications</button></p>
 <h3 id="tut-generators">Generators</h3>
 <p>A <b>generator</b> is an ASP program whose shown atoms are an instance, with seeded random draws such as
-  <code>@flip(500, X, Y)</code> (1 with probability 1/2). The QBF example has one: open the Instances tab, scroll to
-  <b>Generators</b>, and press <b>Preview 6</b> for six instances from six seeds. <b>Add as instance</b> keeps one;
+  <code>@flip(500, X, Y)</code> (1 with probability 1/2). The QBF example has one<span class="web-only">: open the Instances tab, scroll to <b>Generators</b>, and press <b>Preview 6</b> for six instances from six seeds. <b>Add as instance</b> keeps one;</span><span class="book-only">, in the <b>Generators</b> part of the Instances tab, which draws instances from seeds; an instance kept from it is stored as a recipe:</span>
   the file stores only its recipe (generator, parameters, seed), and the same recipe always gives the same facts.</p>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="qbf">Load: QBF</button></p>
 <h3 id="tut-fuzz">Fuzz</h3>
-<p>Load the too weak sum-free sets again and press <b>Fuzz</b> in the Instances tab. It audits the project on
+<p><span class="web-only">Load the too weak sum-free sets again and press <b>Fuzz</b> in the Instances tab.</span><span class="book-only"><b>Fuzz</b> (Instances tab), run on the too weak sum-free sets,</span> It audits the project on
   ever larger instances (here <code>n</code> = 1, 2, …), stops at the first unsound one (<code>n</code> = 2), makes it as
-  small as it can, and shows the lost solution with the audit's witness. <b>Save as regression instance</b> keeps it,
+  small as it can, and shows the lost solution with the audit's witness. It can be kept as a regression instance,
   with its true count as the expected one.</p>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="tutorial-weak-relevant">Load: Sum-free sets (too weak relevant/1)</button></p>
 
@@ -237,15 +242,15 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
 <p>A <b>suite</b> is a grid of runs: instances × variants × solver seeds, each with all solutions. A <b>variant</b>
   changes the project for a run, for example its loop. The too weak sum-free sets have a suite <code>scaling</code>:
   <code>n</code> from 4 to 8, with the project's loop (<code>default</code>) and with the Reference run (<code>reference</code>).</p>
-<p>Open the <b>Campaign</b> tab (in Advanced mode) and press <b>Start</b>. The ten runs share several engines and take under a second.
+<p><span class="web-only">Open the <b>Campaign</b> tab (in Advanced mode) and press <b>Start</b>.</span><span class="book-only">The <b>Campaign</b> tab runs the suite.</span> The ten runs share several engines and take under a second.
   Then:</p>
 <ul>
   <li>the summary: per variant, the median time and candidates, and how fast they grow with <code>n</code>;</li>
-  <li>in red, every instance where two variants ran to the end with different counts: all five here, from
+  <li>marked ✗, every instance where two variants ran to the end with different counts: all five here, from
     <code>n4</code> (6 against 9) to <code>n8</code> (11 against 61). The tab label says <b>Campaign (5 ✗)</b>;</li>
   <li>plots: time against <code>n</code>, one variant against the other, and how many runs finish within a time.</li>
 </ul>
-<p>The results are kept in this browser: press Start again and nothing runs; change a fragment and only the runs it
+<p>The results are kept in this browser: <span class="web-only">press Start again and nothing runs;</span><span class="book-only">a second start runs nothing;</span> change a fragment and only the runs it
   affects run again. The suite is JSON in the editor; <code>tools/bench.mjs</code> runs the same suite from the command
   line, and <b>Import rows</b> reads its output.</p>
 <h3 id="tut-variants">Comparing encodings: variants</h3>
@@ -273,7 +278,7 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
     <tr><td>Reference run</td><td>3,373</td><td>3,272</td><td>3,272 blocks</td></tr>
   </tbody>
 </table></div>
-<p>Run two of them, tick <b>Record calls</b> first, and compare their loop anatomies and timelines in the Observatory (Advanced mode):
+<p><span class="web-only">Run two of them, tick <b>Record calls</b> first, and compare</span><span class="book-only">Two of them, run with <b>Record calls</b>, can be compared by</span> their loop anatomies and timelines in the Observatory (Advanced mode):
   the picture shows where each shape spends its time.</p>
 
 <h3 id="tut-shape1">Shape 1: check inside the search</h3>
@@ -480,8 +485,8 @@ if Y: reject M with GXC.core(C)</div>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="lang-raw-lua">Load: raw Lua</button></p>
 
 <h3 id="tut-lang-errors">Mistakes in a script</h3>
-<p>The script is compiled while you type. Load any example above, open the Loop tab, and change
-  <code>C.solve</code> into <code>D.solve</code>: after a moment the line is marked, the Loop tab label turns red,
+<p>The script is compiled while you type. <span class="web-only">Load any example above, open the Loop tab, and change</span><span class="book-only">If one changes</span>
+  <code>C.solve</code> into <code>D.solve</code><span class="web-only">:</span><span class="book-only"> in any of the scripts above, then</span> after a moment the line is marked, the Loop tab label<span class="web-only"> turns red</span><span class="book-only"> shows the error</span>,
   and the message says <code>'D' is not a declared solver</code>. Other errors found before a run: unknown fragments, wrong
   indentation, <code>reject</code> outside <code>on candidate</code>, <code>A.add</code> inside the search of <code>A</code>.
   A run does not start while there are errors.</p>
@@ -492,14 +497,14 @@ if Y: reject M with GXC.core(C)</div>
   <li><b>Certificates</b> (Loop tab): every refinement gets the cheapest proof that it removes no solution, whatever
     the other candidates are: a block, an unsat core, an evaluation of the check's ground program, or one
     unsatisfiable solver call. The Statistics tab counts them per level. Uncertified does not mean wrong; the
-    third choice, <b>exact</b>, searches for a lost solution where the cheap levels fail. Load the first example, set
-    Certificates to <b>report</b> and run: all 46 clauses are certified (level 2). In the too weak example its 6
+    third choice, <b>exact</b>, searches for a lost solution where the cheap levels fail. With
+    Certificates set to <b>report</b>, the first example certifies all 46 clauses (level 2). In the too weak example its 6
     clauses get none; only the blocks of its 11 solutions are certified.</li>
   <li><b>Lifted refinements</b>: write <code>lift</code> after a link (<code>link G = A -&gt; C via shared + glue lift</code>)
     and <code>G.clause(M, X)</code> computes its own relevant set from the ground programs, keeping only atoms it can
     prove necessary. Slower, never unsound, and a good check of hand-written <code>relevant/1</code> rules
     (see <a href="#manual-refinement-variants">Refinement variants</a>).</li>
-  <li><b>Proofs</b>: tick <b>proof</b> next to Recording, and the run writes a proof log. <code>tools/certcheck.py</code>,
+  <li><b>Proofs</b>: with <b>proof</b> on next to Recording, the run writes a proof log. <code>tools/certcheck.py</code>,
     which shares no code with the playground, confirms the solution count from it.</li>
 </ul>
 <p>A <b>recording</b> keeps the steps of a run (Recording in the Loop tab). <b>Download recording</b> in the Control
@@ -522,10 +527,10 @@ if Y: reject M with GXC.core(C)</div>
   <li>List the atoms the check needs in <b>glue</b>, wrapped as <code>glue(T)</code>.</li>
   <li>Write the <b>check</b>: rules that have an answer set exactly when the candidate is wrong. Add
     <code>relevant(T)</code> rules for the interface atoms each counterexample depends on.</li>
-  <li>Press <b>Audit</b> on a small instance (lesson 6). Unsound? Look at the witness and at the candidate space.</li>
-  <li>Add a few instances with their expected counts and press <b>Run all</b>; let <b>Fuzz</b> look for an instance
+  <li>Audit a small instance (lesson 6). Unsound? Look at the witness and at the candidate space.</li>
+  <li>Add a few instances with their expected counts and check them with <b>Run all</b>; let <b>Fuzz</b> look for an instance
     that breaks the loop; write a suite to see how the run time grows (lessons 7 and 8).</li>
-  <li>In Advanced mode, press <b>Suggest a view</b> in the Observatory for a picture of your problem, and adapt it.</li>
+  <li>Let <b>Suggest a view</b> (Observatory) write a first picture of your problem, and adapt it.</li>
 </ol>
 <p>If a counterexample has no relevant atom, the run stops with <code>relevant/1 derived nothing for link G</code>,
   and the trace shows that candidate and counterexample. Your project is kept in this browser and comes back after a
@@ -549,7 +554,7 @@ if Y: reject M with GXC.core(C)</div>
   <a href="#manual-certificates">certificates</a>, the <a href="#manual-observatory-tab">Observatory</a>, the
   <a href="#manual-refinement-variants">refinement variants</a>, <a href="#manual-settings">settings and limits</a>,
   the <a href="#manual-raw-lua-projects">Lua runtime</a>, and a <a href="#manual-troubleshooting">troubleshooting</a> table.
-  Tick <b>Show the technical manual</b> at the top of this tab to give it a tab of its own; a link to it opens it too.
+  <span class="web-only">Tick <b>Show the technical manual</b> at the top of this tab to give it a tab of its own; a link to it opens it too.</span><span class="book-only">It has a tab of its own in the playground (Manual).</span>
   It is written to be read by AI agents as well: they can fetch <a href="manual.md" target="_blank">manual.md</a> directly.</p>
 <p>The tutorial shows how the tool works. How to <b>design</b> a loop (what goes in the abstraction, how a
   counterexample becomes a refinement, how a refinement goes wrong, which loop shape to choose) is the subject of

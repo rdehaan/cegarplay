@@ -1355,3 +1355,22 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   stays for small cores, so measured numbers did not move). Caching cores across IHS rounds was
   considered and dropped: a cached core cannot be a subset of a later core there (the hitting
   set drops one of its clauses), so the cache would never hit.
+
+## The booklet (2026-11-23)
+
+- `tools/export-book.py` (standard library only) turns `guide/index.html`, the chapters in
+  `guide/chapters.js` order, the glossary and bibliography (Part I) and the lessons of
+  `tutorial.html` (Part II) into `book/cegarplay.md`, pandoc Markdown that converts with
+  `pandoc book/cegarplay.md -o x.epub`. Asides are fenced divs with the web class names (list
+  at the top of the exporter); listings keep their language class, before/after listings are
+  `{.asp .changed}` with `- `/`+ `/two-space prefixes; graph figures are `{.graph delete=..
+  clique=..}` with the graph once in `{.graph-data}`; SVG diagrams stay in `{.diagram}`; play
+  links become `[Playground: id]{.play}`. Exercises and predict boxes link to an Answers
+  section at the end of each chapter.
+- Book/web differences live in the HTML (`web-only`, `book-only`; `.book-only` is hidden by
+  `guide/guide.css` and `css/main.css`). The UI imperatives of the tutorial and the guide
+  ("press Run", "this tab", colour as meaning) have book-only wordings.
+- `--lint` checks the writing rules (no UI imperatives, no app deixis, no raw HTML, every
+  internal link lands, figures have captions). `test/book.test.mjs`: fresh export equals the
+  committed file, lint passes, links land, pandoc converts (skips without pandoc).
+- `tools/_t.mjs`, a scratch runner committed by mistake in 28c81f0, is removed.

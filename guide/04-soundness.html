@@ -56,7 +56,7 @@ relevant(del(V)) :- q(V), not busier(V).</pre>
           refinement is now a clause with one literal: "this node must go".
           <a class="play" href="../?example=guide-04-one-node&amp;fragment=check&amp;from=guide/04-soundness.html%23one-node-run" target="cegarplay">Open the loop that marks one node</a></p>
         <details class="predict">
-          <summary>Before you press Run: the problem has
+          <summary><span class="web-only">Before you press Run: </span><span class="book-only">Predict: </span>the problem has
             <span data-stat="guide-02-block:solutions">3</span> solutions. How many will this loop
             report?</summary>
           <p><span data-stat="guide-04-one-node:solutions">1</span>, after only
@@ -84,8 +84,8 @@ relevant(del(V)) :- q(V), not busier(V).</pre>
           <li>both runs exhausted;</li>
           <li>the same number of solutions, or the faster loop is wrong.</li>
         </ul>
-        <p>In the playground you need not build a second project. Open the loop that marks one node,
-          run it, then change one line in the Loop tab and run again:</p>
+        <p><span class="web-only">In the playground you need not build a second project. Open the loop that marks one node,
+          run it, then change one line in the Loop tab and run again:</span><span class="book-only">In the playground the two loops are the same project with one line of the loop script changed:</span></p>
         <div class="changed" data-lang="loop" data-before="guide-04-one-node:loop" data-after="guide-02-block:loop"><span class="same">        if X:</span><del>            reject M with G.clause(M, X)</del><ins>            reject M with G.block(M)</ins></div>
         <p id="test-run">The run history at the foot of the Statistics tab now has two rows for the same
           fragments, both exhausted, with different counts, and marks both with &#x26A0;: one of the
@@ -98,7 +98,7 @@ relevant(del(V)) :- q(V), not busier(V).</pre>
 
         <h2 id="audit">The audit: every counterexample at once</h2>
         <p>The comparison only sees the counterexamples that one run happens to meet. The
-          <b>Audit</b> button, next to Run, sees them all: it lists every candidate of the
+          <b>Audit</b><span class="web-only"> button, next to Run,</span> sees them all: it lists every candidate of the
           abstraction and every counterexample of each, and asks of every refinement the loop
           would make whether it removes a solution. Its verdict does not depend on the search
           order, and when it is "unsound" it comes with a witness.</p>
@@ -114,13 +114,13 @@ relevant(del(V)) :- q(V), not busier(V).</pre>
         <h2 id="instances">One instance is not enough</h2>
         <p>Which solutions a too-strong refinement removes depends on which counterexamples the
           check happens to return, and so on the search order, the loop shape and the instance. A
-          wrong loop can lose nothing on one instance and lose many on the next. Run the soundness
-          test on several small instances, and on several values of the constants.</p>
+          wrong loop can lose nothing on one instance and lose many on the next. Apply the soundness
+          test to several small instances, and to several values of the constants.</p>
         <p>The playground keeps them together. The Instances tab holds the instances of one
           project, each with its expected count; <b>Run all</b> marks every count that differs.
           <b>Fuzz</b> audits instances from small to large, stops at the first unsound one and
           shrinks it. A campaign (Campaign tab, in Advanced mode) runs your loop and the blocking loop, as a variant,
-          over a grid of instances, and marks in red every instance where the two disagree.</p>
+          over a grid of instances, and marks every instance where the two disagree.</p>
 
         <h2 id="both-ways">Too weak and too strong</h2>
         <p>Marking too much is safe but slow: at the far end it is blocking. Marking too little is
@@ -196,7 +196,7 @@ relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
 
         <section class="exercise" id="exercise-2">
           <h2>Exercise 2</h2>
-          <p>Open the leaf-colouring example, delete its third <code>relevant/1</code> rule and,
+          <p><span class="web-only">Open the leaf-colouring example, delete</span><span class="book-only">In the leaf-colouring example, delete</span> its third <code>relevant/1</code> rule and,
             without looking back at the fix above, write it again yourself. Ask: which change of the
             candidate, not covered by the two rules, breaks the counterexample? Then compare with the
             blocking loop <code>gc-reference</code> at n = 6 (set n in its Loop tab; that run takes a
@@ -213,7 +213,7 @@ relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
           </details>
         </section>
 
-        <section class="tools" id="tools">
+        <section class="tools web-only" id="tools">
           <h2>Tool skills for this chapter</h2>
           <ul>
             <li><a href="../?tab=2#tut-audit">Tutorial: the audit</a></li>
@@ -229,9 +229,9 @@ relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
               without any sign. The run still finishes, exhausted.</li>
             <li id="rule-soundness-test">Test soundness by comparison: the blocking loop and your
               loop, same fragments and constants, all solutions, both exhausted, same count.</li>
-            <li id="rule-audit">Press Audit on a small instance: it checks every refinement against
+            <li id="rule-audit">Audit a small instance: it checks every refinement against
               every solution, and its witness names the atom that should have been relevant.</li>
-            <li id="rule-several-instances">Run the test on several small instances: a wrong loop
+            <li id="rule-several-instances">Apply the test to several small instances: a wrong loop
               can be right on one.</li>
             <li id="rule-both-polarities">A counterexample can depend on an atom being false. Mark
               it too.</li>

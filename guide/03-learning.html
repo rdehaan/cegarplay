@@ -198,7 +198,7 @@
             <text class="small" x="145" y="212" text-anchor="middle">only the refuted candidate</text>
             <text class="small" x="415" y="212" text-anchor="middle">every candidate that keeps the triangle</text>
           </svg>
-          <figcaption>The candidate space, one dot per candidate, the solutions in green. The orange candidate was refuted. A block rules out that point; the clause from its triangle rules out the whole shaded region.</figcaption>
+          <figcaption>The candidate space, one dot per candidate, <span class="web-only">the solutions in green. The orange candidate was refuted.</span><span class="book-only">the solutions as squares. The candidate in the ring was refuted.</span> A block rules out that point; the clause from its triangle rules out the whole shaded region.</figcaption>
         </figure>
 
         <h2 id="relevant-all">Everything relevant is blocking again</h2>
@@ -216,7 +216,7 @@
         <p id="hit-clique-run">Now run the loop with the triangle's three nodes marked.
           <a class="play" href="../?example=guide-03-hit-clique&amp;fragment=check&amp;from=guide/03-learning.html%23hit-clique-run" target="cegarplay">Open the learning loop</a></p>
         <details class="predict">
-          <summary>Before you press Run: the blocking loop looked at <span data-stat="guide-02-block:candidates">176</span> candidates. About how many
+          <summary><span class="web-only">Before you press Run: </span><span class="book-only">Predict: </span>the blocking loop looked at <span data-stat="guide-02-block:candidates">176</span> candidates. About how many
             will this loop need?</summary>
           <p><span data-stat="guide-03-hit-clique:candidates">13</span>. The graph has only seven
             triangles, and each clause rules out every candidate that keeps one of them.</p>
@@ -324,7 +324,7 @@
           </details>
         </section>
 
-        <section class="tools" id="tools">
+        <section class="tools web-only" id="tools">
           <h2>Tool skills for this chapter</h2>
           <ul>
             <li><a href="../?tab=2#tut-weak">Tutorial: when relevant/1 is too weak</a></li>

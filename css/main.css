@@ -1087,3 +1087,6 @@ body[data-last-mode="audit"] .audit-only { display: block; }
 .variant-note-label input { width: 32em; max-width: 100%; }
 #history-compare td.num { font-variant-numeric: tabular-nums; }
 #tutorial .side-note { border-left: 3px solid var(--border); padding-left: 10px; color: var(--text-muted); font-size: 0.95em; }
+
+/* text that only the e-reader booklet shows (tools/export-book.py); .web-only is left out of it */
+.book-only { display: none !important; }
