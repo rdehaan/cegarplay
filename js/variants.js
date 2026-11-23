@@ -145,10 +145,14 @@ export class Variants {
     });
     text.addEventListener('change', () => { if (v.loop) { v.loop = { ...v.loop, text: text.value }; this.changed(); } });
     const del = el('button', { class: 'control-button small-button', onclick: () => this.remove(v.name) }, 'Delete');
+    // the lab notebook (FUTURE-DIRECTIONS D10): why this variant exists, kept in the project
+    const note = el('input', { type: 'text', value: v.note || '', class: 'variant-note', placeholder: 'why I tried this', 'aria-label': `Note on variant ${v.name}` });
+    note.addEventListener('change', () => { if (note.value.trim()) v.note = note.value.trim(); else delete v.note; this.changed(); });
     return el('fieldset', { class: 'variant-card', 'data-variant': v.name },
       el('div', { class: 'variant-row' }, el('label', {}, 'Name ', name), del, err),
       el('div', { class: 'variant-row' }, el('label', { title: 'fragment=fragment whose text it gets, ...' }, 'Swap ', swap),
         el('label', { title: 'name=value, ...' }, 'Constants ', consts)),
+      el('div', { class: 'variant-row' }, el('label', { class: 'variant-note-label' }, 'Note ', note)),
       el('div', { class: 'variant-row' }, el('label', {}, own, ' its own loop script'),
         el('span', { class: 'note' }, 'starts as a copy of the project\'s loop script')),
       text);

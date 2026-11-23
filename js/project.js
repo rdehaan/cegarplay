@@ -315,6 +315,7 @@ function loadVariants(list, fragmentNames) {
     }
     out.constants = strMap(v.constants, `variant ${v.name}: constants`);
     if (v.settings !== undefined && !isObj(v.settings)) throw new ProjectError(`variant ${v.name}: settings must be an object`);
+    if (v.note !== undefined && typeof v.note !== 'string') throw new ProjectError(`variant ${v.name}: note must be a string`);
     return out;
   });
 }

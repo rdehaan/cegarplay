@@ -1083,3 +1083,6 @@ body[data-last-mode="audit"] .audit-only { display: block; }
 .exercise-items { list-style: none; padding-left: 4px; margin: 6px 0; }
 .exercise-items li.pass { color: var(--ok, inherit); }
 .exercise-items li.fail { color: var(--error); }
+.history-note-input { width: 14em; font: inherit; font-size: 13px; }
+.variant-note-label input { width: 32em; max-width: 100%; }
+#history-compare td.num { font-variant-numeric: tabular-nums; }

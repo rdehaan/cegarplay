@@ -512,3 +512,27 @@ test('F1: Check exercise runs counts, audits and budgets, and never passes what 
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('D5, D10: two runs side by side, a note per run and per variant', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=6');
+  await page.evaluate(() => window.cegarplay.control.run({}));
+  await page.evaluate(() => window.cegarplay.control.run({ variant: 'reference' }));
+  await page.waitForFunction(() => document.querySelectorAll('#history-table tbody tr').length === 2);
+  await page.fill('#history-table tbody tr:nth-child(1) .history-note-input', 'the weak relevant/1');
+  await page.dispatchEvent('#history-table tbody tr:nth-child(1) .history-note-input', 'change');
+  await page.click('#history-table tbody tr:nth-child(1) .history-compare-pick');
+  assert.equal(await page.isVisible('#history-compare-box'), false, 'one run picked: nothing to compare');
+  await page.click('#history-table tbody tr:nth-child(2) .history-compare-pick');
+  assert.equal(await page.isVisible('#history-compare-box'), true);
+  const text = await page.textContent('#history-compare');
+  assert.match(text, /the weak relevant\/1/);
+  assert.match(text, /Solutions.*differ/s);
+  assert.match(text, /A: calls/);
+  assert.equal(await page.evaluate(() => window.cegarplay.stats.history[0].note), 'the weak relevant/1');
+  await page.click('label[for="tab4"]');
+  await page.fill('#variants .variant-card[data-variant="reference"] .variant-note', 'ground truth');
+  await page.dispatchEvent('#variants .variant-card[data-variant="reference"] .variant-note', 'change');
+  assert.equal(await page.evaluate(() => window.cegarplay.project.variants.find((v) => v.name === 'reference').note), 'ground truth');
+  assert.deepEqual(errors, []);
+  await context.close();
+});

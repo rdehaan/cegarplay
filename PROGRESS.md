@@ -1310,3 +1310,5 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
   counted next to Solutions and in Statistics, not a solution; `as` is a keyword; MARCO's MSSes use
   it); stopping when the bounds meet works with a kept snapshot (`best = X`, `accept best`), shown
   in the manual and the `maxsat-ihs` variant `bounds-meet`.
+- D5, D10 (done): run history rows have a Note and a Compare box (two runs side by side with
+  the change, per-solver calls/time/conflicts); variants have a `note`.

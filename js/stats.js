@@ -101,6 +101,8 @@ export class Stats {
           <input type="file" id="verdict-file" accept=".json,.txt" hidden>
         </p>
         <div class="table-wrapper"><table class="internals-table" id="history-table"></table></div>
+        <div id="history-compare-box" hidden><h3>Two runs side by side</h3>
+          <div class="table-wrapper"><table class="internals-table" id="history-compare"></table></div></div>
         <p class="note" id="history-note">Rows marked ⚠ ran the same fragments with all solutions, finished exhausted,
           and found different numbers of solutions: at least one of the loops is not sound.</p>
       </div>`;
@@ -379,6 +381,12 @@ export class Stats {
       fragmentsHash: info.fragmentsHash,
       mode: info.mode || 'run',
       audit: info.audit ? { verdict: info.audit.verdict, unsound: info.audit.unsound, pairs: info.audit.pairs } : null,
+      // for "two runs side by side" (FUTURE-DIRECTIONS D5) and the lab notebook (D10)
+      counterexamples: s.counterexamples,
+      perSolver: Object.fromEntries(Object.entries(s.solvers || {}).map(([k, v]) => [k, { calls: v.calls, time: v.time, conflicts: v.conflicts }])),
+      ...(s.labels ? { labels: { ...s.labels } } : {}),
+      variant: info.variant || null,
+      note: '',
     });
     this.renderHistory();
   }
@@ -460,11 +468,64 @@ export class Stats {
       cells: [(bad.has(i) ? '⚠ ' : '') + r.time, r.loop, r.outcome + (r.exhausted ? ' (exhausted)' : ''), secs(r.elapsed), fmt(r.candidates),
         fmt(r.refinements), typeof r.meanLength !== 'number' ? '–' : r.meanLength.toFixed(2), fmt(r.solutions), String(r.seed ?? 0), this.auditText(r) + (r.certcheck ? ` · ${r.certcheck}` : '')],
     }));
-    this.table('history-table', ['Time', 'Loop', 'Outcome', 'Elapsed', 'Candidates', 'Refinements', 'Mean clause', 'Solutions', 'Seed', 'Audit'],
+    const t = this.table('history-table', ['Time', 'Loop', 'Outcome', 'Elapsed', 'Candidates', 'Refinements', 'Mean clause', 'Solutions', 'Seed', 'Audit'],
       rows.length ? rows : [['(no finished runs yet)', '', '', '', '', '', '', '', '', '']], [3, 4, 5, 6, 7, 8]);
+    // the lab notebook (a note per run) and the pick of two runs to compare
+    if (this.history.length) {
+      t.querySelector('thead tr').append(h('th', {}, 'Compare'), h('th', {}, 'Note'));
+      this.compareSel = (this.compareSel || []).filter((i) => i < this.history.length);
+      [...t.querySelectorAll('tbody tr')].forEach((tr, i) => {
+        const r = this.history[i];
+        const box = h('input', { type: 'checkbox', class: 'history-compare-pick', 'aria-label': `Compare run ${i + 1}` });
+        box.checked = this.compareSel.includes(i);
+        box.addEventListener('change', () => {
+          this.compareSel = box.checked ? [...this.compareSel.filter((x) => x !== i), i].slice(-2) : this.compareSel.filter((x) => x !== i);
+          this.renderHistory();
+        });
+        const note = h('input', { type: 'text', class: 'history-note-input', value: r.note || '', placeholder: 'why I tried this', 'aria-label': `Note on run ${i + 1}` });
+        note.addEventListener('change', () => { r.note = note.value; if (this.app.dirty) this.app.dirty(); });
+        tr.append(h('td', {}, box), h('td', {}, note));
+      });
+    }
+    this.renderCompare();
     this.root.querySelector('#history-note').hidden = bad.size === 0;
     this.root.querySelector('#clear-history-button').disabled = this.history.length === 0;
     if (this.app.dirty) this.app.dirty(false);
+  }
+
+  // Two runs side by side (FUTURE-DIRECTIONS D5): the two rows picked in the run history, with
+  // the change from the first to the second.
+  renderCompare() {
+    const box = this.root.querySelector('#history-compare-box');
+    const sel = (this.compareSel || []).map((i) => this.history[i]).filter(Boolean);
+    box.hidden = sel.length !== 2;
+    if (sel.length !== 2) return;
+    const [a, b] = sel;
+    const num = (x) => (typeof x === 'number' ? x : null);
+    const delta = (x, y) => {
+      if (num(x) === null || num(y) === null) return '';
+      const d = y - x;
+      const pct = x ? ` (${d >= 0 ? '+' : ''}${Math.round((d / x) * 100)}%)` : '';
+      return `${d >= 0 ? '+' : ''}${Number.isInteger(d) ? fmt(d) : d.toFixed(3)}${pct}`;
+    };
+    const rows = [
+      ['Loop', a.loop, b.loop, ''], ['Note', a.note || '', b.note || '', ''],
+      ['Outcome', a.outcome + (a.exhausted ? ' (exhausted)' : ''), b.outcome + (b.exhausted ? ' (exhausted)' : ''), ''],
+      ['Elapsed (s)', a.elapsed, b.elapsed, delta(a.elapsed, b.elapsed)],
+      ['Candidates', a.candidates, b.candidates, delta(a.candidates, b.candidates)],
+      ['Counterexamples', a.counterexamples, b.counterexamples, delta(a.counterexamples, b.counterexamples)],
+      ['Refinements', a.refinements, b.refinements, delta(a.refinements, b.refinements)],
+      ['Mean clause', a.meanLength, b.meanLength, delta(a.meanLength, b.meanLength)],
+      ['Solutions', a.solutions, b.solutions, a.solutions !== b.solutions ? 'differ' : ''],
+    ];
+    for (const n of new Set([...Object.keys(a.perSolver || {}), ...Object.keys(b.perSolver || {})])) {
+      const x = (a.perSolver || {})[n] || {}, y = (b.perSolver || {})[n] || {};
+      rows.push([`${n}: calls`, x.calls, y.calls, delta(x.calls, y.calls)], [`${n}: time (s)`, x.time, y.time, delta(x.time, y.time)],
+        [`${n}: conflicts`, x.conflicts, y.conflicts, delta(x.conflicts, y.conflicts)]);
+    }
+    const show = (v) => (v == null ? '–' : typeof v === 'number' ? (Number.isInteger(v) ? fmt(v) : v.toFixed(3)) : String(v));
+    this.table('history-compare', ['', `Run ${this.compareSel[0] + 1} (${a.time})`, `Run ${this.compareSel[1] + 1} (${b.time})`, 'Change'],
+      rows.map((r) => ({ attrs: r[0] === 'Solutions' && r[3] ? { class: 'mismatch' } : {}, cells: [r[0], show(r[1]), show(r[2]), r[3]] })), [1, 2, 3]);
   }
 
   // Remove every row, after a question: the rows are the only record of earlier runs (the

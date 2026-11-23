@@ -170,7 +170,7 @@ the instance of the next run; the run history names it in brackets.
 A variant runs the same project with other fragments swapped in, its own loop script, or other
 constants (the table above). The **Variants** block at the foot of the Loop tab edits them: a name,
 **Swap** as `fragment=other fragment, ...` (the first fragment gets the text of the second; names
-are checked), **Constants** as `name=value, ...`, and **its own loop script** (a text box that
+are checked), **Constants** as `name=value, ...`, a **Note** (`note`: why the variant exists, a lab notebook), and **its own loop script** (a text box that
 starts as a copy of the project's loop). A renamed or deleted fragment is renamed in, or dropped
 from, every swap; a renamed or deleted variant also in the suites. The run bar's **Variant** picker
 (shown only for a project with variants) chooses the variant of a run, an audit and Run all, and
@@ -1103,7 +1103,7 @@ so; the next Run replaces them. The run history keeps both.
 | Refinements | Clauses, mean and largest length, expansions, restarts, automatic blocks (solutions blocked so that a later search does not report them again). |
 | Charts | Candidates and refinements over time; time split per solver; clause length distribution (1, 2, 3–4, 5–8, 9–16, 17–32, 33–64, 65+); after a `track` statement, the tracked values per round (one line per name, a value holds until the next). |
 | Custom counters and tracked values | The `count` statements, and the last value of each `track` series. |
-| Run history | One row per run: time, loop, outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. **Rerun with 5 seeds**, **Clear run history** (asks first; disabled while empty), copy as text or JSON. |
+| Run history | One row per run: time, loop, outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. **Rerun with 5 seeds**, **Clear run history** (asks first; disabled while empty), copy as text or JSON. Each row has a **Note** (kept with the run history in the project) and a **Compare** box: two ticked rows are shown side by side below the table (counts, mean clause, per-solver calls, time and conflicts, with the change). |
 
 Counting rules: *candidates* are the assignments seen by `on candidate` plus models returned by
 `solve`/`models` of solvers without incoming links; *counterexamples* are satisfiable solves that
