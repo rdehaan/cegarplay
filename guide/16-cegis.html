@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>CEGIS: synthesis from counterexamples · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 16 · Part II</p>
+        <h1>CEGIS: synthesis from counterexamples</h1>
+        <p class="lead">Counterexample-guided inductive synthesis is CEGAR for programs: a synthesiser
+          proposes a program, a verifier looks for an input on which it is wrong. The twist is what the
+          synthesiser learns: not a clause about the program, but the input itself. This chapter
+          synthesises small Boolean circuits.</p>
+
+        <h2 id="problem">The problem</h2>
+        <p>Find every circuit of g two-input gates (and, or, nand) over m = 3 inputs that computes the
+          majority of its inputs. The synthesiser guesses a circuit: a kind and two earlier nodes for
+          each gate. The verifier holds the specification, which the synthesiser never sees:</p>
+        <pre class="code" data-lang="asp" data-from="guide-16-cegis-block:check">ones(N) :- N = #count { I : x(I) }.
+spec :- ones(N), 2 * N > m.
+:- out, spec.
+:- not out, not spec.</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>guide-16-cegis-block</code>.</p>
+        <p>A counterexample is an input <code>x/1</code> on which the circuit's output
+          <code>out</code> and the specification disagree. It is an ∃∀ problem: is there a circuit such
+          that for every input it is right?</p>
+
+        <h2 id="block">Blocking circuits</h2>
+        <p id="block-run">With three gates, the blocking loop looks at
+          <span data-stat="guide-16-cegis-block:candidates">1,215</span> circuits and finds
+          <span data-stat="guide-16-cegis-block:solutions">0</span>: no circuit of three gates computes
+          the majority of three inputs. Each refuted circuit is blocked by a clause of
+          <span data-stat="guide-16-cegis-block:meanClause">28.0</span> literals. With four gates the
+          blocking loop does not finish within a minute.
+          <a class="play" href="../?example=guide-16-cegis-block&amp;fragment=loop&amp;from=guide/16-cegis.html%23block-run" target="cegarplay">Open the blocking loop</a></p>
+
+        <h2 id="cegis">Learning the input</h2>
+        <p>A counterexample is an input and the output the specification wants there. Every circuit
+          that gives another output on that input is wrong too. So hand the input to the synthesiser and
+          make it simulate every circuit on it: a program part grounded once per input.</p>
+        <pre class="code" data-lang="asp" data-from="guide-16-cegis:abstraction">#program refine(k).
+% The k-th counterexample input: cex(k,inval(I,V)) gives input I the value V, and
+% goal(k,want(V)) the value the specification wants. Simulate the circuit on this input
+% (w(k,N): node N is 1) and require the wanted output.
+w(k,I) :- cex(k,inval(I,1)).
+w(k,G) :- arg(G,A,B), op(G,and), w(k,A), w(k,B).
+w(k,G) :- arg(G,A,B), op(G,or), w(k,A).
+w(k,G) :- arg(G,A,B), op(G,or), w(k,B).
+w(k,G) :- arg(G,A,B), op(G,nand), not w(k,A).
+w(k,G) :- arg(G,A,B), op(G,nand), not w(k,B).
+:- outnode(N), w(k,N), goal(k,want(0)).
+:- outnode(N), not w(k,N), goal(k,want(1)).</pre>
+        <p class="listing-source">From the fragment <code>abstraction</code> of <code>guide-16-cegis</code>.</p>
+        <pre class="code" data-lang="loop" data-from="guide-16-cegis:loop">    if X:
+        A.expand(refine, cex = X.atoms(inval/2), goal = X.atoms(want/1))
+        count inputs</pre>
+        <p class="listing-source">From the loop script of <code>guide-16-cegis</code>.</p>
+        <details class="predict">
+          <summary>Before you press Run: there are eight inputs of three bits. How many counterexamples
+            can the CEGIS loop meet at most, and how many does it need to show that three gates are not
+            enough?</summary>
+          <p>At most eight: once an input is grounded, no circuit that is wrong on it is proposed again.
+            It needs <span data-stat="guide-16-cegis:counterexamples">7</span>: after seven inputs no
+            circuit of three gates is right on all of them, and the synthesiser has no candidate left.</p>
+        </details>
+        <p id="cegis-run">The loop needs <span data-stat="guide-16-cegis:candidates">7</span> circuits
+          instead of 1,215. With four gates it finds all
+          <span data-stat="guide-16-cegis@g=4:solutions">27</span> circuits after
+          <span data-stat="guide-16-cegis@g=4:candidates">34</span> candidates and the same
+          <span data-stat="guide-16-cegis@g=4:expansions">7</span> inputs. The specification never
+          leaves the verifier: the synthesiser knows only examples.
+          <a class="play" href="../?example=guide-16-cegis&amp;fragment=abstraction&amp;from=guide/16-cegis.html%23cegis-run" target="cegarplay">Open the CEGIS loop</a></p>
+        <p>This is the expansion of chapter 13 in another costume: a counterexample instantiates the
+          problem (here, the circuit's behaviour on one input) inside the abstraction.</p>
+
+        <aside class="paper" id="paper">
+          <h2>The paper</h2>
+          <p>CEGIS was introduced with program sketching by Solar-Lezama, Tancau, Bodík, Seshia and
+            Saraswat ("Combinatorial sketching for finite programs", ASPLOS 2006).</p>
+          <table class="results">
+            <thead><tr><th>Paper</th><th>Loop script</th></tr></thead>
+            <tbody>
+              <tr><td>inputs ← ∅</td><td>solver A without refine parts</td></tr>
+              <tr><td>P ← synthesise(inputs); if none, fail</td><td><code>M = A.solve()</code>; <code>if not M: stop</code></td></tr>
+              <tr><td>x ← verify(P); if none, return P</td><td><code>X = C.solve(assume G(M))</code>; <code>accept M</code></td></tr>
+              <tr><td>inputs ← inputs ∪ {x}</td><td><code>A.expand(refine, cex = …, goal = …)</code></td></tr>
+            </tbody>
+          </table>
+          <p>The library example <code>min-dnf</code> synthesises shortest DNF formulas the same way. More
+            papers are on the <a href="bibliography.html">bibliography page</a>.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>Change the specification to the parity (exclusive or) of m = 2 inputs. How many gates does
+            the smallest circuit need, and how many inputs does CEGIS use to find out?</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <pre class="code" data-lang="asp" data-from="guide-16-ex1:check">spec :- ones(N), N \ 2 == 1.</pre>
+            <p>Two gates are not enough: CEGIS proves it with all
+              <span data-stat="guide-16-ex1@g=2:counterexamples">4</span> inputs. Three gates are: the loop
+              finds <span data-stat="guide-16-ex1:solutions">2</span> circuits (the and of an or and a
+              nand, in both orders of their inputs) after
+              <span data-stat="guide-16-ex1:counterexamples">4</span> counterexamples.
+              <a class="play" href="../?example=guide-16-ex1&amp;fragment=check&amp;from=guide/16-cegis.html%23exercise-1-solution" target="cegarplay">Open the parity loop</a></p>
+          </details>
+        </section>
+
+        <section class="tools" id="tools">
+          <h2>Tool skills for this chapter</h2>
+          <ul>
+            <li><a href="../?tab=2#tut-shape3">Tutorial: Shape 3</a></li>
+            <li><a href="howto-paper.html">How to turn a paper into a loop</a></li>
+          </ul>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-cegis-input">In synthesis the counterexample is an input; learning it (simulating
+              the candidate on it) rules out every program that is wrong there.</li>
+            <li id="rule-cegis-spec">The specification can stay in the verifier; the synthesiser needs
+              only the examples.</li>
+            <li id="rule-cegis-bound">The number of counterexamples is bounded by the number of inputs,
+              not of programs.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="15-marco.html">&larr; MARCO: two kinds of answer</a>
+        <a class="next" href="17-oll.html">Core-guided optimisation: OLL &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

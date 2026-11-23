@@ -1,0 +1,41 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide: MaxSAT by hitting sets, for comparison",
+  "description": "The MaxHS loop of chapter 14 on the instance of maxsat-oll (every weight 1). See the guide page \"Core-guided optimisation: OLL\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% Random MaxSAT (every soft clause has weight 1): 5 variables, 40 soft clauses, 2 hard clauses. Optimum 6.\nsoft(1,1). neg(1,c). neg(1,d).\nsoft(2,1). pos(2,e). neg(2,d).\nsoft(3,1). neg(3,d). neg(3,c).\nsoft(4,1). pos(4,c). pos(4,b).\nsoft(5,1). pos(5,a). pos(5,c).\nsoft(6,1). pos(6,c). neg(6,a).\nsoft(7,1). pos(7,b). neg(7,a). neg(7,d).\nsoft(8,1). pos(8,b).\nsoft(9,1). pos(9,a).\nsoft(10,1). pos(10,b). pos(10,d).\nsoft(11,1). pos(11,c). pos(11,d). neg(11,a).\nsoft(12,1). pos(12,b).\nsoft(13,1). neg(13,b). pos(13,d).\nsoft(14,1). pos(14,d). neg(14,c).\nsoft(15,1). pos(15,e). pos(15,d). neg(15,b).\nsoft(16,1). neg(16,a). pos(16,b).\nsoft(17,1). pos(17,c). neg(17,d).\nsoft(18,1). pos(18,a).\nsoft(19,1). neg(19,e). pos(19,a).\nsoft(20,1). pos(20,e). neg(20,a).\nsoft(21,1). neg(21,e). pos(21,c). pos(21,a).\nsoft(22,1). neg(22,d). neg(22,a).\nsoft(23,1). pos(23,a). neg(23,c).\nsoft(24,1). neg(24,a). pos(24,e).\nsoft(25,1). neg(25,c). pos(25,b).\nsoft(26,1). neg(26,d). neg(26,c). neg(26,a).\nsoft(27,1). pos(27,b).\nsoft(28,1). pos(28,d). neg(28,e).\nsoft(29,1). pos(29,a).\nsoft(30,1). neg(30,b). pos(30,c).\nsoft(31,1). pos(31,d). neg(31,e). pos(31,c).\nsoft(32,1). neg(32,b). pos(32,d).\nsoft(33,1). pos(33,d). pos(33,c).\nsoft(34,1). neg(34,e). pos(34,b).\nsoft(35,1). neg(35,b). neg(35,e). pos(35,d).\nsoft(36,1). neg(36,d). neg(36,b).\nsoft(37,1). pos(37,d). pos(37,e). pos(37,a).\nsoft(38,1). pos(38,b).\nsoft(39,1). neg(39,b). pos(39,d). pos(39,a).\nsoft(40,1). neg(40,e). pos(40,a).\nhard(h1). neg(h1,e).\nhard(h2). pos(h2,a). neg(h2,e). pos(h2,b).\n\n% The instance (Instances tab): soft(C,W) is a soft clause C with weight W, hard(C) a hard\n% clause; pos(C,V) and neg(C,V) are the literals of clause C.\ncl(C) :- soft(C,_).\ncl(C) :- hard(C).\nvar(V) :- pos(_,V).\nvar(V) :- neg(_,V).\n",
+      "description": "Part of the library example maxsat-ihs."
+    },
+    {
+      "name": "abstraction",
+      "text": "% The hitting-set solver: which soft clauses to give up (drop). It knows nothing of the\n% formula; it only learns the cores, as clauses \"drop at least one clause of this core\".\n{ drop(C) : soft(C,_) }.\n% Each call is optimal (A.solve(optimal)): the cheapest set that hits every core so far.\n% Its cost is a lower bound on the optimum.\n#minimize { W,C : drop(C), soft(C,W) }.\n#show drop/1.\n",
+      "description": "Part of the library example maxsat-ihs."
+    },
+    {
+      "name": "glue",
+      "text": "glue(drop(C)) :- soft(C,_).\n",
+      "description": "Part of the library example maxsat-ihs."
+    },
+    {
+      "name": "check",
+      "text": "% The SAT oracle: an assignment that satisfies the hard clauses and every soft clause that is\n% not dropped. It is a witness: if it exists, the hitting set is optimal; if not, the unsat\n% core names the soft clauses (assumed not dropped) that cannot all hold.\n{ t(V) } :- var(V).\nsat(C) :- pos(C,V), t(V).\nsat(C) :- neg(C,V), not t(V).\n:- hard(C), not sat(C).\n:- soft(C,_), not drop(C), not sat(C).\n% Not needed for correctness: with it, X.cost is the true cost of the witness X, an upper bound.\n#minimize { W,C : soft(C,W), not sat(C) }.\n#show t/1.\n",
+      "description": "Part of the library example maxsat-ihs."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# Implicit hitting sets (MaxHS): an optimal hitting set of the cores found so far, then a SAT\n# call with the clauses it keeps. Unsatisfiable: a new core, which the next hitting set must\n# hit. Satisfiable: the hitting set is optimal. Within a round, each core is relaxed\n# (E.without) and the oracle is asked again, so that one round finds several disjoint cores.\n# Each core is made subset-minimal first (C.core.minimal): a short core is a strong clause.\n# The variant plain-cores uses the cores as clasp returns them.\nupper = none\nloop:\n    M = A.solve(optimal)\n    if not M: stop \"the hard clauses are unsatisfiable\"\n    track lower = M.cost\n    E = G(M)\n    cores = 0\n    loop:\n        X = C.solve(assume E)\n        if X:\n            if upper == none or X.cost < upper: upper = X.cost\n            break\n        K = C.core.minimal             # no assumption of it can be left out\n        if K.on(G).size == 0: stop \"the hard clauses are unsatisfiable\"\n        A.add(K.on(G))                 # hit at least one clause of the core\n        cores = cores + 1\n        count cores\n        for a in K:                    # relax the core's clauses, look for a disjoint one\n            E = E.without(a)\n    track upper = upper\n    if cores == 0:\n        log \"optimum:\", M.cost\n        accept M\n        stop\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

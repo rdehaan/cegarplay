@@ -412,6 +412,17 @@ ${query ? 'query(@int(1, n, query)).\n' : ''}
 #show arg/1.  #show att/2.${query ? '  #show query/1.' : ''}
 `,
 });
+// voting-justification: three generated questions with small bounds; counts measured with
+// tools/run.mjs --solutions all
+const VOTE_RECIPES = [
+    { id: 'random-1', recipe: { generator: 'vote-question', params: { v: 3, a: 3 }, seed: 1 }, expected: { solutions: 6 }, tags: ['generated'],
+      constants: { num_candidates: '3', num_voters: '3', num_profiles: '3', num_axiom_instances: '3' } },
+    { id: 'random-2', recipe: { generator: 'vote-question', params: { v: 2, a: 2 }, seed: 3 }, expected: { solutions: 0 }, tags: ['generated', 'no-solution'],
+      constants: { num_candidates: '3', num_voters: '2', num_profiles: '3', num_axiom_instances: '3' } },
+    { id: 'random-3', recipe: { generator: 'vote-question', params: { v: 3, a: 2 }, seed: 3 }, expected: { solutions: 0 }, tags: ['generated', 'no-solution'],
+      constants: { num_candidates: '3', num_voters: '3', num_profiles: '2', num_axiom_instances: '2' } },
+  ];
+
 // voting-justification: random questions (FUTURE-DIRECTIONS E2)
 const VOTE_QUESTION = {
   name: 'vote-question',
@@ -493,20 +504,13 @@ export const GENERATORS = {
   'af-semi-stable': [afGnp(false)],
   qbf: [QBF_DNF],
   'kemeny-control': [BALLOTS_IC, BALLOTS_MALLOWS],
-  'voting-justification': [VOTE_QUESTION],
 };
+// voting-justification's generator, recipe instances and view are attached by buildExamples in
+// tools/make-examples.mjs (its file must equal buildExamples' output).
+export const VOTE_KIT = { generators: [VOTE_QUESTION], recipes: VOTE_RECIPES };
 // recipe instances added to the library (their facts are generated on demand)
 export const RECIPES = {
   qbf: [{ id: 'dnf-1', recipe: { generator: 'qbf-dnf', params: { nx: 5, ny: 4, t: 10 }, seed: 1 }, tags: ['generated'] }],
-  // three generated questions with small bounds; counts measured with tools/run.mjs --solutions all
-  'voting-justification': [
-    { id: 'random-1', recipe: { generator: 'vote-question', params: { v: 3, a: 3 }, seed: 1 }, expected: { solutions: 6 }, tags: ['generated'],
-      constants: { num_candidates: '3', num_voters: '3', num_profiles: '3', num_axiom_instances: '3' } },
-    { id: 'random-2', recipe: { generator: 'vote-question', params: { v: 2, a: 2 }, seed: 3 }, expected: { solutions: 0 }, tags: ['generated', 'no-solution'],
-      constants: { num_candidates: '3', num_voters: '2', num_profiles: '3', num_axiom_instances: '3' } },
-    { id: 'random-3', recipe: { generator: 'vote-question', params: { v: 3, a: 2 }, seed: 3 }, expected: { solutions: 0 }, tags: ['generated', 'no-solution'],
-      constants: { num_candidates: '3', num_voters: '3', num_profiles: '2', num_axiom_instances: '2' } },
-  ],
 };
 
 // suites and variants added to library examples (docs/spec-instances.md section 5)

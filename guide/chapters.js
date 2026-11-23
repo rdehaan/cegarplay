@@ -37,6 +37,20 @@ export const CHAPTERS = [
     summary: 'MaxSAT as an optimal hitting set of cores: lower and upper bounds, and minimal cores.' },
   { file: '15-marco.html', title: 'MARCO: two kinds of answer', ready: true, part: 2,
     summary: 'A map of all subsets, shrink and grow, and refinements in both directions.' },
+  { file: '16-cegis.html', title: 'CEGIS: synthesis from counterexamples', ready: true, part: 2,
+    summary: 'The counterexample is an input; the synthesiser learns to be right on it.' },
+  { file: '17-oll.html', title: 'Core-guided optimisation: OLL', ready: true, part: 2,
+    summary: 'One solver whose cores relax the problem instead of cutting it, against the hitting-set loop.' },
+  { file: '18-benders.html', title: 'Benders decomposition', ready: true, part: 2,
+    summary: 'Master and subproblem, optimality cuts as rules, and how much a cut should cover.' },
+  { file: '19-more-levels.html', title: 'More than two quantifier levels', ready: true, part: 2,
+    summary: 'Chains of solvers, recursion over solver families, and cores along the chain.' },
+  { file: '20-lazy-and-omission.html', title: 'Lazy constraints and omission', ready: true, part: 2,
+    summary: 'Checks at partial assignments, and abstractions that leave part of the problem out.' },
+  { file: '21-voting-case-study.html', title: 'A case study: explaining voting outcomes', ready: true, part: 2,
+    summary: 'A research project with the tool: strategies as variants, a campaign, ground truth and open questions.' },
+  { file: '22-from-a-paper.html', title: 'From a paper to a loop', ready: true, part: 2,
+    summary: 'A checklist from pseudocode to loop script, and which loop for which problem.' },
 ];
 
 // Pages of the guide that are not chapters: linked from the contents page and the sidebar, with

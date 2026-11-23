@@ -7,7 +7,8 @@
 // Each example runs as the page runs it, but with all solutions and no trace. A number on a
 // guide page is never typed by hand: it is a data-stat span whose text must be format(value).
 // Keys of numbers.json: the example id, or ID@name=value[,name=value] for a run with other
-// constants (the variants of a guide entry, and the existing examples in QUOTED).
+// constants (the variants of a guide entry, and the existing examples in QUOTED); a QUOTED run of
+// one instance or variant adds [instance] and (variant): voting-justification[faith-k1](s1).
 import fs from 'node:fs';
 import { runProject } from './run.mjs';
 import { QUOTED } from './guide.mjs';
@@ -29,7 +30,7 @@ export const KEYS = {
   maxClause: (s) => s.maxlen,
   checkCalls: (s) => Object.entries(s.solvers).filter(([n]) => n !== 'A').reduce((a, [, v]) => a + v.calls, 0),
   restarts: (s) => s.restarts,
-  rulesA: (s) => s.solvers.A.rules,                      // rules of the abstraction after grounding
+  rulesA: (s) => (s.solvers.A || Object.values(s.solvers)[0] || {}).rules ?? 0,   // rules of the abstraction (A, else the first solver)
 };
 
 // The text a data-stat span must hold.
@@ -44,9 +45,9 @@ export function guideEntries() {
 }
 
 // The key of a run of example id with the given constants.
-export const runKey = (id, constants) => {
+export const runKey = (id, constants, instance, variant) => {
   const c = Object.entries(constants || {}).sort(([a], [b]) => a.localeCompare(b));
-  return c.length ? `${id}@${c.map(([k, v]) => `${k}=${v}`).join(',')}` : id;
+  return (c.length ? `${id}@${c.map(([k, v]) => `${k}=${v}`).join(',')}` : id) + (instance ? `[${instance}]` : '') + (variant ? `(${variant})` : '');
 };
 
 // Every run to measure: [{ key, id, constants }]: the guide examples, their variants, QUOTED.
@@ -56,16 +57,16 @@ export function runs(entries = guideEntries()) {
     out.push({ key: e.id, id: e.id, outcome: e.outcome, exhausted: e.exhausted });
     for (const c of e.variants || []) out.push({ key: runKey(e.id, c), id: e.id, constants: c });
   }
-  for (const q of QUOTED) out.push({ key: runKey(q.id, q.constants), id: q.id, constants: q.constants, exhausted: q.exhausted });
+  for (const q of QUOTED) out.push({ key: runKey(q.id, q.constants, q.instance, q.variant), id: q.id, constants: q.constants, instance: q.instance, variant: q.variant, exhausted: q.exhausted });
   return out;
 }
 
 // Run one example (with constants changed); returns { numbers, outcome, exhausted, error }.
-export async function measure(id, constants) {
+export async function measure(id, constants, instance, variant) {
   const p = JSON.parse(read(`examples/${id}.json`));
   p.settings = { ...p.settings, solutions: 0, trace: 0 };
   if (constants) p.settings.constants = { ...p.settings.constants, ...constants };
-  const r = await runProject(p);
+  const r = await runProject(p, { ...(instance ? { instance } : {}), ...(variant ? { variant } : {}) });
   if (r.problems.length) return { error: r.problems.map((x) => x.message).join('; ') };
   const ev = (k) => r.events.filter((e) => e.kind === k).map((e) => e.data);
   const err = ev('E').at(-1);
@@ -79,7 +80,7 @@ export async function measure(id, constants) {
 export async function measureAll(entries = guideEntries()) {
   const out = {};
   for (const r of runs(entries)) {
-    const m = await measure(r.id, r.constants);
+    const m = await measure(r.id, r.constants, r.instance, r.variant);
     // An entry with outcome 'error' (a pitfall shown on purpose) must end with an error event.
     if (r.outcome === 'error') {
       if (m.outcome !== 'error' || !m.error) throw new Error(`${r.key}: expected an error, got outcome ${m.outcome}`);

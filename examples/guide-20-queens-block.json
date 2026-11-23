@@ -1,0 +1,43 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide: n queens, blocking",
+  "description": "The abstraction of queens-omission with every diagonal constraint off; a placement that the full program rejects is blocked on its own. See the guide page \"Lazy constraints and omission\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% n queens on an n x n board. Diagonal D: the up diagonals are numbered R + C (2 .. 2n),\n% the down diagonals 2n + R - C + n (2n + 1 .. 4n - 1).\nrow(1..n).\ndiag(R,C,R+C) :- row(R), row(C).\ndiag(R,C,2*n+R-C+n) :- row(R), row(C).\n",
+      "description": "Part of the library example queens-omission."
+    },
+    {
+      "name": "abstraction",
+      "text": "% The abstraction omits the diagonal constraints: one queen per row and per column only.\n1 { q(R,C) : row(C) } 1 :- row(R).\n1 { q(R,C) : row(R) } 1 :- row(C).\n% Each diagonal constraint is guarded by an external atom, false at the start. The loop\n% switches one on (A.set) when a candidate breaks it: the refinement puts back an omitted\n% part of the program instead of adding a clause about the candidate.\n#external active(D) : diag(_,_,D).\n:- active(D), #count { R,C : q(R,C), diag(R,C,D) } > 1.\n#show q/2.\n",
+      "description": "Part of the library example queens-omission."
+    },
+    {
+      "name": "glue",
+      "text": "glue(q(R,C)) :- row(R), row(C).\n",
+      "description": "Part of the library example queens-omission."
+    },
+    {
+      "name": "check",
+      "text": "% A counterexample: the full program says no. violated(D): two queens on diagonal D.\nviolated(D) :- diag(R1,C1,D), diag(R2,C2,D), q(R1,C1), q(R2,C2), R1 < R2.\nbad :- violated(_).\n:- not bad.\n#show violated/1.\n",
+      "description": "Part of the library example queens-omission."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        A.add(G.block(M))\n"
+  },
+  "settings": {
+    "constants": {
+      "n": "6"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

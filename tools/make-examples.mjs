@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { importLp, load, save, template } from '../js/project.js';
 import { stripAspComments } from '../js/driver.js';
-import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS, PROJECT_CARDS, EXERCISES, levelOf } from './library.mjs';
+import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS, PROJECT_CARDS, EXERCISES, levelOf, VOTE_KIT } from './library.mjs';
 import { buildGuide } from './guide.mjs';
 
 const root = new URL('..', import.meta.url);
@@ -458,6 +458,10 @@ export function buildExamples() {
     }, { solutions: 1 });
   vote.settings.constants = { ...vote.instances.find((i) => i.id === VOTE_DEFAULT).constants };
   vote.readme = VOTE_README;
+  vote.generators = structuredClone(VOTE_KIT.generators);
+  vote.instances.push(...structuredClone(VOTE_KIT.recipes).map((x) => ({ constants: {}, ...x })));
+  vote.fragments.push({ name: 'view', text: VIEWS['voting-justification'], description: 'A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks.' });
+  vote.views = [{ name: 'view', fragments: ['shared', 'view'] }];
   vote.suites = [
     { name: 'questions', instances: { ids: 'all' }, limits: { seconds: 20 } },
     // every refinement strategy and loop on the questions that finish
@@ -478,6 +482,7 @@ export function buildExamples() {
   ];
   nash.settings.instance = '';
   nash.version = 2;
+  nash.readme = PROJECT_CARDS.nash;
   return { 'graph-coloring': gc, nash, 'voting-justification': vote };
 }
 

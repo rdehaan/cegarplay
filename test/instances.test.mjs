@@ -141,7 +141,8 @@ test('three library examples carry three or more instances with expected counts'
   assert.ok(many.length >= 3, `only ${many.length}`);
 });
 
-for (const e of lib.examples) {
+// an exercise's starter is meant to miss its expected counts (test/exercise.test.mjs grades it)
+for (const e of lib.examples.filter((x) => !x.tags.includes('exercise'))) {
   const p = P.load(H.read(`examples/${e.id}.json`));
   for (const x of p.instances || []) {
     if (!x.expected || (!Number.isInteger(x.expected.solutions) && x.expected.optimum == null)) continue;

@@ -1302,3 +1302,7 @@ One commit per item. Browser tests in a cloud session: `CHROMIUM_PATH=/opt/pw-br
 - F2 (done): `level` and `after` for every example in the manifest (`LEVELS`, `levelOf` in
   `tools/library.mjs`; contrib may set `library.level/after`); the Library filters **Level** and
   **What can I read now?**.
+- Guide Part II, chapters 16-22 (done): CEGIS, OLL, Benders, more than two levels, lazy
+  constraints and omission, the voting case study, from a paper to a loop. Seven more guide
+  examples (with replays); QUOTED runs may name an instance and a variant (key
+  `id[instance](variant)`); `rulesA` falls back to the first solver.

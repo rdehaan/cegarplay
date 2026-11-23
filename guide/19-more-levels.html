@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>More than two quantifier levels · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 19 · Part II</p>
+        <h1>More than two quantifier levels</h1>
+        <p class="lead">Every loop so far had two levels: a candidate and a check. Problems with three
+          alternating quantifiers, Σ<sub>3</sub><sup>P</sup> and beyond, need a check that is itself a
+          loop. This chapter shows two ways to build one: a chain of solvers, and a recursive procedure
+          over a family of solvers.</p>
+
+        <h2 id="problem">A trilevel problem</h2>
+        <p>Knapsack interdiction with fortification: a defender fortifies up to two items, an attacker
+          removes up to two unfortified ones, and the defender packs what is left. A fortification is a
+          solution when every attack leaves a packing that reaches the goal: ∃ fortification ∀ attack
+          ∃ packing. Three solvers in a chain: A fortifies, B attacks, C packs.</p>
+
+        <h2 id="block">Blocking at both levels</h2>
+        <p id="block-run">The middle level is a loop of its own: B proposes attacks for the current
+          fortification, and C answers each with a packing or fails. The baseline blocks a refuted attack
+          and a refuted fortification each on its own:</p>
+        <pre class="code" data-lang="loop" data-from="guide-19-fortify-block:loop">        loop:
+            Y = B.solve(assume GF(M))
+            if not Y: break
+            K = C.solve(assume GA(Y))
+            if K:
+                B.add(GA.block(Y))
+            else:
+                reject M with GF.block(M)
+                break</pre>
+        <p class="listing-source">From the loop script of <code>guide-19-fortify-block</code>.</p>
+
+        <h2 id="clauses">Clauses at both levels</h2>
+        <p id="clauses-run">Each level can learn as in Part I. A packing refutes an attack, and every
+          attack that leaves the packed items alone is refuted by it too: "attack one of the packed
+          items". An attack refutes a fortification, and every fortification that leaves the attacked items
+          unprotected is refuted too: "fortify one of the attacked items". The library example
+          <code>knapsack-fortification</code> uses these two clauses. It finds the
+          <span data-stat="knapsack-fortification:solutions">2</span> solutions after
+          <span data-stat="knapsack-fortification:candidates">7</span> fortifications and
+          <span data-stat="knapsack-fortification:checkCalls">21</span> inner calls, against
+          <span data-stat="guide-19-fortify-block:candidates">37</span> and
+          <span data-stat="guide-19-fortify-block:checkCalls">137</span> for blocking.
+          <a class="play" href="../?example=knapsack-fortification&amp;fragment=loop&amp;from=guide/19-more-levels.html%23clauses-run" target="cegarplay">Open knapsack-fortification</a>
+          <a class="play" href="../?example=guide-19-fortify-block&amp;fragment=loop&amp;from=guide/19-more-levels.html%23clauses-run" target="cegarplay">Open the blocking loop</a></p>
+        <p>One subtlety: B's clauses must stay valid for <em>later</em> fortifications, because B keeps
+          them. "Attack one of the packed items" does not mention the fortification, so it holds for
+          every one. A clause of the middle level that named the outer candidate would have to name its
+          atoms too, as the next section's loop does.</p>
+
+        <h2 id="cores">Cores along a chain</h2>
+        <p id="cores-run">In QBF form (∃x ∀y ∃z), the innermost solver is a witness check, and a
+          failure is explained by its core. The library example <code>qbf-three-blocks</code> searches B
+          inside A's check and turns the x-part of C's core into a clause for A, CAQE-style: one solver per
+          block, cores flowing outwards. It finds <span data-stat="qbf-three-blocks:solutions">4</span>
+          solutions after <span data-stat="qbf-three-blocks:candidates">34</span> candidates.
+          <a class="play" href="../?example=qbf-three-blocks&amp;fragment=loop&amp;from=guide/19-more-levels.html%23cores-run" target="cegarplay">Open qbf-three-blocks</a></p>
+
+        <h2 id="recursion">Any number of levels</h2>
+        <p>For a formula with any number of blocks, write the check once as a procedure over a family of
+          solvers <code>S[1..depth]</code> and links <code>G</code>. Level i answers a candidate of level
+          i − 1 with a clause, or with none when it stands:</p>
+        <pre class="code" data-lang="loop" data-from="qbf-deep:loop">def refute(i, M):
+    loop:
+        Y = S[i].solve(assume G[i-1](M))
+        if not Y: return none
+        if i == S.size: return G[i-1].clause(Y)
+        c = refute(i + 1, Y)
+        if not c: return G[i-1].clause(Y) + S[i+1].core.on(G[i-1])
+        S[i].add(c)</pre>
+        <p class="listing-source">From the loop script of <code>qbf-deep</code>.</p>
+        <p id="recursion-run">This is RAReQS's recursion with clauses in place of expansion. With three
+          blocks the example's formula is false: the loop proves it after
+          <span data-stat="qbf-deep:candidates">4</span> candidates; with four blocks
+          (<code>depth = 4</code>) after <span data-stat="qbf-deep@depth=4:candidates">4</span>
+          candidates and <span data-stat="qbf-deep@depth=4:checkCalls">36</span> inner calls.
+          <a class="play" href="../?example=qbf-deep&amp;fragment=loop&amp;from=guide/19-more-levels.html%23recursion-run" target="cegarplay">Open qbf-deep</a></p>
+
+        <aside class="paper" id="paper">
+          <h2>The paper</h2>
+          <p>RAReQS: Janota, Klieber, Marques-Silva and Clarke ("Solving QBF with counterexample guided
+            refinement", SAT 2012 and Artificial Intelligence 2016). Clausal abstraction: CAQE (Rabe and
+            Tentrup, FMCAD 2015) and QESTO (Janota and Marques-Silva, IJCAI 2015). Trilevel knapsack
+            interdiction with fortification: Boggio Tomasaz, Carvalho, Cordone and Hosteins.</p>
+          <table class="results">
+            <thead><tr><th>Paper (RAReQS)</th><th>Loop script</th></tr></thead>
+            <tbody>
+              <tr><td>one abstraction per quantifier block</td><td><code>solver S[i in 1..depth]</code></td></tr>
+              <tr><td>recursive call on the inner formula</td><td><code>c = refute(i + 1, Y)</code></td></tr>
+              <tr><td>refine the abstraction of level i</td><td><code>S[i].add(c)</code></td></tr>
+            </tbody>
+          </table>
+          <p>More papers are on the <a href="bibliography.html">bibliography page</a>.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>In the fortification loop, B's clause "attack one of the packed items" is learnt inside the
+            check of one fortification and kept for all later ones. Why is that sound, and which clause
+            would not be?</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>A packing that avoids the attacked items exists whatever is fortified, so every attack that
+              leaves those items alone is answered by it, for every fortification: the clause removes no
+              attack that could still win. A clause that used the current fortification (for example
+              "attack an item that is not fortified now") would be valid only for this candidate; B would
+              have to forget it, or name the fortification's atoms in it, before the next candidate.
+              <a class="play" href="../?example=knapsack-fortification&amp;fragment=pack&amp;from=guide/19-more-levels.html%23exercise-1-solution" target="cegarplay">Open knapsack-fortification</a></p>
+          </details>
+        </section>
+
+        <section class="tools" id="tools">
+          <h2>Tool skills for this chapter</h2>
+          <ul>
+            <li><a href="../?tab=2#tut-lang-search">Tutorial: searches inside searches</a></li>
+            <li><a href="../?tab=2#tut-lang-families">Tutorial: procedures and solver families</a></li>
+          </ul>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-levels-chain">With three levels the check is a loop: a chain of solvers, each
+              refining the one before.</li>
+            <li id="rule-levels-valid">A clause learnt by an inner level must stay valid for every outer
+              candidate, or name the outer atoms it depends on.</li>
+            <li id="rule-levels-recursion">For any number of levels, a recursive procedure over a solver
+              family writes the loop once.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="18-benders.html">&larr; Benders decomposition</a>
+        <a class="next" href="20-lazy-and-omission.html">Lazy constraints and omission &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

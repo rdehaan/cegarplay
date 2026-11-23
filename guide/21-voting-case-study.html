@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>A case study: explaining voting outcomes · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 21 · Part II</p>
+        <h1>A case study: explaining voting outcomes</h1>
+        <p class="lead">The other chapters derive one algorithm each. This one shows what a project with
+          the tool looks like: a loop from a research paper's encoding, several refinement strategies,
+          a campaign to compare them, checks of soundness, and questions that are still open. The
+          project is <code>voting-justification</code>, a library example with a readme.</p>
+
+        <h2 id="problem">The problem</h2>
+        <p>Why does a voting rule give a profile a certain outcome? A <em>justification</em> answers with
+          axioms (Pareto, faithfulness, reinforcement, ...): a small set of axiom instances, each applied
+          to one, two or three concrete profiles, such that every rule satisfying them must give the
+          target profile this outcome (Boixel and Endriss). There is a set of axiom instances such that
+          every assignment of outcomes that satisfies them gives the target outcome: a CEGAR loop.</p>
+        <ul>
+          <li>The abstraction guesses the profiles and the axiom instances.</li>
+          <li>The check guesses outcomes for all profiles that satisfy every chosen instance but differ
+            from the target outcome.</li>
+          <li>The refinement is a clause over the interface atoms that <code>relevant/1</code> marks; the
+            original encoding comes with five strategies for it.</li>
+        </ul>
+
+        <h2 id="baseline">Baseline and variants</h2>
+        <p>Strategy 2, the default, marks every profile atom and the axiom instances
+          the counterexample's outcomes do <em>not</em> falsify:</p>
+        <pre class="code" data-lang="asp" data-from="voting-justification:relevant">relevant(profile(Prof,V,Cand,Pos)) :-
+    profile_num(Prof), voter(V), candidate(Cand), position(Pos).
+relevant(use_axiom_instance(Profiles,Axiom)) :-
+    not falsified(pos_axiom_instance(Profiles,Axiom)),
+    pos_axiom_instance(Profiles,Axiom).</pre>
+        <p class="listing-source">From the fragment <code>relevant</code> of <code>voting-justification</code>.</p>
+        <p id="baseline-run">Each strategy is a variant that swaps in another fragment (<code>s1</code>, <code>s3</code>,
+          <code>s4</code>, <code>s5</code>); <code>shape2</code> and <code>record</code> change the loop,
+          and <code>reference</code> blocks. The project's suite <code>strategies</code> runs them all on
+          the fifteen questions with a known answer.
+          <a class="play" href="../?example=voting-justification&amp;fragment=relevant&amp;from=guide/21-voting-case-study.html%23baseline-run" target="cegarplay">Open voting-justification</a></p>
+
+        <h2 id="campaign">Reading the matrix</h2>
+        <p>The Campaign tab (or <code>tools/bench.mjs</code> with <code>tools/report.mjs</code>) gives one
+          row per question and one column per variant. Eleven questions need at most nine candidates in
+          every variant; four separate the strategies. On one of them:</p>
+        <table class="results">
+          <thead><tr><th>faith-cancel-reinf-pareto-k3</th><th class="num">Candidates</th><th class="num">Mean clause</th></tr></thead>
+          <tbody>
+            <tr><td>Strategy 2 (default)</td>
+              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3]:candidates">1,364</span></td>
+              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3]:meanClause">219.4</span></td></tr>
+            <tr><td>Strategy 1</td>
+              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](s1):candidates">405</span></td>
+              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](s1):meanClause">189.4</span></td></tr>
+            <tr><td>Reference (blocking)</td>
+              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](reference):candidates">1,407</span></td>
+              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](reference):meanClause">248.0</span></td></tr>
+          </tbody>
+        </table>
+        <p>Two findings. First, strategy 1 is the only one that beats blocking clearly (also on
+          <code>faith-pareto-neutral-reinf-k4</code>:
+          <span data-stat="voting-justification[faith-pareto-neutral-reinf-k4](s1):candidates">44</span>
+          candidates against
+          <span data-stat="voting-justification[faith-pareto-neutral-reinf-k4]:candidates">146</span>).
+          Second, the default strategy is barely better than blocking, and the clause lengths say why:
+          219 literals against 248. Every strategy marks every profile atom relevant, so every clause is
+          nearly a block. A strategy that marked only the profiles the counterexample's falsified
+          instances touch would be shorter; whether it is sound is the kind of question chapter 4 teaches
+          you to test.</p>
+
+        <h2 id="soundness">Soundness and ground truth</h2>
+        <ul>
+          <li>On the questions with a known answer, every variant agrees with the reference: the campaign
+            marks no cell ✗.</li>
+          <li><b>Audit</b> and <b>Fuzz</b> test a strategy on small questions; the generator
+            <code>vote-question</code> draws random ones (<code>random-1</code>: strategy 1 needs
+            <span data-stat="voting-justification[random-1](s1):candidates">405</span> candidates, the
+            default <span data-stat="voting-justification[random-1]:candidates">2,526</span>).</li>
+          <li><code>tools/cegarcheck.py</code> runs the loop with Python clingo, independently of the
+            page's runtime.</li>
+          <li>The two hard questions have no ground truth yet: neither finishes within forty minutes
+            in this setting. Getting it, with native clingo, a stronger strategy or a better abstraction,
+            is part of the project.</li>
+        </ul>
+
+        <h2 id="open">Open questions</h2>
+        <p>The project's readme (Control tab, under the description) lists them: which strategy wins on
+          which kind of question and why; whether a refinement can be lifted over symmetric profiles;
+          whether Shape 2 or a rule refinement pays on the hard questions; what change to the abstraction
+          makes them finish. Each is a student project of a few weeks.</p>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>Run the suite <code>generated</code> (twelve random questions, four variants) and read the
+            matrix by candidates. Does the ranking of the strategies on the fixed questions hold on random
+            ones?</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>On the machine where this guide was measured, strategy 1 needed 9.8 s in total, the
+              reference 36.9 s, record 43.0 s and the default 49.6 s: the same ranking, with the default
+              strategy now behind blocking. Times vary between machines; compare candidates first.
+              <a class="play" href="../?example=voting-justification&amp;fragment=loop&amp;from=guide/21-voting-case-study.html%23exercise-1-solution" target="cegarplay">Open voting-justification</a></p>
+          </details>
+        </section>
+
+        <section class="tools" id="tools">
+          <h2>Tool skills for this chapter</h2>
+          <ul>
+            <li><a href="../?tab=2#tut-variants">Tutorial: comparing encodings with variants</a></li>
+            <li><a href="../?tab=2#tut-campaign">Tutorial: campaigns</a></li>
+            <li><a href="howto-campaign.html">How to compare refinement strategies with a campaign</a></li>
+            <li><a href="howto-headless.html">How to run experiments headlessly</a></li>
+            <li><a href="howto-check.html">How to check a loop independently</a></li>
+            <li><a href="howto-instances.html">How to build an instance set</a></li>
+          </ul>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-project-variants">In a project, every design choice is a variant, and the
+              reference variant is always one of them.</li>
+            <li id="rule-project-matrix">Read the matrix by candidates and clause lengths before times;
+              they explain why one variant beats another.</li>
+            <li id="rule-project-truth">Ground truth comes from independent runs (reference, audit,
+              cegarcheck); a question without it is an open question, not a test.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="20-lazy-and-omission.html">&larr; Lazy constraints and omission</a>
+        <a class="next" href="22-from-a-paper.html">From a paper to a loop &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

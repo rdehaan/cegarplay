@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Lazy constraints and omission · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 20 · Part II</p>
+        <h1>Lazy constraints and omission</h1>
+        <p class="lead">Not every loop has a quantifier alternation. Sometimes the abstraction simply
+          leaves out part of an ordinary problem, because that part is too large to ground or because
+          most of it never matters, and the check puts back what does. This chapter shows two such
+          loops: lazy constraints checked inside the search, and omission-based abstraction.</p>
+
+        <h2 id="lazy">Lazy constraints</h2>
+        <p>Graphs on eight nodes with at least sixteen edges and no triangle: the abstraction has no
+          triangle constraint, and the check finds a triangle. Each triangle becomes a clause inside the
+          search (Shape 1), so the constraint is generated only where the search needs it: lazy clause
+          generation.</p>
+        <p>With <code>on partial</code>, the check also runs at partial assignments of the search,
+          with the undecided edges taken as absent:</p>
+        <pre class="code" data-lang="loop" data-from="triangle-free-lazy:loop">    on partial P every 8:
+        X = C.solve(assume G(P, false))
+        if X: reject P with G.clause(X)</pre>
+        <p class="listing-source">From the loop script of <code>triangle-free-lazy</code>.</p>
+        <p id="lazy-run">A triangle among the edges chosen so far cuts the whole subtree. The loop needs
+          <span data-stat="triangle-free-lazy:candidates">136</span> candidates where the variant
+          <code>total-only</code> needs <span data-stat="triangle-free-lazy(total-only):candidates">218</span>,
+          but it calls the check <span data-stat="triangle-free-lazy:checkCalls">1,141</span> times
+          instead of <span data-stat="triangle-free-lazy(total-only):checkCalls">218</span>. This is
+          branch-and-check (Thorsteinsson): whether it pays depends on how cheap the check is against the
+          search it saves.
+          <a class="play" href="../?example=triangle-free-lazy&amp;fragment=loop&amp;from=guide/20-lazy-and-omission.html%23lazy-run" target="cegarplay">Open triangle-free-lazy</a></p>
+        <p>The witness-check version is <code>colourable-partial</code>: a core found at a partial
+          assignment names few edges, so its clause is short. It needs
+          <span data-stat="colourable-partial:candidates">537</span> candidates against
+          <span data-stat="colourable-partial(total-only):candidates">550</span>, with
+          <span data-stat="colourable-partial:checkCalls">6,460</span> check calls against
+          <span data-stat="colourable-partial(total-only):checkCalls">5,881</span>. Here the partial checks
+          barely pay: an example where they win on time needs a cheap check and an expensive completion.</p>
+
+        <h2 id="omission">Omission: put back what matters</h2>
+        <p>Six queens on a 6 × 6 board. An abstraction that knows rows and columns only proposes
+          permutations; the check finds two queens on a diagonal. Blocking each bad permutation takes
+          <span data-stat="guide-20-queens-block:candidates">720</span> candidates, every permutation of
+          six.</p>
+        <p>Omission-based abstraction keeps the omitted constraints in the program,
+          each guarded by an external atom that starts false, and switches on the ones a candidate breaks:</p>
+        <pre class="code" data-lang="asp" data-from="queens-omission:abstraction">#external active(D) : diag(_,_,D).
+:- active(D), #count { R,C : q(R,C), diag(R,C,D) } > 1.</pre>
+        <p class="listing-source">From the fragment <code>abstraction</code> of <code>queens-omission</code>.</p>
+        <pre class="code" data-lang="loop" data-from="queens-omission:loop">        for v in X.atoms(violated/1):
+            A.set(A.atom("active", v.arg(1)), true)</pre>
+        <p class="listing-source">From the loop script of <code>queens-omission</code>.</p>
+        <p id="omission-run">The refinement says nothing about the candidate; it makes the abstraction more like the real
+          problem. With six queens the loop needs
+          <span data-stat="queens-omission@n=6:candidates">10</span> candidates; with eight, the 92
+          solutions take <span data-stat="queens-omission:candidates">106</span> candidates, and only
+          the diagonals some candidate broke are ever switched on.
+          <a class="play" href="../?example=queens-omission&amp;fragment=abstraction&amp;from=guide/20-lazy-and-omission.html%23omission-run" target="cegarplay">Open queens-omission</a>
+          <a class="play" href="../?example=guide-20-queens-block&amp;fragment=loop&amp;from=guide/20-lazy-and-omission.html%23omission-run" target="cegarplay">Open the blocking loop</a></p>
+
+        <aside class="paper" id="paper">
+          <h2>The paper</h2>
+          <p>Branch-and-check: Thorsteinsson ("Branch-and-check: a hybrid framework integrating mixed
+            integer programming and constraint logic programming", CP 2001). Omission-based abstraction:
+            Saribatur and Eiter ("Omission-based abstraction for answer set programs", KR 2018).</p>
+          <table class="results">
+            <thead><tr><th>Paper (omission)</th><th>Loop script</th></tr></thead>
+            <tbody>
+              <tr><td>abstract program: omit the atoms or rules in Ω</td><td><code>#external active(D)</code>, false at the start</td></tr>
+              <tr><td>check the abstract answer set against the full program</td><td><code>X = C.solve(assume G(M))</code></td></tr>
+              <tr><td>refine: Ω ← Ω \ (what the failure involves)</td><td><code>A.set(A.atom("active", …), true)</code></td></tr>
+            </tbody>
+          </table>
+          <p>More papers are on the <a href="bibliography.html">bibliography page</a>.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p><code>conformant-growing</code> grows the planning horizon one step at a time. Is that
+            omission, lazy constraints, or something else?</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>Omission: the horizon is part of the problem the abstraction leaves out, and the loop puts it
+              back step by step (it grounds more of the program and switches an external query to the new
+              horizon), instead of learning about one candidate. The first horizon with a plan gives the
+              shortest plans.
+              <a class="play" href="../?example=conformant-growing&amp;fragment=loop&amp;from=guide/20-lazy-and-omission.html%23exercise-1-solution" target="cegarplay">Open conformant-growing</a></p>
+          </details>
+        </section>
+
+        <section class="tools" id="tools">
+          <h2>Tool skills for this chapter</h2>
+          <ul>
+            <li><a href="../?tab=2#tut-lang-partial">Tutorial: checks at partial assignments</a></li>
+            <li><a href="../?tab=2#tut-lang-growing">Tutorial: growing programs</a></li>
+            <li><a href="howto-time.html">How to find where the time goes</a></li>
+          </ul>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-lazy">A constraint that is too large to ground can be generated lazily: the check
+              finds the violated instances, inside the search.</li>
+            <li id="rule-partial">Checking partial assignments cuts subtrees but costs calls; it pays only
+              when the check is cheap against the search it saves.</li>
+            <li id="rule-omission">An abstraction can omit part of the program and put it back on demand:
+              the refinement changes the abstraction, not the candidates.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="19-more-levels.html">&larr; More than two quantifier levels</a>
+        <a class="next" href="21-voting-case-study.html">A case study: explaining voting outcomes &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

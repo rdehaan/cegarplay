@@ -1045,6 +1045,138 @@
       "after": 15
     },
     {
+      "id": "guide-16-cegis-block",
+      "title": "Guide: circuit synthesis, blocking",
+      "group": "guide",
+      "summary": "Majority circuits of three gates: every circuit the verifier refutes is blocked.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 0
+      },
+      "page": "guide/16-cegis.html#block",
+      "status": "baseline",
+      "level": 4,
+      "after": 16
+    },
+    {
+      "id": "guide-16-cegis",
+      "title": "Guide: circuit synthesis by CEGIS",
+      "group": "guide",
+      "summary": "CEGIS: each counterexample input is simulated in the synthesiser from then on.",
+      "shape": "shape3",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 0
+      },
+      "page": "guide/16-cegis.html#cegis",
+      "status": "sound",
+      "baseline": "guide-16-cegis-block",
+      "variants": [
+        {
+          "g": "4"
+        }
+      ],
+      "level": 4,
+      "after": 16
+    },
+    {
+      "id": "guide-16-ex1",
+      "title": "Guide: parity circuits by CEGIS",
+      "group": "guide",
+      "summary": "Exercise: CEGIS for the parity of two inputs.",
+      "shape": "shape3",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "page": "guide/16-cegis.html#exercise-1-solution",
+      "status": "demo",
+      "variants": [
+        {
+          "g": "2"
+        }
+      ],
+      "level": 4,
+      "after": 16
+    },
+    {
+      "id": "guide-17-ihs",
+      "title": "Guide: MaxSAT by hitting sets, for comparison",
+      "group": "guide",
+      "summary": "The unweighted MaxSAT instance of the OLL chapter, solved by the implicit hitting set loop of chapter 14.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 1
+      },
+      "page": "guide/17-oll.html#ihs",
+      "status": "demo",
+      "exhausted": false,
+      "level": 4,
+      "after": 17
+    },
+    {
+      "id": "guide-18-benders-exact",
+      "title": "Guide: Benders with exact-set cuts",
+      "group": "guide",
+      "summary": "Benders with weak cuts: a cut applies only when a machine gets exactly the same jobs again.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 1
+      },
+      "page": "guide/18-benders.html#exact",
+      "status": "demo",
+      "exhausted": false,
+      "level": 4,
+      "after": 18
+    },
+    {
+      "id": "guide-19-fortify-block",
+      "title": "Guide: fortification, blocking",
+      "group": "guide",
+      "summary": "Trilevel knapsack: every attack and every fortification that fails is blocked on its own.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "page": "guide/19-more-levels.html#block",
+      "status": "baseline",
+      "level": 4,
+      "after": 19
+    },
+    {
+      "id": "guide-20-queens-block",
+      "title": "Guide: n queens, blocking",
+      "group": "guide",
+      "summary": "n queens: the abstraction knows rows and columns only; a placement on a shared diagonal is blocked.",
+      "shape": "custom",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 4
+      },
+      "page": "guide/20-lazy-and-omission.html#omission",
+      "status": "baseline",
+      "level": 4,
+      "after": 20
+    },
+    {
       "id": "lang-basics",
       "title": "Loop language: the basics",
       "group": "language",

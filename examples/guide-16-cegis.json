@@ -1,0 +1,44 @@
+{
+  "format": "cegarplay",
+  "version": 1,
+  "title": "Guide: circuit synthesis by CEGIS",
+  "description": "Each input on which a circuit is wrong is grounded in the synthesiser (refine(k)), which from then on simulates every circuit on it: the synthesiser learns examples, not circuits. See the guide page \"CEGIS: synthesis from counterexamples\".",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% A circuit of g two-input gates over the inputs 1 .. m. Nodes 1 .. m are the inputs, nodes\n% m + 1 .. m + g the gates; the last gate is the output. A gate reads two earlier nodes.\ninp(1..m).\ngate(m+1..m+g).\nnode(1..m+g).\nkind(and; or; nand).\noutnode(m+g).\n",
+      "description": "Part of the library example cegis-circuit."
+    },
+    {
+      "name": "abstraction",
+      "text": "% The synthesiser guesses a circuit: each gate's kind and its two inputs (A < B, both\n% earlier). Every gate but the output feeds a later gate.\n1 { op(G,O) : kind(O) } 1 :- gate(G).\n1 { arg(G,A,B) : node(A), node(B), A < B, B < G } 1 :- gate(G).\nused(A) :- arg(_,A,_).\nused(B) :- arg(_,_,B).\n:- gate(G), not outnode(G), not used(G).\n#show op/2.\n#show arg/3.\n\n#program refine(k).\n% The k-th counterexample input: cex(k,inval(I,V)) gives input I the value V, and\n% goal(k,want(V)) the value the specification wants. Simulate the circuit on this input\n% (w(k,N): node N is 1) and require the wanted output.\nw(k,I) :- cex(k,inval(I,1)).\nw(k,G) :- arg(G,A,B), op(G,and), w(k,A), w(k,B).\nw(k,G) :- arg(G,A,B), op(G,or), w(k,A).\nw(k,G) :- arg(G,A,B), op(G,or), w(k,B).\nw(k,G) :- arg(G,A,B), op(G,nand), not w(k,A).\nw(k,G) :- arg(G,A,B), op(G,nand), not w(k,B).\n:- outnode(N), w(k,N), goal(k,want(0)).\n:- outnode(N), not w(k,N), goal(k,want(1)).\n",
+      "description": "Part of the library example cegis-circuit."
+    },
+    {
+      "name": "glue",
+      "text": "glue(op(G,O)) :- gate(G), kind(O).\nglue(arg(G,A,B)) :- gate(G), node(A), node(B), A < B, B < G.\n",
+      "description": "Part of the library example cegis-circuit."
+    },
+    {
+      "name": "check",
+      "text": "% The verifier: an input on which the circuit and the specification disagree.\n{ x(I) } :- inp(I).\nv(I) :- x(I).\nv(G) :- arg(G,A,B), op(G,and), v(A), v(B).\nv(G) :- arg(G,A,B), op(G,or), v(A).\nv(G) :- arg(G,A,B), op(G,or), v(B).\nv(G) :- arg(G,A,B), op(G,nand), not v(A).\nv(G) :- arg(G,A,B), op(G,nand), not v(B).\nout :- outnode(N), v(N).\n% The specification (only the verifier knows it): the majority of the inputs.\nones(N) :- N = #count { I : x(I) }.\nspec :- ones(N), 2 * N > m.\n:- out, spec.\n:- not out, not spec.\n% The counterexample as data for the synthesiser: the input and the wanted output.\ninval(I,1) :- x(I).\ninval(I,0) :- inp(I), not x(I).\nwant(1) :- spec.\nwant(0) :- not spec.\n#show inval/2.\n#show want/1.\n",
+      "description": "Part of the library example cegis-circuit."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# CEGIS (counterexample-guided inductive synthesis, Solar-Lezama et al.): the synthesiser\n# proposes a circuit that is right on the inputs seen so far; the verifier looks for an\n# input where it is wrong. Each such input is grounded in the synthesiser (Shape 3), which\n# then has to simulate the circuit on it. The specification itself stays in the verifier.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.expand(refine, cex = X.atoms(inval/2), goal = X.atoms(want/1))\n        count inputs\n    else:\n        accept M\n        A.add(G.block(M))\n"
+  },
+  "settings": {
+    "constants": {
+      "m": "3",
+      "g": "3"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "runs": []
+}

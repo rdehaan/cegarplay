@@ -250,6 +250,26 @@ export const QUOTED = [
   { id: 'conformant-planning' },
   { id: 'maxsat-ihs', exhausted: false },   // stops at its optimum
   { id: 'marco' },
+  { id: 'maxsat-oll', exhausted: false },
+  { id: 'benders-tardiness', exhausted: false },
+  { id: 'qbf-deep' },
+  { id: 'qbf-deep', constants: { depth: '4' } },
+  { id: 'qbf-three-blocks' },
+  { id: 'knapsack-fortification' },
+  { id: 'triangle-free-lazy' },
+  { id: 'triangle-free-lazy', variant: 'total-only' },
+  { id: 'colourable-partial' },
+  { id: 'colourable-partial', variant: 'total-only' },
+  { id: 'queens-omission', constants: { n: '6' } },
+  { id: 'queens-omission' },
+  // chapter 21: the voting case study
+  { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3' },
+  { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3', variant: 's1' },
+  { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3', variant: 'reference' },
+  { id: 'voting-justification', instance: 'faith-pareto-neutral-reinf-k4' },
+  { id: 'voting-justification', instance: 'faith-pareto-neutral-reinf-k4', variant: 's1' },
+  { id: 'voting-justification', instance: 'random-1' },
+  { id: 'voting-justification', instance: 'random-1', variant: 's1' },
 ]; 
 
 // Every entry: id, summary, shape, tags, expected, page, status, baseline, project; optionally
@@ -604,9 +624,11 @@ loop:
       'of the robot that must reach the goal too (Shape 3).', contrib('conformant-planning').loop.text) });
 
   // ==== Part II: loops from the literature =================================================
-  const P2 = { 13: '13-qbf', 14: '14-hitting-sets', 15: '15-marco' };
+  const P2 = { 13: '13-qbf', 14: '14-hitting-sets', 15: '15-marco', 16: '16-cegis', 17: '17-oll', 18: '18-benders', 19: '19-more-levels', 20: '20-lazy-and-omission', 21: '21-voting-case-study' };
   const RP = (n, anchor) => `guide/${P2[n]}.html#${anchor}`;
   const T13 = '2QBF, by clauses and by expansion', T14 = 'Implicit hitting sets', T15 = 'MARCO: two kinds of answer';
+  const T16 = 'CEGIS: synthesis from counterexamples', T17 = 'Core-guided optimisation: OLL', T18 = 'Benders decomposition',
+    T19 = 'More than two quantifier levels', T20 = 'Lazy constraints and omission';
 
   // ---- 13 2QBF: one random formula, 12 x-variables, 5 y-variables, 16 terms
   const qbfFacts = '% A random 2QBF: exists x1..x12 forall y1..y5 : T1 v ... v T16, three literals per\n' +
@@ -730,5 +752,85 @@ loop:
     (n, t) => (n === 'abstraction' ? t.replace('#heuristic pick(C) : cl(C). [1,true]', '#heuristic pick(C) : cl(C). [1,false]')
       .replace("% Maximal seeds first (Liffiton and Malik's getUnexploredMax): with --heuristic=Domain the\n% solver decides every pick to true first.",
         '% Minimal seeds first: with --heuristic=Domain the solver decides every pick to false first.') : t)) });
+
+  // ---- 16 CEGIS: majority circuits of g gates over m = 3 inputs
+  const cegisLoop = contrib('cegis-circuit').loop.text;
+  const cegisBlock = `solver A = shared + abstraction
+solver C = shared + check
+link   G = A -> C via shared + glue
+
+# Every circuit that is wrong on some input is blocked on its own.
+loop:
+    M = A.solve()
+    if not M: stop
+    X = C.solve(assume G(M))
+    if X:
+        A.add(G.block(M))
+    else:
+        accept M
+        A.add(G.block(M))
+`;
+  const cegis = (title, description, loop, settings, edit) => fromContrib('cegis-circuit', title, description + SEE(16, T16), loop, settings, edit);
+  add({ id: 'guide-16-cegis-block', summary: 'Majority circuits of three gates: every circuit the verifier refutes is blocked.',
+    shape: 'custom', expected: 0, page: RP(16, 'block'), status: 'baseline',
+    project: cegis('Guide: circuit synthesis, blocking', 'The synthesiser proposes any circuit of g gates; the verifier looks for an input ' +
+      'where it differs from the majority function; a wrong circuit is blocked on its own.', cegisBlock, { constants: { m: '3', g: '3' } }) });
+  add({ id: 'guide-16-cegis', summary: 'CEGIS: each counterexample input is simulated in the synthesiser from then on.',
+    shape: 'shape3', expected: 0, page: RP(16, 'cegis'), status: 'sound', baseline: 'guide-16-cegis-block', variants: [{ g: '4' }],
+    project: cegis('Guide: circuit synthesis by CEGIS', 'Each input on which a circuit is wrong is grounded in the synthesiser ' +
+      '(refine(k)), which from then on simulates every circuit on it: the synthesiser learns examples, not circuits.', cegisLoop, { constants: { m: '3', g: '3' } }) });
+  add({ id: 'guide-16-ex1', summary: 'Exercise: CEGIS for the parity of two inputs.',
+    shape: 'shape3', expected: 2, page: RP(16, 'exercise-1-solution'), status: 'demo', variants: [{ g: '2' }],
+    project: cegis('Guide: parity circuits by CEGIS', 'The CEGIS loop with another specification: the parity (exclusive or) of ' +
+      'm = 2 inputs.', cegisLoop, { constants: { m: '2', g: '3' } },
+    (n, t) => (n === 'check' ? t.replace('% The specification (only the verifier knows it): the majority of the inputs.', '% The specification (only the verifier knows it): the parity of the inputs.')
+      .replace('spec :- ones(N), 2 * N > m.', 'spec :- ones(N), N \\ 2 == 1.') : t)) });
+
+  // ---- 17 OLL: the instance 'example' of maxsat-oll (unweighted, optimum 6), here as IHS
+  const ollFacts = contrib('maxsat-oll').instances.find((x) => x.id === 'example').facts.replace(/soft\((\d+)\)\./g, 'soft($1,1).')
+    .replace('% Random MaxSAT:', '% Random MaxSAT (every soft clause has weight 1):');
+  const ihsLoop = contrib('maxsat-ihs').loop.text;
+  add({ id: 'guide-17-ihs', summary: 'The unweighted MaxSAT instance of the OLL chapter, solved by the implicit hitting set loop of chapter 14.',
+    shape: 'custom', expected: 1, page: RP(17, 'ihs'), status: 'demo', exhausted: false,
+    project: fromContrib('maxsat-ihs', 'Guide: MaxSAT by hitting sets, for comparison', 'The MaxHS loop of chapter 14 on the ' +
+      'instance of maxsat-oll (every weight 1).' + SEE(17, T17), ihsLoop, {},
+    (n, t) => (n === 'shared' ? ollFacts + t.slice(t.indexOf('% The instance (Instances tab)')) : t)) });
+
+  // ---- 18 Benders: the instance 'example' of benders-tardiness (optimum 20)
+  const bendersLoop = contrib('benders-tardiness').loop.text;
+  add({ id: 'guide-18-benders-exact', summary: 'Benders with weak cuts: a cut applies only when a machine gets exactly the same jobs again.',
+    shape: 'custom', expected: 1, page: RP(18, 'exact'), status: 'demo', exhausted: false,
+    project: fromContrib('benders-tardiness', 'Guide: Benders with exact-set cuts', 'The Benders loop of benders-tardiness, but ' +
+      'a cut raises the estimate only for an assignment that gives the machine exactly the jobs of the subproblem, not a superset.' +
+      SEE(18, T18), bendersLoop, {},
+    (n, t) => (n === 'abstraction' ? t.replace('covered(k,M) :- need(k,M,_), assign(J,M) : cut(k,has(M,J)).',
+      '% Weak: only exactly these jobs (no other job on M).\ncovered(k,M) :- need(k,M,_), assign(J,M) : cut(k,has(M,J)); not assign(J,M) : job(J,_,_), not cut(k,has(M,J)).') : t)) });
+
+  // ---- 19 More levels: knapsack fortification, blocking at both inner levels
+  const fortLoop = contrib('knapsack-fortification').loop.text;
+  add({ id: 'guide-19-fortify-block', summary: 'Trilevel knapsack: every attack and every fortification that fails is blocked on its own.',
+    shape: 'custom', expected: 2, page: RP(19, 'block'), status: 'baseline',
+    project: fromContrib('knapsack-fortification', 'Guide: fortification, blocking', 'Three solvers in a chain; a refuted attack ' +
+      'and a refuted fortification are each blocked on their own.' + SEE(19, T19),
+    fortLoop.replace('                B.add(GA.clause(Y, K))', '                B.add(GA.block(Y))')
+      .replace('                reject M with GF.clause(M, Y)', '                reject M with GF.block(M)')
+      .slice(0, fortLoop.indexOf('# The reference run blocks')).trimEnd() + '\n',
+    { constants: { ...contrib('knapsack-fortification').settings.constants, ...(contrib('knapsack-fortification').instances.find((x) => x.id === 'example').constants || {}) } }) });
+
+  // ---- 20 Lazy constraints and omission: n queens without the diagonals, blocking
+  const queensHead = contrib('queens-omission').loop.text.split('loop:')[0];
+  add({ id: 'guide-20-queens-block', summary: 'n queens: the abstraction knows rows and columns only; a placement on a shared diagonal is blocked.',
+    shape: 'custom', expected: 4, page: RP(20, 'omission'), status: 'baseline',
+    project: fromContrib('queens-omission', 'Guide: n queens, blocking', 'The abstraction of queens-omission with every diagonal ' +
+      'constraint off; a placement that the full program rejects is blocked on its own.' + SEE(20, T20), queensHead.replace(/# Omission-based[\s\S]*$/, '') + `loop:
+    M = A.solve()
+    if not M: stop
+    X = C.solve(assume G(M))
+    if X:
+        A.add(G.block(M))
+    else:
+        accept M
+        A.add(G.block(M))
+`, { constants: { n: '6' } }) });
   return E;
 }

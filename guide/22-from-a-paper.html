@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>From a paper to a loop · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 22 · Part II</p>
+        <h1>From a paper to a loop</h1>
+        <p class="lead">Part II took published algorithms apart. This last chapter turns the method
+          around: given an algorithm in a paper, how do you write it as a loop, check it, and compare it
+          with the paper's numbers?</p>
+
+        <h2 id="checklist">A checklist</h2>
+        <ol>
+          <li><b>Name the oracles.</b> Every call to a SAT, ASP, MIP or optimisation solver in the
+            pseudocode is a solver. Name what each one guesses. The abstraction is the one whose formula
+            grows over the run.</li>
+          <li><b>Name the interface.</b> What does each oracle need to know about the previous one's
+            answer? Those atoms are the glue, and a link per pair of solvers.</li>
+          <li><b>Name the refinement.</b> "Add a clause" is <code>G.clause</code> or a core; "add φ[μ]" is
+            a program part grounded per counterexample (<code>A.expand</code>, chapters 13 and 16);
+            "relax the core" is a part in the same solver (chapter 17); "block up/down" is
+            <code>G.above</code>/<code>G.below</code> (chapter 15); "switch a constraint on" is an
+            external (chapter 20).</li>
+          <li><b>Name the control.</b> "Repeat until unsatisfiable" is Shape 2; "for each model" a
+            <code>search</code>; "the cheapest" <code>A.solve(optimal)</code>; bounds <code>track</code>;
+            recursion a <code>def</code> over a solver family (chapter 19).</li>
+          <li><b>Write the blocking baseline first,</b> with the same solvers, and keep it as the
+            <code>reference</code> variant.</li>
+          <li><b>Check.</b> Same answers as the baseline on small instances, an audit, Fuzz; then
+            <code>tools/cegarcheck.py</code> if the loop is in its scope.</li>
+          <li><b>Compare with the paper.</b> Iterations are candidates, oracle calls are solver calls
+            (Statistics tab). Expect the same counts on the same instances, not the same times.</li>
+        </ol>
+
+        <h2 id="which">Which loop for which problem</h2>
+        <table class="results">
+          <thead><tr><th>The problem looks like</th><th>Try</th><th>Chapter</th></tr></thead>
+          <tbody>
+            <tr><td>∃∀ with a clear reason for each refutation</td><td>Shape 1, <code>relevant/1</code></td><td>3, 13</td></tr>
+            <tr><td>∃∀ with few distinct counterexamples</td><td>expansion (copies)</td><td>13, 16</td></tr>
+            <tr><td>a witness check, optimisation over soft constraints</td><td>implicit hitting sets</td><td>14</td></tr>
+            <tr><td>the same, unweighted, small optimum</td><td>core-guided (OLL)</td><td>17</td></tr>
+            <tr><td>enumerate minimal or maximal sets</td><td>MARCO</td><td>15</td></tr>
+            <tr><td>a master and a costed subproblem</td><td>Benders with bounds</td><td>18</td></tr>
+            <tr><td>three or more quantifier blocks</td><td>a chain, or recursion over a family</td><td>19</td></tr>
+            <tr><td>a constraint too large to ground</td><td>lazy constraints, omission</td><td>20</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="missing">When the paper needs something CegarPlay lacks</h2>
+        <ul>
+          <li><b>Interpolants or proofs.</b> clingo produces none, so refinement by interpolation
+            (predicate abstraction) is out of reach. Omission (chapter 20) is the nearest substitute.</li>
+          <li><b>A MIP solver.</b> Use an optimal ASP solver (<code>A.solve(optimal)</code>); expect it to
+            be slower on large linear problems.</li>
+          <li><b>Parallel oracles.</b> The engine runs one call at a time; several checks of one candidate
+            run one after the other.</li>
+        </ul>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>Fu and Malik's algorithm, in short: assume all soft clauses; on a core, add a fresh
+            relaxation variable to each of its soft clauses and an "at most one relaxed" constraint; repeat
+            until satisfiable. Which chapter's loop is closest, and what changes?</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>Chapter 17's OLL loop: one solver under assumptions, relaxed by each core. The difference
+              is the relaxation: Fu-Malik adds new relaxation variables to the clauses of the core (and
+              keeps assuming the relaxed clauses), with an at-most-one constraint over them, where OLL adds
+              totaliser outputs as new soft constraints. In the loop script, the program part
+              <code>relax(k)</code> would ground the relaxation variables and the at-most-one constraint,
+              and the loop would keep the core's assumptions instead of dropping them.
+              <a class="play" href="../?example=maxsat-oll&amp;fragment=check&amp;from=guide/22-from-a-paper.html%23exercise-1-solution" target="cegarplay">Open maxsat-oll</a></p>
+          </details>
+        </section>
+
+        <section class="tools" id="tools">
+          <h2>Tool skills for this chapter</h2>
+          <ul>
+            <li><a href="howto-paper.html">How to turn a paper into a loop</a></li>
+            <li><a href="howto-check.html">How to check a loop independently</a></li>
+          </ul>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-paper-oracles">Oracles are solvers, their arguments are links, their updates are
+              refinements, and the outer control is a shape.</li>
+            <li id="rule-paper-baseline">Write the blocking baseline first and keep it as a variant: it is
+              the ground truth for the published loop.</li>
+            <li id="rule-paper-numbers">Compare counts with the paper, not times.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="21-voting-case-study.html">&larr; A case study: explaining voting outcomes</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

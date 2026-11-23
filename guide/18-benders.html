@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Benders decomposition · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 18 · Part II</p>
+        <h1>Benders decomposition</h1>
+        <p class="lead">Operations research has its own CEGAR loop. Benders decomposition splits a
+          problem into a master, which decides some variables and estimates the cost of the rest, and a
+          subproblem, which computes that cost exactly. When the estimate is too low, a <em>cut</em> tells
+          the master. The design question is the one of chapter 3: how many master solutions should a
+          cut cover?</p>
+
+        <h2 id="problem">The problem</h2>
+        <p>Assign six jobs to two machines and sequence each machine, so that the assignment cost plus
+          the total tardiness is smallest. The master (the abstraction, solved with
+          <code>A.solve(optimal)</code>) assigns jobs and guesses an estimate <code>est(M,V)</code> of each
+          machine's tardiness, cheapest first. The subproblem (the check, solved with
+          <code>optimal</code>) sequences each machine and reports a machine whose estimate is below its
+          real tardiness.</p>
+
+        <h2 id="cuts">Optimality cuts as rules</h2>
+        <p>If machine M runs jobs S with total tardiness V, then any assignment that gives M at least the
+          jobs S has tardiness at least V on M: more jobs never finish earlier. That is the cut, grounded
+          from a program part once per subproblem:</p>
+        <pre class="code" data-lang="asp" data-from="benders-tardiness:abstraction">need(k,M,V) :- machine(M), cut(k,has(M,_)), V = #sum { L,J : lateness(k,late(J,L)), cut(k,has(M,J)) }.
+covered(k,M) :- need(k,M,_), assign(J,M) : cut(k,has(M,J)).
+:- covered(k,M), need(k,M,V), est(M,E), E &lt; V.</pre>
+        <p class="listing-source">From the fragment <code>abstraction</code> of <code>benders-tardiness</code>.</p>
+        <pre class="code" data-lang="loop" data-from="benders-tardiness:loop">    if X.count(bad/1) == 0:
+        log "optimum:", M.cost
+        accept M
+        stop
+    count cuts by X.count(bad/1)
+    A.expand(refine, cut = X.atoms(has/2), lateness = X.atoms(late/2))</pre>
+        <p class="listing-source">From the loop script of <code>benders-tardiness</code>.</p>
+        <p id="cuts-run">The master's optimum is a lower bound; its cost with the estimates replaced by
+          the real tardiness is a feasible cost, an upper bound (<code>track</code> draws both). They meet
+          at the optimum, 20, after <span data-stat="benders-tardiness:candidates">26</span> master
+          solutions and <span data-stat="benders-tardiness:expansions">25</span> cuts.
+          <a class="play" href="../?example=benders-tardiness&amp;fragment=abstraction&amp;from=guide/18-benders.html%23cuts-run" target="cegarplay">Open benders-tardiness</a></p>
+
+        <h2 id="exact">A weaker cut</h2>
+        <p>The cut above covers every superset of S. A cut that covers only assignments that give M
+          exactly the jobs S is also sound, but weaker:</p>
+        <pre class="code" data-lang="asp" data-from="guide-18-benders-exact:abstraction">covered(k,M) :- need(k,M,_), assign(J,M) : cut(k,has(M,J)); not assign(J,M) : job(J,_,_), not cut(k,has(M,J)).</pre>
+        <p class="listing-source">From the fragment <code>abstraction</code> of <code>guide-18-benders-exact</code>.</p>
+        <details class="predict">
+          <summary>Before you press Run: the superset cut needed <span data-stat="benders-tardiness:candidates">26</span>
+            master solutions. How many with the exact-set cut?</summary>
+          <p><span data-stat="guide-18-benders-exact:candidates">57</span>. Every set of jobs on a machine
+            now needs its own cut, even when a subset was already known to be too late.</p>
+        </details>
+        <p id="exact-run">Both reach the same optimum; the stronger cut needs half the master
+          solutions. Logic-based Benders lives on such arguments ("more jobs never help"): they are what
+          lifts a cut from one assignment to many, exactly like <code>relevant/1</code> lifts a clause
+          from one candidate to many.
+          <a class="play" href="../?example=guide-18-benders-exact&amp;fragment=abstraction&amp;from=guide/18-benders.html%23exact-run" target="cegarplay">Open the exact-set cut</a></p>
+
+        <aside class="paper" id="paper">
+          <h2>The paper</h2>
+          <p>Logic-based Benders decomposition is due to Hooker and Ottosson ("Logic-based Benders
+            decomposition", Mathematical Programming, 2003); the classical method is Benders' (1962),
+            for linear programs.</p>
+          <table class="results">
+            <thead><tr><th>Paper</th><th>Loop script</th></tr></thead>
+            <tbody>
+              <tr><td>solve the master: x̄, lower bound z</td><td><code>M = A.solve(optimal)</code>; <code>track lower = M.cost</code></td></tr>
+              <tr><td>solve the subproblem for x̄: cost v</td><td><code>X = C.solve(assume G(M), optimal)</code></td></tr>
+              <tr><td>if the estimate equals v: optimal</td><td><code>if X.count(bad/1) == 0: accept M</code></td></tr>
+              <tr><td>add the Benders cut B<sub>x̄</sub>(x) ≤ estimate</td><td><code>A.expand(refine, cut = …, lateness = …)</code></td></tr>
+            </tbody>
+          </table>
+          <p>More papers are on the <a href="bibliography.html">bibliography page</a>.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>The library example <code>knapsack-bounds</code> is also a Benders-style loop with bounds. Read
+            its loop: what are the master and the subproblem, and what plays the role of the cut?</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>The master (solver A) chooses the items to lock and claims a value for the follower's
+              best packing; the subproblem (solver C) is that best packing of the unlocked items, solved
+              optimally. Each packing that beats the claim is grounded in the master as rules (the part
+              <code>refine</code>): every locked set that leaves this packing possible must claim at least
+              its value. The master's claim is a lower bound, the follower's reply an upper bound, and the
+              loop ends when they meet.
+              <a class="play" href="../?example=knapsack-bounds&amp;fragment=loop&amp;from=guide/18-benders.html%23exercise-1-solution" target="cegarplay">Open knapsack-bounds</a></p>
+          </details>
+        </section>
+
+        <section class="tools" id="tools">
+          <h2>Tool skills for this chapter</h2>
+          <ul>
+            <li><a href="../?tab=2#tut-lang-growing">Tutorial: growing programs</a></li>
+            <li><a href="howto-time.html">How to find where the time goes</a></li>
+          </ul>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-benders">Benders is a CEGAR loop with an optimal abstraction (the master) and an
+              optimal check (the subproblem).</li>
+            <li id="rule-benders-cover">A cut is as strong as the set of master solutions it covers; a
+              monotonicity argument lifts it from one assignment to many.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="17-oll.html">&larr; Core-guided optimisation: OLL</a>
+        <a class="next" href="19-more-levels.html">More than two quantifier levels &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>

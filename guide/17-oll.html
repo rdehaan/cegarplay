@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Core-guided optimisation: OLL · Designing CEGAR loops</title>
+  <link rel="icon" href="data:,">
+  <script src="../js/theme.js"></script>
+  <link rel="stylesheet" href="../vendor/fonts/fonts.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="guide.css">
+  <script type="module" src="guide.js"></script>
+</head>
+
+<body>
+  <header class="guide-header">
+    <a class="guide-title" href="index.html">Designing CEGAR loops</a>
+    <nav>
+      <a href="../">Playground</a>
+      <a href="../?tab=2">Tutorial</a>
+      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+    </nav>
+  </header>
+
+  <div class="guide-layout">
+    <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+    <main>
+      <article>
+        <p class="chapter-number">Chapter 17 · Part II</p>
+        <h1>Core-guided optimisation: OLL</h1>
+        <p class="lead">The hitting-set loop of chapter 14 kept two solvers: an optimiser that knows only
+          the cores, and a SAT oracle that knows only the formula. Core-guided algorithms keep one solver
+          and let each core <em>relax</em> the problem it solves. The refinement no longer cuts
+          candidates away; it changes what the solver is asked.</p>
+
+        <h2 id="problem">The problem</h2>
+        <p>Unweighted MaxSAT: a random formula over five variables with forty soft clauses and two hard
+          ones; the optimum violates six soft clauses. The library example <code>maxsat-oll</code> solves
+          it with OLL.</p>
+
+        <h2 id="ihs">For comparison: hitting sets</h2>
+        <p id="ihs-run">The MaxHS loop of chapter 14, on the same formula with every weight 1, needs
+          <span data-stat="guide-17-ihs:candidates">6</span> hitting sets, but finds
+          <span data-stat="guide-17-ihs:clauses">21</span> cores along the way, with
+          <span data-stat="guide-17-ihs:checkCalls">289</span> calls of the SAT oracle (shrinking the
+          cores is most of them).
+          <a class="play" href="../?example=guide-17-ihs&amp;fragment=loop&amp;from=guide/17-oll.html%23ihs-run" target="cegarplay">Open the hitting-set loop</a></p>
+
+        <h2 id="oll">One solver, relaxed by its cores</h2>
+        <p>OLL calls one solver under the assumptions "every soft constraint holds". A core is a set of
+          soft constraints that cannot all hold: at least one of them is violated in every solution, so
+          the lower bound rises by one. Instead of telling another solver about it, OLL stops assuming the
+          core's constraints and adds new soft constraints: "at most one of them is violated", "at most
+          two", and so on. A program part grounds them (a totaliser) once per core:</p>
+        <pre class="code" data-lang="asp" data-from="maxsat-oll:check">size(k,N) :- N = #count { T : core(k,T) }.
+over(k,J) :- size(k,N), J = 2..N, #count { T : core(k,T), viol(T) } >= J.
+viol(over(k,J)) :- over(k,J).</pre>
+        <p class="listing-source">From the fragment <code>check</code> of <code>maxsat-oll</code>.</p>
+        <pre class="code" data-lang="loop" data-from="maxsat-oll:loop">    K = C.core
+    if K.size == 0: stop "the hard clauses are unsatisfiable"
+    lower = lower + 1
+    for a in K:                    # relax the core's soft constraints
+        E = E.without(a)
+    C.expand(relax, core = K)      # facts core(k,T): the core's atoms (B2)</pre>
+        <p class="listing-source">From the loop script of <code>maxsat-oll</code>.</p>
+        <p>The new soft constraints <code>over(k,J)</code> are then assumed false. A core over them says
+          that some earlier core must lose two of its constraints, and so on: every core raises the
+          bound by one, and the first satisfiable call is optimal.</p>
+        <p id="oll-run">On this formula OLL meets
+          <span data-stat="maxsat-oll:expansions">6</span> cores, one per unit of the optimum, with
+          <span data-stat="maxsat-oll:checkCalls">7</span> calls in all.
+          <a class="play" href="../?example=maxsat-oll&amp;fragment=check&amp;from=guide/17-oll.html%23oll-run" target="cegarplay">Open maxsat-oll</a></p>
+
+        <h2 id="compare">Cutting or relaxing</h2>
+        <table class="results">
+          <thead><tr><th>Loop</th><th class="num">Cores</th><th class="num">Solver calls (check)</th><th class="num">Optimiser calls</th></tr></thead>
+          <tbody>
+            <tr><td>Implicit hitting sets (minimal, disjoint cores)</td>
+              <td class="num"><span data-stat="guide-17-ihs:clauses">21</span></td>
+              <td class="num"><span data-stat="guide-17-ihs:checkCalls">289</span></td>
+              <td class="num"><span data-stat="guide-17-ihs:candidates">6</span></td></tr>
+            <tr><td>OLL</td>
+              <td class="num"><span data-stat="maxsat-oll:expansions">6</span></td>
+              <td class="num"><span data-stat="maxsat-oll:checkCalls">7</span></td>
+              <td class="num">–</td></tr>
+          </tbody>
+        </table>
+        <p>The two loops learn from the same cores but use them differently. The hitting-set loop
+          <em>cuts</em>: each core is a clause for a separate optimiser, and the expensive calls are the
+          optimiser's. OLL <em>relaxes</em>: each core grows the one solver's program by a totaliser, and
+          every call is a plain satisfiability call under assumptions. On unweighted instances with a
+          small optimum, as here, OLL needs one core per unit of cost; with many distinct weights, the
+          hitting-set loop is often the better choice.</p>
+
+        <aside class="paper" id="paper">
+          <h2>The paper</h2>
+          <p>OLL was introduced for clasp by Andres, Kaufmann, Matheis and Schaub ("Unsatisfiability-based
+            optimization in clasp", ICLP 2012) and named and studied for MaxSAT by Morgado, Dodaro and
+            Marques-Silva ("Core-guided MaxSAT with soft cardinality constraints", CP 2014). Fu and
+            Malik's algorithm ("On solving the partial MAX-SAT problem", SAT 2006) is its ancestor: it
+            relaxes each core with fresh blocking variables and an at-most-one constraint.</p>
+          <table class="results">
+            <thead><tr><th>Paper</th><th>Loop script</th></tr></thead>
+            <tbody>
+              <tr><td>A ← all soft constraints</td><td><code>E = G(A.solve(optimal))</code></td></tr>
+              <tr><td>(sat, κ) ← SAT(hard, A)</td><td><code>X = C.solve(assume E)</code>; <code>K = C.core</code></td></tr>
+              <tr><td>lb ← lb + 1</td><td><code>lower = lower + 1</code></td></tr>
+              <tr><td>A ← A \ κ ∪ {¬o<sub>2</sub>}; add totaliser(κ)</td><td><code>E = E.without(a)</code>; <code>C.expand(relax, core = K)</code>; push <code>over(k,2)</code></td></tr>
+            </tbody>
+          </table>
+          <p>More papers are on the <a href="bibliography.html">bibliography page</a>.</p>
+        </aside>
+
+        <section class="exercise" id="exercise-1">
+          <h2>Exercise 1</h2>
+          <p>The example is unweighted. What breaks when soft clauses have different weights, and how do
+            the algorithms in the literature repair it?</p>
+          <details class="solution" id="exercise-1-solution">
+            <summary>Solution</summary>
+            <p>A core then raises the bound by the smallest weight in it, not by one. Weighted OLL splits
+              each soft constraint of the core in two: one part with that smallest weight, which is
+              relaxed, and the rest, which stays assumed, as in WPM1 and weighted OLL.
+              Stratification first solves with the heaviest clauses only and adds lighter strata later.
+              The hitting-set loop needs neither: the optimiser takes the weights directly, which is one
+              reason MaxHS is strong on weighted instances.
+              <a class="play" href="../?example=maxsat-ihs&amp;fragment=abstraction&amp;from=guide/17-oll.html%23exercise-1-solution" target="cegarplay">Open the weighted hitting-set loop</a></p>
+          </details>
+        </section>
+
+        <section class="tools" id="tools">
+          <h2>Tool skills for this chapter</h2>
+          <ul>
+            <li><a href="../?tab=2#tut-lang-ihs">Tutorial: cores as lists, and bounds over time</a></li>
+            <li><a href="../?tab=2#tut-lang-growing">Tutorial: growing programs</a></li>
+            <li><a href="howto-paper.html">How to turn a paper into a loop</a></li>
+          </ul>
+        </section>
+
+        <section class="recap" id="recap">
+          <h2>Recap</h2>
+          <ul>
+            <li id="rule-relax">A core can cut (a clause for another solver) or relax (new soft constraints
+              in the same solver).</li>
+            <li id="rule-oll-bound">In core-guided optimisation each core raises the lower bound; the first
+              satisfiable call is optimal.</li>
+            <li id="rule-oll-when">Relaxing suits small optima and few weights; cutting suits many weights
+              and a strong optimiser.</li>
+          </ul>
+        </section>
+      </article>
+      <nav class="pager">
+        <a class="prev" href="16-cegis.html">&larr; CEGIS: synthesis from counterexamples</a>
+        <a class="next" href="18-benders.html">Benders decomposition &rarr;</a>
+      </nav>
+    </main>
+  </div>
+</body>
+
+</html>
