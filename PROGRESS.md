@@ -1183,3 +1183,13 @@ non-list (today it silently runs zero times: an endless MaxHS loop); B2 cores as
     `llms.txt`, the library panel note); troubleshooting rows (`#minimize` tuple collision, `for`, `flip`).
   - `test/browser/harness.mjs`: `CHROMIUM_PATH` launches a preinstalled Chromium (cloud sessions
     whose Playwright download differs). Replays rebuilt.
+- **Consolidation (same day).** `tools/cegarcheck.py` had the same interface-grounding bug (a
+  minimal check gave 4 instead of 7): fixed the same way, with a test in `chat-package.test.mjs`.
+  Over all 97 library examples with a count, the fixed checker gives the same numbers as the old
+  one (the 7 that differ from the library differ before and after: loops the checker does not
+  model, or the documented `tutorial-weak-relevant` 18). Tutorial lesson 10 gained "Cores as lists,
+  and bounds over time" (loads `maxsat-ihs`), lesson 13 points to the literature table; guide
+  chapters 10 and 11 gained "... in the literature" sections with playground links;
+  `examples/contrib/README.md` and the chat-package guide (tags, `stops-at-optimum`, `#minimize`
+  tuples, sum-assignment grounding); `breadth.md` rewritten as one consolidated note.
+  683 tests pass, 8 skipped.

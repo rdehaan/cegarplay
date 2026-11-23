@@ -390,6 +390,25 @@ for a in E:
 accept A.solve(assume E)
 A.add(G.above(E))                   # no superset of E again</div>
 
+<h3 id="tut-lang-ihs">Cores as lists, and bounds over time</h3>
+<p>A core is a list too: <code>for a in C.core:</code> walks the assumptions that the failed check needed. The MaxSAT
+  example uses this the way the implicit hitting set solver MaxHS does: an optimal solver picks the soft clauses to
+  give up, a SAT check tests the rest, and each core is relaxed with <code>E.without(a)</code> so that one round can
+  find several disjoint cores. <code>track</code> records a number per round; the Statistics tab draws the lower and
+  the upper bound until they meet at the optimum, 8. The manual's
+  <a href="#manual-loops-from-the-literature">Loops from the literature</a> lists the other algorithms written this
+  way (MARCO, OLL, Benders, CEGIS, RAReQS, ...), each with an example.</p>
+<p class="lesson-load"><button class="control-button small-button" data-load-example="maxsat-ihs">Load: MaxSAT by hitting sets</button></p>
+<div class="example-code" data-mode="loop">M = A.solve(optimal)                 # the cheapest set of clauses to give up
+track lower = M.cost
+E = G(M)
+loop:
+    X = C.solve(assume E)
+    if X: break                      # the rest is satisfiable
+    A.add(C.core.on(G))              # give up at least one clause of the core
+    for a in C.core:
+        E = E.without(a)             # relax it, look for a disjoint core</div>
+
 <h3 id="tut-lang-search">Searches inside searches</h3>
 <p>A <code>search</code> can run inside the <code>on candidate</code> block of another solver's search, restricted by
   <code>assume</code>; <code>keep Y</code> stops it at its first surviving candidate, and <code>search A optimal:</code> reports
@@ -493,6 +512,10 @@ if Y: reject M with GXC.core(C)</div>
 <p>The tutorial shows how the tool works. How to <b>design</b> a loop (what goes in the abstraction, how a
   counterexample becomes a refinement, how a refinement goes wrong, which loop shape to choose) is the subject of
   the <a href="guide/" target="_blank">design guide</a>, twelve chapters with an example for every step.</p>
+<p>Algorithms you may know from the literature (implicit hitting sets, MARCO, core-guided MaxSAT, Benders
+  decomposition, CEGIS, RAReQS, clausal abstraction, omission-based abstraction) are mapped to loop patterns and
+  examples in <a href="#manual-loops-from-the-literature">Loops from the literature</a>; the Library filter finds them
+  by tag (<code>ihs</code>, <code>marco</code>, <code>oll</code>, <code>benders</code>, ...).</p>
 <p>The Library in the Control tab has the larger problems: games, argumentation, knapsacks, QBFs, planning, voting.
   Every example can be linked to directly: <b>Copy link</b> in the Library gives a link such as
   <code>?example=gc-shape3</code>.</p>

@@ -192,6 +192,10 @@ class Checker:
         self.c = clingo.Control(cargs + C["options"], logger=on_message)
         self.src, self.dst, self.rel, self.sym = [], [], [], []
         self.jstr = {}
+        # The same atoms also reach the grounder as program text (a choice rule and facts):
+        # clingo 5.8 grounds a rule that projects backend-only choice atoms away ("b :- q(X).")
+        # with one instance (the runtime does the same, see iface_part in lua/runtime.lua).
+        choice_text, fact_text = [], []
         with self.c.backend() as b:
             for atom in self.a.symbolic_atoms:
                 key = str(atom.symbol)
@@ -200,18 +204,24 @@ class Checker:
                 d = b.add_atom(atom.symbol)
                 if atom.is_fact:
                     b.add_rule([d], [])
+                    fact_text.append(key + ".")
                     continue
                 r = b.add_atom(clingo.Function("relevant", [atom.symbol]))
                 b.add_rule([d], [], choice=True)
+                choice_text.append(key)
                 if L["compat"]:
                     b.add_rule([r], [], choice=True)
+                    choice_text.append(f"relevant({key})")
                 self.jstr[key] = len(self.src)
                 self.src.append(atom.literal)
                 self.dst.append(d)
                 self.rel.append(r)
                 self.sym.append(atom.symbol)
+        iface_text = ("{ " + "; ".join(choice_text) + " }.\n" if choice_text else "") + "\n".join(fact_text)
+        if iface_text:
+            self.c.add("cegarplay_iface", [], iface_text)
         self.c.add("base", [], join(frags, C["frags"], f"solver {C['name']}"))
-        self.c.ground([("base", [])])
+        self.c.ground([("base", [])] + ([("cegarplay_iface", [])] if iface_text else []))
         if opts.optimal:
             self.c.configuration.solve.opt_mode = "opt"
         self.k = 0

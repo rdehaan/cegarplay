@@ -53,6 +53,21 @@ test('cegarcheck: reports relevant/1 that derives nothing', { skip: !HAVE_CLINGO
   assert.match(r.out, /relevant\/1 derived nothing for link G/);
 });
 
+test('cegarcheck: a check rule that projects interface atoms away sees all of them (7 of 8 sets)', { skip: !HAVE_CLINGO && 'no Python clingo' }, () => {
+  // "b :- q(X)." over backend-only interface atoms got one instance in clingo 5.8 (CLAUDE.md rule 10)
+  const p = { format: 'cegarplay', version: 1, title: 't', description: '', runs: [],
+    fragments: [{ name: 'shared', text: 'd(1..3).' }, { name: 'abstraction', text: '{ q(X) : d(X) }.\n#show q/1.' },
+      { name: 'glue', text: 'glue(q(X)) :- d(X).' }, { name: 'check', text: 'b :- q(X).\n:- b.\nrelevant(q(X)) :- d(X).' }],
+    loop: { language: 'loop', text: 'solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X:\n            reject M with G.clause(M, X)\n' },
+    settings: { constants: {}, solutions: 0, seconds: 10, candidates: 0, trace: 0, seed: 0 } };
+  const dir = fs.mkdtempSync(join(os.tmpdir(), 'cegarcheck-'));
+  const file = join(dir, 'p.json');
+  fs.writeFileSync(file, JSON.stringify(p));
+  const r = check(file, '--solutions', 'all');
+  fs.rmSync(dir, { recursive: true });
+  assert.equal(r.solutions, 7, r.out);
+});
+
 test('contrib: a project with a library block becomes a library entry; bad blocks are refused', () => {
   const dir = fs.mkdtempSync(join(os.tmpdir(), 'contrib-'));
   const url = new URL(`file://${dir}/`);

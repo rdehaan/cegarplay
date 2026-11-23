@@ -164,6 +164,19 @@ hit(k) :- cex(k,pack(I)), lock(I).
           </details>
         </section>
 
+        <section id="literature">
+          <h2>Optimisation in the literature</h2>
+          <p>Logic-based Benders decomposition is this chapter's loop with numbers in the
+            refinement: the master problem (an optimal abstraction) estimates a cost, the
+            subproblem (an optimal check) computes it, and a too-low estimate becomes an
+            optimality cut, grounded as rules. The master's optimum is a lower bound, every
+            feasible assignment an upper bound; <code>track</code> draws both in the Statistics tab
+            until they meet. The implicit hitting set loop (MaxHS) and core-guided MaxSAT (OLL) are
+            optimisation loops driven by cores (previous chapter).
+            <a class="play" href="../?example=benders-tardiness&amp;fragment=loop&amp;from=guide/11-optimisation.html%23literature" target="cegarplay">Open benders-tardiness</a>
+            <a class="play" href="../?example=knapsack-bounds&amp;fragment=loop&amp;from=guide/11-optimisation.html%23literature" target="cegarplay">Open knapsack-bounds</a></p>
+        </section>
+
         <section class="recap" id="recap">
           <h2>Recap</h2>
           <ul>

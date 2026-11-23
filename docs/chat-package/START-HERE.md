@@ -105,7 +105,9 @@ breaks as `\n`. After the block, give two or three sentences on what the example
   `example-graph-coloring.json`). Keep `settings.constants` equal to the `example`'s values so
   the project as written still runs in seconds.
 - Loop scripts: start from a template in the manual (*Templates*). In custom scripts, add
-  `#` comments that explain each step, as in `example-lang-*.json`.
+  `#` comments that explain each step, as in `example-lang-*.json`. For an algorithm from the
+  literature (MaxHS, MARCO, OLL, Benders, CEGIS, RAReQS, ...), start from the example the
+  manual's *Loops from the literature* names, and give the entry the algorithm's tag.
 - Settings: copy `settings` from the template (`solutions: 0, seconds: 60, candidates: 0,
   trace: 200, seed: 0`) and change only what you need.
 
@@ -124,7 +126,11 @@ breaks as `\n`. After the block, give two or three sentences on what the example
 5. In a `#program refine(k).` part, every head contains `k`.
 6. `relevant/1` derives at least one atom in every counterexample (else the run fails with
    `relevant/1 derived nothing for link G`).
-7. Keep the ground program small: constants small, domains bounded.
+7. Keep the ground program small: constants small, domains bounded. Avoid `V = #sum { ... }`
+   over atoms the solver guesses (each possible sum is grounded); compare instead
+   (`#sum { ... } > E`).
+8. Two `#minimize` statements add up only distinct tuples: tag them (`{ C,J,cost : ... }`,
+   `{ V,M,est : ... }`), else equal tuples are counted once.
 
 ## Verification
 

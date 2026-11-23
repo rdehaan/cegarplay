@@ -24,7 +24,12 @@ CegarPlay project (`"format": "cegarplay"`) with one extra top-level block:
 - `shape`: `shape1` … `shape4`, `reference` or `custom`.
 - `tags`: `fast` makes `test/library.test.mjs` run the example and check `expected`
   (the solution count with `solutions = all`); use it when the run takes under ~2 s.
-- `expected`: the solution count, or `null` when there is none to check.
+- `expected`: the solution count, or `null` when there is none to check. A loop that ends with
+  `stop` once it has proved an optimum is not exhausted, so its counts are `null`: tag it
+  `stops-at-optimum` and check the optimum in a test instead (`test/breadth.test.mjs`).
+- Algorithm tags help readers find a loop by the name they know: `ihs`, `marco`, `oll`,
+  `benders`, `cegis`, `expansion`, `rareqs`, `caqe`, `omission`, `bounds` (see the manual's
+  *Loops from the literature*).
 
 Put the problem's input (graph, formula, items, ...) in `instances` (format version 2, see the
 manual's *Instances*): an instance `example` tagged `library` whose `expected.solutions` equals
