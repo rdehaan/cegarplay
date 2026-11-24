@@ -114,6 +114,7 @@ two-space indentation.
 | `spaces` | list | none | Optional, format version 2: every instance up to a bound, for the Audit's mode Space. See [Spaces](#manual-spaces). |
 | `settings.instance` | string | the first instance | The instance a run uses; `""` = the project as written. |
 | `settings.variant` | string | none | The variant a run uses (the run bar's Variant picker); absent or `""` = the project as it is; a name that is no variant is ignored. Dropped on save when the project has no variants. |
+| `settings.audit` | object | none | The run bar's audit mode: `{ mode, space, bound }`, `mode` one of `"enumerate"`, `"symbolic"`, `"space"`; `space` and `bound` only for `"space"`. Written when the mode is changed; not written for enumeration (the default), nor for `"space"` when the project has no spaces. See [Audit modes](#manual-audit-modes). |
 
 ### Instances
 
@@ -1099,7 +1100,9 @@ the column **Audit**, and runs with the same fragments and constants show it too
 
 Optional. **Audit** sits in one group with its mode, "Audit by …" (`docs/spec-soundness.md`
 sections 7 and 8). A mode the loop does not support is marked "(not for this loop)", and the
-Audit button's tooltip says why (an `expand` loop, a chain, a loop refined only by blocks, no space).
+Audit button's tooltip says why (an `expand` loop, a chain, a loop refined only by blocks, no space). The mode, and for a space audit the space and
+the bound, are kept with the project (`settings.audit`): a reload, a download or a share brings them
+back; a project without it opens with enumeration.
 
 - **enumeration** (default): the audit above.
 - **symbolic search**: the same question as one search with an inner CEGAR loop (`lua/bounded.lua`): a

@@ -135,3 +135,34 @@ test('the starter project runs: n = 4 gives the 4 non-empty downward-closed sets
   assert.equal(H.ofKind(r, 'D')[0].outcome, 'finished');
   assert.equal(H.ofKind(r, 'W').length, 0);
 });
+
+test('settings.audit: a project without it saves byte-identically; enumeration is not written', () => {
+  const dir = new URL('../examples/', import.meta.url).pathname;
+  for (const name of ['tutorial-weak-relevant', 'af-preferred', 'graph-coloring']) {
+    const text = fs.readFileSync(dir + name + '.json', 'utf8');
+    assert.equal(P.save(P.load(text)), text, name);
+  }
+  const text = fs.readFileSync(dir + 'tutorial-weak-relevant.json', 'utf8');
+  const p = P.load(text);
+  // the default mode, as the run bar stores it, leaves the file as it was
+  p.settings.audit = { mode: 'enumerate' };
+  assert.equal(P.save(p), text);
+  // a space mode without spaces is not written either
+  const starter = fs.readFileSync(dir + 'starter.json', 'utf8');
+  const q = P.load(starter);
+  assert.equal((q.spaces || []).length, 0);
+  q.settings.audit = { mode: 'space', space: 'x', bound: 2 };
+  assert.equal(P.save(q), starter);
+  // the other modes round-trip
+  p.settings.audit = { mode: 'space', space: 'n', bound: 3 };
+  const saved = P.save(p);
+  assert.deepEqual(JSON.parse(saved).settings.audit, { mode: 'space', space: 'n', bound: 3 });
+  assert.deepEqual(P.load(saved).settings.audit, { mode: 'space', space: 'n', bound: 3 });
+  p.settings.audit = { mode: 'symbolic' };
+  assert.deepEqual(P.load(P.save(p)).settings.audit, { mode: 'symbolic' });
+  // malformed
+  for (const bad of [{ mode: 'fast' }, 'symbolic', { mode: 'space', bound: -1 }, { mode: 'space', space: 3 }]) {
+    const j = JSON.parse(text); j.settings.audit = bad;
+    assert.throws(() => P.load(JSON.stringify(j)), /settings\.audit/);
+  }
+});

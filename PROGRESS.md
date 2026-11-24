@@ -1607,15 +1607,38 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
   Solutions, muted). Each label stays with its control, so narrow screens wrap whole groups;
   every id is unchanged.
 
-### Interface directions (2026-11-24, stopped on request, work in progress)
+### Interface directions (2026-11-24)
 
 - `FUTURE-DIRECTIONS.md` rewritten with the outline of further directions (shipping, verification,
   interface, teaching, engine, code health, library).
-- Started on the interface items, then stopped on request. **Committed untested:**
-  - the audit mode is kept per project (`settings.audit = { mode, space, bound }`, not written for
-    enumeration; `InstancesTab.applyAuditSetting` / `storeAuditSetting`);
-  - `js/result-card.js`, one result card used by the audit panel, the Fuzz card and the exercise
-    box (same layout and next-step buttons; the old ids kept).
-- Not started: comparing variants, project snapshots with undo, narrow screens and accessibility.
-- Next: run `cd test && npm test` (browser tests with `CHROMIUM_PATH` in a cloud container); the
-  browser tests of Fuzz, exercises and the audit panel are the ones these changes touch.
+- The audit mode is kept per project (`settings.audit = { mode, space, bound }`, not written for
+  enumeration, nor for a space mode without spaces; `InstancesTab.applyAuditSetting` /
+  `storeAuditSetting`). A project without it opens with enumeration (before, the mode carried over
+  from the previous project). A next step that changes the mode (Audit by symbolic search, Try a
+  larger bound, ...) stores it as a choice in the bar does.
+- `js/result-card.js`, one result card used by the audit panel, the Fuzz card and the exercise
+  box (same layout and next-step buttons; the old ids kept).
+
+### Verify: the interface WIP commit (2026-11-24)
+
+- Commit 34f4329 was committed without a test run. Reading it showed that its edit of
+  `showFuzz` had also deleted the whole Spaces section of `js/instances-tab.js` (`buildSpaces`,
+  `renderSpaces`, `renderSpaceBar`, `addSpace`, `removeSpace`, `renameSpace`, `addSpaceParam`,
+  `checkSpace`, `previewSpace`, `saveWitness`), and that `applyAuditSetting` / `storeAuditSetting`
+  were called but never written: the Instances tab failed to build. The section is restored
+  unchanged from 422dcb0, and the two methods are written.
+- Screenshots in both themes (a look by eye, not kept): the unsound enumeration audit
+  (tutorial-weak-relevant), a sound space audit (af-preferred, frameworks, k = 3), an unsound one
+  (tutorial-weak-relevant, n), the Fuzz card, the exercise before and after Check. All use the one
+  card. Changes from the look:
+  - the exercise card had its own "Check exercise" / "Check again" button under the bar's
+    `#check-exercise-button`, a few pixels apart; the card's button is removed (the bar's keeps its
+    id and its tests), and the card's note says "Check exercise (above)";
+  - the Fuzz card said "shrunk from 0 facts to 0 (constants n=2) in 1 audits" for a constants-only
+    instance; it now says "no facts to shrink (constants n=2); 1 audit".
+- Tests: `test/browser/bounded.test.mjs` (the mode, space and bound survive a reload of the
+  autosaved project; enumeration is not written; another example starts from enumeration),
+  `test/project.test.mjs` (a project without `settings.audit` saves byte-identically;
+  `{ mode: 'enumerate' }` and a space mode without spaces are not written; malformed values are
+  rejected). `manual.md`: a row in the field table and a sentence under *Audit modes*.
+- Full suite: 1105 tests, 1096 pass, 0 fail, 9 skipped.

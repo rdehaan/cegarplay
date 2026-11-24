@@ -138,7 +138,8 @@ app.output.onSaveInstance = (a) => app.instancesTab.saveWitness(a);
 // the verdict panel's next steps (js/output.js nextSteps)
 app.output.auditContext = () => ({ spaces: (app.project.spaces || []).length > 0, observatory: !$('tab11').hidden });
 const showTab = (n) => { $('tab' + n).checked = true; $('tab' + n).dispatchEvent(new Event('change', { bubbles: true })); };
-const auditMode = (m) => { $('audit-mode').value = m; app.instancesTab.renderSpaceBar(); };
+// a next step that changes the run bar's mode keeps it with the project, as a choice in the bar does
+const auditMode = (m) => { $('audit-mode').value = m; app.instancesTab.renderSpaceBar(); app.instancesTab.storeAuditSetting(); app.dirty(); };
 app.output.onAuditAction = async (name, a) => {
   if (name === 'symbolic') { auditMode('symbolic'); return app.control.auditPicked(); }
   if (name === 'space') { auditMode('space'); $('space-bound').focus(); return; }
@@ -148,7 +149,7 @@ app.output.onAuditAction = async (name, a) => {
     requestAnimationFrame(() => $('space-body').scrollIntoView({ block: 'start' }));
     return;
   }
-  if (name === 'larger-bound') { auditMode('space'); $('space-select').value = a.space; $('space-bound').value = String(a.k + 2); return app.control.auditPicked(); }
+  if (name === 'larger-bound') { auditMode('space'); $('space-select').value = a.space; $('space-bound').value = String(a.k + 2); app.instancesTab.storeAuditSetting(); return app.control.auditPicked(); }
   if (name === 'save-and-audit') {
     const id = app.instancesTab.saveWitness(a);
     auditMode('enumerate');

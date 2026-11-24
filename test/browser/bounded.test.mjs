@@ -132,3 +132,33 @@ test('UI: the Instances tab shows an instance\'s expected symbolic verdict', asy
   assert.match(await page.textContent('#instance-symbolic'), /Expected verdict of the symbolic audit on this instance: unsound/);
   await context.close();
 });
+
+test('UI: the audit mode, space and bound are kept with the project (settings.audit) across a reload', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant');
+  const stored = () => page.evaluate(() => { const t = localStorage.getItem('cegarplay.project'); return t && JSON.parse(t).settings.audit; });
+  await page.selectOption('#audit-mode', 'symbolic');
+  await page.waitForFunction(() => /"audit"/.test(localStorage.getItem('cegarplay.project') || ''));
+  assert.deepEqual(await stored(), { mode: 'symbolic' });
+  // no example in the URL: the page restores the autosaved project, with its audit mode
+  await page.goto(server.url + 'index.html?nocoi=1');
+  await page.waitForSelector('body[data-ready="true"]');
+  assert.equal(await page.$eval('#audit-mode', (e) => e.value), 'symbolic');
+  // a space and its bound too
+  await page.selectOption('#audit-mode', 'space');
+  await page.fill('#space-bound', '3');
+  await page.dispatchEvent('#space-bound', 'change');
+  await page.waitForFunction(() => /"bound": 3/.test(localStorage.getItem('cegarplay.project') || ''));
+  assert.deepEqual(await stored(), { mode: 'space', space: 'n', bound: 3 });
+  await page.goto(server.url + 'index.html?nocoi=1');
+  await page.waitForSelector('body[data-ready="true"]');
+  assert.deepEqual(await page.evaluate(() => ['audit-mode', 'space-select', 'space-bound'].map((id) => document.getElementById(id).value)), ['space', 'n', '3']);
+  assert.equal(await page.isVisible('#space-bound'), true);
+  // back to enumeration: nothing is written; another example starts from enumeration
+  await page.selectOption('#audit-mode', 'enumerate');
+  await page.waitForFunction(() => !/"audit"/.test(localStorage.getItem('cegarplay.project') || ''));
+  await page.selectOption('#audit-mode', 'symbolic');
+  await page.evaluate(() => window.cegarplay.loadExample('tutorial-first-run'));
+  await page.waitForFunction(() => document.getElementById('audit-mode').value === 'enumerate');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
