@@ -1581,3 +1581,11 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
   (before: killed by the backstop at 5 s, no counts). No visible overhead: akari/example 19.7 s,
   sudoku-graded/one-erased-c 14.3 s, sudoku-hard/one-clue-missing 3.2 s (the sweep's 34.2, 32.3
   and 10.0 s were measured under load). Grounding itself still cannot be interrupted.
+- The check of M' got the same budget hook. On a page with the pause/stop poll the hook also reads
+  the page's command every 0.25 s, so Pause and Stop work during a symbolic audit (Stop: "ended
+  without a verdict: stopped"; browser test on an isolated page). Headless runs do not poll.
+- Re-sweep with the final code (`spike3/sweep2.jsonl`): 311 instances, the same verdict as the
+  audit on all 273 it finishes, 0 disagreements; 309 symbolic verdicts as in the first sweep, and
+  2 former `budget`s now sound (sudoku-unavoidable/one-clue-missing 42 s, voting-justification/
+  random-1 48 s, under load). These two stay without a stored `symbolic` verdict in `SYMBOLIC`: too
+  close to the 60 s budget for the slow tests. 31 of 36 `audit: false` instances now get a verdict.

@@ -111,6 +111,38 @@ local function progress(st, force)
   rt.emit("A", { phase = "symbolic", rounds = st.rounds, refinements = st.refinements })
 end
 
+-- The time budget inside one solve: a propagator whose check runs at every propagation fixpoint
+-- (check mode Fixpoint), reads the clock every 256 calls and interrupts the search of ctl past
+-- B.deadline (setting B.timed_out), as the runtime's guarded() interrupts a search. Both hooks
+-- exist at registration (rule 2); nothing here may raise inside clingo (rule 1). Used on V and
+-- on the check C. On a page with the pause/stop poll (SETTINGS.poll), it also reads the page's
+-- command at most every 0.25 s, as the runtime does between candidates: "pause" blocks until the
+-- next command, "stop" interrupts the search and sets B.stopped.
+local last_poll = 0
+local function watch(ctl, B)
+  local calls = 0
+  ctl:register_propagator({
+    init = function(_, init)
+      pcall(function() init.check_mode = clingo.PropagatorCheckMode.Fixpoint end)
+    end,
+    check = function(_, control)
+      calls = calls + 1
+      if calls < 256 then return end
+      calls = 0
+      pcall(function()
+        local now = clock()
+        if not B.timed_out and now > B.deadline then B.timed_out = true; ctl:interrupt(); return end
+        if SETTINGS.poll and not B.stopped and now - last_poll >= 0.25 then
+          last_poll = now
+          local l = io.read("l")
+          if l == "pause" then l = io.read("l") end
+          if l == "stop" then B.stopped = true; ctl:interrupt() end
+        end
+      end)
+    end,
+  })
+end
+
 local function solve_first(ctl, assume)
   local h = ctl:solve{ assumptions = assume, yield = true }
   local m0 = nil
@@ -149,24 +181,7 @@ local function build(L, o, deadline)
   local ctl = rt.new_control({}, "verifier " .. L.name, {})
   local V = { ctl = ctl, isint = isint, inst = inst, stratified = strat, a = {}, b = {}, r = {}, picks = {}, ignored = 0,
     deadline = math.huge, timed_out = false }
-  -- The time budget inside one solve: check runs at every propagation fixpoint (check mode
-  -- Fixpoint), reads the clock every 256 calls and interrupts the search past V.deadline, as the
-  -- runtime's guarded() interrupts a search. Both hooks exist at registration (rule 2); nothing
-  -- here may raise inside clingo (rule 1).
-  local calls = 0
-  ctl:register_propagator({
-    init = function(_, init)
-      pcall(function() init.check_mode = clingo.PropagatorCheckMode.Fixpoint end)
-    end,
-    check = function(_, control)
-      calls = calls + 1
-      if calls < 256 then return end
-      calls = 0
-      pcall(function()
-        if not V.timed_out and clock() > V.deadline then V.timed_out = true; ctl:interrupt() end
-      end)
-    end,
-  })
+  watch(ctl, V)
   local b = ctl:backend()
   -- A1, C1
   local am1 = LIFT.atom_map(b)
@@ -335,6 +350,8 @@ function rt.bounded(o)
   progress(st, true)
   local inst = V.inst
   V.deadline = deadline
+  -- the check of M' (C under M''s values) is interruptible too
+  watch(C.ctl, V)
   while true do
     if clock() - t0 > seconds then return verdict("budget", { seconds = seconds }) end
     st.rounds = st.rounds + 1
@@ -356,6 +373,7 @@ function rt.bounded(o)
     if not okv then return verdict("unsupported", { reason = tostring(errv) }) end
     -- the propagator ended this solve at the deadline: no model means nothing here, and a model
     -- of an interrupted optimisation need not have the fewest differing atoms
+    if V.stopped then rt.finish("stopped", "stopped by user", false) end
     if V.timed_out then
       st.rounds = st.rounds - 1
       progress(st, true)
@@ -375,6 +393,8 @@ function rt.bounded(o)
       for a = 1, C.store.maxatom do tv[a] = y:is_true(a) end
     end
     hk:close()
+    if V.stopped then rt.finish("stopped", "stopped by user", false) end
+    if V.timed_out then progress(st, true); return verdict("budget", { seconds = seconds }) end
     if not okk then return verdict("unsupported", { reason = tostring(errk) }) end
     if not tv then
       -- unsound: M' has no counterexample and the clause removes it

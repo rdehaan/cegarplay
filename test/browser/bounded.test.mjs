@@ -70,3 +70,23 @@ test('S8: a project without spaces offers no Space mode', async () => {
   assert.equal(await page.$eval('#audit-mode-space', (o) => o.hidden), false);
   await context.close();
 });
+
+test('S8: Stop ends a long symbolic audit on an isolated page (the verifier polls like the runtime)', async () => {
+  const coi = await B.startServer({ coi: true });
+  try {
+    const { page, context, errors } = await B.openPage(browser, coi, '?nocoi=1&example=slitherlink', { coi: true });
+    assert.equal(await page.evaluate(() => self.crossOriginIsolated), true);
+    await page.selectOption('#audit-mode', 'symbolic');
+    await page.click('#audit-button');
+    await B.waitState(page, ['running']);
+    await page.waitForTimeout(2500);
+    const t0 = Date.now();
+    await page.click('#stop-button');
+    await page.waitForFunction(() => ['finished', 'error', 'aborted'].includes(document.getElementById('run-status').dataset.state), null, { timeout: 10000 });
+    assert.ok(Date.now() - t0 < 5000, 'stopped within seconds');
+    assert.equal(await B.runState(page), 'finished');
+    assert.match(await page.textContent('#result-line'), /Symbolic audit ended without a verdict: stopped/);
+    assert.deepEqual(errors, []);
+    await context.close();
+  } finally { coi.close(); }
+});

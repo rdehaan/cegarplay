@@ -289,8 +289,8 @@ from the start) gives **budget**: it is checked between rounds, between the part
 built, and inside every solve of V by a propagator whose `check` (check mode Fixpoint) reads the
 clock every 256 calls and interrupts the search past the deadline. Grounding cannot be
 interrupted; a run whose grounding alone outlasts the budget is ended by the run's backstop
-(budget + 2 s) and reported as `budget` without counts. The check of M' (C under M''s values) has
-no such hook; it is one solve of the check, usually short.
+(budget + 2 s) and reported as `budget` without counts. The check of M' (C under M''s values)
+has the same hook.
 
 **Why V unsatisfiable means sound.** Every model of V is a triple (M, X, M') with X a model of C
 under M (A1 ∪ C1 splits on A1) and M' removed by X's clause. The pruning and every C_Y remove only
