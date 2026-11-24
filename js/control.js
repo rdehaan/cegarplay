@@ -1,6 +1,6 @@
 // Run bar and run flow (spec-app.md section 6).
 import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody, boundedPlan, boundedBody, modulesFor } from './driver.js';
-import { spaceProblems } from './bounded.js';
+import { verifySpace } from './bounded.js';
 import { TEMPLATES, template, derive, pickedVariant, deriveSpace, spaceBound } from './project.js';
 import { resolveProject } from './instances.js';
 import { hashText } from './stats.js';
@@ -495,9 +495,9 @@ export class Control {
     return this.run({ mode: 'audit' });
   }
 
-  // Space (PLAN3 S7): one symbolic audit per k = from..K on the space's instances, as a batch that
-  // stops at the first k that is not sound (js/bounded.js verifySpace does the same headless).
-  // One row in the run history.
+  // Space (PLAN3 S7): js/bounded.js verifySpace (the same loop as the CLI) with every step a
+  // page run (mode 'bounded' on the space at k), as a batch that stops at the first k that is not
+  // sound. One row in the run history.
   async auditSpace() {
     const app = this.app;
     const name = $('space-select') ? $('space-select').value : '';
@@ -506,35 +506,35 @@ export class Control {
     if (!sp) { this.runMessage('Not started: the project has no space of that name.'); return null; }
     const from = sp.from ?? 1;
     const to = Math.max(from, Math.floor(Number($('space-bound') && $('space-bound').value) || (sp.expected && sp.expected.k) || from));
-    const errs = await spaceProblems(project, sp.name, (p, o) => app.engine.exec(p, o), from);
-    if (errs.length) {
-      const msg = `Not started: space ${sp.name}, line ${errs[0].line}: ${oneLineMessage(errs[0].message)}`;
-      this.runMessage(msg); app.output.result(msg, 'error');
-      return null;
-    }
     const b = this.beginBatch('space audit');
     if (!b) return null;
     let last = null, result = null;
-    const perK = [];
     try {
-      for (let k = from; k <= to; k++) {
-        this.batchProgress(`k = ${k} of ${to}`);
-        const r = await this.run({ mode: 'bounded', spaceRun: { name: sp.name, k }, noHistory: true });
-        if (b.cancelled || !r || r.state === 'aborted') break;
-        last = r;
-        const v = r.audit;
-        perK.push({ k, verdict: v ? v.verdict : r.state, rounds: v ? v.rounds : null, t: v ? v.t : null });
-        if (!v || v.verdict !== 'sound') { result = { verdict: v ? v.verdict : 'error', k, witness: v && v.witness ? { ...v.witness, k } : null, reason: v ? v.reason : r.state, last: v }; break; }
-        if (k === to) result = { verdict: 'sound', k, witness: null, last: v };
-      }
+      result = await verifySpace(project, { space: sp.name, from, to, env: {
+        engineRun: (p, o) => app.engine.exec(p, o),
+        runBounded: async (_p, { k }) => {
+          this.batchProgress(`k = ${k} of ${to}`);
+          const r = await this.run({ mode: 'bounded', spaceRun: { name: sp.name, k }, noHistory: true });
+          if (b.cancelled || !r || r.state === 'aborted') throw new BatchStopped();
+          last = r;
+          return r.audit || { verdict: 'error', reason: r.state };
+        },
+      } });
+    } catch (e) {
+      if (!(e instanceof BatchStopped)) throw e;
     } finally { this.endBatch(b); }
-    if (!result) { app.output.result(`Space audit stopped after ${perK.length} step${perK.length === 1 ? '' : 's'}.`); return null; }
-    const A = { ...(result.last || {}), verdict: result.verdict, mode: 'space', space: sp.name, k: result.k, witness: result.witness, reason: result.reason, perK };
+    if (!result) { app.output.result('Space audit stopped.'); return null; }
+    if (result.verdict === 'error' && !last) {
+      const msg = `Not started: ${result.reason}`;
+      this.runMessage(msg); app.output.result(msg, 'error');
+      return null;
+    }
+    const A = { ...(result.last || {}), verdict: result.verdict, mode: 'space', space: sp.name, k: result.k, witness: result.witness, reason: result.reason, perK: result.perK };
     this.audit = A;
     app.output.auditVerdict(A);
     app.output.result(symbolicText(A), result.verdict === 'unsound' ? 'error' : '');
     if (last && last.info && app.stats.S) { app.stats.record({ ...last.info, noHistory: false, audit: A }); app.stats.render(); }
-    return { ...result, perK };
+    return result;
   }
 
   stop() {

@@ -17,7 +17,7 @@
   an example of the library group "guide"; page 12 has a checklist of all its rules.
 
 - Specifications of the newer parts: [instances, generators, campaigns, fuzz, pools](docs/spec-instances.md),
-  [recordings](docs/spec-recording.md), [audit, certificates, lift, proof logs](docs/spec-soundness.md),
+  [recordings](docs/spec-recording.md), [audit, certificates, lift, proof logs, symbolic audit, bounded verification](docs/spec-soundness.md),
   [domain views, candidate space, cursor](docs/spec-views.md). The page's tabs: Instances (9),
   Campaign (10), Observatory (11).
 
@@ -38,7 +38,9 @@
 - `python3 tools/cegarcheck.py <project.json> [--mode block] [--solutions all] [--instance id] [--variant name]` runs a project
   with Python clingo (one abstraction, one check, one link); compare with `--mode block`.
 - `node tools/run.mjs` and `node tools/audit.mjs` take `--instance id` and `--variant name` too.
-- `node tools/audit.mjs <id>` audits a loop (sound / unsound with a witness); `node tools/run.mjs <id> --proof log.jsonl`
+- `node tools/audit.mjs <id>` audits a loop (sound / unsound with a witness); `--symbolic` asks the same question by
+  search (also for instances too large to enumerate); `--space NAME --bound K` checks every instance of a project's
+  space up to K (optional `spaces[]`, manual "Spaces"); `node tools/run.mjs <id> --proof log.jsonl`
   then `python3 tools/certcheck.py <project.json> log.jsonl` certifies a solution count;
   `node tools/bench.mjs <id> --suite NAME` runs a campaign suite.
 

@@ -5,11 +5,11 @@ programming, solved with clingo compiled to WebAssembly.
 
 ## Where things are
 
-- Both implementation plans (PLAN.md, PLAN2.md) are done and were removed; they are in
+- The implementation plans (PLAN.md, PLAN2.md, PLAN3.md) are done and were removed; they are in
   the git history. `docs/directions/*.md` holds the design behind PLAN2's features; the `spike2/`
-  prototypes it cites were removed too (git history).
-- `PLAN3.md`: bounded verification of refinement strategies (phases S6 symbolic audit, S7
-  instance spaces, S8 app and docs). `spike3/`: its measurements (`sweep.mjs`, `spaces.mjs`).
+  prototypes it cites were removed too (git history). PLAN3 (bounded verification: symbolic audit,
+  instance spaces) is specified in `docs/spec-soundness.md` sections 7-8 and
+  `docs/spec-instances.md` section 8; `spike3/` holds its measuring scripts and results.
 - `FUTURE-DIRECTIONS.md`: what was considered and not built (language, tools, views, library).
 - `PROGRESS.md`: what is done and what is next. **Read it first after any
   context clear. Update it at every checkpoint.**
@@ -62,6 +62,8 @@ pip install clingo                                                  # Python cli
 - One test in `test/project.test.mjs` needs a native `clingo` built with Lua on the PATH.
   It is optional and skips without one.
 - `test/serve.py` (the server for the browser tests) uses only the standard library.
+- In a Claude Code cloud container with a preinstalled Chromium, the browser tests hang unless
+  they are run with `CHROMIUM_PATH=/opt/pw-browsers/chromium` (skip `playwright install` there).
 - `vendor/` is committed. Run `tools/vendor.mjs` only after an upgrade of clingo-wasm.
 
 ## Commands

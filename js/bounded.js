@@ -17,8 +17,8 @@ export async function spaceProblems(project, name, engineRun, k) {
 }
 
 // Iterative deepening: one symbolic audit per k = from..to on the space's instances, stopping at
-// the first k that is not sound. env.runBounded(project, { seconds }) runs one bounded audit
-// of a derived project and returns its verdict (the A event's data) or null.
+// the first k that is not sound. env.runBounded(project, { seconds, k }) runs one bounded audit
+// of a derived project (the space at k) and returns its verdict (the A event's data) or null.
 // Returns { verdict, k, witness, reason, perK: [{ k, verdict, rounds, refinements, t }] }.
 export async function verifySpace(project, { space, from, to, seconds = 60, variant, env, onK = null } = {}) {
   const sp = (project.spaces || []).find((x) => x.name === space);
@@ -29,13 +29,13 @@ export async function verifySpace(project, { space, from, to, seconds = 60, vari
   const last = to ?? (sp.defaults && sp.defaults[bound] !== undefined ? Number(sp.defaults[bound]) : from);
   if (env.engineRun) {
     const errs = await spaceProblems(project, space, env.engineRun, from);
-    if (errs.length) return { verdict: 'error', k: from, reason: `space ${space}: line ${errs[0].line}: ${errs[0].message}`, perK: [] };
+    if (errs.length) return { verdict: 'error', k: from, reason: `space ${space}, line ${errs[0].line}: ${errs[0].message}`, perK: [] };
   }
   const perK = [];
   let lastV = null;
   for (let k = from; k <= last; k++) {
     const p = deriveSpace(project, space, { [bound]: k }, { variant });
-    const v = await env.runBounded(p, { seconds });
+    const v = await env.runBounded(p, { seconds, k });
     const row = { k, verdict: v ? v.verdict : 'error', rounds: v ? v.rounds : null, refinements: v ? v.refinements : null, t: v && v.t != null ? v.t : null };
     perK.push(row);
     lastV = v;

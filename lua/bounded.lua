@@ -149,7 +149,7 @@ local function build(L, o)
   local V = { ctl = ctl, isint = isint, inst = inst, stratified = strat, a = {}, b = {}, r = {}, picks = {}, ignored = 0 }
   local b = ctl:backend()
   -- A1, C1
-  local am1, amap1 = LIFT.atom_map(b)
+  local am1 = LIFT.atom_map(b)
   LIFT.copy(b, sa, { map = am1 })
   local cm1, cmap1 = LIFT.atom_map(b, function(a) local j = isint[a]; return j and am1(L.src[j]) end)
   LIFT.copy(b, sc, { map = cm1, isint = isint })
@@ -159,7 +159,6 @@ local function build(L, o)
   local am2 = LIFT.atom_map(b, function(a) return instsrc[a] and am1(a) or nil end)
   LIFT.copy(b, sa, { map = am2, shared = instsrc })
   for j = 1, L.n do V.b[j] = am2(L.src[j]) end
-  V.am2 = am2
   -- removal: M' falsifies the clause that X yields
   local reasons = {}
   if o.clause then

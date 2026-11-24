@@ -199,3 +199,10 @@ A run writes a proof log, and a checker that shares no code with the runtime con
 - The cost of level 2 is one fixpoint per check and one check per dropped atom, not "one linear pass".
 - Level 3 is built in S2, not S4. S4 keeps the rule refinements and the exact level.
 - The audit's diagnosis is the set of atoms on which candidate and lost solution differ. It needs no ground program.
+
+## Later: S6 to S8 (PLAN3)
+
+PLAN3 continued this series with S6 (the symbolic audit: the audit's question as one search with an
+inner CEGAR loop), S7 (instance spaces: every instance up to a bound) and S8 (app, Fuzz, docs). The
+plan is in the git history; the design is in `docs/spec-soundness.md` sections 7 and 8 and
+`docs/spec-instances.md` section 8, the measurements in `PROGRESS.md` and `spike3/`.

@@ -16,8 +16,10 @@ The page's tabs follow the work:
   fragments or another loop, chosen in the run bar and compared in a campaign)
   and *Instances* (the problem's inputs as
   facts and constants, generators of random instances, importers for common
-  file formats, Run all, Fuzz).
-- **Run and look**: *Output* (solutions, trace, messages, the audit's verdict),
+  file formats, Run all, Fuzz, and optional spaces: every instance up to a bound,
+  for verifying a refinement strategy on all of them).
+- **Run and look**: *Output* (solutions, trace, messages, the audit's verdict:
+  by enumeration, by a symbolic search, or over a space up to a bound),
   *Statistics* (counts, solver tables, charts, the run history) and, in
   Advanced mode, *Observatory* (the loop's anatomy and call timeline, a picture
   of each step in the problem's own terms, every candidate at once in the

@@ -1533,8 +1533,8 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
 - Run bar: a mode select beside Audit (Enumerate, Symbolic, Space; Space only for a project with
   spaces: hidden and disabled otherwise), the space and the bound k (default: the space's
   expected k). `Control.runOne({ mode: 'bounded', spaceRun })` runs one symbolic audit (on the
-  project derived from the space at k); `auditSpace()` runs k = from..K as a batch and records one
-  history row. The Output tab's panel shows mode, rounds, refinements, blocks, per-k steps, the
+  project derived from the space at k); `auditSpace()` runs `verifySpace` (the CLI's loop) with
+  those runs as its steps, as a batch, and records one history row. The Output tab's panel shows mode, rounds, refinements, blocks, per-k steps, the
   witness (with the instance for a space) and **Save as regression instance**
   (`InstancesTab.saveWitness`). Run history: the Audit column shows `unsound (symbolic)`,
   `sound ≤ 4`, `unsound at k = 2`; a run row only borrows an enumerative audit's verdict.
@@ -1557,3 +1557,14 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
   without spaces; the Spaces list), `test/bounded.test.mjs` (Fuzz on an `audit: false` instance).
 - Environment note: in this container the browser tests need `CHROMIUM_PATH=/opt/pw-browsers/chromium`
   (the preinstalled Chromium); without it they hang.
+
+### Consolidation after PLAN3 (2026-11-24)
+
+- `PLAN3.md` removed (git history), as PLAN.md and PLAN2.md were; CLAUDE.md points to the specs
+  and `spike3/`, and its Setup notes the `CHROMIUM_PATH` workaround for cloud containers.
+- The page's space audit now runs `js/bounded.js verifySpace` (the CLI's loop) with page runs as its
+  steps, instead of a copy of the loop (`verifySpace` passes `k` to `env.runBounded`).
+- The slow tests (`SLOW=1`: every symbolic library verdict, the slow spaces) pass: 13 tests,
+  3.5 min. `make-replays` rewrites nothing (the runtime is unchanged).
+- Docs that did not mention the new modes: `llms.txt`, `README.md`, `examples/contrib/README.md`,
+  and a pointer from `docs/directions/soundness.md` to S6-S8.

@@ -51,6 +51,8 @@ node tools/make-examples.mjs        # writes examples/<id>.json and examples/lib
 node tools/run.mjs <id> --solutions all --quiet
 node tools/run.mjs <id> --instance all --solutions all --quiet
 node tools/audit.mjs <id>           # every refinement against every solution
+node tools/audit.mjs <id> --symbolic          # the same question by search (large instances)
+node tools/audit.mjs <id> --space NAME --bound K   # optional: every instance of a space up to K
 cd test && npm test
 ```
 
