@@ -39,7 +39,8 @@
 
   <main>
     <div class="run-bar">
-      <div class="run-buttons">
+      <!-- two rows: the actions (status at the end), then what the next run uses ("Run with") -->
+      <div class="run-buttons run-actions">
         <button class="control-button" id="run-button" title="Run (Ctrl+Enter)" disabled>&#x23F5; Run</button>
         <span class="audit-group" id="audit-group" role="group" aria-label="Audit">
           <button class="control-button" id="audit-button" title="Audit: check every candidate and every counterexample of this instance against the solutions" disabled>&#x2713; Audit</button>
@@ -50,27 +51,31 @@
             <option value="space" id="audit-mode-space" hidden disabled title="Every instance of a space, k = 1, 2, ... up to a bound">space</option>
           </select>
           <select id="space-select" aria-label="Space" hidden></select>
-          <label class="audit-mode-label" for="space-bound" id="space-bound-label" hidden>up to k =</label>
-          <input id="space-bound" size="3" inputmode="numeric" aria-label="Bound k of the space audit" hidden>
+          <span id="space-description" class="audit-mode-label space-description" hidden></span>
+          <span class="run-field"><label class="audit-mode-label" for="space-bound" id="space-bound-label" hidden>up to k =</label>
+            <input id="space-bound" size="3" inputmode="numeric" aria-label="Bound k of the space audit" hidden></span>
         </span>
         <button class="control-button" id="abort-button" disabled>&#x2717; Abort</button>
         <button class="control-button isolated-only" id="pause-button" title="Pause the run; Resume goes on" disabled hidden>&#x23F8; Pause</button>
         <button class="control-button isolated-only" id="step-button" title="One candidate at a time: starts a run that waits after its first candidate, or moves a running or paused run on by one candidate" disabled hidden>&#x21E5; Step</button>
         <button class="control-button isolated-only" id="stop-button" title="End the run now, keeping its statistics (Abort ends it without them)" disabled hidden>&#x23F9; Stop</button>
         <button class="control-button" id="clear-button" title="Remove the results of the last run: output, statistics, trace and recording (the run history stays)" disabled>Clear</button>
-        <label class="inline-label" for="solutions-select">Solutions:</label>
-        <select id="solutions-select">
-          <option value="1">1</option>
-          <option value="10">10</option>
-          <option value="100">100</option>
-          <option value="0">all</option>
-        </select>
-        <label class="inline-label" for="instance-select" id="instance-select-label" hidden>Instance:</label>
-        <select id="instance-select" hidden></select>
-        <label class="inline-label" for="variant-select" id="variant-select-label" hidden>Variant:</label>
-        <select id="variant-select" hidden></select>
-        <span class="status-label">Status:</span>
-        <span id="run-status" data-state="idle" role="status" aria-live="polite">idle</span>
+        <span class="run-field run-status-box"><span class="status-label">Status:</span>
+          <span id="run-status" data-state="idle" role="status" aria-live="polite">idle</span></span>
+      </div>
+      <div class="run-buttons run-with" role="group" aria-label="Run with">
+        <span class="run-with-label">Run with</span>
+        <span class="run-field"><label class="inline-label" for="instance-select" id="instance-select-label" hidden>Instance:</label>
+          <select id="instance-select" hidden></select></span>
+        <span class="run-field"><label class="inline-label" for="variant-select" id="variant-select-label" hidden>Variant:</label>
+          <select id="variant-select" hidden></select></span>
+        <span class="run-field"><label class="inline-label" for="solutions-select">Solutions:</label>
+          <select id="solutions-select">
+            <option value="1">1</option>
+            <option value="10">10</option>
+            <option value="100">100</option>
+            <option value="0">all</option>
+          </select></span>
       </div>
       <div id="live-line" class="live-line">&nbsp;</div>
       <div id="run-message" class="run-message" role="status" aria-live="polite" hidden><span id="run-message-text"></span>

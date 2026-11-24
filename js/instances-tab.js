@@ -775,14 +775,15 @@ export class InstancesTab {
     document.getElementById('space-bound-label').hidden = !on;
     const y = list.find((z) => z.name === sel.value);
     if (y && (!bound.value || bound.dataset.space !== y.name)) { bound.value = String(y.expected ? y.expected.k : 3); bound.dataset.space = y.name; }
-    // the space's description says what the name does not
+    // the space's description says what the name does not: in the options' tooltips and, greyed,
+    // after the select (cut with an ellipsis; the whole text in its tooltip)
     for (const o of sel.options) {
       const z = list.find((q) => q.name === o.value);
-      const d = (z && z.description) || '';
-      o.textContent = d ? `${o.value}: ${d.length > 40 ? d.slice(0, 39) + '…' : d}` : o.value;
-      o.title = d;
+      o.title = (z && z.description) || '';
     }
     sel.title = y && y.description ? y.description : 'Space';
+    const desc = document.getElementById('space-description');
+    if (desc) { desc.textContent = (y && y.description) || ''; desc.title = desc.textContent; desc.hidden = !on || !desc.textContent; }
     if (this.app.control) this.app.control.updateAuditModes();
   }
 

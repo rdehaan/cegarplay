@@ -1589,3 +1589,20 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
   2 former `budget`s now sound (sudoku-unavoidable/one-clue-missing 42 s, voting-justification/
   random-1 48 s, under load). These two stay without a stored `symbolic` verdict in `SYMBOLIC`: too
   close to the 60 s budget for the slow tests. 31 of 36 `audit: false` instances now get a verdict.
+
+### Interface pass (2026-11-24, on request)
+
+- Audit is one labelled group, "Audit by [enumeration | symbolic search | space]"; a mode the loop
+  does not support is marked "(not for this loop)" with the reason in its tooltip and the Audit
+  button's (`Control.updateAuditModes`, on load and on hover/focus; a marked mode stays selectable,
+  so Audit still explains). The space select shows the name, its description greyed beside it
+  (hidden under 760 px; always in the tooltip).
+- The verdict panel ends with next steps (`Output.nextSteps`, actions in `js/init.js`): see it in
+  the candidate space, check / write a space, audit by symbolic search after a limit, save and
+  audit a space's breaking instance, try a larger bound. Per-k lines join runs of sound steps.
+- Spaces editor: at least 5 lines with a placeholder, Bound only with two or more parameters,
+  **Preview** (the first 6 instances at a k, as facts). The instance table and form show a stored
+  symbolic verdict.
+- The run bar has two rows: actions (status at the end), then **Run with** (Instance, Variant,
+  Solutions, muted). Each label stays with its control, so narrow screens wrap whole groups;
+  every id is unchanged.

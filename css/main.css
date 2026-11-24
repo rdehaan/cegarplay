@@ -385,7 +385,19 @@ label.tab-label.has-problem:after {
 }
 .audit-group .control-button { margin: 0; }
 .audit-mode-label { margin: 0; padding: 0 2px; color: var(--text-muted); font-size: 0.9em; }
-#space-select { max-width: 22em; }
+#space-select { max-width: 14em; }
+.space-description { max-width: 18em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* the run bar's two rows: actions (status at the end), then "Run with" */
+.run-actions { row-gap: 8px; }
+.run-status-box { margin-left: auto; }
+.run-with { margin-top: 8px; font-size: 0.92em; color: var(--text-muted); gap: 4px 14px; }
+.run-with select { font-size: 1em; }
+.run-with-label { font-weight: 600; }
+.run-field { display: inline-flex; align-items: center; white-space: nowrap; gap: 4px; }
+.run-field .inline-label { padding: 0; }
+.run-with .run-field:not(:has(select:not([hidden]))) { display: none; }
+.run-status-box .status-label { padding-left: 0; }
+@media (max-width: 760px) { .space-description { display: none !important; } }
 .audit-next { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
 .status-label {
   padding-left: 12px;

@@ -20,8 +20,9 @@ The page's tabs follow the work: **Control** (the library, files, recordings, sh
 **Tutorial**; then the project: **Programs** (the ASP fragments), **Loop** (the loop script,
 constants, limits, recording and certificates) and **Instances** (inputs, generators, Run all,
 Fuzz); then a run: **Output**, **Statistics** and **Observatory**; and many runs: **Campaign**. The
-run bar above the tabs holds **Run**, **Audit**, Abort (and Pause, Step, Stop on an isolated page),
-the Solutions and Instance pickers and the live counts. **Manual** and **Internals** appear when
+run bar above the tabs has two rows: the actions (**Run**, **Audit** with its mode, Abort, Pause,
+Step and Stop on an isolated page, Clear, and the status), then **Run with**: the Instance and
+Variant pickers (for a project with instances or variants) and Solutions; below them, the live counts. **Manual** and **Internals** appear when
 asked for. The Control tab's **Tabs** block has three toggles, kept in this browser: **Tutorial**
 (shown by default), **Technical manual**, and **Advanced mode** (off by default), which adds the
 Observatory and Campaign tabs. A link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`,
