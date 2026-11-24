@@ -112,8 +112,9 @@ as D9 or F1 in code comments refer to that version (`git show 652e5bb:FUTURE-DIR
   code could be a module of its own.
 - **Types without a build**: JSDoc and `tsc --checkJs` in CI (no build step) would catch slips
   such as a field read from the wrong event.
-- **Flaky browser tests**: one browser test timed out once under heavy load; a retry or longer
-  timeouts for the slowest ones would keep CI quiet.
+- **Flaky browser tests**: one browser test timed out once under heavy load, and the Observatory's
+  "a cursor move redraws within one frame" (V4, gc-shape1) took 22.6 ms once in a full run; a retry
+  or longer timeouts and budgets for the slowest ones would keep CI quiet.
 
 ## Library
 

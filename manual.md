@@ -1373,6 +1373,12 @@ Browser storage (`localStorage`, per browser and site):
 
 Keyboard: Ctrl+Enter or Cmd+Enter runs from anywhere, also inside an editor.
 
+Every control shows a ring in the link colour when it has keyboard focus. Verdicts (the audit
+panel, the Fuzz card, the exercise box) and the status lines of Spaces, Snapshots and Compare
+variants are polite live regions, so a screen reader announces them. The page has no sideways
+scroll from 1400 px down to 400 px wide (the run bar wraps whole groups; tables and diffs scroll
+in their own box).
+
 Cross-origin isolation: `coi-serviceworker.js` adds the isolation headers through a service worker
 and reloads the page once on the first visit. Without it (or with `?nocoi=1`) everything except
 Pause, Step, Stop and threads works.

@@ -33,7 +33,13 @@ export function resultCard(el, { verdict = 'info', title = '', paragraphs = [], 
   el.classList.add('audit-panel', 'result-card');
   el.dataset.verdict = verdict;
   el.dataset.tone = TONE[verdict] || 'info';
-  if (title) el.append(h('h3', {}, title));
+  // a verdict is status: announced politely, the card named by its heading
+  el.setAttribute('aria-live', 'polite');
+  if (title) {
+    const hid = el.id ? `${el.id}-title` : null;
+    el.append(h('h3', { id: hid }, title));
+    if (hid) el.setAttribute('aria-labelledby', hid); else el.setAttribute('aria-label', title);
+  }
   for (const p of paragraphs) {
     if (p == null || p === '') continue;
     el.append(typeof p === 'string' ? h('p', {}, p) : h('p', { id: p.id, class: p.class }, p.text));

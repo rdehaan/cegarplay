@@ -688,7 +688,8 @@ export class InstancesTab {
     this.spSelect.addEventListener('change', () => { this.space = this.spSelect.value; this.renderSpaces(); });
     this.spName = el('input', { id: 'space-name', size: 14, 'aria-label': 'Space name' });
     this.spName.addEventListener('change', () => this.renameSpace(this.spName.value));
-    this.spDesc = el('input', { id: 'space-description', size: 48, 'aria-label': 'Space description' });
+    // not 'space-description': that id is the run bar's description of the chosen space (index.html)
+    this.spDesc = el('input', { id: 'space-description-input', size: 48, 'aria-label': 'Space description' });
     this.spDesc.addEventListener('change', () => { const x = this.spaceItem; if (x) { x.description = this.spDesc.value; this.app.dirty(); } });
     this.spBound = el('select', { id: 'space-bound-param', 'aria-label': 'Bound parameter' });
     this.spBound.addEventListener('change', () => { const x = this.spaceItem; if (x) { x.bound = this.spBound.value; this.renderSpaces(); this.app.dirty(); } });
@@ -701,7 +702,7 @@ export class InstancesTab {
     this.spBody = el('div', { id: 'space-body', hidden: true },
       el('div', { class: 'instance-fields' }, el('label', {}, 'Name ', this.spName), this.spBoundLabel,
         el('button', { class: 'control-button small-button', id: 'delete-space-button', onclick: () => this.removeSpace() }, 'Delete')),
-      el('div', { class: 'instance-fields' }, el('label', {}, 'Description ', this.spDesc)),
+      el('div', { class: 'instance-fields' }, el('label', { class: 'wide-field' }, 'Description ', this.spDesc)),
       el('p', { class: 'note' }, 'Every instance up to the bound k: choice rules and constraints over the instance predicates (with the fragment "schema", if there is one). ' +
         'The parameters are constants of every solver; the bound runs from 1 (or the space\'s first k) to K. Optional: Audit with the mode Space verifies the loop on all of them.'),
       box,

@@ -1684,3 +1684,29 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
   (take, load over an edit + Undo, restore + Undo, delete, reload; a page whose storage throws).
   `manual.md`: the storage keys list.
 - Full suite: 1120 tests, 1111 pass, 0 fail, 9 skipped.
+
+### Narrow screens and accessibility (2026-11-24)
+
+- Screenshots at 1400, 700 and 400 px of the tab row and the Control, Instances, Output and
+  Observatory tabs (Advanced mode), with a list of elements past the viewport's right edge. One
+  overflow, at 400 px: the Spaces editor's description input (`size=48`). Fixed with
+  `.instance-fields` limits and a `wide-field` label that takes the rest of its row. The workspace
+  and snapshot lists lose their stray bullets (`.workspace-list`).
+- **Duplicate id fixed:** `space-description` was both the run bar's span (index.html) and the
+  Spaces editor's input; `getElementById` (code and tests) always found the span. The input is now
+  `space-description-input`; the span keeps its id.
+- The recent controls (the audit group, space select and bound, the Spaces editor and Preview,
+  next steps, result cards, snapshots, Compare) all have a label or `aria-label`; the tab order
+  after Audit is mode, space, bound. New: a 2 px `:focus-visible` ring in `--link` on every
+  control (the browser's own ring was thin; Ace's hidden textarea is left out); result cards are
+  `aria-live="polite"` and named by their heading (`aria-labelledby` = `<id>-title`).
+- Tests: `test/browser/a11y.test.mjs` B7 (names, Tab order, focus ring, live regions, the card's
+  name and next steps after a space audit) and B5 (no sideways scroll on the four tabs at 1400, 700
+  and 400 px). `manual.md`: a paragraph after *Keyboard*.
+- `node tools/make-examples.mjs` leaves `examples/` unchanged; `export-book.py --check` / `--lint`
+  and `guide-numbers --check` pass (no guide or tutorial change).
+- Full suite: 1122 tests, 1113 pass, 0 fail, 9 skipped.
+- `FUTURE-DIRECTIONS.md`: the Interface section keeps only first-visit guidance (the built items
+  had already been left out of the rewrite); the flaky-tests item names the V4 frame timing.
+- Not verified: Firefox (`BROWSER=firefox`; not installed here). No git remote in this container,
+  so nothing was pushed.

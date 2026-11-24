@@ -115,3 +115,64 @@ test('A4: the time limit ends a loop without solver calls in the page', async ()
   assert.equal(await page.evaluate(() => window.cegarplay.control.D.outcome), 'limit');
   await context.close();
 });
+
+// The controls added with bounded verification and the interface items: names, a visible keyboard
+// focus, the tab order of the audit group, and live regions for what reports status.
+const accName = (page, sel) => page.$eval(sel, (e) => {
+  if (e.getAttribute('aria-label')) return e.getAttribute('aria-label');
+  if (e.labels && e.labels.length) return [...e.labels].map((l) => l.textContent.trim()).join(' ');
+  return ['BUTTON', 'A', 'SUMMARY'].includes(e.tagName) ? e.textContent.trim() : '';
+});
+
+test('B7: the audit group, the Spaces editor, next steps and result cards are named, focusable and announced', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=af-preferred&tab=9');
+  for (const sel of ['#audit-button', '#audit-mode', '#space-list-select', '#space-name', '#space-description-input', '#space-preview-k',
+    '#preview-space-button', '#check-space-button', '#add-space-param-button', '#add-space-button', '#delete-space-button',
+    '#snapshot-name', '#snapshot-save-button', '#compare-a', '#compare-b', '#compare-button']) {
+    assert.ok((await accName(page, sel)).length > 1, `${sel} has a name`);
+  }
+  assert.equal(await page.$('#space-description-input') !== null && await page.$$eval('[id="space-description"]', (l) => l.length), 1, 'one #space-description');
+  // the audit group in the Tab order: Audit, its mode, the space and the bound
+  await page.selectOption('#audit-mode', 'space');
+  for (const sel of ['#space-select', '#space-bound']) assert.ok((await accName(page, sel)).length > 1, `${sel} has a name`);
+  await page.focus('#audit-button');
+  const order = [];
+  for (let i = 0; i < 3; i++) { await page.keyboard.press('Tab'); order.push(await page.evaluate(() => document.activeElement.id)); }
+  assert.deepEqual(order, ['audit-mode', 'space-select', 'space-bound']);
+  // a visible keyboard focus (2 px in the link colour)
+  assert.deepEqual(await page.$eval('#space-bound', (e) => [getComputedStyle(e).outlineStyle, getComputedStyle(e).outlineWidth]), ['solid', '2px']);
+  await page.keyboard.press('Shift+Tab');
+  assert.equal(await page.$eval('#space-select', (e) => getComputedStyle(e).outlineStyle), 'solid');
+  // status regions
+  for (const sel of ['#space-status', '#snapshot-status', '#compare-result', '#instances-status', '#run-message']) {
+    assert.equal(await page.getAttribute(sel, 'aria-live'), 'polite', `${sel} is a live region`);
+  }
+  // a verdict: the result card is a live region named by its heading; its next steps are buttons
+  await page.fill('#space-bound', '2');
+  await page.click('#audit-button');
+  await page.waitForFunction(() => document.getElementById('run-status').dataset.state === 'finished' && !window.cegarplay.control.batch, null, { timeout: 60000 });
+  assert.equal(await page.getAttribute('#audit-panel', 'aria-live'), 'polite');
+  assert.equal(await page.$eval('#audit-panel', (e) => document.getElementById(e.getAttribute('aria-labelledby')).textContent), 'Space frameworks: sound up to k = 2');
+  await page.click('label[for="tab5"]');
+  const next = await page.$$eval('#audit-panel .audit-next button', (l) => l.map((b) => [b.textContent, b.type, b.title.length > 0]));
+  assert.deepEqual(next, [['Try a larger bound', 'button', true]]);
+  await page.keyboard.press('Shift');   // keyboard use: the focus that follows is a keyboard focus
+  await page.focus('#audit-panel .audit-next button');
+  assert.equal(await page.$eval('#audit-panel .audit-next button', (e) => getComputedStyle(e).outlineStyle), 'solid');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('B5: at 1400, 700 and 400 px the Control, Instances, Output and Observatory tabs do not scroll sideways', async () => {
+  for (const width of [1400, 700, 400]) {
+    const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant', { contextOptions: { viewport: { width, height: 800 } } });
+    for (const t of [1, 9, 5, 11]) {
+      await page.click(`label[for="tab${t}"]`);
+      await page.waitForTimeout(150);
+      const [sw, w] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+      assert.equal(sw, w, `tab ${t} at ${width} px scrolls sideways (${sw} > ${w})`);
+    }
+    assert.deepEqual(errors, []);
+    await context.close();
+  }
+});
