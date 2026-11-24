@@ -256,8 +256,10 @@ Optional. `spaces[]` describes every instance up to a bound, for the Audit's mod
 
 The fixed part (what the glue is built from) must be facts: when the glue's `glue/1` atoms differ
 between the instances of the space, the verdict is `unsupported` ("the interface depends on the
-instance"). The Instances tab lists the spaces (name, bound, description, text, parameters;
-**Check** runs clingo on the text). 40 library examples have one; an instance field
+instance"). The Instances tab lists the spaces (name, bound (with two or more parameters),
+description, text, parameters; **Check** runs clingo on the text; **Preview** shows the first 6
+instances at a given k as facts). The instance table tags an instance whose stored symbolic verdict
+is unsound, and the instance form shows that verdict. 40 library examples have one; an instance field
 `symbolic: "sound" | "unsound"` records the symbolic audit's expected verdict.
 
 ### Pools and mining
@@ -1094,11 +1096,12 @@ the column **Audit**, and runs with the same fragments and constants show it too
 
 ### Audit modes
 
-Optional. The select next to **Audit** picks how the audit works (`docs/spec-soundness.md` sections 7
-and 8):
+Optional. **Audit** sits in one group with its mode, "Audit by …" (`docs/spec-soundness.md`
+sections 7 and 8). A mode the loop does not support is marked "(not for this loop)", and the
+Audit button's tooltip says why (an `expand` loop, a chain, a loop refined only by blocks, no space).
 
-- **Enumerate** (default): the audit above.
-- **Symbolic**: the same question as one search with an inner CEGAR loop (`lua/bounded.lua`): a
+- **enumeration** (default): the audit above.
+- **symbolic search**: the same question as one search with an inner CEGAR loop (`lua/bounded.lua`): a
   candidate M, a counterexample X of M and a candidate M' that X's clause removes, where M' has no
   counterexample. None: sound. Found: unsound, with the same witness fields (the fewest differing
   atoms, as the audit; ties may be broken differently). It covers `G.clause` and `G.clauses`
@@ -1108,12 +1111,20 @@ and 8):
   a verdict by then: `budget`. The panel shows the rounds of the inner loop, its refinements and
   the blocks it used (a check that is not stratified is refined by blocks). Use it for instances
   marked `audit: false`.
-- **Space** (only for a project with [spaces](#manual-spaces)): pick the space and the bound K; the
+- **space** (only for a project with [spaces](#manual-spaces); the space select shows each space's
+  description): pick the space and the bound K; the
   symbolic audit runs for k = 1, 2, …, K (from the space's `from`) on every instance of the space
   at once, and stops at the first k that is not sound. "Sound up to K" holds for every instance of
   the space up to K, and says nothing about larger ones. An unsound verdict shows the instance it
   breaks on, with **Save as regression instance**. The run history's Audit column shows `sound ≤ K`
   or `unsound at k = 2`.
+
+After a verdict the panel offers the next step: an unsound audit, **See it in the candidate space**
+(Observatory, Advanced mode); a sound or unsound one, **Check a space** (or **Write a space** when
+the project has none); an audit stopped at its candidate limit, **Audit by symbolic search**; an
+unsound space, **Save it and audit it** (a regression instance, audited by enumeration); a sound
+space, **Try a larger bound**. The per-k line joins runs of sound steps (`1-11 sound (1 round
+each) · 12 unsound`).
 
 ### Certificates
 

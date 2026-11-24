@@ -47,14 +47,14 @@
             candidate and counterexample of the instance, and names a witness: the candidate, the
             counterexample, the relevant set, the lost solution and the atoms on which the candidate
             and the lost solution differ. One of those atoms should have been relevant. On an
-            instance too large to enumerate, choose the mode <b>Symbolic</b>: the same verdict and the
+            instance too large to enumerate, audit by <b>symbolic search</b>: the same verdict and the
             same kind of witness from one search.</li>
           <li><b>See it.</b> Observatory, Candidate space, <b>Compute</b>: one square per candidate,
             coloured by its fate; lost solutions stand out. The summary names the first unsound
             refinement; the blame matrix shows which atoms each clause relies on.</li>
           <li><b>Shrink it.</b> If the instance is large, <b>Fuzz</b> (Instances tab) audits instances
             from small to large, stops at the first unsound one and shrinks it (instances marked
-            "no audit" get the symbolic audit). With a space (the mode <b>Space</b> of Audit) the
+            "no audit" get the symbolic audit). With a space (Audit by <b>space</b>) the
             search for the smallest breaking instance is exhaustive: k = 1, 2, … until one breaks.</li>
           <li><b>Keep it.</b> Fuzz's card, and the witness of a space audit, save the small instance as
             a regression instance; <b>Run all</b> checks it from then on.</li>

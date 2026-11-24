@@ -49,7 +49,7 @@ export class Output {
     el.hidden = false;
     el.dataset.verdict = a.verdict;
     el.dataset.mode = a.mode || 'enumerate';
-    if (a.mode) { this.symbolicVerdict(el, a); return; }
+    if (a.mode) { this.symbolicVerdict(el, a); this.nextSteps(el, a); return; }
     const h = document.createElement('h3');
     h.textContent = a.verdict === 'sound' ? 'Audit: sound' : a.verdict === 'unsound' ? 'Audit: unsound' : 'Audit: limit';
     el.append(h);
@@ -85,6 +85,45 @@ export class Output {
       e.textContent = `${fmt(a.empty)} counterexamples have no relevant atom (a run stops there with an error).`;
       el.append(e);
     }
+    this.nextSteps(el, a);
+  }
+
+  // What to do next after a verdict: buttons that call this.onAuditAction(name, a) (js/init.js).
+  // Which ones apply depends on the verdict and on the project (this.auditContext()).
+  nextSteps(el, a) {
+    if (!this.onAuditAction) return;
+    const ctx = this.auditContext ? this.auditContext() : {};
+    const steps = [];
+    const add = (name, label, title) => steps.push({ name, label, title });
+    if (a.mode === 'space') {
+      if (a.verdict === 'unsound') add('save-and-audit', 'Save it and audit it', 'Keep the instance as a regression instance and audit it by enumeration: the full list of unsound refinements');
+      if (a.verdict === 'sound') add('larger-bound', 'Try a larger bound', 'The same space with k two higher');
+    } else {
+      if (a.verdict === 'unsound' && ctx.observatory) add('candidate-space', 'See it in the candidate space', 'Run with every step recorded and draw every candidate, with the lost solutions marked (Observatory)');
+      if (a.verdict === 'limit') add('symbolic', 'Audit by symbolic search', 'The same question in one search, without listing the candidates');
+      if (a.verdict === 'sound' || a.verdict === 'unsound') {
+        if (ctx.spaces) add('space', 'Check a space', 'Every instance of a space up to a bound: is the verdict the same on the others?');
+        else add('write-space', 'Write a space', 'One instance says little about the others: describe all small instances (Instances tab, Spaces)');
+      }
+    }
+    if (!steps.length) return;
+    const box = document.createElement('div');
+    box.className = 'audit-next';
+    const lead = document.createElement('span');
+    lead.className = 'note';
+    lead.textContent = 'Next: ';
+    box.append(lead);
+    for (const s of steps) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'control-button small-button';
+      b.dataset.action = s.name;
+      b.textContent = s.label;
+      b.title = s.title;
+      b.addEventListener('click', () => this.onAuditAction(s.name, a));
+      box.append(b);
+    }
+    el.append(box);
   }
 
   symbolicVerdict(el, a) {
@@ -98,7 +137,7 @@ export class Output {
     if (a.mode === 'space' && a.perK && a.perK.length) {
       const q = document.createElement('p');
       q.className = 'note space-steps';
-      q.textContent = 'Per k: ' + a.perK.map((r) => `${r.k} ${r.verdict}${r.rounds != null ? ` (${plural(r.rounds, 'round')})` : ''}`).join(' · ');
+      q.textContent = 'Per k: ' + perKText(a.perK);
       el.append(q);
     }
     const w = a.witness;
@@ -267,6 +306,23 @@ export class Output {
 }
 
 const plural = (n, word) => `${fmt(n)} ${word}${n === 1 ? '' : 's'}`;
+
+// The steps of a space audit, runs of sound steps joined: "1-11 sound (1 round each) · 12 unsound (3 rounds)".
+function perKText(rows) {
+  const out = [];
+  for (let i = 0; i < rows.length;) {
+    const r = rows[i];
+    let j = i;
+    if (r.verdict === 'sound') while (j + 1 < rows.length && rows[j + 1].verdict === 'sound') j++;
+    if (j > i) {
+      const rounds = rows.slice(i, j + 1).map((x) => x.rounds);
+      const same = rounds.every((x) => x === rounds[0]) && rounds[0] != null;
+      out.push(`${r.k}-${rows[j].k} sound${same ? ` (${plural(rounds[0], 'round')} each)` : ''}`);
+    } else out.push(`${r.k} ${r.verdict}${r.rounds != null ? ` (${plural(r.rounds, 'round')})` : ''}`);
+    i = j + 1;
+  }
+  return out.join(' · ');
+}
 
 // The panel's explanation under its heading (the result line already says the verdict).
 function symbolicDetail(a) {

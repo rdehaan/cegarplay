@@ -98,6 +98,7 @@ export class InstancesTab {
         el('button', { class: 'control-button small-button', id: 'delete-instance-button', onclick: () => this.remove() }, 'Delete')),
       el('p', { class: 'note' }, 'Facts of this instance. A run gives them to every solver and every glue control, as the fragment "instance".'),
       this.recipeNote = el('p', { class: 'note', id: 'instance-recipe', hidden: true }),
+      this.symbolicNote = el('p', { class: 'note', id: 'instance-symbolic', hidden: true }),
       editorBox);
     for (const [inp, fn] of [[this.idInput, 'rename'], [this.expInput, 'setExpected'], [this.optInput, 'setOptimum'], [this.tagsInput, 'setTags'], [this.constInput, 'setConstants']]) {
       inp.addEventListener('change', () => this[fn](inp.value));
@@ -163,7 +164,7 @@ export class InstancesTab {
         el('td', {}, el('a', { href: '#', onclick: (e) => { e.preventDefault(); this.show(x.id); } }, x.id), x.id === sel ? ' (runs)' : ''),
         el('td', {}, x.recipe && !x.facts ? 'recipe' : `${nfacts} lines`),
         el('td', {}, constText(x.constants) || '–'),
-        el('td', {}, [...(x.tags || []), ...(x.audit === false ? ['no audit'] : [])].join(', ') || '–'),
+        el('td', {}, [...(x.tags || []), ...(x.audit === false ? ['no audit'] : []), ...(x.symbolic === 'unsound' ? ['symbolic audit: unsound'] : [])].join(', ') || '–'),
         el('td', { class: 'num' }, expectedText(x.expected)),
         el('td', { class: 'num' }, r ? `${fmt(r.solutions)}${r.cost ? `, cost ${costText(r.cost)}${r.same ? '' : ' (differ)'}` : ''}${r.exhausted ? '' : ' (not exhausted)'}${bad ? ' ✗' : good ? ' ✓' : ''}` : '–'),
         el('td', {}, el('button', { class: 'control-button small-button', onclick: () => this.pick(x.id), disabled: x.id === sel }, 'Use')));
@@ -213,6 +214,9 @@ export class InstancesTab {
     this.tagsInput.value = (x.tags || []).join(', ');
     this.constInput.value = constText(x.constants);
     this.recipeNote.hidden = !x.recipe;
+    // the stored expected verdict of the symbolic audit (library instances)
+    this.symbolicNote.hidden = !x.symbolic;
+    this.symbolicNote.textContent = x.symbolic ? `Expected verdict of the symbolic audit on this instance: ${x.symbolic}.` : '';
     if (x.recipe) {
       const r = x.recipe;
       this.recipeNote.textContent = `Recipe: generator ${r.generator}, ${constText(r.params) || 'default parameters'}, seed ${r.seed || 0}. ` +
@@ -691,8 +695,11 @@ export class InstancesTab {
     this.spParams = el('table', { class: 'internals-table', id: 'space-params' });
     this.spStatus = el('p', { id: 'space-status', class: 'note', role: 'status', 'aria-live': 'polite' });
     const box = el('div', { class: 'instance-editor', id: 'space-editor' });
+    this.spBoundLabel = el('label', { title: 'The parameter that runs over k = 1, 2, ...' }, 'Bound ', this.spBound);
+    this.spK = el('input', { id: 'space-preview-k', size: 3, inputmode: 'numeric', value: '2', 'aria-label': 'k for the preview' });
+    this.spPreview = el('div', { id: 'space-preview', class: 'generator-preview' });
     this.spBody = el('div', { id: 'space-body', hidden: true },
-      el('div', { class: 'instance-fields' }, el('label', {}, 'Name ', this.spName), el('label', {}, 'Bound ', this.spBound),
+      el('div', { class: 'instance-fields' }, el('label', {}, 'Name ', this.spName), this.spBoundLabel,
         el('button', { class: 'control-button small-button', id: 'delete-space-button', onclick: () => this.removeSpace() }, 'Delete')),
       el('div', { class: 'instance-fields' }, el('label', {}, 'Description ', this.spDesc)),
       el('p', { class: 'note' }, 'Every instance up to the bound k: choice rules and constraints over the instance predicates (with the fragment "schema", if there is one). ' +
@@ -701,13 +708,17 @@ export class InstancesTab {
       el('div', { class: 'table-wrapper' }, this.spParams),
       el('div', { class: 'instances-bar' },
         el('button', { class: 'control-button small-button', id: 'add-space-param-button', onclick: () => this.addSpaceParam() }, 'Add parameter'),
-        el('button', { class: 'control-button small-button', id: 'check-space-button', onclick: () => this.checkSpace() }, 'Check')),
-      this.spStatus);
+        el('button', { class: 'control-button small-button', id: 'check-space-button', onclick: () => this.checkSpace() }, 'Check'),
+        el('label', {}, 'k = ', this.spK),
+        el('button', { class: 'control-button small-button', id: 'preview-space-button', onclick: () => this.previewSpace(),
+          title: 'The first instances of the space at this k (up to 6), as facts' }, 'Preview')),
+      this.spStatus, this.spPreview);
     this.root.append(el('h3', {}, 'Spaces'),
       el('div', { class: 'instances-bar' }, this.spSelect,
         el('button', { class: 'control-button', id: 'add-space-button', onclick: () => this.addSpace() }, 'New space')),
       this.spBody);
     this.spEditor = makeEditor(box, 'ace/mode/gringo');
+    this.spEditor.setOptions({ minLines: 5, placeholder: 'Choice rules over the instance predicates, e.g.\nnode(1..k).\n{ edge(X,Y) : node(X), node(Y), X < Y }.\n(empty: the constants family k = 1, 2, ...)' });
     this.spEditor.on('change', () => {
       if (this.spLoading) return;
       const x = this.spaceItem;
@@ -730,6 +741,9 @@ export class InstancesTab {
     if (this.spEditor.getValue() !== x.text) this.spEditor.setValue(x.text || '', -1);
     this.spLoading = false;
     const bound = spaceBound(x);
+    // a choice only with two or more parameters
+    this.spBoundLabel.hidden = Object.keys(x.params || {}).length < 2;
+    if (this.spPreviewOf !== x.name) { this.spPreview.textContent = ''; this.spPreviewOf = x.name; this.spK.value = String(x.from ?? 2); }
     this.spBound.textContent = '';
     for (const k of Object.keys(x.params || {})) this.spBound.append(el('option', { value: k, selected: k === bound }, k));
     this.spParams.textContent = '';
@@ -761,6 +775,15 @@ export class InstancesTab {
     document.getElementById('space-bound-label').hidden = !on;
     const y = list.find((z) => z.name === sel.value);
     if (y && (!bound.value || bound.dataset.space !== y.name)) { bound.value = String(y.expected ? y.expected.k : 3); bound.dataset.space = y.name; }
+    // the space's description says what the name does not
+    for (const o of sel.options) {
+      const z = list.find((q) => q.name === o.value);
+      const d = (z && z.description) || '';
+      o.textContent = d ? `${o.value}: ${d.length > 40 ? d.slice(0, 39) + '…' : d}` : o.value;
+      o.title = d;
+    }
+    sel.title = y && y.description ? y.description : 'Space';
+    if (this.app.control) this.app.control.updateAuditModes();
   }
 
   addSpace() {
@@ -810,6 +833,33 @@ export class InstancesTab {
     this.spStatus.textContent = errs.length ? `${errs[0].where ? 'schema, ' : ''}line ${errs[0].line}: ${errs[0].message}` : 'No problems.';
     this.spStatus.classList.toggle('error', errs.length > 0);
     return errs;
+  }
+
+  // Preview: the first instances of the space at k (models of its text, the schema added), up to 6.
+  async previewSpace() {
+    const x = this.spaceItem;
+    if (!x || !this.app.ready || this.app.engine.active) return;
+    const k = Math.max(0, Math.floor(Number(this.spK.value)) || 0);
+    this.spPreview.textContent = '';
+    const errs = await this.checkSpace();
+    if (errs.length) return;
+    const project = this.app.collect();
+    const schema = project.fragments.find((f) => f.name === 'schema');
+    const values = { ...(x.defaults || {}), [spaceBound(x)]: k };
+    const consts = Object.entries(values).filter(([, v]) => v !== undefined).map(([a, v]) => `-c ${a}=${v}`).join(' ');
+    const r = await this.app.engine.exec(`${x.text || ''}\n${schema ? schema.text : ''}\n`, `--outf=2 6 ${consts}`);
+    let json = null;
+    try { json = JSON.parse((r.out || []).join('\n')); } catch { json = null; }
+    if (!json) { this.spStatus.textContent = 'No preview: clingo gave no answer.'; return; }
+    const models = ((json.Call || [])[0] || {}).Witnesses || [];
+    const more = json.Models && json.Models.More === 'yes';
+    this.spStatus.textContent = !models.length ? `No instance at k = ${k} (the space is empty there).`
+      : `${models.length}${more ? ' of more' : ''} instance${models.length === 1 ? '' : 's'} at k = ${k}${Object.keys(values).length > 1 ? ` (${Object.entries(values).map(([a, v]) => `${a} = ${v}`).join(', ')})` : ''}.`;
+    for (const [i, m] of models.entries()) {
+      const facts = (m.Value || []).slice().sort();
+      this.spPreview.append(el('div', { class: 'generator-card', 'data-space-instance': String(i + 1) },
+        el('p', {}, `Instance ${i + 1}`), el('pre', { class: 'generator-facts' }, facts.map((a) => `${a}.`).join('\n') || '(no facts)')));
+    }
   }
 
   // "Save as regression instance" of a space audit's witness (as Fuzz saves its instance).

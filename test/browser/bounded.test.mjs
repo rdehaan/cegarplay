@@ -90,3 +90,43 @@ test('S8: Stop ends a long symbolic audit on an isolated page (the verifier poll
     await context.close();
   } finally { coi.close(); }
 });
+
+test('UI: modes a loop does not support are marked with the reason; next steps; space preview', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape3');
+  await page.hover('#audit-button');
+  const sym = await page.$eval('#audit-mode option[value="symbolic"]', (o) => [o.textContent, o.title]);
+  assert.match(sym[0], /not for this loop/);
+  assert.match(sym[1], /expand/);
+  // af-preferred: the space select names its description; a sound space offers a larger bound
+  await page.goto(server.url + 'index.html?nocoi=1&example=af-preferred');
+  await page.waitForSelector('body[data-ready="true"]');
+  await page.selectOption('#audit-mode', 'space');
+  assert.match(await page.$eval('#space-select', (s) => s.options[s.selectedIndex].textContent), /^frameworks: Every argumentation/);
+  await page.fill('#space-bound', '3');
+  await page.click('#audit-button');
+  await settled(page);
+  assert.match(await page.textContent('#audit-panel .space-steps'), /Per k: 1-3 sound \(1 round each\)/);
+  assert.deepEqual(await page.$$eval('#audit-panel .audit-next button', (bs) => bs.map((b) => b.dataset.action)), ['larger-bound']);
+  // an enumerative audit that is sound offers the space
+  await page.selectOption('#audit-mode', 'enumerate');
+  await page.click('#audit-button');
+  await settled(page);
+  assert.deepEqual(await page.$$eval('#audit-panel .audit-next button', (bs) => bs.map((b) => b.dataset.action)), ['space']);
+  // the Spaces editor: one parameter, so no Bound choice; Preview shows instances as facts
+  await page.evaluate(() => { const t = document.getElementById('tab9'); t.checked = true; t.dispatchEvent(new Event('change', { bubbles: true })); });
+  assert.equal(await page.isVisible('#space-bound-param'), false);
+  await page.fill('#space-preview-k', '2');
+  await page.click('#preview-space-button');
+  await page.waitForSelector('[data-space-instance="6"]');
+  assert.match(await page.textContent('#space-status'), /6 of more instances at k = 2/);
+  assert.match(await page.textContent('[data-space-instance="1"]'), /arg\(1\)\.\s*arg\(2\)\./);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('UI: the Instances tab shows an instance\'s expected symbolic verdict', async () => {
+  const { page, context } = await B.openPage(browser, server, '?example=exercise-sum-free&tab=9');
+  assert.match(await page.textContent('#instances-table'), /symbolic audit: unsound/);
+  assert.match(await page.textContent('#instance-symbolic'), /Expected verdict of the symbolic audit on this instance: unsound/);
+  await context.close();
+});

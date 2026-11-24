@@ -41,15 +41,18 @@
     <div class="run-bar">
       <div class="run-buttons">
         <button class="control-button" id="run-button" title="Run (Ctrl+Enter)" disabled>&#x23F5; Run</button>
-        <button class="control-button" id="audit-button" title="Audit: check every candidate and every counterexample of this instance against the solutions" disabled>&#x2713; Audit</button>
-        <select id="audit-mode" aria-label="Audit mode" title="Enumerate: every candidate and counterexample (the audit). Symbolic: the same question in one search, also for large instances. Space: every instance of a space up to a bound k">
-          <option value="enumerate">Enumerate</option>
-          <option value="symbolic">Symbolic</option>
-          <option value="space" id="audit-mode-space" hidden disabled>Space</option>
-        </select>
-        <select id="space-select" aria-label="Space" hidden></select>
-        <label class="inline-label" for="space-bound" id="space-bound-label" hidden>up to k =</label>
-        <input id="space-bound" size="3" inputmode="numeric" aria-label="Bound k of the space audit" hidden>
+        <span class="audit-group" id="audit-group" role="group" aria-label="Audit">
+          <button class="control-button" id="audit-button" title="Audit: check every candidate and every counterexample of this instance against the solutions" disabled>&#x2713; Audit</button>
+          <label class="audit-mode-label" for="audit-mode">by</label>
+          <select id="audit-mode" aria-label="Audit mode">
+            <option value="enumerate" title="Every candidate and every counterexample of this instance (small instances)">enumeration</option>
+            <option value="symbolic" title="The same question in one search: also for instances too large to enumerate">symbolic search</option>
+            <option value="space" id="audit-mode-space" hidden disabled title="Every instance of a space, k = 1, 2, ... up to a bound">space</option>
+          </select>
+          <select id="space-select" aria-label="Space" hidden></select>
+          <label class="audit-mode-label" for="space-bound" id="space-bound-label" hidden>up to k =</label>
+          <input id="space-bound" size="3" inputmode="numeric" aria-label="Bound k of the space audit" hidden>
+        </span>
         <button class="control-button" id="abort-button" disabled>&#x2717; Abort</button>
         <button class="control-button isolated-only" id="pause-button" title="Pause the run; Resume goes on" disabled hidden>&#x23F8; Pause</button>
         <button class="control-button isolated-only" id="step-button" title="One candidate at a time: starts a run that waits after its first candidate, or moves a running or paused run on by one candidate" disabled hidden>&#x21E5; Step</button>

@@ -134,6 +134,28 @@ app.instancesTab = new InstancesTab(app);
 $('audit-mode').addEventListener('change', () => app.instancesTab.renderSpaceBar());
 $('space-select').addEventListener('change', () => app.instancesTab.renderSpaceBar());
 app.output.onSaveInstance = (a) => app.instancesTab.saveWitness(a);
+// the verdict panel's next steps (js/output.js nextSteps)
+app.output.auditContext = () => ({ spaces: (app.project.spaces || []).length > 0, observatory: !$('tab11').hidden });
+const showTab = (n) => { $('tab' + n).checked = true; $('tab' + n).dispatchEvent(new Event('change', { bubbles: true })); };
+const auditMode = (m) => { $('audit-mode').value = m; app.instancesTab.renderSpaceBar(); };
+app.output.onAuditAction = async (name, a) => {
+  if (name === 'symbolic') { auditMode('symbolic'); return app.control.auditPicked(); }
+  if (name === 'space') { auditMode('space'); $('space-bound').focus(); return; }
+  if (name === 'write-space') {
+    showTab(9);
+    if (!(app.project.spaces || []).length) app.instancesTab.addSpace();
+    requestAnimationFrame(() => $('space-body').scrollIntoView({ block: 'start' }));
+    return;
+  }
+  if (name === 'larger-bound') { auditMode('space'); $('space-select').value = a.space; $('space-bound').value = String(a.k + 2); return app.control.auditPicked(); }
+  if (name === 'save-and-audit') {
+    const id = app.instancesTab.saveWitness(a);
+    auditMode('enumerate');
+    await app.control.run({ mode: 'audit', instance: id });
+    return;
+  }
+  if (name === 'candidate-space') { showTab(11); return app.space.recordAndRun(); }
+};
 app.variants = new Variants(app);
 app.cursor = new Cursor();
 bindKeys(app.cursor, () => $('tab11').checked || document.body.classList.contains('lecture'));

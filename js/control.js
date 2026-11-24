@@ -1,6 +1,7 @@
 // Run bar and run flow (spec-app.md section 6).
 import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody, boundedPlan, boundedBody, modulesFor } from './driver.js';
 import { verifySpace } from './bounded.js';
+import { compile } from './compiler.js';
 import { TEMPLATES, template, derive, pickedVariant, deriveSpace, spaceBound } from './project.js';
 import { resolveProject } from './instances.js';
 import { hashText, auditLiveText } from './stats.js';
@@ -55,6 +56,8 @@ export class Control {
     this.auditButton = $('audit-button');
     this.runButton.addEventListener('click', () => this.run());
     this.auditButton.addEventListener('click', () => this.auditPicked());
+    for (const ev of ['mouseenter', 'focus']) this.auditButton.addEventListener(ev, () => this.updateAuditModes());
+    for (const ev of ['mousedown', 'focus', 'change']) $('audit-mode').addEventListener(ev, () => this.updateAuditModes());
     this.abortButton.addEventListener('click', () => this.abort());
     this.pauseButton.addEventListener('click', () => this.togglePause());
     this.stepButton.addEventListener('click', () => this.step());
@@ -493,6 +496,40 @@ export class Control {
       return it.auditAll();
     }
     return this.run({ mode: 'audit' });
+  }
+
+  // Which audit modes the project's loop supports (PLAN3): a mode it does not support stays
+  // selectable (Audit then says why) but is marked, and the Audit button's tooltip names the
+  // reason. Cheap (one compile); called on load and when the mode select or the button is used.
+  updateAuditModes() {
+    const p = this.app.project, sel = $('audit-mode');
+    if (!p || !sel) return;
+    let enumWhy = null, symWhy = null;
+    if (!p.loop || p.loop.language !== 'loop') enumWhy = symWhy = 'a raw Lua loop has no audit';
+    else {
+      const c = compile(p.loop.text, { fragments: p.fragments.map((f) => f.name) });
+      if (!c.ok) enumWhy = symWhy = 'the loop script has errors';
+      else {
+        const a = auditPlan(c), b = boundedPlan(c);
+        if (a.error) enumWhy = a.error;
+        if (b.error) symWhy = b.error;
+        else if (b.unsupported) symWhy = b.unsupported;
+        else if (!b.clause && !b.clauses) symWhy = 'the loop refines only by blocks or cores, which remove no solution by construction';
+      }
+    }
+    const why = { enumerate: enumWhy, symbolic: symWhy, space: symWhy || (!(p.spaces || []).length ? 'the project has no space (Instances tab, Spaces)' : null) };
+    const NAMES = { enumerate: 'enumeration', symbolic: 'symbolic search', space: 'space' };
+    for (const o of sel.options) {
+      if (!o.dataset.title) o.dataset.title = o.title;
+      const w = why[o.value];
+      o.textContent = NAMES[o.value] + (w ? ' (not for this loop)' : '');
+      o.title = w ? `Not for this loop: ${w}` : o.dataset.title;
+      o.dataset.unsupported = w ? 'true' : '';
+    }
+    const cur = sel.options[sel.selectedIndex];
+    const b = this.auditButton;
+    if (!b.dataset.title) b.dataset.title = b.title;
+    b.title = why[sel.value] ? `Audit by ${NAMES[sel.value]}: not for this loop: ${why[sel.value]}` : `Audit by ${NAMES[sel.value]}: ${cur ? cur.dataset.title : b.dataset.title}`;
   }
 
   // Space (PLAN3 S7): js/bounded.js verifySpace (the same loop as the CLI) with every step a
