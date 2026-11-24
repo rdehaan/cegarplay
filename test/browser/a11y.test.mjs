@@ -152,7 +152,7 @@ test('B7: the audit group, the Spaces editor, next steps and result cards are na
   await page.click('#audit-button');
   await page.waitForFunction(() => document.getElementById('run-status').dataset.state === 'finished' && !window.cegarplay.control.batch, null, { timeout: 60000 });
   assert.equal(await page.getAttribute('#audit-panel', 'aria-live'), 'polite');
-  assert.equal(await page.$eval('#audit-panel', (e) => document.getElementById(e.getAttribute('aria-labelledby')).textContent), 'Space frameworks: sound up to k = 2');
+  assert.equal(await page.$eval('#audit-panel', (e) => document.getElementById(e.getAttribute('aria-labelledby')).textContent), 'Space frameworks: sound up to size = 2');
   await page.click('label[for="tab5"]');
   const next = await page.$$eval('#audit-panel .audit-next button', (l) => l.map((b) => [b.textContent, b.type, b.title.length > 0]));
   assert.deepEqual(next, [['Try a larger bound', 'button', true]]);

@@ -1861,3 +1861,21 @@ number count". Found and fixed:
   note. A recipe-only instance has **Write out its facts**. The run bar's "(project as written)" is
   now **(no instance)**, explained by a note in the Instances tab while picked; the Shown line says
   "with no instance". Docs: manual, tutorial, spec-instances.
+
+## Requests of 2026-11-24 (evening)
+
+- Loop tab: one separator above Compare variants. Compare variants compares texts only: the
+  run-history table (which missed campaign runs) is gone, a link points to the Campaign tab, and
+  **Close** ends a comparison.
+- Campaign matrix: variants and instances in the project's order (`resultMatrix(rows, metric,
+  order)`); **solutions** as a metric (no best cell). The Campaign intro says the run bar's
+  Instance and Variant do not apply.
+- Spaces: the bound is named by its own name everywhere (editor, run bar, verdicts, run history,
+  CLI); one parameter table (Bound radio, Values: a number or a range `lo..hi`, In a regression
+  instance). New optional keys `ranges` and `regression` (`spaceCombos`, `spaceKeeps`);
+  `verifySpace` audits each combination at each k and returns the failing `params`. While Audit is
+  set to space, the run bar's Instance label says it is for Run only.
+- Control: the lines that say how the project came (loaded, uploaded, opened, started) are cleared
+  at the first edit and when another project comes (`clearOriginLines`).
+- Instances: ↑/↓ per row (`move`; the instance a run uses is pinned first); **Run all instances**,
+  and a line naming the run bar's variant that it and Fuzz use.

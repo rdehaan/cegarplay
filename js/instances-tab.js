@@ -5,8 +5,8 @@ import { generate, PARAM_TYPES, generatorConstants } from './generate.js';
 import { fuzz, shrinkInstance, diagnose, defaultSource, auditOf, symbolicOf } from './fuzz.js';
 import { mine } from './mine.js';
 import { BatchStopped } from './control.js';
-import { spaceBound, auditable, INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary, exerciseItems, gradeItem, exerciseSummary } from './project.js';
-import { fmt } from './output.js';
+import { spaceBound, spaceCombos, spaceKeeps, auditable, INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary, exerciseItems, gradeItem, exerciseSummary } from './project.js';
+import { fmt, spaceAt } from './output.js';
 import { spaceProblems } from './bounded.js';
 import { resultCard } from './result-card.js';
 
@@ -78,7 +78,8 @@ export class InstancesTab {
       el('button', { class: 'control-button', id: 'add-instance-button', onclick: () => this.add() }, 'New instance'),
       el('button', { class: 'control-button', id: 'import-instance-button', onclick: () => this.fileInput.click() }, 'Import file'),
       this.format, this.columnMap,
-      el('button', { class: 'control-button', id: 'run-all-instances-button', onclick: () => this.runAll() }, 'Run all'),
+      el('button', { class: 'control-button', id: 'run-all-instances-button', onclick: () => this.runAll(),
+        title: 'Run every instance in turn (the instance picked in the run bar does not matter), with the variant picked in the run bar' }, 'Run all instances'),
       this.checkButton = el('button', { class: 'control-button', id: 'check-exercise-button', hidden: true, onclick: () => this.checkExercise(),
         title: 'Check this exercise: expected counts and optima, the audit, and the budgets' }, 'Check exercise'),
       el('button', { class: 'control-button', id: 'fuzz-button', onclick: () => this.fuzz(), title: 'Audit instances from small to large; shrink the first unsound one and name the refinement that loses a solution' }, 'Fuzz'),
@@ -112,8 +113,10 @@ export class InstancesTab {
     this.noneNote = el('p', { class: 'note audit-note', id: 'instance-none-note', hidden: true },
       'The run bar says (no instance): a run uses none of these instances. The solvers get the fragments alone, with the project\'s own constants (Loop tab); ',
       'no instance facts and no instance constants. Pick an instance in the run bar, or press Use in the table, to run on one.');
+    // which choice of the run bar the actions of this bar use
+    this.contextNote = el('p', { class: 'note', id: 'instances-context' });
     this.root.append(
-      bar, this.status, this.noneNote, this.exerciseBox, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table), this.form);
+      bar, this.contextNote, this.status, this.noneNote, this.exerciseBox, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table), this.form);
     this.buildGenerators();
     this.buildSpaces();
     this.editor = makeEditor(editorBox, 'ace/mode/gringo');
@@ -156,6 +159,7 @@ export class InstancesTab {
       for (const x of list) this.select.append(el('option', { value: x.id }, x.id));
       this.select.value = sel;
     }
+    this.renderContext();
     // what "(no instance)" means, said where the instances are listed
     this.noneNote.hidden = !(list.length && sel === '');
     // the table
@@ -164,7 +168,7 @@ export class InstancesTab {
     if (!list.length) {
       this.table.append(el('tr', {}, el('td', { colspan: 7 }, 'No instances. The project runs as written; "New instance" or "Import file" adds one.')));
     }
-    for (const x of list) {
+    for (const [i, x] of list.entries()) {
       const r = this.results.get(x.id);
       const v = expectedCheck(x.expected, r);
       const bad = v.checked && !v.ok;
@@ -178,7 +182,13 @@ export class InstancesTab {
         el('td', {}, [...(x.tags || []), ...(x.audit === false ? ['no audit'] : []), ...(x.symbolic === 'unsound' ? ['symbolic audit: unsound'] : [])].join(', ') || '–'),
         el('td', { class: 'num' }, expectedText(x.expected)),
         el('td', { class: 'num' }, r ? `${fmt(r.solutions)}${r.cost ? `, cost ${costText(r.cost)}${r.same ? '' : ' (differ)'}` : ''}${r.exhausted ? '' : ' (not exhausted)'}${bad ? ' ✗' : good ? ' ✓' : ''}` : '–'),
-        el('td', {}, el('button', { class: 'control-button small-button', onclick: () => this.pick(x.id), disabled: x.id === sel }, 'Use')));
+        el('td', { class: 'instance-actions' },
+          el('button', { class: 'control-button small-button', onclick: () => this.pick(x.id), disabled: x.id === sel,
+            title: 'Pick this instance in the run bar: Run and Audit use it' }, 'Use'), ' ',
+          el('button', { class: 'control-button small-button instance-up', onclick: () => this.move(x.id, -1), disabled: i === 0,
+            title: 'Move up', 'aria-label': `Move instance ${x.id} up` }, '↑'),
+          el('button', { class: 'control-button small-button instance-down', onclick: () => this.move(x.id, 1), disabled: i === list.length - 1,
+            title: 'Move down', 'aria-label': `Move instance ${x.id} down` }, '↓')));
       this.table.append(tr);
     }
   }
@@ -245,6 +255,30 @@ export class InstancesTab {
 
   pick(id) {
     this.app.project.settings = { ...this.app.project.settings, instance: id };
+    this.render();
+    this.app.dirty();
+  }
+
+  // Which choice of the run bar the buttons above use: Run all instances and Fuzz go over the
+  // instances themselves, with the variant picked in the run bar.
+  renderContext() {
+    const vs = this.app.project.variants || [];
+    const v = this.app.variants ? this.app.variants.selected() : '';
+    this.contextNote.textContent = '';
+    if (!vs.length) { this.contextNote.hidden = true; return; }
+    this.contextNote.hidden = false;
+    this.contextNote.append('Run all instances and Fuzz go over the instances themselves; they use the ',
+      el('b', {}, v ? `variant ${v}` : 'project as written (no variant)'), ', as picked in the run bar\'s Variant.');
+  }
+
+  // the order of the instances (the run bar, Run all, the Campaign tab and the file follow it)
+  move(id, d) {
+    const list = this.list, i = list.findIndex((x) => x.id === id), j = i + d;
+    if (i < 0 || j < 0 || j >= list.length || this.app.editors.readOnly) return;
+    // the instance a run uses stays the same (without a pick it is the first one)
+    const sel = this.selectedId();
+    if (sel && this.app.project.settings.instance === undefined) this.app.project.settings = { ...this.app.project.settings, instance: sel };
+    [list[i], list[j]] = [list[j], list[i]];
     this.render();
     this.app.dirty();
   }
@@ -743,12 +777,9 @@ export class InstancesTab {
     // not 'space-description': that id is the run bar's description of the chosen space (index.html)
     this.spDesc = el('input', { id: 'space-description-input', size: 48, 'aria-label': 'Space description' });
     this.spDesc.addEventListener('change', () => { const x = this.spaceItem; if (x) { x.description = this.spDesc.value; this.app.dirty(); } });
-    this.spBound = el('select', { id: 'space-bound-param', 'aria-label': 'Bound parameter' });
-    this.spBound.addEventListener('change', () => { const x = this.spaceItem; if (x) { x.bound = this.spBound.value; this.renderSpaces(); this.app.dirty(); } });
     this.spParams = el('table', { class: 'internals-table', id: 'space-params' });
     this.spStatus = el('p', { id: 'space-status', class: 'note', role: 'status', 'aria-live': 'polite' });
     const box = el('div', { class: 'instance-editor', id: 'space-editor' });
-    this.spBoundLabel = el('label', { title: 'The parameter that runs over k = 1, 2, ...' }, 'Bound ', this.spBound);
     // the first k (space.from): for spaces whose instances only make sense from some size on
     this.spFrom = el('input', { id: 'space-from', size: 3, inputmode: 'numeric', 'aria-label': 'First k of the space' });
     this.spFrom.addEventListener('change', () => {
@@ -757,26 +788,29 @@ export class InstancesTab {
       const t = this.spFrom.value.trim(), n = Number(t);
       if (t === '' || n === 1) delete x.from;
       else if (Number.isInteger(n) && n >= 0) x.from = n;
-      else { this.spStatus.textContent = 'First k: a whole number (0 or more).'; this.spFrom.value = String(x.from ?? 1); return; }
+      else { this.spStatus.textContent = `First value of ${spaceBound(x)}: a whole number (0 or more).`; this.spFrom.value = String(x.from ?? 1); return; }
       this.spStatus.textContent = '';
       this.renderSpaces();
       this.app.dirty();
     });
-    this.spFromLabel = el('label', { title: 'The audit starts at this k (default 1): for instances that only make sense from some size on' }, 'First k ', this.spFrom);
-    this.spK = el('input', { id: 'space-preview-k', size: 3, inputmode: 'numeric', value: '2', 'aria-label': 'k for the preview' });
+    this.spK = el('input', { id: 'space-preview-k', size: 3, inputmode: 'numeric', value: '2', 'aria-label': 'Value of the bound for the preview' });
+    this.spKLabel = el('span', {}, 'k');
     this.spPreview = el('div', { id: 'space-preview', class: 'generator-preview' });
     this.spBody = el('div', { id: 'space-body', hidden: true },
-      el('div', { class: 'instance-fields' }, el('label', {}, 'Name ', this.spName), this.spBoundLabel, this.spFromLabel,
+      el('div', { class: 'instance-fields' }, el('label', {}, 'Name ', this.spName),
         el('button', { class: 'control-button small-button', id: 'delete-space-button', onclick: () => this.removeSpace() }, 'Delete')),
       el('div', { class: 'instance-fields' }, el('label', { class: 'wide-field' }, 'Description ', this.spDesc)),
-      el('p', { class: 'note' }, 'Every instance up to the bound k: choice rules and constraints over the instance predicates (with the fragment "schema", if there is one). ' +
-        'The parameters are constants of every solver; the bound runs from 1 (or the space\'s first k) to K. Optional: Audit with the mode Space verifies the loop on all of them.'),
+      el('p', { class: 'note' }, 'Every instance up to a bound: choice rules and constraints over the instance predicates (with the fragment "schema", if there is one). ' +
+        'Audit by space (run bar) verifies the loop on all of them; it does not use the run bar\'s instance.'),
       box,
       el('div', { class: 'table-wrapper' }, this.spParams),
+      el('p', { class: 'note' }, 'Parameters are constants of every solver: one named like a constant of your encoding (#const m = 2.) sets it. ' +
+        'The bound runs from its first value up to the value given in the run bar. Every other parameter has a value, or a range lo..hi: the audit checks each value of the range at each value of the bound. ' +
+        '"In a regression instance": whether the constant goes into the instance saved from an unsound witness.'),
       el('div', { class: 'instances-bar' },
         el('button', { class: 'control-button small-button', id: 'add-space-param-button', onclick: () => this.addSpaceParam() }, 'Add parameter'),
         el('button', { class: 'control-button small-button', id: 'check-space-button', onclick: () => this.checkSpace() }, 'Check'),
-        el('label', {}, 'k = ', this.spK),
+        el('label', {}, this.spKLabel, ' = ', this.spK),
         el('button', { class: 'control-button small-button', id: 'preview-space-button', onclick: () => this.previewSpace(),
           title: 'The first instances of the space at this k (up to 6), as facts' }, 'Preview')),
       this.spStatus, this.spPreview);
@@ -808,20 +842,45 @@ export class InstancesTab {
     if (this.spEditor.getValue() !== x.text) this.spEditor.setValue(x.text || '', -1);
     this.spLoading = false;
     const bound = spaceBound(x);
-    // a choice only with two or more parameters
-    this.spBoundLabel.hidden = Object.keys(x.params || {}).length < 2;
     this.spFrom.value = String(x.from ?? 1);
+    this.spKLabel.textContent = bound;
     if (this.spPreviewOf !== x.name) { this.spPreview.textContent = ''; this.spPreviewOf = x.name; this.spK.value = String(x.from ?? 2); }
-    this.spBound.textContent = '';
-    for (const k of Object.keys(x.params || {})) this.spBound.append(el('option', { value: k, selected: k === bound }, k));
     this.spParams.textContent = '';
-    this.spParams.append(el('tr', {}, ...['Parameter', 'Value (not the bound)', ''].map((h) => el('th', {}, h))));
-    for (const k of Object.keys(x.params || {})) {
-      const val = el('input', { size: 6, value: x.defaults && x.defaults[k] !== undefined ? String(x.defaults[k]) : '', 'aria-label': `Value of ${k}`, disabled: k === bound });
-      val.addEventListener('change', () => { x.defaults = { ...(x.defaults || {}), [k]: val.value.trim() === '' ? undefined : Number(val.value) }; this.app.dirty(); });
-      this.spParams.append(el('tr', {}, el('td', {}, k), el('td', {}, k === bound ? '(the bound k)' : val),
-        el('td', {}, el('button', { class: 'control-button small-button', disabled: Object.keys(x.params).length < 2, onclick: () => {
-          delete x.params[k]; if (x.defaults) delete x.defaults[k]; if (x.bound === k) delete x.bound; this.renderSpaces(); this.app.dirty(); } }, 'Remove'))));
+    this.spParams.append(el('tr', {}, ...['Parameter', 'Bound', 'Values', 'In a regression instance', ''].map((h) => el('th', {}, h))));
+    const names = Object.keys(x.params || {});
+    for (const k of names) {
+      const isBound = k === bound;
+      const radio = el('input', { type: 'radio', name: 'space-bound-pick', class: 'space-bound-pick', value: k, 'aria-label': `${k} is the bound` });
+      radio.checked = isBound;
+      radio.addEventListener('change', () => {
+        if (!radio.checked) return;
+        // the new bound has no range or fixed value; the old one gets its first value as value
+        if (x.ranges) { delete x.ranges[k]; if (!Object.keys(x.ranges).length) delete x.ranges; }
+        if (k === names[0]) delete x.bound; else x.bound = k;
+        this.renderSpaces(); this.renderSpaceBar(); this.app.dirty();
+      });
+      let values;
+      if (isBound) values = el('span', {}, 'from ', this.spFrom, ' up to the run bar\'s value');
+      else {
+        const r = x.ranges && x.ranges[k];
+        const val = el('input', { size: 8, class: 'space-param-value', 'data-param': k, placeholder: '3 or 1..3',
+          value: r ? `${r[0]}..${r[1]}` : x.defaults && x.defaults[k] !== undefined ? String(x.defaults[k]) : '', 'aria-label': `Value or range of ${k}` });
+        val.addEventListener('change', () => this.setSpaceValue(x, k, val));
+        values = val;
+      }
+      const keep = el('input', { type: 'checkbox', class: 'space-param-keep', 'data-param': k, 'aria-label': `${k} goes into a regression instance` });
+      keep.checked = spaceKeeps(x, k);
+      keep.addEventListener('change', () => {
+        if (keep.checked) { if (x.regression) { delete x.regression[k]; if (!Object.keys(x.regression).length) delete x.regression; } }
+        else x.regression = { ...(x.regression || {}), [k]: false };
+        this.app.dirty();
+      });
+      this.spParams.append(el('tr', { 'data-param': k }, el('td', {}, k), el('td', {}, radio), el('td', {}, values), el('td', {}, keep),
+        el('td', {}, el('button', { class: 'control-button small-button', disabled: names.length < 2, onclick: () => {
+          delete x.params[k];
+          for (const o of [x.defaults, x.ranges, x.regression]) if (o) delete o[k];
+          if (x.bound === k) delete x.bound;
+          this.renderSpaces(); this.renderSpaceBar(); this.app.dirty(); } }, 'Remove'))));
     }
     requestAnimationFrame(() => this.spEditor.resize());
   }
@@ -877,7 +936,15 @@ export class InstancesTab {
     const y = list.find((z) => z.name === sel.value);
     if (y && (!bound.value || bound.dataset.space !== y.name)) { bound.value = String(y.expected ? y.expected.k : Math.max(3, y.from ?? 1)); bound.dataset.space = y.name; }
     // a space that starts later than k = 1 says so in the bar
-    document.getElementById('space-bound-label').textContent = y && (y.from ?? 1) !== 1 ? `k = ${y.from} up to` : 'up to k =';
+    // the bound by its own name; the run bar says that the audit does not use an instance
+    const B = y ? spaceBound(y) : 'k';
+    document.getElementById('space-bound-label').textContent = y && (y.from ?? 1) !== 1 ? `every instance with ${B} = ${y.from} up to` : `every instance with ${B} up to`;
+    bound.setAttribute('aria-label', `Largest value of ${B} for the space audit`);
+    const il = document.getElementById('instance-select-label');
+    if (il) {
+      il.textContent = on ? 'Instance (for Run; the space audit uses none):' : 'Instance:';
+      il.title = on ? 'Audit by space checks every instance of the space; the instance picked here is used by Run only' : '';
+    }
     // the space's description says what the name does not: in the options' tooltips and, greyed,
     // after the select (cut with an ellipsis; the whole text in its tooltip)
     for (const o of sel.options) {
@@ -918,6 +985,22 @@ export class InstancesTab {
     this.app.dirty();
   }
 
+  // A value ("3") or a range ("1..3") of a parameter other than the bound.
+  setSpaceValue(x, k, input) {
+    const t = input.value.trim();
+    const m = /^(-?\d+)\s*\.\.\s*(-?\d+)$/.exec(t);
+    const clear = (o) => { if (x[o]) { delete x[o][k]; if (!Object.keys(x[o]).length) delete x[o]; } };
+    if (t === '') { clear('defaults'); clear('ranges'); }
+    else if (/^-?\d+$/.test(t)) { clear('ranges'); x.defaults = { ...(x.defaults || {}), [k]: Number(t) }; }
+    else if (m && Number(m[1]) <= Number(m[2])) {
+      clear('defaults');
+      x.ranges = { ...(x.ranges || {}), [k]: [Number(m[1]), Number(m[2])] };
+      try { spaceCombos(x); } catch (e) { clear('ranges'); this.spStatus.textContent = e.message; return; }
+    } else { this.spStatus.textContent = `${k}: a whole number, or a range lo..hi (lo at most hi).`; return; }
+    this.spStatus.textContent = '';
+    this.app.dirty();
+  }
+
   addSpaceParam() {
     const x = this.spaceItem;
     if (!x) return;
@@ -949,7 +1032,9 @@ export class InstancesTab {
     if (errs.length) return;
     const project = this.app.collect();
     const schema = project.fragments.find((f) => f.name === 'schema');
-    const values = { ...(x.defaults || {}), [spaceBound(x)]: k };
+    let first = {};
+    try { first = spaceCombos(x)[0] || {}; } catch (e) { this.spStatus.textContent = e.message; return; }
+    const values = { ...(x.defaults || {}), ...first, [spaceBound(x)]: k };
     const consts = Object.entries(values).filter(([, v]) => v !== undefined).map(([a, v]) => `-c ${a}=${v}`).join(' ');
     const r = await this.app.engine.exec(`${x.text || ''}\n${schema ? schema.text : ''}\n`, `--outf=2 6 ${consts}`);
     let json = null;
@@ -957,8 +1042,9 @@ export class InstancesTab {
     if (!json) { this.spStatus.textContent = 'No preview: clingo gave no answer.'; return; }
     const models = ((json.Call || [])[0] || {}).Witnesses || [];
     const more = json.Models && json.Models.More === 'yes';
-    this.spStatus.textContent = !models.length ? `No instance at k = ${k} (the space is empty there).`
-      : `${models.length}${more ? ' of more' : ''} instance${models.length === 1 ? '' : 's'} at k = ${k}${Object.keys(values).length > 1 ? ` (${Object.entries(values).map(([a, v]) => `${a} = ${v}`).join(', ')})` : ''}.`;
+    const B = spaceBound(x);
+    this.spStatus.textContent = !models.length ? `No instance at ${B} = ${k} (the space is empty there).`
+      : `${models.length}${more ? ' of more' : ''} instance${models.length === 1 ? '' : 's'} at ${B} = ${k}${Object.keys(values).length > 1 ? ` (${Object.entries(values).map(([a, v]) => `${a} = ${v}`).join(', ')})` : ''}.`;
     for (const [i, m] of models.entries()) {
       const facts = (m.Value || []).slice().sort();
       this.spPreview.append(el('div', { class: 'generator-card', 'data-space-instance': String(i + 1) },
@@ -971,12 +1057,13 @@ export class InstancesTab {
     const w = a.witness || {};
     const sp = this.spaces.find((x) => x.name === a.space);
     const id = freshId(this.app.project, 'regression');
-    const consts = { ...((sp && sp.defaults) || {}) };
+    const consts = { ...((sp && sp.defaults) || {}), ...(a.params || {}) };
     if (sp) consts[spaceBound(sp)] = a.k;
-    const constants = Object.fromEntries(Object.entries(consts).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
+    // only the constants the space marks "in a regression instance", and not those the project already has
+    const constants = Object.fromEntries(Object.entries(consts).filter(([k, v]) => v !== undefined && (!sp || spaceKeeps(sp, k))).map(([k, v]) => [k, String(v)])
       .filter(([k, v]) => this.app.project.settings.constants[k] !== v));
     this.add({ id, facts: (w.instance || '').split(' ').filter(Boolean).join('\n') + '\n', constants, tags: ['regression'] });
-    this.say(`Saved instance ${id}: the space ${a.space} at k = ${a.k} breaks the loop there (tag regression).`);
+    this.say(`Saved instance ${id}: the space ${a.space} at ${spaceAt(a)} breaks the loop there (tag regression${Object.keys(constants).length ? `; constants ${constText(constants)}` : ''}).`);
     return id;
   }
 

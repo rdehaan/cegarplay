@@ -347,6 +347,25 @@ function loadSpaces(list) {
         if (!Number.isInteger(Number(v))) throw new ProjectError(`space ${x.name}: default ${k} must be a whole number`);
       }
     }
+    // ranges (optional): a parameter other than the bound that runs over lo..hi (each value is
+    // checked at each k); regression (optional): { name: false } leaves that constant out of a
+    // regression instance saved from a witness
+    const boundName = x.bound || names[0];
+    if (x.ranges !== undefined) {
+      if (!isObj(x.ranges)) throw new ProjectError(`space ${x.name}: ranges must be an object`);
+      for (const [k, r] of Object.entries(x.ranges)) {
+        if (!names.includes(k)) throw new ProjectError(`space ${x.name}: range for unknown parameter ${k}`);
+        if (k === boundName) throw new ProjectError(`space ${x.name}: the bound ${k} has no range (it runs from the first value to the audit's bound)`);
+        if (!Array.isArray(r) || r.length !== 2 || !r.every((v) => Number.isInteger(v)) || r[0] > r[1]) throw new ProjectError(`space ${x.name}: range of ${k} must be [lo, hi] with whole numbers lo <= hi`);
+      }
+    }
+    if (x.regression !== undefined) {
+      if (!isObj(x.regression)) throw new ProjectError(`space ${x.name}: regression must be an object`);
+      for (const [k, v] of Object.entries(x.regression)) {
+        if (!names.includes(k)) throw new ProjectError(`space ${x.name}: regression names unknown parameter ${k}`);
+        if (typeof v !== 'boolean') throw new ProjectError(`space ${x.name}: regression.${k} must be true or false`);
+      }
+    }
     if (x.description !== undefined && typeof x.description !== 'string') throw new ProjectError(`space ${x.name}: description must be a string`);
     if (x.from !== undefined && !(Number.isInteger(x.from) && x.from >= 0)) throw new ProjectError(`space ${x.name}: from must be a whole number (the first k)`);
     if (x.expected !== undefined) {
@@ -361,6 +380,27 @@ function loadSpaces(list) {
 
 // The bound parameter of a space (its `bound`, else the first parameter).
 export function spaceBound(space) { return space.bound || Object.keys(space.params || {})[0]; }
+
+// The values of the other parameters at each value of the bound: one object per combination
+// (a fixed value from `defaults`, or each value of a range), at most `cap` of them.
+export const SPACE_COMBOS_CAP = 1000;
+export function spaceCombos(space, cap = SPACE_COMBOS_CAP) {
+  const bound = spaceBound(space);
+  let out = [{}];
+  for (const k of Object.keys(space.params || {})) {
+    if (k === bound) continue;
+    const r = space.ranges && space.ranges[k];
+    const vals = r ? Array.from({ length: r[1] - r[0] + 1 }, (_, i) => r[0] + i)
+      : space.defaults && space.defaults[k] !== undefined && space.defaults[k] !== null ? [Number(space.defaults[k])] : [];
+    if (!vals.length) continue;
+    out = out.flatMap((c) => vals.map((v) => ({ ...c, [k]: v })));
+    if (out.length > cap) throw new ProjectError(`space ${space.name}: ${out.length}+ combinations of the ranges (at most ${cap})`);
+  }
+  return out;
+}
+
+// Does the space name this constant in a regression instance? (default: yes)
+export const spaceKeeps = (space, k) => !(space.regression && space.regression[k] === false);
 
 // The plain project of one bounded run: the fragment `instance` = the space text (+ the project's
 // `schema` fragment), the constants = the space's defaults, params, and the bound at k.

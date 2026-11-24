@@ -249,8 +249,14 @@ A **space** describes every instance up to a bound, for the bounded verification
 refinement strategy (`docs/spec-soundness.md` section 8). Nothing else uses spaces; a project
 without them loads, saves (byte-identical) and runs as before.
 
-`spaces[]`: `{ name, text, params: { name: "int" }, bound, defaults, from, description,
+`spaces[]`: `{ name, text, params: { name: "int" }, bound, defaults, ranges, regression, from, description,
 expected: { verdict, k } }`.
+
+- `ranges` (optional, 2026-11-24): `{ name: [lo, hi] }` for parameters other than the bound;
+  `spaceCombos(space)` (`js/project.js`) lists the combinations (fixed defaults and each ranged
+  value; at most 1,000) and `verifySpace` audits each at each k, returning the failing `params`.
+- `regression` (optional): `{ name: false }` keeps that constant out of a regression instance
+  saved from a witness (`spaceKeeps`).
 
 - `text` replaces the instance: choice rules and constraints over the instance predicates
   (`node(1..size). { edge(U,V) : node(U), node(V), U < V }.`). A project's `schema` fragment is

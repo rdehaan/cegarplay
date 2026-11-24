@@ -1,5 +1,5 @@
 // Statistics tab, live line, charts, run history (spec-app.md section 10).
-import { fmt } from './output.js';
+import { fmt, spaceAt } from './output.js';
 
 const MAX_POINTS = 500;
 const HIST_LABELS = ['1', '2', '3–4', '5–8', '9–16', '17–32', '33–64', '65+'];
@@ -22,7 +22,7 @@ export function liveText(s) {
 // The run bar after an audit: its own counts (the S events of an audit count raw models).
 export function auditLiveText(a) {
   if (!a || !a.verdict) return ' ';
-  if (a.mode === 'space' && a.space) return `space ${a.space} · ${a.verdict === 'sound' ? `sound up to k = ${a.k}` : `${a.verdict} at k = ${a.k}`}`;
+  if (a.mode === 'space' && a.space) return `space ${a.space} · ${a.verdict === 'sound' ? `sound up to ${a.bound || 'k'} = ${a.k}` : `${a.verdict} at ${spaceAt(a)}`}`;
   if (a.mode === 'space') return ' ';   // one step of a space audit: the space's line follows
   if (a.mode) return `symbolic audit · ${fmt(a.rounds ?? 0)} rounds · ${fmt(a.refinements ?? 0)} refinements · ${a.verdict}`;
   const verdict = a.verdict === 'sound' ? 'sound' : a.verdict === 'unsound'
@@ -210,7 +210,7 @@ export class Stats {
     } else if (a && a.verdict && a.mode) {
       // a symbolic or space audit: rounds and refinements of its inner loop
       this.table('stats-summary', ['Audit verdict', 'Elapsed', 'Rounds of the inner loop', 'Refinements of the inner loop'],
-        [[a.mode === 'space' && a.space ? (a.verdict === 'sound' ? `sound up to k = ${a.k}` : `${a.verdict} at k = ${a.k}`) : `${a.verdict} (symbolic)`, s ? secs(s.t) : '–', dash(a.rounds), dash(a.refinements)]],
+        [[a.mode === 'space' && a.space ? (a.verdict === 'sound' ? `sound up to ${a.bound || 'k'} = ${a.k}` : `${a.verdict} at ${spaceAt(a)}`) : `${a.verdict} (symbolic)`, s ? secs(s.t) : '–', dash(a.rounds), dash(a.refinements)]],
         [1, 2, 3]);
     } else {
       this.table('stats-summary', ['Outcome', 'Elapsed', 'Candidates', 'Counterexamples', 'Refinements', 'Solutions'],
@@ -470,7 +470,7 @@ export class Stats {
   auditText(r) {
     const a = r.audit || (r.mode !== 'audit' && r.mode !== 'bounded' && [...this.history].reverse().find((x) => x.audit && !x.audit.mode && x.fragmentsHash === r.fragmentsHash)?.audit);
     if (!a) return '–';
-    if (a.mode === 'space') return a.verdict === 'sound' ? `sound ≤ ${a.k}` : `${a.verdict} at k = ${a.k}`;
+    if (a.mode === 'space') return a.verdict === 'sound' ? `sound ≤ ${a.k}` : `${a.verdict} at ${spaceAt(a)}`;
     if (a.mode === 'symbolic') return `${a.verdict} (symbolic)`;
     if (a.verdict === 'unsound') return `unsound (${fmt(a.unsound)})`;
     return a.verdict;

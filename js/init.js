@@ -230,6 +230,7 @@ $('project-form').addEventListener('keydown', (e) => {
 });
 
 app.setProject = (p, { save = true } = {}) => {
+  clearOriginLines();
   app.project = p;
   app.exampleId = null;         // set by loadExample
   markLoadedExample();
@@ -309,8 +310,13 @@ app.factoryReset = async () => {
 };
 
 // edit = false: save, but the project was not edited (e.g. the run history changed)
+// The lines that say how the project came (loaded, uploaded, opened, started) are about the
+// project as it came: the first edit, or another project, removes them.
+const ORIGIN_LINES = ['load-status', 'upload-status', 'new-status', 'workspace-status'];
+function clearOriginLines() { for (const id of ORIGIN_LINES) { const e = $(id); if (e) { e.textContent = ''; e.classList.remove('error'); } } }
 app.dirty = (edit = true) => {
   if (edit) {
+    if (!app.edited) clearOriginLines();
     if (app.restoredOrLoaded) urlForgetProject();
     app.edited = true; app.saveBlocked = false;
   }
@@ -988,7 +994,7 @@ async function start() {
     // A project named in the URL does not replace the one kept in the browser until it is edited.
     const save = !named && shared === null && params.get('fresh') !== '1' && !stored;
     try { await loadExample(file, { save }); status('load-status', `Loaded example "${app.project.title}".`); }
-    catch (e) { status('load-status', String(e.message || e), true); app.setProject(Project.newProject(), { save: false }); }
+    catch (e) { app.setProject(Project.newProject(), { save: false }); status('load-status', String(e.message || e), true); }
     if (shareError) status('load-status', `${shareError}. Opened the example "${app.project.title}" instead.`, true);
   }
   if (named && !restored && app.exampleId === named && params.get('fragment')) openFragment(params.get('fragment'));

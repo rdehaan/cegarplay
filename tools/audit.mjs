@@ -94,9 +94,10 @@ async function main(argv) {
     catch (e) { console.error(e.message); process.exitCode = 2; return; }
     if (json) console.log(JSON.stringify(r));
     else {
-      for (const row of r.perK) console.log(`k = ${row.k}: ${row.verdict}${row.rounds != null ? `; ${row.rounds} rounds` : ''}${row.t != null ? `; ${row.t.toFixed(2)} s` : ''}`);
+      const B = r.bound || 'k';
+      for (const row of r.perK) console.log(`${B} = ${row.k}${row.params ? `, ${Object.entries(row.params).map(([a, x]) => `${a} = ${x}`).join(', ')}` : ''}: ${row.verdict}${row.rounds != null ? `; ${row.rounds} rounds` : ''}${row.t != null ? `; ${row.t.toFixed(2)} s` : ''}`);
       if (r.verdict === 'error') console.log(`error: ${r.reason}`);
-      else printSymbolic({ ...(r.last || {}), verdict: r.verdict, mode: 'space', space, k: r.k, witness: r.witness, reason: r.reason, seconds: seconds || 60 });
+      else printSymbolic({ ...(r.last || {}), verdict: r.verdict, mode: 'space', space, k: r.k, bound: r.bound, params: r.params, witness: r.witness, reason: r.reason, seconds: seconds || 60 });
     }
     process.exitCode = r.verdict === 'error' ? 2 : exitCode({ verdict: r.verdict });
     return;
@@ -174,16 +175,18 @@ function exitCode(v) {
 
 // A symbolic (or space) verdict as text.
 export function printSymbolic(v, log = console.log) {
-  const where = v.mode === 'space' && v.k != null ? ` (space ${v.space || ''}, k = ${v.k})` : '';
+  const B = v.bound || 'k';
+  const at = [`${B} = ${v.k}`, ...Object.entries(v.params || {}).map(([a, x]) => `${a} = ${x}`)].join(', ');
+  const where = v.mode === 'space' && v.k != null ? ` (space ${v.space || ''}, ${at})` : '';
   log(`Symbolic audit of link ${v.link || '?'}${(v.kinds || []).length ? ` (${v.kinds.join(', ')})` : ''}${where}: ${v.rounds ?? 0} rounds, ${v.refinements ?? 0} refinements${v.fallback ? ` (${v.fallback} blocks)` : ''}${v.t != null ? `, ${v.t.toFixed(2)} s` : ''}`);
-  if (v.verdict === 'sound') log(v.mode === 'space' ? `Sound for every instance of the space up to k = ${v.k}` : 'Sound for every candidate and counterexample of this instance');
+  if (v.verdict === 'sound') log(v.mode === 'space' ? `Sound for every instance of the space up to ${B} = ${v.k}` : 'Sound for every candidate and counterexample of this instance');
   else if (v.verdict === 'budget') log(`Budget: no verdict within ${v.seconds} s`);
   else if (v.verdict === 'unsupported') log(`Unsupported: ${v.reason}`);
   else if (v.verdict === 'unsound') {
     log('UNSOUND');
     const w = v.witness;
     if (w) {
-      if (w.instance != null) log(`Instance (k = ${w.k ?? v.k}): ${w.instance}`);
+      if (w.instance != null) log(`Instance (${B} = ${w.k ?? v.k}): ${w.instance}`);
       log(`Witness: candidate ${names(w.candidate)}, counterexample [${w.counterexample}]`);
       if (w.kind === 'clauses') log(`  clause ${names(w.clause)}`);
       else log(`  relevant ${names(w.relevant)}`);

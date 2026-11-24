@@ -68,3 +68,15 @@ test('tools/report.mjs writes Markdown, CSV and SVG', () => {
   assert.match(fs.readFileSync(path.join(dir, 'r.svg'), 'utf8'), /<svg/);
   assert.equal(spawnSync('node', [tool, f, '--metric', 'nope']).status, 2);
 });
+
+test('resultMatrix: variants and instances in the order given (the project file); solutions as a metric, no best', () => {
+  const row = (instance, variant, solutions) => ({ key: `${instance}|${variant}`, instance, variant, seed: 1, outcome: 'finished', exhausted: true, solutions, time: 0.1, candidates: 3 });
+  const rows = [row('b', 'v2', 4), row('a', 'v1', 3), row('a', 'default', 3), row('b', 'default', 4)];
+  const m = resultMatrix(rows, 'solutions', { variants: ['default', 'v1', 'v2'], instances: ['a', 'b'] });
+  assert.deepEqual(m.variants, ['default', 'v1', 'v2']);
+  assert.deepEqual(m.rows.map((r) => r.instance), ['a', 'b']);
+  assert.equal(m.rows[0].cells.v1.value, 3);
+  assert.equal(m.rows[0].best, null);
+  // without an order: the order of the rows
+  assert.deepEqual(resultMatrix(rows, 'time').variants, ['v2', 'v1', 'default']);
+});

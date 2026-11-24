@@ -701,3 +701,44 @@ test('I2: generator constants reach the instances it makes; a recipe instance ca
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('Instances: move up and down; the instance a run uses stays; Run all says which variant it uses', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=voting-justification&tab=9');
+  const ids = () => page.evaluate(() => window.cegarplay.project.instances.map((x) => x.id));
+  const before = await ids();
+  const used = await page.$eval('#instance-select', (s) => s.value);
+  await page.click(`#instances-table tr[data-instance="${before[0]}"] .instance-down`);
+  const after = await ids();
+  assert.deepEqual(after.slice(0, 2), [before[1], before[0]]);
+  assert.equal(await page.$eval('#instance-select', (s) => s.value), used, 'the run bar keeps its instance');
+  assert.deepEqual(await page.$$eval('#instance-select option', (l) => l.slice(1, 3).map((o) => o.value)), [before[1], before[0]]);
+  assert.equal(await page.$eval(`#instances-table tr[data-instance="${before[1]}"] .instance-up`, (b) => b.disabled), true);
+  await page.click(`#instances-table tr[data-instance="${before[0]}"] .instance-up`);
+  assert.deepEqual(await ids(), before);
+  // Run all instances and Fuzz: the run bar's variant, named
+  assert.match(await page.textContent('#instances-context'), /use the project as written \(no variant\), as picked in the run bar/);
+  await page.selectOption('#variant-select', 's1');
+  assert.match(await page.textContent('#instances-context'), /use the variant s1, as picked in the run bar/);
+  assert.equal(await page.textContent('#run-all-instances-button'), 'Run all instances');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('Control: "Loaded example" goes at the first edit and when another project comes', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?tab=1');
+  await B.openLibrary(page);
+  page.on('dialog', (d) => d.accept());
+  await page.click('[data-load-example="tutorial-first-run"]');
+  await page.waitForFunction(() => /Loaded example "Sum-free sets"/.test(document.getElementById('load-status').textContent));
+  await B.setEditor(page, 'editor-check', '% edit\n');
+  await page.waitForFunction(() => document.getElementById('load-status').textContent === '');
+  // an upload replaces it with its own line, and the old line is not left behind
+  await page.setInputFiles('#file-input', { name: 'p.json', mimeType: 'application/json',
+    buffer: Buffer.from(await page.evaluate(() => JSON.stringify(window.cegarplay.collect()))) });
+  await page.waitForFunction(() => /Loaded p\.json/.test(document.getElementById('upload-status').textContent));
+  assert.equal(await page.textContent('#load-status'), '');
+  await B.setEditor(page, 'editor-check', '% edit 2\n');
+  await page.waitForFunction(() => document.getElementById('upload-status').textContent === '');
+  assert.deepEqual(errors, []);
+  await context.close();
+});

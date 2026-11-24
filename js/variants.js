@@ -44,6 +44,7 @@ export class Variants {
       this.app.project.settings = { ...this.app.project.settings, variant: this.select.value };
       if (!this.select.value) delete this.app.project.settings.variant;
       this.app.dirty();
+      if (this.app.instancesTab) this.app.instancesTab.renderContext();
     });
   }
 
@@ -68,6 +69,7 @@ export class Variants {
     this.app.dirty();
     this.renderPicker();
     this.refreshCompare();
+    if (this.app.instancesTab) this.app.instancesTab.renderContext();
   }
 
   // The compare selects follow the variants (a rename, an add, a delete); a comparison on
@@ -163,14 +165,17 @@ export class Variants {
     this.cmpA = opts('compare-a', 'First side of the comparison', keep[0]);
     this.cmpB = opts('compare-b', 'Second side of the comparison', keep[1]);
     this.cmpOut = el('div', { id: 'compare-result', class: 'compare-result', 'aria-live': 'polite' });
-    const run = () => { this.compareSides = [this.cmpA.value, this.cmpB.value]; this.showCompare(); };
+    const run = () => { this.compareSides = [this.cmpA.value, this.cmpB.value]; this.showCompare(); close.hidden = false; };
+    // Close: back to nothing compared (both sides the project as written, no result shown)
+    const close = el('button', { class: 'control-button', id: 'compare-close-button', type: 'button', hidden: true,
+      onclick: () => { this.compareSides = ['', '']; this.cmpA.value = ''; this.cmpB.value = ''; this.cmpOut.textContent = ''; close.hidden = true; } }, 'Close');
     for (const s of [this.cmpA, this.cmpB]) s.addEventListener('change', () => { if (this.cmpOut.childElementCount) run(); });
     return el('div', { class: 'variant-compare', id: 'variant-compare' },
       el('h3', {}, 'Compare variants'),
       el('div', { class: 'variant-row' },
         el('label', {}, 'Compare ', this.cmpA), el('label', {}, 'with ', this.cmpB),
         el('button', { class: 'control-button', id: 'compare-button', type: 'button', onclick: run,
-          title: 'The fragments and loop script as line diffs, the constants, and the latest results per instance from the run history' }, 'Compare')),
+          title: 'The fragments and loop script as line diffs, and the constants and settings that differ' }, 'Compare'), close),
       this.cmpOut);
   }
 
@@ -212,29 +217,15 @@ export class Variants {
     if (c.loop) {
       out.append(diffBlock('the loop script' + (c.loop.languages[0] !== c.loop.languages[1] ? ` (${c.loop.languages.join(' / ')})` : ''), c.loop, 'loop'));
     }
-    // results from the run history
-    if (!c.results.length) {
-      out.append(el('p', { class: 'note', id: 'compare-no-runs' }, 'No runs of either side in the run history yet: pick a side in the run bar\'s Variant picker and run or audit it.'));
-      return;
-    }
-    const cell = (r, what) => {
-      if (!r) return '–';
-      if (what === 'solutions') return r.solutions === null ? '–' : `${r.solutions}${r.exact ? '' : '+'}`;
-      return r.audit || '–';
-    };
-    const t = el('table', { class: 'internals-table compare-table', id: 'compare-results' },
-      el('tr', {}, el('th', {}, 'Instance'), el('th', {}, `Solutions, ${A}`), el('th', {}, `Solutions, ${B}`), el('th', {}, `Audit, ${A}`), el('th', {}, `Audit, ${B}`)));
-    for (const r of c.results) {
-      const differs = (k) => cell(r.a, k) !== cell(r.b, k) && r.a && r.b;
-      t.append(el('tr', { 'data-instance': r.instance },
-        el('td', {}, r.instance || '(the project as written)'),
-        el('td', { class: 'num' + (differs('solutions') ? ' differs' : '') }, cell(r.a, 'solutions')),
-        el('td', { class: 'num' + (differs('solutions') ? ' differs' : '') }, cell(r.b, 'solutions')),
-        el('td', { class: differs('audit') ? 'differs' : '' }, cell(r.a, 'audit')),
-        el('td', { class: differs('audit') ? 'differs' : '' }, cell(r.b, 'audit'))));
-    }
-    out.append(el('div', { class: 'table-wrapper' }, t),
-      el('p', { class: 'note' }, 'The latest run and audit of each side in the run history (Statistics tab); "+" marks a count from a run that did not look for all solutions. Rows that differ are marked.'));
+    // results per instance: the Campaign tab runs every variant on every instance (a suite)
+    const open = el('a', { href: '#', id: 'compare-campaign-link', onclick: (e) => {
+      e.preventDefault();
+      if (this.app.showTabs) this.app.showTabs('advanced', true, { store: false });
+      const t = document.getElementById('tab10');
+      if (t) { t.checked = true; t.dispatchEvent(new Event('change', { bubbles: true })); }
+    } }, 'Campaign tab');
+    out.append(el('p', { class: 'note', id: 'compare-results-note' }, 'This compares the texts only. To compare what the two sides compute (solutions, refinements, time per instance), run a suite in the ',
+      open, '.'));
   }
 
   card(v, i, fragments) {

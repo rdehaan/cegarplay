@@ -171,7 +171,10 @@ over the header's names or column numbers). Several files can be chosen at once 
 file that fails is named and the others are added); each importer is checked with clingo before
 the instance is added. **Run all**, **Fuzz** and **Check exercise** (like **Rerun with 5 seeds**) are batches: the run bar
 says what runs (**running all instances (3 of 17: n5)**, **running fuzz**), Run and Audit wait, and one
-click on **Abort** (or **Stop**) ends the whole batch. **Run all** runs every instance and marks a count other than the expected one
+click on **Abort** (or **Stop**) ends the whole batch. **Run all instances** runs every instance (whatever instance the run bar picks) with the run bar's
+variant, which a line under the buttons names; Fuzz uses that variant too. **↑** and **↓** in the table
+move an instance (the run bar, Run all, the Campaign tab and the file follow the order; the instance
+a run uses stays the same). **Run all instances** marks a count other than the expected one
 with ✗ in red. An instance with an expected count is run to all solutions, whatever the project's
 solution limit. The status line says how many instances were checked and why the others were not
 (no expectation, a run that did not finish, a run that stopped before all solutions); it never says
@@ -203,13 +206,12 @@ questions that finish.
 **Compare variants** (below the variant cards, for a project with variants) puts two sides next to
 each other: two variants, or the project as written and a variant. **Compare** shows the fragments
 that differ, each as a line diff (removed lines `-`, added lines `+`, two lines of context, the line
-numbers of each side), the loop script as a line diff, the constants and settings that differ, and
-from the run history, per instance, the latest solution count and the latest audit verdict of each
-side (a count marked `+` comes from a run that did not look for all solutions; a space audit has a
-row of its own). It reads the run history (Statistics tab) and stores nothing: run or audit each side
-first (the run bar's Variant picker). Changing a side updates a comparison already shown. Each run
-history row records its instance (`instance`; `""` = the project as written); older rows are matched
-by the `[id]` in their loop label. To compare many instances at once, use a campaign.
+numbers of each side), the loop script as a line diff, and the constants and settings that differ.
+It compares the texts only and stores nothing; changing a side updates a comparison already shown,
+and **Close** ends it (both sides back to the project as written). What the sides compute (solutions,
+refinements, time per instance) is compared in the Campaign tab, which a link under the comparison
+opens. (Until 2026-11-24 a table here showed the run history's latest count per instance and side;
+it showed "–" for runs made elsewhere, such as in a campaign, and was removed.)
 
 ### Campaigns
 
@@ -220,8 +222,10 @@ runs only the missing cells; an edit of a fragment, the loop or a constant chang
 exactly the cells it touches. Instances whose exhausted variants disagree on the solutions, or
 whose finished variants report different optima, are marked red (the run history's ⚠, for a whole
 grid); hover a square of the progress grid to see its cell. The **instance × variant matrix** has
-one row per instance and one column per variant, showing time, candidates or refinements (median
-over seeds); the best finished cell of a row is bold (none on a tie), a cell that did not finish shows its outcome,
+one row per instance and one column per variant, in the order of the project (the suite's variants,
+then the project's; the instances as in the Instances tab), showing time, solutions, candidates or
+refinements (median over seeds); the best finished cell of a row is bold (none on a tie; never for
+solutions), a cell that did not finish shows its outcome,
 a disagreement is marked ✗, and a click on a heading sorts by that column. **Export matrix (CSV)**
 saves it. Plots: time against a parameter (median and interquartile band), a heat map over two
 parameters, one variant against another (pick both), and a cactus plot (the i-th fastest finished
@@ -260,9 +264,11 @@ Optional. `spaces[]` describes every instance up to a bound, for the Audit's mod
 | --- | --- | --- |
 | `name` | string | Matches `[A-Za-z0-9_-]+`; unique. |
 | `text` | string | Replaces the instance: choice rules and constraints over the instance's predicates. A `schema` fragment is added. Empty with one parameter: the constants family n = 1, 2, … |
-| `params` | object | At least one parameter, each `"int"`; passed as constants to every solver (pick names no fragment uses). |
-| `bound` | string | The bound parameter; default the first. |
-| `defaults` | object | Values of the other parameters. |
+| `params` | object | At least one parameter, each `"int"`; passed as constants to every solver (`-c`, so a parameter named like a constant of the encoding sets it, over its `#const` default). |
+| `bound` | string | The bound parameter; default the first. Below, "k" stands for its value, whatever its name; the page and the CLI use the name. |
+| `defaults` | object | Fixed values of the other parameters. |
+| `ranges` | object | `{ name: [lo, hi] }` (optional): a parameter other than the bound that runs over lo..hi. The audit checks every combination of the ranged values at each k (at most 1,000 combinations); an unsound verdict names the values it failed at. |
+| `regression` | object | `{ name: false }` (optional): leave that constant out of a regression instance saved from a witness (default: every parameter goes in, except values the project already has). |
 | `from` | number | The first k (default 1). |
 | `description` | string | Shown in the Instances tab. |
 | `expected` | object | `{ verdict, k }`: the bounded verdict and its k (the library's tests check it). |
@@ -286,15 +292,19 @@ every step recorded; the map shows the refinements that run makes, which may avo
 
 **Writing a space** (Instances tab, **Spaces**, **New space**): a name; the text, which replaces the
 instance: choice rules and constraints over the instance's predicates, written with the bound
-parameter (`node(1..k). { edge(X,Y) : node(X), node(Y), X < Y }.`); the parameters (the bound,
-and for two or more, which one is the bound and the values of the others); **First k**; and a
-description. **Check** runs clingo on the text; **Preview** lists the first 6 instances at a k as
+parameter (`node(1..k). { edge(X,Y) : node(X), node(Y), X < Y }.`); the parameters, in one table:
+**Bound** (which one runs up to the run bar's value; its row has the first value, the field `from`),
+**Values** for the others (a number, or a range `1..3`), and **In a regression instance** (whether a
+saved witness instance gets that constant); and a description. A range is how a space covers a
+constant of the encoding: add a parameter with the constant's name and give it a range. The run
+bar names the bound ("every instance with n up to"), and while Audit is set to space its Instance
+picker says that it is for Run only: a space audit uses no instance. **Check** runs clingo on the text; **Preview** lists the first 6 instances at a k as
 facts, which is the quickest way to see that the space is what you meant. A space whose text is
 empty and whose one parameter is a constant of the project is the constants family n = 1, 2, …
 (the tutorial's space `n`).
 
 **Instances that only make sense from some size on.** Set **First k** (the field `from`, default
-1): the audit then starts there, the run bar shows "k = 3 up to", and the verdict says "sound for k
+1): the audit then starts there, the run bar shows "every instance with k = 3 up to", and the verdict says "sound for k
 from 3 up to 10". (Without it, a constraint such as `:- k < 3.` in the text also works: the space is
 empty below 3, and an empty space is trivially sound; but the verdict then counts those k as
 checked.)

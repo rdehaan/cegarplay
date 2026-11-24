@@ -60,13 +60,14 @@ export class Output {
     const rows = [], notes = [], paragraphs = [];
     let title;
     if (a.mode) {
-      title = `${a.mode === 'space' ? `Space ${a.space}` : 'Symbolic audit'}: ${a.mode === 'space' && a.verdict === 'sound' ? `sound up to k = ${a.k}`
-        : a.mode === 'space' && a.verdict === 'unsound' ? `unsound at k = ${a.k}` : a.verdict}`;
+      const B = a.bound || 'k';
+      title = `${a.mode === 'space' ? `Space ${a.space}` : 'Symbolic audit'}: ${a.mode === 'space' && a.verdict === 'sound' ? `sound up to ${B} = ${a.k}`
+        : a.mode === 'space' && a.verdict === 'unsound' ? `unsound at ${spaceAt(a)}` : a.verdict}`;
       paragraphs.push(symbolicDetail(a));
-      if (a.mode === 'space' && a.perK && a.perK.length) paragraphs.push({ class: 'note space-steps', text: 'Per k: ' + perKText(a.perK) });
+      if (a.mode === 'space' && a.perK && a.perK.length) paragraphs.push({ class: 'note space-steps', text: `Per ${B}: ` + perKText(a.perK) });
       if (w && w.instance != null) {
         const c = Object.entries(w.constants || {}).map(([k, v]) => `${k} = ${v}`).join(', ');
-        rows.push([`Instance (k = ${w.k ?? a.k})`, [w.instance, c && `constants ${c}`].filter(Boolean).join('; ') || '(no facts)', { class: 'witness-instance' }]);
+        rows.push([`Instance (${B} = ${w.k ?? a.k})`, [w.instance, c && `constants ${c}`].filter(Boolean).join('; ') || '(no facts)', { class: 'witness-instance' }]);
       }
     } else {
       title = a.verdict === 'sound' ? 'Audit: sound' : a.verdict === 'unsound' ? 'Audit: unsound' : 'Audit: limit';
@@ -257,7 +258,16 @@ export class Output {
 const plural = (n, word) => `${fmt(n)} ${word}${n === 1 ? '' : 's'}`;
 
 // The steps of a space audit, runs of sound steps joined: "1-11 sound (1 round each) · 12 unsound (3 rounds)".
-function perKText(rows) {
+function perKText(rows0) {
+  // with ranged parameters a k has one row per combination: one entry per k (its worst verdict)
+  const rows = [];
+  for (const r of rows0) {
+    const last = rows[rows.length - 1];
+    if (last && last.k === r.k) {
+      if (last.verdict === 'sound' && r.verdict !== 'sound') last.verdict = r.verdict;
+      if (last.rounds !== r.rounds) last.rounds = null;
+    } else rows.push({ ...r });
+  }
   const out = [];
   for (let i = 0; i < rows.length;) {
     const r = rows[i];
@@ -273,20 +283,27 @@ function perKText(rows) {
   return out.join(' · ');
 }
 
+// Where a space audit stopped: "n = 4", or "n = 4, m = 2" with ranged parameters.
+export function spaceAt(a) {
+  return [`${a.bound || 'k'} = ${a.k}`, ...Object.entries(a.params || {}).map(([x, v]) => `${x} = ${v}`)].join(', ');
+}
+
 // The panel's explanation under its heading (the result line already says the verdict).
 function symbolicDetail(a) {
   const steps = `${plural(a.rounds ?? 0, 'round')} of the inner loop, ${plural(a.refinements ?? 0, 'refinement')}${a.fallback ? ` (${plural(a.fallback, 'block')})` : ''}`;
   const link = a.link ? `Link ${a.link}${(a.kinds || []).length ? ` (refined with ${kindText(a.link, a.kinds)})` : ''}: ` : '';
   if (a.mode === 'space') {
-    const n = (a.perK || []).length;
-    // the first k of the space (its "from"): a space may start above k = 1
-    const k0 = n ? a.perK[0].k : a.k;
-    const range = n === 1 ? `k = ${a.k}` : k0 > 1 ? `k from ${k0} up to ${a.k}` : `k up to ${a.k}`;
-    const below = k0 > 1 ? `the values of k from ${k0} on below ${a.k} are sound (the space starts at k = ${k0})` : 'the smaller values of k are sound';
-    const what = a.verdict === 'sound' ? `every instance of the space for ${range} was checked; no refinement removes a solution on any of them. Larger instances are not covered.`
-      : a.verdict === 'unsound' ? (a.k === k0 && k0 > 1 ? `at k = ${a.k}, the first k of the space, a clause removes the lost solution below, on the instance shown.`
-        : `${below}; at k = ${a.k} a clause removes the lost solution below, on the instance shown.`)
-        : `no verdict at k = ${a.k}${a.reason ? ` (${a.reason})` : ''}${a.k === k0 ? '' : `; ${below}`}.`;
+    const B = a.bound || 'k';
+    const n = new Set((a.perK || []).map((r) => r.k)).size;
+    // the first value of the bound (the space's "from"): a space may start above 1
+    const k0 = (a.perK || []).length ? a.perK[0].k : a.k;
+    const range = n === 1 ? `${B} = ${a.k}` : k0 > 1 ? `${B} from ${k0} up to ${a.k}` : `${B} up to ${a.k}`;
+    const below = k0 > 1 ? `the values of ${B} from ${k0} on below ${a.k} are sound (the space starts at ${B} = ${k0})` : `the smaller values of ${B} are sound`;
+    const others = Object.keys(a.params || {}).length ? ` (with every value of ${Object.keys(a.params).join(', ')} in its range)` : '';
+    const what = a.verdict === 'sound' ? `every instance of the space for ${range}${others} was checked; no refinement removes a solution on any of them. Larger instances are not covered.`
+      : a.verdict === 'unsound' ? (a.k === k0 && k0 > 1 ? `at ${spaceAt(a)}, the first value of the space, a clause removes the lost solution below, on the instance shown.`
+        : `${below}; at ${spaceAt(a)} a clause removes the lost solution below, on the instance shown.`)
+        : `no verdict at ${spaceAt(a)}${a.reason ? ` (${a.reason})` : ''}${a.k === k0 ? '' : `; ${below}`}.`;
     return `${link}${what} Last step: ${steps}.`;
   }
   const what = a.verdict === 'sound' ? 'no candidate, counterexample and solution exist such that the clause removes the solution.'
@@ -299,10 +316,10 @@ function symbolicDetail(a) {
 export function symbolicText(a) {
   const steps = `${plural(a.rounds ?? 0, 'round')}, ${plural(a.refinements ?? 0, 'refinement')}${a.fallback ? ` (${plural(a.fallback, 'block')})` : ''}`;
   if (a.mode === 'space') {
-    if (a.verdict === 'sound') return `Space ${a.space}: sound for every instance up to k = ${a.k} (the strategy loses no solution on any of them).`;
-    if (a.verdict === 'unsound') return `Space ${a.space}: unsound at k = ${a.k}: a clause removes a solution on the instance shown.`;
-    if (a.verdict === 'budget') return `Space ${a.space}: no verdict at k = ${a.k} within the time budget (sound below it).`;
-    return `Space ${a.space}: ${a.verdict} at k = ${a.k}${a.reason ? `: ${a.reason}` : ''}.`;
+    if (a.verdict === 'sound') return `Space ${a.space}: sound for every instance up to ${a.bound || 'k'} = ${a.k} (the strategy loses no solution on any of them).`;
+    if (a.verdict === 'unsound') return `Space ${a.space}: unsound at ${spaceAt(a)}: a clause removes a solution on the instance shown.`;
+    if (a.verdict === 'budget') return `Space ${a.space}: no verdict at ${spaceAt(a)} within the time budget (sound below it).`;
+    return `Space ${a.space}: ${a.verdict} at ${spaceAt(a)}${a.reason ? `: ${a.reason}` : ''}.`;
   }
   if (a.verdict === 'sound') return `Symbolic audit: sound for every candidate and counterexample of this instance (${steps}).`;
   if (a.verdict === 'unsound') return `Symbolic audit: unsound. A clause removes a solution (${steps}).`;

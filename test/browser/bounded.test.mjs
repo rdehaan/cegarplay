@@ -41,7 +41,7 @@ test('S8: a space audit shows its k; the witness instance can be saved', async (
   await page.click('#audit-button');
   await settled(page);
   assert.equal(await page.$eval('#audit-panel', (e) => e.dataset.mode), 'space');
-  assert.match(await page.textContent('#audit-panel'), /Space n: sound up to k = 4/);
+  assert.match(await page.textContent('#audit-panel'), /Space n: sound up to n = 4/);
   assert.deepEqual(await historyAudit(page), ['sound ≤ 4']);
   // the too weak variant breaks at n = 2; its instance is kept as a regression instance
   await page.goto(server.url + 'index.html?nocoi=1&example=tutorial-weak-relevant');
@@ -50,7 +50,7 @@ test('S8: a space audit shows its k; the witness instance can be saved', async (
   await page.click('#audit-button');
   await settled(page);
   assert.equal(await page.$eval('#audit-panel', (e) => e.dataset.verdict), 'unsound');
-  assert.match(await page.textContent('#audit-panel'), /Space n: unsound at k = 2/);
+  assert.match(await page.textContent('#audit-panel'), /Space n: unsound at n = 2/);
   await page.$eval('#audit-panel .save-witness', (b) => b.click());   // the panel is in the Output tab
   const inst = await page.evaluate(() => window.cegarplay.project.instances.map((x) => [x.id, x.constants]));
   assert.deepEqual(inst, [['regression', { n: '2' }]]);
@@ -107,20 +107,20 @@ test('UI: modes a loop does not support are marked with the reason; next steps; 
   await page.fill('#space-bound', '3');
   await page.click('#audit-button');
   await settled(page);
-  assert.match(await page.textContent('#audit-panel .space-steps'), /Per k: 1-3 sound \(1 round each\)/);
+  assert.match(await page.textContent('#audit-panel .space-steps'), /Per size: 1-3 sound \(1 round each\)/);
   assert.deepEqual(await page.$$eval('#audit-panel .audit-next button', (bs) => bs.map((b) => b.dataset.action)), ['larger-bound']);
   // an enumerative audit that is sound offers the space
   await page.selectOption('#audit-mode', 'enumerate');
   await page.click('#audit-button');
   await settled(page);
   assert.deepEqual(await page.$$eval('#audit-panel .audit-next button', (bs) => bs.map((b) => b.dataset.action)), ['space']);
-  // the Spaces editor: one parameter, so no Bound choice; Preview shows instances as facts
+  // the Spaces editor: the bound named by its own name; Preview shows instances as facts
   await page.evaluate(() => { const t = document.getElementById('tab9'); t.checked = true; t.dispatchEvent(new Event('change', { bubbles: true })); });
-  assert.equal(await page.isVisible('#space-bound-param'), false);
+  assert.equal(await page.$eval('#space-params .space-bound-pick:checked', (r) => r.value), 'size');
   await page.fill('#space-preview-k', '2');
   await page.click('#preview-space-button');
   await page.waitForSelector('[data-space-instance="6"]');
-  assert.match(await page.textContent('#space-status'), /6 of more instances at k = 2/);
+  assert.match(await page.textContent('#space-status'), /6 of more instances at size = 2/);
   assert.match(await page.textContent('[data-space-instance="1"]'), /arg\(1\)\.\s*arg\(2\)\./);
   assert.deepEqual(errors, []);
   await context.close();
@@ -170,19 +170,53 @@ test('UI: a space\'s First k: the audit starts there, the bar and the verdict sa
   await page.dispatchEvent('#space-from', 'change');
   assert.equal(await page.evaluate(() => window.cegarplay.project.spaces[0].from), 3);
   await page.selectOption('#audit-mode', 'space');
-  assert.equal(await page.textContent('#space-bound-label'), 'k = 3 up to');
+  assert.equal(await page.textContent('#space-bound-label'), 'every instance with n = 3 up to');
   await page.fill('#space-bound', '5');
   await page.click('#audit-button');
   await settled(page);
   const text = await page.textContent('#audit-panel');
-  assert.match(text, /Space n: sound up to k = 5/);
-  assert.match(text, /every instance of the space for k from 3 up to 5 was checked/);
-  assert.match(text, /Per k: 3-5 sound/);
+  assert.match(text, /Space n: sound up to n = 5/);
+  assert.match(text, /every instance of the space for n from 3 up to 5 was checked/);
+  assert.match(text, /Per n: 3-5 sound/);
   // back to 1: the field is dropped again
   await page.fill('#space-from', '1');
   await page.dispatchEvent('#space-from', 'change');
   assert.equal(await page.evaluate(() => 'from' in window.cegarplay.project.spaces[0]), false);
-  assert.equal(await page.textContent('#space-bound-label'), 'up to k =');
+  assert.equal(await page.textContent('#space-bound-label'), 'every instance with n up to');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('UI: the space editor picks the bound by name, takes a value or a range, and chooses the regression constants', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=9');
+  page.on('dialog', (d) => d.accept('m'));
+  await page.click('#add-space-param-button');
+  const sp = () => page.evaluate(() => structuredClone(window.cegarplay.project.spaces[0]));
+  assert.deepEqual(Object.keys((await sp()).params), ['n', 'm']);
+  // a range for m
+  await page.fill('#space-params .space-param-value[data-param="m"]', '1..3');
+  await page.dispatchEvent('#space-params .space-param-value[data-param="m"]', 'change');
+  assert.deepEqual((await sp()).ranges, { m: [1, 3] });
+  await page.fill('#space-params .space-param-value[data-param="m"]', 'x');
+  await page.dispatchEvent('#space-params .space-param-value[data-param="m"]', 'change');
+  assert.match(await page.textContent('#space-status'), /m: a whole number, or a range lo\.\.hi/);
+  // m stays out of a regression instance
+  await page.uncheck('#space-params .space-param-keep[data-param="m"]');
+  assert.deepEqual((await sp()).regression, { m: false });
+  // the run bar names the bound, and says that the space audit uses no instance
+  await page.selectOption('#audit-mode', 'space');
+  assert.equal(await page.textContent('#space-bound-label'), 'every instance with n up to');
+  assert.match(await page.textContent('#instance-select-label'), /the space audit uses none/);
+  // a witness at n = 2, m = 3: the instance gets n but not m
+  const id = await page.evaluate(() => window.cegarplay.instancesTab.saveWitness({ space: 'n', k: 2, bound: 'n', params: { m: 3 }, witness: { instance: '' } }));
+  assert.deepEqual(await page.evaluate((x) => window.cegarplay.project.instances.find((i) => i.id === x).constants, id), { n: '2' });
+  // m becomes the bound: the run bar follows
+  await page.check('#space-params .space-bound-pick[value="m"]');
+  assert.equal((await sp()).bound, 'm');
+  assert.equal((await sp()).ranges, undefined);
+  assert.equal(await page.textContent('#space-bound-label'), 'every instance with m up to');
+  await page.selectOption('#audit-mode', 'enumerate');
+  assert.equal(await page.textContent('#instance-select-label'), 'Instance:');
   assert.deepEqual(errors, []);
   await context.close();
 });

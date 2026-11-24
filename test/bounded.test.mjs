@@ -183,3 +183,34 @@ test('the time budget holds inside one solve: the verifier ends itself with "bud
   assert.ok(v.t >= 2 && v.t < 3, `t = ${v.t}`);
   assert.ok(Number.isInteger(v.rounds) && Number.isInteger(v.refinements));
 });
+
+test('spaces with ranges: every value of a ranged parameter at each k; the failing values are returned', async () => {
+  const { verifySpace } = await import('../js/bounded.js');
+  const P = await import('../js/project.js');
+  const p = P.load({ format: 'cegarplay', fragments: [{ name: 'shared', text: '' }],
+    spaces: [{ name: 's', text: '', params: { n: 'int', m: 'int', c: 'int' }, bound: 'n', defaults: { c: 7 }, ranges: { m: [1, 3] }, regression: { m: false } }] });
+  const sp = p.spaces[0];
+  assert.deepEqual(P.spaceCombos(sp), [{ m: 1, c: 7 }, { m: 2, c: 7 }, { m: 3, c: 7 }]);
+  assert.equal(P.spaceKeeps(sp, 'm'), false);
+  assert.equal(P.spaceKeeps(sp, 'n'), true);
+  // the format checks ranges and regression
+  const bad = (extra) => () => P.load({ format: 'cegarplay', fragments: [], spaces: [{ name: 's', text: '', params: { n: 'int', m: 'int' }, ...extra }] });
+  assert.throws(bad({ ranges: { n: [1, 2] } }), /the bound n has no range/);
+  assert.throws(bad({ ranges: { m: [3, 1] } }), /lo <= hi/);
+  assert.throws(bad({ regression: { m: 'no' } }), /true or false/);
+  // a stub audit: unsound at n = 2 with m = 3 only
+  const seen = [];
+  const r = await verifySpace(p, { space: 's', from: 1, to: 3, env: {
+    runBounded: async (q, { k, params }) => {
+      seen.push(`${k}/${params.m}`);
+      assert.equal(q.settings.constants.m, String(params.m));
+      assert.equal(q.settings.constants.n, String(k));
+      return k === 2 && params.m === 3 ? { verdict: 'unsound', witness: { instance: '' } } : { verdict: 'sound', rounds: 1 };
+    } } });
+  assert.deepEqual(seen, ['1/1', '1/2', '1/3', '2/1', '2/2', '2/3']);
+  assert.equal(r.verdict, 'unsound');
+  assert.equal(r.k, 2);
+  assert.deepEqual(r.params, { m: 3, c: 7 });
+  assert.equal(r.bound, 'n');
+  assert.equal(r.perK.length, 6);
+});

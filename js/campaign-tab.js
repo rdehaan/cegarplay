@@ -221,7 +221,7 @@ export class CampaignTab {
   }
 
   exportCSV() {
-    const blob = new Blob([matrixCSV(resultMatrix(this.rows, this.metric))], { type: 'text/csv' });
+    const blob = new Blob([matrixCSV(resultMatrix(this.rows, this.metric, this.order()))], { type: 'text/csv' });
     const a = h('a', { href: URL.createObjectURL(blob), download: `${this.current || 'campaign'}-${this.metric}.csv` });
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -261,9 +261,9 @@ export class CampaignTab {
   drawMatrix() {
     this.matrixBox.textContent = '';
     if (!this.rows.length) return;
-    const m = resultMatrix(this.rows, this.metric);
+    const m = resultMatrix(this.rows, this.metric, this.order());
     const pick = h('select', { id: 'campaign-metric', 'aria-label': 'Matrix metric' },
-      ...[['time', 'time (s)'], ['candidates', 'candidates'], ['refinements', 'refinements']].map(([v, l]) => h('option', { value: v, selected: v === this.metric }, l)));
+      ...[['time', 'time (s)'], ['solutions', 'solutions'], ['candidates', 'candidates'], ['refinements', 'refinements']].map(([v, l]) => h('option', { value: v, selected: v === this.metric }, l)));
     pick.addEventListener('change', () => { this.metric = pick.value; this.drawMatrix(); });
     const rows = m.rows.slice();
     if (this.sortBy === 'instance') rows.sort((a, b) => String(a.instance).localeCompare(String(b.instance), undefined, { numeric: true }));
@@ -279,14 +279,24 @@ export class CampaignTab {
       t.append(h('tr', { 'data-instance': r.instance }, h('td', {}, r.instance || '(project)'), ...m.variants.map((v) => {
         const c = r.cells[v];
         if (!c) return h('td', {}, '');
-        const text = !c.solved ? c.outcome : c.value === null ? '–' : this.metric === 'time' ? `${c.value.toFixed(3)}` : fmt(Math.round(c.value));
+        const text = this.metric === 'solutions' ? (c.value === null ? '–' : fmt(Math.round(c.value)) + (c.solved ? '' : ` (${c.outcome})`))
+          : !c.solved ? c.outcome : c.value === null ? '–' : this.metric === 'time' ? `${c.value.toFixed(3)}` : fmt(Math.round(c.value));
         const cls = ['num', r.best === v ? 'best' : '', c.disagree ? 'disagree' : '', c.solved ? '' : 'unsolved'].filter(Boolean).join(' ');
         const tip = `${r.instance} / ${v}: ${c.outcome}, ${fmt(c.solutions)} solutions${c.cost ? `, cost ${c.cost.join(' ')}` : ''}${c.n > 1 ? `, median of ${c.n} seeds` : ''}${c.disagree ? '; disagrees with another variant' : ''}`;
         return h('td', { class: cls, title: tip, 'data-variant': v }, text + (c.disagree ? ' ✗' : ''));
       })));
     }
     this.matrixBox.append(h('div', { class: 'instances-bar' }, h('b', {}, 'Instance × variant '), h('label', {}, 'Show ', pick),
-      h('span', { class: 'note' }, ' the best solved cell per row in bold (none on a tie); click a heading to sort')), t);
+      h('span', { class: 'note' }, this.metric === 'solutions' ? ' the number of solutions each run found (median over seeds); click a heading to sort'
+        : ' the best solved cell per row in bold (none on a tie); click a heading to sort')), t);
+  }
+
+  // the order of the project file: the suite's variants as listed, then the project's variants;
+  // the instances as in the Instances tab
+  order() {
+    const p = this.app.project, s = this.suite;
+    const variants = [...((s && s.variants) || []), 'default', ...(p.variants || []).map((v) => v.name)];
+    return { variants: [...new Set(variants)], instances: (p.instances || []).map((x) => x.id) };
   }
 
   // the progress grid's tooltip: the cell under the mouse

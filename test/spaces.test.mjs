@@ -86,7 +86,7 @@ test('S7: tools/audit.mjs --space', () => {
   assert.equal(out.k, 2);
   assert.equal(run(['tutorial-first-run', '--space', 'nope', '--bound', '4']).status, 2);
   const sp = run(['af-preferred', '--space', 'frameworks', '--bound', '2', '--from', '2']).stdout.toString();
-  assert.match(sp, /^k = 2: sound/m);
+  assert.match(sp, /^size = 2: sound/m);
 });
 
 // Mutation test: one relevant/1 (or clause/3) rule deleted at a time. A mutation that the

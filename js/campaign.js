@@ -334,7 +334,9 @@ export function inconsistencies(rows) {
 // cell is { value, n, solved, outcome, disagree, solutions, cost }; best names the variant with
 // the smallest value among the solved cells of the row (null when none is solved or on a tie).
 export const solvedRow = (r) => !r.skipped && r.outcome === 'finished';
-export function resultMatrix(rows, metric = 'time') {
+// order: { variants: [...], instances: [...] } lists the names in the order to show (the project's);
+// names not listed follow in the order of the rows.
+export function resultMatrix(rows, metric = 'time', order = {}) {
   const bad = new Set(inconsistencies(rows).flatMap((b) => b.rows.map((r) => r.key)));
   const variants = [], instances = [];
   const by = new Map();
@@ -346,6 +348,13 @@ export function resultMatrix(rows, metric = 'time') {
     if (!by.has(k)) by.set(k, []);
     by.get(k).push(r);
   }
+  const byOrder = (list, want) => {
+    if (!Array.isArray(want) || !want.length) return list;
+    const at = (x) => { const i = want.indexOf(x); return i < 0 ? want.length : i; };
+    return list.map((x, i) => [x, i]).sort((a, b) => at(a[0]) - at(b[0]) || a[1] - b[1]).map((x) => x[0]);
+  };
+  variants.splice(0, variants.length, ...byOrder(variants, order.variants));
+  instances.splice(0, instances.length, ...byOrder(instances, order.instances));
   const out = instances.map((instance) => {
     const cells = {};
     for (const v of variants) {
@@ -364,7 +373,7 @@ export function resultMatrix(rows, metric = 'time') {
       if (!c || !c.solved || c.value === null) continue;
       if (best === null || c.value < cells[best].value) { best = v; ties = 0; } else if (c.value === cells[best].value) ties++;
     }
-    if (ties) best = null;
+    if (ties || metric === 'solutions') best = null;   // fewer solutions is not better
     return { instance, cells, best };
   });
   return { metric, variants, rows: out };

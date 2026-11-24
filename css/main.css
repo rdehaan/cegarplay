@@ -1131,7 +1131,7 @@ body[data-last-mode="audit"] .audit-only { display: block; }
 .book-only { display: none !important; }
 
 /* Compare variants (js/variants.js, js/compare.js) */
-.variant-compare { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 4px; }
+.variant-compare { margin-top: 14px; }
 .compare-result { margin-top: 6px; }
 .compare-block { margin: 6px 0; }
 .compare-block summary { cursor: pointer; }

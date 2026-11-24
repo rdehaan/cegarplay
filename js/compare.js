@@ -90,7 +90,10 @@ export function rowInstance(r) {
 // The text the run history's Audit column shows for a verdict.
 export function verdictText(a) {
   if (!a) return '';
-  if (a.mode === 'space') return a.verdict === 'sound' ? `sound ≤ ${a.k}` : a.verdict === 'unsound' ? `unsound at k = ${a.k}` : a.verdict;
+  if (a.mode === 'space') {
+    const at = [`${a.bound || 'k'} = ${a.k}`, ...Object.entries(a.params || {}).map(([x, v]) => `${x} = ${v}`)].join(', ');
+    return a.verdict === 'sound' ? `sound ≤ ${a.k}` : a.verdict === 'unsound' ? `unsound at ${at}` : a.verdict;
+  }
   if (a.mode) return `${a.verdict} (symbolic)`;
   return a.verdict;
 }

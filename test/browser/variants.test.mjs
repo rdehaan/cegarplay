@@ -57,18 +57,11 @@ test('the editor adds, checks, renames and deletes a variant', async () => {
   await context.close();
 });
 
-test('Compare variants: line diffs of fragments and loop script, and the latest results per instance', async () => {
+test('Compare variants: line diffs of fragments and loop script; Close; results are in the Campaign tab', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=af-preferred&tab=4');
-  // the project as written and the variant one-clause, each run with all solutions on "example"
-  await page.selectOption('#instance-select', 'example');
-  await page.selectOption('#solutions-select', '0');
-  for (const v of ['', 'one-clause']) {
-    await page.selectOption('#variant-select', v);
-    await page.click('#run-button');
-    assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
-  }
   assert.equal(await page.isVisible('#variant-compare'), true);
   assert.deepEqual(await page.$$eval('#compare-a option', (l) => l.map((o) => o.value)), ['', 'reference', 'one-clause', 'three-cex', 'record']);
+  assert.equal(await page.isVisible('#compare-close-button'), false);
   await page.selectOption('#compare-a', '');
   await page.selectOption('#compare-b', 'one-clause');
   await page.click('#compare-button');
@@ -76,17 +69,23 @@ test('Compare variants: line diffs of fragments and loop script, and the latest 
   assert.match(await page.textContent('#compare-summary'), /one-clause against the project as written: 1 fragment, the loop script differ\./);
   assert.deepEqual(await page.$$eval('#compare-result [data-compare]', (l) => l.map((d) => d.dataset.compare)), ['fragment:check', 'loop']);
   assert.ok(await page.$$eval('[data-compare="loop"] .diff-add', (l) => l.length) > 0);
-  // the run history's latest count on "example", per side
-  const row = await page.$$eval('#compare-results tr[data-instance="example"] td', (l) => l.map((x) => x.textContent));
-  assert.equal(row.length, 5);
-  assert.match(row[1], /^\d+$/);
-  assert.match(row[2], /^\d+$/);
-  assert.equal(row[1], row[2]);      // a sound variant: the same count
+  // what the sides compute is compared in the Campaign tab
+  assert.match(await page.textContent('#compare-results-note'), /compares the texts only/);
+  assert.equal(await page.$('#compare-results'), null);
+  await page.click('#compare-campaign-link');
+  assert.equal(await page.$eval('#tab10', (e) => e.checked), true);
+  await page.click('label[for="tab4"]');
   // both sides the same
   await page.selectOption('#compare-b', '');
   assert.equal(await page.textContent('#compare-summary'), 'Both sides are the same.');
   // the live region announces the result
   assert.equal(await page.getAttribute('#compare-result', 'aria-live'), 'polite');
+  // Close: nothing compared
+  await page.selectOption('#compare-b', 'one-clause');
+  await page.click('#compare-close-button');
+  assert.equal(await page.$eval('#compare-result', (e) => e.childElementCount), 0);
+  assert.equal(await page.$eval('#compare-b', (s) => s.value), '');
+  assert.equal(await page.isVisible('#compare-close-button'), false);
   assert.deepEqual(errors, []);
   await context.close();
 });

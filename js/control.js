@@ -233,7 +233,7 @@ export class Control {
       if (spaceRun) {
         const sp = (project.spaces || []).find((x) => x.name === spaceRun.name);
         if (!sp) throw new Error(`no space named ${spaceRun.name}`);
-        project = deriveSpace(project, sp.name, { [spaceBound(sp)]: spaceRun.k }, { variant: variant !== undefined ? variant : pickedVariant(project) });
+        project = deriveSpace(project, sp.name, { ...(spaceRun.params || {}), [spaceBound(sp)]: spaceRun.k }, { variant: variant !== undefined ? variant : pickedVariant(project) });
       } else {
         // an instance stored as a recipe gets its facts from its generator first
         project = await resolveProject(project, instance, (p, o) => app.engine.exec(p, o), app.genLua());
@@ -298,7 +298,7 @@ export class Control {
     app.output.clear();
     app.output.trace.clear(project.settings.trace);
     app.stats.start({});
-    app.output.result(mode === 'audit' ? 'Auditing…' : mode === 'bounded' ? (spaceRun ? `Symbolic audit of space ${spaceRun.name} at k = ${spaceRun.k}…` : 'Symbolic audit…') : 'Running…');
+    app.output.result(mode === 'audit' ? 'Auditing…' : mode === 'bounded' ? (spaceRun ? `Symbolic audit of space ${spaceRun.name} at ${spaceRun.at || `k = ${spaceRun.k}`}…` : 'Symbolic audit…') : 'Running…');
     this.mode = mode;
     document.body.dataset.lastMode = mode;   // shows the audit notes in Statistics and Observatory
     this.audit = null;
@@ -548,6 +548,7 @@ export class Control {
     const sp = (project.spaces || []).find((x) => x.name === name);
     if (!sp) { this.runMessage('Not started: the project has no space of that name.'); return null; }
     const from = sp.from ?? 1;
+    const bound = spaceBound(sp);
     const to = Math.max(from, Math.floor(Number($('space-bound') && $('space-bound').value) || (sp.expected && sp.expected.k) || from));
     const b = this.beginBatch('space audit');
     if (!b) return null;
@@ -555,9 +556,10 @@ export class Control {
     try {
       result = await verifySpace(project, { space: sp.name, from, to, env: {
         engineRun: (p, o) => app.engine.exec(p, o),
-        runBounded: async (_p, { k }) => {
-          this.batchProgress(`k = ${k} of ${to}`);
-          const r = await this.run({ mode: 'bounded', spaceRun: { name: sp.name, k }, noHistory: true });
+        runBounded: async (_p, { k, params }) => {
+          const at = [`${bound} = ${k}`, ...Object.entries(params || {}).map(([a, v]) => `${a} = ${v}`)].join(', ');
+          this.batchProgress(`${at} (${bound} up to ${to})`);
+          const r = await this.run({ mode: 'bounded', spaceRun: { name: sp.name, k, params, at }, noHistory: true });
           if (b.cancelled || !r) throw new BatchStopped();
           last = r;
           // a step that the time backstop ended (one solve call longer than the budget): budget
@@ -574,10 +576,11 @@ export class Control {
       this.runMessage(msg); app.output.result(msg, 'error');
       return null;
     }
-    // the constants of the space at k (a constants-only space has no facts: they are its instance)
-    const consts = { ...(sp.defaults || {}), [spaceBound(sp)]: result.k };
+    // the constants of the space at k (a constants-only space has no facts: they are its instance),
+    // with the values of the ranged parameters at which it failed
+    const consts = { ...(sp.defaults || {}), ...(result.params || {}), [bound]: result.k };
     const witness = result.witness ? { ...result.witness, constants: Object.fromEntries(Object.entries(consts).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])) } : null;
-    const A = { ...(result.last || {}), verdict: result.verdict, mode: 'space', space: sp.name, k: result.k, witness, reason: result.reason, perK: result.perK };
+    const A = { ...(result.last || {}), verdict: result.verdict, mode: 'space', space: sp.name, k: result.k, bound, params: result.params || null, witness, reason: result.reason, perK: result.perK };
     this.audit = A;
     app.output.auditVerdict(A);
     app.output.result(symbolicText(A), result.verdict === 'unsound' ? 'error' : '');
