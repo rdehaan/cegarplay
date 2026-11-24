@@ -1322,6 +1322,13 @@ draw(note("A triangle survives.")) :- kind(reject).
 "views": [ { "name": "view", "fragments": ["shared", "view"] } ]
 ```
 
+A view is made and edited in the Observatory, not in the Programs tab: **New view** starts one (a
+fragment of the view's name, with comments on what goes where, reading `shared`), **Rename** and
+**Delete** act on the selected view and its rules, and **Edit this view** opens its rules in an
+editor, with checkboxes for the program fragments it reads. The drawing follows as you type. A
+fragment that a view names and the loop script does not use is such a view fragment: it is not
+listed in the Programs tab, which says where the views are edited.
+
 Marks: `node/1`, `edge/2`, `cell/2`, `item/2`, `rank/3`, `attr/3` (keys `fill`, `stroke`,
 `label`, `weight`; a fill or stroke value is a class, coloured by first use), `emph/1`, `ghost/1`,
 `note/1`, `layout/1` (`grid`, `list`, `circle`, `layers`, `graph`), `pos/3`. **Show** switches

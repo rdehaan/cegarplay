@@ -64,10 +64,35 @@ export class Editors {
     this.serious.clear();
     this.loop.session.clearAnnotations();
     this.container.textContent = '';
+    this.project = project;
+    const vc = document.getElementById('view-fragments');
+    if (vc) vc.textContent = '';
     for (const f of project.fragments) this.addBlock(f);
     this.setLoop(project.loop);
     this.setReadOnly(this.readOnly);
     this.updateTabMarkers();
+    const n = project.fragments.filter((f) => this.isViewFragment(f.name)).length;
+    const note = document.getElementById('view-fragments-note');
+    if (note) note.hidden = !n;
+    this.resizeShown();
+    if (this.app.views && this.app.views.editorsBuilt) this.app.views.editorsBuilt();
+  }
+
+  // An editor built while its box has no size (a hidden tab, or before layout) stays a few
+  // pixels high until it is resized; resize the ones that are on screen.
+  resizeShown() {
+    for (const ed of this.allEditors()) if (ed.container.offsetParent !== null) ed.resize(true);
+  }
+
+  // A view fragment: one that a view names and that the loop script does not use. It is edited
+  // with its view in the Observatory tab (js/view-panel.js), not in the Programs tab.
+  isViewFragment(name, project = this.project || this.app.project) {
+    if (!project || DEFAULT_FRAGMENTS.includes(name) || name === INSTANCE_FRAGMENT) return false;
+    if (!(project.views || []).some((v) => (v.fragments || []).includes(name))) return false;
+    const word = new RegExp(`\\b${name}\\b`);
+    if (word.test((project.loop && project.loop.text) || '')) return false;
+    if ((project.variants || []).length && word.test(JSON.stringify(project.variants))) return false;
+    return true;
   }
 
   setLoop(loop) {
@@ -81,10 +106,11 @@ export class Editors {
 
   addBlock(f) {
     const name = f.name;
+    const inView = this.isViewFragment(name);
     const info = DEFAULT_FRAGMENTS.includes(name)
       ? el('a', { href: '#', class: 'modal-link', 'data-open': `modal-${name}`, title: 'About this fragment', 'aria-label': `About the ${name} fragment` }, '') : '';
     const btn = (label, title, fn) => el('button', { class: 'control-button frag-tool', title, onclick: () => fn(name) }, label);
-    const tools = el('span', { class: 'fragment-tools' },
+    const tools = inView ? '' : el('span', { class: 'fragment-tools' },
       btn('↑', 'Move up', (n) => this.move(n, -1)),
       btn('↓', 'Move down', (n) => this.move(n, 1)),
       btn('Rename', 'Rename this fragment', (n) => this.rename(n)),
@@ -93,7 +119,9 @@ export class Editors {
     const desc = el('p', { class: 'fragment-description' }, f.description || '');
     const box = el('div', { class: 'editor', id: `editor-${name}` });
     const block = el('div', { class: 'fragment', 'data-fragment': name }, heading, desc, box);
-    this.container.append(block);
+    const vc = inView && document.getElementById('view-fragments');
+    if (vc) block.classList.add('view-fragment');
+    (vc || this.container).append(block);
     const editor = makeEditor(box, 'ace/mode/gringo');
     editor.setValue(f.text || '', -1);
     editor.session.getUndoManager().reset();
@@ -101,6 +129,7 @@ export class Editors {
       this.clearFor(name);
       this.app.dirty && this.app.dirty();
       if (this.app.control && !this.readOnly) this.app.control.scheduleFragmentCheck(name);
+      if (this.app.views && this.app.views.fragmentEdited) this.app.views.fragmentEdited(name);
     });
     this.fragments.set(name, { editor, block, heading, desc });
   }
@@ -127,6 +156,7 @@ export class Editors {
     if (!b) document.getElementById('edit-as-lua-button').disabled = this.loopLanguage === 'lua';
     if (this.app && this.app.instancesTab) this.app.instancesTab.setReadOnly(b);
     if (this.app && this.app.variants) this.app.variants.setReadOnly(b);
+    if (this.app && this.app.views) this.app.views.setReadOnly(b);
   }
 
   // ---- annotations ---------------------------------------------------------
@@ -196,12 +226,12 @@ export class Editors {
     this.app.projectChanged && this.app.projectChanged();
   }
 
-  askName(question, current = '') {
+  askName(question, current = '', what = 'fragment') {
     const n = (window.prompt(question, current) || '').trim();
-    if (!n) return null;
+    if (!n || n === current) return null;
     if (!FRAGMENT_NAME.test(n)) { window.alert('A fragment name starts with a lower case letter and contains only lower case letters, digits and _.'); return null; }
     if (n === INSTANCE_FRAGMENT) { window.alert(`The name ${n} is reserved for the facts of an instance (Instances tab).`); return null; }
-    if (this.app.project.fragments.some((f) => f.name === n)) { window.alert(`There is already a fragment called ${n}.`); return null; }
+    if (this.app.project.fragments.some((f) => f.name === n)) { window.alert(`There is already a fragment called ${n}${what === 'view' ? ' (a view\'s rules are a fragment of that name)' : ''}.`); return null; }
     return n;
   }
 
@@ -211,7 +241,7 @@ export class Editors {
     if (!n) return;
     this.withProject((p) => p.fragments.push({ name: n, text: '' }));
     const b = this.fragments.get(n);
-    if (b) { b.block.scrollIntoView({ block: 'center' }); b.editor.focus(); }
+    if (b) { b.editor.resize(true); b.block.scrollIntoView({ block: 'center' }); b.editor.focus(); }
   }
 
   rename(name) {

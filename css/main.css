@@ -1175,3 +1175,10 @@ summary:focus-visible, a:focus-visible {
 /* the run history's row of the run the tabs show */
 #history-table tr.shown-row td { background: var(--hint-bg); font-weight: 600; }
 .chart-empty-note { font-style: italic; }
+/* the editor of the selected domain view (js/view-panel.js) */
+.view-edit { margin: 8px 0; border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; }
+.view-edit > summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+.view-reads { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; margin: 6px 0; }
+.view-read { white-space: nowrap; }
+.view-fragment h3 { font-size: 14px; }
+.view-fragment .fragment-description { display: none; }

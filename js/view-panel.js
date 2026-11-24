@@ -23,6 +23,21 @@ const svg = (tag, attrs = {}, text) => {
   return e;
 };
 
+// What "New view" starts with: it runs as it is (one note per step) and says what goes where.
+const NEW_VIEW = `% A view: rules that derive marks draw(M). See Manual: Writing views.
+
+#program scene.
+% What every step shares, from the instance and the program fragments it reads:
+% draw(node(X)) :- node(X).
+% draw(edge(X,Y)) :- edge(X,Y).
+% draw(cell(R,C)) :- cell(R,C).
+
+#program frame.
+% One step: cand(A) for the candidate's atoms, cex(A), kind(K), step(I).
+% draw(attr(node(X), fill, chosen)) :- cand(in(X)).
+draw(note(K)) :- kind(K).
+`;
+
 export class ViewPanel {
   constructor(app, root) {
     this.app = app;
@@ -39,7 +54,7 @@ export class ViewPanel {
     this.root.hidden = false;
     this.root.textContent = '';
     this.select = h('select', { id: 'view-select', 'aria-label': 'View' });
-    this.select.addEventListener('change', () => { this.current = this.select.value; this.resetScene(); this.show(); });
+    this.select.addEventListener('change', () => { this.current = this.select.value; this.resetScene(); this.syncEditor(); this.show(); });
     this.slider = h('input', { type: 'range', id: 'view-step', min: 1, max: 1, value: 1, 'aria-label': 'Step' });
     this.slider.addEventListener('input', () => {
       const st = this.steps[Number(this.slider.value) - 1];
@@ -66,28 +81,180 @@ export class ViewPanel {
     this.notes = h('ul', { id: 'view-notes', class: 'view-notes' });
     this.svgBoxB = h('div', { id: 'view-svg-b', class: 'view-svg', hidden: true });
     this.msg = h('p', { id: 'view-message', class: 'note', role: 'status' });
+    this.buttons = {
+      add: h('button', { class: 'control-button small-button', id: 'view-new', title: 'A new view with a starting point for its rules', onclick: () => this.newView() }, 'New view'),
+      suggest: h('button', { class: 'control-button small-button', id: 'view-suggest', title: 'Write a view from the predicates of the last run', onclick: () => this.suggest() }, 'Suggest a view'),
+      rename: h('button', { class: 'control-button small-button', id: 'view-rename', onclick: () => this.renameView() }, 'Rename'),
+      remove: h('button', { class: 'control-button small-button', id: 'view-delete', onclick: () => this.deleteView() }, 'Delete'),
+    };
+    // The view's own rules are edited here, not in the Programs tab: Editors puts the blocks of
+    // view fragments into #view-fragments (js/editors.js, isViewFragment); this panel shows those
+    // of the selected view. An edit redraws the view.
+    this.reads = h('div', { id: 'view-reads', class: 'view-reads' });
+    this.ownBox = h('div', { id: 'view-fragments' });
+    this.editBox = h('details', { id: 'view-edit', class: 'view-edit' },
+      h('summary', {}, 'Edit this view'),
+      h('p', { class: 'note' }, 'The view\'s rules derive marks ', h('code', {}, 'draw(M)'), ': under ', h('code', {}, '#program scene.'),
+        ' what every step shares (', h('code', {}, 'node(X)'), ', ', h('code', {}, 'edge(X,Y)'), ', ', h('code', {}, 'cell(R,C)'), ', ...), under ',
+        h('code', {}, '#program frame.'), ' what one step changes (', h('code', {}, 'attr(E,fill,C)'), ', ', h('code', {}, 'emph(E)'), ', ', h('code', {}, 'note(T)'),
+        ', ...), from the step\'s ', h('code', {}, 'cand/1'), ', ', h('code', {}, 'cex/1'), ', ', h('code', {}, 'kind/1'), ' and ', h('code', {}, 'step/1'),
+        '. The view redraws as you type. Manual: ', h('a', { href: '#manual-writing-views' }, 'Writing views'), '.'),
+      this.reads, this.ownBox);
+    this.editBox.addEventListener('toggle', () => { if (this.editBox.open) requestAnimationFrame(() => this.app.editors.resizeShown()); });
     this.root.append(
       h('h3', {}, 'Domain view'),
-      h('p', { class: 'note' }, 'A view is an ASP fragment that turns a step into marks (draw/1): a scene part for what stays, a frame part for one step. ',
-        'Drag a node to fix its place.'),
-      h('div', { class: 'instances-bar' }, this.select,
-        h('button', { class: 'control-button small-button', id: 'view-suggest', onclick: () => this.suggest() }, 'Suggest a view'),
-        this.showBox, this.stepBox, this.stepLabel, this.solBox, this.solLabel),
+      h('p', { class: 'note' }, 'A view draws each step of the run as a picture of the problem\'s domain. It is not part of the loop: ',
+        'its rules only read the steps. Drag a node to fix its place.'),
+      h('div', { class: 'instances-bar' }, this.select, this.buttons.add, this.buttons.suggest, this.buttons.rename, this.buttons.remove),
+      h('div', { class: 'instances-bar' }, this.showBox, this.stepBox, this.stepLabel, this.solBox, this.solLabel),
+      this.editBox,
       this.msg, h('div', { class: 'view-pair' }, this.svgBox, this.svgBoxB), this.notes);
   }
 
   get views() { return this.app.project.views || []; }
   get view() { return this.views.find((v) => v.name === this.current) || null; }
 
-  load() {
+  // keep: keep the selected view if it still exists (after a fragment or view operation)
+  load({ keep = false } = {}) {
+    const was = this.current;
     this.select.textContent = '';
     for (const v of this.views) this.select.append(h('option', { value: v.name }, v.name));
     this.select.hidden = !this.views.length;
-    this.current = this.views[0] ? this.views[0].name : null;
+    this.current = keep && this.views.some((v) => v.name === was) ? was : (this.views[0] ? this.views[0].name : null);
+    this.select.value = this.current || '';
+    if (!keep || was !== this.current) this.resetScene();
+    if (!keep) { this.steps = []; this.updateSteps(); }
+    this.msg.textContent = this.views.length ? '' : 'This project has no view. "New view" starts one; "Suggest a view" writes one from the predicates of a run.';
+    this.syncEditor();
+  }
+
+  // the editor part follows the selected view: its own fragments, the program fragments it reads
+  syncEditor() {
+    const v = this.view, ed = this.app.editors;
+    this.editBox.hidden = !v;
+    this.buttons.rename.hidden = this.buttons.remove.hidden = !v;
+    this.svgBox.hidden = !v;
+    if (!v) this.notes.textContent = '';
+    for (const b of this.ownBox.querySelectorAll('.fragment')) b.hidden = !v || !(v.fragments || []).includes(b.dataset.fragment);
+    this.reads.textContent = '';
+    if (!v) return;
+    const program = this.app.project.fragments.filter((f) => !ed.isViewFragment(f.name) && f.name !== 'instance');
+    const boxes = program.map((f) => {
+      const c = h('input', { type: 'checkbox', value: f.name, checked: (v.fragments || []).includes(f.name), disabled: ed.readOnly });
+      c.addEventListener('change', () => this.setReads());
+      return h('label', { class: 'view-read' }, c, ' ', f.name);
+    });
+    this.reads.append(h('span', { class: 'note' }, 'Reads the program fragments '), ...boxes,
+      h('span', { class: 'note' }, ' (and the instance of the last run). Its own rules:'));
+    for (const b of Object.values(this.buttons)) b.disabled = ed.readOnly;
+  }
+
+  setReadOnly() { this.syncEditor(); }
+
+  // Open the Observatory with the editor of the view that owns fragment name (else the selected one).
+  openEditor(name) {
+    const v = name && this.views.find((x) => (x.fragments || []).includes(name) && this.app.editors.isViewFragment(name));
+    if (v && v.name !== this.current) { this.current = v.name; this.select.value = v.name; this.resetScene(); this.syncEditor(); }
+    if (this.openTab) this.openTab();
+    this.editBox.open = true;
+    requestAnimationFrame(() => {
+      this.app.editors.resizeShown();
+      const f = name && this.app.editors.fragments.get(name);
+      (f ? f.block : this.editBox).scrollIntoView({ block: 'start' });
+      if (f) f.editor.focus();
+      this.show();
+    });
+  }
+
+  // called by Editors.build: the fragment blocks were made again
+  editorsBuilt() { this.load({ keep: true }); }
+
+  setReads() {
+    const v = this.view;
+    if (!v) return;
+    const on = new Set([...this.reads.querySelectorAll('input:checked')].map((c) => c.value));
+    const own = (v.fragments || []).filter((n) => this.app.editors.isViewFragment(n));
+    v.fragments = [...this.app.project.fragments.map((f) => f.name).filter((n) => on.has(n)), ...own];
+    this.app.dirty();
+    this.show();
+  }
+
+  fragmentEdited(name) {
+    const v = this.view;
+    if (!v || !(v.fragments || []).includes(name)) return;
+    clearTimeout(this.editTimer);
+    this.editTimer = setTimeout(() => this.show(), 400);
+  }
+
+  freeName(base) {
+    const p = this.app.project;
+    const taken = (n) => p.fragments.some((f) => f.name === n) || this.views.some((v) => v.name === n);
+    let name = base;
+    for (let i = 2; taken(name); i++) name = `${base}${i}`;
+    return name;
+  }
+
+  askViewName(question, current = '') {
+    const n = this.app.editors.askName(question, current, 'view');
+    if (n && this.views.some((v) => v.name === n)) { window.alert(`There is already a view called ${n}.`); return null; }
+    return n;
+  }
+
+  // add a view with its own fragment, select it and open its editor
+  addView(name, text, reads) {
+    this.app.editors.withProject((proj) => {
+      proj.fragments.push({ name, text, description: '' });
+      proj.views = [...(proj.views || []), { name, fragments: [...reads, name] }];
+    });
+    this.current = name;
+    this.load({ keep: true });
     this.resetScene();
-    this.steps = [];
-    this.updateSteps();
-    this.msg.textContent = this.views.length ? '' : 'This project has no view. "Suggest a view" writes one from the predicates of the interface.';
+    this.editBox.open = true;
+    requestAnimationFrame(() => this.app.editors.resizeShown());
+    this.show();
+  }
+
+  newView() {
+    if (this.app.editors.readOnly) return;
+    const name = this.askViewName('Name of the new view:', this.freeName('view'));
+    if (!name) return;
+    const reads = this.app.project.fragments.some((f) => f.name === 'shared') ? ['shared'] : [];
+    this.addView(name, NEW_VIEW, reads);
+  }
+
+  renameView() {
+    const v = this.view;
+    if (!v || this.app.editors.readOnly) return;
+    const n = this.askViewName(`New name for view ${v.name}:`, v.name);
+    if (!n) return;
+    const old = v.name;
+    this.app.editors.withProject((proj) => {
+      const pv = proj.views.find((x) => x.name === old);
+      pv.name = n;
+      // its own fragment of the same name follows
+      const f = proj.fragments.find((x) => x.name === old);
+      if (f && this.app.editors.isViewFragment(old, proj)) {
+        f.name = n;
+        for (const x of proj.views) x.fragments = x.fragments.map((y) => (y === old ? n : y));
+      }
+    });
+    this.current = n;
+    this.load({ keep: true });
+  }
+
+  deleteView() {
+    const v = this.view;
+    if (!v || this.app.editors.readOnly) return;
+    if (!window.confirm(`Delete view ${v.name} and its rules?`)) return;
+    const name = v.name;
+    this.app.editors.withProject((proj) => {
+      const own = v.fragments.filter((n) => this.app.editors.isViewFragment(n, proj));
+      proj.views = proj.views.filter((x) => x.name !== name);
+      const still = new Set(proj.views.flatMap((x) => x.fragments));
+      proj.fragments = proj.fragments.filter((f) => !own.includes(f.name) || still.has(f.name));
+    });
+    this.load({ keep: true });
+    this.show();
   }
 
   resetScene() { this.scene = null; this.sceneKey = null; this.palette = new Palette(); this.svgBox.textContent = ''; this.els = new Map(); }
@@ -350,15 +517,6 @@ export class ViewPanel {
     const all = await this.engine.exec(shared + '\n', VIEW_OPTIONS);
     try { facts = JSON.parse(all.out.join('\n')).Call[0].Witnesses[0].Value; } catch { facts = []; }
     const text = suggestView(iface, facts);
-    let name = 'view';
-    for (let i = 2; p.fragments.some((f) => f.name === name); i++) name = `view${i}`;
-    app.editors.withProject((proj) => {
-      proj.fragments.push({ name, text, description: 'A domain view (Observatory tab): a scene part and a frame part that draw/1 marks.' });
-      proj.views = [...(proj.views || []), { name, fragments: ['shared', name] }];
-    });
-    this.load();
-    this.current = name; this.select.value = name;
-    this.resetScene();
-    this.show();
+    this.addView(this.freeName('view'), text, p.fragments.some((f) => f.name === 'shared') ? ['shared'] : []);
   }
 }

@@ -9,6 +9,15 @@ recorded step into marks; the Observatory draws them as SVG.
 them, by convention `view`, holds the view's rules); `positions` maps an element term to `[x, y]`
 in the 0..1000 square (written by dragging a node). `load` checks the names and the fragments.
 
+Editing (`js/view-panel.js`, since 2026-11-24): a **view fragment** is one that a view names and the
+loop script (and the variants) do not mention (`Editors.isViewFragment`). Its editor is built in
+the Observatory's domain view (`#view-fragments`, under *Edit this view*), not in the Programs tab,
+which shows a note with a button to it; `?fragment=<view fragment>` opens it there. The panel
+shows the editors of the selected view, checkboxes for the program fragments it reads (`fragments`
+minus its own, in project order), and New view / Rename / Delete (a rename renames its own fragment
+of the same name; a delete removes its own fragments no other view names). An edit redraws the view
+after 400 ms. The project format is unchanged.
+
 ## 2. Programs
 
 - The **scene**: the instance's facts (when the last run used an instance), the named fragments,
@@ -80,7 +89,7 @@ the last run or replay, else its `R` events (with the interface atoms of the `I`
 the domain of a unary interface predicate gives a graph with `fill` from the candidate and `emph`
 from the clause; an interface predicate with two integer arguments gives a grid; `p(X, V)` an
 attribute of node X; otherwise one node per interface atom. "Suggest a view" in the Observatory
-adds it as a fragment and a views entry.
+adds it as a fragment and a views entry, and opens its editor.
 
 Library views (`tools/library.mjs VIEWS`): `guide-03-hit-clique`, `guide-03-relevant-all`,
 `guide-04-one-node`, `tutorial-first-run`, `tutorial-weak-relevant`, `clique-colouring`,

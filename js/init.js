@@ -181,6 +181,13 @@ bindKeys(app.cursor, () => $('tab11').checked || document.body.classList.contain
 app.anatomy = new Anatomy(app, $('anatomy'));
 app.campaign = new CampaignTab(app);
 app.views = new ViewPanel(app, $('domain-view'));
+// A view's rules are edited in the Observatory (an Advanced tab): open it for this visit.
+app.views.openTab = () => {
+  if ($('tab11').hidden) showTabs('advanced', true, { store: false });
+  $('tab11').checked = true;
+  $('tab11').dispatchEvent(new Event('change', { bubbles: true }));
+};
+$('open-view-editor').addEventListener('click', () => app.views.openEditor());
 app.space = new SpaceView(app, $('candidate-space'));
 app.observatory = new ObservatoryBar(app, $('cursor-region'));
 
@@ -966,6 +973,7 @@ function openFragment(name) {
     requestAnimationFrame(() => { resizeVisibleEditors(); app.editors.loop.focus(); });
     return;
   }
+  if (app.editors.isViewFragment(name)) { app.views.openEditor(name); return; }
   const f = app.editors.fragments.get(name);
   if (!f) {
     status('load-status', `Loaded example "${app.project.title}". It has no fragment "${name}"; the link's fragment= is ignored.`);

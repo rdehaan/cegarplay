@@ -1812,3 +1812,20 @@ number count". Found and fixed:
   `directions.test.mjs` (cursor label), `observatory.test.mjs`, `test/space.test.mjs`. New:
   `stats.test.mjs` "what the tabs show".
 - Full suite: 1128 tests, 1119 pass, 0 fail, 9 skipped. `make-examples` leaves `examples/` unchanged.
+
+## Editing views in the Observatory; fragment height (2026-11-24, on request)
+
+- Ctrl+S / Cmd+S no longer opens the browser's save dialog (capture listener in `init.js`).
+- Bug: a fragment added in the Programs tab was 2 px high (its ACE editor was built before layout and
+  never resized). `Editors.build` now resizes the editors on screen (`resizeShown`).
+- Views are made and edited in the Observatory's domain view, not in the Programs tab. A **view
+  fragment** (named by a view, not mentioned by the loop script or the variants:
+  `Editors.isViewFragment`) has its editor under **Edit this view** (`#view-fragments`); the
+  Programs tab shows a note with **Edit the views** (opens the Observatory for the visit).
+  New view (commented skeleton that runs), Rename, Delete, checkboxes for the program fragments a
+  view reads; an edit redraws after 400 ms; `?fragment=view` opens the view's editor. Project
+  format unchanged. Docs: `manual.md` (Writing views), `docs/spec-views.md` section 1,
+  `guide/howto-view.html`; book regenerated.
+- New tests: `test/browser/observatory.test.mjs` (view editing, fragment height, `?fragment=view`).
+  All 121 browser tests pass. Node tests that need `reference/` (not cloned in this container) fail
+  the same way without the change.

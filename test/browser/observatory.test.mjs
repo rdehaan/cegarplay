@@ -109,3 +109,50 @@ test('a space audit to the candidate space: which run the map shows, the refinem
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('a view is edited in the Observatory, not in the Programs tab; a new fragment has its height', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=3', { advanced: false });
+  await page.waitForSelector('#fragments [data-fragment="check"]');
+  // the view's rules are not among the program fragments; a note leads to them
+  assert.deepEqual(await page.$$eval('#fragments .fragment', (l) => l.map((x) => x.dataset.fragment)), ['shared', 'abstraction', 'glue', 'check']);
+  assert.equal(await page.isVisible('#view-fragments-note'), true);
+  // a fragment added in the Programs tab is not a few pixels high
+  page.once('dialog', (d) => d.accept('extra'));
+  await page.click('#add-fragment-button');
+  assert.ok(await page.$eval('[data-fragment="extra"] .editor', (e) => e.getBoundingClientRect().height) > 30);
+  // the note's button opens the Observatory (an Advanced tab) with the view's editor
+  await page.click('#open-view-editor');
+  await page.waitForFunction(() => document.getElementById('tab11').checked && document.getElementById('view-edit').open);
+  await page.waitForFunction(() => document.querySelector('#view-fragments [data-fragment="view"] .editor').getBoundingClientRect().height > 100);
+  assert.deepEqual(await page.$$eval('#view-reads input:checked', (l) => l.map((x) => x.value)), ['shared']);
+  // run, then edit the view: it redraws
+  await page.click('#run-button');
+  assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
+  await page.waitForFunction(() => document.getElementById('view-notes').textContent.length > 0);
+  await page.evaluate(() => { const ed = window.cegarplay.editors.fragments.get('view').editor; ed.navigateFileEnd(); ed.insert('\ndraw(note(hello)).\n'); });
+  await page.waitForFunction(() => /hello/.test(document.getElementById('view-notes').textContent));
+  // New view: its own fragment, shown instead of the first one's; rename and delete follow it
+  page.once('dialog', (d) => d.accept('second'));
+  await page.click('#view-new');
+  await page.waitForFunction(() => document.getElementById('view-select').value === 'second');
+  assert.deepEqual(await page.$$eval('#view-fragments .fragment:not([hidden])', (l) => l.map((x) => x.dataset.fragment)), ['second']);
+  await page.waitForFunction(() => /reject/.test(document.getElementById('view-notes').textContent));
+  page.once('dialog', (d) => d.accept('third'));
+  await page.click('#view-rename');
+  await page.waitForFunction(() => document.getElementById('view-select').value === 'third');
+  assert.deepEqual(await page.evaluate(() => window.cegarplay.project.views.map((v) => [v.name, v.fragments])), [['view', ['shared', 'view']], ['third', ['shared', 'third']]]);
+  page.once('dialog', (d) => d.accept());
+  await page.click('#view-delete');
+  await page.waitForFunction(() => document.getElementById('view-select').value === 'view');
+  assert.equal(await page.evaluate(() => window.cegarplay.project.fragments.some((f) => f.name === 'third')), false);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('?fragment=view opens the view\'s editor in the Observatory', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=guide-03-hit-clique&fragment=view', { advanced: false });
+  await page.waitForFunction(() => document.getElementById('tab11').checked && document.getElementById('view-edit').open);
+  assert.equal(await page.isVisible('#view-fragments [data-fragment="view"] .ace_editor'), true);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
