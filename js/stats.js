@@ -535,7 +535,7 @@ export class Stats {
       rows.length ? rows : [['(no finished runs yet)', '', '', '', '', '', '', '', '', '']], [3, 4, 5, 6, 7, 8]);
     // the lab notebook (a note per run) and the pick of two runs to compare
     if (this.history.length) {
-      t.querySelector('thead tr').append(h('th', {}, 'Compare'), h('th', {}, 'Note'));
+      t.querySelector('thead tr').append(h('th', {}, 'Compare'), h('th', {}, 'Note'), h('th', {}, ''));
       this.compareSel = (this.compareSel || []).filter((i) => i < this.history.length);
       [...t.querySelectorAll('tbody tr')].forEach((tr, i) => {
         const r = this.history[i];
@@ -547,7 +547,10 @@ export class Stats {
         });
         const note = h('input', { type: 'text', class: 'history-note-input', value: r.note || '', placeholder: 'why I tried this', 'aria-label': `Note on run ${i + 1}` });
         note.addEventListener('change', () => { r.note = note.value; if (this.app.dirty) this.app.dirty(); });
-        tr.append(h('td', {}, box), h('td', {}, note));
+        const del = h('button', { class: 'control-button small-button history-delete', type: 'button', title: 'Remove this row from the run history',
+          'aria-label': `Remove run ${i + 1} from the run history` }, '✕');
+        del.addEventListener('click', () => this.removeRun(i));
+        tr.append(h('td', {}, box), h('td', {}, note), h('td', {}, del));
       });
     }
     this.renderCompare();
@@ -590,6 +593,18 @@ export class Stats {
     const show = (v) => (v == null ? '–' : typeof v === 'number' ? (Number.isInteger(v) ? fmt(v) : v.toFixed(3)) : String(v));
     this.table('history-compare', ['', `Run ${this.compareSel[0] + 1} (${a.time})`, `Run ${this.compareSel[1] + 1} (${b.time})`, 'Change'],
       rows.map((r) => ({ attrs: r[0] === 'Solutions' && r[3] ? { class: 'mismatch' } : {}, cells: [r[0], show(r[1]), show(r[2]), r[3]] })), [1, 2, 3]);
+  }
+
+  // Remove one row (no question: it is one run, and the button is next to it). The marks that
+  // point at rows by position (the run the tabs show, the two picked to compare) follow.
+  removeRun(i) {
+    if (i < 0 || i >= this.history.length) return false;
+    this.history.splice(i, 1);
+    if (this.shownIndex != null) this.shownIndex = this.shownIndex === i ? null : this.shownIndex > i ? this.shownIndex - 1 : this.shownIndex;
+    this.compareSel = (this.compareSel || []).filter((x) => x !== i).map((x) => (x > i ? x - 1 : x));
+    this.renderHistory();
+    if (this.app.dirty) this.app.dirty(false);
+    return true;
   }
 
   // Remove every row, after a question: the rows are the only record of earlier runs (the

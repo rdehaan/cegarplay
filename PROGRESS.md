@@ -1832,3 +1832,25 @@ number count". Found and fixed:
 - Thin separators: a 1 px line (`--border`) above each part heading (`h3`) of a tab, except in the
   Tutorial and Manual, a `summary` heading, a view's fragment heading and the history comparison
   (`css/main.css`, end).
+
+## Requests of 2026-11-24 (afternoon)
+
+- **Empty relevant set:** `G.clause(M, X)` with no relevant atom now gives the empty clause
+  (`empty_ok`; rejecting with it ends the search) instead of the error `relevant/1 derived nothing
+  for link G`. Whether that is right (no solution left) is the audit's question: it already counted
+  these counterexamples (`empty`) and reports a solution they cut as unsound. Same in
+  `tools/cegarcheck.py`. The step is a `reject` (`r`) with no literals. Docs: manual, tutorial,
+  spec-runtime, chat-package START-HERE. Tests changed on purpose: `refine`, `runtime`, `recording`,
+  `chat-package`.
+- **Reset everything** (Control tab, last block): removes every `cegarplay*` localStorage key and
+  the campaign rows, then loads the page without query or hash (`app.factoryReset`).
+- **Variants:** the Compare selects follow renames, adds and deletes, and a comparison on screen is
+  made again; a swap naming a fragment that does not exist yet is kept as typed (`pending`, outside
+  the project, which would not load with it) and applied when `Editors.build` makes that fragment.
+- **Run history:** ✕ per row (`Stats.removeRun`), no question; the ▶ mark and Compare picks follow.
+- **Snapshots:** a line says where the project stands (the same as snapshot X / differs from all /
+  none yet), updated 300 ms after each edit (comparison without the run history, normal forms
+  cached per snapshot id); the matching snapshot is marked and its Restore disabled; the list has a
+  title; Undo is on its own line saying what replaced the project; **Last action (time)** above the
+  list.
+- Full suite: 1125 pass, 0 fail, 9 skipped (with the reference clones and Python clingo). `make-replays` changes only timings (not committed); `guide-numbers --check` passes; book regenerated.

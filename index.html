@@ -204,17 +204,20 @@
       <p id="workspace-status" class="status-line"></p>
 
       <h3>Snapshots</h3>
-      <p class="note">Copies of this project to go back to, kept in this browser (at most 20 per project).
-        Restoring one, or loading another project over an edited one, first takes an automatic snapshot;
-        <b>Undo</b> brings that project back.</p>
+      <p class="note">A snapshot is a copy of the project as it is now, kept in this browser (at most 20 per
+        project). <b>Restore</b> puts a copy back in place of the project you are editing; that project is first
+        kept as an automatic snapshot, so nothing is lost, and <b>Undo</b> brings it straight back.</p>
+      <p id="snapshot-current" class="snapshot-current"></p>
+      <p id="snapshot-status" class="status-line" role="status" aria-live="polite"></p>
       <div class="inline-controls">
         <input type="text" id="snapshot-name" placeholder="name (optional)" size="24" aria-label="Snapshot name">
         <button class="control-button" id="snapshot-save-button">Take snapshot</button>
-        <button class="control-button" id="snapshot-undo-button" hidden>Undo</button>
       </div>
-      <ul id="snapshot-list" class="workspace-list"></ul>
+      <p id="snapshot-undo" class="snapshot-undo" hidden><span id="snapshot-undo-text"></span>
+        <button class="control-button" id="snapshot-undo-button">Undo</button></p>
+      <p id="snapshot-list-title" class="note"></p>
+      <ul id="snapshot-list" class="workspace-list snapshot-list"></ul>
       <div id="snapshot-others"></div>
-      <p id="snapshot-status" class="status-line" role="status" aria-live="polite"></p>
 
       <h3>Recordings</h3>
       <button class="control-button" id="download-recording-button" disabled>Download recording</button>
@@ -243,6 +246,12 @@
         Advanced mode</label> <span class="note">adds the <b>Observatory</b> (a run as pictures: anatomy, call
         timeline, domain view, candidate space) and the <b>Campaign</b> tab (grids of runs on several engines)</span></p>
       <p class="note">These choices are kept in this browser.</p>
+
+      <h3>Reset</h3>
+      <p class="note">Start from a clean slate: forget everything CegarPlay keeps in this browser (the
+        project being edited and its run history, the workspace, all snapshots, the campaign rows, the
+        choices of tabs and theme) and start again as on a first visit. Download what you want to keep first.</p>
+      <button class="control-button danger-button" id="factory-reset-button">Reset everything</button>
     </section>
 
     <!-- 2. Tutorial -->

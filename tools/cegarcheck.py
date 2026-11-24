@@ -306,10 +306,8 @@ class Checker:
         if mode == "block":
             return [self.block_interface(M)]
         if mode == "clause":
-            c = [(-l if v else l) for l, v, r in zip(self.src, M["v"], X["rel"]) if r]
-            if not c:
-                raise CheckError(f"relevant/1 derived nothing for link {Ln}")
-            return [c]
+            # no relevant atom: the empty clause, which ends the search (as in the runtime)
+            return [[(-l if v else l) for l, v, r in zip(self.src, M["v"], X["rel"]) if r]]
         if mode == "clauses":
             byid = {}
             for a in X["atoms"]:

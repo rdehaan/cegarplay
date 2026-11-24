@@ -76,6 +76,7 @@ export class Editors {
     if (note) note.hidden = !n;
     this.resizeShown();
     if (this.app.views && this.app.views.editorsBuilt) this.app.views.editorsBuilt();
+    if (this.app.variants && this.app.variants.fragmentsChanged) this.app.variants.fragmentsChanged();
   }
 
   // An editor built while its box has no size (a hidden tab, or before layout) stays a few

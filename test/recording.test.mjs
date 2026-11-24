@@ -124,13 +124,15 @@ test('every fast example has a replay file whose final S equals a live run (time
   }
 });
 
-test('an x step is recorded when relevant/1 derives nothing', async () => {
+test('relevant/1 derives nothing: the empty clause is recorded as a refinement with no literals', async () => {
   const p = ex('tutorial-first-run', { record: { steps: 'all', n: 0, calls: false } });
   const c = p.fragments.find((f) => f.name === 'check');
   c.text = c.text.replace(/^relevant.*$/gm, '');
   const r = await H.runProject(p);
-  assert.equal(H.done(r).outcome, 'error');
-  const x = recOf(r).steps.filter((s) => s.k === 'x');
-  assert.equal(x.length, 1);
-  assert.deepEqual(x[0].q, []);
+  assert.equal(H.done(r).outcome, 'finished');
+  const steps = recOf(r).steps;
+  assert.equal(steps.filter((s) => s.k === 'x').length, 0);
+  const last = steps[steps.length - 1];
+  assert.equal(last.k, 'r');
+  assert.deepEqual(last.q, []);
 });

@@ -40,7 +40,7 @@ test('cegarcheck: refuses raw Lua and multi-solver scripts', { skip: !HAVE_CLING
   }
 });
 
-test('cegarcheck: reports relevant/1 that derives nothing', { skip: !HAVE_CLINGO && 'no Python clingo' }, () => {
+test('cegarcheck: relevant/1 that derives nothing gives the empty clause (the search ends)', { skip: !HAVE_CLINGO && 'no Python clingo' }, () => {
   const p = JSON.parse(H.read('examples/starter.json'));
   const c = p.fragments.find((f) => f.name === 'check');
   c.text = c.text.replace(/relevant\(.*\n/g, '');
@@ -49,8 +49,8 @@ test('cegarcheck: reports relevant/1 that derives nothing', { skip: !HAVE_CLINGO
   fs.writeFileSync(file, JSON.stringify(p));
   const r = check(file);
   fs.rmSync(dir, { recursive: true });
-  assert.equal(r.code, 1);
-  assert.match(r.out, /relevant\/1 derived nothing for link G/);
+  assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.out, /derived nothing/);
 });
 
 test('cegarcheck: models C.core.minimal and refuses loops it does not model', { skip: !HAVE_CLINGO && 'no Python clingo' }, () => {

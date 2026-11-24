@@ -249,3 +249,29 @@ test('what the tabs show: the marked history row, the Summary and notes after an
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('a run history row can be removed on its own; the shown mark and the compare picks follow', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?fresh=1&tab=6');
+  for (let k = 0; k < 3; k++) {
+    await page.click('#run-button');
+    assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
+  }
+  const rows = () => page.$$eval('#history-table tbody tr', (l) => l.filter((r) => !/no finished runs/.test(r.textContent)).length);
+  assert.equal(await rows(), 3);
+  // pick runs 1 and 3 to compare; the last run (3) is the shown one
+  const picks = page.locator('#history-table .history-compare-pick');
+  await picks.nth(0).check();
+  await picks.nth(2).check();
+  await page.locator('#history-table .history-delete').nth(1).click();
+  assert.equal(await rows(), 2);
+  assert.equal(await page.evaluate(() => window.cegarplay.stats.history.length), 2);
+  assert.deepEqual(await page.evaluate(() => window.cegarplay.stats.compareSel), [0, 1]);
+  assert.equal(await page.evaluate(() => window.cegarplay.stats.shownIndex), 1);
+  assert.equal(await page.$$eval('#history-table tr[data-shown]', (l) => l.length), 1);
+  // removing the shown run: no row is marked
+  await page.locator('#history-table .history-delete').nth(1).click();
+  assert.equal(await rows(), 1);
+  assert.equal(await page.$$eval('#history-table tr[data-shown]', (l) => l.length), 0);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

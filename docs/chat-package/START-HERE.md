@@ -138,8 +138,8 @@ breaks as `\n`. After the block, give two or three sentences on what the example
    values make it a counterexample, both true ones and false ones. Too few is unsound: the
    clause can cut real solutions (see `example-tutorial-weak-relevant.json`). Too many is safe but slow.
 5. In a `#program refine(k).` part, every head contains `k`.
-6. `relevant/1` derives at least one atom in every counterexample (else the run fails with
-   `relevant/1 derived nothing for link G`).
+6. `relevant/1` derives at least one atom in every counterexample, unless no solution is left:
+   an empty relevant set gives the empty clause, which ends the search (the audit reports it).
 7. Keep the ground program small: constants small, domains bounded. Avoid `V = #sum { ... }`
    over atoms the solver guesses (each possible sum is grounded); compare instead
    (`#sum { ... } > E`).

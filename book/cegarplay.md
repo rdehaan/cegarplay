@@ -4008,7 +4008,7 @@ Replace the fragments step by step, running after each change:
 5. Add a few instances with their expected counts and check them with **Run all**; let **Fuzz** look for an instance that breaks the loop; write a suite to see how the run time grows (lessons 7 and 8).
 6. Let **Suggest a view** (Observatory) write a first picture of your problem, and adapt it.
 
-If a counterexample has no relevant atom, the run stops with `relevant/1 derived nothing for link G`, and the trace shows that candidate and counterexample. Your project is kept in this browser and comes back after a reload; download it (Control tab) to keep it for good, or **Copy share link** to send it.
+If a counterexample has no relevant atom, its clause is empty: the run ends there, with the solutions found so far. That is right only when no solution is left; the **Audit** tells you, and names a solution it would cut. Your project is kept in this browser and comes back after a reload; download it (Control tab) to keep it for good, or **Copy share link** to send it.
 
 ### Exercises that check themselves {#t12-tut-exercises}
 

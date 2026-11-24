@@ -87,7 +87,7 @@ export class Output {
         : w.kind === 'clause' || w.kind === 'core' ? 'The lost solution agrees with the candidate on every relevant atom, so the clause removes it too. An atom on which they differ should have been relevant.'
           : 'Grounding the refine part with these facts leaves the lost solution without a model.');
     }
-    if (a.empty) notes.push(`${fmt(a.empty)} counterexamples have no relevant atom (a run stops there with an error).`);
+    if (a.empty) notes.push(`${fmt(a.empty)} counterexamples have no relevant atom: a run adds the empty clause there, which ends the search (unsound when a solution is still left).`);
     resultCard(el, { verdict: a.verdict, title, paragraphs, rows, notes, actions: this.nextSteps(a) });
     // an audit does not run the loop: say so where its solutions and trace would be
     this.auditShown = true;

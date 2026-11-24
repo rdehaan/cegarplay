@@ -689,15 +689,10 @@ function Link:clause(M, X)
       idx[k] = j
     end
   end
-  if #c == 0 then
-    -- show the step in the trace (even past the trace cap), then fail
-    pcall(function()
-      emit("T", { i = rt.traced + 1, kind = "error", solver = M.solver.name, candidate = candidate_text(M),
-        counterexample = X.shown, literals = array({}) })
-      if REC then record("x", M.solver, nil, M) end
-    end)
-    fail("relevant/1 derived nothing for link " .. self.name)
-  end
+  -- no relevant atom: the empty clause. Rejecting with it ends the search (no candidate is
+  -- left), adding it leaves the solver without models. Whether that is right (no solution was
+  -- left) is for the audit to say: it counts these counterexamples and finds a solution they cut.
+  if #c == 0 then c.empty_ok = true end
   return c
 end
 

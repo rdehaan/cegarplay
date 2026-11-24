@@ -266,7 +266,7 @@ const STORE_KEY = 'cegarplay.project';
 let saveTimer = null;
 function saveNow() {
   saveTimer = null;
-  if ((!app.ready && !app.restoredOrLoaded) || app.saveBlocked) return;
+  if ((!app.ready && !app.restoredOrLoaded) || app.saveBlocked || app.resetting) return;
   let p;
   try { p = structuredClone(app.collect()); } catch { return; }
   // the run history is the part that grows: without it first, then say that nothing was kept
@@ -286,6 +286,28 @@ function saveNow() {
   e.textContent = note;
   e.hidden = !note;
 }
+// ---- reset everything ("factory settings") ------------------------------------------------
+// Forget all that this site keeps in this browser (localStorage keys cegarplay.*, the campaign
+// rows in IndexedDB) and load the page afresh, without query or hash.
+app.factoryReset = async () => {
+  const ok = window.confirm('Reset everything?\n\nThis forgets the project being edited and its run history, the workspace, ' +
+    'all snapshots, the campaign rows and your choices of tabs and theme, in this browser. It cannot be undone.');
+  if (!ok) return false;
+  app.resetting = true;
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  try {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('cegarplay')) keys.push(k); }
+    for (const k of keys) localStorage.removeItem(k);
+  } catch { /* no storage */ }
+  try {
+    const store = await Promise.race([app.campaign.storeP, new Promise((r) => setTimeout(() => r(null), 2000))]);
+    if (store) await store.clear();
+  } catch { /* no IndexedDB */ }
+  location.replace(location.pathname);
+  return true;
+};
+
 // edit = false: save, but the project was not edited (e.g. the run history changed)
 app.dirty = (edit = true) => {
   if (edit) {
@@ -295,7 +317,7 @@ app.dirty = (edit = true) => {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 800);
   if (shownTimer) clearTimeout(shownTimer);
-  shownTimer = setTimeout(() => { shownTimer = null; app.updateShown(); }, 300);
+  shownTimer = setTimeout(() => { shownTimer = null; app.updateShown(); if (edit) { try { renderSnapshots(); } catch { /* not yet */ } } }, 300);
 };
 let shownTimer = null;
 app.projectChanged = () => app.dirty();
@@ -556,6 +578,7 @@ function renderWorkspace() {
     ul.append(li);
   }
 }
+$('factory-reset-button').addEventListener('click', () => app.factoryReset());
 $('workspace-save-button').addEventListener('click', () => {
   if (!workspace) return;
   const name = $('workspace-name').value.trim();
@@ -580,6 +603,25 @@ renderWorkspace();
 let snapshots = null;
 try { snapshots = new Snapshots(localStorage); localStorage.getItem(SNAP_INDEX); } catch { snapshots = null; }
 let undoSnapshot = null;   // { text, what }
+// What happened last, with the time: the status line of the Snapshots block.
+const snapStatus = (text, error = false) => status('snapshot-status', `Last action (${new Date().toLocaleTimeString()}): ${text}`, error);
+// Which snapshot the project being edited is the same as (the run history aside). A snapshot
+// never changes, so its normal form is computed once per id.
+const snapNorm = new Map();
+const normText = (text) => { try { return Project.save(Project.load(text), { runs: false }); } catch { return null; } };
+function snapNormOf(id) {
+  if (!snapNorm.has(id)) { let t = null; try { t = snapshots.load(id); } catch { t = null; } snapNorm.set(id, t ? normText(t) : null); }
+  return snapNorm.get(id);
+}
+function currentNorm() { try { return Project.save(structuredClone(app.collect()), { runs: false }); } catch { return null; } }
+const when = (iso) => { const d = new Date(iso); return isNaN(d) ? String(iso) : d.toLocaleString(); }
+function showUndo() {
+  const u = undoSnapshot;
+  $('snapshot-undo').hidden = !u;
+  if (!u) return;
+  $('snapshot-undo-button').textContent = `Undo ${u.what}`;
+  $('snapshot-undo-text').textContent = `You replaced the project you were editing (${u.what}). `;
+}
 function projectText() {
   const p = structuredClone(app.collect());
   p.runs = app.stats.history;
@@ -600,9 +642,8 @@ function snapshotBefore(what) {
   if (!r) return;
   undoSnapshot = { text: r.text, what };
   renderSnapshots();
-  $('snapshot-undo-button').hidden = false;
-  $('snapshot-undo-button').textContent = `Undo ${what}`;
-  status('snapshot-status', r.kept ? `Kept the project before ${what} as an automatic snapshot.`
+  showUndo();
+  snapStatus(r.kept ? `Kept the project before ${what} as the automatic snapshot "before ${what}".`
     : `The project before ${what} could not be kept in browser storage; Undo still brings it back during this visit.`, !r.kept);
 }
 app.snapshotBefore = snapshotBefore;
@@ -618,20 +659,38 @@ function renderSnapshots() {
   let all = [];
   try { all = snapshots.all(); } catch { all = []; }
   const key = projectKey(app.project && app.project.title);
+  const now = currentNorm();
+  const same = (x) => now !== null && snapNormOf(x.id) === now;
   const item = (x, showProject) => {
-    const li = make('li', { 'data-snapshot': x.id });
-    const restore = make('button', { class: 'control-button small-button', 'aria-label': `Restore snapshot ${x.name}` }, 'Restore');
+    const cur = same(x);
+    const li = make('li', { 'data-snapshot': x.id, class: cur ? 'snapshot-is-current' : '' });
+    const restore = make('button', { class: 'control-button small-button', 'aria-label': `Restore snapshot ${x.name}`,
+      title: cur ? 'The project you are editing is already the same as this snapshot' : 'Put this copy in place of the project you are editing (that one is kept as an automatic snapshot first)' }, 'Restore');
+    if (cur) restore.disabled = true;
     restore.addEventListener('click', () => restoreSnapshot(x));
     const del = make('button', { class: 'control-button small-button', 'aria-label': `Delete snapshot ${x.name}` }, 'Delete');
     del.addEventListener('click', () => {
       try { snapshots.remove(x.id); } catch { /* gone already */ }
+      snapNorm.delete(x.id);
       renderSnapshots();
-      status('snapshot-status', `Deleted the snapshot ${x.name}.`);
+      snapStatus(`Deleted the snapshot ${x.name}.`);
     });
     li.append(make('b', {}, x.name), ' ', x.auto ? make('span', { class: 'note' }, '(automatic) ') : '',
-      showProject ? `(${x.project}) ` : '', make('span', { class: 'note' }, String(x.saved).slice(0, 19).replace('T', ' ')), ' ', restore, ' ', del);
+      showProject ? `(${x.project}) ` : '', make('span', { class: 'note' }, `${x.auto ? 'kept' : 'taken'} ${when(x.saved)}`), ' ',
+      cur ? make('span', { class: 'snapshot-badge' }, 'same as the project now') : '', ' ', restore, ' ', del);
     return li;
   };
+  // the line that says where the project being edited stands
+  const cur = $('snapshot-current');
+  const mineAll = all.filter((x) => x.project === key);
+  const match = mineAll.find(same);
+  cur.textContent = '';
+  if (match) cur.append('The project you are editing is the same as the snapshot ', make('b', {}, match.name), ` (${match.auto ? 'kept' : 'taken'} ${when(match.saved)}).`);
+  else if (mineAll.length) cur.append('The project you are editing differs from every snapshot of it below (the newest is ', make('b', {}, mineAll[0].name),
+    `, ${when(mineAll[0].saved)}). Take a snapshot to keep it as it is now.`);
+  else cur.append('No snapshot of this project yet. Take one to have a state to come back to.');
+  cur.dataset.state = match ? 'same' : mineAll.length ? 'differs' : 'none';
+  $('snapshot-list-title').textContent = mineAll.length ? `Snapshots of this project (${mineAll.length}), newest first:` : '';
   const mine = all.filter((x) => x.project === key), rest = all.filter((x) => x.project !== key);
   for (const x of mine) ul.append(item(x, false));
   if (!mine.length) ul.append(make('li', { class: 'note' }, 'No snapshots of this project yet.'));
@@ -648,32 +707,32 @@ function restoreSnapshot(x) {
   if (!guard()) return;
   let text;
   try { text = snapshots.load(x.id); } catch { text = null; }
-  if (!text) { status('snapshot-status', `The snapshot ${x.name} is no longer in this browser.`, true); renderSnapshots(); return; }
+  if (!text) { snapStatus(`The snapshot ${x.name} is no longer in this browser.`, true); renderSnapshots(); return; }
   let p;
-  try { p = Project.load(text); } catch (e) { status('snapshot-status', `${x.name}: ${e.message || e}`, true); return; }
+  try { p = Project.load(text); } catch (e) { snapStatus(`${x.name}: ${e.message || e}`, true); return; }
   snapshotBefore(`restoring ${x.name}`);
   app.setProject(p);
   urlForgetProject();
   renderSnapshots();
-  status('snapshot-status', `Restored the snapshot ${x.name}. Undo brings back the project as it was before.`);
+  snapStatus(`Restored the snapshot ${x.name}: it is now the project you are editing. Undo brings back the project as it was before.`);
 }
 $('snapshot-save-button').addEventListener('click', () => {
   const name = $('snapshot-name').value.trim() || new Date().toLocaleString();
   const r = takeSnapshot(name);
-  if (!r || !r.kept) { status('snapshot-status', 'Not kept: browser storage is full or unavailable; download the project to keep it.', true); return; }
+  if (!r || !r.kept) { snapStatus('Not kept: browser storage is full or unavailable; download the project to keep it.', true); return; }
   $('snapshot-name').value = '';
   renderSnapshots();
-  status('snapshot-status', `Took the snapshot ${name}${r.noRuns ? ' (without the run history: storage is full)' : ''}.`);
+  snapStatus(`Took the snapshot ${name}${r.noRuns ? ' (without the run history: storage is full)' : ''}.`);
 });
 $('snapshot-undo-button').addEventListener('click', () => {
   if (!undoSnapshot || !guard()) return;
   const u = undoSnapshot;
   undoSnapshot = null;
-  $('snapshot-undo-button').hidden = true;
-  try { app.setProject(Project.load(u.text)); } catch (e) { status('snapshot-status', `Undo failed: ${e.message || e}`, true); return; }
+  showUndo();
+  try { app.setProject(Project.load(u.text)); } catch (e) { snapStatus(`Undo failed: ${e.message || e}`, true); return; }
   urlForgetProject();
   renderSnapshots();
-  status('snapshot-status', `Undone: back to the project before ${u.what}.`);
+  snapStatus(`Undone: back to the project before ${u.what}.`);
 });
 renderSnapshots();
 

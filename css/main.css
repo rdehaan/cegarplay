@@ -1189,3 +1189,10 @@ main > section:not(#section-tutorial):not(#section-manual) h3:not(summary h3, .v
   margin-top: 18px;
   padding-top: 14px;
 }
+.control-button.danger-button { color: var(--error); border-color: var(--error); }
+/* Snapshots (Control tab): where the project stands, the snapshot it is the same as, the Undo */
+.snapshot-current { padding: 6px 10px; border-left: 3px solid var(--border-strong); background: var(--button-bg); }
+.snapshot-current[data-state="same"] { border-left-color: var(--ok); }
+.snapshot-undo { padding: 6px 10px; border-left: 3px solid var(--anchor); }
+.snapshot-list li.snapshot-is-current > b { text-decoration: underline; }
+.snapshot-badge { font-size: 12px; padding: 1px 6px; border-radius: 8px; border: 1px solid var(--ok); color: var(--ok); }

@@ -36,6 +36,10 @@ export class Variants {
     this.root = $('variants');
     this.select = $('variant-select');
     this.readOnly = false;
+    // swaps typed with a fragment that does not exist (yet): variant name -> text. They are not in
+    // the project (it would not load); fragmentsChanged() applies one as soon as it is valid.
+    this.pending = new Map();
+    this.pendingProject = null;
     this.select.addEventListener('change', () => {
       this.app.project.settings = { ...this.app.project.settings, variant: this.select.value };
       if (!this.select.value) delete this.app.project.settings.variant;
@@ -51,7 +55,7 @@ export class Variants {
     return v && this.list.some((x) => x.name === v) ? v : '';
   }
 
-  load() { this.render(); }
+  load() { this.pending.clear(); this.compareSides = null; this.render(); }
 
   setReadOnly(b) {
     this.readOnly = b;
@@ -63,6 +67,47 @@ export class Variants {
   changed() {
     this.app.dirty();
     this.renderPicker();
+    this.refreshCompare();
+  }
+
+  // The compare selects follow the variants (a rename, an add, a delete); a comparison on
+  // screen is made again, as it shows the variants as they are now.
+  refreshCompare() {
+    if (!this.cmpA || !this.cmpA.isConnected) return;
+    for (const [s, i] of [[this.cmpA, 0], [this.cmpB, 1]]) {
+      const want = (this.compareSides || [s.value, s.value])[i] ?? s.value;
+      s.textContent = '';
+      s.append(el('option', { value: '' }, '(the project as written)'));
+      for (const v of this.list) s.append(el('option', { value: v.name }, v.name));
+      s.value = this.list.some((v) => v.name === want) ? want : '';
+    }
+    if (this.cmpOut.childElementCount) { this.compareSides = [this.cmpA.value, this.cmpB.value]; this.showCompare(); }
+  }
+
+  // A swap as typed: { map } when it can be applied now, else { error, later } (later: it names
+  // a fragment that does not exist yet, so it is kept and tried again).
+  checkSwap(text) {
+    let map;
+    try { map = parsePairs(text); } catch (e) { return { error: `Swap: ${e.message}.` }; }
+    const names = this.app.project.fragments.map((f) => f.name);
+    const bad = [...new Set(Object.entries(map).flat().filter((n) => !names.includes(n)))];
+    if (bad.length) return { error: `Swap: no fragment named ${bad.join(', ')} yet; the swap is applied once it exists.`, later: true };
+    return { map };
+  }
+
+  // The fragments changed (Editors.build): a pending swap may be valid now; the cards show the
+  // fragments as they are.
+  fragmentsChanged() {
+    if (this.pendingProject !== this.app.project) { this.pending.clear(); return; }
+    let applied = false;
+    for (const [name, text] of [...this.pending]) {
+      const v = this.list.find((x) => x.name === name);
+      const r = v ? this.checkSwap(text) : { error: 'gone' };
+      if (!v) this.pending.delete(name);
+      else if (r.map) { v.swap = r.map; this.pending.delete(name); applied = true; }
+    }
+    if (this.pending.size || applied) this.render();
+    if (applied) this.changed();
   }
 
   renderPicker() {
@@ -206,17 +251,20 @@ export class Variants {
       ok();
       this.changed();
     });
-    const swap = el('input', { type: 'text', value: showPairs(v.swap), class: 'variant-swap', placeholder: 'check=check_alt, relevant=relevant_s3',
+    const swap = el('input', { type: 'text', value: this.pending.has(v.name) ? this.pending.get(v.name) : showPairs(v.swap), class: 'variant-swap', placeholder: 'check=check_alt, relevant=relevant_s3',
       'aria-label': `Swap of variant ${v.name}` });
     swap.addEventListener('change', () => {
-      let map;
-      try { map = parsePairs(swap.value); } catch (e) { return fail(`Swap: ${e.message}.`); }
-      const bad = Object.entries(map).flat().filter((n) => !fragments.includes(n));
-      if (bad.length) return fail(`Swap: no fragment named ${bad.join(', ')}.`);
-      v.swap = map;
+      const r = this.checkSwap(swap.value);
+      if (r.error) {
+        if (r.later) { this.pending.set(v.name, swap.value); this.pendingProject = this.app.project; } else this.pending.delete(v.name);
+        return fail(r.error);
+      }
+      this.pending.delete(v.name);
+      v.swap = r.map;
       ok();
       this.changed();
     });
+    if (this.pending.has(v.name)) { const r = this.checkSwap(this.pending.get(v.name)); if (r.error) fail(r.error); }
     const consts = el('input', { type: 'text', value: showPairs(v.constants), class: 'variant-constants', placeholder: 'n=5',
       'aria-label': `Constants of variant ${v.name}` });
     consts.addEventListener('change', () => {
@@ -274,6 +322,9 @@ export class Variants {
     const p = this.app.project;
     const v = this.list.find((x) => x.name === from);
     v.name = to;
+    if (this.pending.has(from)) { this.pending.set(to, this.pending.get(from)); this.pending.delete(from); }
+    const sides = this.compareSides || (this.cmpA && this.cmpA.isConnected ? [this.cmpA.value, this.cmpB.value] : null);
+    if (sides) this.compareSides = sides.map((x) => (x === from ? to : x));
     if (p.settings.variant === from) p.settings.variant = to;
     for (const s of p.suites || []) if (Array.isArray(s.variants)) s.variants = s.variants.map((x) => (x === from ? to : x));
     const card = this.root.querySelector(`[data-variant="${CSS.escape(from)}"]`);

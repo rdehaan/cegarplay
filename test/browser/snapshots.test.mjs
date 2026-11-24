@@ -75,3 +75,60 @@ test('snapshots: without browser storage the page works and Undo still brings th
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('Reset everything forgets the project, workspace, snapshots and choices; Cancel keeps them', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=1', { advanced: false });
+  await page.click('#snapshot-save-button');
+  await page.fill('#workspace-name', 'mine');
+  await page.click('#workspace-save-button');
+  await page.check('#section-control .advanced-checkbox');
+  await B.setEditor(page, 'editor-check', '% my edit\n');
+  await page.waitForFunction(() => localStorage.getItem('cegarplay.project') && /my edit/.test(localStorage.getItem('cegarplay.project')));
+  const ours = () => page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('cegarplay')).sort());
+  assert.ok((await ours()).length >= 4);
+  // Cancel: nothing changes
+  page.once('dialog', (d) => d.dismiss());
+  await page.click('#factory-reset-button');
+  assert.ok((await ours()).length >= 4);
+  // OK: the page starts again as on a first visit
+  page.once('dialog', (d) => d.accept());
+  await Promise.all([page.waitForNavigation(), page.click('#factory-reset-button')]);
+  await page.waitForSelector('body[data-ready="true"]');
+  assert.equal(new URL(page.url()).search, '');
+  assert.equal(await page.evaluate(() => window.cegarplay.project.title), 'Sum-free sets');
+  assert.equal(await page.isVisible('label[for="tab11"]'), false, 'Advanced mode is off again');
+  assert.equal(await page.$$eval('#snapshot-list li[data-snapshot]', (l) => l.length), 0);
+  assert.equal(await page.$$eval('#workspace-list li', (l) => l.length), 0);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('snapshots say where the project stands: none yet, the same as one, edited since', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=1');
+  page.on('dialog', (d) => d.accept());
+  const state = () => page.$eval('#snapshot-current', (e) => e.dataset.state);
+  assert.equal(await state(), 'none');
+  assert.match(await page.textContent('#snapshot-current'), /No snapshot of this project yet/);
+  await page.fill('#snapshot-name', 'first');
+  await page.click('#snapshot-save-button');
+  assert.equal(await state(), 'same');
+  assert.match(await page.textContent('#snapshot-current'), /is the same as the snapshot first/);
+  assert.match(await page.textContent('#snapshot-status'), /^Last action \(.*\): Took the snapshot first\./);
+  assert.equal(await item(page, 'first').locator('.snapshot-badge').count(), 1);
+  assert.equal(await item(page, 'first').locator('button:has-text("Restore")').isDisabled(), true);
+  // an edit: the line says so, and the snapshot can be restored
+  await B.setEditor(page, 'editor-check', (await checkText(page)) + '% edit\n');
+  await page.waitForFunction(() => document.getElementById('snapshot-current').dataset.state === 'differs');
+  assert.match(await page.textContent('#snapshot-current'), /differs from every snapshot/);
+  await item(page, 'first').locator('button:has-text("Restore")').click();
+  assert.equal(await state(), 'same');
+  assert.equal(await page.isVisible('#snapshot-undo-button'), true);
+  assert.match(await page.textContent('#snapshot-undo'), /You replaced the project you were editing \(restoring first\)/);
+  // the automatic snapshot holds the edit: after Undo, the project is the same as that one
+  await page.click('#snapshot-undo-button');
+  assert.equal(await state(), 'same');
+  assert.match(await page.textContent('#snapshot-current'), /the same as the snapshot before restoring first/);
+  assert.equal(await page.isVisible('#snapshot-undo'), false);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

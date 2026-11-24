@@ -169,7 +169,7 @@ propagator `init`), and one reusable buffer for assumptions.
 | Method | Returns |
 | --- | --- |
 | `G:of(M)` | Assumptions for `to`: for each j, `dst[j]` if `M`'s value j is true, else `-dst[j]`. Returns the link's own reusable array. |
-| `G:clause(M, X)` | Clause "one relevant atom must change": for each j with `X`'s indicator j true: the literal of atom j in `from`, negated if `M`'s value is true. Error if no indicator is true (message: `relevant/1 derived nothing for link G`). Fields: `link`, `m`, `x`. |
+| `G:clause(M, X)` | Clause "one relevant atom must change": for each j with `X`'s indicator j true: the literal of atom j in `from`, negated if `M`'s value is true. No indicator true: the empty clause (`empty_ok`; rejecting with it ends the search). Until 2026-11-24 this was an error (`relevant/1 derived nothing for link G`); whether it is sound is the audit's question (its `empty` count). Fields: `link`, `m`, `x`. |
 | `G:block(M)` | Clause over all j: flips every value of `M`. |
 | `G:core(S)` | Clause from the unsat core of `S`'s last solve: for each core literal that is `±dst[j]`, the literal of atom j in `from` with the opposite sign of its value in the core. `S` must be `to`. Error if the last solve of `S` was not unsatisfiable. |
 | `G:clauses(X)` | A list of clauses, one per `Id`, from atoms `clause(Id, T, true)` and `clause(Id, T, false)` true in `X` (captured automatically for links whose target has such atoms). `T` must be an interface atom of the link; unknown atoms are a Lua error. `true` gives the positive literal. |

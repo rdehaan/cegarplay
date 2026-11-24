@@ -24,10 +24,6 @@ export function loopLabel(loop) {
 // A sentence of advice for common run-time errors, or null.
 export function errorHint(message) {
   const m = String(message || '');
-  if (/relevant\/1 derived nothing/.test(m)) {
-    return 'The check found a counterexample, but no relevant(T) atom holds in it, so there is nothing to build a clause from. ' +
-      'Add relevant/1 rules to the check fragment for the interface atoms the counterexample depends on, or use G.block(M) to rule out the whole candidate.';
-  }
   if (/derive no (glue\/1|shown) atom/.test(m)) {
     return 'The glue fragments derive no glue(T) atom. Wrap the shared atoms as glue(T), or add the keyword legacy to the link for files written for cegar.py.';
   }

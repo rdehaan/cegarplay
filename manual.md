@@ -183,9 +183,11 @@ the instance of the next run; the run history names it in brackets.
 A variant runs the same project with other fragments swapped in, its own loop script, or other
 constants (the table above). The **Variants** block at the foot of the Loop tab edits them: a name,
 **Swap** as `fragment=other fragment, ...` (the first fragment gets the text of the second; names
-are checked), **Constants** as `name=value, ...`, a **Note** (`note`: why the variant exists, a lab notebook), and **its own loop script** (a text box that
+are checked: a swap that names a fragment that does not exist yet is kept as typed, with a note, and
+applied as soon as that fragment is made), **Constants** as `name=value, ...`, a **Note** (`note`: why the variant exists, a lab notebook), and **its own loop script** (a text box that
 starts as a copy of the project's loop). A renamed or deleted fragment is renamed in, or dropped
-from, every swap; a renamed or deleted variant also in the suites. The run bar's **Variant** picker
+from, every swap; a renamed or deleted variant also in the suites and in **Compare variants**
+(a comparison on screen is made again after each change of a variant). The run bar's **Variant** picker
 (shown only for a project with variants) chooses the variant of a run, an audit and Run all, and
 is stored as `settings.variant`; the run history adds `(variant NAME)`. Alternative fragments
 that only a variant uses are not grounded by the project as it is. `tools/run.mjs` and
@@ -394,8 +396,10 @@ relevant(pick(Y)) :- sum(X,Y).
 relevant(pick(X+Y)) :- sum(X,Y).
 ```
 
-- If no `relevant/1` atom is true in a counterexample, `G.clause` fails with
-  `relevant/1 derived nothing for link G`.
+- If no `relevant/1` atom is true in a counterexample, `G.clause` gives the empty clause: rejecting
+  with it ends the search (no candidate is left). That is right only when no solution is left, so
+  it is not an error of the run but a question for the **Audit**, which counts these
+  counterexamples and reports a solution they cut (verdict unsound).
 - The more atoms are relevant, the weaker (but safer) the clause. Marking every interface atom is
   the same as `G.block(M)`.
 - With the link keyword `compat`, `relevant(T)` is a free choice in the target, as in the Python
@@ -723,7 +727,7 @@ calls it the *blocking loop*.
 | Script | Meaning |
 | --- | --- |
 | `G.above(M)`, `G.below(M)` | A clause for the source of G that removes M and all its supersets (subsets) on G's atoms; M is a model or a list `G(M)`. |
-| `G.clause(X)` | The clause from the counterexample alone: its `relevant/1` atoms with the values X saw. It may be empty: rejecting with an empty clause ends the search, adding it leaves the solver without models. (`G.clause(M, X)` still stops with "relevant/1 derived nothing" on an empty set.) |
+| `G.clause(X)` | The clause from the counterexample alone: its `relevant/1` atoms with the values X saw. It may be empty: rejecting with an empty clause ends the search, adding it leaves the solver without models. (`G.clause(M, X)` does the same.) |
 | `C.core` and `core.on(G)` | The whole unsat core of C's last solve; `.on(G)` keeps the atoms of link G (`G.core(C)` is short for `C.core.on(G)`, but `core.on(G)` gives an empty clause where `G.core(C)` is an error: test `K.size == 0`). |
 | `S.expand(part, name = V)` with a core, a clause or a list | Each atom T of V becomes a fact `name(k,T)`; an atom that has the value **false** there (assumed false in a core or list, false in the candidate for a clause) also gets `name_false(k,T)`, so the part can tell the signs apart (`core_false(k,T)`). |
 | `C.core.minimal` | A subset-minimal core: no assumption of it can be left out. Computed by deletion (each assumption left out in turn, keeping the smaller core of every solve that stays unsatisfiable), so it costs up to one solve of C per assumption; a core of more than 32 assumptions is minimised by QuickXplain instead (about 2k·log(n/k) solves for a minimal core of k out of n); the solves count as calls of C, not as counterexamples. A core value also works as assumptions (`C.solve(assume K)`) and with `.on(G)`, `for`, `.size`. Short cores make strong clauses: `maxsat-ihs` needs 5 rounds instead of 57. The Statistics counter **minimised cores** (`minimised` in the `S` event) counts the calls. |
@@ -1012,8 +1016,7 @@ its line.
 | `rt.count(name, n)`, `rt.track(name, v)`, `rt.log(...)` | As `count`, `track`, `log`. |
 | `rt.size(l)`, `rt.push(l, x)`, `rt.clear(l)`, `rt.list()` | List helpers. |
 
-Runtime errors (raised as a Lua error, reported in the Output tab with the loop line): `relevant/1
-derived nothing for link G`, `the refinement made no progress: the same candidate came back`
+Runtime errors (raised as a Lua error, reported in the Output tab with the loop line): `the refinement made no progress: the same candidate came back`
 (eager shapes: a solver with outgoing links and no incoming links returned the same interface
 values twice in a row), `refinement does not exclude the candidate`, `reject works only on a
 candidate inside search; use S.add between solves`, `reject: the clause was built from a model
@@ -1224,7 +1227,8 @@ abstraction), with a note saying so; the next Run replaces them. The run history
   atoms; the atoms in the refinement highlighted; an empty candidate is `{ }`, no interface atom true), **Counterexample** (shown atoms of the check's
   model), **Refinement** (clause literals such as `-pick(3)`, or the facts of an expansion). Step
   kinds: `reject` (Shape 1 clause), `partial` (a clause from `on partial`), `add` (clause added between solves), `expand` (rules grounded),
-  `error` (the counterexample from which `relevant/1` derived nothing; the view jumps to it).
+  `error` (a step that ended the run with an error; the view jumps to it). A counterexample with no
+  relevant atom is a `reject` with no literals: the empty clause, which ends the search.
 - **Messages**: clingo messages grouped with a count, `log` lines, errors (with a collapsed Lua
   traceback) and hints.
 
@@ -1238,7 +1242,7 @@ abstraction), with a note saying so; the next Run replaces them. The run history
 | Cores | After a run that refines by cores: how many cores and their lengths (the clause-length buckets), as clasp returns them and minimised (`core.minimal`), with an approximate mean. The `S` event's `cores` (`plain`, `minimal`). |
 | Charts | Candidates and refinements over time (a run too short for a curve shows its points, with a note; after an audit, a note);  time split per solver; clause length distribution (1, 2, 3–4, 5–8, 9–16, 17–32, 33–64, 65+); after a `track` statement, the tracked values per round (one line per name, a value holds until the next). |
 | Custom counters and tracked values | The `count` statements, and the last value of each `track` series. |
-| Run history | One row per run: time, loop and instance (**Loop [instance]**: the loop's first line, the instance in brackets, the variant), outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. The row of the run the tabs show is marked ▶ (none after Clear, or after another project is loaded). **Rerun with 5 seeds**, **Clear run history** (asks first; disabled while empty), copy as text or JSON. Each row has a **Note** (kept with the run history in the project) and a **Compare** box: two ticked rows are shown side by side below the table (counts, mean clause, per-solver calls, time and conflicts, with the change). |
+| Run history | One row per run: time, loop and instance (**Loop [instance]**: the loop's first line, the instance in brackets, the variant), outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. The row of the run the tabs show is marked ▶ (none after Clear, or after another project is loaded). **Rerun with 5 seeds**, **Clear run history** (asks first; disabled while empty), **✕** on a row removes that run only (the ▶ mark and the Compare picks follow), copy as text or JSON. Each row has a **Note** (kept with the run history in the project) and a **Compare** box: two ticked rows are shown side by side below the table (counts, mean clause, per-solver calls, time and conflicts, with the change). |
 
 Counting rules: *candidates* are the assignments seen by `on candidate` plus models returned by
 `solve`/`models` of solvers without incoming links; *counterexamples* are satisfiable solves that
@@ -1420,14 +1424,21 @@ Browser storage (`localStorage`, per browser and site):
   *Other projects*. At most 20 per project; past that the oldest automatic snapshot goes first, then
   the oldest. Before a restore, and before another project replaces an edited one (an example from
   the library, a file, **New project**, **Open** in the workspace, after the question), an
-  automatic snapshot "before …" is taken and **Undo** appears (also beside the library's "Loaded
-  example" line); Undo brings that project back. Undo keeps its copy in memory, so it works for this
-  visit also when browser storage is full or blocked; the snapshot list then says that storage is
-  not available.
+  automatic snapshot "before …" is taken and **Undo** appears on a line of its own that says what
+  replaced the project (also beside the library's "Loaded example" line); Undo brings that project
+  back. Undo keeps its copy in memory, so it works for this visit also when browser storage is full
+  or blocked; the snapshot list then says that storage is not available. A line above the list says
+  where the project being edited stands: the same as a snapshot (named; that snapshot is marked
+  "same as the project now" and its Restore is disabled), different from every snapshot, or without
+  snapshots. "The same" ignores the run history and follows each edit. **Last action** names what the
+  block did last, with the time.
 - `cegarplay.manual`: `"1"` when "Show the technical manual" is ticked.
 - `cegarplay.advanced`: `"1"` when Advanced mode is on (absent when off).
 - `cegarplay.tutorial`: `"0"` when the Tutorial tab is hidden (absent when shown).
 - `cegarplay.theme`: `"light"` or `"dark"` when the colour theme was chosen by hand (absent for Auto).
+- **Reset everything** (Control tab, last block) removes every `cegarplay*` key above and the
+  Campaign tab's rows (IndexedDB `cegarplay`), after a question, and loads the page afresh (no
+  query, no hash): a first visit.
 
 Keyboard: Ctrl+Enter or Cmd+Enter runs from anywhere, also inside an editor.
 
@@ -1633,7 +1644,6 @@ ground truth for an exhausted run. Chains, searches of a check and optimisation 
 
 | Symptom | Cause and remedy |
 | --- | --- |
-| `relevant/1 derived nothing for link G` | A counterexample has no `relevant(T)` atom. Add `relevant/1` rules for every kind of counterexample, or use `G.block(M)`. The trace shows that candidate and counterexample (step kind `error`). |
 | `link G: the glue fragments derive no glue/1 atom` | Wrap the interface atoms as `glue(T)`, or add `legacy` to the link for `cegar.py` files. The glue fragments are solved on their own: they need the domains (include `shared`). |
 | `the refinement made no progress: the same candidate came back` | Shapes 2 and 3: the refinement did not change the abstraction. In a refine part, a head without `k` (later steps are silently ignored), or a clause that does not mention the candidate's atoms. |
 | Fewer solutions than the Reference run | `relevant/1` marks too few atoms: a clause also removes good candidates. Mark more atoms. See [tutorial-weak-relevant](?example=tutorial-weak-relevant). |

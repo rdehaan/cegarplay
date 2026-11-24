@@ -38,7 +38,7 @@ test('the editor adds, checks, renames and deletes a variant', async () => {
   const card = '#variants .variant-card[data-variant="v1"]';
   await page.fill(`${card} .variant-swap`, 'check=nope');
   await page.press(`${card} .variant-swap`, 'Tab');
-  assert.match(await page.textContent(`${card} .variant-error`), /no fragment named nope/);
+  assert.match(await page.textContent(`${card} .variant-error`), /no fragment named nope yet/);
   assert.deepEqual(await page.evaluate(() => window.cegarplay.project.variants[0].swap), {});
   await page.fill(`${card} .variant-swap`, 'check=abstraction');
   await page.press(`${card} .variant-swap`, 'Tab');
@@ -87,6 +87,32 @@ test('Compare variants: line diffs of fragments and loop script, and the latest 
   assert.equal(await page.textContent('#compare-summary'), 'Both sides are the same.');
   // the live region announces the result
   assert.equal(await page.getAttribute('#compare-result', 'aria-live'), 'polite');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('variants follow edits: the compare box gets a new name; a swap waits for its fragment', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=4');
+  await page.click('#add-variant-button');
+  const card = (n) => `#variants .variant-card[data-variant="${n}"]`;
+  assert.deepEqual(await page.$$eval('#compare-b option', (l) => l.map((o) => o.value)), ['', 'v1']);
+  assert.equal(await page.$eval('#compare-b', (s) => s.value), 'v1');
+  await page.fill(`${card('v1')} .variant-name`, 'mine');
+  await page.press(`${card('v1')} .variant-name`, 'Tab');
+  assert.deepEqual(await page.$$eval('#compare-b option', (l) => l.map((o) => o.value)), ['', 'mine']);
+  assert.equal(await page.$eval('#compare-b', (s) => s.value), 'mine');
+  // a swap with a fragment that does not exist yet: kept as typed, applied once it is made
+  await page.fill(`${card('mine')} .variant-swap`, 'check=check2');
+  await page.press(`${card('mine')} .variant-swap`, 'Tab');
+  assert.match(await page.textContent(`${card('mine')} .variant-error`), /no fragment named check2 yet/);
+  assert.deepEqual(await page.evaluate(() => window.cegarplay.project.variants[0].swap), {});
+  await page.click('label[for="tab3"]');
+  page.once('dialog', (d) => d.accept('check2'));
+  await page.click('#add-fragment-button');
+  await page.click('label[for="tab4"]');
+  assert.equal(await page.textContent(`${card('mine')} .variant-error`), '');
+  assert.equal(await page.inputValue(`${card('mine')} .variant-swap`), 'check=check2');
+  assert.deepEqual(await page.evaluate(() => window.cegarplay.project.variants[0].swap), { check: 'check2' });
   assert.deepEqual(errors, []);
   await context.close();
 });

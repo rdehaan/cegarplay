@@ -83,13 +83,13 @@ test('a Lua error inside on_candidate is an E event, not a trap', async () => {
   assert.ok(e.line >= r.assembled.loopStartLine && e.line <= r.assembled.loopEndLine);
 });
 
-test('a check without relevant/1 rules: E event', async () => {
+test('a check without relevant/1 rules: the empty clause ends the search, no error', async () => {
   const f = H.GC6();
   f.check = f.check.replace(/^relevant.*$/gm, '');
   const r = await H.runLua(H.projectOf(f, { solutions: 0 }), H.LUA.shape1(LEG));
   endsWithOneD(r);
-  assert.equal(H.last(r, 'E').message, 'relevant/1 derived nothing for link G');
-  assert.equal(H.done(r).outcome, 'error');
+  assert.equal(H.ofKind(r, 'E').length, 0);
+  assert.equal(H.done(r).outcome, 'finished');
 });
 
 test('candidate limit 100 ends row 1 early', async () => {
