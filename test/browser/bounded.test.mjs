@@ -220,3 +220,24 @@ test('UI: the space editor picks the bound by name, takes a value or a range, an
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('a seed sweep finds a run that loses the solution an unsound space audit names, and shows it in the candidate space', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=5');
+  await page.selectOption('#audit-mode', 'space');
+  await page.fill('#space-bound', '4');
+  await page.click('#audit-button');
+  await settled(page);
+  assert.match(await page.textContent('#result-line'), /unsound at n = 2/);
+  await page.click('#audit-panel button[data-action="space-seed-sweep"]');
+  await page.waitForFunction(() => /the candidate space shows the refinement that removes it/.test(document.getElementById('run-message-text').textContent), null, { timeout: 120000 });
+  assert.match(await page.textContent('#run-message-text'), /Seed sweep: seed \d+ loses a solution \(2 of 3 found\)/);
+  assert.match(await page.textContent('#space-summary'), /Lost solutions: refinement \d+ is the first that removes a solution/);
+  // the seed and the randomized search stay, so Run repeats that run
+  const st = await page.evaluate(() => window.cegarplay.project.settings);
+  assert.equal(st.randomize, true);
+  assert.ok(st.seed >= 1);
+  assert.equal(await page.$eval('#randomize-checkbox', (c) => c.checked), true);
+  assert.equal(await page.$eval('#seed-input', (c) => c.value), String(st.seed));
+  assert.deepEqual(errors, []);
+  await context.close();
+});

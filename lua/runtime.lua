@@ -10,7 +10,7 @@ rt = rt or {}
 SETTINGS = SETTINGS or {}
 CONSTS = CONSTS or {}
 FRAGMENTS = FRAGMENTS or {}
-for k, v in pairs({ solutions = 1, seconds = 0, candidates = 0, trace = 0, seed = 0, poll = false, plain = false }) do
+for k, v in pairs({ solutions = 1, seconds = 0, candidates = 0, trace = 0, seed = 0, randomize = false, poll = false, plain = false }) do
   if SETTINGS[k] == nil then SETTINGS[k] = v end
 end
 
@@ -331,6 +331,9 @@ local function new_control(args, name, frags)
   a[#a + 1] = "--stats"
   for _, c in ipairs(CONSTS) do a[#a + 1] = "-c"; a[#a + 1] = c end
   if SETTINGS.seed ~= 0 then a[#a + 1] = "--seed=" .. SETTINGS.seed end
+  -- randomize: random decisions and signs, so that the seed changes the search (the order of the
+  -- candidates and which counterexample the check returns)
+  if SETTINGS.randomize then a[#a + 1] = "--rand-freq=0.2"; a[#a + 1] = "--sign-def=rnd" end
   local starts = fragment_lines(frags)
   return clingo.Control(a, function(code, msg)
     -- a Lua error here would cross a clingo frame: keep it inside pcall

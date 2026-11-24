@@ -1897,3 +1897,11 @@ number count". Found and fixed:
   instance, this run, lost solutions) with **Audit this instance**. (The user's space also allows
   `deletable(X,Y)` with X > Y, which the glue does not link; restricted to X < Y the strategy is
   still unsound at size 6.)
+- **Seed sweep** (on request, after the question whether an unsound refinement always shows up in
+  some run: yes, at the first step if nothing else): `settings.randomize` (Loop tab, Randomized
+  search: `--rand-freq=0.2 --sign-def=rnd` in every solver); `Control.seedSweep` runs the instance
+  to all solutions for seeds 1..50 until a run finds fewer than the true count; `app.sweepAndShow`
+  keeps that seed, records the run and computes the candidate space. Buttons: **Find a run that
+  loses it** on unsound verdicts (space: on the saved witness instance), **Find a run that loses
+  one** in the candidate space. On the user's Hamiltonian-cycle project (relevant4, space graphs,
+  size 6) seed 13 loses one solution; refinement 1 is the bad one.

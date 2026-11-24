@@ -26,6 +26,10 @@ export class LoopTab {
       });
     }
     $('solutions-select').addEventListener('change', (e) => { this.app.project.settings.solutions = Number(e.target.value); });
+    $('randomize-checkbox').addEventListener('change', (e) => {
+      if (e.target.checked) this.app.project.settings.randomize = true; else delete this.app.project.settings.randomize;
+      this.app.dirty();
+    });
     // settings.record: absent when off (the program text is then unchanged)
     const rec = () => {
       let steps = $('record-select').value;
@@ -72,6 +76,7 @@ export class LoopTab {
   load(project) {
     const st = project.settings;
     for (const [id, key] of Object.entries(NUMERIC)) $(id).value = st[key];
+    $('randomize-checkbox').checked = st.randomize === true;
     $('certify-select').value = st.certify && st.certify !== 'off' ? st.certify : 'off';
     if (![...$('certify-select').options].some((o) => o.value === $('certify-select').value)) $('certify-select').value = 'off';
     const r = st.record || {};

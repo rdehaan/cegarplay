@@ -193,6 +193,8 @@ export function load(json) {
     const v = Number(out.settings[k]);
     out.settings[k] = Number.isFinite(v) && v >= 0 ? v : DEFAULT_SETTINGS[k];
   }
+  // randomize (optional): random decisions and signs in every solver, so the seed changes the search
+  if (out.settings.randomize !== true) delete out.settings.randomize;
   out.runs = Array.isArray(p.runs) ? p.runs : [];
   if ('instances' in p) out.instances = loadInstances(p.instances);
   if ('variants' in p) out.variants = loadVariants(p.variants, names);

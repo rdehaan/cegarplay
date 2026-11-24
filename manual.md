@@ -112,6 +112,7 @@ two-space indentation.
 | `settings.candidates` | number | 0 | Candidate limit; 0 = none. |
 | `settings.trace` | number | 200 | Number of trace steps recorded; 0 = off. |
 | `settings.seed` | number | 0 | Passed as `--seed=N` unless 0. |
+| `settings.randomize` | boolean | absent | **Randomized search** (Loop tab): every solver gets `--rand-freq=0.2 --sign-def=rnd`, so that the seed changes the order of the candidates and which counterexample a check returns. Absent when off. |
 | `runs` | list | `[]` | Final statistics of earlier runs (Statistics tab, run history). Written only when "include run history" is ticked on download. |
 | `instances` | list | none | Format version 2. See [Instances](#manual-instances). |
 | `variants` | list | none | Format version 2. See [Instances](#manual-instances). |
@@ -1183,6 +1184,19 @@ the project has none); an audit stopped at its candidate limit, **Audit by symbo
 unsound space, **Save it and audit it** (a regression instance, audited by enumeration); a sound
 space, **Try a larger bound**. The per-k line joins runs of sound steps (`1-11 sound (1 round
 each) · 12 unsound`).
+
+**Find a run that loses it** (every unsound verdict; also **Find a run that loses one** in the
+candidate space when the run shown lost nothing): a **seed sweep**. An unsound audit means that the
+loop *can* lose a solution; a run loses it only if its search proposes the bad candidate before the
+solution is found and the check answers with the bad counterexample. The sweep runs the instance
+(for a space, its saved witness instance; the run bar's variant) to all solutions with a randomized
+search for seeds 1 to 50, and stops at the first run that finds fewer solutions than the true count
+(the audit's count; for a symbolic or space audit, from an enumeration audit of the instance first).
+It then sets that seed and Randomized search in the Loop tab (so **Run** repeats the run), records
+the run with every step and computes the candidate space, whose summary names the first refinement
+that removes a solution. When none of the 50 seeds loses one, the run message says so: the bad
+refinement is still possible (`Control.seedSweep` in `js/control.js`, `app.sweepAndShow` in
+`js/init.js`).
 
 ### Certificates
 

@@ -323,6 +323,9 @@
         <input type="number" min="0" step="1" id="trace-input">
         <label for="seed-input">Seed (0 = clingo's default)</label>
         <input type="number" min="0" step="1" id="seed-input">
+        <label for="randomize-checkbox">Randomized search</label>
+        <span><input type="checkbox" id="randomize-checkbox">
+          <span class="note">random decisions and signs in every solver (<code>--rand-freq=0.2 --sign-def=rnd</code>), so that the seed changes the search</span></span>
         <label for="certify-select">Certificates</label>
         <select id="certify-select">
           <option value="off">off</option>
@@ -346,8 +349,8 @@
           <span id="threads-note" class="note">needs a cross-origin isolated page</span></span>
       </div>
       <p class="note">
-        The seed changes the search only together with randomising solver options, such as
-        <code>options "--rand-freq=0.05"</code>.
+        The seed changes the search only together with randomising solver options: tick
+        <b>Randomized search</b>, or give a solver options such as <code>options "--rand-freq=0.05"</code>.
       </p>
 
       <h3>Variants</h3>

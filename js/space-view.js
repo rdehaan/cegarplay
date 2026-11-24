@@ -232,7 +232,11 @@ export class SpaceView {
           const id = (this.app.recording && this.app.recording.header && this.app.recording.header.instance) || undefined;
           await this.app.control.run({ mode: 'audit', instance: id });
           const t = document.getElementById('tab5'); if (t) { t.checked = true; t.dispatchEvent(new Event('change', { bubbles: true })); }
-        } }, 'Audit this instance'));
+        } }, 'Audit this instance'), ' ',
+      h('button', { class: 'control-button small-button', id: 'space-seed-sweep', type: 'button',
+        title: 'Run this instance to all solutions with a randomized search, seeds 1 to 50, until a run loses a solution; then show that run here',
+        onclick: () => this.app.sweepAndShow({ instance: (this.app.recording && this.app.recording.header && this.app.recording.header.instance) || undefined, target: this.truth.size }) },
+        'Find a run that loses one'));
     }
     this.msg.textContent = '';
     this.layout();

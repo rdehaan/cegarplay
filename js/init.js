@@ -167,6 +167,9 @@ app.output.onAuditAction = async (name, a) => {
     return;
   }
   if (name === 'candidate-space') { showTab(11); return app.space.recordAndRun(); }
+  // the instance the audit was of (the recording's header names it; else the run bar's)
+  if (name === 'seed-sweep') return app.sweepAndShow({ instance: (app.recording && app.recording.header && app.recording.header.instance) || undefined, target: Number.isInteger(a.solutions) ? a.solutions : null });
+  if (name === 'space-seed-sweep') return app.sweepAndShow({ instance: app.instancesTab.saveWitness(a), target: null });
   if (name === 'space-candidate-space') {
     // the map is of one run: on the instance the space audit broke on
     const id = app.instancesTab.saveWitness(a);
@@ -174,6 +177,31 @@ app.output.onAuditAction = async (name, a) => {
     showTab(11);
     return app.space.recordAndRun();
   }
+};
+// Seed sweep (js/control.js seedSweep): a run that loses a solution, then that run recorded and
+// shown in the candidate space. The seed and the randomized search stay in the settings, so Run
+// gives the same run again.
+app.sweepAndShow = async ({ instance, target }) => {
+  if (instance) app.instancesTab.pick(instance);
+  const seeds = 50;
+  const r = await app.control.seedSweep({ instance, target, seeds });
+  if (!r) return null;
+  if (r.seed === null) {
+    app.control.runMessage(`Seed sweep: none of ${r.tried} randomized runs lost a solution (each found all ${r.target}). ` +
+      'The refinement the audit found is still possible; another instance, more seeds or other solver options may reach it.');
+    return r;
+  }
+  app.project.settings = { ...app.project.settings, seed: r.seed, randomize: true };
+  app.loopTab.load(app.project);
+  app.dirty();
+  app.control.runMessage(`Seed sweep: seed ${r.seed} loses a solution (${r.solutions} of ${r.target} found). ` +
+    `The Loop tab's seed is now ${r.seed}, with a randomized search, so Run repeats this run; the candidate space shows its first bad refinement.`);
+  if ($('tab11').hidden) showTabs('advanced', true, { store: false });
+  showTab(11);
+  await app.space.recordAndRun();
+  app.control.runMessage(`Seed sweep: seed ${r.seed} loses a solution (${r.solutions} of ${r.target} found); the candidate space shows the refinement that removes it. ` +
+    `The Loop tab's seed is now ${r.seed}, with a randomized search: Run repeats this run.`);
+  return r;
 };
 app.variants = new Variants(app);
 app.cursor = new Cursor();

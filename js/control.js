@@ -212,7 +212,7 @@ export class Control {
   //   mode 'bounded': the symbolic audit of lua/bounded.lua (PLAN3); with spaceRun = { name, k },
   //   on the project derived from that space at bound k (js/project.js deriveSpace).
   //   noHistory: no row in the run history (the steps of a space audit).
-  async runOne({ seed, mode = 'run', instance, variant, allSolutions = false, spaceRun = null, noHistory = false } = {}) {
+  async runOne({ seed, randomize, mode = 'run', instance, variant, allSolutions = false, spaceRun = null, noHistory = false } = {}) {
     const app = this.app;
     this.mode = mode;
     this.setState('validating');
@@ -222,6 +222,7 @@ export class Control {
     if (this.fragCheck) await this.fragCheck.catch(() => {});
     let project = structuredClone(app.collect());
     if (seed !== undefined) project.settings.seed = seed;
+    if (randomize !== undefined) { if (randomize) project.settings.randomize = true; else delete project.settings.randomize; }
     // Run all: an instance with an expected count is run to all solutions (as tools/run.mjs does)
     if (allSolutions) project.settings.solutions = 0;
     app.editors.clearAnnotations();
@@ -586,6 +587,39 @@ export class Control {
     if (this.batch) { this.abort(); return; }
     this.app.engine.stop();
     if (this.state === 'paused') this.setState('running');
+  }
+
+  // Seed sweep: show an unsound refinement in a run. An audit finds a refinement that removes a
+  // solution; a run makes it only if its search goes there. Run the instance to all solutions with
+  // a randomized search for seeds 1..n, and stop at the first run that finds fewer than the true
+  // count (target; from an enumeration audit when not given). Returns { seed, solutions, target,
+  // tried } or { seed: null, ... } (none of the seeds lost one), or null (stopped or no count).
+  async seedSweep({ instance, target = null, seeds = 50, onProgress = null } = {}) {
+    const app = this.app;
+    if (target === null || target === undefined) {
+      const a = await this.run({ mode: 'audit', instance });
+      const A = a && a.audit;
+      if (!A || A.mode || !Number.isInteger(A.solutions)) {
+        this.runMessage('Seed sweep: no true count (the enumeration audit of the instance did not finish).');
+        return null;
+      }
+      target = A.solutions;
+    }
+    const b = this.beginBatch('seed sweep');
+    if (!b) return null;
+    let found = null, tried = 0;
+    try {
+      for (let seed = 1; seed <= seeds; seed++) {
+        this.batchProgress(`seed ${seed} of ${seeds}`);
+        if (onProgress) onProgress(seed, seeds);
+        const r = await this.run({ seed, randomize: true, instance, allSolutions: true, noHistory: true });
+        if (b.cancelled || !r || r.state === 'aborted' || r.state === 'error') return null;
+        tried = seed;
+        const n = r.S ? r.S.solutions : null;
+        if (r.D && r.D.outcome === 'finished' && Number.isInteger(n) && n < target) { found = { seed, solutions: n }; break; }
+      }
+    } finally { this.endBatch(b); }
+    return found ? { ...found, target, tried } : { seed: null, target, tried };
   }
 
   async rerunSeeds() {

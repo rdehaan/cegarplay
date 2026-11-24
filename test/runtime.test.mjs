@@ -265,3 +265,20 @@ test('accepted solutions are blocked by one clause over all outgoing links (two 
   assert.equal(new Set(H.ofKind(r, 'M').map((m) => m.atoms)).size, 16);
   assert.deepEqual(H.done(r), { outcome: 'finished', exhausted: true, detail: '' });
 });
+
+test('settings.randomize: random decisions and signs; a full enumeration still finds every solution', async () => {
+  const P = await import('../js/project.js');
+  const p = await H.example('tutorial-first-run');
+  assert.equal(P.load({ ...p, settings: { ...p.settings, randomize: false } }).settings.randomize, undefined);
+  assert.equal(P.load({ ...p, settings: { ...p.settings, randomize: true } }).settings.randomize, true);
+  p.settings = { ...p.settings, solutions: 0, randomize: true };
+  const counts = [];
+  for (const seed of [1, 2, 3]) {
+    p.settings.seed = seed;
+    const r = await H.runProject(p);
+    assert.equal(H.done(r).outcome, 'finished');
+    assert.match(r.assembled.program, /randomize = true/);
+    counts.push(H.ofKind(r, 'S').at(-1).solutions);
+  }
+  assert.deepEqual(counts, [61, 61, 61]);
+});

@@ -727,10 +727,11 @@ test('Instances: move up and down; the instance a run uses stays; Run all says w
 
 test('Control: "Loaded example" goes at the first edit and when another project comes', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?tab=1');
-  await B.openLibrary(page);
   page.on('dialog', (d) => d.accept());
-  await page.click('[data-load-example="tutorial-first-run"]');
-  await page.waitForFunction(() => /Loaded example "Sum-free sets"/.test(document.getElementById('load-status').textContent));
+  await page.waitForSelector('#library [data-load-example="tutorial-first-run"]', { state: 'attached' });
+  await B.openLibrary(page);
+  await page.click('#library [data-load-example="tutorial-first-run"]');
+  await page.waitForFunction(() => /Loaded example "Sum-free sets"/.test(document.getElementById('load-status').textContent), null, { timeout: 60000 });
   await B.setEditor(page, 'editor-check', '% edit\n');
   await page.waitForFunction(() => document.getElementById('load-status').textContent === '');
   // an upload replaces it with its own line, and the old line is not left behind
