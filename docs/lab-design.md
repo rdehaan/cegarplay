@@ -74,7 +74,8 @@ None. Everything the lab needs is already exported.
 | `js/lab/minimal.js` | The clingo program for minimal sound sets (subset-minimal by `domRec`, one cardinality-minimal set), many candidates in one run. |
 | `js/lab/bounds.js` | The ASP program for exact best and worst runs, its budgeted Lua driver, trivial bounds. |
 | `js/lab/simulate.js` | Idealised runs: random order, two option policies, greedy best and worst. |
-| `js/lab/runs.js` | A recording read onto the space: steps, alive sets, regret, ladder, decomposition. |
+| `js/lab/runs.js` | A recording read onto the space: steps, alive sets by replay, regret, percentile. |
+| `js/lab/report.js` | Feature C composed: `runReport`, `ladder`, `decomposition`. |
 | `js/lab/core.js` | The computations end to end, given an `exec(program, options, onLine)` function. Shared by the worker and `tools/lab.mjs`, so the tab and the tool give the same numbers. |
 | `js/lab/worker.js` | The lab's Web Worker: its own clingo-wasm instance, its own space cache, `core.js` behind messages. |
 | `js/lab/tab.js` | The tab's UI. Talks only to the lab worker. Loaded lazily when the tab is first shown. |
@@ -111,7 +112,7 @@ LabSpace {
                             for a relevant set; the group's values for a clause/3 group)
   optN: Int32Array[nopt]    counterexamples giving this option; option 0 of a candidate comes
                             from its first counterexample in clingo's order
-  optKind: Uint8Array       0 relevant set, 1 clause group
+  optKind: Uint8Array       0 relevant set, 1 clause group, 2 block (a loop refined only by blocks)
   CW, bitsT: Uint32Array[n*CW]   bitsT[j]: the candidates with atom j true (CW = count/32 words)
   solBits, badBits: Uint32Array[CW]
   plan: { link, schemes: { loop, omniscient, block } supported or a reason, unsupported? }
@@ -123,12 +124,13 @@ its complement. Pruning is the popcount of that AND the alive bitset. D(M, s) is
 `words[M] XOR words[s]`. Minimal sound sets are the minimal hitting sets of the inclusion-minimal
 members of D(M).
 
-**Exact bounds program** (`js/lab/bounds.js`): facts `opt(O,C)` (option O of bad candidate C)
-and `rem(O,D)` (O removes bad candidate D, D not its owner). The choice is
-`{ sel(O) : opt(O,C) } 1 :- bad(C)`, with `pick(C)` for a chosen candidate. The constraint is
-that every bad candidate is picked or removed by a selected option. The order uses clingo's
-acyclicity directive: `#edge (C,D) : sel(O), opt(O,C), rem(O,D), pick(D).` (D must come before
-C). The goal is `#minimize` or `#maximize { 1,C : pick(C) }`. I chose `#edge` over integer
+**Exact bounds program** (`js/lab/bounds.js`; the predicates are one letter long to keep the text
+small): facts `b(C)` (bad candidate), `o(O,C)` (option O of C) and `r(O,D)` (O removes bad
+candidate D, D not its owner). The choice is `{ s(O) : o(O,C) } 1 :- b(C)`, with `p(C)` for a
+chosen candidate and `c(D)` for a removed one. The constraint `:- b(D), not p(D), not c(D).` says
+every bad candidate is picked or removed. The order uses clingo's acyclicity directive:
+`#edge (C,D) : s(O), o(O,C), r(O,D), p(D).` (D must come before C). The goal is `#minimize` or
+`#maximize { 1,C : p(C) }`. I chose `#edge` over integer
 positions. It grounds one edge per `rem` fact, linear in the incidence, where positions ground
 O(k·|Bad|) atoms and as many ordering constraints per edge. clasp checks acyclicity natively.
 Best and worst differ only in the direction of the optimisation: "cover" and "maximal" are the
@@ -150,9 +152,91 @@ same condition, because a picked candidate is removed by its own clause.
   Only the first N counterexamples of M (the Limits group) are tried. The result says how many M
   has.
 - Percentile of a run: 100·(#simulated runs shorter + ½·#equal)/#runs.
+- A run's length counts its refinements of bad candidates (`R` steps of kind `r` or `a` whose
+  candidate has a counterexample). A clause on a solution is the block of an accepted solution, and
+  a step of kind `s` accepts its candidate. Both remove candidates from the alive set at no cost.
+- Greedy runs propose only bad candidates, so for an unsound scheme every solution their clauses
+  remove counts as lost.
+- The omniscient scheme needs the minimal sound sets of every bad candidate. They are computed in
+  one clingo run for up to 20,000 bad candidates (`OMNISCIENT_MAX` in `core.js`); above that the
+  scheme is reported as not computed. When a candidate's minimal sets are capped, the omniscient
+  bounds are marked as not exact (the best is then an upper bound on the true best).
+- An unproven bound shows its other side as a trivial bound: best ≥ ⌈|Bad| / largest removal⌉,
+  worst ≤ |Bad|. clingo's own lower bound is not used: its `bb` strategy has none, and after a
+  budget stop clasp's statistics would describe the cut search.
+- Unsupported (exit code 4), beyond the prompt's list: refinements other than `G.clause`,
+  `G.clauses` and `G.block` (`above`, `below`, hand-made clauses: marco, maxsat-oll), because
+  their options are not a function of the counterexample's relevant set.
+- The index and size limits: the incidence (option × removed candidate) is built when
+  options × words × |S| stays under 4·10⁸ work units. Above that, the greedy policies and the exact
+  program are skipped with a reason. The random simulation scans only the alive list and runs at
+  any size up to the candidate cap, within its time budget: at 200,000 candidates one run takes about
+  0.2 s, so the default 1,000 runs stop at the 30 s budget, and the result says how many were run.
 
 ## Milestones
 
 ### 0. Design note
 
-Built: this note. No product code. Open question: none yet.
+Built: this note. No product code.
+
+### 1. Space and headless core
+
+Built: `lua/lab.lua` (`rt.lab_space`, `rt.lab_detail`), `js/lab/space.js`, `sets.js`,
+`minimal.js`, `core.js`, and `tools/lab.mjs` for the space, removal sets, soundness, forced
+atoms, minimal sound sets and justification. Tests: `test/lab-sets.test.mjs` (brute force over
+every subset on synthetic spaces and the two 8-atom tutorial examples) and
+`test/lab-library-[1-3].test.mjs`. On every `fast` library example the lab supports, the lab's
+candidates, solutions, options (= the audit's pairs), soundness, unsound pairs and solutions at
+risk equal the audit's. The lab declines the others with a reason: expand, cores, `above`/`below`,
+several links, instances with `audit: false`, raw Lua.
+Deviation: block-only loops (gc-reference) are supported, although `auditPlan` declines them;
+`labPlan` chooses the link the same way.
+Observed, not changed: `tools/audit.mjs` on an instance marked `audit: false` only prints a note
+and goes on enumerating (lang-second-solver's n5 runs past 120 s). That matches its
+documentation; the library test does not audit what the lab declines.
+
+### 2. Tab shell and step inspector
+
+Built: tab 12 with its toggle, `?lab=1`, `?tab=12`, the lab worker (`js/lab/worker.js`), free
+and from-a-run modes, the counterexample table, the atom table, the option map with its Pareto
+frontier, the lattice, the verdict line, CSV/SVG/JSON exports, and `css/lab.css`. A browser test
+(`test/browser/lab.test.mjs`) checks that the default page is unchanged: the same visible tabs,
+the same Control-tab ids, no lab module requested. It also checks that a Run finishes while the
+lab computes and that Cancel stops only the lab.
+Deviation: after Cancel the lab worker is gone, and its space with it. The next request computes
+the space again with the same parameters, without asking; the results already on screen stay.
+Later version: drawing M, the counterexample and a clause with the project's domain view would
+need the Observatory's view code to accept a candidate from outside the cursor. Left out.
+
+### 3. Run bounds
+
+Built: `js/lab/bounds.js` (program, budgeted Lua driver, ordering of the selection into a run),
+`js/lab/simulate.js` (random order with two option policies, greedy best and worst), and the
+histogram. Tests (`test/lab-bounds.test.mjs`): the exact program equals a brute-force enumeration
+of every idealised run on 7 synthetic spaces × 3 schemes, and every simulated and greedy length
+lies within those bounds. Block best = worst = |Bad| on gc-shape2 n3 and n4. Omniscient best ≤
+loop best. The budget stop is checked, and so is the unsound case.
+Note: on spaces of a few hundred bad candidates, clingo often finds the best and worst runs but
+cannot prove them within 30 s (gc-shape2 n4: best ≤ 64, not proven; tutorial-first-run: neither
+proven). The tab then shows intervals.
+
+### 4. Run against bounds
+
+Built: `js/lab/runs.js`, `js/lab/report.js`, the ladder, the decomposition, the regret chart, the
+five largest regrets (they open the step in the inspector), and **Compare with a recording**.
+Tests (`test/lab-runs.test.mjs`): recorded gc-shape2 and gc-reference runs on n3 and n4 map step
+by step (no problem, every clause an option, every refined candidate alive, nothing lost) and lie
+within the loop-scheme bounds. gc-reference makes exactly |Bad| refinements. |Sol| equals the
+runs' solution count. gc-shape1 is only reported. For tutorial-weak-relevant, the witness, the
+unsound pair count and the solutions at risk equal the audit's, and the stored recording loses
+solutions.
+Observed: gc-shape2 n4's recorded run (77 refinements) is shorter than every one of 200 random
+idealised runs (85 to 113). clingo's candidate order is far better than a random one.
+
+### 5. Documentation and polish
+
+Built: the manual section "Refinement lab tab", plus the tab list, `?tab=12`, `?lab=1` and the
+storage keys in the manual. Also: polite live regions for the status, the verdict and the
+ladder's sentence; keyboard access (every control is a button, select or range; the option map
+has a **Set** list as its keyboard alternative); theme tokens for light and dark; no sideways
+scroll from 1400 px down to 400 px (checked in the browser test).

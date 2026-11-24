@@ -18,6 +18,7 @@ only memory of what happened.
 - [x] PLAN3 S6: symbolic audit
 - [x] PLAN3 S7: instance spaces
 - [x] PLAN3 S8: app, Fuzz, docs
+- [x] Refinement lab (tab 12): milestones 0-5, docs/lab-design.md
 
 ## Hand-over (final review, 2026-11-20)
 
@@ -1954,3 +1955,16 @@ screenshots), then the fixes:
   form instead of JSON; tab bar wrapping at narrow widths; dark-mode colours of the candidate map;
   placeholders for empty Observatory regions; the run history's "Loop [instance]" column.
 - Full suite: 1135 pass, 0 fail, 9 skipped; book check and lint pass; examples unchanged.
+
+## Refinement lab (2026-11-24, docs/lab-design.md)
+
+Tab 12, off by default (toggle **Refinement lab** in the Control tab's Tabs block, `cegarplay.lab`;
+`?lab=1`, `?tab=12`). Purely additive: the code is under `js/lab/`, `lua/lab.lua` and `css/lab.css`,
+and is loaded only when the tab is first shown. The lab has its own worker and clingo-wasm
+instance. Three parts: the step inspector (option map, atom table, lattice, justification), run
+bounds (exact best and worst by an ASP program with `#edge`, a budget enforced in Lua because
+clingo-wasm ignores `--time-limit`; random and greedy simulation), and the run against the bounds
+(ladder, decomposition, regret). Headless: `node tools/lab.mjs`. Tests: `test/lab-*.test.mjs`
+(brute force, audit agreement on every fast library example, bounds, recorded runs) and
+`test/browser/lab.test.mjs` (non-interference, flows, widths). The manual has a section
+"Refinement lab tab". Design, deviations and open points: `docs/lab-design.md`.

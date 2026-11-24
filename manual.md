@@ -19,7 +19,8 @@ no request to another origin.
 The page's tabs follow the work: **Control** (the library, files, recordings, share and export) and
 **Tutorial**; then the project: **Programs** (the ASP fragments), **Loop** (the loop script,
 constants, limits, recording and certificates) and **Instances** (inputs, generators, Run all instances,
-Fuzz); then a run: **Output**, **Statistics** and **Observatory**; and many runs: **Campaign**. The
+Fuzz); then a run: **Output**, **Statistics** and **Observatory**; and many runs: **Campaign**. **Lab** (the
+[Refinement lab](#manual-refinement-lab-tab), off by default) shows what a loop could have done. The
 run bar above the tabs has two rows: the actions (**Run**, **Audit** with its mode, Abort, Pause
 and Stop on an isolated page, Clear, and the status), then **Run with**: the Instance and
 Variant pickers (for a project with instances or variants), Solutions, and **Seed** with
@@ -28,11 +29,12 @@ what the Output, Statistics and Observatory tabs hold now: the run, audit or rep
 instance, variant and start time), how it ended, how much of it was recorded, whether the
 candidate space was computed for it, and, in amber, when the project was edited since (or another
 project was loaded): the results are then of the earlier version. Then the live counts. **Manual** and **Internals** appear when
-asked for. The Control tab's **Tabs** block has three toggles, kept in this browser: **Tutorial**
-(shown by default), **Technical manual**, and **Advanced mode** (off by default), which adds the
-Observatory and Campaign tabs. A link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`,
-`?lecture=1`, `?view=`, `?step=`, `?advanced=1`, a link to a tutorial lesson) shows it for that
-visit without changing the stored choice.
+asked for. The Control tab's **Tabs** block has four toggles, kept in this browser: **Tutorial**
+(shown by default), **Technical manual**, **Advanced mode** (off by default), which adds the
+Observatory and Campaign tabs, and **Refinement lab** (off by default), which adds the Lab tab. A
+link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`, `?tab=12`, `?lecture=1`, `?view=`,
+`?step=`, `?advanced=1`, `?lab=1`, a link to a tutorial lesson) shows it for that visit without
+changing the stored choice.
 
 ## Model and terms
 
@@ -1407,6 +1409,127 @@ generator found is its solution (Show: solutions). A view program gets the proje
 `#const k = default.` takes the project's value. `cand/1` holds only interface atoms that are not
 facts: draw what the instance fixes in the scene part.
 
+### Refinement lab tab
+
+Tab 12 (`?tab=12`), shown with the toggle **Refinement lab** in the Control tab's **Tabs** block
+(`cegarplay.lab`), or for one visit with `?lab=1`. It shows what a loop *could* have done, not
+just what it did: at one step, every refinement clause that was possible there, and over a whole run,
+how its length compares with the best and worst runs that the same refinements allow. Everything is
+computed on small instances by enumerating the candidate space, as the [audit](#manual-audit) does,
+in the lab's own Web Worker with its own clingo-wasm instance. **Run**, **Audit**, **Abort** and the
+batches work as usual while the lab computes, and the lab's **Cancel** stops only the lab. The lab
+stores nothing in the project and writes nothing to the run history; its settings are kept in
+`cegarplay.lab.*` (removed by **Reset everything**). The tab's parts depend on each other in order,
+and say why when they are disabled. When the project was edited after the space was computed, an
+amber line says so and the older results stay on screen.
+
+**Definitions.** All parts rest on one precomputed space of one link G (the audited link, or the
+one named under **Link**):
+
+| Term | Meaning |
+| --- | --- |
+| interface I | The non-fact interface atoms of G, numbered as in the Candidate space (and the recordings' `I` and `R` events). |
+| candidates, solutions, bad | The models of the unrefined abstraction, one per assignment to I; solutions have no counterexample; bad candidates are the others. |
+| cl(M, S) | For a bad candidate M and a set S ⊆ I: at least one atom of S takes a value other than M's (`G.clause(M, X)` with S the relevant set of X; `G.block(M)` with S = I). |
+| R(M, S) | The removal set: the candidates that agree with M on S. |
+| sound | R(M, S) has no solution: S meets every D(M, s), the atoms on which M and a solution s differ. The minimal sound sets are the minimal hitting sets of these sets. A superset of a sound set is sound and prunes less. |
+| forced atom | An atom in every sound set of M: some solution (the witness) differs from M only there. |
+| justified by X | X is also a counterexample of every candidate in R(M, S). Justified implies sound, not the other way round. It is checked with certificate level 2 on S's values, else one solve of the check per candidate of R(M, S) with X's choices fixed (the heads of the check's choice rules, as in X), up to a cap. |
+| Opt(M), schemes | **loop**: one option per distinct relevant set over all counterexamples of M (the audit's pairs), each `clause/3` group for `G.clauses`, the block for a loop refined only by blocks; **omniscient**: every minimal sound set of M; **block**: S = I. |
+| pruning | The candidates of R(M, S) still alive at a step; total removal is \|R(M, S)\|. |
+| idealised run | Proposes alive candidates: a solution is accepted (no cost), a bad candidate M is refined with one option of Opt(M), which removes R(M, S). It ends when only solutions are alive; its length is its number of refinements. |
+
+The idealised run ignores clasp's weak retention of clauses in Shape 1 (`--enum-mode=record`): a
+real Shape 1 run can propose a removed candidate again and be longer than the worst idealised run.
+The tab says so wherever it compares a real run with idealised ones.
+
+**Lab bar.** The instance and variant (at first those of the run bar; changing them here does not
+change the run bar), the link (empty: as the audit chooses it), **Steps from** (the latest run of the
+page, an opened recording, or free), **Compute space**, **Cancel**, the status line ("space: 412
+candidates, 37 solutions, 375 bad, 12 interface atoms"), and **Limits**: candidate cap (200,000, the
+audit's), counterexamples per candidate (20), minimal sets per candidate (200), exact-bounds
+threshold (3,000 bad candidates), time budget (30 s per clingo computation and for the simulation),
+simulation runs (1,000). The space is computed once per project version, instance, variant and
+link, and kept in the lab worker's memory.
+
+**Space.** The counts, the options per scheme, and whether the loop scheme is sound on this instance
+(the same answer as the audit, with the same witness: the fewest differing atoms).
+
+**Step inspector.** From a run (a run recorded with every step: Loop tab, Recording) with a step
+slider, **Previous** and **Next**; the alive set before the step comes from replaying the run's
+earlier clauses over the space. Or free: any bad candidate from a list ordered by true atoms, by
+counterexamples or at random, with every candidate alive. For the candidate M:
+
+1. **Counterexamples** (on request: one more run of the check): the first N, each with its relevant
+   set, clause length, total removal and status; the one the run used is marked.
+2. **Atoms**: one row per interface atom: M's value, whether it is in the loop's clause, **forced**
+   (a click names the witness solution), in how many minimal sound sets it appears, and for the
+   selected set S the one-atom changes: dropping it (still sound? how many more removed) and adding it.
+3. **Option map**: clause length against pruning at this step, for the minimal sound sets (capped,
+   with a note), the loop's options, the block, the run's clause and, on request, the lifted clause
+   (certificate levels 2 and 3, as `lift`). The Pareto frontier of the sound points is drawn.
+   Colours: unsound (the hover names a lost solution), sound but not justified (or not checked),
+   justified. A click (or the **Set** list) selects a set for the atom table.
+4. **Lattice**: the Hasse diagram of the subsets of the loop's clause atoms plus the forced atoms,
+   each node sound or unsound with its pruning; only up to 10 atoms.
+5. **The verdict line** (a polite live region), for example "The loop's clause has 6 atoms and
+   removes 14 candidates. The smallest sound clause has 3 atoms and removes 41. edge(2,4) is forced
+   by solution 7."
+
+Minimal sound sets come from clingo (`--heuristic=Domain --enum-mode=domRec` with a false sign
+heuristic on the chosen atoms; under the cap, one cardinality-minimal set by `#minimize`).
+
+**Run bounds.** For a scheme (loop, omniscient, block), the exact best and worst idealised runs: one
+ASP program, with `opt/2` and `rem/2` facts, chosen options, the condition "every bad candidate is
+chosen or removed by a chosen clause", and clingo's `#edge` acyclicity constraint on "the clause of
+C removes the chosen D, so D comes first", minimised or maximised. Each value is **proven** or, when
+the time budget runs out, a bound ("best ≤ 14, ≥ 4, not proven"; the other side is trivial: ⌈\|Bad\| /
+largest removal⌉ for the best, \|Bad\| for the worst). Under the block scheme best = worst = \|Bad\|.
+Above the exact-bounds threshold only the simulation runs. The simulation: idealised runs in random
+order (an option at random; for the loop scheme also the first counterexample's option), and two
+greedy policies (each step the candidate and option that remove the most, or the fewest, alive
+candidates). A histogram shows the lengths with the bounds, the greedy results and the median.
+When the loop scheme is unsound, the bounds name the solutions their runs put at risk, the
+simulation counts the runs that lose solutions, and the text says to audit the instance.
+
+**This run against the bounds.** Needs a recorded run of the same instance and variant and the loop
+scheme's bounds. **The ladder** puts on one axis of refinements: best (omniscient), best (loop
+scheme), greedy best, the simulation's median, this run, greedy worst, worst (loop scheme) and
+\|Bad\| (the block scheme); unproven values are intervals. Under it, the run's percentile among the
+simulated runs (shorter runs, ties counting half). **The decomposition**: abstraction looseness
+(\|Bad\| and \|Bad\| / \|Cand\|), refinement strength (best of the loop scheme − best omniscient: what a
+better `relevant/1` could save at best), order luck (this run − best of the loop scheme, and the
+percentile). **Regret per step**: the pruning of the run's clause, of the best option of Opt(M) at
+that step, and of the best minimal sound set; the five steps with the largest regret open in the
+inspector. **Compare with a recording** lays a second recording of the same instance over the ladder
+and the regret chart. A run outside the idealised range is shown with the likely cause (weak clause
+retention in Shape 1, restarts, refinements outside the model).
+
+**Exports**: the space and all results as JSON, each table as CSV, each chart as SVG.
+
+**Unsupported** (version 1; the tab and the tool give the reason, exit code 4): `expand`
+refinements, cores, refinements other than `G.clause`, `G.clauses` and `G.block`, checks on partial
+candidates, chains, solver and link families, several links leaving the top solver, raw Lua loops,
+and instances marked `audit: false`. A `lift` link gets a space, the omniscient and block schemes
+and lifted clauses in the inspector, but no loop-scheme bounds. A `clause/3` group is one option
+with its own removal set; a group that does not remove its candidate is left out of the bounds.
+
+**Headless**: every number of the tab also comes from `tools/lab.mjs`, with the same modules
+(`js/lab/*.js`, `lua/lab.lua`):
+
+```
+node tools/lab.mjs <project.json | library id> [--instance ID] [--variant NAME] [--link G]
+                   [--candidate HEX | --step N --record FILE] [--bounds loop|omniscient|block]
+                   [--simulate N] [--seed N] [--record FILE [--compare FILE]] [--seconds N]
+                   [--cex N] [--minimal N] [--exact N] [--limit N] [--justify [--lift]]
+                   [-c name=value] [--json]
+```
+
+`--candidate` inspects a candidate in free mode, `--step N --record FILE` step N of a recording;
+`--record FILE` with `--bounds loop` and `--simulate N` places the run against the bounds (the
+ladder, the decomposition and the regret per step). Exit codes as `tools/audit.mjs`: 0 success,
+1 error, 2 bad usage, 3 a limit or a budget (a bound not proven), 4 unsupported.
+
 ### Event lines
 
 The runtime prints one line per event: `@@` + kind letter + space + JSON. `tools/run.mjs --json`
@@ -1438,10 +1561,11 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?example=<id>` | Load the library example `<id>` (also `?file=<id>`). It does not replace the project kept in the browser until you edit it. |
 | `&fragment=<name>` | With `?example`: open the Programs tab on that fragment's editor (`loop` opens the Loop tab; a view fragment opens its view's editor in the Observatory, **Edit this view**). Overrides `?tab`. An unknown name is ignored with a note in the status line. |
 | `&from=guide/<page>.html#<anchor>` | Show a link "← Back to the guide" at the top left, to that guide page. Only a page of the guide is accepted. |
-| `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory. The numbers are fixed; they are not the order on screen. |
+| `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory, 12 Lab (the Refinement lab). The numbers are fixed; they are not the order on screen. |
 | `&instance=<id>` | Pick that instance of the project in the run bar. An unknown id is ignored with a note. |
 | `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
 | `?advanced=1` | Advanced mode for this visit: the Observatory and Campaign tabs (without changing the remembered toggle). `?tab=10`, `?tab=11`, `?lecture=1`, `?view=` and `?step=` imply it. |
+| `?lab=1` | Show the Lab tab ([Refinement lab](#manual-refinement-lab-tab)) for this visit, without changing the remembered toggle. `?tab=12` implies it. |
 | `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
 | `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
 | `#p=<data>` | A share link (**Copy share link** in the Control tab): the whole project without its run history, in the URL fragment, which never reaches the server. `<data>` is `z` + base64url of the deflate-raw compressed project JSON (`u` + base64url of the plain JSON in a browser without `CompressionStream`). Takes precedence over the kept project and, like `?example`, does not replace it until you edit. A damaged link opens the default example with an error in the status line. Links over 8,000 characters get a warning. |
@@ -1488,6 +1612,8 @@ Browser storage (`localStorage`, per browser and site):
 - `cegarplay.manual`: `"1"` when "Show the technical manual" is ticked.
 - `cegarplay.advanced`: `"1"` when Advanced mode is on (absent when off).
 - `cegarplay.tutorial`: `"0"` when the Tutorial tab is hidden (absent when shown).
+- `cegarplay.lab`: `"1"` when the Refinement lab is on (absent when off); `cegarplay.lab.*`: the
+  lab's settings (its Limits, the source of steps, the candidate order, the scheme), as JSON.
 - `cegarplay.theme`: `"light"` or `"dark"` when the colour theme was chosen by hand (absent for Auto).
 - **Reset everything** (Control tab, last block) removes every `cegarplay*` key above and the
   Campaign tab's rows (IndexedDB `cegarplay`), after a question, and loads the page afresh (no
