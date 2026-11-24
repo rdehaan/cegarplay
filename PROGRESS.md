@@ -1710,3 +1710,35 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
   had already been left out of the rewrite); the flaky-tests item names the V4 frame timing.
 - Not verified: Firefox (`BROWSER=firefox`; not installed here). No git remote in this container,
   so nothing was pushed.
+
+### Feedback: readme, domain view solutions, candidate space, blame matrix, manual (2026-11-24)
+
+- **Readme code:** the project readme (Control tab) is outside the Tutorial/Manual sections, so it
+  got the global 15 px `code` in 14 px text and list items with a 14 px line height: code
+  overlapped the lines around it. `.project-readme-body` now has its own list rules (as the
+  manual's) and code at 0.9 em.
+- **Domain view, solutions (intended change):** without a recording of every step, `traceSteps`
+  appended the solutions found after the last traced step as steps numbered on from it, so a run of
+  thousands of steps showed its puzzle as "step 201" right after the trace's 200. Now `traceSteps`
+  returns the T steps only, and `solutionSteps(rec)` (`js/recording.js`, at most 1,000) lists the
+  solutions apart with what is known of when each was found (`at.step` with R events;
+  `at.after` / `at.before` around it in the trace). The domain view has **Show: steps (N) |
+  solutions (M)**; the solution label says "found at step 13", "found between traced steps 4 and
+  5", or "found after traced step 200; the trace keeps only the first 200 steps, so when exactly is
+  not known". A step label says when the trace was cut ("traced step 200 of 200; the trace keeps
+  only the first 200 steps of the run"; the limit is the project's `settings.trace`, as a recording
+  does not store it). No runtime change, so recordings and replays are unchanged.
+  `test/cursor.test.mjs`: the two tests of the old behaviour now test the new one (changed on
+  purpose). `docs/spec-views.md` and `manual.md` updated.
+- **Candidate space without candidates:** for sudoku-unavoidable (810 interface atoms, every
+  instance `audit: false`) the audit runs out of memory; Compute ignored that and drew an empty
+  map, "removes 0, 0 new, 0 solutions" at every step. Now an `audit: false` instance gets a message
+  first (with **Try anyway**), an audit without a verdict or without candidates says why ("not
+  enough memory"), the old map is cleared, and the blame matrix is still drawn (it needs only the
+  recorded steps).
+- **Blame matrix:** two sentences under its heading in the Observatory (`#space-blame-note`).
+- **Manual:** the references to `docs/*.md` (not reachable from the web app) are removed, with
+  the "phase S3" note.
+- Tests: `test/browser/observatory.test.mjs` (the switch on af-preferred with a 3-step trace and
+  with every step recorded; the candidate space of an `audit: false` instance, Try anyway).
+- Full suite: 1124 tests, 1115 pass, 0 fail, 9 skipped. `make-examples` leaves `examples/` unchanged.

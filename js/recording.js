@@ -35,25 +35,36 @@ export function align(a, b, by = 'step') {
   return out;
 }
 
-// Without R events: the T events (i = T step number), then the solutions found after the last
-// traced step (at most TRACE_SOLUTIONS), as steps of kind 'solution' numbered on from the last T
-// step. The trace has no step for an accepted candidate; this way a view and the cursor still
-// reach the run's last solution (such as the puzzle a generator found). Solutions found between
-// traced steps are left out: they have no number of their own in the trace.
-export const TRACE_SOLUTIONS = 20;
+// Without R events: the T events (i = T step number). Solutions are not steps here: the trace has
+// no step for an accepted candidate, and a solution found after the trace stopped (it keeps the
+// first settings.trace steps) has no step number at all. solutionSteps lists them apart, with what
+// is known of when each was found; the domain view shows them under "Show: solutions".
 export function traceSteps(rec) {
   if (!rec) return [];
+  return (rec.traces || []).map((t) => ({ i: t.i, r: null, t }));
+}
+
+// The run's solutions (at most `limit`), each as a frame a view can draw: [{ n, t, at }].
+//   at.step: the R step that found it (a recording with every step)
+//   at.after / at.before: without R events, the traced steps around it (after: the T step before
+//   it, 0 = before the first; before: the next T step, null = none followed it)
+export const SOLUTION_FRAMES = 1000;
+export function solutionSteps(rec, limit = SOLUTION_FRAMES) {
+  if (!rec) return [];
+  const sols = (rec.solutions || []).slice(0, limit);
   const T = rec.traces || [];
-  const out = T.map((t) => ({ i: t.i, r: null, t }));
-  const last = T.length ? T[T.length - 1].i : 0;
-  const after = rec.solutionAfter || [];
-  let j = 0;
-  (rec.solutions || []).forEach((m, k) => {
-    if (j >= TRACE_SOLUTIONS || after[k] !== T.length) return;
-    j++;
-    out.push({ i: last + j, r: null, t: { i: last + j, kind: 'solution', solver: '', candidate: m.atoms, solution: m.n } });
+  const R = (rec.steps || []).filter((x) => x.k === 's');
+  const withR = !!(rec.steps && rec.steps.length);
+  return sols.map((m, k) => {
+    let at;
+    if (withR) at = R[k] ? { step: R[k].i } : {};
+    else {
+      const a = (rec.solutionAfter || [])[k] ?? T.length;
+      at = { after: a > 0 ? T[a - 1].i : 0, before: a < T.length ? T[a].i : null };
+    }
+    const i = at.step ?? at.after ?? 0;
+    return { n: m.n ?? k + 1, at, t: { i, kind: 'solution', solver: '', candidate: m.atoms, solution: m.n } };
   });
-  return out;
 }
 
 // The steps of a recording with one numbering: the R steps (i = R step number; solutions count),

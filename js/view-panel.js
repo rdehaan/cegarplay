@@ -1,7 +1,7 @@
 // The domain view region of the Observatory (docs/spec-views.md): pick a view and a step, draw
 // the view's marks as SVG. Scene layout once per scene; a frame only changes attributes.
 import { Engine } from './engine.js';
-import { pairSteps } from './recording.js';
+import { pairSteps, solutionSteps } from './recording.js';
 import { viewAtoms as viewAtomsOf, frameSVG, svgFile } from './views.js';
 import { frameFacts, viewProgram, sceneProgram, parseMarks, layoutScene, suggestView, Palette, FrameSource, VIEW_OPTIONS, viewProject, hashText } from './views.js';
 
@@ -46,6 +46,22 @@ export class ViewPanel {
       if (st && this.app.cursor) this.app.cursor.setByStep(st.i);
     });
     this.stepLabel = h('span', { id: 'view-step-label', class: 'note' });
+    // Show: the recorded steps, or the run's solutions. A solution is not a step of the trace (it
+    // has none for an accepted candidate, and stops after settings.trace steps): shown apart, with
+    // what is known of when it was found, instead of as a made-up step after the last traced one.
+    this.mode = 'steps';
+    const radio = (value, text) => {
+      const r = h('input', { type: 'radio', name: 'view-show', value, id: `view-show-${value}`, checked: value === 'steps' });
+      r.addEventListener('change', () => { if (r.checked) { this.mode = value; this.renderMode(); this.show(); } });
+      return [r, h('label', { for: `view-show-${value}`, id: `view-show-${value}-label` }, text)];
+    };
+    this.showBox = h('div', { class: 'view-show', role: 'radiogroup', 'aria-label': 'Show the recorded steps or the solutions' },
+      h('span', { class: 'note' }, 'Show '), ...radio('steps', 'steps'), ...radio('solutions', 'solutions'));
+    this.solSlider = h('input', { type: 'range', id: 'view-solution', min: 1, max: 1, value: 1, 'aria-label': 'Solution' });
+    this.solSlider.addEventListener('input', () => this.show());
+    this.solLabel = h('span', { id: 'view-solution-label', class: 'note', 'aria-live': 'polite' });
+    this.stepBox = h('label', { id: 'view-step-box' }, 'Step ', this.slider);
+    this.solBox = h('label', { id: 'view-solution-box', hidden: true }, 'Solution ', this.solSlider);
     this.svgBox = h('div', { id: 'view-svg', class: 'view-svg' });
     this.notes = h('ul', { id: 'view-notes', class: 'view-notes' });
     this.svgBoxB = h('div', { id: 'view-svg-b', class: 'view-svg', hidden: true });
@@ -56,7 +72,7 @@ export class ViewPanel {
         'Drag a node to fix its place.'),
       h('div', { class: 'instances-bar' }, this.select,
         h('button', { class: 'control-button small-button', id: 'view-suggest', onclick: () => this.suggest() }, 'Suggest a view'),
-        h('label', {}, 'Step ', this.slider), this.stepLabel),
+        this.showBox, this.stepBox, this.stepLabel, this.solBox, this.solLabel),
       this.msg, h('div', { class: 'view-pair' }, this.svgBox, this.svgBoxB), this.notes);
   }
 
@@ -82,6 +98,42 @@ export class ViewPanel {
     this.slider.max = Math.max(1, this.steps.length);
     if (Number(this.slider.value) > this.steps.length) this.slider.value = 1;
     this.slider.disabled = !this.steps.length;
+    this.solutions = solutionSteps(this.app.recording);
+    this.solSlider.max = Math.max(1, this.solutions.length);
+    if (Number(this.solSlider.value) > this.solutions.length) this.solSlider.value = String(Math.max(1, this.solutions.length));
+    this.solSlider.disabled = !this.solutions.length;
+    this.renderMode();
+  }
+
+  renderMode() {
+    const sols = this.mode === 'solutions';
+    this.stepBox.hidden = sols; this.stepLabel.hidden = sols;
+    this.solBox.hidden = !sols; this.solLabel.hidden = !sols;
+    const n = (this.solutions || []).length, total = this.app.recording ? (this.app.recording.solutions || []).length : 0;
+    this.showBox.querySelector('#view-show-steps-label').textContent = `steps (${(this.steps || []).length})`;
+    this.showBox.querySelector('#view-show-solutions-label').textContent = `solutions (${total > n ? `${n} of ${total}` : n})`;
+  }
+
+  // How much the trace tells: it keeps the first settings.trace steps (the project's setting now;
+  // a recording does not store it).
+  traceCut() {
+    const rec = this.app.recording;
+    if (!rec || (rec.steps && rec.steps.length)) return 0;
+    const lim = Number(((this.app.project || {}).settings || {}).trace ?? 200);
+    const T = rec.traces || [];
+    return lim > 0 && T.length >= lim ? lim : 0;
+  }
+
+  // where a solution was found, as far as the recording knows
+  solutionWhere(x) {
+    const a = x.at;
+    if (a.step != null) return `found at step ${a.step}`;
+    if (a.after == null) return 'found when (not recorded)';
+    if (a.before != null) return a.after ? `found between traced steps ${a.after} and ${a.before}` : `found before traced step ${a.before}`;
+    if (!a.after) return 'found with no traced step before it';
+    const cut = this.traceCut();
+    return cut ? `found after traced step ${a.after}; the trace keeps only the first ${cut} steps, so when exactly is not known (record every step in the Loop tab)`
+      : `found after step ${a.after}, the last step of the run`;
   }
 
   // frames come from a FrameSource; its engine starts only when a frame is not cached
@@ -139,10 +191,22 @@ export class ViewPanel {
       this.scene = parseMarks(r.atoms, v.name);
       this.drawScene();
     }
-    const st = this.steps[index - 1];
-    if (!st) { this.stepLabel.textContent = this.steps.length ? 'before the first step' : 'no recorded step (run first)'; this.applyFrame(parseMarks([], v.name)); return; }
-    const facts = st.t ? frameFacts(st.t) : frameFacts(st.r, this.iface(st));
-    this.stepLabel.textContent = `step ${st.i} of ${this.steps.length} (${st.t ? st.t.kind : st.r.k})`;
+    let facts;
+    if (this.mode === 'solutions') {
+      const sols = this.solutions || [];
+      const k = Math.min(sols.length, Math.max(1, Number(this.solSlider.value) || 1));
+      const x = sols[k - 1];
+      if (!x) { this.solLabel.textContent = 'no solution in the last run'; this.applyFrame(parseMarks([], v.name)); return; }
+      this.solLabel.textContent = `solution ${x.n} of ${(this.app.recording.solutions || []).length}, ${this.solutionWhere(x)}`;
+      facts = frameFacts(x.t);
+    } else {
+      const st = this.steps[index - 1];
+      if (!st) { this.stepLabel.textContent = this.steps.length ? 'before the first step' : 'no recorded step (run first)'; this.applyFrame(parseMarks([], v.name)); return; }
+      facts = st.t ? frameFacts(st.t) : frameFacts(st.r, this.iface(st));
+      const cut = this.traceCut();
+      this.stepLabel.textContent = cut ? `traced step ${st.i} of ${this.steps.length} (${st.t.kind}); the trace keeps only the first ${cut} steps of the run`
+        : `step ${st.i} of ${this.steps.length} (${st.t ? st.t.kind : st.r.k})`;
+    }
     const r = await this.source.frame(viewProgram(p, v, facts));
     if (!r) return;                                    // the cursor has moved on
     if (r.error) { this.msg.textContent = `The frame: ${r.error}`; return; }

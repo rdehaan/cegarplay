@@ -30,12 +30,15 @@ Step facts (`frameFacts(step, iface)`):
 
 `cand/1` holds the candidate's interface atoms that are not facts (in both sources): an interface
 atom that is a fact is the same in every step, so a view draws it in the scene, from the instance.
-Without `R` events the steps are the `T` events, then the solutions found after the last traced
-step (`traceSteps` in `js/recording.js`, at most 20), each as a step of kind `solution` numbered on
-from the last `T` step, with `cand(A)` for each atom of the solution (its shown atoms, which may
-include facts). The trace has no step for an accepted candidate, so this is how a view (and the
-cursor) reaches the run's last solution, such as the puzzle a generator found. Solutions found
-between traced steps have no step.
+Without `R` events the steps are the `T` events (`traceSteps` in `js/recording.js`). Solutions are
+not steps: the trace has no step for an accepted candidate, and stops after `settings.trace` steps,
+so a solution found later has no step number. (Until 2026-11-24 the solutions after the last traced
+step were appended as steps numbered on from it, which read as "found at step 201" in a run of
+thousands of steps.) `solutionSteps(rec)` lists the run's solutions (at most 1,000) apart, each
+with `cand(A)` for each of its shown atoms (which may include facts) and what is known of when it
+was found: `at.step` (the `R` step, with a recording of every step), or `at.after` / `at.before`
+(the traced steps around it; `before = null` after the last one). The domain view's **Show:
+steps | solutions** switch picks between the two; a step label says when the trace was cut.
 
 ## 3. Marks
 

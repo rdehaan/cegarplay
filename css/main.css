@@ -465,6 +465,13 @@ label.tab-label.has-problem:after {
 .project-readme-body h1 { font-size: 17px; }
 .project-readme-body h2 { font-size: 15px; }
 .project-readme-body h3 { font-size: 14px; }
+/* the readme sits in the Control tab, outside the manual's section rules: lists and code as there,
+   code sized to the text around it (the global 15 px code is larger than the readme's 14 px) */
+.project-readme-body ul, .project-readme-body ol { margin: 0 0 10px; padding-left: 25px; line-height: 1.5; }
+.project-readme-body li { margin-bottom: 4px; line-height: 1.5; }
+.project-readme-body code { font-size: 0.9em; padding: 0 4px; }
+.project-readme-body pre code { font-size: inherit; padding: 0; }
+.project-readme-body pre { font-size: 13px; }
 .project-edit { float: right; }
 .project-form {
   display: flex;
@@ -1152,3 +1159,6 @@ summary:focus-visible, a:focus-visible {
   outline: 2px solid var(--link);
   outline-offset: 2px;
 }
+/* the domain view's Show switch (steps | solutions) */
+.view-show { display: inline-flex; align-items: center; gap: 2px 6px; flex-wrap: wrap; }
+.view-show label { margin-right: 6px; }

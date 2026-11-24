@@ -227,7 +227,7 @@ the mean clause length (`meanClause`) and per solver the calls, time and conflic
 limit); **Import rows** reads its file. `node tools/report.mjs rows.jsonl [--metric
 time|candidates|refinements] [--limit S] [--out PREFIX]` turns rows into a report: per-variant
 totals (solved, total time, PAR2), the matrix as Markdown and CSV, the disagreements, and a cactus
-plot as SVG. Format: `docs/spec-instances.md` section 5.
+plot as SVG.
 
 ```json
 "suites": [ { "name": "scaling", "instances": { "constants": { "n": [4, 5, 6, 7, 8] } },
@@ -242,7 +242,7 @@ stops at the first unsound one, shrinks its facts and constants (delta debugging
 `schema` fragment satisfied and the audit unsound) and diagnoses it: the lost solution, the
 audit's witness, and the step of the loop's own run whose refinement removes the solution (for
 `expand` loops, a replay of the recorded expansions). The card saves the instance as a regression
-instance with its true count. Details: `docs/spec-instances.md` section 6. Instances marked
+instance with its true count. Instances marked
 `audit: false` get the [symbolic audit](#manual-audit-modes) instead of none; one without a verdict
 (`budget`, `unsupported`) is skipped like one above the candidate limit.
 
@@ -839,7 +839,7 @@ def refute(i, M):                                     # a clause that removes M,
 | Files from `cegar.py` | `link G = A -> C via shared + glue legacy` | [lang-legacy](?example=lang-legacy) |
 | Clauses lifted from the ground programs (no `relevant/1` needed) | `link G = A -> C via shared + glue lift`; or `reject M with G.lift(M, X)` on any link | [tutorial-weak-relevant](?example=tutorial-weak-relevant) with `lift` |
 
-**`lift`** (phase S3, `docs/spec-soundness.md` section 4). With the keyword on a link,
+**`lift`**. With the keyword on a link,
 `G.clause(M, X)` computes the clause from the ground programs of both ends: it starts from the
 `relevant/1` atoms when that set is certified (level 2 or 3 of the certificates), else from the
 whole interface, and drops groups of atoms (least blamed first; a group that cannot go is split)
@@ -921,7 +921,7 @@ of these loops step by step (2QBF, implicit hitting sets, MARCO, ...).
 | Branch-and-check (Thorsteinsson), lazy clause generation | `on partial P:` in the search: the check also runs at partial assignments; cores or `G.clause(X)` with `G(P, false)` cut whole subtrees | [colourable-partial](?example=colourable-partial), [triangle-free-lazy](?example=triangle-free-lazy) | `branch-and-check`, `lazy-constraints` |
 | Omission-based abstraction (Saribatur and Eiter) | Constraints guarded by `#external` atoms, switched on with `A.set` when a candidate breaks them | [queens-omission](?example=queens-omission), [conformant-growing](?example=conformant-growing) (a growing horizon) | `omission` |
 
-Not expressible: refinement by interpolants, since clingo produces no proofs. `docs/directions/breadth.md` has the reasoning.
+Not expressible: refinement by interpolants, since clingo produces no proofs.
 
 ## Raw Lua projects
 
@@ -1109,8 +1109,7 @@ the column **Audit**, and runs with the same fragments and constants show it too
 
 ### Audit modes
 
-Optional. **Audit** sits in one group with its mode, "Audit by …" (`docs/spec-soundness.md`
-sections 7 and 8). A mode the loop does not support is marked "(not for this loop)", and the
+Optional. **Audit** sits in one group with its mode, "Audit by …". A mode the loop does not support is marked "(not for this loop)", and the
 Audit button's tooltip says why (an `expand` loop, a chain, a loop refined only by blocks, no space). The mode, and for a space audit the space and
 the bound, are kept with the project (`settings.audit`): a reload, a download or a share brings them
 back; a project without it opens with enumeration.
@@ -1150,7 +1149,6 @@ counterexample's guesses fixed, level 3 one unsatisfiable solver call on a produ
 and check. A certified refinement removes no solution, whatever the instance's other candidates
 are. Uncertified does not mean unsound (use Audit). Each clause gets a `K` event
 (`c`, `i`, `l`, `level`, `verdict`, `reason`), and the final `S` event a `certificates` object.
-Details and the proof: `docs/spec-soundness.md`.
 
 Expansions are certified too: the rules that `S.expand` grounds get level 3 when no candidate
 they remove escapes the counterexample whose atoms were the facts (the step must define new atoms
@@ -1167,15 +1165,14 @@ proof log: every counterexample and the certificate level of every refinement.
 shares nothing with the runtime (four checks: counterexamples are answer sets, certificates
 verify, solutions have no counterexample (for a witness check: every solution has a witness),
 nothing else is left). Its `--json` verdict can be
-imported in the Statistics tab ("Import certcheck verdict"). Details: `docs/spec-soundness.md`
-section 6.
+imported in the Statistics tab ("Import certcheck verdict").
 
 **Recording** (Loop tab, limits block) records the steps of a run as compact `R` events: every
 step, the first N, every N-th, the last N, or a sample of N; **solver calls** adds a `C` event per
 call. The setting is `settings.record` (absent when off). Every run's events are kept:
 **Download recording** (Control tab) saves them as a `.cprec` file (gzip; header line, then the event
 lines), **Open recording** replays one without the engine (run status `replayed`). Each `fast`
-library example has a replay in `examples/replays/`. Details: `docs/spec-recording.md`.
+library example has a replay in `examples/replays/`.
 
 ## Output and statistics
 
@@ -1279,16 +1276,22 @@ draw(note("A triangle survives.")) :- kind(reject).
 
 Marks: `node/1`, `edge/2`, `cell/2`, `item/2`, `rank/3`, `attr/3` (keys `fill`, `stroke`,
 `label`, `weight`; a fill or stroke value is a class, coloured by first use), `emph/1`, `ghost/1`,
-`note/1`, `layout/1` (`grid`, `list`, `circle`, `layers`, `graph`), `pos/3`. The step slider picks
-a recorded step (the trace's `T` events and the solutions found after the last of them, or `R`
-events of a recording); the drawing keeps every
+`note/1`, `layout/1` (`grid`, `list`, `circle`, `layers`, `graph`), `pos/3`. **Show** switches
+between **steps** and **solutions**. In steps mode the slider (and the Observatory's cursor) picks a
+recorded step: the trace's `T` events, or the `R` events of a run recorded with every step. The
+trace keeps only the first steps of a run (**Trace steps** in the Loop tab, 200 by default), and
+then the label says so ("traced step 200 of 200; the trace keeps only the first 200 steps of the
+run"). In solutions mode the slider picks one of the run's solutions (up to 1,000), drawn with
+`kind(solution)` and `cand(A)` for each of its shown atoms; the label says when it was found as far
+as the recording knows: at step N (recorded with every step), between two traced steps, or after
+the last traced step, in which case when exactly is not known. A solution is never shown as a
+step: the trace has no step for an accepted candidate. The drawing keeps every
 position between steps; dragging a node stores its position in the project. **Suggest a view**
 writes a first view from the predicates of the interface. The view runs as plain clingo with the
-instance and the named fragments, so a mistake shows as a clingo message. Details:
-`docs/spec-views.md`. Nineteen library examples ship a view (the guide's clique examples, the
+instance and the named fragments, so a mistake shows as a clingo message. Nineteen library examples ship a view (the guide's clique examples, the
 tutorial, `clique-colouring`, `af-preferred`, `arrowing`, `choosability`, `qbf`, and the puzzle
-generators: the five `sudoku-*`, `binairo`, `futoshiki`, `akari`, `slitherlink`); their last
-step is the puzzle the run found. A view program gets the project's constants: a fragment's own
+generators: the five `sudoku-*`, `binairo`, `futoshiki`, `akari`, `slitherlink`); the puzzle a
+generator found is its solution (Show: solutions). A view program gets the project's constants: a fragment's own
 `#const k = default.` takes the project's value. `cand/1` holds only interface atoms that are not
 facts: draw what the instance fixes in the scene part.
 

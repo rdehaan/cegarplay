@@ -4,7 +4,7 @@
 import { Space, fates, mapOrder, blameMatrix, redundancy } from './space.js';
 import { Recording } from './recording.js';
 import { auditPlan, auditBody, assemble, modulesFor, validate } from './driver.js';
-import { derive } from './project.js';
+import { derive, selectedInstance } from './project.js';
 import { fmt } from './output.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -56,7 +56,11 @@ export class SpaceView {
         h('button', { class: 'control-button small-button', id: 'space-compare', onclick: () => this.compareFile.click(), title: 'A second recording of the same project and instance' }, 'Compare with a recording'),
         this.compareFile = h('input', { type: 'file', id: 'space-compare-file', hidden: true, accept: '.cprec,.jsonl,.txt', onchange: () => this.openCompare() }),
         this.order, h('label', {}, 'Refinement ', this.slider), this.label),
-      this.msg, this.summary, this.canvas, this.legend, this.tip, this.curve, h('h4', {}, 'Blame matrix'), this.matrix);
+      this.msg, this.summary, this.canvas, this.legend, this.tip, this.curve, h('h4', {}, 'Blame matrix'),
+      h('p', { class: 'note', id: 'space-blame-note' }, 'One row per refinement, one column per interface atom that some refinement\'s clause contains: a cell is ' +
+        'coloured when that clause names the atom (one colour for a positive literal, another for a negative one). Atoms blamed by the same refinements stand side by side, ' +
+        'so a block shows a group of atoms the refinements keep relying on together.'),
+      this.matrix);
     this.canvas.addEventListener('mousemove', (e) => this.hover(e));
     this.canvas.addEventListener('click', (e) => this.click(e));
   }
@@ -73,7 +77,7 @@ export class SpaceView {
   }
 
   // Audit vectors of the current project (instance of the last run) and the recorded steps.
-  async compute() {
+  async compute({ force = false } = {}) {
     const app = this.app;
     const rec = app.recording;
     if (!rec || !rec.I || !rec.steps.length || (rec.header && rec.header.mode === 'audit')) {
@@ -82,12 +86,22 @@ export class SpaceView {
       return;
     }
     if (!app.ready || app.engine.active) return;
-    this.msg.textContent = 'Auditing for the candidate vectors…';
     const p = structuredClone(app.collect());
     let d;
-    const h = rec.header || {};
+    const hd = rec.header || {};
+    // an instance marked audit: false is too large to list its candidates (the audit runs out of
+    // memory or past its limit): say so first, and offer to try anyway
+    let inst = null;
+    try { inst = selectedInstance(p, hd.instance ? hd.instance : undefined); } catch { inst = null; }
+    if (inst && inst.audit === false && !force) {
+      this.noMap(`No map: the instance ${inst.id} is marked "audit: false", too large to list every candidate. ` +
+        'Record a run on a small instance (the run bar\'s Instance) and compute again. The blame matrix below needs only the recorded steps.');
+      this.msg.append(' ', h('button', { class: 'control-button small-button', id: 'space-compute-anyway', type: 'button', onclick: () => this.compute({ force: true }) }, 'Try anyway'));
+      return;
+    }
+    this.msg.textContent = 'Auditing for the candidate vectors…';
     // the instance and variant the recorded run used
-    try { d = derive(p, { instance: h.instance ? h.instance : undefined, variant: h.variant || undefined }); } catch (e) { this.msg.textContent = e.message; return; }
+    try { d = derive(p, { instance: hd.instance ? hd.instance : undefined, variant: hd.variant || undefined }); } catch (e) { this.msg.textContent = e.message; return; }
     const exec = (prog, o) => app.engine.exec(prog, o);
     const pr = await validate(d, exec);
     const plan = pr.compiled ? auditPlan(pr.compiled) : { error: 'a raw Lua loop has no audit' };
@@ -98,10 +112,38 @@ export class SpaceView {
     const r = await exec(a.program, '--outf=3');
     const ev = (r.out || []).filter((l) => l.startsWith('@@P ') || l.startsWith('@@A ')).map((l) => ({ kind: l[2], data: JSON.parse(l.slice(4)) }));
     const verdict = ev.filter((e) => e.kind === 'A' && e.data.verdict).map((e) => e.data).at(-1);
-    if (verdict && verdict.verdict === 'limit') { this.msg.textContent = 'More candidates than the limit: no map.'; return; }
+    if (verdict && verdict.verdict === 'limit') { this.noMap('No map: more candidates than the limit of the audit.', rec, plan.link); return; }
     const cands = ev.filter((e) => e.kind === 'P' && e.data.set === 'candidates').flatMap((e) => e.data.v);
     const sols = ev.filter((e) => e.kind === 'P' && e.data.set === 'solutions').flatMap((e) => e.data.v);
+    if (!verdict || !cands.length) {
+      // the audit ended without listing the candidates (out of memory, an error): no map, and no
+      // empty map that reads as "removes 0" at every step
+      let D = null;
+      for (const l of r.out || []) if (l.startsWith('@@D ')) { try { D = JSON.parse(l.slice(4)); } catch { /* not an event */ } }
+      const why = r.error ? (r.error.message || String(r.error)) : D ? [D.outcome, D.detail].filter(Boolean).join(': ') : 'no verdict';
+      this.noMap(`No map: the audit could not list the candidates (${why}). The candidate space needs an instance whose candidates fit in memory; try a smaller one.`, rec, plan.link);
+      return;
+    }
     this.setData(cands, sols, rec, plan.link);
+  }
+
+  // No candidates: clear the map, its summary and legend; keep the blame matrix, which needs only
+  // the recorded steps.
+  noMap(text, rec = this.app.recording, linkName) {
+    this.F = null; this.space = null; this.B = null;
+    this.summary.textContent = ''; this.label.textContent = ''; this.tip.textContent = '';
+    this.legend.textContent = ''; delete this.legend.dataset.keys;
+    this.curve.textContent = '';
+    this.canvas.width = 0; this.canvas.height = 0; this.canvas.style.width = '0px'; this.canvas.style.height = '0px';
+    delete this.canvas.dataset.cells;
+    this.slider.max = '0'; this.slider.value = '0';
+    this.msg.textContent = text;
+    if (rec && rec.I && rec.I.links.length) {
+      const li = Math.max(0, rec.I.links.findIndex((L) => L.link === linkName));
+      this.atoms = rec.I.links[li].atoms;
+      this.steps = rec.steps.filter((x) => x.l === li + 1 || x.k === 's');
+      this.drawMatrix();
+    }
   }
 
   setData(cands, sols, rec, linkName) {

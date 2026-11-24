@@ -80,34 +80,44 @@ test('review of wave 5: R steps and T events paired (R counts solutions, T does 
   assert.ok(a && b, 'both channels get their frame');
 });
 
-test('without R events, the solutions after the last traced step are steps of kind solution', async () => {
-  const { traceSteps, pairSteps, TRACE_SOLUTIONS } = await import('../js/recording.js');
+test('without R events the steps are the traced ones; solutions are listed apart with where they were found', async () => {
+  const { traceSteps, pairSteps, solutionSteps, SOLUTION_FRAMES } = await import('../js/recording.js');
   const rec = new Recording();
+  rec.add('M', { n: 1, atoms: 'p(0)' });                         // before the first traced step
   rec.add('T', { i: 1, kind: 'reject', solver: 'A', candidate: 'p(1)', literals: ['p(1)'] });
-  rec.add('M', { n: 1, atoms: 'p(2)' });                         // between traced steps: left out
+  rec.add('M', { n: 2, atoms: 'p(2)' });                         // between traced steps 1 and 2
   rec.add('T', { i: 2, kind: 'reject', solver: 'A', candidate: 'p(3)', literals: ['p(3)'] });
-  rec.add('M', { n: 2, atoms: 'p(4) q' });
-  rec.add('M', { n: 3, atoms: 'p(5)' });
+  rec.add('M', { n: 3, atoms: 'p(4) q' });                       // after the last traced step
   const S = traceSteps(rec);
-  assert.deepEqual(S.map((s) => [s.i, s.t.kind]), [[1, 'reject'], [2, 'reject'], [3, 'solution'], [4, 'solution']]);
+  // no made-up step numbers: a solution is not a step of the trace
+  assert.deepEqual(S.map((s) => [s.i, s.t.kind]), [[1, 'reject'], [2, 'reject']]);
   assert.deepEqual(pairSteps(rec), S);
-  assert.deepEqual(ticksOf(rec).map((t) => [t.i, t.k]), [[1, 'reject'], [2, 'reject'], [3, 'solution'], [4, 'solution']]);
-  assert.deepEqual(frameFacts(S[2].t), ['step(3).', 'kind(solution).', 'cand(p(4)).', 'cand(q).']);
-  for (let n = 4; n < 40; n++) rec.add('M', { n, atoms: `p(${n + 2})` });
-  assert.equal(traceSteps(rec).length, 2 + TRACE_SOLUTIONS);
-  // a recording with R events keeps its own numbering (solutions are R steps there)
-  assert.equal(pairSteps(recOf('af-preferred')).length, recOf('af-preferred').steps.length);
+  assert.deepEqual(ticksOf(rec).map((t) => [t.i, t.k]), [[1, 'reject'], [2, 'reject']]);
+  const L = solutionSteps(rec);
+  assert.deepEqual(L.map((x) => [x.n, x.at]), [[1, { after: 0, before: 1 }], [2, { after: 1, before: 2 }], [3, { after: 2, before: null }]]);
+  assert.deepEqual(frameFacts(L[2].t), ['step(2).', 'kind(solution).', 'cand(p(4)).', 'cand(q).']);
+  for (let n = 4; n < SOLUTION_FRAMES + 10; n++) rec.add('M', { n, atoms: `p(${n + 2})` });
+  assert.equal(solutionSteps(rec).length, SOLUTION_FRAMES);
+  // a recording with R events: a solution is an R step, with its own number
+  const af = recOf('af-preferred');
+  assert.equal(pairSteps(af).length, af.steps.length);
+  const sAf = solutionSteps(af);
+  assert.equal(sAf.length, af.solutions.length);
+  assert.deepEqual(sAf.map((x) => x.at.step), af.steps.filter((x) => x.k === 's').map((x) => x.i));
 });
 
-test('a generator run without a recording: the view\'s last step is the puzzle it found', async () => {
+test('a generator run without a recording: the view\'s last solution is the puzzle it found', async () => {
   const p = load(H.read('examples/akari.json'));
   p.settings = { ...p.settings, solutions: 1, trace: 200 };
   const r = await H.runProject(p, { instance: 'layout' });
   const rec = new Recording();
   for (const e of r.events) rec.add(e.kind, e.data);
-  const { pairSteps } = await import('../js/recording.js');
-  const last = pairSteps(rec).at(-1);
+  const { pairSteps, solutionSteps } = await import('../js/recording.js');
+  // the trace's steps are refinements only; the puzzle is the run's solution (Show: solutions)
+  assert.ok(pairSteps(rec).every((x) => x.t.kind !== 'solution'));
+  const last = solutionSteps(rec).at(-1);
   assert.equal(last.t.kind, 'solution');
+  assert.equal(last.at.before, null);
   assert.equal(last.t.candidate, H.ofKind(r, 'M')[0].atoms);
   const d = derive(p, { instance: 'layout' });
   const consts = Object.entries(d.settings.constants).map(([k, v]) => `-c ${k}=${v}`).join(' ');
