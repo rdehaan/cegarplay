@@ -83,7 +83,7 @@ test('a space audit to the candidate space: which run the map shows, the refinem
   await page.waitForFunction(() => /candidate space computed for it/.test(document.getElementById('shown-line').textContent));
   // the refinement at the cursor: its step, candidate, counterexample and clause
   const detail = await page.textContent('#space-refinement');
-  assert.match(detail, /^Refinement \d+ of \d+: step \d+ \((reject|add|expand), solver A\)/);
+  assert.match(detail, /^Refinement \d+ of \d+: recorded step \d+, traced step \d+ \((reject|add|expand), solver A\)/);
   assert.match(detail, /Candidate\{/);
   assert.match(detail, /Counterexample\S/);
   assert.match(detail, /Clauseat least one of: /);
@@ -94,7 +94,7 @@ test('a space audit to the candidate space: which run the map shows, the refinem
   await page.waitForFunction(() => /^Refinement 1 of/.test(document.getElementById('space-refinement').textContent));
   await page.click('#space-show-trace');
   assert.equal(await page.$eval('#tab5', (t) => t.checked), true);
-  assert.match(await page.textContent('#trace-label'), /^step 1 of /);
+  assert.match(await page.textContent('#trace-label'), /^traced step 1 of \d+ \(recorded step \d+ of \d+, as in the Observatory\)$/);
   // another run: the map is of a run no longer shown, so it is cleared with a note
   await page.click('#run-button');
   await settled(page);

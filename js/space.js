@@ -194,5 +194,6 @@ export function refinementDetail(step, atoms, t = null) {
     clause,
     counterexample: t ? (t.counterexample ?? null) : null,
     traced: !!t,
+    traceStep: t ? t.i : null,
   };
 }

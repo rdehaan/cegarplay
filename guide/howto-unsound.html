@@ -50,8 +50,14 @@
             instance too large to enumerate, audit by <b>symbolic search</b>: the same verdict and the
             same kind of witness from one search.</li>
           <li><b>See it.</b> Observatory, Candidate space, <b>Compute</b>: one square per candidate,
-            coloured by its fate; lost solutions stand out. The summary names the first unsound
-            refinement; the blame matrix shows which atoms each clause relies on.</li>
+            coloured by its fate; lost solutions stand out. The map is of one run, recorded with every
+            step (the line above it names that run). The summary names the first unsound refinement;
+            the box under the map shows the refinement at the cursor (its candidate, counterexample and
+            clause), and a click on a lost solution moves the cursor to the refinement that removed it.
+            The blame matrix shows which atoms each clause relies on. The map shows only the
+            refinements this run made: its search order may avoid the unsound one that the audit found
+            (after a space audit, <b>Run on it in the candidate space</b> runs the loop on the
+            breaking instance).</li>
           <li><b>Shrink it.</b> If the instance is large, <b>Fuzz</b> (Instances tab) audits instances
             from small to large, stops at the first unsound one and shrinks it (instances marked
             "no audit" get the symbolic audit). With a space (Audit by <b>space</b>) the

@@ -97,7 +97,7 @@ test('refinementDetail: the candidate from its hex, the clause from its signed i
   const st = { i: 9, k: 'r', s: 1, c: '5', q: [2, -3] };
   const t = { i: 4, kind: 'reject', solver: 'A', candidate: 'a c', counterexample: 'x(1)' };
   assert.deepEqual(refinementDetail(st, atoms, t),
-    { step: 9, kind: 'r', solver: 'A', candidate: ['a', 'c'], clause: ['b', 'not c'], counterexample: 'x(1)', traced: true });
+    { step: 9, kind: 'r', solver: 'A', candidate: ['a', 'c'], clause: ['b', 'not c'], counterexample: 'x(1)', traced: true, traceStep: 4 });
   // not in the trace: no counterexample, and no solver name (the R step has only its index)
   const d = refinementDetail(st, atoms, null);
   assert.deepEqual([d.traced, d.counterexample, d.solver, d.candidate], [false, null, '', ['a', 'c']]);

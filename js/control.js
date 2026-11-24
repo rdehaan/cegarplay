@@ -371,7 +371,7 @@ export class Control {
       case 'A':
         if (data.verdict) { this.audit = data; app.output.auditVerdict(data); }
         else if (data.phase === 'symbolic') app.output.result(`Symbolic audit: ${fmt(data.rounds)} rounds, ${fmt(data.refinements)} refinements so far…`);
-        else app.output.result(`Auditing: ${fmt(data.candidates)} candidates, ${fmt(data.pairs)} pairs, ${fmt(data.unsound)} unsound so far…`);
+        else app.output.result(`Auditing: ${fmt(data.candidates)} candidates, ${fmt(data.pairs)} refinements checked, ${fmt(data.unsound)} unsound so far…`);
         break;
       case 'D': this.D = data; break;
       default: break;
@@ -419,7 +419,7 @@ export class Control {
       if (!A) return `Audit ended without a verdict: ${D.outcome}${D.detail ? ` (${D.detail})` : ''}.`;
       if (A.verdict === 'limit') return `Audit stopped: more than ${fmt(A.limit)} candidates. Audit a smaller instance.`;
       return A.verdict === 'sound'
-        ? `Audit: sound for every candidate and counterexample of this instance (${fmt(A.candidates)} candidates, ${fmt(A.pairs)} pairs).`
+        ? `Audit: sound for every candidate and counterexample of this instance (${fmt(A.candidates)} candidates, ${fmt(A.pairs)} refinements checked).`
         : `Audit: unsound. ${fmt(A.unsound)} of ${fmt(A.pairs)} refinements would remove a solution; ${fmt(A.at_risk)} solutions at risk.`;
     }
     if (this.mode === 'bounded' && D.outcome !== 'error') {
@@ -587,6 +587,7 @@ export class Control {
     app.output.result(symbolicText(A), result.verdict === 'unsound' ? 'error' : '');
     if (last && last.info && app.stats.S) { app.stats.record({ ...last.info, noHistory: false, audit: A }); app.stats.render(); }
     app.stats.live.textContent = auditLiveText(A);   // the whole space, not its last step
+    app.stats.audit = A; app.stats.render();
     return result;
   }
 

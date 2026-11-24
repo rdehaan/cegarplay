@@ -13,12 +13,14 @@ The page's tabs follow the work:
 
 - **Write**: *Programs* (the ASP fragments), *Loop* (the loop script, constants,
   limits, recording, certificates, and variants: the same project with other
-  fragments or another loop, chosen in the run bar and compared in a campaign)
+  fragments or another loop, chosen in the run bar, compared side by side as
+  line diffs with their latest results, or in a campaign)
   and *Instances* (the problem's inputs as
   facts and constants, generators of random instances, importers for common
   file formats, Run all, Fuzz, and optional spaces: every instance up to a bound,
   for verifying a refinement strategy on all of them).
-- **Run and look**: *Output* (solutions, trace, messages, the audit's verdict:
+- **Run and look**: the run bar's *Shown* line says which run the result tabs
+  hold, and when the project was edited since; *Output* (solutions, trace, messages, the audit's verdict:
   by enumeration, by a symbolic search, or over a space up to a bound),
   *Statistics* (counts, solver tables, charts, the run history) and, in
   Advanced mode, *Observatory* (the loop's anatomy and call timeline, a picture
@@ -30,7 +32,9 @@ The page's tabs follow the work:
   red).
 
 Advanced mode, the Tutorial and the Manual are toggles under *Tabs* in the
-Control tab; the browser remembers them.
+Control tab; the browser remembers them. The Control tab also keeps named
+projects (the workspace) and snapshots of the project being edited, with an
+Undo after a restore or after loading another project over an edited one.
 - **Trust**: *Audit* (every candidate and counterexample of an instance against
   the loop's refinements), certificates per refinement, lifted refinements,
   proof logs checked by an independent Python checker, and recordings that

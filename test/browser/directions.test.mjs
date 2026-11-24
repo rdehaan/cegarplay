@@ -429,7 +429,7 @@ test('V5: one cursor drives the trace, the domain view, the map and the timeline
   await page.keyboard.press('ArrowRight');
   s = await state();
   assert.equal(s.step, 4);
-  assert.match(s.label, /^step 4/);
+  assert.match(s.label, /^recorded step 4 \(/);
   await page.keyboard.press('Shift+ArrowLeft');
   assert.equal((await state()).step, 0);
   // a range restricts the line table

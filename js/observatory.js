@@ -71,7 +71,10 @@ export class ObservatoryBar {
     this.slider.max = String(c.ticks.length);
     this.slider.value = String(c.index);
     const t = c.tick;
-    this.label.textContent = c.ticks.length ? (t ? `step ${t.i} (${c.index} of ${c.ticks.length}${t.k ? `, ${t.k}` : ''})` : `before the first of ${c.ticks.length} steps`)
+    // "recorded step 16 of 16 (reject)": the R steps count solutions; "traced step 13 of 13": the trace
+    const KIND = { r: 'reject', a: 'add', e: 'expand', s: 'solution', x: 'error' };
+    const which = this.app.recording && this.app.recording.steps && this.app.recording.steps.length ? 'recorded' : 'traced';
+    this.label.textContent = c.ticks.length ? (t ? `${which} step ${t.i} (${c.index} of ${c.ticks.length}${t.k ? `, ${KIND[t.k] || t.k}` : ''})` : `before the first of ${c.ticks.length} ${which} steps`)
       + (c.range ? `; range ${c.ticks[c.range[0] - 1].i}–${c.ticks[c.range[1] - 1].i}` : '') : 'no recorded steps';
     this.follow.checked = c.follow;
     if (!this.data.hidden) this.fillData();

@@ -117,7 +117,13 @@ edge(U,V) :- node(U), node(V), U &lt; V, square((V-U) \ n).</pre>
             node.</li>
           <li><strong>Charts</strong>: candidates and refinements over time, and the time split
             between the solvers and grounding.</li>
+          <li><strong>Run history</strong>: one row per finished run; the row marked &#x25B6; is the
+            run whose results the tabs show.</li>
         </ul>
+        <p>All of this belongs to one run: the line <b>Shown:</b> under the run bar names it (a run or an
+          audit, its instance and variant, how much was recorded), and turns amber once the project is
+          edited, since the results on screen are then of the earlier version. After an audit the
+          Summary holds the audit's own figures, not the loop's.</p>
 
         <h2 id="good-run">What a good run looks like</h2>
         <ul>

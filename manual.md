@@ -1204,17 +1204,24 @@ library example has a replay in `examples/replays/`.
 
 ## Output and statistics
 
-After an **Audit**, the Output tab shows its verdict, and the Statistics tab and the Observatory show
-the audit's own solving (one check per candidate of the unrefined abstraction), with a note saying
-so; the next Run replaces them. The run history keeps both.
+Every result tab shows one run, audit or replay at a time: the one the run bar's **Shown** line
+names, and the run history marks with ▶. After an **Audit**, the Output tab shows its verdict (its
+Solutions and Trace say that an audit does not run the loop), the Statistics tab's Summary shows the
+audit's own figures (verdict, candidates, counterexamples, refinements checked, solutions; for a
+symbolic or space audit the rounds and refinements of its inner loop), and the solver tables, the
+charts and the Observatory show the audit's own solving (one check per candidate of the unrefined
+abstraction), with a note saying so; the next Run replaces them. The run history keeps both.
 
 ### Output tab
 
 - **Result line**: outcome, time, solution count, whether the search was exhausted.
 - **Solutions**: numbered, shown atoms and cost. At most 1,000 are shown; **Download** saves all
   kept solutions (up to 200,000) as text, one per line (`n: atoms`).
-- **Trace**: one recorded step at a time (slider, Previous, Next): **Candidate** (true interface
-  atoms; the atoms in the refinement highlighted), **Counterexample** (shown atoms of the check's
+- **Trace**: one recorded step at a time (slider, Previous, Next). Its label counts the trace's own
+  steps ("traced step 3 of 46"); with Recording set to every step it also names the recorded step,
+  the Observatory's numbering, which counts solutions too ("recorded step 4 of 49, as in the
+  Observatory"). **Candidate** (true interface
+  atoms; the atoms in the refinement highlighted; an empty candidate is `{ }`, no interface atom true), **Counterexample** (shown atoms of the check's
   model), **Refinement** (clause literals such as `-pick(3)`, or the facts of an expansion). Step
   kinds: `reject` (Shape 1 clause), `partial` (a clause from `on partial`), `add` (clause added between solves), `expand` (rules grounded),
   `error` (the counterexample from which `relevant/1` derived nothing; the view jumps to it).
@@ -1225,13 +1232,13 @@ so; the next Run replaces them. The run history keeps both.
 
 | Part | Content |
 | --- | --- |
-| Summary | Outcome, elapsed time, candidates, counterexamples, refinements (clauses + expansions), solutions. |
+| Summary | Outcome, elapsed time, candidates, counterexamples, refinements (clauses + expansions), solutions. After an audit: the audit's verdict and its own figures instead. The run bar's live counts use the same time format. |
 | Solvers | Per solver: fragments, options, calls, sat, unsat, solving time (exclusive of nested solves), time per call, grounding time, choices, conflicts, restarts, atoms, rules, expansions. |
 | Refinements | Clauses, mean and largest length, expansions, restarts, automatic blocks (solutions blocked so that a later search does not report them again). |
 | Cores | After a run that refines by cores: how many cores and their lengths (the clause-length buckets), as clasp returns them and minimised (`core.minimal`), with an approximate mean. The `S` event's `cores` (`plain`, `minimal`). |
-| Charts | Candidates and refinements over time; time split per solver; clause length distribution (1, 2, 3–4, 5–8, 9–16, 17–32, 33–64, 65+); after a `track` statement, the tracked values per round (one line per name, a value holds until the next). |
+| Charts | Candidates and refinements over time (a run too short for a curve shows its points, with a note; after an audit, a note);  time split per solver; clause length distribution (1, 2, 3–4, 5–8, 9–16, 17–32, 33–64, 65+); after a `track` statement, the tracked values per round (one line per name, a value holds until the next). |
 | Custom counters and tracked values | The `count` statements, and the last value of each `track` series. |
-| Run history | One row per run: time, loop, outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. **Rerun with 5 seeds**, **Clear run history** (asks first; disabled while empty), copy as text or JSON. Each row has a **Note** (kept with the run history in the project) and a **Compare** box: two ticked rows are shown side by side below the table (counts, mean clause, per-solver calls, time and conflicts, with the change). |
+| Run history | One row per run: time, loop and instance (**Loop [instance]**: the loop's first line, the instance in brackets, the variant), outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. The row of the run the tabs show is marked ▶ (none after Clear, or after another project is loaded). **Rerun with 5 seeds**, **Clear run history** (asks first; disabled while empty), copy as text or JSON. Each row has a **Note** (kept with the run history in the project) and a **Compare** box: two ticked rows are shown side by side below the table (counts, mean clause, per-solver calls, time and conflicts, with the change). |
 
 Counting rules: *candidates* are the assignments seen by `on candidate` plus models returned by
 `solve`/`models` of solvers without incoming links; *counterexamples* are satisfiable solves that
@@ -1286,7 +1293,9 @@ the second only, or by both.
 One cursor (the bar at the top of the Observatory) drives every view: the domain view, the
 candidate map, the call timeline, the line table and the trace of the Output tab. The left and
 right arrow keys move it one step (Shift: ten); "follow the run" keeps it on the last step; a range
-restricts the line table and the alive curve. Exports: the view as SVG, a storyboard strip of
+restricts the line table and the alive curve. Its label counts recorded steps with Recording set to
+every step ("recorded step 16 (16 of 16, reject)", the solutions included), else the trace's steps
+("traced step 13"). Exports: the view as SVG, a storyboard strip of
 chosen steps, the map as PNG, and the data as tables. "Compare with a recording" lays a second run
 of the same instance over the map and beside the domain view. A link with `replay=` (a file of
 `examples/replays/`), `step=N` and `view=<name>` opens a recording on a step and view;

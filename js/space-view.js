@@ -361,7 +361,7 @@ export class SpaceView {
     if (d.clause.length) add('Clause', `at least one of: ${d.clause.join(', ')}`);
     add('Removes', `${fmt(row.removed)} candidates (${fmt(row.fresh)} not removed before)` + (row.lost ? `, ${fmt(row.lost)} solutions: an unsound refinement` : ', no solution'));
     box.dataset.verdict = row.lost ? 'unsound' : 'sound';
-    box.append(h('h4', {}, `Refinement ${row.ref} of ${this.F.rows.length}: step ${d.step} (${KIND[d.kind] || d.kind}${d.solver ? `, solver ${d.solver}` : ''})`), dl,
+    box.append(h('h4', {}, `Refinement ${row.ref} of ${this.F.rows.length}: recorded step ${d.step}${d.traceStep ? `, traced step ${d.traceStep}` : ''} (${KIND[d.kind] || d.kind}${d.solver ? `, solver ${d.solver}` : ''})`), dl,
       h('button', { class: 'control-button small-button', id: 'space-show-trace', type: 'button', disabled: !d.traced,
         title: d.traced ? 'The Output tab\'s trace at this step' : 'The trace did not keep this step', onclick: () => this.showInTrace(row.i) }, 'Show in the trace'));
   }

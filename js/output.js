@@ -4,6 +4,10 @@ import { costTracker } from './project.js';
 import { resultCard } from './result-card.js';
 
 const SHOW_SOLUTIONS = 1000;
+// the refinement kinds of an audit as the loop script writes them: G.clause, G.clauses, G.block
+const LINK_KINDS = new Set(['clause', 'clauses', 'block', 'core', 'lift']);
+const kindText = (link, kinds) => (kinds || []).map((k) => (LINK_KINDS.has(k) ? `${link}.${k}` : k === 'expand' ? 'expansions' : k)).join(' and ');
+const AUDIT_NOTE = 'An audit does not run the loop: no solutions are listed here. Its own counts (candidates, solutions, refinements checked) are in the verdict above and in the Statistics tab.';
 const MAX_MESSAGES = 2000;
 const KEEP_SOLUTIONS = 200000;   // kept for the download
 export const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('en-US') : n == null ? '–' : String(n));
@@ -36,6 +40,9 @@ export class Output {
     this.msgEl.textContent = '';
     this.solCount.textContent = '';
     this.solNote.textContent = '';
+    this.auditShown = false;
+    const te = document.getElementById('trace-empty');
+    if (te) te.textContent = 'No steps recorded.';
     this.trace.clear();
     this.result('', '');
     if (this.auditEl) { this.auditEl.hidden = true; this.auditEl.textContent = ''; }
@@ -64,8 +71,8 @@ export class Output {
     } else {
       title = a.verdict === 'sound' ? 'Audit: sound' : a.verdict === 'unsound' ? 'Audit: unsound' : 'Audit: limit';
       paragraphs.push(a.verdict === 'limit' ? `More than ${fmt(a.limit)} candidates.`
-        : `Link ${a.link} (${a.kinds.join(' and ')} refinements): ${fmt(a.candidates)} candidates, ${fmt(a.solutions)} solutions, ` +
-          `${fmt(a.counterexamples)} counterexamples, ${fmt(a.pairs)} distinct refinements. ` +
+        : `Link ${a.link} (refined with ${kindText(a.link, a.kinds)}): ${fmt(a.candidates)} candidates, ${fmt(a.solutions)} solutions, ` +
+          `${fmt(a.counterexamples)} counterexamples, ${fmt(a.pairs)} distinct refinements checked. ` +
           (a.verdict === 'sound' ? 'No refinement removes a solution of this instance.'
             : `${fmt(a.unsound)} refinements remove a solution; ${fmt(a.at_risk)} solutions are at risk.`));
     }
@@ -82,6 +89,11 @@ export class Output {
     }
     if (a.empty) notes.push(`${fmt(a.empty)} counterexamples have no relevant atom (a run stops there with an error).`);
     resultCard(el, { verdict: a.verdict, title, paragraphs, rows, notes, actions: this.nextSteps(a) });
+    // an audit does not run the loop: say so where its solutions and trace would be
+    this.auditShown = true;
+    this.solNote.textContent = AUDIT_NOTE;
+    const te = document.getElementById('trace-empty');
+    if (te) te.textContent = 'An audit does not run the loop, so it has no trace. Press Run to see the loop step by step.';
   }
 
   // What to do next after a verdict: buttons that call this.onAuditAction(name, a) (js/init.js),
@@ -141,7 +153,7 @@ export class Output {
     const named = Object.entries(this.namedCounts || {}).map(([k, n]) => `${fmt(n)} ${k}`).join(', ');
     this.solCount.textContent = this.solutions || named ? `(${fmt(this.solutions)}${named ? `; also ${named}` : ''})` : '';
     this.dlButton.hidden = this.solutions === 0;
-    this.solNote.textContent = this.solutions > SHOW_SOLUTIONS ? `The first ${fmt(SHOW_SOLUTIONS)} solutions are shown.` : '';
+    this.solNote.textContent = this.auditShown ? AUDIT_NOTE : this.solutions > SHOW_SOLUTIONS ? `The first ${fmt(SHOW_SOLUTIONS)} solutions are shown.` : '';
     this.trace.render();
   }
 
@@ -264,7 +276,7 @@ function perKText(rows) {
 // The panel's explanation under its heading (the result line already says the verdict).
 function symbolicDetail(a) {
   const steps = `${plural(a.rounds ?? 0, 'round')} of the inner loop, ${plural(a.refinements ?? 0, 'refinement')}${a.fallback ? ` (${plural(a.fallback, 'block')})` : ''}`;
-  const link = a.link ? `Link ${a.link}${(a.kinds || []).length ? ` (${a.kinds.join(' and ')})` : ''}: ` : '';
+  const link = a.link ? `Link ${a.link}${(a.kinds || []).length ? ` (refined with ${kindText(a.link, a.kinds)})` : ''}: ` : '';
   if (a.mode === 'space') {
     const n = (a.perK || []).length;
     // the first k of the space (its "from"): a space may start above k = 1

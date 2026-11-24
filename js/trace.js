@@ -104,7 +104,9 @@ export class TraceView {
     if (!n) return;
     const t = this.events[this.pos];
     this.slider.value = String(this.pos + 1);
-    this.root.querySelector('#trace-label').textContent = `step ${this.pos + 1} of ${n}`;
+    // the trace counts its own steps; with every step recorded the Observatory counts solutions
+    // too, so the label gives that number as well (stepNote, set by js/init.js)
+    this.root.querySelector('#trace-label').textContent = `traced step ${this.pos + 1} of ${n}${this.stepNote ? this.stepNote(t) : ''}`;
     const kindEl = this.root.querySelector('#trace-kind');
     kindEl.textContent = `${KIND[t.kind] || t.kind} · solver ${t.solver}`;
     kindEl.classList.toggle('error', t.kind === 'error');
@@ -114,9 +116,10 @@ export class TraceView {
     for (const f of facts) for (const a of splitAtoms(f)) inRef.add(a);
     const factText = facts.join(' ');
     const cand = splitAtoms(t.candidate).sort();
-    this.fill('#trace-candidate', cand, (a) => inRef.has(a) || (facts.length && factText.includes(a)));
+    // an empty candidate is the empty set (no interface atom true), not "no candidate"
+    this.fill('#trace-candidate', cand, (a) => inRef.has(a) || (facts.length && factText.includes(a)), '{ } (no interface atom is true)');
     this.fill('#trace-counterexample', splitAtoms(t.counterexample).sort(), () => false,
-      t.counterexample === undefined ? (t.kind === 'accept' ? 'none: the check found no counterexample' : 'not recorded') : '');
+      t.counterexample === undefined ? (t.kind === 'accept' ? 'none: the check found no counterexample' : 'not recorded') : '(no shown atom)');
     const ref = t.literals ? [...t.literals].sort((a, b) => a.replace(/^-/, '').localeCompare(b.replace(/^-/, ''))) : [...facts].sort();
     const head = t.literals ? 'one of these must hold:' : t.facts ? 'facts grounded with the refine part:' : '';
     this.fill('#trace-refinement', ref, () => false,

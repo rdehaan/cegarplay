@@ -130,9 +130,14 @@ search A:
   refinements, 10,698 solutions.</p>
 
 <h2 id="tut-reading">4. Reading the trace and the statistics</h2>
-<p>The trace (Output tab) records the first steps of a run (Trace steps in the Loop tab, default 200). Each step
+<p>The line <b>Shown:</b> under the run bar says which run the Output, Statistics and Observatory tabs show: a run or
+  an audit, on which instance, how it ended and how much of it was recorded. It turns amber when you edit the
+  project afterwards: the results on screen are then of the earlier version.</p>
+<p>The trace (Output tab) records the first steps of a run (Trace steps in the Loop tab, default 200); its label
+  counts them: "traced step 3 of 46". Each step
   shows the candidate, the counterexample and the refinement; candidate atoms that occur in the refinement are
-  highlighted. If a run stops with an error about a candidate, the trace jumps to that step.</p>
+  highlighted. If a run stops with an error about a candidate, the trace jumps to that step. An audit does not
+  run the loop, so after an audit the trace and the list of solutions are empty, and say so.</p>
 <p>The <b>Statistics</b> tab, after a run:</p>
 <ul>
   <li><b>Candidates</b>, <b>Counterexamples</b>, <b>Refinements</b> (clauses + expansions), <b>Solutions</b>.
@@ -142,7 +147,10 @@ search A:
   <li>The Refinements table: number of clauses and their lengths. Short clauses are strong refinements:
     each removes many candidates.</li>
   <li>Charts of candidates and refinements over time, where the time went, and the clause lengths.</li>
-  <li>The <b>run history</b>: one row per finished run in this session. Use it to compare loops on the same problem.</li>
+  <li>The <b>run history</b>: one row per finished run in this session. Use it to compare loops on the same problem.
+    The row marked &#x25B6; is the run the tabs show; the others are kept as numbers only.</li>
+  <li>After an audit the Summary shows the audit's own figures (its verdict, candidates, refinements checked,
+    solutions); the solver tables are the audit's solving, not the loop's.</li>
 </ul>
 
 <h2 id="tut-observatory">5. Watching a run: the Observatory</h2>
@@ -157,7 +165,11 @@ search A:
     The view is the fragment <b>view</b>: ASP that turns a step into drawing marks (see
     <a href="#manual-writing-views">Writing views</a>). For a project without one, <b>Suggest a view</b> writes a first draft.</li>
   <li><b>The cursor</b>: the bar at the top moves one step through the run, and every picture follows it, the
-    trace in the Output tab too. The arrow keys move it; <b>follow the run</b> keeps it on the last step.
+    trace in the Output tab too. With Recording set to every step it counts recorded steps, which include the
+    solutions ("recorded step 16"); otherwise it counts the trace's steps ("traced step 13"). The trace names
+    both numbers when they differ.
+    In the domain view, <b>Show</b> switches between <b>steps</b> and the run's <b>solutions</b>: a solution is
+    not a step of the trace, and its label says when it was found, as far as the recording knows. The arrow keys move it; <b>follow the run</b> keeps it on the last step.
     <b>Export view</b> and <b>Storyboard</b> save pictures for slides; <code>?lecture=1</code> in the address shows the view
     alone, with its notes as captions.</li>
   <li><b>Timeline</b> and <b>Cost per line</b>: <span class="web-only">tick <b>Record calls</b> and run again.</span><span class="book-only">they need a run with <b>Record calls</b> on.</span> Every solve call becomes a bar
@@ -226,7 +238,12 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
   sets, coloured by what the run's refinements have done to it so far; move the <b>Refinement</b> slider through
   the run.</span><span class="book-only">The Observatory's <b>Candidate space</b> draws the project's own loop as a map, from a run with every
   step recorded. Each square is one of the 256 sets, marked by what the run's refinements have done to it so far
-  (alive, removed, a lost solution), step by step through the run.</span> The summary names the first unsound refinement: number 6, which removes 13 solutions at once. <span class="web-only">Click a square to jump to the step that removed it.</span> The blame matrix below shows which atoms the refinements relied on.</p>
+  (alive, removed, a lost solution), step by step through the run.</span> The summary names the first unsound refinement: number 6, which removes 13 solutions at once. <span class="web-only">Click a square to jump to the step that removed it.</span> Under the map, a box shows the
+  refinement at the cursor: its step, the candidate it refined, the counterexample, and its clause ("at least one of
+  …"). For refinement 6 the clause names only the sum, not the two numbers that add up to it, so it also
+  removes sets that contain the sum without those numbers: among them, solutions. <span class="web-only"><b>Show in the trace</b> opens the same step in the Output tab.</span> The line
+  above the map names the run it is of; another run, an audit or a replay clears it. The blame matrix below shows
+  which atoms the refinements relied on.</p>
 
 <h2 id="tut-instances">7. One project, many instances</h2>
 <p>An <b>instance</b> is a set of facts and constant values that a run puts on top of the project: the input of

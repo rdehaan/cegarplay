@@ -966,6 +966,9 @@ The Statistics tab summarises the whole run:
 - **Solvers**: per solver the calls, satisfiable and unsatisfiable answers, solving time and grounding time. Solver A is called once: Shape 1 runs one search. Solver C is called once per candidate, 96 times.
 - **Refinements**: the number of clauses, their mean and largest length, and a histogram of clause lengths. All clauses here have length 3; the blocking loop's have length 13, one literal per node.
 - **Charts**: candidates and refinements over time, and the time split between the solvers and grounding.
+- **Run history**: one row per finished run; the row marked ▶ is the run whose results the tabs show.
+
+All of this belongs to one run: the line **Shown:** under the run bar names it (a run or an audit, its instance and variant, how much was recorded), and turns amber once the project is edited, since the results on screen are then of the earlier version. After an audit the Summary holds the audit's own figures, not the loop's.
 
 ### What a good run looks like {#c05-good-run}
 
@@ -3630,7 +3633,9 @@ With Solutions set to `all`, a run takes a few seconds: 31,776 candidates, 21,07
 
 ## Reading the trace and the statistics {#t04}
 
-The trace (Output tab) records the first steps of a run (Trace steps in the Loop tab, default 200). Each step shows the candidate, the counterexample and the refinement; candidate atoms that occur in the refinement are highlighted. If a run stops with an error about a candidate, the trace jumps to that step.
+The line **Shown:** under the run bar says which run the Output, Statistics and Observatory tabs show: a run or an audit, on which instance, how it ended and how much of it was recorded. It turns amber when you edit the project afterwards: the results on screen are then of the earlier version.
+
+The trace (Output tab) records the first steps of a run (Trace steps in the Loop tab, default 200); its label counts them: "traced step 3 of 46". Each step shows the candidate, the counterexample and the refinement; candidate atoms that occur in the refinement are highlighted. If a run stops with an error about a candidate, the trace jumps to that step. An audit does not run the loop, so after an audit the trace and the list of solutions are empty, and say so.
 
 The **Statistics** tab, after a run:
 
@@ -3638,7 +3643,8 @@ The **Statistics** tab, after a run:
 - A table per solver: solve calls and how they ended, time spent solving and grounding, clasp's counters. For a check, Sat is the number of counterexamples found.
 - The Refinements table: number of clauses and their lengths. Short clauses are strong refinements: each removes many candidates.
 - Charts of candidates and refinements over time, where the time went, and the clause lengths.
-- The **run history**: one row per finished run in this session. Use it to compare loops on the same problem.
+- The **run history**: one row per finished run in this session. Use it to compare loops on the same problem. The row marked ▶ is the run the tabs show; the others are kept as numbers only.
+- After an audit the Summary shows the audit's own figures (its verdict, candidates, refinements checked, solutions); the solver tables are the audit's solving, not the loop's.
 
 ## Watching a run: the Observatory {#t05}
 
@@ -3648,7 +3654,7 @@ The **Observatory** tab shows a run as pictures. Here it shows a run of the sum-
 
 - **Loop anatomy**: one box per solver, one arrow per link. Here `A` made 1 search call, and `C` 107 calls: 46 found a counterexample (sat), 61 did not (unsat, a solution). The arrow `G · 8 atoms` says the link has eight interface atoms, `pick(1)` to `pick(8)`.
 - **Domain view**: the step in the problem's own terms. The numbers 1..8 stand in a circle; the candidate's numbers are filled, and the ringed ones are those of the counterexample, which cannot all stay. The view is the fragment **view**: ASP that turns a step into drawing marks (see Writing views). For a project without one, **Suggest a view** writes a first draft.
-- **The cursor**: the bar at the top moves one step through the run, and every picture follows it, the trace in the Output tab too. The arrow keys move it; **follow the run** keeps it on the last step. **Export view** and **Storyboard** save pictures for slides; `?lecture=1` in the address shows the view alone, with its notes as captions.
+- **The cursor**: the bar at the top moves one step through the run, and every picture follows it, the trace in the Output tab too. With Recording set to every step it counts recorded steps, which include the solutions ("recorded step 16"); otherwise it counts the trace's steps ("traced step 13"). The trace names both numbers when they differ. In the domain view, **Show** switches between **steps** and the run's **solutions**: a solution is not a step of the trace, and its label says when it was found, as far as the recording knows. The arrow keys move it; **follow the run** keeps it on the last step. **Export view** and **Storyboard** save pictures for slides; `?lecture=1` in the address shows the view alone, with its notes as captions.
 - **Timeline** and **Cost per line**: they need a run with **Record calls** on. Every solve call becomes a bar on its solver's lane, and the table says which line of the loop script spent the time. After such a run the Loop tab shows the same figures beside the lines.
 
 The fourth picture, the **candidate space**, shows every candidate at once. It belongs to the next lesson.
@@ -3690,7 +3696,7 @@ A second way to find out, which works for any loop: `G.block(M)` removes only th
 
 ### Which refinement went wrong {#t06-tut-space}
 
-The Observatory's **Candidate space** draws the project's own loop as a map, from a run with every step recorded. Each square is one of the 256 sets, marked by what the run's refinements have done to it so far (alive, removed, a lost solution), step by step through the run. The summary names the first unsound refinement: number 6, which removes 13 solutions at once.  The blame matrix below shows which atoms the refinements relied on.
+The Observatory's **Candidate space** draws the project's own loop as a map, from a run with every step recorded. Each square is one of the 256 sets, marked by what the run's refinements have done to it so far (alive, removed, a lost solution), step by step through the run. The summary names the first unsound refinement: number 6, which removes 13 solutions at once.  Under the map, a box shows the refinement at the cursor: its step, the candidate it refined, the counterexample, and its clause ("at least one of …"). For refinement 6 the clause names only the sum, not the two numbers that add up to it, so it also removes sets that contain the sum without those numbers: among them, solutions.  The line above the map names the run it is of; another run, an audit or a replay clears it. The blame matrix below shows which atoms the refinements relied on.
 
 ## One project, many instances {#t07}
 

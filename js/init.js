@@ -10,7 +10,7 @@ import { LoopTab } from './loop-tab.js';
 import { Internals } from './internals.js';
 import { InstancesTab } from './instances-tab.js';
 import { Variants } from './variants.js';
-import { Recording, REPLAY_PATTERN } from './recording.js';
+import { Recording, REPLAY_PATTERN, pairSteps } from './recording.js';
 import { makeEditor } from './editors.js';
 import { Anatomy } from './anatomy.js';
 import { CampaignTab } from './campaign-tab.js';
@@ -137,6 +137,14 @@ $('audit-mode').addEventListener('change', () => { app.instancesTab.renderSpaceB
 $('space-select').addEventListener('change', () => { app.instancesTab.renderSpaceBar(); app.instancesTab.storeAuditSetting(); });
 $('space-bound').addEventListener('change', () => app.instancesTab.storeAuditSetting());
 app.output.onSaveInstance = (a) => app.instancesTab.saveWitness(a);
+// the trace's label also names the recorded step (the Observatory's numbering, which counts
+// solutions) when the run was recorded with every step
+app.output.trace.stepNote = (t) => {
+  const rec = app.recording;
+  if (!rec || !rec.steps || !rec.steps.length || !t) return '';
+  const p = pairSteps(rec).find((x) => x.t && x.t.i === t.i);
+  return p ? ` (recorded step ${p.i} of ${rec.steps.length}, as in the Observatory)` : '';
+};
 // the verdict panel's next steps (js/output.js nextSteps)
 app.output.auditContext = () => ({ spaces: (app.project.spaces || []).length > 0, observatory: !$('tab11').hidden });
 const showTab = (n) => { $('tab' + n).checked = true; $('tab' + n).dispatchEvent(new Event('change', { bubbles: true })); };

@@ -1777,3 +1777,38 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
   trace -> a new run clears the map -> an edit marks Shown stale), `test/browser/bounded.test.mjs`
   (First k), `test/space.test.mjs` (`refinementDetail`).
 - Full suite: 1127 tests, 1118 pass, 0 fail, 9 skipped. `make-examples` leaves `examples/` unchanged.
+
+### Clarity review: what is shown, what each figure counts (2026-11-24)
+
+Screenshots of Output, Statistics and Observatory after a run (every step recorded), after an
+audit, after a space audit and its candidate space, read for "which run is this, and what does this
+number count". Found and fixed:
+
+- **Two step numberings** under one word: the trace counts its own steps, the Observatory (with
+  every step recorded) counts recorded steps, which include solutions. Labels now name their
+  counter: the trace "traced step 13 of 13 (recorded step 16 of 16, as in the Observatory)", the
+  cursor "recorded step 16 (16 of 16, reject)" or "traced step …", the candidate space's box
+  "recorded step 16, traced step 13". The cursor label had the raw kind letter (`r`).
+- **After an audit** the Output tab's Solutions and Trace were empty ("No steps recorded."); they now
+  say that an audit does not run the loop. The Statistics Summary showed the audit's raw solver counts
+  as Solutions 0 / Refinements 0 against the live line's 3 solutions and 277 refinements checked; it
+  now shows the audit's verdict and figures (for a symbolic or space audit: rounds and refinements of
+  its inner loop). The result line said "277 pairs" and the card "277 distinct refinements": now
+  "refinements checked" in both. "(clauses refinements)" is now "(refined with G.clauses)".
+- **Run history:** the row of the run the tabs show is marked ▶ (`data-shown`), with a note; none
+  after Clear or another project. The column "Loop" is "Loop [instance]".
+- **Time:** the live line said "0.1 s" where the Summary and history said "0.05 s"; one format.
+- **Charts:** a run too short for a curve drew an empty frame; its points are now dots, with a note;
+  after an audit, or with no clauses, a note says why the chart is empty.
+- **Trace:** an empty candidate read "(none)" (as if there was no candidate); now "{ } (no interface
+  atom is true)".
+- Docs: `manual.md` (Output and statistics, Output tab, Statistics table, cursor), `tutorial.html`
+  (lessons 4-6: Shown, the two counters, the marked row, the audit's Summary, Show: steps |
+  solutions, the refinement box), `guide/` (05: Statistics and Shown; 04 and howto-unsound: the
+  candidate space's refinement box and that the map shows one run), `README.md` (Shown, compare,
+  snapshots). `book/cegarplay.md` regenerated; `export-book --check` and `--lint` and
+  `guide-numbers --check` pass.
+- Tests changed on purpose (label wording): `test/browser/stats.test.mjs` (trace label),
+  `directions.test.mjs` (cursor label), `observatory.test.mjs`, `test/space.test.mjs`. New:
+  `stats.test.mjs` "what the tabs show".
+- Full suite: 1128 tests, 1119 pass, 0 fail, 9 skipped. `make-examples` leaves `examples/` unchanged.

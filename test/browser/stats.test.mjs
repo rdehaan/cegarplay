@@ -54,7 +54,7 @@ test('trace: step 1 of the default example shows candidate, counterexample and r
   const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring&tab=5');
   await page.click('#run-button');
   await B.waitState(page, ['finished']);
-  assert.equal(await page.textContent('#trace-label'), 'step 1 of 200');
+  assert.equal(await page.textContent('#trace-label'), 'traced step 1 of 200');
   const cand = await page.$$eval('#trace-candidate .atom', (l) => l.map((d) => d.textContent));
   const cex = await page.$$eval('#trace-counterexample .atom', (l) => l.map((d) => d.textContent));
   const ref = await page.$$eval('#trace-refinement .atom', (l) => l.map((d) => d.textContent));
@@ -64,9 +64,9 @@ test('trace: step 1 of the default example shows candidate, counterexample and r
   assert.ok(await page.$$eval('#trace-candidate .atom.hl', (l) => l.length) > 0, 'refinement atoms highlighted');
   assert.match(await page.textContent('#trace-cap'), /first 200 steps/);
   await page.click('#trace-next');
-  assert.equal(await page.textContent('#trace-label'), 'step 2 of 200');
+  assert.equal(await page.textContent('#trace-label'), 'traced step 2 of 200');
   await page.$eval('#trace-slider', (e) => { e.value = '150'; e.dispatchEvent(new Event('input')); });
-  assert.equal(await page.textContent('#trace-label'), 'step 150 of 200');
+  assert.equal(await page.textContent('#trace-label'), 'traced step 150 of 200');
   assert.deepEqual(errors, []);
   await context.close();
 });
@@ -209,6 +209,43 @@ test('track: a chart of the tracked values, and their last values with the count
   const counters = await page.textContent('#counters-table');
   assert.match(counters, /lower \(tracked, last value\)\s*25/);
   assert.match(counters, /upper \(tracked, last value\)\s*25/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('what the tabs show: the marked history row, the Summary and notes after an audit, charts that say why they are empty', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=6');
+  const done = () => page.waitForFunction(() => ['finished', 'error'].includes(document.getElementById('run-status').dataset.state) && !window.cegarplay.control.batch, null, { timeout: 60000 });
+  await page.click('#run-button');
+  await done();
+  // the run's row is marked, with the note that says what the mark means
+  assert.equal(await page.$$eval('#history-table tr[data-shown="true"]', (l) => l.length), 1);
+  assert.match(await page.$eval('#history-table tr[data-shown="true"] td', (td) => td.textContent), /^▶ /);
+  assert.equal(await page.isVisible('#history-shown-note'), true);
+  assert.equal(await page.$$eval('#history-table th', (l) => l[1].textContent), 'Loop [instance]');
+  // the live line and the Summary give the time in one format
+  const live = await page.textContent('#live-line');
+  const elapsed = await page.$eval('#stats-summary tbody td:nth-child(2)', (td) => td.textContent);
+  assert.ok(live.startsWith(elapsed + ' · '), `${live} / ${elapsed}`);
+  // an audit: its own figures in the Summary, notes where the loop's solutions and trace would be
+  await page.click('#audit-button');
+  await done();
+  assert.deepEqual(await page.$$eval('#stats-summary th', (l) => l.map((x) => x.textContent)),
+    ['Audit verdict', 'Elapsed', 'Candidates', 'Counterexamples', 'Refinements checked', 'Solutions']);
+  assert.match(await page.$eval('#stats-summary tbody td', (td) => td.textContent), /^sound$/);
+  assert.match(await page.textContent('#svg-progress'), /an audit: no loop to draw/);
+  assert.match(await page.textContent('#svg-hist'), /an audit adds no clauses/);
+  assert.equal(await page.$$eval('#history-table tr[data-shown="true"]', (l) => l.length), 1);
+  assert.match(await page.$eval('#history-table tr[data-shown="true"]', (tr) => tr.textContent), /sound/);
+  await page.click('label[for="tab5"]');
+  assert.match(await page.textContent('#solutions-note'), /An audit does not run the loop: no solutions are listed here/);
+  assert.match(await page.textContent('#trace-empty'), /An audit does not run the loop, so it has no trace/);
+  assert.match(await page.textContent('#result-line'), /refinements checked\)/);
+  assert.match(await page.textContent('#audit-panel'), /refined with G\.(clause|clauses|block)/);
+  // Clear: nothing is shown, no row is marked
+  await page.click('#clear-button');
+  assert.equal(await page.$$eval('#history-table tr[data-shown="true"]', (l) => l.length), 0);
+  await page.waitForFunction(() => /^Shown: no results yet/.test(document.getElementById('shown-line').textContent));
   assert.deepEqual(errors, []);
   await context.close();
 });

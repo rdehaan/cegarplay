@@ -14,7 +14,8 @@ const meanLen = (s) => (s && s.clauses ? s.literals / s.clauses : null);
 
 export function liveText(s) {
   if (!s) return ' ';
-  return `${s.t.toFixed(1)} s · ${fmt(s.candidates)} candidates · ${fmt(s.counterexamples)} counterexamples · ` +
+  // the same time format as the Summary and the run history (0.05 s, not 0.1 s)
+  return `${secs(s.t)} · ${fmt(s.candidates)} candidates · ${fmt(s.counterexamples)} counterexamples · ` +
     `${fmt(refinements(s))} refinements · ${fmt(s.solutions)} solutions`;
 }
 
@@ -106,6 +107,8 @@ export class Stats {
           <button class="control-button" id="import-verdict-button" title="The --json output of tools/certcheck.py for a proof log of one of these runs">Import certcheck verdict</button>
           <input type="file" id="verdict-file" accept=".json,.txt" hidden>
         </p>
+        <p class="note" id="history-shown-note" hidden>&#x25B6; marks the run whose results the tabs show now (the run bar's <b>Shown</b> line);
+          the other rows are earlier runs, kept as numbers only.</p>
         <div class="table-wrapper"><table class="internals-table" id="history-table"></table></div>
         <div id="history-compare-box" hidden><h3>Two runs side by side</h3>
           <div class="table-wrapper"><table class="internals-table" id="history-compare"></table></div></div>
@@ -128,6 +131,8 @@ export class Stats {
     this.D = null;
     this.series = [];
     this.tracks = new Map();
+    this.audit = null;
+    this.shownIndex = null;
     this.live.textContent = ' ';
     this.render();
   }
@@ -156,7 +161,7 @@ export class Stats {
 
   done(D, info) {
     this.D = D;
-    if (info && (info.mode === 'audit' || info.mode === 'bounded') && info.audit) this.live.textContent = auditLiveText(info.audit);
+    if (info && (info.mode === 'audit' || info.mode === 'bounded') && info.audit) { this.live.textContent = auditLiveText(info.audit); this.audit = info.audit; }
     if (this.S && info && !info.noHistory) this.record(info);
     this.render();
   }
@@ -194,11 +199,24 @@ export class Stats {
   }
 
   renderSummary() {
-    const s = this.S, d = this.D;
+    const s = this.S, d = this.D, a = this.audit;
     const outcome = d ? d.outcome + (d.exhausted === true ? ' (exhausted)' : '') : s ? 'running' : '–';
-    this.table('stats-summary', ['Outcome', 'Elapsed', 'Candidates', 'Counterexamples', 'Refinements', 'Solutions'],
-      [[outcome, s ? secs(s.t) : '–', dash(s && s.candidates), dash(s && s.counterexamples), s ? fmt(refinements(s)) : '–', dash(s && s.solutions)]],
-      [1, 2, 3, 4, 5]);
+    if (a && a.verdict && !a.mode) {
+      // an audit by enumeration: its own counts (the solver tables below are its solving, whose raw
+      // model counts are not the loop's solutions or refinements)
+      this.table('stats-summary', ['Audit verdict', 'Elapsed', 'Candidates', 'Counterexamples', 'Refinements checked', 'Solutions'],
+        [[a.verdict === 'unsound' ? `unsound (${fmt(a.unsound)} remove a solution)` : a.verdict, s ? secs(s.t) : '–', dash(a.candidates), dash(a.counterexamples), dash(a.pairs), dash(a.solutions)]],
+        [1, 2, 3, 4, 5]);
+    } else if (a && a.verdict && a.mode) {
+      // a symbolic or space audit: rounds and refinements of its inner loop
+      this.table('stats-summary', ['Audit verdict', 'Elapsed', 'Rounds of the inner loop', 'Refinements of the inner loop'],
+        [[a.mode === 'space' && a.space ? (a.verdict === 'sound' ? `sound up to k = ${a.k}` : `${a.verdict} at k = ${a.k}`) : `${a.verdict} (symbolic)`, s ? secs(s.t) : '–', dash(a.rounds), dash(a.refinements)]],
+        [1, 2, 3]);
+    } else {
+      this.table('stats-summary', ['Outcome', 'Elapsed', 'Candidates', 'Counterexamples', 'Refinements', 'Solutions'],
+        [[outcome, s ? secs(s.t) : '–', dash(s && s.candidates), dash(s && s.counterexamples), s ? fmt(refinements(s)) : '–', dash(s && s.solutions)]],
+        [1, 2, 3, 4, 5]);
+    }
     const c = s && s.certificates;
     const box = this.root.querySelector('#certificates-block');
     box.hidden = !c;
@@ -315,7 +333,8 @@ export class Stats {
   chartProgress(box) {
     const W = 380, H = 200, L = 48, R = 10, T = 10, B = 28;
     const s = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', id: 'svg-progress', role: 'img' });
-    const pts = this.series;
+    // an audit's counts are its own solving, not the loop's progress: nothing to draw
+    const pts = this.audit ? [] : this.series;
     const tMax = Math.max(1e-3, ...pts.map((p) => p[0]));
     const yMax = Math.max(1, ...pts.map((p) => Math.max(p[1], p[2])));
     s.append(svg('line', { x1: L, y1: H - B, x2: W - R, y2: H - B, class: 'axis' }), svg('line', { x1: L, y1: T, x2: L, y2: H - B, class: 'axis' }));
@@ -326,8 +345,15 @@ export class Stats {
     for (const [i, name] of [[1, 'candidates'], [2, 'refinements']]) {
       const d = pts.map((p) => `${x(p[0]).toFixed(1)},${y(p[i]).toFixed(1)}`).join(' ');
       s.append(svg('polyline', { points: d, fill: 'none', style: `stroke: ${COLORS[i - 1]}`, 'stroke-width': 2, class: `series-${name}`, 'data-points': pts.length }));
+      // few points (a short run reports its counts once or twice): draw them as dots
+      if (pts.length < 4) for (const p of pts) s.append(svg('circle', { cx: x(p[0]).toFixed(1), cy: y(p[i]).toFixed(1), r: 3, style: `fill: ${COLORS[i - 1]}` }));
     }
     s.append(this.legend([['candidates', COLORS[0]], ['refinements', COLORS[1]]], L + 8, T + 4));
+    // say why the frame is (nearly) empty instead of leaving it blank
+    const why = this.audit ? 'an audit: no loop to draw (its counts are in the Summary)'
+      : !pts.length ? (this.S ? 'no counts reported yet' : 'no run yet')
+        : pts.length < 3 ? 'too short for a curve (counts only at the end)' : '';
+    if (why) s.append(svg('text', { x: (L + W - R) / 2, y: (T + H - B) / 2, 'text-anchor': 'middle', class: 'tick chart-empty-note' }, why));
     box.replaceChildren(s);
   }
 
@@ -371,6 +397,10 @@ export class Stats {
       if (v) s.append(svg('text', { x: L + i * bw + bw / 2, y: H - B - bh - 3, 'text-anchor': 'middle', class: 'tick' }, fmt(v)));
     });
     s.append(svg('text', { x: (W + L) / 2, y: H - 4, 'text-anchor': 'middle', class: 'tick' }, 'literals per clause'));
+    if (!hist.some((v) => v > 0)) {
+      s.append(svg('text', { x: (W + L) / 2, y: (H - B + T) / 2, 'text-anchor': 'middle', class: 'tick chart-empty-note' },
+        this.audit ? 'an audit adds no clauses' : this.S ? 'no clauses in this run (blocks, expansions or none)' : 'no run yet'));
+    }
     box.replaceChildren(s);
   }
 
@@ -386,6 +416,8 @@ export class Stats {
   // ---- run history -------------------------------------------------------------
   record(info) {
     const s = this.S, d = this.D || {};
+    // the row of the run whose results the tabs show (cleared by reset: a new run, Clear, another project)
+    this.shownIndex = this.history.length;
     this.history.push({
       time: new Date().toTimeString().slice(0, 8),
       loop: info.loopLabel,
@@ -491,11 +523,15 @@ export class Stats {
   renderHistory() {
     const bad = this.mismatches();
     const rows = this.history.map((r, i) => ({
-      attrs: { ...(bad.has(i) ? { class: 'mismatch', 'data-mismatch': 'true' } : {}), ...(r.audit ? { 'data-audit': r.audit.verdict } : {}) },
-      cells: [(bad.has(i) ? '⚠ ' : '') + r.time, r.loop, r.outcome + (r.exhausted ? ' (exhausted)' : ''), secs(r.elapsed), fmt(r.candidates),
+      attrs: { ...([bad.has(i) ? 'mismatch' : '', i === this.shownIndex ? 'shown-row' : ''].some(Boolean)
+        ? { class: [bad.has(i) ? 'mismatch' : '', i === this.shownIndex ? 'shown-row' : ''].filter(Boolean).join(' ') } : {}),
+        ...(bad.has(i) ? { 'data-mismatch': 'true' } : {}), ...(i === this.shownIndex ? { 'data-shown': 'true', title: 'The run whose results the tabs show now' } : {}),
+        ...(r.audit ? { 'data-audit': r.audit.verdict } : {}) },
+      cells: [(i === this.shownIndex ? '▶ ' : '') + (bad.has(i) ? '⚠ ' : '') + r.time, r.loop, r.outcome + (r.exhausted ? ' (exhausted)' : ''), secs(r.elapsed), fmt(r.candidates),
         fmt(r.refinements), typeof r.meanLength !== 'number' ? '–' : r.meanLength.toFixed(2), fmt(r.solutions), String(r.seed ?? 0), this.auditText(r) + (r.certcheck ? ` · ${r.certcheck}` : '')],
     }));
-    const t = this.table('history-table', ['Time', 'Loop', 'Outcome', 'Elapsed', 'Candidates', 'Refinements', 'Mean clause', 'Solutions', 'Seed', 'Audit'],
+    // 'Loop [instance]': the loop's first line, then the instance in brackets and the variant
+    const t = this.table('history-table', ['Time', 'Loop [instance]', 'Outcome', 'Elapsed', 'Candidates', 'Refinements', 'Mean clause', 'Solutions', 'Seed', 'Audit'],
       rows.length ? rows : [['(no finished runs yet)', '', '', '', '', '', '', '', '', '']], [3, 4, 5, 6, 7, 8]);
     // the lab notebook (a note per run) and the pick of two runs to compare
     if (this.history.length) {
@@ -516,6 +552,7 @@ export class Stats {
     }
     this.renderCompare();
     this.root.querySelector('#history-note').hidden = bad.size === 0;
+    this.root.querySelector('#history-shown-note').hidden = this.shownIndex == null || this.shownIndex >= this.history.length;
     this.root.querySelector('#clear-history-button').disabled = this.history.length === 0;
     if (this.app.dirty) this.app.dirty(false);
   }

@@ -1172,3 +1172,6 @@ summary:focus-visible, a:focus-visible {
 /* "Shown:" in the run bar: which run the result tabs hold */
 .shown-line { font-size: 13px; color: var(--text-muted); margin: 4px 0 0; overflow-wrap: anywhere; }
 .shown-line[data-state="stale"] { color: var(--warn); }
+/* the run history's row of the run the tabs show */
+#history-table tr.shown-row td { background: var(--hint-bg); font-weight: 600; }
+.chart-empty-note { font-style: italic; }
