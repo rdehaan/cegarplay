@@ -129,7 +129,8 @@ local function facts_text(list)
 end
 
 -- The verifier program. Returns V = { ctl, a, b, r, picks, cm1, ... } or nil, reason.
-local function build(L, o)
+local function build(L, o, deadline)
+  deadline = deadline or math.huge
   local A, C = L.from, L.to
   local sa, sc = A.store, C.store
   if not sa or not sc then return nil, "no ground program" end
@@ -146,18 +147,39 @@ local function build(L, o)
   local heads = {}
   for _, r in ipairs(sc.rules) do for _, h in ipairs(r.head) do heads[h] = true end end
   local ctl = rt.new_control({}, "verifier " .. L.name, {})
-  local V = { ctl = ctl, isint = isint, inst = inst, stratified = strat, a = {}, b = {}, r = {}, picks = {}, ignored = 0 }
+  local V = { ctl = ctl, isint = isint, inst = inst, stratified = strat, a = {}, b = {}, r = {}, picks = {}, ignored = 0,
+    deadline = math.huge, timed_out = false }
+  -- The time budget inside one solve: check runs at every propagation fixpoint (check mode
+  -- Fixpoint), reads the clock every 256 calls and interrupts the search past V.deadline, as the
+  -- runtime's guarded() interrupts a search. Both hooks exist at registration (rule 2); nothing
+  -- here may raise inside clingo (rule 1).
+  local calls = 0
+  ctl:register_propagator({
+    init = function(_, init)
+      pcall(function() init.check_mode = clingo.PropagatorCheckMode.Fixpoint end)
+    end,
+    check = function(_, control)
+      calls = calls + 1
+      if calls < 256 then return end
+      calls = 0
+      pcall(function()
+        if not V.timed_out and clock() > V.deadline then V.timed_out = true; ctl:interrupt() end
+      end)
+    end,
+  })
   local b = ctl:backend()
   -- A1, C1
   local am1 = LIFT.atom_map(b)
   LIFT.copy(b, sa, { map = am1 })
   local cm1, cmap1 = LIFT.atom_map(b, function(a) local j = isint[a]; return j and am1(L.src[j]) end)
   LIFT.copy(b, sc, { map = cm1, isint = isint })
+  if clock() > deadline then b:close(); return nil, "budget" end
   V.cm1, V.cmap1 = cm1, cmap1
   for j = 1, L.n do V.a[j] = am1(L.src[j]) end
   -- A2: the instance atoms (a space) are A1's
   local am2 = LIFT.atom_map(b, function(a) return instsrc[a] and am1(a) or nil end)
   LIFT.copy(b, sa, { map = am2, shared = instsrc })
+  if clock() > deadline then b:close(); return nil, "budget" end
   for j = 1, L.n do V.b[j] = am2(L.src[j]) end
   -- removal: M' falsifies the clause that X yields
   local reasons = {}
@@ -220,6 +242,7 @@ local function build(L, o)
     LIFT.copy(b, sc, { map = cm3, isint = isint, violated = viol, guess = function(h) return cm1(h) end })
     b:add_rule{ head = {}, body = { -viol } }
   end
+  if clock() > deadline then b:close(); return nil, "budget" end
   -- witness order: the fewest atoms on which M and M' differ
   if o.fewest then
     local lits = {}
@@ -235,6 +258,7 @@ local function build(L, o)
   end
   b:close()
   ctl:ground({ { "base", {} } })
+  if clock() > deadline then return nil, "budget" end
   return V
 end
 
@@ -300,12 +324,17 @@ function rt.bounded(o)
   end
   pcall(function() C.ctl.configuration.solve.opt_mode = "ignore" end)
   local seconds = o.seconds or 60
-  local ok, V, why = pcall(build, L, o)
+  -- the budget counts from the start; building V (Lua) checks it between its parts, grounding
+  -- (clingo) cannot be interrupted
+  local deadline = t0 + seconds
+  local ok, V, why = pcall(build, L, o, deadline)
   if not ok then return verdict("unsupported", { reason = tostring(V) }) end
+  if not V and why == "budget" then return verdict("budget", { seconds = seconds }) end
   if not V then return verdict("unsupported", { reason = why }) end
   if V.empty then return verdict("sound", { reason = "the check derives no clause/3 atom" }) end
   progress(st, true)
   local inst = V.inst
+  V.deadline = deadline
   while true do
     if clock() - t0 > seconds then return verdict("budget", { seconds = seconds }) end
     st.rounds = st.rounds + 1
@@ -325,6 +354,13 @@ function rt.bounded(o)
     end)
     h:close()
     if not okv then return verdict("unsupported", { reason = tostring(errv) }) end
+    -- the propagator ended this solve at the deadline: no model means nothing here, and a model
+    -- of an interrupted optimisation need not have the fewest differing atoms
+    if V.timed_out then
+      st.rounds = st.rounds - 1
+      progress(st, true)
+      return verdict("budget", { seconds = seconds })
+    end
     if not found then
       progress(st, true)
       return verdict("sound", V.ignored > 0 and { ignored = V.ignored } or nil)

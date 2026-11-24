@@ -170,3 +170,16 @@ test('S8: Fuzz gives an audit: false instance the symbolic audit instead of skip
   assert.equal(s.verdict.verdict, 'unsound');
   assert.deepEqual(s.constants, { n: '2' });
 });
+
+test('the time budget holds inside one solve: the verifier ends itself with "budget" and its counts', async () => {
+  // slitherlink/example (audit: false): no verdict within 60 s; with 2 s the propagator on V
+  // interrupts the solve (before, only the run's backstop at budget + 2 s ended it, without a verdict)
+  const r = await auditProject(loadTarget('slitherlink'), { instance: 'example', symbolic: true, seconds: 2 });
+  assert.notEqual(r.status, 'timeout');
+  const v = r.verdict;
+  assert.equal(v.verdict, 'budget');
+  assert.equal(v.mode, 'symbolic');
+  assert.equal(v.seconds, 2);
+  assert.ok(v.t >= 2 && v.t < 3, `t = ${v.t}`);
+  assert.ok(Number.isInteger(v.rounds) && Number.isInteger(v.refinements));
+});

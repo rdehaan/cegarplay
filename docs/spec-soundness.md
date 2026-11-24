@@ -284,8 +284,13 @@ assumptions): no model → M' is a solution → **unsound**, with the witness `{
 counterexample, relevant | clause, solution, differ }` (the audit's fields). A model Y refines V:
 C stratified → a copy C_Y of C under M' with Y's guesses fixed must fire a constraint
 (`violated_Y`), which removes every M'' that Y still refutes, for every M and X; otherwise
-M''s interface vector is blocked (a **fallback**). A time budget (`seconds`, default 60) gives
-**budget**.
+M''s interface vector is blocked (a **fallback**). A time budget (`seconds`, default 60, counted
+from the start) gives **budget**: it is checked between rounds, between the parts of V while V is
+built, and inside every solve of V by a propagator whose `check` (check mode Fixpoint) reads the
+clock every 256 calls and interrupts the search past the deadline. Grounding cannot be
+interrupted; a run whose grounding alone outlasts the budget is ended by the run's backstop
+(budget + 2 s) and reported as `budget` without counts. The check of M' (C under M''s values) has
+no such hook; it is one solve of the check, usually short.
 
 **Why V unsatisfiable means sound.** Every model of V is a triple (M, X, M') with X a model of C
 under M (A1 ∪ C1 splits on A1) and M' removed by X's clause. The pruning and every C_Y remove only

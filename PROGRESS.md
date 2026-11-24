@@ -1574,3 +1574,10 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
   regression instance has no expected count when there is none. A step of the page's space audit
   that the time backstop ends counts as `budget` (it read "stopped"). `tools/survey.mjs` gives
   `audit: false` instances the symbolic audit instead of skipping them.
+- The symbolic audit's time budget now holds inside one solve: a propagator on V (`check` at every
+  propagation fixpoint, the clock read every 256 calls) interrupts the search past the deadline,
+  and the building of V checks the deadline between its parts. slitherlink/example and
+  sudoku-graded/example with `--seconds 3` end with their own `budget` verdict at 3.0 s and 3.8 s
+  (before: killed by the backstop at 5 s, no counts). No visible overhead: akari/example 19.7 s,
+  sudoku-graded/one-erased-c 14.3 s, sudoku-hard/one-clue-missing 3.2 s (the sweep's 34.2, 32.3
+  and 10.0 s were measured under load). Grounding itself still cannot be interrupted.
