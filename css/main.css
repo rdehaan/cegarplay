@@ -610,14 +610,20 @@ label.tab-label.has-problem:after {
   padding: 4px 12px 8px;
   margin: 4px 0 10px;
 }
-.audit-panel[data-verdict="unsound"] {
+.audit-panel[data-verdict="unsound"], .result-card[data-tone="unsound"] {
   border-left-color: var(--error);
   background: var(--error-bg);
 }
-.audit-panel[data-verdict="limit"] {
+.audit-panel[data-verdict="limit"], .result-card[data-tone="limit"] {
   border-left-color: var(--warn);
   background: var(--warn-bg);
 }
+/* a result card without a verdict yet (an exercise before its check) */
+.result-card[data-tone="info"] {
+  border-left-color: var(--border-strong);
+  background: var(--subtle);
+}
+.result-card pre { margin: 6px 0; }
 .audit-panel h3 {
   margin: 6px 0 4px;
 }

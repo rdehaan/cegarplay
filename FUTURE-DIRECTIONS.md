@@ -1,6 +1,6 @@
 # Future directions
 
-What was considered but not built, as of Nov 23, 2026. Every item of the previous version of this
+What was considered but not built, as of Nov 24, 2026 (after PLAN3). Every item of the previous version of this
 file (the learning plan A–F, the loop-language, checking, statistics and library items) was built
 except the ones below; `PROGRESS.md` says where each built item lives. The reasoning behind the
 older items is in `docs/directions/breadth.md` and `docs/directions/generality.md`. Labels such
@@ -17,6 +17,9 @@ as D9 or F1 in code comments refer to that version (`git show 652e5bb:FUTURE-DIR
 - **Run the browser tests in Firefox** (`BROWSER=firefox npm test`); this work used Chromium.
 - **Deploy to GitHub Pages, run the first CI, and have a person read the guide, the how-tos,
   the instructor notes and the booklet** (`book/cegarplay.md`; `pandoc` turns it into an EPUB).
+- **Push the PLAN3 branch** (`claude/plan3-bounded-verification`; the cloud clone had no remote).
+- **CI speed.** The suite takes about 8 minutes; separate CI jobs for the browser tests and for
+  `SLOW=1` would keep pull-request feedback fast.
 
 ## Loop language and runtime
 
@@ -60,11 +63,22 @@ as D9 or F1 in code comments refer to that version (`git show 652e5bb:FUTURE-DIR
   checked once by hand (`cegarcheck.py --mode block` or a temporary blocking copy). A checker
   family that handles them would turn that into a test.
 
-## Bounded verification (PLAN3, out of scope)
+## Bounded verification (after PLAN3)
 
 - The symbolic audit and spaces cover `G.clause` and `G.clauses` on one link. Not covered:
-  `expand` (rule refinements), chains and several links, `lift` links (certified per clause
-  already).
+  `expand` (rule refinements; `LIFT.level3_rules` is half of that encoding), chains and several
+  links, `lift` links (certified per clause already).
+- **One verifier across k.** Each k of a space is a fresh run that grounds A, C and V again; with
+  most steps taking one round, start-up dominates. A multi-shot V that adds the facts of k + 1
+  would make long bounds cheap.
+- **The remaining `budget` cases** (5 `audit: false` instances, the slow spaces): a sampling audit
+  with a confidence statement (see "Checking tools").
+- **From diagnosis to repair.** The witness names the atom that should have been relevant; the
+  app could propose the missing `relevant/1` rule and check the proposal on the space.
+- **Certified bounded verdicts.** "Sound up to k" is trusted today; a log that an independent
+  checker replays (as `certcheck.py` does for run counts) would make it checkable.
+- **A library example whose check is not stratified**, so that the verifier's block fallback is
+  shown in the library and not only in a test.
 - Unbounded proofs (every instance): undecidable in general; would need proofs by hand or in Lean.
 - An independent Python twin of the verifier (today the enumerative audit is the oracle in tests).
 - Spaces derived automatically from an instance's predicates (today they are written by hand).
@@ -72,12 +86,42 @@ as D9 or F1 in code comments refer to that version (`git show 652e5bb:FUTURE-DIR
   voting-justification, the puzzles with printed cells): the verifier would need instance atoms
   inside the interface.
 
+## Interface
+
+- **First-visit guidance.** A short guided path through Run, the trace, Audit and a space on the
+  default example (the tutorial covers it, in a tab of its own).
+
+## Teaching
+
+- **Exercises built on spaces**: "make this loop sound up to k = 6", checked by Check exercise; a
+  verdict that does not depend on one instance suits grading.
+- **A guide example for bounded verification** (chapter 4 uses library examples now), measured by
+  `guide-numbers --check`.
+- **Instructor material** for the soundness chapter: a lecture-mode sequence with the candidate
+  space and a space audit.
+
+## Engine and performance
+
+- **Parallel steps**: the steps of a space or the cells of a campaign in several workers at once
+  (the page has one engine worker per run today).
+- **Upgrade clingo-wasm** once a release fixes the trap (`docs/upstream-trap-report.md`).
+
+## Code health
+
+- **Split the page modules**: `js/control.js` and `js/init.js` keep growing; the audit and space
+  code could be a module of its own.
+- **Types without a build**: JSDoc and `tsc --checkJs` in CI (no build step) would catch slips
+  such as a field read from the wrong event.
+- **Flaky browser tests**: one browser test timed out once under heavy load; a retry or longer
+  timeouts for the slowest ones would keep CI quiet.
+
 ## Library
 
 - **Graded random puzzles.** The `erased` generators of `sudoku-hard` and `sudoku-graded` give
   puzzles that singles or a beginner solve, so their recipe instances have 0 solutions and only
   show the generator. A generator that searches for a grade (erase until the grade is reached,
   as a loop in itself) would give useful random instances.
+- **More contributed examples** through the chat package, now that they can carry spaces.
 - **Slow `example` runs.** `sudoku-graded` (13 s), `sudoku-unavoidable` (13 s) and
   `sudoku-hard` (7 s) are tagged `fast` but are not; their variants on `example` take as long.
   Make the instances smaller, or tag them and leave them to `SLOW=1`.

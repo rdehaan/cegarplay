@@ -1,6 +1,7 @@
 // Output tab: result line, solutions, messages, trace.
 import { TraceView } from './trace.js';
 import { costTracker } from './project.js';
+import { resultCard } from './result-card.js';
 
 const SHOW_SOLUTIONS = 1000;
 const MAX_MESSAGES = 2000;
@@ -40,137 +41,72 @@ export class Output {
     if (this.auditEl) { this.auditEl.hidden = true; this.auditEl.textContent = ''; }
   }
 
-  // The verdict of an audit (A event with a verdict), with its witness. A symbolic or space verdict
-  // (PLAN3, a.mode) has rounds and refinements instead of counts.
+  // The verdict of an audit (A event with a verdict), with its witness and the next steps, as a
+  // result card (js/result-card.js). A symbolic or space verdict (PLAN3, a.mode) has rounds and
+  // refinements instead of counts.
   auditVerdict(a) {
     const el = this.auditEl;
     if (!el) return;
-    el.textContent = '';
-    el.hidden = false;
-    el.dataset.verdict = a.verdict;
     el.dataset.mode = a.mode || 'enumerate';
-    if (a.mode) { this.symbolicVerdict(el, a); this.nextSteps(el, a); return; }
-    const h = document.createElement('h3');
-    h.textContent = a.verdict === 'sound' ? 'Audit: sound' : a.verdict === 'unsound' ? 'Audit: unsound' : 'Audit: limit';
-    el.append(h);
-    const p = document.createElement('p');
-    p.textContent = a.verdict === 'limit' ? `More than ${fmt(a.limit)} candidates.`
-      : `Link ${a.link} (${a.kinds.join(' and ')} refinements): ${fmt(a.candidates)} candidates, ${fmt(a.solutions)} solutions, ` +
-        `${fmt(a.counterexamples)} counterexamples, ${fmt(a.pairs)} distinct refinements. ` +
-        (a.verdict === 'sound' ? 'No refinement removes a solution of this instance.'
-          : `${fmt(a.unsound)} refinements remove a solution; ${fmt(a.at_risk)} solutions are at risk.`);
-    el.append(p);
     const w = a.witness;
-    if (w) {
-      const dl = document.createElement('dl');
-      const row = (k, v) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; dl.append(dt, dd); };
-      const set = (l) => `{${(l || []).join(' ')}}`;
-      row('Candidate', set(w.candidate));
-      row('Counterexample', w.counterexample || '(no shown atoms)');
-      if (w.kind === 'clause') row('Relevant', set(w.relevant));
-      else row(`Facts of ${w.part}`, (w.facts || []).join(' '));
-      row('Lost solution', set(w.solution));
-      row('They differ on', set(w.differ));
-      el.append(dl);
-      const n = document.createElement('p');
-      n.className = 'note';
-      n.textContent = w.kind === 'clause'
-        ? 'The lost solution agrees with the candidate on every relevant atom, so the clause removes it too. An atom on which they differ should have been relevant.'
-        : 'Grounding the refine part with these facts leaves the lost solution without a model.';
-      el.append(n);
-    }
-    if (a.empty) {
-      const e = document.createElement('p');
-      e.className = 'note';
-      e.textContent = `${fmt(a.empty)} counterexamples have no relevant atom (a run stops there with an error).`;
-      el.append(e);
-    }
-    this.nextSteps(el, a);
-  }
-
-  // What to do next after a verdict: buttons that call this.onAuditAction(name, a) (js/init.js).
-  // Which ones apply depends on the verdict and on the project (this.auditContext()).
-  nextSteps(el, a) {
-    if (!this.onAuditAction) return;
-    const ctx = this.auditContext ? this.auditContext() : {};
-    const steps = [];
-    const add = (name, label, title) => steps.push({ name, label, title });
-    if (a.mode === 'space') {
-      if (a.verdict === 'unsound') add('save-and-audit', 'Save it and audit it', 'Keep the instance as a regression instance and audit it by enumeration: the full list of unsound refinements');
-      if (a.verdict === 'sound') add('larger-bound', 'Try a larger bound', 'The same space with k two higher');
-    } else {
-      if (a.verdict === 'unsound' && ctx.observatory) add('candidate-space', 'See it in the candidate space', 'Run with every step recorded and draw every candidate, with the lost solutions marked (Observatory)');
-      if (a.verdict === 'limit') add('symbolic', 'Audit by symbolic search', 'The same question in one search, without listing the candidates');
-      if (a.verdict === 'sound' || a.verdict === 'unsound') {
-        if (ctx.spaces) add('space', 'Check a space', 'Every instance of a space up to a bound: is the verdict the same on the others?');
-        else add('write-space', 'Write a space', 'One instance says little about the others: describe all small instances (Instances tab, Spaces)');
-      }
-    }
-    if (!steps.length) return;
-    const box = document.createElement('div');
-    box.className = 'audit-next';
-    const lead = document.createElement('span');
-    lead.className = 'note';
-    lead.textContent = 'Next: ';
-    box.append(lead);
-    for (const s of steps) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'control-button small-button';
-      b.dataset.action = s.name;
-      b.textContent = s.label;
-      b.title = s.title;
-      b.addEventListener('click', () => this.onAuditAction(s.name, a));
-      box.append(b);
-    }
-    el.append(box);
-  }
-
-  symbolicVerdict(el, a) {
-    const h = document.createElement('h3');
-    const what = a.mode === 'space' ? `Space ${a.space}` : 'Symbolic audit';
-    h.textContent = `${what}: ${a.mode === 'space' && a.verdict === 'sound' ? `sound up to k = ${a.k}` : a.verdict === 'unsound' && a.mode === 'space' ? `unsound at k = ${a.k}` : a.verdict}`;
-    el.append(h);
-    const p = document.createElement('p');
-    p.textContent = symbolicDetail(a);
-    el.append(p);
-    if (a.mode === 'space' && a.perK && a.perK.length) {
-      const q = document.createElement('p');
-      q.className = 'note space-steps';
-      q.textContent = 'Per k: ' + perKText(a.perK);
-      el.append(q);
-    }
-    const w = a.witness;
-    if (w) {
-      const dl = document.createElement('dl');
-      const row = (k, v) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; dl.append(dt, dd); return dd; };
-      const set = (l) => `{${(l || []).join(' ')}}`;
-      if (w.instance != null) {
+    const set = (l) => `{${(l || []).join(' ')}}`;
+    const rows = [], notes = [], paragraphs = [];
+    let title;
+    if (a.mode) {
+      title = `${a.mode === 'space' ? `Space ${a.space}` : 'Symbolic audit'}: ${a.mode === 'space' && a.verdict === 'sound' ? `sound up to k = ${a.k}`
+        : a.mode === 'space' && a.verdict === 'unsound' ? `unsound at k = ${a.k}` : a.verdict}`;
+      paragraphs.push(symbolicDetail(a));
+      if (a.mode === 'space' && a.perK && a.perK.length) paragraphs.push({ class: 'note space-steps', text: 'Per k: ' + perKText(a.perK) });
+      if (w && w.instance != null) {
         const c = Object.entries(w.constants || {}).map(([k, v]) => `${k} = ${v}`).join(', ');
-        row(`Instance (k = ${w.k ?? a.k})`, [w.instance, c && `constants ${c}`].filter(Boolean).join('; ') || '(no facts)').className = 'witness-instance';
+        rows.push([`Instance (k = ${w.k ?? a.k})`, [w.instance, c && `constants ${c}`].filter(Boolean).join('; ') || '(no facts)', { class: 'witness-instance' }]);
       }
-      row('Candidate', set(w.candidate));
-      row('Counterexample', w.counterexample || '(no shown atoms)');
-      if (w.kind === 'clauses') row('Clause', set(w.clause));
-      else row('Relevant', set(w.relevant));
-      row('Lost solution', set(w.solution));
-      row('They differ on', set(w.differ));
-      el.append(dl);
-      const n = document.createElement('p');
-      n.className = 'note';
-      n.textContent = w.kind === 'clauses'
-        ? 'The lost solution falsifies every literal of the clause, so the clause removes it.'
-        : 'The lost solution agrees with the candidate on every relevant atom, so the clause removes it too. An atom on which they differ should have been relevant.';
-      el.append(n);
-      if (w.instance != null && this.onSaveInstance) {
-        const b = document.createElement('button');
-        b.className = 'control-button save-witness';
-        b.type = 'button';
-        b.textContent = 'Save as regression instance';
-        b.addEventListener('click', () => this.onSaveInstance(a));
-        el.append(b);
+    } else {
+      title = a.verdict === 'sound' ? 'Audit: sound' : a.verdict === 'unsound' ? 'Audit: unsound' : 'Audit: limit';
+      paragraphs.push(a.verdict === 'limit' ? `More than ${fmt(a.limit)} candidates.`
+        : `Link ${a.link} (${a.kinds.join(' and ')} refinements): ${fmt(a.candidates)} candidates, ${fmt(a.solutions)} solutions, ` +
+          `${fmt(a.counterexamples)} counterexamples, ${fmt(a.pairs)} distinct refinements. ` +
+          (a.verdict === 'sound' ? 'No refinement removes a solution of this instance.'
+            : `${fmt(a.unsound)} refinements remove a solution; ${fmt(a.at_risk)} solutions are at risk.`));
+    }
+    if (w) {
+      rows.push(['Candidate', set(w.candidate)], ['Counterexample', w.counterexample || '(no shown atoms)']);
+      if (w.kind === 'clause') rows.push(['Relevant', set(w.relevant)]);
+      else if (w.kind === 'clauses') rows.push(['Clause', set(w.clause)]);
+      else if (w.kind === 'core') rows.push(['Core atoms', set(w.relevant)]);
+      else rows.push([`Facts of ${w.part}`, (w.facts || []).join(' ')]);
+      rows.push(['Lost solution', set(w.solution)], ['They differ on', set(w.differ)]);
+      notes.push(w.kind === 'clauses' ? 'The lost solution falsifies every literal of the clause, so the clause removes it.'
+        : w.kind === 'clause' || w.kind === 'core' ? 'The lost solution agrees with the candidate on every relevant atom, so the clause removes it too. An atom on which they differ should have been relevant.'
+          : 'Grounding the refine part with these facts leaves the lost solution without a model.');
+    }
+    if (a.empty) notes.push(`${fmt(a.empty)} counterexamples have no relevant atom (a run stops there with an error).`);
+    resultCard(el, { verdict: a.verdict, title, paragraphs, rows, notes, actions: this.nextSteps(a) });
+  }
+
+  // What to do next after a verdict: buttons that call this.onAuditAction(name, a) (js/init.js),
+  // and the space witness's "Save as regression instance" (this.onSaveInstance). Which apply
+  // depends on the verdict and on the project (this.auditContext()).
+  nextSteps(a) {
+    const steps = [];
+    const act = (name, label, title, extra = {}) => steps.push({ name, label, title, onClick: () => this.onAuditAction(name, a), ...extra });
+    if (a.witness && a.witness.instance != null && this.onSaveInstance) {
+      steps.push({ name: 'save', label: 'Save as regression instance', class: 'save-witness', title: 'Keep the instance the space broke on', onClick: () => this.onSaveInstance(a) });
+    }
+    if (!this.onAuditAction) return steps;
+    const ctx = this.auditContext ? this.auditContext() : {};
+    if (a.mode === 'space') {
+      if (a.verdict === 'unsound') act('save-and-audit', 'Save it and audit it', 'Keep the instance as a regression instance and audit it by enumeration: the full list of unsound refinements');
+      if (a.verdict === 'sound') act('larger-bound', 'Try a larger bound', 'The same space with k two higher');
+    } else {
+      if (a.verdict === 'unsound' && ctx.observatory) act('candidate-space', 'See it in the candidate space', 'Run with every step recorded and draw every candidate, with the lost solutions marked (Observatory)');
+      if (a.verdict === 'limit') act('symbolic', 'Audit by symbolic search', 'The same question in one search, without listing the candidates');
+      if (a.verdict === 'sound' || a.verdict === 'unsound') {
+        if (ctx.spaces) act('space', 'Check a space', 'Every instance of a space up to a bound: is the verdict the same on the others?');
+        else act('write-space', 'Write a space', 'One instance says little about the others: describe all small instances (Instances tab, Spaces)');
       }
     }
+    return steps;
   }
 
   result(text, kind = '') {

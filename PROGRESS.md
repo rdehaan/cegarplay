@@ -1606,3 +1606,16 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
 - The run bar has two rows: actions (status at the end), then **Run with** (Instance, Variant,
   Solutions, muted). Each label stays with its control, so narrow screens wrap whole groups;
   every id is unchanged.
+
+### Interface directions (2026-11-24, stopped on request, work in progress)
+
+- `FUTURE-DIRECTIONS.md` rewritten with the outline of further directions (shipping, verification,
+  interface, teaching, engine, code health, library).
+- Started on the interface items, then stopped on request. **Committed untested:**
+  - the audit mode is kept per project (`settings.audit = { mode, space, bound }`, not written for
+    enumeration; `InstancesTab.applyAuditSetting` / `storeAuditSetting`);
+  - `js/result-card.js`, one result card used by the audit panel, the Fuzz card and the exercise
+    box (same layout and next-step buttons; the old ids kept).
+- Not started: comparing variants, project snapshots with undo, narrow screens and accessibility.
+- Next: run `cd test && npm test` (browser tests with `CHROMIUM_PATH` in a cloud container); the
+  browser tests of Fuzz, exercises and the audit panel are the ones these changes touch.

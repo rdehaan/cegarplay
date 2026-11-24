@@ -235,6 +235,14 @@ export function load(json) {
   if ('exercise' in p) out.exercise = loadExercise(p.exercise, out.instances || []);
   if ('instance' in st && st.instance !== null && st.instance !== '' && typeof st.instance !== 'string') throw new ProjectError('settings.instance must be an instance id or ""');
   if ('variant' in st && st.variant !== null && typeof st.variant !== 'string') throw new ProjectError('settings.variant must be a variant name or ""');
+  // settings.audit (optional): the run bar's audit mode, kept with the project
+  if ('audit' in st) {
+    const a = st.audit;
+    if (!isObj(a) || !AUDIT_MODES.includes(a.mode) || (a.space !== undefined && typeof a.space !== 'string') ||
+        (a.bound !== undefined && !(Number.isInteger(a.bound) && a.bound >= 0))) {
+      throw new ProjectError('settings.audit must be { mode: "enumerate" | "symbolic" | "space", space, bound }');
+    }
+  }
   out.version = usesV2(out) ? 2 : 1;
   return out;
 }
@@ -394,6 +402,8 @@ function loadVariants(list, fragmentNames) {
 }
 
 // Whether a project needs format version 2 (a key of V2_KEYS that is not empty).
+export const AUDIT_MODES = ['enumerate', 'symbolic', 'space'];
+
 export function usesV2(project) {
   return V2_KEYS.some((k) => Array.isArray(project[k]) && project[k].length > 0) ||
     !!(project.settings && project.settings.instance);
@@ -406,6 +416,10 @@ export function save(project, { runs = true } = {}) {
   for (const k of V2_KEYS) if (Array.isArray(p[k]) && p[k].length === 0) delete p[k];
   if (p.settings && 'instance' in p.settings && !usesV2(project)) { p.settings = { ...p.settings }; delete p.settings.instance; }
   if (p.settings && 'variant' in p.settings && !(project.variants || []).length) { p.settings = { ...p.settings }; delete p.settings.variant; }
+  // the default audit mode, or a space mode without spaces, is not written
+  if (p.settings && p.settings.audit && (p.settings.audit.mode === 'enumerate' || (p.settings.audit.mode === 'space' && !(project.spaces || []).length))) {
+    p.settings = { ...p.settings }; delete p.settings.audit;
+  }
   return JSON.stringify(p, null, 2) + '\n';
 }
 

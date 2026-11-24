@@ -131,8 +131,9 @@ app.control = new Control(app);
 app.instancesTab = new InstancesTab(app);
 // the audit modes (PLAN3): Space shows the space picker and the bound; a space audit's witness
 // can be kept as an instance
-$('audit-mode').addEventListener('change', () => app.instancesTab.renderSpaceBar());
-$('space-select').addEventListener('change', () => app.instancesTab.renderSpaceBar());
+$('audit-mode').addEventListener('change', () => { app.instancesTab.renderSpaceBar(); app.instancesTab.storeAuditSetting(); });
+$('space-select').addEventListener('change', () => { app.instancesTab.renderSpaceBar(); app.instancesTab.storeAuditSetting(); });
+$('space-bound').addEventListener('change', () => app.instancesTab.storeAuditSetting());
 app.output.onSaveInstance = (a) => app.instancesTab.saveWitness(a);
 // the verdict panel's next steps (js/output.js nextSteps)
 app.output.auditContext = () => ({ spaces: (app.project.spaces || []).length > 0, observatory: !$('tab11').hidden });
