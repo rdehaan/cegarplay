@@ -8,6 +8,12 @@ import { hashText, auditLiveText } from './stats.js';
 import { fmt, symbolicText } from './output.js';
 import { Recording } from './recording.js';
 
+// What a run's result depends on: the derived project's fragments (instance and variant applied),
+// its loop script and constants. The Instances tab compares it with the project as it is now.
+export function programHash(project) {
+  return hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.loop && project.loop.text, project.settings.constants]));
+}
+
 const $ = (id) => document.getElementById(id);
 
 export function loopLabel(loop) {
@@ -318,6 +324,7 @@ export class Control {
         (project.variant ? ` (variant ${project.variant})` : ''), mode, instance: instanceId, variant: project.variant || null, settings: { ...project.settings, constants: { ...project.settings.constants } },
       engine: app.engineVersion, solvers: compiled ? compiled.solvers : [], noHistory,
       fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])),
+      programHash: programHash(project),
     };
     return new Promise((resolve) => {
       app.engine.start(assembled.program, '--outf=3', {
@@ -390,7 +397,7 @@ export class Control {
     }
     if (this.audit) info.audit = this.audit;
     app.stats.done(this.D, this.D ? info : null);
-    if (info.mode !== 'audit' && info.mode !== 'bounded' && app.instancesTab) app.instancesTab.noteRun(info.instance, app.stats.S, this.D, app.output.costs);
+    if (info.mode !== 'audit' && info.mode !== 'bounded' && app.instancesTab) app.instancesTab.noteRun(info.instance, app.stats.S, this.D, app.output.costs, info);
     app.editors.setReadOnly(false);
     if (this.marks.length) app.editors.annotate(this.marks);
     if (app.anatomy) app.anatomy.done();

@@ -23,11 +23,25 @@ export class LoopTab {
         const v = Math.max(0, Math.floor(Number(e.target.value) || 0));
         e.target.value = v;
         this.app.project.settings[key] = v;
+        if (key === 'seed') { this.syncSeed(); this.app.dirty(); }
       });
     }
+    // the run bar's Seed and randomized: the same settings as the Loop tab's, kept in step
+    $('run-seed').addEventListener('change', (e) => {
+      const v = Math.max(0, Math.floor(Number(e.target.value) || 0));
+      this.app.project.settings.seed = v;
+      this.syncSeed();
+      this.app.dirty();
+    });
+    $('run-randomize').addEventListener('change', (e) => {
+      if (e.target.checked) this.app.project.settings.randomize = true; else delete this.app.project.settings.randomize;
+      this.syncSeed();
+      this.app.dirty();
+    });
     $('solutions-select').addEventListener('change', (e) => { this.app.project.settings.solutions = Number(e.target.value); });
     $('randomize-checkbox').addEventListener('change', (e) => {
       if (e.target.checked) this.app.project.settings.randomize = true; else delete this.app.project.settings.randomize;
+      this.syncSeed();
       this.app.dirty();
     });
     // settings.record: absent when off (the program text is then unchanged)
@@ -73,10 +87,16 @@ export class LoopTab {
     }, 500);
   }
 
+  syncSeed() {
+    const st = this.app.project.settings;
+    $('seed-input').value = $('run-seed').value = String(st.seed || 0);
+    $('randomize-checkbox').checked = $('run-randomize').checked = st.randomize === true;
+  }
+
   load(project) {
     const st = project.settings;
     for (const [id, key] of Object.entries(NUMERIC)) $(id).value = st[key];
-    $('randomize-checkbox').checked = st.randomize === true;
+    this.syncSeed();
     $('certify-select').value = st.certify && st.certify !== 'off' ? st.certify : 'off';
     if (![...$('certify-select').options].some((o) => o.value === $('certify-select').value)) $('certify-select').value = 'off';
     const r = st.record || {};

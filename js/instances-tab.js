@@ -4,8 +4,8 @@ import { IMPORTERS, importerFor, freshId, checkFacts, ImportError, resolveInstan
 import { generate, PARAM_TYPES, generatorConstants } from './generate.js';
 import { fuzz, shrinkInstance, diagnose, defaultSource, auditOf, symbolicOf } from './fuzz.js';
 import { mine } from './mine.js';
-import { BatchStopped } from './control.js';
-import { spaceBound, spaceCombos, spaceKeeps, auditable, INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary, exerciseItems, gradeItem, exerciseSummary } from './project.js';
+import { BatchStopped, programHash } from './control.js';
+import { derive, spaceBound, spaceCombos, spaceKeeps, auditable, INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary, exerciseItems, gradeItem, exerciseSummary } from './project.js';
 import { fmt, spaceAt } from './output.js';
 import { spaceProblems } from './bounded.js';
 import { resultCard } from './result-card.js';
@@ -34,6 +34,21 @@ function parseConsts(text) {
     out[m[1]] = m[2];
   }
   return out;
+}
+
+// What Fuzz does, said at the top of its result card.
+const FUZZ_WHAT = 'Fuzz looks for a small instance on which the loop is unsound. It audits instances from small to large (every refinement the loop could make; ' +
+  'a solution removed means unsound), stops at the first unsound one, removes facts from it while it stays unsound, and shows the step of the loop\'s own run that loses the solution.';
+
+// What a Fuzz source goes over, in words.
+function fuzzSourceText(source, project, suite) {
+  if (source.constants) {
+    const parts = Object.entries(source.constants).map(([k, v]) => `${k} = ${v[0]}..${v[v.length - 1]}`);
+    return `the project with ${parts.join(' and ')} (every numeric constant from 1 up to its value in the Loop tab; not the instances in the table)`;
+  }
+  if (source.generator) return `the instances of suite ${suite ? suite.name : '?'} (generator ${source.generator}${source.grid ? `, ${Object.entries(source.grid).map(([k, v]) => `${k} in ${JSON.stringify(v)}`).join(', ')}` : ''}, ${source.seeds || 1} seed${(source.seeds || 1) === 1 ? '' : 's'} each)`;
+  const n = (project.instances || []).length;
+  return `the ${n} instance${n === 1 ? '' : 's'} in the table`;
 }
 
 export class InstancesTab {
@@ -82,7 +97,7 @@ export class InstancesTab {
         title: 'Run every instance in turn (the instance picked in the run bar does not matter), with the variant picked in the run bar' }, 'Run all instances'),
       this.checkButton = el('button', { class: 'control-button', id: 'check-exercise-button', hidden: true, onclick: () => this.checkExercise(),
         title: 'Check this exercise: expected counts and optima, the audit, and the budgets' }, 'Check exercise'),
-      el('button', { class: 'control-button', id: 'fuzz-button', onclick: () => this.fuzz(), title: 'Audit instances from small to large; shrink the first unsound one and name the refinement that loses a solution' }, 'Fuzz'),
+      el('button', { class: 'control-button', id: 'fuzz-button', onclick: () => this.fuzz(), title: 'Look for a small instance on which the loop is unsound: audit instances from small to large (the instances, or the numeric constants from 1 up), shrink the first unsound one, and name the step of the run that loses a solution. The result is a card under these buttons.' }, 'Fuzz'),
       this.fileInput);
     this.form = el('div', { class: 'instance-form', id: 'instance-form', hidden: true });
     this.idInput = el('input', { id: 'instance-id', size: 16, 'aria-label': 'Instance id' });
@@ -116,7 +131,8 @@ export class InstancesTab {
     // which choice of the run bar the actions of this bar use
     this.contextNote = el('p', { class: 'note', id: 'instances-context' });
     this.root.append(
-      bar, this.contextNote, this.status, this.noneNote, this.exerciseBox, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table), this.form);
+      bar, this.contextNote, this.status, this.noneNote, this.exerciseBox, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table),
+      this.resultsNote = el('p', { class: 'note', id: 'instances-results-note', hidden: true }), this.form);
     this.buildGenerators();
     this.buildSpaces();
     this.editor = makeEditor(editorBox, 'ace/mode/gringo');
@@ -129,6 +145,7 @@ export class InstancesTab {
 
   load() {
     this.results = new Map();
+    this.lastRunAll = null;
     this.showExercise();
     this.gen = (this.app.project.generators || [])[0] ? this.app.project.generators[0].name : null;
     this.renderGenerators();
@@ -168,8 +185,13 @@ export class InstancesTab {
     if (!list.length) {
       this.table.append(el('tr', {}, el('td', { colspan: 7 }, 'No instances. The project runs as written; "New instance" or "Import file" adds one.')));
     }
+    // which variant the counts are of, and whether the project changed since
+    let staleAny = false;
+    const variants = new Set();
     for (const [i, x] of list.entries()) {
       const r = this.results.get(x.id);
+      const stale = this.staleResult(x.id, r);
+      if (r) { variants.add(r.variant || ''); if (stale) staleAny = true; }
       const v = expectedCheck(x.expected, r);
       const bad = v.checked && !v.ok;
       const good = v.checked && v.ok;
@@ -181,7 +203,8 @@ export class InstancesTab {
         el('td', {}, constText(x.constants) || '–'),
         el('td', {}, [...(x.tags || []), ...(x.audit === false ? ['no audit'] : []), ...(x.symbolic === 'unsound' ? ['symbolic audit: unsound'] : [])].join(', ') || '–'),
         el('td', { class: 'num' }, expectedText(x.expected)),
-        el('td', { class: 'num' }, r ? `${fmt(r.solutions)}${r.cost ? `, cost ${costText(r.cost)}${r.same ? '' : ' (differ)'}` : ''}${r.exhausted ? '' : ' (not exhausted)'}${bad ? ' ✗' : good ? ' ✓' : ''}` : '–'),
+        el('td', { class: 'num' + (stale ? ' stale-result' : ''), title: r ? `${r.time}, ${r.variant ? `variant ${r.variant}` : 'no variant'}${stale ? '; the project changed since: this count may no longer hold' : ''}` : '' },
+          r ? `${fmt(r.solutions)}${r.cost ? `, cost ${costText(r.cost)}${r.same ? '' : ' (differ)'}` : ''}${r.exhausted ? '' : ' (not exhausted)'}${bad ? ' ✗' : good ? ' ✓' : ''}${stale ? ' (stale)' : ''}` : '–'),
         el('td', { class: 'instance-actions' },
           el('button', { class: 'control-button small-button', onclick: () => this.pick(x.id), disabled: x.id === sel,
             title: 'Pick this instance in the run bar: Run and Audit use it' }, 'Use'), ' ',
@@ -190,6 +213,18 @@ export class InstancesTab {
           el('button', { class: 'control-button small-button instance-down', onclick: () => this.move(x.id, 1), disabled: i === list.length - 1,
             title: 'Move down', 'aria-label': `Move instance ${x.id} down` }, '↓')));
       this.table.append(tr);
+    }
+    // under the table: which run the Last count column is of, and whether it still holds
+    this.resultsNote.textContent = '';
+    this.resultsNote.hidden = !variants.size;
+    this.resultsNote.classList.toggle('stale-note', staleAny);
+    if (variants.size) {
+      const vs = [...variants];
+      const which = vs.length > 1 ? 'different variants (hover a count to see which)' : vs[0] ? `the variant ${vs[0]}` : 'no variant (the project as written)';
+      const ra = this.lastRunAll;
+      this.resultsNote.append(ra ? `Last count: Run all instances at ${ra.time}, with ${ra.variant ? `the variant ${ra.variant}` : 'no variant'}` + (vs.length > 1 ? `; some counts are of other runs, with ${which}.` : '.')
+        : `Last count: runs with ${which}.`);
+      if (staleAny) this.resultsNote.append(' ', el('b', {}, 'The project changed since'), ' (fragments, loop script, constants, the instance or the variant): the counts marked (stale) may no longer hold. Run all instances again.');
     }
   }
 
@@ -392,12 +427,26 @@ export class InstancesTab {
   }
 
   // Record a finished run of an instance (called by the control after every run).
-  noteRun(id, S, D, costs) {
+  noteRun(id, S, D, costs, info = {}) {
     if (!id || !S || !D) return;
     this.results.set(id, { solutions: S.solutions, exhausted: D.outcome === 'finished' && D.exhausted === true, outcome: D.outcome,
-      cost: costs && costs.n ? costs.cost : null, same: costs ? costs.same : true });
+      cost: costs && costs.n ? costs.cost : null, same: costs ? costs.same : true,
+      variant: info.variant || null, hash: info.programHash || null, time: new Date().toLocaleTimeString() });
     this.render();
   }
+
+  // Is a result of an earlier program? The run's program hash against the project now, with the
+  // same instance and variant (a recipe instance not yet generated: not known, not marked).
+  staleResult(id, r) {
+    if (!r || !r.hash) return false;
+    try {
+      const p = derive(structuredClone(this.app.collect ? this.app.collect() : this.app.project), { instance: id, variant: r.variant || undefined });
+      return programHash(p) !== r.hash;
+    } catch { return false; }
+  }
+
+  // after an edit (js/init.js, 300 ms later): mark the results that no longer hold
+  markStale() { if (this.results.size) this.render(); }
 
   async runAll() {
     const c = this.app.control;
@@ -417,6 +466,8 @@ export class InstancesTab {
       }
     } finally { c.endBatch(b); }
     const s = runAllSummary(rows);
+    this.lastRunAll = { variant: this.app.variants ? this.app.variants.selected() || null : null, time: new Date().toLocaleTimeString() };
+    this.render();
     this.say(s.text, s.bad > 0);
   }
 
@@ -494,7 +545,7 @@ export class InstancesTab {
 
   buildGenerators() {
     this.genSelect = el('select', { id: 'generator-select', 'aria-label': 'Generator' });
-    this.genSelect.addEventListener('change', () => { this.gen = this.genSelect.value; this.renderGenerators(); });
+    this.genSelect.addEventListener('change', () => { this.gen = this.genSelect.value; this.clearGenResults(); this.renderGenerators(); });
     this.genName = el('input', { id: 'generator-name', size: 14, 'aria-label': 'Generator name' });
     this.genName.addEventListener('change', () => this.renameGenerator(this.genName.value));
     this.genParams = el('table', { class: 'internals-table', id: 'generator-params' });
@@ -518,7 +569,9 @@ export class InstancesTab {
         el('label', {}, 'Seed ', this.genSeed),
         el('button', { class: 'control-button', id: 'preview-button', onclick: () => this.previewSix() }, 'Preview 6'),
         el('button', { class: 'control-button', id: 'mine-button', onclick: () => this.mineHard(),
-          title: 'Search 24 seeds of this generator (default parameters) for the instances with the most candidates per solution, then try removing single facts' }, 'Mine hard instances')),
+          title: 'Search 24 seeds of this generator (default parameters) for the instances with the most candidates per solution, then try removing single facts' }, 'Mine hard instances'),
+        this.genClear = el('button', { class: 'control-button small-button', id: 'generator-clear-button', hidden: true, onclick: () => this.clearGenResults(),
+          title: 'Remove the previewed or mined instances below (an edit of the generator removes them too)' }, 'Clear results')),
       this.genStatus, this.preview);
     this.root.append(el('h3', {}, 'Generators'),
       el('div', { class: 'instances-bar' }, this.genSelect,
@@ -528,7 +581,7 @@ export class InstancesTab {
     this.genEditor.on('change', () => {
       if (this.genLoading) return;
       const g = this.generator;
-      if (g) { g.text = this.genEditor.getValue(); this.app.dirty(); }
+      if (g) { g.text = this.genEditor.getValue(); this.genEdited(); }
     });
   }
 
@@ -549,14 +602,24 @@ export class InstancesTab {
     this.genParams.append(el('tr', {}, ...['Parameter', 'Type', 'Value', ''].map((h) => el('th', {}, h))));
     for (const [k, t] of Object.entries(g.params || {})) {
       const type = el('select', { 'aria-label': `Type of ${k}` }, ...PARAM_TYPES.map((x) => el('option', { value: x, selected: x === t }, x)));
-      type.addEventListener('change', () => { g.params[k] = type.value; this.app.dirty(); });
+      type.addEventListener('change', () => { g.params[k] = type.value; this.genEdited(); });
       const val = el('input', { size: 6, value: g.defaults && g.defaults[k] !== undefined ? String(g.defaults[k]) : '', 'aria-label': `Value of ${k}` });
-      val.addEventListener('change', () => { g.defaults = { ...(g.defaults || {}), [k]: val.value.trim() === '' ? undefined : Number(val.value) }; this.app.dirty(); });
+      val.addEventListener('change', () => { g.defaults = { ...(g.defaults || {}), [k]: val.value.trim() === '' ? undefined : Number(val.value) }; this.genEdited(); });
       this.genParams.append(el('tr', {}, el('td', {}, k), el('td', {}, type), el('td', {}, val),
-        el('td', {}, el('button', { class: 'control-button small-button', onclick: () => { delete g.params[k]; if (g.defaults) delete g.defaults[k]; this.renderGenerators(); this.app.dirty(); } }, 'Remove'))));
+        el('td', {}, el('button', { class: 'control-button small-button', onclick: () => { delete g.params[k]; if (g.defaults) delete g.defaults[k]; this.renderGenerators(); this.genEdited(); } }, 'Remove'))));
     }
     requestAnimationFrame(() => this.genEditor.resize());
   }
+
+  // The previewed or mined instances are of the generator as it was: an edit removes them.
+  genEdited() { this.clearGenResults(); this.app.dirty(); }
+  clearGenResults() {
+    this.preview.textContent = '';
+    this.genStatus.textContent = '';
+    this.genEditor.getSession().setAnnotations([]);
+    this.genClear.hidden = true;
+  }
+  showGenClear() { this.genClear.hidden = !this.preview.childElementCount; }
 
   addGenerator() {
     let name = 'gen';
@@ -564,6 +627,7 @@ export class InstancesTab {
     this.generators.push({ name, text: '% one fact per node; each edge with probability p/1000\nnode(1..n).\nedge(X,Y) :- node(X), node(Y), X < Y, @flip(p, X, Y) = 1.\n#show node/1.  #show edge/2.\n',
       params: { n: 'int', p: 'permille' }, defaults: { n: 5, p: 500 } });
     this.gen = name;
+    this.clearGenResults();
     this.renderGenerators();
     this.app.dirty();
   }
@@ -624,7 +688,7 @@ export class InstancesTab {
     if (!/^[a-z][A-Za-z0-9_]*$/.test(k)) return;
     g.params = { ...(g.params || {}), [k]: 'int' };
     this.renderGenerators();
-    this.app.dirty();
+    this.genEdited();
   }
 
   // Six instances from seeds s..s+5, each with its attempt number and label.
@@ -668,6 +732,7 @@ export class InstancesTab {
         } }, 'Add as instance'));
       this.preview.append(card);
     }
+    this.showGenClear();
   }
 
   async previewSix() {
@@ -708,6 +773,7 @@ export class InstancesTab {
       }
       this.preview.append(card);
     }
+    this.showGenClear();
   }
 
   // ---- fuzz (docs/spec-instances.md section 6) ----------------------------------------------
@@ -726,11 +792,20 @@ export class InstancesTab {
     const def = defaultSource(project);
     const source = def.constants ? def : suite ? suite.instances : def;
     this.fuzzCard.hidden = true;
+    // what Fuzz goes over, said in the card whatever comes out
+    const variant = app.variants ? app.variants.selected() : '';
+    this.fuzzWhat = `${fuzzSourceText(source, project, suite)}, ${variant ? `with the variant ${variant}` : 'with no variant'} (the run bar's)`;
+    const seen = [];
     try {
       this.say('Fuzz: auditing instances from small to large…');
-      const r = await fuzz(project, { source, env, onProgress: (x) => this.say(`Fuzz: ${x.tried} of ${x.total} instances (${x.instance}: ${x.verdict})…`) });
-      if (!r.found) { this.say(`Fuzz: no unsound instance among ${r.tried}${r.skipped ? ` (${r.skipped} skipped)` : ''}.${r.note ? ` ${r.note}.` : ''}`); return; }
-      if (r.mode !== 'audit') { this.say(`Fuzz: instance ${r.found.instance.id} gives ${r.found.counts[0]} solutions against ${r.found.counts[1]} with the reference (${r.note}).`, true); return; }
+      const r = await fuzz(project, { source, env, onProgress: (x) => { seen.push(x); this.say(`Fuzz: ${x.tried} of ${x.total} instances (${x.instance}: ${x.verdict})…`); } });
+      if (!r.found) { this.showFuzzNone(r, seen); this.say(`Fuzz: no unsound instance among ${r.tried}${r.skipped ? ` (${r.skipped} skipped)` : ''}; see the card below.`); return; }
+      if (r.mode !== 'audit') {
+        resultCard(this.fuzzCard, { verdict: 'unsound', title: 'Fuzz: an instance where the loop and the reference differ',
+          paragraphs: [FUZZ_WHAT, `Tried: ${this.fuzzWhat}.`, `On ${r.found.instance.id} the loop finds ${r.found.counts[0]} solutions and the variant "reference" ${r.found.counts[1]} (${r.note}).`] });
+        this.say(`Fuzz: instance ${r.found.instance.id} gives ${r.found.counts[0]} solutions against ${r.found.counts[1]} with the reference.`, true);
+        return;
+      }
       this.say(`Fuzz: ${r.found.instance.id} is unsound; shrinking…`);
       // an instance that only the symbolic audit could judge is shrunk with it too
       const judge = r.found.verdict && r.found.verdict.mode === 'symbolic' ? symbolicOf : auditOf;
@@ -745,6 +820,22 @@ export class InstancesTab {
     } finally { this.fuzzing = false; app.control.endBatch(b); }
   }
 
+  // Fuzz found nothing: say so in a card, with what it tried
+  showFuzzNone(r, seen) {
+    const count = (v) => seen.filter((x) => x.verdict === v).length;
+    const sound = count('sound') + count('same');
+    resultCard(this.fuzzCard, {
+      verdict: r.tried ? 'sound' : 'limit',
+      title: r.tried ? 'Fuzz: no unsound instance found' : 'Fuzz: nothing to try',
+      paragraphs: [FUZZ_WHAT, `Tried: ${this.fuzzWhat}.`,
+        r.tried ? `${r.tried} instance${r.tried === 1 ? '' : 's'}: ${sound} sound${r.skipped ? `, ${r.skipped} skipped (too large, out of budget, or an error)` : ''}. ` +
+          'The loop loses no solution on any of them. This says nothing about other or larger instances: a space (below) covers every instance up to a bound.'
+          : 'No instance to audit.',
+        ...(r.note ? [`Note: ${r.note}.`] : [])],
+      content: seen.length ? [el('p', { class: 'note', id: 'fuzz-tried' }, seen.map((x) => `${x.instance}: ${x.verdict}`).join(' · '))] : [],
+    });
+  }
+
   showFuzz(found, s, dg) {
     const w = s.verdict.witness || {};
     const step = dg.step ? `step ${dg.step.i} (${{ r: 'reject', a: 'add', e: 'expand' }[dg.step.k] || dg.step.k})` : dg.culprit ? `expansion ${dg.culprit}` : null;
@@ -752,7 +843,8 @@ export class InstancesTab {
     resultCard(this.fuzzCard, {
       verdict: 'unsound',
       title: 'Fuzz: an unsound instance',
-      paragraphs: [`Found at ${found.instance.id}; ${s.from ? `shrunk from ${s.from} facts to ${s.facts.length}` : 'no facts to shrink'}${consts ? ` (constants ${consts})` : ''}; ${s.tests} audit${s.tests === 1 ? '' : 's'}.`],
+      paragraphs: [FUZZ_WHAT, `Tried: ${this.fuzzWhat}.`,
+        `Unsound at ${found.instance.id}; ${s.from ? `shrunk from ${s.from} facts to the ${s.facts.length} below` : 'no facts to shrink'}${consts ? ` (constants ${consts})` : ''}; ${s.tests} audit${s.tests === 1 ? '' : 's'}.`],
       content: [el('pre', { id: 'fuzz-facts' }, s.facts.join('\n') || '(no facts)'),
         el('p', {}, `Lost solution {${(w.solution || []).join(' ')}}; the audit's witness: candidate {${(w.candidate || []).join(' ')}}, counterexample [${w.counterexample || ''}]` +
           (w.relevant ? `, relevant {${w.relevant.join(' ')}}` : '') + '.'),
@@ -761,6 +853,9 @@ export class InstancesTab {
         { name: 'trace', id: 'fuzz-trace', label: 'Open in trace', title: 'Run the loop on the small instance and open the trace', onClick: () => this.fuzzAction('trace', s) },
         { name: 'audit', id: 'fuzz-witness', label: 'Show audit witness', title: 'Audit the small instance (Output tab)', onClick: () => this.fuzzAction('audit', s) },
         { name: 'save', id: 'fuzz-save', label: 'Save as regression instance', title: 'Keep the small instance, with its true count when there is one', onClick: () => this.fuzzAction('save', s) },
+        ...(step ? [] : [{ name: 'sweep', id: 'fuzz-sweep', label: 'Find a run that loses it',
+          title: 'Save the small instance, then run it with a randomized search for seeds 1 to 50 until a run loses a solution, and show that run in the candidate space',
+          onClick: () => this.app.sweepAndShow({ instance: this.fuzzSave(s), target: Number.isInteger(s.verdict.solutions) ? s.verdict.solutions : null }) }]),
       ],
     });
   }
@@ -771,7 +866,7 @@ export class InstancesTab {
 
   buildSpaces() {
     this.spSelect = el('select', { id: 'space-list-select', 'aria-label': 'Space' });
-    this.spSelect.addEventListener('change', () => { this.space = this.spSelect.value; this.renderSpaces(); });
+    this.spSelect.addEventListener('change', () => { this.space = this.spSelect.value; this.clearSpacePreview(); this.renderSpaces(); });
     this.spName = el('input', { id: 'space-name', size: 14, 'aria-label': 'Space name' });
     this.spName.addEventListener('change', () => this.renameSpace(this.spName.value));
     // not 'space-description': that id is the run bar's description of the chosen space (index.html)
@@ -791,7 +886,7 @@ export class InstancesTab {
       else { this.spStatus.textContent = `First value of ${spaceBound(x)}: a whole number (0 or more).`; this.spFrom.value = String(x.from ?? 1); return; }
       this.spStatus.textContent = '';
       this.renderSpaces();
-      this.app.dirty();
+      this.spaceEdited();
     });
     this.spK = el('input', { id: 'space-preview-k', size: 3, inputmode: 'numeric', value: '2', 'aria-label': 'Value of the bound for the preview' });
     this.spKLabel = el('span', {}, 'k');
@@ -809,10 +904,11 @@ export class InstancesTab {
         '"In a regression instance": whether the constant goes into the instance saved from an unsound witness.'),
       el('div', { class: 'instances-bar' },
         el('button', { class: 'control-button small-button', id: 'add-space-param-button', onclick: () => this.addSpaceParam() }, 'Add parameter'),
-        el('button', { class: 'control-button small-button', id: 'check-space-button', onclick: () => this.checkSpace() }, 'Check'),
         el('label', {}, this.spKLabel, ' = ', this.spK),
         el('button', { class: 'control-button small-button', id: 'preview-space-button', onclick: () => this.previewSpace(),
-          title: 'The first instances of the space at this k (up to 6), as facts' }, 'Preview')),
+          title: 'The first instances of the space at this value of the bound (up to 6), as facts' }, 'Preview'),
+        this.spClear = el('button', { class: 'control-button small-button', id: 'space-preview-clear', hidden: true, onclick: () => this.clearSpacePreview(),
+          title: 'Remove the previewed instances (an edit of the space removes them too)' }, 'Clear preview')),
       this.spStatus, this.spPreview);
     this.root.append(el('h3', {}, 'Spaces'),
       el('div', { class: 'instances-bar' }, this.spSelect,
@@ -823,7 +919,7 @@ export class InstancesTab {
     this.spEditor.on('change', () => {
       if (this.spLoading) return;
       const x = this.spaceItem;
-      if (x) { x.text = this.spEditor.getValue(); this.app.dirty(); }
+      if (x) { x.text = this.spEditor.getValue(); this.spaceEdited(); }
     });
   }
 
@@ -857,7 +953,7 @@ export class InstancesTab {
         // the new bound has no range or fixed value; the old one gets its first value as value
         if (x.ranges) { delete x.ranges[k]; if (!Object.keys(x.ranges).length) delete x.ranges; }
         if (k === names[0]) delete x.bound; else x.bound = k;
-        this.renderSpaces(); this.renderSpaceBar(); this.app.dirty();
+        this.renderSpaces(); this.renderSpaceBar(); this.spaceEdited();
       });
       let values;
       if (isBound) values = el('span', {}, 'from ', this.spFrom, ' up to the run bar\'s value');
@@ -880,7 +976,7 @@ export class InstancesTab {
           delete x.params[k];
           for (const o of [x.defaults, x.ranges, x.regression]) if (o) delete o[k];
           if (x.bound === k) delete x.bound;
-          this.renderSpaces(); this.renderSpaceBar(); this.app.dirty(); } }, 'Remove'))));
+          this.renderSpaces(); this.renderSpaceBar(); this.spaceEdited(); } }, 'Remove'))));
     }
     requestAnimationFrame(() => this.spEditor.resize());
   }
@@ -998,7 +1094,28 @@ export class InstancesTab {
       try { spaceCombos(x); } catch (e) { clear('ranges'); this.spStatus.textContent = e.message; return; }
     } else { this.spStatus.textContent = `${k}: a whole number, or a range lo..hi (lo at most hi).`; return; }
     this.spStatus.textContent = '';
+    this.spaceEdited();
+  }
+
+  // An edit of a space: its preview is of the space as it was (removed), and the space is checked
+  // with clingo 500 ms after the last edit, as the fragments are.
+  spaceEdited() {
+    this.clearSpacePreview();
     this.app.dirty();
+    clearTimeout(this.spCheckTimer);
+    this.spCheckTimer = setTimeout(() => this.autoCheckSpace(), 500);
+  }
+  async autoCheckSpace() {
+    if (!this.app.ready) return;
+    // a run is going: try again a little later (one engine call at a time)
+    if (this.app.engine.active) { this.spCheckTimer = setTimeout(() => this.autoCheckSpace(), 1000); return; }
+    const errs = await this.checkSpace();
+    if (!errs.length) this.spStatus.textContent = '';
+  }
+  clearSpacePreview() {
+    this.spPreview.textContent = '';
+    if (!this.spStatus.classList.contains('error')) this.spStatus.textContent = '';
+    this.spClear.hidden = true;
   }
 
   addSpaceParam() {
@@ -1008,7 +1125,7 @@ export class InstancesTab {
     if (!/^[a-z][A-Za-z0-9_]*$/.test(k)) return;
     x.params = { ...(x.params || {}), [k]: 'int' };
     this.renderSpaces();
-    this.app.dirty();
+    this.spaceEdited();
   }
 
   // The validation messages of the space at its first k (clingo in gringo mode, as for generators).
@@ -1050,6 +1167,7 @@ export class InstancesTab {
       this.spPreview.append(el('div', { class: 'generator-card', 'data-space-instance': String(i + 1) },
         el('p', {}, `Instance ${i + 1}`), el('pre', { class: 'generator-facts' }, facts.map((a) => `${a}.`).join('\n') || '(no facts)')));
     }
+    this.spClear.hidden = !this.spPreview.childElementCount;
   }
 
   // "Save as regression instance" of a space audit's witness (as Fuzz saves its instance).

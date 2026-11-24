@@ -75,6 +75,9 @@
             <option value="100">100</option>
             <option value="0">all</option>
           </select></span>
+        <span class="run-field" title="clingo's --seed (0 = clingo's default). The seed changes the search only with a randomized search (or randomizing solver options); the same seed gives the same run again. Also in the Loop tab."><label class="inline-label" for="run-seed">Seed:</label>
+          <input type="number" min="0" step="1" id="run-seed" class="run-seed">
+          <label class="inline-label"><input type="checkbox" id="run-randomize"> randomized</label></span>
       </div>
       <!-- what the Output, Statistics and Observatory tabs show now: which run, audit or replay -->
       <div id="shown-line" class="shown-line" aria-live="polite"></div>

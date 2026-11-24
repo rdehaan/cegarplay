@@ -351,7 +351,7 @@ app.dirty = (edit = true) => {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 800);
   if (shownTimer) clearTimeout(shownTimer);
-  shownTimer = setTimeout(() => { shownTimer = null; app.updateShown(); if (edit) { try { renderSnapshots(); } catch { /* not yet */ } } }, 300);
+  shownTimer = setTimeout(() => { shownTimer = null; app.updateShown(); if (edit) { try { renderSnapshots(); } catch { /* not yet */ } if (app.instancesTab) app.instancesTab.markStale(); } }, 300);
 };
 let shownTimer = null;
 app.projectChanged = () => app.dirty();

@@ -127,7 +127,7 @@ const accName = (page, sel) => page.$eval(sel, (e) => {
 test('B7: the audit group, the Spaces editor, next steps and result cards are named, focusable and announced', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=af-preferred&tab=9');
   for (const sel of ['#audit-button', '#audit-mode', '#space-list-select', '#space-name', '#space-description-input', '#space-preview-k',
-    '#preview-space-button', '#check-space-button', '#add-space-param-button', '#add-space-button', '#delete-space-button',
+    '#preview-space-button', '#add-space-param-button', '#add-space-button', '#delete-space-button',
     '#snapshot-name', '#snapshot-save-button', '#compare-a', '#compare-b', '#compare-button']) {
     assert.ok((await accName(page, sel)).length > 1, `${sel} has a name`);
   }

@@ -1905,3 +1905,19 @@ number count". Found and fixed:
   loses it** on unsound verdicts (space: on the saved witness instance), **Find a run that loses
   one** in the candidate space. On the user's Hamiltonian-cycle project (relevant4, space graphs,
   size 6) seed 13 loses one solution; refinement 1 is the bad one.
+
+## Requests of 2026-11-24 (late night)
+
+- Generators: **Clear results** removes Preview 6 and mined instances; any edit of the generator
+  (text, parameters, values, another generator) removes them too (`genEdited`).
+- Spaces: no Check button; the space is checked 500 ms after each edit (`spaceEdited`,
+  `autoCheckSpace`); **Clear preview**, and an edit removes the preview.
+- Domain view: each Show radio sits next to its label.
+- Run bar: **Seed** and **randomized** (the Loop tab's settings, kept in step: `LoopTab.syncSeed`).
+  A CSS rule hid run-bar fields without a select; it now keeps fields with an input.
+- Instances: each count remembers its variant and a hash of the program it ran (`programHash` in
+  `js/control.js`); a line under the table names the run (Run all instances, time, variant) and
+  counts whose program changed since are marked (stale).
+- Fuzz: a card for every outcome, with what Fuzz does and what it tried (the constants grid is
+  named as such: it does not use the instances in the table); **Find a run that loses it** when
+  the loop's own run does not.

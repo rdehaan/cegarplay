@@ -112,7 +112,7 @@ two-space indentation.
 | `settings.candidates` | number | 0 | Candidate limit; 0 = none. |
 | `settings.trace` | number | 200 | Number of trace steps recorded; 0 = off. |
 | `settings.seed` | number | 0 | Passed as `--seed=N` unless 0. |
-| `settings.randomize` | boolean | absent | **Randomized search** (Loop tab): every solver gets `--rand-freq=0.2 --sign-def=rnd`, so that the seed changes the order of the candidates and which counterexample a check returns. Absent when off. |
+| `settings.randomize` | boolean | absent | **Randomized search** (Loop tab; **randomized** next to **Seed** in the run bar, the same setting as the Loop tab's seed): every solver gets `--rand-freq=0.2 --sign-def=rnd`, so that the seed changes the order of the candidates and which counterexample a check returns. Absent when off. |
 | `runs` | list | `[]` | Final statistics of earlier runs (Statistics tab, run history). Written only when "include run history" is ticked on download. |
 | `instances` | list | none | Format version 2. See [Instances](#manual-instances). |
 | `variants` | list | none | Format version 2. See [Instances](#manual-instances). |
@@ -173,7 +173,11 @@ file that fails is named and the others are added); each importer is checked wit
 the instance is added. **Run all**, **Fuzz** and **Check exercise** (like **Rerun with 5 seeds**) are batches: the run bar
 says what runs (**running all instances (3 of 17: n5)**, **running fuzz**), Run and Audit wait, and one
 click on **Abort** (or **Stop**) ends the whole batch. **Run all instances** runs every instance (whatever instance the run bar picks) with the run bar's
-variant, which a line under the buttons names; Fuzz uses that variant too. **↑** and **↓** in the table
+variant, which a line under the buttons names; Fuzz uses that variant too. Under the table a line
+says which run the **Last count** column is of (Run all instances, its time and variant; hover a
+count for its own run), and after an edit that changes what a counted run ran (a fragment it used,
+the loop script, a constant, the instance or the variant) the count is marked **(stale)** and the
+line says that the project changed since. **↑** and **↓** in the table
 move an instance (the run bar, Run all, the Campaign tab and the file follow the order; the instance
 a run uses stays the same). **Run all instances** marks a count other than the expected one
 with ✗ in red. An instance with an expected count is run to all solutions, whatever the project's
@@ -253,7 +257,12 @@ stops at the first unsound one, shrinks its facts and constants (delta debugging
 `schema` fragment satisfied and the audit unsound) and diagnoses it: the lost solution, the
 audit's witness, and the step of the loop's own run whose refinement removes the solution (for
 `expand` loops, a replay of the recorded expansions). The card saves the instance as a regression
-instance with its true count. Instances marked
+instance with its true count. Every outcome is a card under the Instances bar that says what Fuzz
+does and what it tried: with numeric constants in the Loop tab, the project with each constant from
+1 up to its value (not the instances in the table); else a suite's generator grid; else the
+instances in the table; and the variant. When nothing is unsound the card says how many instances
+were sound or skipped, and that larger or other instances are not covered. When the loop's own run
+does not lose the solution, **Find a run that loses it** starts a seed sweep on the small instance. Instances marked
 `audit: false` get the [symbolic audit](#manual-audit-modes) instead of none; one without a verdict
 (`budget`, `unsupported`) is skipped like one above the candidate limit.
 
@@ -299,8 +308,9 @@ parameter (`node(1..k). { edge(X,Y) : node(X), node(Y), X < Y }.`); the paramete
 saved witness instance gets that constant); and a description. A range is how a space covers a
 constant of the encoding: add a parameter with the constant's name and give it a range. The run
 bar names the bound ("every instance with n up to"), and while Audit is set to space its Instance
-picker says that it is for Run only: a space audit uses no instance. **Check** runs clingo on the text; **Preview** lists the first 6 instances at a k as
-facts, which is the quickest way to see that the space is what you meant. A space whose text is
+picker says that it is for Run only: a space audit uses no instance. The space is checked with clingo 500 ms after each edit (errors are marked in its editor and named
+under it); **Preview** lists the first 6 instances at a value of the bound as facts (**Clear
+preview** removes them, and so does any edit of the space), which is the quickest way to see that the space is what you meant. A space whose text is
 empty and whose one parameter is a constant of the project is the constants family n = 1, 2, …
 (the tutorial's space `n`).
 
@@ -360,7 +370,8 @@ the generator's `defaults`. An instance is **exact** when its program has one mo
 follow the stated distribution, conditioned on acceptance) and **solver-completed** when it has
 more (clingo returns some model, not a uniform one). A bad argument (`@flip(a, 1)`) stops the
 generator with a message. The Instances tab has a generator list and editor, a parameter table, a
-seed and **Preview 6** (six instances from six seeds, with attempt and label); **Add as instance**
+seed and **Preview 6** (six instances from six seeds, with attempt and label; **Clear results**
+removes them and the mined instances, and so does any edit of the generator); **Add as instance**
 adds a fixed instance: the generated facts as text (to read and edit; the generator is not run again),
 the recipe kept as a note of where they came from, and the generator's constants. **Constants of its
 instances** (`constants` in the project: `n=n, k=3`) are given to every instance a generator makes: a

@@ -361,7 +361,8 @@ test('I4: Fuzz on tutorial-weak-relevant reports n = 2, the lost solution pick(2
   await page.click('#fuzz-button');
   await page.waitForSelector('#fuzz-card:not([hidden])', { timeout: 60000 });
   const text = await page.textContent('#fuzz-card');
-  assert.match(text, /Found at n2/);
+  assert.match(text, /Unsound at n2/);
+  assert.match(text, /Tried: the project with n = 1\.\.8/);
   assert.match(text, /Lost solution \{pick\(2\)\}/);
   assert.match(text, /candidate \{pick\(1\) pick\(2\)\}/);
   await page.click('#fuzz-save');
@@ -741,6 +742,77 @@ test('Control: "Loaded example" goes at the first edit and when another project 
   assert.equal(await page.textContent('#load-status'), '');
   await B.setEditor(page, 'editor-check', '% edit 2\n');
   await page.waitForFunction(() => document.getElementById('upload-status').textContent === '');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('Instances: the counts say which variant they are of, and are marked stale after an edit', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=af-preferred&tab=9');
+  await page.selectOption('#variant-select', 'one-clause');
+  await page.click('#run-all-instances-button');
+  await page.waitForFunction(() => /Last count: Run all instances at .*, with the variant one-clause\./.test(document.getElementById('instances-results-note').textContent), null, { timeout: 120000 });
+  // another variant picked afterwards: the note still names the one the counts are of
+  await page.selectOption('#variant-select', '');
+  await page.click('label[for="tab9"]');
+  assert.match(await page.textContent('#instances-results-note'), /with the variant one-clause/);
+  assert.equal(await page.$$eval('#instances-table td.stale-result', (l) => l.length), 0);
+  // an edit of check: the variant swaps check out, so its counts still hold
+  await B.setEditor(page, 'editor-check', (await B.getEditor(page, 'editor-check')) + '\n% edited\n');
+  await page.waitForTimeout(600);
+  assert.equal(await page.$$eval('#instances-table td.stale-result', (l) => l.length), 0);
+  // an edit of shared, which the variant uses: the counts are marked stale
+  await B.setEditor(page, 'editor-shared', (await B.getEditor(page, 'editor-shared')) + '\n% edited\n');
+  await page.click('label[for="tab9"]');
+  await page.waitForFunction(() => document.querySelectorAll('#instances-table td.stale-result').length > 0);
+  assert.match(await page.textContent('#instances-results-note'), /The project changed since/);
+  assert.match(await page.textContent('#instances-table'), /\(stale\)/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('Fuzz says what it tried and what came out, also when it finds nothing', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=9');
+  await page.click('#fuzz-button');
+  await page.waitForFunction(() => !document.getElementById('fuzz-card').hidden, null, { timeout: 120000 });
+  const text = await page.textContent('#fuzz-card');
+  assert.match(text, /Fuzz: no unsound instance found/);
+  assert.match(text, /Fuzz looks for a small instance on which the loop is unsound/);
+  assert.match(text, /Tried: the project with n = 1\.\.\d+ \(every numeric constant from 1 up to its value/);
+  assert.match(text, /\d+ instances?: \d+ sound/);
+  assert.equal(await page.$eval('#fuzz-card', (e) => e.dataset.verdict), 'sound');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('generator and space results go when their program is edited; a space is checked after an edit; the run bar seed', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf&tab=9');
+  await page.click('#preview-button');
+  await page.waitForSelector('#generator-preview .generator-card');
+  assert.equal(await page.isVisible('#generator-clear-button'), true);
+  await page.click('#generator-clear-button');
+  assert.equal(await page.$$eval('#generator-preview .generator-card', (l) => l.length), 0);
+  await page.click('#preview-button');
+  await page.waitForSelector('#generator-preview .generator-card');
+  await B.setEditor(page, 'generator-editor', (await B.getEditor(page, 'generator-editor')) + '\n% edited\n');
+  assert.equal(await page.$$eval('#generator-preview .generator-card', (l) => l.length), 0, 'an edit removes the preview');
+  // spaces: no Check button; an error is marked 500 ms after the edit; Preview can be cleared
+  assert.equal(await page.$('#check-space-button'), null);
+  await page.click('#preview-space-button');
+  await page.waitForSelector('#space-preview .generator-card');
+  await page.click('#space-preview-clear');
+  assert.equal(await page.$$eval('#space-preview .generator-card', (l) => l.length), 0);
+  const text = await B.getEditor(page, 'space-editor');
+  await B.setEditor(page, 'space-editor', text + '\nbroken(.\n');
+  await page.waitForFunction(() => /line \d+/.test(document.getElementById('space-status').textContent), null, { timeout: 10000 });
+  await B.setEditor(page, 'space-editor', text);
+  await page.waitForFunction(() => document.getElementById('space-status').textContent === '', null, { timeout: 10000 });
+  // the run bar's seed and the Loop tab's are one setting
+  await page.fill('#run-seed', '7');
+  await page.dispatchEvent('#run-seed', 'change');
+  await page.check('#run-randomize');
+  assert.equal(await page.$eval('#seed-input', (e) => e.value), '7');
+  assert.equal(await page.$eval('#randomize-checkbox', (e) => e.checked), true);
+  assert.deepEqual(await page.evaluate(() => [window.cegarplay.project.settings.seed, window.cegarplay.project.settings.randomize]), [7, true]);
   assert.deepEqual(errors, []);
   await context.close();
 });
