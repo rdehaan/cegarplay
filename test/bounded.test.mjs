@@ -163,4 +163,10 @@ test('S8: Fuzz gives an audit: false instance the symbolic audit instead of skip
   const u = await fuzz(w, { source: { ids: ['big'] }, env: env({ bounded: H.read('lua/bounded.lua') }) });
   assert.equal(u.found.instance.id, 'big');
   assert.equal(u.found.verdict.mode, 'symbolic');
+  // and shrunk with the symbolic audit (the enumerative one would stop at its limit there):
+  // n = 9 becomes the smallest unsound n, 2
+  const { shrinkInstance, symbolicOf } = await import('../js/fuzz.js');
+  const s = await shrinkInstance(u.found.project, env({ bounded: H.read('lua/bounded.lua') }), { judge: symbolicOf });
+  assert.equal(s.verdict.verdict, 'unsound');
+  assert.deepEqual(s.constants, { n: '2' });
 });

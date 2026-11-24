@@ -1568,3 +1568,9 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
   3.5 min. `make-replays` rewrites nothing (the runtime is unchanged).
 - Docs that did not mention the new modes: `llms.txt`, `README.md`, `examples/contrib/README.md`,
   and a pointer from `docs/directions/soundness.md` to S6-S8.
+- Fixes found afterwards: Fuzz shrank an instance found unsound by the symbolic audit (an
+  `audit: false` one) with the enumerative audit, which stops at its candidate limit there; it now
+  shrinks with the audit that judged it (`shrinkInstance(.., { judge })`), and the saved
+  regression instance has no expected count when there is none. A step of the page's space audit
+  that the time backstop ends counts as `budget` (it read "stopped"). `tools/survey.mjs` gives
+  `audit: false` instances the symbolic audit instead of skipping them.

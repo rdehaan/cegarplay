@@ -515,8 +515,10 @@ export class Control {
         runBounded: async (_p, { k }) => {
           this.batchProgress(`k = ${k} of ${to}`);
           const r = await this.run({ mode: 'bounded', spaceRun: { name: sp.name, k }, noHistory: true });
-          if (b.cancelled || !r || r.state === 'aborted') throw new BatchStopped();
+          if (b.cancelled || !r) throw new BatchStopped();
           last = r;
+          // a step that the time backstop ended (one solve call longer than the budget): budget
+          if (r.state === 'aborted') return { verdict: 'budget', mode: 'symbolic', seconds: Number(app.project.settings.seconds) || 60 };
           return r.audit || { verdict: 'error', reason: r.state };
         },
       } });

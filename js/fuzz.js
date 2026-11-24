@@ -135,8 +135,9 @@ export async function fuzz(project, { source = defaultSource(project), env, onPr
 }
 
 // Shrink the facts (one ground fact per item) and then the numeric constants of an unsound
-// plain project, keeping the schema fragment satisfied and the audit unsound.
-export async function shrinkInstance(d, env, { jobs = 1, onStep } = {}) {
+// plain project, keeping the schema fragment satisfied and the audit unsound. judge: the audit
+// that decides (auditOf; symbolicOf for an instance only the symbolic audit could judge).
+export async function shrinkInstance(d, env, { jobs = 1, onStep, judge = auditOf } = {}) {
   const inst = d.fragments.find((f) => f.name === 'instance');
   const schema = d.fragments.find((f) => f.name === 'schema');
   const withFacts = (facts, constants = d.settings.constants) => ({
@@ -150,7 +151,7 @@ export async function shrinkInstance(d, env, { jobs = 1, onStep } = {}) {
     const r = await env.engineRun(`${facts}\n${schema.text}\n`, `--outf=3 ${c}`.trim());
     return r.status === 10 || r.status === 30;
   };
-  const unsound = async (p) => (await schemaOk(p)) && (await auditOf(p, env)).verdict?.verdict === 'unsound';
+  const unsound = async (p) => (await schemaOk(p)) && (await judge(p, env)).verdict?.verdict === 'unsound';
   let facts = [];
   if (inst && inst.text.trim()) {
     const n = await normaliseFacts(inst.text, env.engineRun, d.settings.constants);
@@ -165,7 +166,7 @@ export async function shrinkInstance(d, env, { jobs = 1, onStep } = {}) {
   const rc = await shrinkConstants(d.settings.constants || {}, (c) => unsound(withFacts(cur, c)));
   tests += rc.tests;
   const small = withFacts(cur, rc.constants);
-  const final = await auditOf(small, env);
+  const final = await judge(small, env);
   return { project: small, facts: cur, constants: rc.constants, tests, verdict: final.verdict, from: facts.length };
 }
 

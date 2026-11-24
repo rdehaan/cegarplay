@@ -1,4 +1,5 @@
-// Survey library examples: per instance, the loop's counts and the audit's verdict and time.
+// Survey library examples: per instance, the loop's counts and the audit's verdict and time
+// (the symbolic audit's for instances marked audit: false).
 //   node tools/survey.mjs [id | file ...] [--no-audit] [--variants] [--seconds N] [--json]
 // --variants also runs every variant on every instance and checks the expected counts.
 import fs from 'node:fs';
@@ -31,11 +32,13 @@ for (const id of ids) {
     const tl = (Date.now() - t0) / 1000;
     const row = { id, inst, sol: S.solutions, cand: S.candidates, cex: S.counterexamples, cl: S.clauses, ex: S.expansions, out: D.outcome, exh: D.exhausted, t: tl, err: E?.message || r.problems?.[0]?.message };
     const own = (p.instances || []).find((y) => y.id === inst);
-    if (!noAudit && own && own.audit === false) { row.audit = 'skipped (audit: false)'; row.ta = 0; }
-    else if (!noAudit) {
+    if (!noAudit) {
+      // audit: false (too large to enumerate): the symbolic audit instead (PLAN3)
+      const symbolic = !!(own && own.audit === false);
       const t1 = Date.now();
       try {
-        const a = await auditProject(p, { seconds, instance: inst });
+        const a = await auditProject(p, { seconds, instance: inst, symbolic });
+        if (symbolic && a.verdict) a.verdict.verdict = `${a.verdict.verdict} (symbolic)`;
         row.audit = a.verdict ? (a.verdict.sound ? 'sound' : a.verdict.verdict || 'unsound') : (a.error?.message || a.status || 'none').slice(0, 60);
       } catch (e) { row.audit = 'ERR ' + e.message.slice(0, 60); }
       row.ta = (Date.now() - t1) / 1000;

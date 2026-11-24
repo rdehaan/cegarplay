@@ -2,7 +2,7 @@
 import { makeEditor } from './editors.js';
 import { IMPORTERS, importerFor, freshId, checkFacts, ImportError } from './instances.js';
 import { generate, PARAM_TYPES } from './generate.js';
-import { fuzz, shrinkInstance, diagnose, defaultSource } from './fuzz.js';
+import { fuzz, shrinkInstance, diagnose, defaultSource, auditOf, symbolicOf } from './fuzz.js';
 import { mine } from './mine.js';
 import { BatchStopped } from './control.js';
 import { spaceBound, auditable, INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary, exerciseItems, gradeItem, exerciseSummary } from './project.js';
@@ -641,7 +641,9 @@ export class InstancesTab {
       if (!r.found) { this.say(`Fuzz: no unsound instance among ${r.tried}${r.skipped ? ` (${r.skipped} skipped)` : ''}.${r.note ? ` ${r.note}.` : ''}`); return; }
       if (r.mode !== 'audit') { this.say(`Fuzz: instance ${r.found.instance.id} gives ${r.found.counts[0]} solutions against ${r.found.counts[1]} with the reference (${r.note}).`, true); return; }
       this.say(`Fuzz: ${r.found.instance.id} is unsound; shrinking…`);
-      const s = await shrinkInstance(r.found.project, env, { onStep: (items, tests) => this.say(`Fuzz: shrinking, ${items.length} facts after ${tests} audits…`) });
+      // an instance that only the symbolic audit could judge is shrunk with it too
+      const judge = r.found.verdict && r.found.verdict.mode === 'symbolic' ? symbolicOf : auditOf;
+      const s = await shrinkInstance(r.found.project, env, { judge, onStep: (items, tests) => this.say(`Fuzz: shrinking, ${items.length} facts after ${tests} audits…`) });
       if (s.error || !s.verdict) { this.say(`Fuzz: ${r.found.instance.id} is unsound; shrinking failed (${s.error || 'no verdict'}).`, true); return; }
       const dg = await diagnose(s.project, s.verdict, env);
       this.showFuzz(r.found, s, dg);
@@ -828,14 +830,16 @@ export class InstancesTab {
     if (this.fuzzSaved && this.list.some((x) => x.id === this.fuzzSaved)) return this.fuzzSaved;
     const id = freshId(this.app.project, 'regression');
     const constants = Object.fromEntries(Object.entries(s.constants || {}).filter(([k, v]) => this.app.project.settings.constants[k] !== v));
-    this.add({ id, facts: s.facts.join('\n') + '\n', constants, expected: { solutions: s.verdict.solutions }, tags: ['regression'] });
+    // the symbolic audit gives no solution count: then no expected count
+    const expected = Number.isInteger(s.verdict.solutions) ? { expected: { solutions: s.verdict.solutions } } : {};
+    this.add({ id, facts: s.facts.join('\n') + '\n', constants, ...expected, tags: ['regression'] });
     this.fuzzSaved = id;
     return id;
   }
 
   async fuzzAction(what, s) {
     const id = this.fuzzSave(s);
-    if (what === 'save') { this.say(`Saved instance ${id} with its true count ${s.verdict.solutions} (tag regression).`); return; }
+    if (what === 'save') { this.say(Number.isInteger(s.verdict.solutions) ? `Saved instance ${id} with its true count ${s.verdict.solutions} (tag regression).` : `Saved instance ${id} (tag regression).`); return; }
     const tab = document.getElementById(what === 'trace' ? 'tab5' : 'tab1');
     await this.app.control.run(what === 'audit' ? { mode: 'audit', instance: id } : { instance: id });
     if (tab) { tab.checked = true; tab.dispatchEvent(new Event('change')); }
