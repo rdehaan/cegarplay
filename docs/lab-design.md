@@ -240,3 +240,7 @@ storage keys in the manual. Also: polite live regions for the status, the verdic
 ladder's sentence; keyboard access (every control is a button, select or range; the option map
 has a **Set** list as its keyboard alternative); theme tokens for light and dark; no sideways
 scroll from 1400 px down to 400 px (checked in the browser test).
+Observed, not changed: `test/browser/directions.test.mjs` "Run all, Fuzz and the audit of many
+instances..." failed once in a loaded full run and passed in 3 reruns and in the other full run. It
+waits for the short-lived run-bar text "running audit (1 of N: ...)", which a busy machine can skip
+past. That page never loads the lab.
