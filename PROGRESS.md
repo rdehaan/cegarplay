@@ -1642,3 +1642,23 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
   `{ mode: 'enumerate' }` and a space mode without spaces are not written; malformed values are
   rejected). `manual.md`: a row in the field table and a sentence under *Audit modes*.
 - Full suite: 1105 tests, 1096 pass, 0 fail, 9 skipped.
+
+### Compare variants (2026-11-24)
+
+- `js/compare.js` (no DOM, no Node): `lineDiff` (LCS on lines, the common prefix and suffix taken
+  off first; above 4e6 cells the middle part is shown as removed and added), `hunks` (two lines of
+  context, line numbers per side), `latestResults` / `compareVariants(project, a, b, history)`
+  (`''` = the project as written; `applyVariant` for each side; fragments, loop script, constants
+  and settings that differ; per instance the latest count and audit verdict from the run history).
+- UI: **Compare variants** under the variant cards in the Loop tab (`js/variants.js`
+  `compareBox` / `showCompare`; ids `compare-a`, `compare-b`, `compare-button`, `compare-result`
+  with `aria-live`). It stays usable in a read-only project.
+- **Deviation:** the run history rows did not record their instance (only inside the loop label,
+  `[id]`). `js/stats.js` now adds `instance` to each new row (`''` = the project as written,
+  `null` for a space audit); older rows are matched by the `[id]` of their label
+  (`rowInstance`). Nothing else is stored.
+- Tests: `test/compare.test.mjs` (7), `test/browser/variants.test.mjs` (af-preferred: the project as
+  written against one-clause, after a run of each). `manual.md`: a paragraph under *Variants*.
+- Full suite: 1113 tests, 1103 pass, 9 skipped, 1 fail: `V4: the candidate space of gc-shape1 ...
+  a cursor move redraws within one frame` took 22.6 ms under the load of the full run; alone it
+  passes 3 times in 3 (the Observatory, untouched here; FUTURE-DIRECTIONS "Flaky browser tests").

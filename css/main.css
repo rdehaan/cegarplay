@@ -1122,3 +1122,17 @@ body[data-last-mode="audit"] .audit-only { display: block; }
 
 /* text that only the e-reader booklet shows (tools/export-book.py); .web-only is left out of it */
 .book-only { display: none !important; }
+
+/* Compare variants (js/variants.js, js/compare.js) */
+.variant-compare { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 4px; }
+.compare-result { margin-top: 6px; }
+.compare-block { margin: 6px 0; }
+.compare-block summary { cursor: pointer; }
+.compare-diff { margin: 4px 0; padding: 4px 0; background: var(--subtle); border: 1px solid var(--border-light); overflow-x: auto; max-height: 28em; }
+.compare-diff span { display: block; padding: 0 8px; white-space: pre; }
+.compare-diff .diff-add { background: var(--ok-bg); color: var(--ok); }
+.compare-diff .diff-del { background: var(--error-bg); color: var(--error); }
+.compare-diff .diff-hunk { color: var(--text-muted); font-style: italic; }
+.diff-add-count { color: var(--ok); }
+.diff-del-count { color: var(--error); }
+.compare-table td.differs { background: var(--highlight); font-weight: 600; }

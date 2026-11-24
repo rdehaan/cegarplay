@@ -194,6 +194,17 @@ its variants (`default` = the project as it is) and ignores the picker.
 in, `shape2` and `reference` replace the loop, and the suite `strategies` runs all seven on the 15
 questions that finish.
 
+**Compare variants** (below the variant cards, for a project with variants) puts two sides next to
+each other: two variants, or the project as written and a variant. **Compare** shows the fragments
+that differ, each as a line diff (removed lines `-`, added lines `+`, two lines of context, the line
+numbers of each side), the loop script as a line diff, the constants and settings that differ, and
+from the run history, per instance, the latest solution count and the latest audit verdict of each
+side (a count marked `+` comes from a run that did not look for all solutions; a space audit has a
+row of its own). It reads the run history (Statistics tab) and stores nothing: run or audit each side
+first (the run bar's Variant picker). Changing a side updates a comparison already shown. Each run
+history row records its instance (`instance`; `""` = the project as written); older rows are matched
+by the `[id]` in their loop label. To compare many instances at once, use a campaign.
+
 ### Campaigns
 
 The **Campaign** tab (tab 10) runs a suite: a grid of instances (instance ids, a generator grid

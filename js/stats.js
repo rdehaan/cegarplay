@@ -409,6 +409,8 @@ export class Stats {
       perSolver: Object.fromEntries(Object.entries(s.solvers || {}).map(([k, v]) => [k, { calls: v.calls, time: v.time, conflicts: v.conflicts }])),
       ...(s.labels ? { labels: { ...s.labels } } : {}),
       variant: info.variant || null,
+      // the instance of the run ('' = the project as written; null for a space audit), for Compare variants (js/compare.js)
+      instance: info.audit && info.audit.mode === 'space' ? null : info.instance || '',
       note: '',
     });
     this.renderHistory();

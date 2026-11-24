@@ -4,6 +4,7 @@
 // sets settings.variant ('' = the project as it is); a run, an audit and "Run all" use it, and a
 // campaign suite names variants explicitly.
 import { INSTANCE_ID } from './project.js';
+import { compareVariants, hunks } from './compare.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, attrs = {}, ...kids) => {
@@ -55,7 +56,8 @@ export class Variants {
   setReadOnly(b) {
     this.readOnly = b;
     this.select.disabled = b;
-    for (const e of this.root.querySelectorAll('input, textarea, button')) e.disabled = b;
+    // comparing changes nothing: it stays usable in a read-only project
+    for (const e of this.root.querySelectorAll('input, textarea, button')) if (!e.closest('.variant-compare')) e.disabled = b;
   }
 
   changed() {
@@ -96,7 +98,98 @@ export class Variants {
     this.list.forEach((v, i) => this.root.append(this.card(v, i, fragments)));
     this.root.append(el('p', { class: 'inline-controls' },
       el('button', { class: 'control-button', id: 'add-variant-button', onclick: () => this.add() }, '+ Add variant')));
+    if (this.list.length) this.root.append(this.compareBox());
     this.setReadOnly(this.readOnly);
+  }
+
+  // ---- compare two variants (js/compare.js) --------------------------------------
+  // Two sides ('' = the project as written); the fragments and loop script as line diffs, the
+  // constants and settings that differ, and per instance the latest count and audit verdict from
+  // the run history (the Statistics tab's rows; nothing else is stored).
+  compareBox() {
+    const opts = (id, label, value) => {
+      const s = el('select', { id, 'aria-label': label });
+      s.append(el('option', { value: '' }, '(the project as written)'));
+      for (const v of this.list) s.append(el('option', { value: v.name }, v.name));
+      s.value = this.list.some((v) => v.name === value) ? value : '';
+      return s;
+    };
+    const keep = this.compareSides || ['', this.list[0].name];
+    this.cmpA = opts('compare-a', 'First side of the comparison', keep[0]);
+    this.cmpB = opts('compare-b', 'Second side of the comparison', keep[1]);
+    this.cmpOut = el('div', { id: 'compare-result', class: 'compare-result', 'aria-live': 'polite' });
+    const run = () => { this.compareSides = [this.cmpA.value, this.cmpB.value]; this.showCompare(); };
+    for (const s of [this.cmpA, this.cmpB]) s.addEventListener('change', () => { if (this.cmpOut.childElementCount) run(); });
+    return el('div', { class: 'variant-compare', id: 'variant-compare' },
+      el('h3', {}, 'Compare variants'),
+      el('div', { class: 'variant-row' },
+        el('label', {}, 'Compare ', this.cmpA), el('label', {}, 'with ', this.cmpB),
+        el('button', { class: 'control-button', id: 'compare-button', type: 'button', onclick: run,
+          title: 'The fragments and loop script as line diffs, the constants, and the latest results per instance from the run history' }, 'Compare')),
+      this.cmpOut);
+  }
+
+  showCompare() {
+    const out = this.cmpOut;
+    out.textContent = '';
+    const name = (x) => x || 'the project as written';
+    let c;
+    try {
+      c = compareVariants(this.app.collect ? this.app.collect() : this.app.project, this.cmpA.value, this.cmpB.value,
+        (this.app.stats && this.app.stats.history) || []);
+    } catch (e) { out.append(el('p', { class: 'error-text' }, String(e.message || e))); return; }
+    const A = name(c.a), B = name(c.b);
+    const same = !c.fragments.length && !c.loop && !c.constants.length && !c.settings.length;
+    out.append(el('p', { class: 'note', id: 'compare-summary' }, c.a === c.b ? 'Both sides are the same.'
+      : same ? `${A} and ${B} run the same program.`
+        : `${B} against ${A}: ` + [c.fragments.length && `${c.fragments.length} fragment${c.fragments.length === 1 ? '' : 's'}`,
+          c.loop && 'the loop script', c.constants.length && 'constants', c.settings.length && 'settings'].filter(Boolean).join(', ') + ' differ.'));
+    const val = (v) => (v === null ? '(none)' : typeof v === 'string' ? v : JSON.stringify(v));
+    if (c.constants.length || c.settings.length) {
+      const t = el('table', { class: 'internals-table compare-table', id: 'compare-constants' },
+        el('tr', {}, el('th', {}, ''), el('th', {}, A), el('th', {}, B)));
+      for (const x of c.constants) t.append(el('tr', {}, el('td', {}, `-c ${x.name}`), el('td', {}, val(x.a)), el('td', {}, val(x.b))));
+      for (const x of c.settings) t.append(el('tr', {}, el('td', {}, x.name), el('td', {}, val(x.a)), el('td', {}, val(x.b))));
+      out.append(el('div', { class: 'table-wrapper' }, t));
+    }
+    const diffBlock = (title, d, id) => {
+      const pre = el('pre', { class: 'compare-diff', 'aria-label': `Line diff of ${title}` });
+      for (const hk of hunks(d.diff, 2)) {
+        pre.append(el('span', { class: 'diff-hunk' }, `@@ ${A} line ${hk.aStart}, ${B} line ${hk.bStart}\n`));
+        for (const x of hk.lines) {
+          pre.append(el('span', { class: x.op === '+' ? 'diff-add' : x.op === '-' ? 'diff-del' : 'diff-same' }, `${x.op} ${x.line}\n`));
+        }
+      }
+      return el('details', { class: 'compare-block', open: true, 'data-compare': id },
+        el('summary', {}, `${title}: `, el('span', { class: 'diff-add-count' }, `+${d.added}`), ' ', el('span', { class: 'diff-del-count' }, `-${d.removed}`)), pre);
+    };
+    for (const f of c.fragments) out.append(diffBlock(`fragment ${f.name}`, f, `fragment:${f.name}`));
+    if (c.loop) {
+      out.append(diffBlock('the loop script' + (c.loop.languages[0] !== c.loop.languages[1] ? ` (${c.loop.languages.join(' / ')})` : ''), c.loop, 'loop'));
+    }
+    // results from the run history
+    if (!c.results.length) {
+      out.append(el('p', { class: 'note', id: 'compare-no-runs' }, 'No runs of either side in the run history yet: pick a side in the run bar\'s Variant picker and run or audit it.'));
+      return;
+    }
+    const cell = (r, what) => {
+      if (!r) return '–';
+      if (what === 'solutions') return r.solutions === null ? '–' : `${r.solutions}${r.exact ? '' : '+'}`;
+      return r.audit || '–';
+    };
+    const t = el('table', { class: 'internals-table compare-table', id: 'compare-results' },
+      el('tr', {}, el('th', {}, 'Instance'), el('th', {}, `Solutions, ${A}`), el('th', {}, `Solutions, ${B}`), el('th', {}, `Audit, ${A}`), el('th', {}, `Audit, ${B}`)));
+    for (const r of c.results) {
+      const differs = (k) => cell(r.a, k) !== cell(r.b, k) && r.a && r.b;
+      t.append(el('tr', { 'data-instance': r.instance },
+        el('td', {}, r.instance || '(the project as written)'),
+        el('td', { class: 'num' + (differs('solutions') ? ' differs' : '') }, cell(r.a, 'solutions')),
+        el('td', { class: 'num' + (differs('solutions') ? ' differs' : '') }, cell(r.b, 'solutions')),
+        el('td', { class: differs('audit') ? 'differs' : '' }, cell(r.a, 'audit')),
+        el('td', { class: differs('audit') ? 'differs' : '' }, cell(r.b, 'audit'))));
+    }
+    out.append(el('div', { class: 'table-wrapper' }, t),
+      el('p', { class: 'note' }, 'The latest run and audit of each side in the run history (Statistics tab); "+" marks a count from a run that did not look for all solutions. Rows that differ are marked.'));
   }
 
   card(v, i, fragments) {
