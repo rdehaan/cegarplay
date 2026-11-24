@@ -869,6 +869,8 @@ addEventListener('keydown', (ev) => {
     ev.stopPropagation();
     if (!app.control.busy && app.ready) app.control.run();
   }
+  // Ctrl+S (Cmd+S) does nothing: the browser's "save page" dialog is never what is meant here.
+  if (ev.key.toLowerCase() === 's' && (ev.ctrlKey || ev.metaKey) && !ev.altKey) ev.preventDefault();
 }, true);
 
 // ---- start ------------------------------------------------------------------------
