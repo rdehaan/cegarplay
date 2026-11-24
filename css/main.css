@@ -1196,3 +1196,5 @@ main > section:not(#section-tutorial):not(#section-manual) h3:not(summary h3, .v
 .snapshot-undo { padding: 6px 10px; border-left: 3px solid var(--anchor); }
 .snapshot-list li.snapshot-is-current > b { text-decoration: underline; }
 .snapshot-badge { font-size: 12px; padding: 1px 6px; border-radius: 8px; border: 1px solid var(--ok); color: var(--ok); }
+.anatomy-legend .legend-item { margin-right: 14px; white-space: nowrap; }
+.anatomy-legend .legend-swatch { display: inline-block; width: 12px; height: 10px; vertical-align: middle; }

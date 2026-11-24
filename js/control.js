@@ -45,7 +45,6 @@ export class Control {
     this.runButton = $('run-button');
     this.abortButton = $('abort-button');
     this.pauseButton = $('pause-button');
-    this.stepButton = $('step-button');
     this.stopButton = $('stop-button');
     this.clearButton = $('clear-button');
     this.statusEl = $('run-status');
@@ -56,11 +55,10 @@ export class Control {
     for (const ev of ['mousedown', 'focus', 'change']) $('audit-mode').addEventListener(ev, () => this.updateAuditModes());
     this.abortButton.addEventListener('click', () => this.abort());
     this.pauseButton.addEventListener('click', () => this.togglePause());
-    this.stepButton.addEventListener('click', () => this.step());
     this.stopButton.addEventListener('click', () => this.stop());
     this.clearButton.addEventListener('click', () => this.clearResults());
     const iso = app.engine.isolated && !!app.engine.control;
-    for (const b of [this.pauseButton, this.stepButton, this.stopButton]) b.hidden = !iso;
+    for (const b of [this.pauseButton, this.stopButton]) b.hidden = !iso;
     $('run-message-link').addEventListener('click', (e) => { e.preventDefault(); $('tab5').checked = true; $('tab5').dispatchEvent(new Event('change')); });
     this.setState('idle');
   }
@@ -120,7 +118,6 @@ export class Control {
     this.pauseButton.innerHTML = state === 'paused' ? '&#x23F5; Resume' : '&#x23F8; Pause';
     // Step: from idle it starts a run that pauses after its first candidate; while running it
     // pauses after the next candidate; while paused it advances by one candidate.
-    this.stepButton.disabled = !!this.batch || !(active || !this.runButton.disabled);
     this.stopButton.disabled = !active;
     // Clear: something of an earlier run is on screen and no run is active
     this.clearButton.disabled = active || state === 'validating' || (state === 'idle' && !this.app.recording);
@@ -215,7 +212,7 @@ export class Control {
   //   mode 'bounded': the symbolic audit of lua/bounded.lua (PLAN3); with spaceRun = { name, k },
   //   on the project derived from that space at bound k (js/project.js deriveSpace).
   //   noHistory: no row in the run history (the steps of a space audit).
-  async runOne({ seed, mode = 'run', instance, variant, stepping = false, allSolutions = false, spaceRun = null, noHistory = false } = {}) {
+  async runOne({ seed, mode = 'run', instance, variant, allSolutions = false, spaceRun = null, noHistory = false } = {}) {
     const app = this.app;
     this.mode = mode;
     this.setState('validating');
@@ -328,7 +325,6 @@ export class Control {
         onDone: (d) => resolve(this.onDone(d, info)),
       }, { seconds: mode === 'bounded' ? budget : Number(project.settings.seconds) || 0 });
       // started by Step: the first poll lets one candidate through, then the run waits
-      if (stepping && iso) { app.engine.step(); this.setState('paused'); }
     });
   }
 
@@ -480,12 +476,6 @@ export class Control {
   togglePause() {
     if (this.state === 'running') { this.app.engine.pause(); this.setState('paused'); }
     else if (this.state === 'paused') { this.app.engine.resume(); this.setState('running'); }
-  }
-
-  step() {
-    if (this.state === 'paused') this.app.engine.step();
-    else if (this.state === 'running') { this.app.engine.step(); this.setState('paused'); }
-    else if (!this.busy && !this.runButton.disabled) this.run({ stepping: true });
   }
 
   // Audit: the instance picked in the run bar, unless it is marked audit: false (too large to

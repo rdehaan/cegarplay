@@ -58,7 +58,7 @@ test('candidate space: an audit: false instance gets no empty map; the blame mat
   // this instance is small: Try anyway lists its candidates
   await page.click('#space-compute-anyway');
   await page.waitForFunction(() => Number(document.getElementById('space-map').dataset.cells) > 0, null, { timeout: 60000 });
-  assert.match(await page.textContent('#space-summary'), /candidates, \d+ solutions/);
+  assert.match(await page.textContent('#space-summary'), /candidates, \d+ of them solutions/);
   assert.deepEqual(errors, []);
   await context.close();
 });

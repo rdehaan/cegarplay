@@ -140,6 +140,7 @@ export class SpaceView {
   // the recorded steps.
   noMap(text, rec = this.app.recording, linkName) {
     this.F = null; this.space = null; this.B = null;
+    if (this.app.observatory) this.app.observatory.syncExports();
     this.rec = rec;
     this.source.textContent = '';
     this.detail.hidden = true; this.detail.textContent = ''; this.detailKey = null;
@@ -195,6 +196,7 @@ export class SpaceView {
 
   setData(cands, sols, rec, linkName) {
     this.rec = rec;
+    queueMicrotask(() => { if (this.app.observatory) this.app.observatory.syncExports(); });
     this.pairT = new Map(pairSteps(rec).filter((x) => x.r && x.t).map((x) => [x.i, x.t]));
     this.detailKey = null;
     this.source.textContent = this.runText(rec);
@@ -210,10 +212,28 @@ export class SpaceView {
     this.slider.value = String(this.F.firstUnsound ? this.F.firstUnsound.ref : this.F.rows.length);
 
     const red = redundancy(this.steps);
-    this.summary.textContent = `${fmt(this.space.count)} candidates, ${fmt(this.truth.size)} solutions, ${fmt(this.F.rows.length)} refinements; ` +
-      `alive at the end ${fmt(this.F.alive)}; ${fmt(this.F.already)} of ${fmt(this.F.total)} removals hit a candidate already removed; ` +
-      `${fmt(red.length)} clauses contain an earlier one.` + (this.F.firstUnsound ? ` First unsound refinement: ${this.F.firstUnsound.ref} (it removes ${fmt(this.F.firstUnsound.lost)} solutions).`
-        : ' No refinement of this run removes a solution. (An audit can still be unsound: it checks every refinement the loop could make, this map only those this run made.)');
+    // in three parts: the instance, this run, and what it says about soundness
+    this.summary.textContent = '';
+    const line = (label, text) => h('span', { class: 'space-summary-line' }, h('b', {}, label), ' ', text);
+    this.summary.append(
+      line('This instance:', `${fmt(this.space.count)} candidates, ${fmt(this.truth.size)} of them solutions.`), h('br'),
+      line('This run:', `${fmt(this.F.rows.length)} refinements; ${fmt(this.F.alive)} candidates left at the end. ` +
+        `Of the ${fmt(this.F.total)} removals, ${fmt(this.F.already)} hit a candidate an earlier refinement had already removed` +
+        `${red.length ? `, and ${fmt(red.length)} clauses contain an earlier clause (both: wasted work)` : ' (wasted work)'}.`), h('br'),
+      this.F.firstUnsound
+        ? line('Lost solutions:', `refinement ${this.F.firstUnsound.ref} is the first that removes a solution (${fmt(this.F.firstUnsound.lost)} of them): this run is wrong.`)
+        : line('Lost solutions:', 'none: no refinement of this run removes a solution, so this run is right. That does not make the loop sound on this instance: ' +
+          'an audit checks every refinement the loop could make, and another search order (seed, solver options) can make one that removes a solution. '),
+    );
+    if (!this.F.firstUnsound) {
+      this.summary.append(h('button', { class: 'control-button small-button', id: 'space-audit-instance', type: 'button',
+        title: 'Audit this instance by enumeration: every refinement the loop could make on it (Output tab)',
+        onclick: async () => {
+          const id = (this.app.recording && this.app.recording.header && this.app.recording.header.instance) || undefined;
+          await this.app.control.run({ mode: 'audit', instance: id });
+          const t = document.getElementById('tab5'); if (t) { t.checked = true; t.dispatchEvent(new Event('change', { bubbles: true })); }
+        } }, 'Audit this instance'));
+    }
     this.msg.textContent = '';
     this.layout();
     const c = this.app.cursor;

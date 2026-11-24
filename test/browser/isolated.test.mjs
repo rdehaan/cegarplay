@@ -25,7 +25,7 @@ test('the service worker shim isolates the page on the plain server; ?nocoi=1 do
   await n.context.close();
 });
 
-test('pause freezes the counters, step advances, resume continues, stop ends with statistics', async () => {
+test('pause freezes the counters, resume continues, stop ends with statistics', async () => {
   const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&example=graph-coloring&tab=6', { coi: true });
   assert.equal(await page.evaluate(() => self.crossOriginIsolated), true);
   await setN7(page);
@@ -38,14 +38,9 @@ test('pause freezes the counters, step advances, resume continues, stop ends wit
   const a = await page.textContent('#live-line');
   await page.waitForTimeout(700);
   assert.equal(await page.textContent('#live-line'), a, 'frozen while paused');
-  const c0 = await candidates(page);
-  await page.click('#step-button');
-  await page.waitForTimeout(300);
-  assert.equal(await B.runState(page), 'paused');
   const c1 = await candidates(page);
-  await page.waitForTimeout(500);
-  assert.equal(await candidates(page), c1, 'paused again after a step');
-  assert.ok(c1 >= c0);
+  // no Step: stepping through a run is done afterwards, in the Observatory
+  assert.equal(await page.$('#step-button'), null);
   await page.click('#pause-button');                 // resume
   assert.equal(await B.runState(page), 'running');
   await page.waitForTimeout(700);
@@ -90,45 +85,7 @@ test('abort works on the isolated page too', async () => {
   await context.close();
 });
 
-test('Step from idle starts a run that waits after its first candidate; Step while running pauses', async () => {
-  const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&example=tutorial-first-run&tab=5', { coi: true });
-  assert.equal(await page.$eval('#step-button', (b) => b.disabled), false, 'enabled whenever Run is');
-  await page.click('#step-button');
-  await B.waitState(page, ['paused']);
-  await page.waitForTimeout(500);
-  const c0 = await candidates(page);
-  assert.ok(c0 >= 1 && c0 <= 2, `first candidate only, got ${c0}`);
-  await page.click('#step-button');
-  await page.waitForTimeout(400);
-  assert.equal(await B.runState(page), 'paused');
-  assert.ok(await candidates(page) >= c0, 'a step moves on');
-  await page.click('#pause-button');                 // resume to the end
-  assert.equal(await B.waitState(page, ['finished', 'error', 'aborted']), 'finished');
-  assert.match(await page.textContent('#live-line'), /61 solutions/);
-  assert.equal(await page.$eval('#step-button', (b) => b.disabled), false, 'enabled again after the run');
-  assert.deepEqual(errors, []);
-  await context.close();
-});
-
-test('Step while a run is going pauses it after the next candidate', async () => {
-  const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&example=graph-coloring&tab=6', { coi: true });
-  await setN7(page);
-  await page.click('#run-button');
-  await B.waitState(page, ['running']);
-  await page.waitForTimeout(500);
-  await page.click('#step-button');
-  assert.equal(await B.runState(page), 'paused');
-  await page.waitForTimeout(400);
-  const c = await candidates(page);
-  await page.waitForTimeout(600);
-  assert.equal(await candidates(page), c, 'frozen after the step');
-  await page.click('#stop-button');
-  assert.equal(await B.waitState(page, ['finished', 'error', 'aborted']), 'finished');
-  assert.deepEqual(errors, []);
-  await context.close();
-});
-
-test('V2: pausing freezes the Observatory counters; Step moves them by one candidate', async () => {
+test('V2: pausing freezes the Observatory counters', async () => {
   const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&example=graph-coloring&tab=11', { coi: true });
   await setN7(page);
   await page.click('#run-button');
@@ -142,12 +99,6 @@ test('V2: pausing freezes the Observatory counters; Step moves them by one candi
   assert.ok(a.text.includes('calls'));
   await page.waitForTimeout(700);
   assert.deepEqual(await read(), a, 'frozen while paused');
-  await page.click('#step-button');
-  await page.waitForTimeout(400);
-  const b = await read();
-  assert.equal(b.candidates - a.candidates, 1, `${a.candidates} -> ${b.candidates}`);
-  await page.waitForTimeout(500);
-  assert.deepEqual(await read(), b, 'paused again after the step');
   await page.click('#stop-button');
   await B.waitState(page, ['finished', 'error', 'aborted']);
   assert.deepEqual(errors, []);

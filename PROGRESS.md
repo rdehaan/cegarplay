@@ -1879,3 +1879,21 @@ number count". Found and fixed:
   at the first edit and when another project comes (`clearOriginLines`).
 - Instances: ↑/↓ per row (`move`; the instance a run uses is pinned first); **Run all instances**,
   and a line naming the run bar's variant that it and Fuzz use.
+
+## Requests of 2026-11-24 (night)
+
+- **Step removed** from the run bar (Pause/Resume and Stop stay): a run is gone through afterwards
+  with the Observatory's cursor. `Control.step`, the `stepping` option and the Step tests went.
+- **Export candidate map (PNG)** (was "Export map") and **Export view (SVG)**: disabled, with the
+  reason in the tooltip, while there is no map or view (`ObservatoryBar.syncExports`); the map
+  export used to do nothing silently.
+- **Timeline**: says what it shows, with a legend; without recorded calls the chart and the Cost
+  per line table are hidden and a line says to tick Record calls.
+- **Unsound witness vs a run**: checked on the user's Hamiltonian-cycle project (variant relevant4,
+  space graphs): the space audit, an enumeration audit of the saved instance and the runtime agree;
+  a run on the instance finds every solution because its search order never proposes the witness's
+  candidate with its counterexample. Not a bug; now said: the audit panel explains that unsound
+  means the loop *can* lose a solution, and the candidate space summary is in three parts (this
+  instance, this run, lost solutions) with **Audit this instance**. (The user's space also allows
+  `deletable(X,Y)` with X > Y, which the glue does not link; restricted to X < Y the strategy is
+  still unsound at size 6.)

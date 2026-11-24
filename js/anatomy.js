@@ -142,12 +142,18 @@ export class Anatomy {
         'A link flashes when a step refines through it.'),
       this.diagram,
       h('h3', {}, 'Timeline'),
+      h('p', { class: 'note' }, 'Where the time of the run goes. One lane per solver; each call it makes (a solve, or one check inside a search) is a bar ',
+        'from its start to its end, so long calls and the solver that dominates stand out. A thin band over a lane is a search; the ticks along the top ',
+        'mark solutions and refinements; the vertical line is the Observatory\'s cursor.'),
+      this.legend = h('p', { class: 'note anatomy-legend', id: 'anatomy-legend' },
+        ...[['--call-sat', 'sat (a model)'], ['--call-unsat', 'unsat (none)'], ['--call-int', 'interrupted'], ['--call-search', 'search']]
+          .map(([c, t]) => h('span', { class: 'legend-item' }, h('span', { class: 'legend-swatch', style: `background: var(${c})` }), ' ', t))),
       h('p', { class: 'note' }, h('label', {}, this.callsBox, ' Record calls'),
-        ' (needed for the timeline and the line table; the setting is also in the Loop tab). Wheel zooms, drag pans, double click shows all.'),
-      h('div', { class: 'anatomy-timeline-box' }, this.canvas),
+        ' (off by default: the timeline and the table below need it; the setting is also in the Loop tab). Wheel zooms, drag pans, double click shows all.'),
+      this.timelineBox = h('div', { class: 'anatomy-timeline-box' }, this.canvas),
       this.note,
-      h('h3', {}, 'Cost per line'),
-      h('div', { class: 'table-wrapper' }, this.table));
+      this.linesHead = h('h3', {}, 'Cost per line'),
+      this.linesBox = h('div', { class: 'table-wrapper' }, h('p', { class: 'note' }, 'The loop script\'s lines with the calls they made and their time: which line of the loop costs most. A click on a row shows its calls in the timeline.'), this.table));
     this.bindTimeline();
   }
 
@@ -313,6 +319,10 @@ export class Anatomy {
   }
 
   drawTimeline() {
+    // without recorded calls there is nothing to draw: no empty chart or table, but what to do
+    const none = !this.calls.length;
+    this.timelineBox.hidden = none; this.legend.hidden = none;
+    this.linesHead.hidden = none; this.linesBox.hidden = none;
     const cv = this.canvas;
     const lanes = Math.max(1, this.solvers.length);
     const tracks = [...this.tracks.entries()];
@@ -334,8 +344,9 @@ export class Anatomy {
     this.solvers.forEach((s, i) => ctx.fillText(s.name, 4, MARK_H + i * LANE_H + 16));
     tracks.forEach(([name], i) => ctx.fillText(name, 4, MARK_H + (lanes + i) * LANE_H + 16));
     const t = performance.now();
-    if (!this.calls.length) {
-      this.note.textContent = this.steps.length || this.S ? 'This run has no call events: tick "Record calls" and run again.' : 'Run the project to see its calls.';
+    if (none) {
+      this.note.textContent = this.steps.length || this.S ? 'This run has no recorded calls: tick "Record calls" above and run again to see its timeline and the cost of each loop line.'
+        : 'Run the project (with "Record calls" ticked) to see its calls.';
     }
     const searches = searchIds(this.calls);
     const lineOf = (n) => this.lineOf(n);

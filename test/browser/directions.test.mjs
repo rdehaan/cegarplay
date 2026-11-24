@@ -382,8 +382,9 @@ test('V4: the candidate space of gc-shape1: 3,373 cells, alive 101, a cursor mov
   await page.click('#space-compute');
   await page.waitForFunction(() => /candidates/.test(document.getElementById('space-summary').textContent), null, { timeout: 60000 });
   const sum = await page.textContent('#space-summary');
-  assert.match(sum, /3,373 candidates, 101 solutions, 1,320 refinements; alive at the end 101/);
-  assert.match(sum, /No refinement of this run removes a solution/);
+  assert.match(sum, /This instance: 3,373 candidates, 101 of them solutions\.\s*This run: 1,320 refinements; 101 candidates left at the end/);
+  assert.match(sum, /Lost solutions: none: no refinement of this run removes a solution/);
+  assert.equal(await page.isVisible('#space-audit-instance'), true);
   const ms = await page.evaluate(() => {
     const v = window.cegarplay.space, t = [];
     for (const r of [10, 500, 1000, 1320, 1]) { v.slider.value = String(r); v.draw(); t.push(v.lastDrawMs); }
@@ -403,7 +404,7 @@ test('V4: tutorial-weak-relevant: the first unsound refinement is 6', async () =
   await settled(page);
   await page.click('#space-compute');
   await page.waitForFunction(() => /candidates/.test(document.getElementById('space-summary').textContent));
-  assert.match(await page.textContent('#space-summary'), /First unsound refinement: 6 \(it removes 13 solutions\)/);
+  assert.match(await page.textContent('#space-summary'), /refinement 6 is the first that removes a solution \(13 of them\): this run is wrong/);
   assert.equal(await page.$eval('#space-step', (s) => s.value), '6');
   assert.deepEqual(errors, []);
   await context.close();

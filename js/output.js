@@ -88,6 +88,12 @@ export class Output {
         : w.kind === 'clause' || w.kind === 'core' ? 'The lost solution agrees with the candidate on every relevant atom, so the clause removes it too. An atom on which they differ should have been relevant.'
           : 'Grounding the refine part with these facts leaves the lost solution without a model.');
     }
+    // what "unsound" means for a run: it can lose a solution, not that every run does
+    if (w && a.verdict === 'unsound') {
+      notes.push('Unsound means that the loop can lose a solution: when its search proposes this candidate and the check answers with this counterexample, '
+        + 'the refinement removes the lost solution. A run loses it only if its search goes that way; its search order (seed, solver options) decides, '
+        + 'so a run on this instance may well find every solution. The audit is the proof that the strategy is wrong; a run is one example.');
+    }
     if (a.empty) notes.push(`${fmt(a.empty)} counterexamples have no relevant atom: a run adds the empty clause there, which ends the search (unsound when a solution is still left).`);
     resultCard(el, { verdict: a.verdict, title, paragraphs, rows, notes, actions: this.nextSteps(a) });
     // an audit does not run the loop: say so where its solutions and trace would be

@@ -45,7 +45,7 @@ export class ObservatoryBar {
         b('cursor-clear', 'Clear', () => { this.from.value = ''; this.to.value = ''; c.setRange(null, null); })),
       h('div', { class: 'instances-bar' },
         b('export-view', 'Export view (SVG)', () => this.exportView()),
-        b('export-map', 'Export map (PNG)', () => this.exportMap()),
+        b('export-map', 'Export candidate map (PNG)', () => this.exportMap()),
         h('label', {}, 'Storyboard of steps ', this.stepsIn), b('export-storyboard', 'Storyboard (SVG)', () => this.storyboard()),
         b('observatory-table', 'Data as table', () => this.toggleData())),
       this.data);
@@ -66,7 +66,24 @@ export class ObservatoryBar {
   // a run ended or a recording was replayed: new ticks
   update() { this.app.cursor.setTicks(ticksOf(this.app.recording)); }
 
+  // The exports save a picture that is on the page: disabled, with the reason, while there is none.
+  syncExports() {
+    const map = $('export-map'), view = $('export-view');
+    const hasMap = !!(this.app.space && this.app.space.F);
+    if (map) {
+      map.disabled = !hasMap;
+      map.title = hasMap ? 'Save the candidate space map below (Candidate space), at the cursor\'s step, as a PNG image'
+        : 'Saves the candidate space map (below) as a PNG image; there is no map yet: compute it in Candidate space first';
+    }
+    const v = this.app.views, hasView = !!(v && v.scene && v.lastFrame);
+    if (view) {
+      view.disabled = !hasView;
+      view.title = hasView ? 'Save the domain view at the cursor\'s step as an SVG image' : 'Saves the domain view as an SVG image; no view is drawn yet';
+    }
+  }
+
   render() {
+    this.syncExports();
     const c = this.app.cursor;
     this.slider.max = String(c.ticks.length);
     this.slider.value = String(c.index);

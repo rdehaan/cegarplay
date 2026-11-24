@@ -452,6 +452,7 @@ export class ViewPanel {
 
   applyFrame(m) {
     this.lastFrame = m;
+    if (this.app.observatory) this.app.observatory.syncExports();
     if (this.compare) setTimeout(() => this.showCompare(), 0);
     for (const [key, x] of this.els) {
       const a = m.attrs.get(key) || {};

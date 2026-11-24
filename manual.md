@@ -1103,14 +1103,11 @@ script is compiled 0.5 s after each edit.
 
 **Abort** terminates the worker at once and starts a new one. On a cross-origin isolated page
 (see [URL parameters](#manual-url-parameters-and-browser-storage)) there are also **Pause** /
-**Resume**, **Step** and **Stop** (ends the run cleanly, with final statistics). Step is enabled
-whenever Run is: from idle it starts a run that waits after its first candidate (state `paused`);
-on a running run it pauses after the next candidate; on a paused run it moves on by one candidate.
-Resume runs on to the end. On a page that is not isolated these buttons are hidden: the worker
-cannot be paused there.
-A pause makes the runtime send fresh statistics before it waits, so the counters show the state at
-the pause; Step lets exactly one poll through (one candidate of a `search`; in a loop of `solve`
-calls the poll runs every 256 iterations of a loop body) and pauses again with fresh statistics.
+**Resume** and **Stop** (ends the run cleanly, with final statistics). On a page that is not
+isolated these buttons are hidden: the worker cannot be paused there. A pause makes the runtime send
+fresh statistics before it waits, so the counters show the state at the pause. There is no Step
+button (removed 2026-11-24): to go through a run one step at a time, record it (Loop tab, Recording)
+and move the Observatory's cursor, which every view follows.
 
 Messages from clingo (infos and warnings, such as `atom does not occur in any rule head`) name the
 fragment and the line within it (`check:3:5`), and are marked in that editor after the run (blue
@@ -1274,10 +1271,15 @@ instead). **Timeline** (needs **Record calls**, the same setting as in the Loop 
 solver; a call is a bar from its start to its end coloured by result (sat, unsat, interrupted); a
 search is a thin band; marks above the lanes show solutions, refinements and expansions; after a `track` statement each tracked series gets a lane of its own under the solvers, a step line between its lowest and highest value, so a bound lines up with the call that moved it; calls
 narrower than a pixel share a column split by the share of sat and unsat calls. Wheel zooms, drag
-pans, double click shows all. **Cost per line**: one row per loop line with calls, sat, unsat,
+pans, double click shows all. It shows where the run's time goes (which solver, which calls). A
+legend names the colours; without recorded calls the timeline and the line table are hidden and a
+line says to tick Record calls. **Cost per line**: one row per loop line with calls, sat, unsat,
 exclusive time (nested calls subtracted) and time with nested calls, sorted by time; a click
 selects the line and filters the timeline; after a run the loop editor shows the same figures as
 info annotations. The **Domain view** (see [Writing views](#manual-writing-views)) and the **Candidate space** follow.
+Under the cursor bar, **Export view (SVG)** saves the domain view at the cursor's step and **Export
+candidate map (PNG)** the candidate space map; each is disabled (its tooltip says why) until there
+is a view or a map to save.
 
 ### Candidate space
 
