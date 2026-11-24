@@ -281,7 +281,7 @@ test('I3: tutorial-weak-relevant with a reference variant marks n = 8 red; impor
   await page.click('#campaign-start');
   await campaignDone(page);
   const text = await page.textContent('#campaign-consistency');
-  assert.match(text, /n8 \((default 11 vs reference 61|reference 61 vs default 11)\)/);
+  assert.match(text, /n8: (\(no variant\) 11 vs reference 61|reference 61 vs \(no variant\) 11)/);
   assert.match(await page.textContent('#label-campaign'), /Campaign \(5 ✗\)/);
   for (const id of ['plot-scaling', 'plot-scatter', 'plot-solved']) assert.equal(await page.$$eval(`#${id} svg`, (x) => x.length), 1, id);
   // the instance x variant matrix (D2): a row per instance, the n8 cells marked, sortable, metric switch
@@ -361,7 +361,7 @@ test('I4: Fuzz on tutorial-weak-relevant reports n = 2, the lost solution pick(2
   await page.click('#fuzz-button');
   await page.waitForSelector('#fuzz-card:not([hidden])', { timeout: 60000 });
   const text = await page.textContent('#fuzz-card');
-  assert.match(text, /Unsound at n2/);
+  assert.match(text, /Unsound at n = 2;/);
   assert.match(text, /Tried: the project with n = 1\.\.8/);
   assert.match(text, /Lost solution \{pick\(2\)\}/);
   assert.match(text, /candidate \{pick\(1\) pick\(2\)\}/);
@@ -718,7 +718,7 @@ test('Instances: move up and down; the instance a run uses stays; Run all says w
   await page.click(`#instances-table tr[data-instance="${before[0]}"] .instance-up`);
   assert.deepEqual(await ids(), before);
   // Run all instances and Fuzz: the run bar's variant, named
-  assert.match(await page.textContent('#instances-context'), /use the project as written \(no variant\), as picked in the run bar/);
+  assert.match(await page.textContent('#instances-context'), /Both use no variant, as picked in the run bar/);
   await page.selectOption('#variant-select', 's1');
   assert.match(await page.textContent('#instances-context'), /use the variant s1, as picked in the run bar/);
   assert.equal(await page.textContent('#run-all-instances-button'), 'Run all instances');

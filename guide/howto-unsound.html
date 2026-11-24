@@ -56,14 +56,17 @@
             clause), and a click on a lost solution moves the cursor to the refinement that removed it.
             The blame matrix shows which atoms each clause relies on. The map shows only the
             refinements this run made: its search order may avoid the unsound one that the audit found
-            (after a space audit, <b>Run on it in the candidate space</b> runs the loop on the
-            breaking instance).</li>
+            (after a space audit, <b>See it in the candidate space</b> runs the loop on the
+            breaking instance). To see a run that does lose it, <b>Find a run that loses it</b> (on the
+            verdict) or <b>Find a run that loses one</b> (under the map) runs the instance with a
+            randomized search for seeds 1 to 50 until a run loses a solution, keeps that seed, and shows
+            that run's bad refinement.</li>
           <li><b>Shrink it.</b> If the instance is large, <b>Fuzz</b> (Instances tab) audits instances
             from small to large, stops at the first unsound one and shrinks it (instances marked
             "no audit" get the symbolic audit). With a space (Audit by <b>space</b>) the
             search for the smallest breaking instance is exhaustive: k = 1, 2, … until one breaks.</li>
           <li><b>Keep it.</b> Fuzz's card, and the witness of a space audit, save the small instance as
-            a regression instance; <b>Run all</b> checks it from then on.</li>
+            a regression instance; <b>Run all instances</b> checks it from then on.</li>
           <li><b>Fix and re-audit.</b> Mark the atom relevant (or fix the refine part), audit again.</li>
         </ol>
 

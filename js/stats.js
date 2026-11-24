@@ -24,7 +24,7 @@ export function auditLiveText(a) {
   if (!a || !a.verdict) return ' ';
   if (a.mode === 'space' && a.space) return `space ${a.space} · ${a.verdict === 'sound' ? `sound up to ${a.bound || 'k'} = ${a.k}` : `${a.verdict} at ${spaceAt(a)}`}`;
   if (a.mode === 'space') return ' ';   // one step of a space audit: the space's line follows
-  if (a.mode) return `symbolic audit · ${fmt(a.rounds ?? 0)} rounds · ${fmt(a.refinements ?? 0)} refinements · ${a.verdict}`;
+  if (a.mode) return `symbolic audit · ${fmt(a.rounds ?? 0)} round${(a.rounds ?? 0) === 1 ? '' : 's'} · ${fmt(a.refinements ?? 0)} refinement${(a.refinements ?? 0) === 1 ? '' : 's'} · ${a.verdict}`;
   const verdict = a.verdict === 'sound' ? 'sound' : a.verdict === 'unsound'
     ? `unsound: ${fmt(a.unsound)} remove a solution` : a.verdict;
   return `audit · ${fmt(a.candidates)} candidates · ${fmt(a.solutions)} solutions · ` +
@@ -101,7 +101,7 @@ export class Stats {
       <div class="stats-block">
         <h3>Run history</h3>
         <p class="inline-controls">
-          <button class="control-button" id="rerun-seeds-button">Rerun with 5 seeds</button>
+          <button class="control-button" id="rerun-seeds-button" title="Run again with seeds 1 to 5 and a randomized search (random decisions and signs), one run history row each: does the outcome depend on the search?">Rerun with 5 seeds</button>
           <button class="control-button" id="clear-history-button" title="Remove every row of the run history (asks first)">Clear run history</button>
           <button class="control-button" id="save-pool-button" title="Store the counterexamples of the last run's expansions as pools (needs Recording: every step)">Save counterexamples as pool</button>
           <button class="control-button" id="import-verdict-button" title="The --json output of tools/certcheck.py for a proof log of one of these runs">Import certcheck verdict</button>
@@ -435,7 +435,8 @@ export class Stats {
       fragmentsHash: info.fragmentsHash,
       mode: info.audit && info.audit.mode === 'space' ? 'bounded' : info.mode || 'run',
       audit: info.audit ? { verdict: info.audit.verdict, unsound: info.audit.unsound, pairs: info.audit.pairs,
-        ...(info.audit.mode ? { mode: info.audit.mode, k: info.audit.k ?? null, space: info.audit.space ?? null } : {}) } : null,
+        ...(info.audit.mode ? { mode: info.audit.mode, k: info.audit.k ?? null, space: info.audit.space ?? null,
+          ...(info.audit.bound ? { bound: info.audit.bound } : {}), ...(info.audit.params ? { params: info.audit.params } : {}) } : {}) } : null,
       // for "two runs side by side" (FUTURE-DIRECTIONS D5) and the lab notebook (D10)
       counterexamples: s.counterexamples,
       perSolver: Object.fromEntries(Object.entries(s.solvers || {}).map(([k, v]) => [k, { calls: v.calls, time: v.time, conflicts: v.conflicts }])),

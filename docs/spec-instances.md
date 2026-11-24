@@ -63,7 +63,7 @@ exit status (20 = unsatisfiable = violated).
 ## 3. Library
 
 `graph-coloring` has the constants-only instances `n4` (1), `n5` (101) and `n6` (10,698, tag
-`slow`), with `settings.instance = ""` (the project as written, n = 6). `af-preferred`, `qbf` and
+`slow`), with `settings.instance = ""` (the run bar's **(no instance)**: the project's own n = 6). `af-preferred`, `qbf` and
 `kemeny-control` keep their former facts as the instance `example`; `af-preferred` and `qbf` also
 have three generated instances (`random-1..3`) whose counts agree between the loop and the
 reference run. `test/instances.test.mjs` runs every instance with an expected count or optimum.
@@ -202,7 +202,11 @@ luaTexts }`:
 Instances tab: **Fuzz** (source: the 1..v constants grid, else the first generator or constants
 suite), a progress line, and a card with the minimal instance, the lost solution, the witness,
 the culprit step, and "Open in trace" (runs the instance, opens Output), "Show audit witness"
-(audits it), "Save as regression instance" (tag `regression`, expected = the audited count).
+(audits it), "Save as regression instance" (tag `regression`, expected = the audited count), and,
+when the loop's own run does not lose the solution, "Find a run that loses it" (a seed sweep:
+`Control.seedSweep`). Every outcome is a card (since 2026-11-24) that says what Fuzz does and what
+it tried (the constants grid, a suite's grid or the instances in the table, and the variant); when
+nothing is unsound it lists each instance with its verdict.
 
 Measured: `tutorial-weak-relevant` over n = 1..8 stops at n = 2 (candidate `pick(1) pick(2)`, lost
 `pick(2)`; this loop's own run finds `pick(2)` before the weak clause, so no culprit step at n = 2;
@@ -261,10 +265,11 @@ expected: { verdict, k } }`.
 - `text` replaces the instance: choice rules and constraints over the instance predicates
   (`node(1..size). { edge(U,V) : node(U), node(V), U < V }.`). A project's `schema` fragment is
   added to it. An empty text with one parameter is the constants family (n = 1, 2, ...).
-- `params`: at least one, all `int`. They are passed as constants to every solver (as generator
-  parameters are): pick names that no fragment uses as a constant. `bound` names the bound
-  parameter (default: the first); `defaults` give the others; `from` is the first k (default 1;
-  for a space whose smallest instances have no interface, such as one node and no pair).
+- `params`: at least one, all `int`. They are passed as constants to every solver (`-c`, as generator
+  parameters are): a parameter named like a constant of the encoding sets it. `bound` names the
+  bound parameter (default: the first); `defaults` fix the others, `ranges` run them over lo..hi;
+  `from` is the bound's first value (default 1; for a space whose smallest instances have no
+  interface, such as one node and no pair).
 - `expected` (library): the bounded verdict (`sound`, `unsound`, `budget`, `unsupported`) and the
   k it is reached at (`sound`: the last k checked).
 
@@ -274,14 +279,18 @@ one bound: the fragment `instance` = the space text (+ schema), constants = defa
 no instance or variant left to apply. `validateSpace` (`js/driver.js`) runs clingo in gringo mode
 on the text with the parameters as constants before any `ctl:add`; `spaceProblems` (`js/bounded.js`)
 calls it at the space's first k. `verifySpace(project, { space, from, to, seconds, env })`
-(`js/bounded.js`, DOM-free) runs one symbolic audit per k and returns `{ verdict, k, witness,
-reason, perK: [{ k, verdict, rounds, refinements, t }] }`.
+(`js/bounded.js`, DOM-free) runs one symbolic audit per k and combination of ranged values, and
+returns `{ verdict, k, params, witness, reason, space, bound, last, perK: [{ k, params?, verdict,
+rounds, refinements, t }] }` (`params`: the values of the other parameters where it stopped).
 
 Library: `SPACES` and `SPACE_TEXTS` in `tools/library.mjs`, attached by `tools/make-examples.mjs`.
 The instance field `symbolic: "sound" | "unsound"` (written by `make-examples` from `SYMBOLIC`)
 is the expected verdict of the symbolic audit on that instance.
 
 The page: Audit's mode select (Enumerate, Symbolic, Space; Space only for a project with spaces,
-with the space and the bound k); the Instances tab lists the spaces (name, bound, description,
-text, parameters, Check). A space audit's witness instance can be saved as a regression
-instance. The CLI: `node tools/audit.mjs <id> --space NAME --bound K [--from K0]`.
+with the space and the largest value of its bound, named by its own name: "every instance with n
+up to"); while it is set to space, the run bar's Instance label says it is for Run only. The
+Instances tab lists the spaces (name, description, text, the parameter table: Bound, Values, In a
+regression instance; checked with clingo 500 ms after an edit; Preview and Clear preview). A space
+audit's witness instance can be saved as a regression instance (with the constants marked "in a
+regression instance"). The CLI: `node tools/audit.mjs <id> --space NAME --bound K [--from K0]`.

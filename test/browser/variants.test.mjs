@@ -66,7 +66,7 @@ test('Compare variants: line diffs of fragments and loop script; Close; results 
   await page.selectOption('#compare-b', 'one-clause');
   await page.click('#compare-button');
   await page.waitForSelector('#compare-summary');
-  assert.match(await page.textContent('#compare-summary'), /one-clause against the project as written: 1 fragment, the loop script differ\./);
+  assert.match(await page.textContent('#compare-summary'), /one-clause against \(no variant\): 1 fragment and the loop script differ\./);
   assert.deepEqual(await page.$$eval('#compare-result [data-compare]', (l) => l.map((d) => d.dataset.compare)), ['fragment:check', 'loop']);
   assert.ok(await page.$$eval('[data-compare="loop"] .diff-add', (l) => l.length) > 0);
   // what the sides compute is compared in the Campaign tab

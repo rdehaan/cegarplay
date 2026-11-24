@@ -71,15 +71,15 @@ test('a space audit to the candidate space: which run the map shows, the refinem
   await page.selectOption('#audit-mode', 'space');
   await page.click('#audit-button');
   await settled(page);
-  await page.waitForFunction(() => /^Shown: the space audit of space n, started \S+ · unsound at k = 2$/.test(document.getElementById('shown-line').textContent));
+  await page.waitForFunction(() => /^Shown: the space audit of space n, started \S+ · unsound at n = 2$/.test(document.getElementById('shown-line').textContent));
   // after an audit alone the map explains why it has nothing to show
   await page.evaluate(() => window.cegarplay.space.compute());
   assert.match(await page.textContent('#space-message'), /The last action was an audit, which records no steps of the loop/);
   await page.click('label[for="tab5"]');
   await page.click('#audit-panel button[data-action="space-candidate-space"]');
   await page.waitForFunction(() => Number(document.getElementById('space-map').dataset.cells) > 0, null, { timeout: 120000 });
-  assert.equal(await page.$eval('#instance-select', (s) => s.value), 'regression');
-  assert.match(await page.textContent('#space-source'), /^The map of the run on instance regression: \d+ recorded steps\./);
+  assert.equal(await page.$eval('#instance-select', (s) => s.value), 'regression-n2');
+  assert.match(await page.textContent('#space-source'), /^The map of the run on instance regression-n2: \d+ recorded steps\./);
   await page.waitForFunction(() => /candidate space computed for it/.test(document.getElementById('shown-line').textContent));
   // the refinement at the cursor: its step, candidate, counterexample and clause
   const detail = await page.textContent('#space-refinement');
@@ -98,7 +98,7 @@ test('a space audit to the candidate space: which run the map shows, the refinem
   // another run: the map is of a run no longer shown, so it is cleared with a note
   await page.click('#run-button');
   await settled(page);
-  assert.match(await page.textContent('#space-message'), /The map of the run on instance regression was cleared: a newer run, audit or replay replaced it/);
+  assert.match(await page.textContent('#space-message'), /The map of the run on instance regression-n2 was cleared: a newer run, audit or replay replaced it/);
   assert.equal(await page.$eval('#space-map', (c) => c.dataset.cells ?? null), null);
   assert.equal(await page.isHidden('#space-refinement'), true);
   assert.doesNotMatch(await page.textContent('#shown-line'), /candidate space/);

@@ -94,7 +94,6 @@ export class Engine {
           else handlers.onLine && handlers.onLine(l, false);
         }
         for (const l of err) handlers.onLine && handlers.onLine(l, true);
-        if (this.stepping && this.control) { this.stepping = false; Atomics.store(this.control, 0, 1); }
       },
       finish,
     };
@@ -122,7 +121,6 @@ export class Engine {
   // Control word: only on isolated pages.
   setControl(v) { if (this.control) { Atomics.store(this.control, 0, v); Atomics.notify(this.control, 0); } }
   pause() { this.setControl(1); }
-  resume() { this.stepping = false; this.setControl(0); }
-  step() { this.stepping = false; this.setControl(3); }
-  stop() { this.stepping = false; this.setControl(2); }
+  resume() { this.setControl(0); }
+  stop() { this.setControl(2); }
 }

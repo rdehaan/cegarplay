@@ -280,7 +280,7 @@ export { INSTANCE_FRAGMENT };
 // ---------------------------------------------------------------------------
 // Recipes (docs/spec-instances.md section 4): an instance with a `recipe` and no facts gets its
 // facts from the generator on demand. Kept in memory by a content hash of the generator text,
-// parameters and seed; the project keeps the recipe only.
+// parameters and seed. (An instance added from the page keeps its facts too, and they win.)
 // ---------------------------------------------------------------------------
 const recipeCache = new Map();
 

@@ -30,6 +30,17 @@ export function parsePairs(text) {
 }
 export const showPairs = (map) => Object.entries(map || {}).map(([a, b]) => `${a}=${b}`).join(', ');
 
+// "1 fragment and the loop script differ", "the loop script differs": what two sides differ in.
+function differText(c) {
+  const items = [];
+  if (c.fragments.length) items.push({ text: `${c.fragments.length} fragment${c.fragments.length === 1 ? '' : 's'}`, plural: c.fragments.length > 1 });
+  if (c.loop) items.push({ text: 'the loop script', plural: false });
+  if (c.constants.length) items.push({ text: 'constants', plural: true });
+  if (c.settings.length) items.push({ text: 'settings', plural: true });
+  const list = items.map((x) => x.text).reduce((s, x, i) => s + (i ? (i === items.length - 1 ? ' and ' : ', ') : '') + x, '');
+  return `${list} ${items.length > 1 || items.some((x) => x.plural) ? 'differ' : 'differs'}`;
+}
+
 export class Variants {
   constructor(app) {
     this.app = app;
@@ -79,7 +90,7 @@ export class Variants {
     for (const [s, i] of [[this.cmpA, 0], [this.cmpB, 1]]) {
       const want = (this.compareSides || [s.value, s.value])[i] ?? s.value;
       s.textContent = '';
-      s.append(el('option', { value: '' }, '(the project as written)'));
+      s.append(el('option', { value: '' }, '(no variant)'));
       for (const v of this.list) s.append(el('option', { value: v.name }, v.name));
       s.value = this.list.some((v) => v.name === want) ? want : '';
     }
@@ -118,7 +129,7 @@ export class Variants {
     this.select.hidden = list.length === 0;
     $('variant-select-label').hidden = list.length === 0;
     if (!list.length) return;
-    this.select.append(el('option', { value: '' }, '(the project as it is)'));
+    this.select.append(el('option', { value: '' }, '(no variant)'));
     for (const v of list) this.select.append(el('option', { value: v.name }, v.name));
     this.select.value = this.selected();
   }
@@ -140,7 +151,7 @@ export class Variants {
         if (t) { t.checked = true; t.dispatchEvent(new Event('change', { bubbles: true })); }
       } }, 'Campaign tab');
       this.root.append(el('p', { class: 'note' }, 'To compare the variants on many instances (a table per instance and variant, plots, CSV), use the ', open,
-        ' (an Advanced tab; this link shows it for this visit).'));
+        el('span', { class: 'advanced-off-only' }, ' (an Advanced tab; this link shows it for this visit)'), '.'));
     }
     this.list.forEach((v, i) => this.root.append(this.card(v, i, fragments)));
     this.root.append(el('p', { class: 'inline-controls' },
@@ -150,13 +161,13 @@ export class Variants {
   }
 
   // ---- compare two variants (js/compare.js) --------------------------------------
-  // Two sides ('' = the project as written); the fragments and loop script as line diffs, the
-  // constants and settings that differ, and per instance the latest count and audit verdict from
-  // the run history (the Statistics tab's rows; nothing else is stored).
+  // Two sides ('' = the project as written); the fragments and loop script as line diffs, and the
+  // constants and settings that differ. Texts only: results per instance are the Campaign tab's
+  // (compare.js still computes `results` from the run history, for its tests and tools).
   compareBox() {
     const opts = (id, label, value) => {
       const s = el('select', { id, 'aria-label': label });
-      s.append(el('option', { value: '' }, '(the project as written)'));
+      s.append(el('option', { value: '' }, '(no variant)'));
       for (const v of this.list) s.append(el('option', { value: v.name }, v.name));
       s.value = this.list.some((v) => v.name === value) ? value : '';
       return s;
@@ -182,7 +193,7 @@ export class Variants {
   showCompare() {
     const out = this.cmpOut;
     out.textContent = '';
-    const name = (x) => x || 'the project as written';
+    const name = (x) => x || '(no variant)';
     let c;
     try {
       c = compareVariants(this.app.collect ? this.app.collect() : this.app.project, this.cmpA.value, this.cmpB.value,
@@ -192,8 +203,7 @@ export class Variants {
     const same = !c.fragments.length && !c.loop && !c.constants.length && !c.settings.length;
     out.append(el('p', { class: 'note', id: 'compare-summary' }, c.a === c.b ? 'Both sides are the same.'
       : same ? `${A} and ${B} run the same program.`
-        : `${B} against ${A}: ` + [c.fragments.length && `${c.fragments.length} fragment${c.fragments.length === 1 ? '' : 's'}`,
-          c.loop && 'the loop script', c.constants.length && 'constants', c.settings.length && 'settings'].filter(Boolean).join(', ') + ' differ.'));
+        : `${B} against ${A}: ${differText(c)}.`));
     const val = (v) => (v === null ? '(none)' : typeof v === 'string' ? v : JSON.stringify(v));
     if (c.constants.length || c.settings.length) {
       const t = el('table', { class: 'internals-table compare-table', id: 'compare-constants' },
@@ -240,9 +250,11 @@ export class Variants {
       if (n === 'default' || this.list.some((x) => x !== v && x.name === n)) return fail(`The name ${n} is taken.`);
       this.renameVariant(v.name, n);
       ok();
+      // a swap still waiting for its fragment keeps saying so
+      if (this.pending.has(n)) { const r = this.checkSwap(this.pending.get(n)); if (r.error) fail(r.error); }
       this.changed();
     });
-    const swap = el('input', { type: 'text', value: this.pending.has(v.name) ? this.pending.get(v.name) : showPairs(v.swap), class: 'variant-swap', placeholder: 'check=check_alt, relevant=relevant_s3',
+    const swap = el('input', { type: 'text', value: this.pending.has(v.name) ? this.pending.get(v.name) : showPairs(v.swap), class: 'variant-swap', placeholder: `e.g. ${this.swapExample()}`,
       'aria-label': `Swap of variant ${v.name}` });
     swap.addEventListener('change', () => {
       const r = this.checkSwap(swap.value);
@@ -256,13 +268,14 @@ export class Variants {
       this.changed();
     });
     if (this.pending.has(v.name)) { const r = this.checkSwap(this.pending.get(v.name)); if (r.error) fail(r.error); }
-    const consts = el('input', { type: 'text', value: showPairs(v.constants), class: 'variant-constants', placeholder: 'n=5',
+    const consts = el('input', { type: 'text', value: showPairs(v.constants), class: 'variant-constants', placeholder: 'e.g. n=5',
       'aria-label': `Constants of variant ${v.name}` });
     consts.addEventListener('change', () => {
       try { v.constants = parsePairs(consts.value); } catch (e) { return fail(`Constants: ${e.message}.`); }
       ok();
       this.changed();
     });
+    let hint = null;
     const own = el('input', { type: 'checkbox', class: 'variant-own-loop', 'aria-label': `Variant ${v.name} has its own loop script` });
     own.checked = !!v.loop;
     const text = el('textarea', { class: 'variant-loop', rows: 8, spellcheck: 'false', 'aria-label': `Loop script of variant ${v.name}` });
@@ -273,6 +286,7 @@ export class Variants {
       else delete v.loop;
       text.value = v.loop ? v.loop.text : '';
       text.hidden = !v.loop;
+      hint.hidden = !!v.loop;
       this.changed();
     });
     text.addEventListener('change', () => { if (v.loop) { v.loop = { ...v.loop, text: text.value }; this.changed(); } });
@@ -286,8 +300,16 @@ export class Variants {
         el('label', { title: 'name=value, ...' }, 'Constants ', consts)),
       el('div', { class: 'variant-row' }, el('label', { class: 'variant-note-label' }, 'Note ', note)),
       el('div', { class: 'variant-row' }, el('label', {}, own, ' its own loop script'),
-        el('span', { class: 'note' }, 'starts as a copy of the project\'s loop script')),
+        hint = el('span', { class: 'note', hidden: !!v.loop }, 'starts as a copy of the project\'s loop script')),
       text);
+  }
+
+  // an example swap from the project's own fragments: "check=check2" (another fragment's text)
+  swapExample() {
+    const names = this.app.project.fragments.map((f) => f.name);
+    const a = names.includes('check') ? 'check' : names[0] || 'check';
+    const b = names.find((n) => n !== a && n.startsWith(a)) || `${a}2`;
+    return `${a}=${b}`;
   }
 
   add() {

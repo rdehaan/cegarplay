@@ -143,7 +143,7 @@ relevant(del(V)) :- q(V), not busier(V).</pre>
           wrong loop can lose nothing on one instance and lose many on the next. Apply the soundness
           test to several small instances, and to several values of the constants.</p>
         <p>The playground keeps them together. The Instances tab holds the instances of one
-          project, each with its expected count; <b>Run all</b> marks every count that differs.
+          project, each with its expected count; <b>Run all instances</b> marks every count that differs.
           <b>Fuzz</b> audits instances from small to large, stops at the first unsound one and
           shrinks it. A campaign (Campaign tab, in Advanced mode) runs your loop and the blocking loop, as a variant,
           over a grid of instances, and marks every instance where the two disagree.</p>
@@ -201,7 +201,8 @@ relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
           <p>The audit names one witness. To see every candidate at once, the Observatory's
             <b>Candidate space</b> draws one square per candidate of the unrefined abstraction and marks the
             solutions a refinement removed;<span class="web-only"> a click on a lost solution shows the refinement that removed it, with
-            its candidate, counterexample and clause;</span> its blame matrix shows which atoms each clause relies on. When the
+            its candidate, counterexample and clause;</span> its blame matrix shows which atoms each clause relies on. The map shows one run; when its search avoids the bad
+            refinement, <b>Find a run that loses one</b> tries seeds until a run does not. When the
             instance is large, <b>Fuzz</b> (Instances tab) audits instances from small to large and shrinks the
             first unsound one to a handful of facts. The how-to <a href="howto-unsound.html">hunting an unsound
             refinement</a> walks through both on this chapter's example.</p>

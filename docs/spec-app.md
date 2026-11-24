@@ -182,10 +182,10 @@ Title: `CegarPlay`. Subtitle line under it: `Play with CEGAR loops in answer set
 | Run button | `run-button` | Validate, then start. Disabled while running. |
 | Abort button | `abort-button` | Enabled while running or paused. |
 | Pause / Resume | `pause-button` | Hidden unless the page is isolated. |
-| Step | `step-button` | Hidden unless isolated; enabled while paused. |
 | Stop | `stop-button` | Hidden unless isolated. Soft stop with full statistics. |
 | Clear | `clear-button` | Removes the last run's results (output, statistics, trace, recording); status back to `idle`. The run history stays. Disabled while a run is active or nothing is shown. |
 | Solutions | `solutions-select` | Options: `1`, `10`, `100`, `all`; bound to `settings.solutions`. |
+| Seed / randomized | `run-seed`, `run-randomize` | `settings.seed` and `settings.randomize`, the same settings as the Loop tab's (kept in step). (The Step button was removed on 2026-11-24: a run is gone through afterwards with the Observatory's cursor.) |
 | Status | `run-status` | `idle`, `validating`, `running`, `paused`, `finished`, `aborted`, `error` (also as `data-state` for tests). |
 | Live line | `live-line` | `12.3 s · 16,577 candidates · 7,307 counterexamples · 7,307 refinements · 9,270 solutions`, updated on each `S` event. |
 
@@ -198,7 +198,7 @@ locked editors.
 | --- | --- | --- | --- |
 | 1 | Control | `section-control` | Example selector + Load; upload JSON; download JSON; import `.lp`; export `.lp`; export standalone. Status lines like logic-game. |
 | 2 | Tutorial | `section-tutorial` | Section 11. |
-| 3 | Programs | `section-programs` | One block per fragment: heading with the name, description line, ACE editor (`mode-gringo`). Buttons: add fragment, rename, delete, move up/down. |
+| 3 | Programs | `section-programs` | One block per fragment: heading with the name, description line, ACE editor (`mode-gringo`). Buttons: add fragment, rename, delete, move up/down. View fragments (named by a view, not used by the loop) are not listed: they are edited in the Observatory (`docs/spec-views.md` section 1). |
 | 4 | Loop | `section-loop` | Template selector + Insert; loop editor (`mode-loop`, or Lua mode off: plain text for raw Lua); constants table (name, value, add/remove); limits (seconds, candidates), trace steps, seed. "Edit as Lua" button. |
 | 5 | Output | `section-output` | Result line; solutions list (numbered, atoms, cost); messages (clingo `W` events grouped by solver + code + message with a count; `L` events; stderr lines; errors in red); trace view (section 9). |
 | 6 | Statistics | `section-statistics` | Section 10. |
@@ -327,7 +327,7 @@ All values come from `H`, `S` and `D` events.
   per solver, grounding, rest); clause length distribution (8 bars from `hist`).
   Keep at most 500 points per series; when full, drop every second point.
 - **Custom counters:** table of `counters`.
-- **Run history:** one row per finished run of this session: time of day, loop
+- **Run history:** (✕ on a row removes that run) one row per finished run of this session: time of day, loop
   template or first script line, outcome, elapsed, candidates, refinements,
   mean clause length, solutions, seed. Each entry also stores the engine
   version, every solver's options and the settings. If two runs of the same
@@ -364,7 +364,7 @@ them, so a service worker adds them.
   It reloads the page once on the first visit. **This shim is not verified by
   the spike.** Verify with Playwright against the plain server: after the
   reload `self.crossOriginIsolated` must be true.
-- When isolated: show Pause, Step, Stop; create the control buffer; pass
+- When isolated: show Pause, Stop; create the control buffer; pass
   `poll = true` to `assemble`.
 - When not isolated: hide those buttons. Everything else must work unchanged.
   Keep a test for the non-isolated page (`?nocoi=1` should skip loading the shim).

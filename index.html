@@ -345,7 +345,7 @@
             <option value="sample">a sample of N steps</option>
           </select>
           <input type="number" min="0" step="1" id="record-n" aria-label="N, the number of steps" value="1000">
-          <label class="inline-label"><input type="checkbox" id="record-calls"> solver calls</label>
+          <label class="inline-label" title="Record every solver call: the Observatory's timeline and cost per line need it (also there: Record calls)"><input type="checkbox" id="record-calls"> Record calls</label>
           <label class="inline-label" title="A proof log for tools/certcheck.py: every step with its counterexample and certificate level"><input type="checkbox" id="record-proof"> proof</label></span>
         <label for="threads-checkbox">Threads (clingo-mt)</label>
         <span><input type="checkbox" id="threads-checkbox" disabled>
@@ -359,7 +359,7 @@
       <h3>Variants</h3>
       <p class="note">The same project with other fragments swapped in, its own loop script or other
         constants. The run bar's <b>Variant</b> picker chooses the variant of a run (also for Audit and
-        Run all); a campaign suite compares variants on the same instances.</p>
+        Run all instances); a campaign suite compares variants on the same instances.</p>
       <div id="variants"></div>
     </section>
 
@@ -369,7 +369,7 @@
       <p class="tab-intro">
         An instance is a set of facts and constant values that a run applies on top of the project:
         the problem's input, kept apart from its encoding. The run bar picks the instance a run uses;
-        <b>Run all</b> runs each one and compares its count with the expected one; <b>Fuzz</b> looks
+        <b>Run all instances</b> runs each one and compares its count with the expected one; <b>Fuzz</b> looks
         for an instance on which the loop is unsound.
         <span class="tab-help">Tutorial: <a href="#tut-instances">One project, many instances</a>. Manual: <a href="#manual-instances">Instances</a> · <a href="#manual-generators">Generators</a> · <a href="#manual-fuzz">Fuzz</a>.</span>
       </p>
@@ -422,7 +422,8 @@
     <section id="section-observatory">
       <p class="tab-intro">
         The last run, or an opened recording, as pictures: the loop's anatomy and its calls, each
-        step in the problem's own terms, and every candidate at once. One cursor moves them all.
+        step in the problem's own terms, and every candidate at once. One cursor moves them all. The project's domain views are
+        written here too (Domain view: New view, Edit this view).
         <span class="tab-help">Tutorial: <a href="#tut-observatory">Watching a run</a> · <a href="#tut-space">Which refinement went wrong</a>. Manual: <a href="#manual-observatory-tab">Observatory tab</a> · <a href="#manual-writing-views">Writing views</a> · <a href="#manual-candidate-space">Candidate space</a>.</span>
       </p>
       <p class="audit-only audit-note">The last action was an <b>audit</b>: the figures below are those of the

@@ -327,7 +327,8 @@ A **space** (`docs/spec-instances.md` section 8) describes every instance up to 
 strategy is **bounded-sound for the space up to k** when it is sound (section 7) on every instance
 the space generates for every k' ≤ k. Checked by iterative deepening, one symbolic audit per k'
 (`js/bounded.js verifySpace`), stopping at the first k' that is not sound; the witness adds the
-breaking `instance` (facts text) and `k`.
+breaking `instance` (facts text) and `k`, and for ranged parameters (`ranges`) `params`: each
+combination of ranged values is audited at each k'.
 
 In bounded mode with a space, the link is declared with `extra = true`: `lua/bounded.lua` wraps
 `rt.link` (so `lua/runtime.lua` is unchanged) and

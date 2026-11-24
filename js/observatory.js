@@ -75,10 +75,23 @@ export class ObservatoryBar {
       map.title = hasMap ? 'Save the candidate space map below (Candidate space), at the cursor\'s step, as a PNG image'
         : 'Saves the candidate space map (below) as a PNG image; there is no map yet: compute it in Candidate space first';
     }
-    const v = this.app.views, hasView = !!(v && v.scene && v.lastFrame);
+    // a view drawn for a recorded step (before a run the view has a scene but no step)
+    const v = this.app.views, steps = !!(v && v.steps && v.steps.length);
+    const hasView = !!(v && v.scene && v.lastFrame && steps);
     if (view) {
       view.disabled = !hasView;
-      view.title = hasView ? 'Save the domain view at the cursor\'s step as an SVG image' : 'Saves the domain view as an SVG image; no view is drawn yet';
+      view.title = hasView ? 'Save the domain view at the cursor\'s step as an SVG image' : 'Saves the domain view as an SVG image; no view is drawn yet (a project with a view, after a run)';
+    }
+    const sb = $('export-storyboard');
+    if (sb) {
+      sb.disabled = !(v && v.view && steps);
+      sb.title = sb.disabled ? 'Saves the frames of the chosen steps side by side; needs a domain view and a run' : 'Save the domain view at the chosen steps side by side, as one SVG image';
+    }
+    const tb = $('observatory-table');
+    if (tb) {
+      const any = !!(this.app.cursor && this.app.cursor.ticks.length);
+      tb.disabled = !any;
+      tb.title = any ? 'The marks of the view at the cursor and the fates of the refinements, as tables' : 'Tables of the view\'s marks and the refinements; needs a run';
     }
   }
 

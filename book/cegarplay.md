@@ -83,7 +83,7 @@ Every step of Part I is an example of the playground, named where it appears, as
 - How to compare refinement strategies with a campaign: Variants, a suite, the instance × variant matrix and the plots.
 - How to find where the time goes: Solvers, candidates, clause lengths, the timeline and the cost per line.
 - How to hunt an unsound refinement: The audit, the candidate space, Fuzz and a regression instance.
-- How to build an instance set: Generators, imports, ground truth and Run all.
+- How to build an instance set: Generators, imports, ground truth and Run all instances.
 - How to run experiments headlessly: run.mjs, bench.mjs, report.mjs, and when to move to native clingo.
 - How to check a loop independently: The reference variant, cegarcheck.py and proof logs with certcheck.py.
 - How to write a domain view: Scene and frame, the step facts, and checking a view against the trace.
@@ -805,7 +805,7 @@ What "sound up to k" does not say: anything about k + 1, or about instances the 
 
 Which solutions a too-strong refinement removes depends on which counterexamples the check happens to return, and so on the search order, the loop shape and the instance. A wrong loop can lose nothing on one instance and lose many on the next. Apply the soundness test to several small instances, and to several values of the constants.
 
-The playground keeps them together. The Instances tab holds the instances of one project, each with its expected count; **Run all** marks every count that differs. **Fuzz** audits instances from small to large, stops at the first unsound one and shrinks it. A campaign (Campaign tab, in Advanced mode) runs your loop and the blocking loop, as a variant, over a grid of instances, and marks every instance where the two disagree.
+The playground keeps them together. The Instances tab holds the instances of one project, each with its expected count; **Run all instances** marks every count that differs. **Fuzz** audits instances from small to large, stops at the first unsound one and shrinks it. A campaign (Campaign tab, in Advanced mode) runs your loop and the blocking loop, as a variant, over a grid of instances, and marks every instance where the two disagree.
 
 ### Too weak and too strong {#c04-both-ways}
 
@@ -853,7 +853,7 @@ Write `lift` after a link's fragments (`link G = A -> C via shared + glue lift`)
 ::: tool-moment
 ### Tool moment: seeing the lost solution
 
-The audit names one witness. To see every candidate at once, the Observatory's **Candidate space** draws one square per candidate of the unrefined abstraction and marks the solutions a refinement removed; its blame matrix shows which atoms each clause relies on. When the instance is large, **Fuzz** (Instances tab) audits instances from small to large and shrinks the first unsound one to a handful of facts. The how-to hunting an unsound refinement walks through both on this chapter's example.
+The audit names one witness. To see every candidate at once, the Observatory's **Candidate space** draws one square per candidate of the unrefined abstraction and marks the solutions a refinement removed; its blame matrix shows which atoms each clause relies on. The map shows one run; when its search avoids the bad refinement, **Find a run that loses one** tries seeds until a run does not. When the instance is large, **Fuzz** (Instances tab) audits instances from small to large and shrinks the first unsound one to a handful of facts. The how-to hunting an unsound refinement walks through both on this chapter's example.
 :::
 
 ::: exercise
@@ -3604,7 +3604,7 @@ relevant(pick(Y)) :- sum(X,Y).
 relevant(pick(X+Y)) :- sum(X,Y).
 ```
 
-(The project has a fifth fragment, **view**, which draws the run as a picture. Lesson 5 uses it.)
+(The project has a fifth fragment, **view**, which draws the run as a picture. It is not part of the loop, so it is not listed here: it is edited with its view in the Observatory. Lesson 5 uses it.)
 
 The **Loop** tab holds the loop script. The loop script first declares the **solvers** (clingo instances, each grounding a list of fragments) and a **link** between them:
 
@@ -3653,7 +3653,7 @@ The **Observatory** tab shows a run as pictures. Here it shows a run of the sum-
 [Playground: tutorial-first-run]{.play}
 
 - **Loop anatomy**: one box per solver, one arrow per link. Here `A` made 1 search call, and `C` 107 calls: 46 found a counterexample (sat), 61 did not (unsat, a solution). The arrow `G · 8 atoms` says the link has eight interface atoms, `pick(1)` to `pick(8)`.
-- **Domain view**: the step in the problem's own terms. The numbers 1..8 stand in a circle; the candidate's numbers are filled, and the ringed ones are those of the counterexample, which cannot all stay. The view is the fragment **view**: ASP that turns a step into drawing marks (see Writing views). For a project without one, **Suggest a view** writes a first draft.
+- **Domain view**: the step in the problem's own terms. The numbers 1..8 stand in a circle; the candidate's numbers are filled, and the ringed ones are those of the counterexample, which cannot all stay. The view is the fragment **view**: ASP that turns a step into drawing marks (see Writing views); **Edit this view** opens its rules beside the drawing, which follows as you type. For a project without one, **New view** starts from a commented skeleton and **Suggest a view** writes a first draft.
 - **The cursor**: the bar at the top moves one step through the run, and every picture follows it, the trace in the Output tab too. With Recording set to every step it counts recorded steps, which include the solutions ("recorded step 16"); otherwise it counts the trace's steps ("traced step 13"). The trace names both numbers when they differ. In the domain view, **Show** switches between **steps** and the run's **solutions**: a solution is not a step of the trace, and its label says when it was found, as far as the recording knows. The arrow keys move it; **follow the run** keeps it on the last step. **Export view** and **Storyboard** save pictures for slides; `?lecture=1` in the address shows the view alone, with its notes as captions.
 - **Timeline** and **Cost per line**: they need a run with **Record calls** on. Every solve call becomes a bar on its solver's lane, and the table says which line of the loop script spent the time. After such a run the Loop tab shows the same figures beside the lines.
 
@@ -3705,7 +3705,7 @@ An **instance** is a set of facts and constant values that a run puts on top of 
 [Playground: graph-coloring]{.play}
 
 - The **Instance** picker in the run bar chooses the instance of the next run; the run history names it.
-- The **Instances** tab lists them with their tags, the expected solution count and the count of the last run, and edits their facts and constants. **Run all** runs each one and marks a count other than the expected one with ✗. (The instance `n6` is tagged `slow`.)
+- The **Instances** tab lists them with their tags, the expected solution count and the count of the last run, and edits their facts and constants. **Run all instances** runs each one (with the run bar's variant) and marks a count other than the expected one with ✗. (The instance `n6` is tagged `slow`.)
 - **Import file** turns a file into an instance: facts, DIMACS graphs, QDIMACS formulas, argumentation frameworks, PrefLib elections.
 
 Most examples of the library keep their input in instances. The voting example has fourteen: each is one question, a set of axioms with a target profile and its outcome, from two axioms up to five. One of them has no justification at all; its run ends with 0 solutions.
@@ -4005,7 +4005,7 @@ Replace the fragments step by step, running after each change:
 2. List the atoms the check needs in **glue**, wrapped as `glue(T)`.
 3. Write the **check**: rules that have an answer set exactly when the candidate is wrong. Add `relevant(T)` rules for the interface atoms each counterexample depends on.
 4. Audit a small instance (lesson 6). Unsound? Look at the witness and at the candidate space.
-5. Add a few instances with their expected counts and check them with **Run all**; let **Fuzz** look for an instance that breaks the loop; write a suite to see how the run time grows (lessons 7 and 8).
+5. Add a few instances with their expected counts and check them with **Run all instances**; let **Fuzz** look for an instance that breaks the loop; write a suite to see how the run time grows (lessons 7 and 8).
 6. Let **Suggest a view** (Observatory) write a first picture of your problem, and adapt it.
 
 If a counterexample has no relevant atom, its clause is empty: the run ends there, with the solutions found so far. That is right only when no solution is left; the **Audit** tells you, and names a solution it would cut. Your project is kept in this browser and comes back after a reload; download it (Control tab) to keep it for good, or **Copy share link** to send it.

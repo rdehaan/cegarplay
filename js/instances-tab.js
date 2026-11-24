@@ -23,6 +23,12 @@ const el = (tag, attrs = {}, ...kids) => {
   for (const k of kids) if (k !== null && k !== undefined) e.append(k);
   return e;
 };
+// A card's "Add as instance" after a click: says so, and is not clicked twice
+function added(card, id) {
+  const b = card.querySelector('button');
+  if (b) { b.textContent = `Added ✓ (${id})`; b.disabled = true; }
+}
+
 // generated facts ("a. b(1). c.") one per line
 const factsText = (facts) => String(facts || '').split(/(?<=\.)\s+/).filter(Boolean).join('\n') + '\n';
 const constText = (c) => Object.entries(c || {}).map(([k, v]) => `${k}=${v}`).join(', ');
@@ -35,6 +41,8 @@ function parseConsts(text) {
   }
   return out;
 }
+
+const RUN_ALL_TITLE = 'Run every instance in the table in turn (the instance picked in the run bar does not matter), with the variant picked in the run bar';
 
 // What Fuzz does, said at the top of its result card.
 const FUZZ_WHAT = 'Fuzz looks for a small instance on which the loop is unsound. It audits instances from small to large (every refinement the loop could make; ' +
@@ -89,12 +97,15 @@ export class InstancesTab {
       ...Object.entries(IMPORTERS).map(([k, v]) => el('option', { value: k }, v.label)));
     const auto = el('option', { value: 'auto', selected: true }, 'Format from the file name');
     this.format.prepend(auto);
+    // the column map is for CSV files: hidden when another format is chosen
+    const syncMap = () => { const imp = IMPORTERS[this.format.value]; this.columnMap.hidden = this.format.value !== 'auto' && !(imp && imp.columnMap); };
+    this.format.addEventListener('change', syncMap);
+    syncMap();
     const bar = el('div', { class: 'instances-bar' },
       el('button', { class: 'control-button', id: 'add-instance-button', onclick: () => this.add() }, 'New instance'),
       el('button', { class: 'control-button', id: 'import-instance-button', onclick: () => this.fileInput.click() }, 'Import file'),
       this.format, this.columnMap,
-      el('button', { class: 'control-button', id: 'run-all-instances-button', onclick: () => this.runAll(),
-        title: 'Run every instance in turn (the instance picked in the run bar does not matter), with the variant picked in the run bar' }, 'Run all instances'),
+      this.runAllButton = el('button', { class: 'control-button', id: 'run-all-instances-button', onclick: () => this.runAll(), title: RUN_ALL_TITLE }, 'Run all instances'),
       this.checkButton = el('button', { class: 'control-button', id: 'check-exercise-button', hidden: true, onclick: () => this.checkExercise(),
         title: 'Check this exercise: expected counts and optima, the audit, and the budgets' }, 'Check exercise'),
       el('button', { class: 'control-button', id: 'fuzz-button', onclick: () => this.fuzz(), title: 'Look for a small instance on which the loop is unsound: audit instances from small to large (the instances, or the numeric constants from 1 up), shrink the first unsound one, and name the step of the run that loses a solution. The result is a card under these buttons.' }, 'Fuzz'),
@@ -108,7 +119,9 @@ export class InstancesTab {
     this.auditInput = el('input', { type: 'checkbox', id: 'instance-audit', 'aria-label': 'Include this instance in the audit' });
     this.auditInput.addEventListener('change', () => this.setAudit(this.auditInput.checked));
     const editorBox = el('div', { class: 'instance-editor', id: 'instance-editor' });
+    this.formTitle = el('h4', { id: 'instance-form-title' });
     this.form.append(
+      this.formTitle,
       el('div', { class: 'instance-fields' },
         el('label', {}, 'Id ', this.idInput), el('label', {}, 'Constants ', this.constInput),
         el('label', {}, 'Expected solutions ', this.expInput), el('label', { title: 'For an optimisation loop that stops at its optimum: the cost of every solution (levels separated by spaces)' }, 'Expected optimum ', this.optInput),
@@ -162,6 +175,7 @@ export class InstancesTab {
     this.editor.setReadOnly(b);
     for (const x of this.root.querySelectorAll('button, input, select')) x.disabled = b;
     this.select.disabled = b;
+    if (this.runAllButton && !b) this.runAllButton.disabled = !this.list.length;
   }
 
   render() {
@@ -198,7 +212,7 @@ export class InstancesTab {
       const nfacts = (x.facts || '').split('\n').filter((l) => l.trim() && !l.trim().startsWith('%')).length;
       const tr = el('tr', { 'data-instance': x.id, class: [x.id === this.current ? 'selected' : '', bad ? 'mismatch' : good ? 'match' : ''].filter(Boolean).join(' '),
         ...(bad ? { 'data-mismatch': 'true' } : {}) },
-        el('td', {}, el('a', { href: '#', onclick: (e) => { e.preventDefault(); this.show(x.id); } }, x.id), x.id === sel ? ' (runs)' : ''),
+        el('td', {}, el('a', { href: '#', onclick: (e) => { e.preventDefault(); this.show(x.id); } }, x.id), x.id === sel ? el('span', { class: 'note', title: 'The instance picked in the run bar: Run and Audit use it' }, ' (picked in the run bar)') : ''),
         el('td', {}, x.recipe && !x.facts ? 'recipe' : `${nfacts} lines`),
         el('td', {}, constText(x.constants) || '–'),
         el('td', {}, [...(x.tags || []), ...(x.audit === false ? ['no audit'] : []), ...(x.symbolic === 'unsound' ? ['symbolic audit: unsound'] : [])].join(', ') || '–'),
@@ -218,9 +232,15 @@ export class InstancesTab {
     this.resultsNote.textContent = '';
     this.resultsNote.hidden = !variants.size;
     this.resultsNote.classList.toggle('stale-note', staleAny);
+    // the status line above (e.g. "all match") is of the counts as they were: dimmed once one is stale
+    this.status.classList.toggle('stale-status', staleAny);
+    if (this.runAllButton) {
+      this.runAllButton.disabled = !list.length || !!this.app.editors.readOnly;
+      this.runAllButton.title = list.length ? RUN_ALL_TITLE : 'No instances in the table: New instance, Import file or a generator adds one';
+    }
     if (variants.size) {
       const vs = [...variants];
-      const which = vs.length > 1 ? 'different variants (hover a count to see which)' : vs[0] ? `the variant ${vs[0]}` : 'no variant (the project as written)';
+      const which = vs.length > 1 ? 'different variants (hover a count to see which)' : vs[0] ? `the variant ${vs[0]}` : 'no variant';
       const ra = this.lastRunAll;
       this.resultsNote.append(ra ? `Last count: Run all instances at ${ra.time}, with ${ra.variant ? `the variant ${ra.variant}` : 'no variant'}` + (vs.length > 1 ? `; some counts are of other runs, with ${which}.` : '.')
         : `Last count: runs with ${which}.`);
@@ -263,6 +283,7 @@ export class InstancesTab {
     const x = this.list.find((i) => i.id === this.current);
     this.form.hidden = !x;
     if (!x) return;
+    this.formTitle.textContent = `Editing instance ${x.id}`;
     this.auditInput.checked = x.audit !== false;
     this.idInput.value = x.id;
     this.expInput.value = x.expected && Number.isInteger(x.expected.solutions) ? String(x.expected.solutions) : '';
@@ -297,13 +318,19 @@ export class InstancesTab {
   // Which choice of the run bar the buttons above use: Run all instances and Fuzz go over the
   // instances themselves, with the variant picked in the run bar.
   renderContext() {
-    const vs = this.app.project.variants || [];
+    const p = this.app.project, vs = p.variants || [];
     const v = this.app.variants ? this.app.variants.selected() : '';
     this.contextNote.textContent = '';
-    if (!vs.length) { this.contextNote.hidden = true; return; }
     this.contextNote.hidden = false;
-    this.contextNote.append('Run all instances and Fuzz go over the instances themselves; they use the ',
-      el('b', {}, v ? `variant ${v}` : 'project as written (no variant)'), ', as picked in the run bar\'s Variant.');
+    // what Fuzz tries (the same choice as fuzz() makes)
+    let fz;
+    try {
+      const def = defaultSource(p);
+      const suite = (p.suites || []).find((s) => s.instances && (s.instances.generator || s.instances.constants));
+      fz = fuzzSourceText(def.constants ? def : suite ? suite.instances : def, p, suite).replace(/ \(every numeric constant.*$/, ', from the Loop tab\'s constants');
+    } catch { fz = 'instances from small to large'; }
+    this.contextNote.append('Run all instances runs the instances in the table; Fuzz tries ', fz, '.',
+      ...(vs.length ? [' Both use ', el('b', {}, v ? `the variant ${v}` : 'no variant'), ', as picked in the run bar\'s Variant.'] : []));
   }
 
   // the order of the instances (the run bar, Run all, the Campaign tab and the file follow it)
@@ -431,7 +458,8 @@ export class InstancesTab {
     if (!id || !S || !D) return;
     this.results.set(id, { solutions: S.solutions, exhausted: D.outcome === 'finished' && D.exhausted === true, outcome: D.outcome,
       cost: costs && costs.n ? costs.cost : null, same: costs ? costs.same : true,
-      variant: info.variant || null, hash: info.programHash || null, time: new Date().toLocaleTimeString() });
+      variant: info.variant || null, hash: info.programHash || null, time: new Date().toLocaleTimeString(),
+      facts: info.instanceFacts ?? null, recipe: JSON.stringify((this.list.find((x) => x.id === id) || {}).recipe || null) });
     this.render();
   }
 
@@ -440,7 +468,14 @@ export class InstancesTab {
   staleResult(id, r) {
     if (!r || !r.hash) return false;
     try {
-      const p = derive(structuredClone(this.app.collect ? this.app.collect() : this.app.project), { instance: id, variant: r.variant || undefined });
+      const p0 = structuredClone(this.app.collect ? this.app.collect() : this.app.project);
+      // a recipe instance (facts generated at run time): the facts of that run, while its recipe is the same
+      const x = (p0.instances || []).find((i) => i.id === id);
+      if (x && x.facts === undefined && x.recipe) {
+        if (JSON.stringify(x.recipe) !== r.recipe) return true;
+        x.facts = r.facts || '';
+      }
+      const p = derive(p0, { instance: id, variant: r.variant || undefined });
       return programHash(p) !== r.hash;
     } catch { return false; }
   }
@@ -468,7 +503,9 @@ export class InstancesTab {
     const s = runAllSummary(rows);
     this.lastRunAll = { variant: this.app.variants ? this.app.variants.selected() || null : null, time: new Date().toLocaleTimeString() };
     this.render();
-    this.say(s.text, s.bad > 0);
+    // the Output and Statistics tabs show the last run of the batch, not the run bar's instance
+    const last = list.at(-1);
+    this.say(`${s.text} The Output and Statistics tabs show the last of these runs (${last.id}).`, s.bad > 0);
   }
 
   // ---- self-checking exercises (FUTURE-DIRECTIONS F1) ---------------------------------------
@@ -728,6 +765,7 @@ export class InstancesTab {
             delete inst.mutations;
           } catch (e) { this.genStatus.textContent = `Not added: ${e.message || e}`; return; }
           const id = this.add(inst);
+          added(card, id);
           this.genStatus.textContent = `Added instance ${id} (tag hard).`;
         } }, 'Add as instance'));
       this.preview.append(card);
@@ -768,6 +806,7 @@ export class InstancesTab {
             const id = freshId(this.app.project, `${g.name}-s${r.seed}`);
             // a fixed instance: the facts as text (the recipe says where they came from)
             this.add({ id, facts: factsText(r.facts), recipe: { generator: g.name, params, seed: r.seed }, constants, tags: ['generated'] });
+            added(card, id);
             this.say(`Added instance ${id} (generated by ${g.name}, seed ${r.seed}${constText(constants) ? `; constants ${constText(constants)}` : ''}).`);
           } }, 'Add as instance'));
       }
@@ -813,7 +852,7 @@ export class InstancesTab {
       if (s.error || !s.verdict) { this.say(`Fuzz: ${r.found.instance.id} is unsound; shrinking failed (${s.error || 'no verdict'}).`, true); return; }
       const dg = await diagnose(s.project, s.verdict, env);
       this.showFuzz(r.found, s, dg);
-      this.say(`Fuzz: ${r.found.instance.id} is unsound (after ${r.tried} instances); shrunk to ${s.facts.length} facts.`, true);
+      this.say('Fuzz: done; the card below says what it found.');
     } catch (e) {
       if (e instanceof BatchStopped || b.cancelled) this.say('Fuzz: stopped.');
       else this.say(`Fuzz stopped: ${e.message || e}`, true);
@@ -839,12 +878,15 @@ export class InstancesTab {
   showFuzz(found, s, dg) {
     const w = s.verdict.witness || {};
     const step = dg.step ? `step ${dg.step.i} (${{ r: 'reject', a: 'add', e: 'expand' }[dg.step.k] || dg.step.k})` : dg.culprit ? `expansion ${dg.culprit}` : null;
-    const consts = Object.entries(s.constants || {}).map(([k, v]) => `${k}=${v}`).join(', ');
+    const consts = Object.entries(s.constants || {}).map(([k, v]) => `${k} = ${v}`).join(', ');
+    // an instance of the constants grid is named by its values (n = 2), not by its id (n2)
+    const at = found.params && Object.keys(found.params).length && !found.instance.facts
+      ? Object.entries(found.params).map(([k, v]) => `${k} = ${v}`).join(', ') : found.instance.id;
     resultCard(this.fuzzCard, {
       verdict: 'unsound',
       title: 'Fuzz: an unsound instance',
       paragraphs: [FUZZ_WHAT, `Tried: ${this.fuzzWhat}.`,
-        `Unsound at ${found.instance.id}; ${s.from ? `shrunk from ${s.from} facts to the ${s.facts.length} below` : 'no facts to shrink'}${consts ? ` (constants ${consts})` : ''}; ${s.tests} audit${s.tests === 1 ? '' : 's'}.`],
+        `Unsound at ${at}; ${s.from ? `shrunk from ${s.from} facts to the ${s.facts.length} below` : 'no facts to shrink'}${consts ? ` (constants ${consts})` : ''}; ${s.tests} audit${s.tests === 1 ? '' : 's'}.`],
       content: [el('pre', { id: 'fuzz-facts' }, s.facts.join('\n') || '(no facts)'),
         el('p', {}, `Lost solution {${(w.solution || []).join(' ')}}; the audit's witness: candidate {${(w.candidate || []).join(' ')}}, counterexample [${w.counterexample || ''}]` +
           (w.relevant ? `, relevant {${w.relevant.join(' ')}}` : '') + '.'),
@@ -876,7 +918,7 @@ export class InstancesTab {
     this.spStatus = el('p', { id: 'space-status', class: 'note', role: 'status', 'aria-live': 'polite' });
     const box = el('div', { class: 'instance-editor', id: 'space-editor' });
     // the first k (space.from): for spaces whose instances only make sense from some size on
-    this.spFrom = el('input', { id: 'space-from', size: 3, inputmode: 'numeric', 'aria-label': 'First k of the space' });
+    this.spFrom = el('input', { id: 'space-from', size: 3, inputmode: 'numeric', 'aria-label': 'First value of the bound' });
     this.spFrom.addEventListener('change', () => {
       const x = this.spaceItem;
       if (!x) return;
@@ -898,6 +940,7 @@ export class InstancesTab {
       el('p', { class: 'note' }, 'Every instance up to a bound: choice rules and constraints over the instance predicates (with the fragment "schema", if there is one). ' +
         'Audit by space (run bar) verifies the loop on all of them; it does not use the run bar\'s instance.'),
       box,
+      this.spHint = el('p', { class: 'note', id: 'space-empty-hint', hidden: true }),
       el('div', { class: 'table-wrapper' }, this.spParams),
       el('p', { class: 'note' }, 'Parameters are constants of every solver: one named like a constant of your encoding (#const m = 2.) sets it. ' +
         'The bound runs from its first value up to the value given in the run bar. Every other parameter has a value, or a range lo..hi: the audit checks each value of the range at each value of the bound. ' +
@@ -915,11 +958,11 @@ export class InstancesTab {
         el('button', { class: 'control-button', id: 'add-space-button', onclick: () => this.addSpace() }, 'New space')),
       this.spBody);
     this.spEditor = makeEditor(box, 'ace/mode/gringo');
-    this.spEditor.setOptions({ minLines: 5, placeholder: 'Choice rules over the instance predicates, e.g.\nnode(1..k).\n{ edge(X,Y) : node(X), node(Y), X < Y }.\n(empty: the constants family k = 1, 2, ...)' });
+    this.spEditor.setOptions({ minLines: 5 });
     this.spEditor.on('change', () => {
       if (this.spLoading) return;
       const x = this.spaceItem;
-      if (x) { x.text = this.spEditor.getValue(); this.spaceEdited(); }
+      if (x) { x.text = this.spEditor.getValue(); this.spaceEdited(); this.renderSpaceHint(); }
     });
   }
 
@@ -938,6 +981,7 @@ export class InstancesTab {
     if (this.spEditor.getValue() !== x.text) this.spEditor.setValue(x.text || '', -1);
     this.spLoading = false;
     const bound = spaceBound(x);
+    this.renderSpaceHint();
     this.spFrom.value = String(x.from ?? 1);
     this.spKLabel.textContent = bound;
     if (this.spPreviewOf !== x.name) { this.spPreview.textContent = ''; this.spPreviewOf = x.name; this.spK.value = String(x.from ?? 2); }
@@ -1081,6 +1125,18 @@ export class InstancesTab {
     this.app.dirty();
   }
 
+  // An empty space text is the constants family: say so under the editor (the bound by its name).
+  renderSpaceHint() {
+    const x = this.spaceItem;
+    const empty = !!x && !(x.text || '').trim();
+    this.spHint.hidden = !empty;
+    if (empty) {
+      const b = spaceBound(x);
+      this.spHint.textContent = `The text is empty: the space is the constants family ${b} = 1, 2, …, one instance per value of ${b}, with no facts ` +
+        `(the fragments read the constant ${b}). Or write choice rules over the instance's predicates, e.g. node(1..${b}). { edge(X,Y) : node(X), node(Y), X < Y }.`;
+    }
+  }
+
   // A value ("3") or a range ("1..3") of a parameter other than the bound.
   setSpaceValue(x, k, input) {
     const t = input.value.trim();
@@ -1161,7 +1217,7 @@ export class InstancesTab {
     const more = json.Models && json.Models.More === 'yes';
     const B = spaceBound(x);
     this.spStatus.textContent = !models.length ? `No instance at ${B} = ${k} (the space is empty there).`
-      : `${models.length}${more ? ' of more' : ''} instance${models.length === 1 ? '' : 's'} at ${B} = ${k}${Object.keys(values).length > 1 ? ` (${Object.entries(values).map(([a, v]) => `${a} = ${v}`).join(', ')})` : ''}.`;
+      : `${more ? `The first ${models.length}` : models.length === 1 ? 'The one' : `All ${models.length}`} instance${models.length === 1 ? '' : 's'} at ${B} = ${k}${more ? ' (there are more)' : ''}${Object.keys(values).length > 1 ? ` (${Object.entries(values).map(([a, v]) => `${a} = ${v}`).join(', ')})` : ''}.`;
     for (const [i, m] of models.entries()) {
       const facts = (m.Value || []).slice().sort();
       this.spPreview.append(el('div', { class: 'generator-card', 'data-space-instance': String(i + 1) },
@@ -1174,7 +1230,8 @@ export class InstancesTab {
   saveWitness(a) {
     const w = a.witness || {};
     const sp = this.spaces.find((x) => x.name === a.space);
-    const id = freshId(this.app.project, 'regression');
+    // named after where it broke: regression-n2 (the bound and its value)
+    const id = freshId(this.app.project, `regression-${a.bound || (sp ? spaceBound(sp) : 'k')}${a.k}`);
     const consts = { ...((sp && sp.defaults) || {}), ...(a.params || {}) };
     if (sp) consts[spaceBound(sp)] = a.k;
     // only the constants the space marks "in a regression instance", and not those the project already has

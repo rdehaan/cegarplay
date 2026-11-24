@@ -49,8 +49,10 @@
             <code>@perm(N, I, K…)</code>, <code>@subset(M, N, I, K…)</code>,
             <code>@weighted((W1, …), K…)</code> and <code>@mallows(N, phi, I, K…)</code>. The keys K
             make draws independent; the seed makes them repeatable.</li>
-          <li><b>Preview and add.</b> The generator panel draws instances for a few seeds; add them as
-            recipe instances (stored as generator, parameters and seed, not as facts).</li>
+          <li><b>Preview and add.</b> The generator panel draws instances for a few seeds; <b>Add as
+            instance</b> keeps one as a fixed instance: its facts as text, to read and edit, with the
+            recipe it came from (generator, parameters, seed) as a note. The generator's <b>Constants of
+            its instances</b> (<code>n=n</code> passes a parameter on) go into each instance it makes.</li>
           <li><b>Import files.</b> <b>Import file</b> reads ASP facts, DIMACS graphs, QDIMACS, ASPARTIX,
             Trivial Graph Format, PrefLib orders and jaggpy scenarios as facts, checked by clingo
             first.</li>
@@ -59,7 +61,8 @@
             <code>tools/cegarcheck.py</code> (see <a href="howto-check.html">checking a loop
             independently</a>). Write the counts into the instances' expected values.</li>
           <li><b>Tag the hard ones</b> (<code>hard</code>, <code>slow</code>) and check everything with
-            <b>Run all</b>, which says how many instances it actually checked.</li>
+            <b>Run all instances</b>, which says how many instances it actually checked (and, under the
+            table, which variant the counts are of; an edit marks them stale).</li>
         </ol>
 
         <h2 id="space">Writing a space (optional)</h2>
@@ -76,22 +79,26 @@
             on the instance".</li>
           <li><b>Constraints for well-formed instances.</b> A schema fragment, if the project has one,
             is added; or write the constraints into the space (each clause non-empty, each atom used).</li>
-          <li><b>Parameters.</b> At least one, the bound; others get values. They are constants of every
-            solver, so pick names no fragment uses (<code>size</code>, not <code>k</code> if the loop
-            has a constant <code>k</code>).</li>
-          <li><b>Check, then audit.</b> <b>Check</b> runs clingo on the text and <b>Preview</b> shows the first instances at a k; Audit by
-            <b>space</b> and a bound runs k = 1, 2, … and keeps the first breaking instance as a
-            regression instance on request.</li>
+          <li><b>Parameters.</b> At least one, the bound; each other one gets a value or a range
+            <code>lo..hi</code>. They are constants of every solver: a parameter named like a constant
+            of the encoding sets that constant. So give the bound a new name (<code>size</code>, not
+            <code>k</code> if the loop has a constant <code>k</code>), and use a constant's own name, with
+            a range, to cover several of its values. The table also says which constants go into a
+            regression instance saved from a witness.</li>
+          <li><b>Preview, then audit.</b> The space is checked with clingo as you type; <b>Preview</b>
+            shows the first instances at a value of the bound (<b>Clear preview</b> removes them). Audit
+            by <b>space</b> and a bound runs the bound 1, 2, … (each value of a range at each) and keeps
+            the first breaking instance as a regression instance on request.</li>
         </ol>
 
         <h2 id="pitfalls">Pitfalls</h2>
         <ul>
           <li>Random instances of a fixed size are often all easy or all trivial: vary the parameters
             in a suite grid and look at the scaling plot.</li>
-          <li>An expected count is compared only for a run that was exhausted; Run all now runs such
-            instances to all solutions.</li>
-          <li><code>js/mine.js</code> searches a generator's grid for hard instances; it is not in the
-            page yet.</li>
+          <li>An expected count is compared only for a run that was exhausted; Run all instances runs
+            such instances to all solutions.</li>
+          <li><b>Mine hard instances</b> (generator panel) searches a generator's seeds for the instances
+            with the most candidates per solution, then tries removing single facts.</li>
           <li>A space's size grows fast with the bound. Keep each step within seconds; "sound up to k"
             covers the space below k only.</li>
         </ul>

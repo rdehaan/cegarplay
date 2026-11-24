@@ -27,6 +27,9 @@ const css = (name) => getComputedStyle(document.documentElement).getPropertyValu
 const COLORS = ['--chart-2', '--chart-1', '--chart-3', '--chart-4', '--chart-6', '--chart-5', '--chart-7'];
 const OUTCOME_COLOR = { finished: '--call-sat', limit: '--call-int', timeout: '--call-int', error: '--call-unsat', trap: '--call-unsat', invalid: '--call-unsat', skipped: '--chart-rest', aborted: '--chart-ground' };
 
+// A suite names "no variant" 'default' (the file's key); the page says (no variant).
+const vname = (v) => (v === 'default' ? '(no variant)' : v);
+
 export class CampaignTab {
   constructor(app) {
     this.app = app;
@@ -47,7 +50,7 @@ export class CampaignTab {
     this.text = h('textarea', { id: 'suite-text', rows: 9, spellcheck: 'false', 'aria-label': 'Suite (JSON)' });
     this.text.addEventListener('change', () => this.saveText());
     this.status = h('p', { id: 'campaign-status', class: 'note', role: 'status', 'aria-live': 'polite' });
-    this.jobs = h('input', { id: 'campaign-jobs', size: 3, inputmode: 'numeric', value: String(defaultPoolSize()), 'aria-label': 'Engines' });
+    this.jobs = h('input', { id: 'campaign-jobs', size: 3, inputmode: 'numeric', value: String(defaultPoolSize()), 'aria-label': 'Parallel runs (engines)' });
     const b = (id, label, fn) => h('button', { class: 'control-button', id, onclick: fn }, label);
     this.startB = b('campaign-start', 'Start', () => this.start());
     this.pauseB = b('campaign-pause', 'Pause', () => this.togglePause());
@@ -63,7 +66,7 @@ export class CampaignTab {
     this.grid.addEventListener('mousemove', (e) => this.gridTip(e));
     this.root.append(
       h('div', { class: 'instances-bar' }, this.select, b('campaign-new', 'New suite', () => this.addSuite()),
-        h('label', {}, 'Engines ', this.jobs), this.startB, this.pauseB, this.abortB,
+        h('label', { title: 'How many runs go at once, one engine (worker) each' }, 'Parallel runs ', this.jobs), this.startB, this.pauseB, this.abortB,
         b('campaign-export', 'Export rows', () => this.exportFile()), b('campaign-export-csv', 'Export matrix (CSV)', () => this.exportCSV()), b('campaign-import', 'Import rows', () => this.fileInput.click()),
         b('campaign-clear', 'Forget rows', () => this.clearRows()), this.fileInput),
       this.text, this.status, this.grid, this.summary, this.matrixBox, this.plots);
@@ -274,15 +277,15 @@ export class CampaignTab {
     const th = (label, key) => h('th', { 'data-sort': key, class: 'sortable', title: 'Sort by this column', onclick: () => { this.sortBy = this.sortBy === key ? null : key; this.drawMatrix(); } },
       label + (this.sortBy === key ? ' ▲' : ''));
     const t = h('table', { class: 'internals-table campaign-matrix', id: 'campaign-matrix', 'data-metric': this.metric });
-    t.append(h('tr', {}, th('Instance', 'instance'), ...m.variants.map((v) => th(v, v))));
+    t.append(h('tr', {}, th('Instance', 'instance'), ...m.variants.map((v) => th(vname(v), v))));
     for (const r of rows) {
-      t.append(h('tr', { 'data-instance': r.instance }, h('td', {}, r.instance || '(project)'), ...m.variants.map((v) => {
+      t.append(h('tr', { 'data-instance': r.instance }, h('td', {}, r.instance || '(no instance)'), ...m.variants.map((v) => {
         const c = r.cells[v];
         if (!c) return h('td', {}, '');
         const text = this.metric === 'solutions' ? (c.value === null ? '–' : fmt(Math.round(c.value)) + (c.solved ? '' : ` (${c.outcome})`))
           : !c.solved ? c.outcome : c.value === null ? '–' : this.metric === 'time' ? `${c.value.toFixed(3)}` : fmt(Math.round(c.value));
         const cls = ['num', r.best === v ? 'best' : '', c.disagree ? 'disagree' : '', c.solved ? '' : 'unsolved'].filter(Boolean).join(' ');
-        const tip = `${r.instance} / ${v}: ${c.outcome}, ${fmt(c.solutions)} solutions${c.cost ? `, cost ${c.cost.join(' ')}` : ''}${c.n > 1 ? `, median of ${c.n} seeds` : ''}${c.disagree ? '; disagrees with another variant' : ''}`;
+        const tip = `${r.instance || '(no instance)'} / ${vname(v)}: ${c.outcome}, ${fmt(c.solutions)} solutions${c.cost ? `, cost ${c.cost.join(' ')}` : ''}${c.n > 1 ? `, median of ${c.n} seeds` : ''}${c.disagree ? '; disagrees with another variant' : ''}`;
         return h('td', { class: cls, title: tip, 'data-variant': v }, text + (c.disagree ? ' ✗' : ''));
       })));
     }
@@ -305,7 +308,7 @@ export class CampaignTab {
     const r0 = cv.getBoundingClientRect();
     const i = Math.floor((e.clientY - r0.top) / (sq + 1)) * per + Math.floor((e.clientX - r0.left) / (sq + 1));
     const r = (this.sortedRows || [])[i];
-    cv.title = r ? `${r.instance || '(project)'} / ${r.variant} / seed ${r.seed}: ${r.outcome}${r.skipped ? '' : `, ${fmt(r.solutions)} solutions, ${Number(r.time || 0).toFixed(3)} s`}` : '';
+    cv.title = r ? `${r.instance || '(no instance)'} / ${vname(r.variant)} / seed ${r.seed}: ${r.outcome}${r.skipped ? '' : `, ${fmt(r.solutions)} solutions, ${Number(r.time || 0).toFixed(3)} s`}` : '';
   }
 
   drawGrid(bad) {
@@ -353,7 +356,7 @@ export class CampaignTab {
     }
     this.summary.append(t);
     const p = h('p', { id: 'campaign-consistency', class: bad.length ? 'error' : 'note' },
-      bad.length ? `${bad.length} instances where variants disagree: ` + bad.map((b) => `${b.instance} (${b.kind === 'optimum' ? 'optimum ' : ''}${b.rows.map((r) => `${r.variant} ${b.kind === 'optimum' ? r.cost.join(' ') : fmt(r.solutions)}`).join(' vs ')})`).join('; ')
+      bad.length ? `${bad.length} instances where variants disagree: ` + bad.map((b) => `${b.instance || '(no instance)'}: ${b.kind === 'optimum' ? 'optimum ' : ''}${b.rows.map((r) => `${vname(r.variant)} ${b.kind === 'optimum' ? r.cost.join(' ') : fmt(r.solutions)}`).join(' vs ')}`).join('; ')
         : 'Every instance: the finished variants agree on counts and optima.');
     this.summary.append(p);
   }
@@ -386,7 +389,7 @@ export class CampaignTab {
       const va = variants.includes(a0) ? a0 : variants[0];
       const vb = variants.includes(b0) && b0 !== va ? b0 : variants.find((v) => v !== va);
       const sel = (id, cur, i) => {
-        const e = h('select', { id, 'aria-label': i ? 'Scatter y variant' : 'Scatter x variant' }, ...variants.map((v) => h('option', { value: v, selected: v === cur }, v)));
+        const e = h('select', { id, 'aria-label': i ? 'Scatter y variant' : 'Scatter x variant' }, ...variants.map((v) => h('option', { value: v, selected: v === cur }, vname(v))));
         e.addEventListener('change', () => { this.scatterPick[i] = e.value; this.drawPlots(); });
         return e;
       };
@@ -430,7 +433,7 @@ export class CampaignTab {
   legend(f, names, color) {
     names.forEach((v, i) => {
       f.s.append(svg('rect', { x: f.x0 + 8, y: f.y1 + 4 + i * 14, width: 10, height: 10, fill: color(v) }));
-      f.s.append(svg('text', { x: f.x0 + 22, y: f.y1 + 13 + i * 14, class: 'plot-label' }, v));
+      f.s.append(svg('text', { x: f.x0 + 22, y: f.y1 + 13 + i * 14, class: 'plot-label' }, vname(v)));
     });
   }
 

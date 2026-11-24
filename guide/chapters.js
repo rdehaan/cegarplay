@@ -63,7 +63,7 @@ export const EXTRAS = [
   { file: 'howto-campaign.html', group: 'howto', title: 'How to compare refinement strategies with a campaign', summary: 'Variants, a suite, the instance × variant matrix and the plots.' },
   { file: 'howto-time.html', group: 'howto', title: 'How to find where the time goes', summary: 'Solvers, candidates, clause lengths, the timeline and the cost per line.' },
   { file: 'howto-unsound.html', group: 'howto', title: 'How to hunt an unsound refinement', summary: 'The audit, the candidate space, Fuzz and a regression instance.' },
-  { file: 'howto-instances.html', group: 'howto', title: 'How to build an instance set', summary: 'Generators, imports, ground truth and Run all.' },
+  { file: 'howto-instances.html', group: 'howto', title: 'How to build an instance set', summary: 'Generators, imports, ground truth and Run all instances.' },
   { file: 'howto-headless.html', group: 'howto', title: 'How to run experiments headlessly', summary: 'run.mjs, bench.mjs, report.mjs, and when to move to native clingo.' },
   { file: 'howto-check.html', group: 'howto', title: 'How to check a loop independently', summary: 'The reference variant, cegarcheck.py and proof logs with certcheck.py.' },
   { file: 'howto-view.html', group: 'howto', title: 'How to write a domain view', summary: 'Scene and frame, the step facts, and checking a view against the trace.' },

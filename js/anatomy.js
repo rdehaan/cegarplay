@@ -282,7 +282,7 @@ export class Anatomy {
       g.append(svg('text', { x: 10, y: 20, class: 'anatomy-name' }, s.name));
       const frag = (s.fragments || []).filter((f) => f !== 'instance').join(' + ');
       g.append(svg('text', { x: 10, y: 37, class: 'anatomy-frag' }, frag.length > 28 ? frag.slice(0, 27) + '…' : frag));
-      const c = st ? `${fmt(st.calls)} calls · ${fmt(st.sat)} sat · ${fmt(st.unsat)} unsat` : 'no calls yet';
+      const c = st ? `${fmt(st.calls)} call${st.calls === 1 ? '' : 's'} · ${fmt(st.sat)} sat · ${fmt(st.unsat)} unsat` : 'no calls yet';
       g.append(svg('text', { x: 10, y: 60, class: 'anatomy-count', 'data-count': 'calls' }, c));
       g.append(svg('text', { x: 10, y: 78, class: 'anatomy-count', 'data-count': 'time' }, st ? `${secs(st.time || 0)} s` : ''));
       if (st && st.k > 0) {
@@ -423,7 +423,7 @@ export class Anatomy {
     ctx.fillText(end, width - ctx.measureText(end).width - 2, height - 3);
     this.lastDrawMs = performance.now() - t;
     if (this.calls.length) {
-      this.note.textContent = `${fmt(this.calls.length)} calls, ${fmt(searches.size)} searches; drawn in ${this.lastDrawMs.toFixed(1)} ms.` +
+      this.note.textContent = `${fmt(this.calls.length)} call${this.calls.length === 1 ? '' : 's'}, ${fmt(searches.size)} search${searches.size === 1 ? '' : 'es'}; drawn in ${this.lastDrawMs.toFixed(1)} ms.` +
         (this.filterLine !== null ? ` Showing the calls of loop line ${this.filterLine} (click the row again to show all).` : '');
     }
   }
@@ -502,7 +502,7 @@ export class Anatomy {
     if (!ed || !this.assembled || !this.calls.length) return;
     const old = (ed.session.getAnnotations() || []).filter((a) => !a.anatomy);
     const add = this.rows().filter((r) => r.line).map((r) => ({ row: r.line - 1, column: 0, type: 'info', anatomy: true,
-      text: `${fmt(r.calls)} calls (${fmt(r.sat)} sat, ${fmt(r.unsat)} unsat), ${secs(r.time)} s exclusive` }));
+      text: `${fmt(r.calls)} call${r.calls === 1 ? '' : 's'} (${fmt(r.sat)} sat, ${fmt(r.unsat)} unsat), ${secs(r.time)} s exclusive` }));
     ed.session.setAnnotations([...old, ...add]);
   }
 }

@@ -14,10 +14,10 @@ The page's tabs follow the work:
 - **Write**: *Programs* (the ASP fragments), *Loop* (the loop script, constants,
   limits, recording, certificates, and variants: the same project with other
   fragments or another loop, chosen in the run bar, compared side by side as
-  line diffs with their latest results, or in a campaign)
+  line diffs, and per instance in a campaign)
   and *Instances* (the problem's inputs as
   facts and constants, generators of random instances, importers for common
-  file formats, Run all, Fuzz, and optional spaces: every instance up to a bound,
+  file formats, Run all instances, Fuzz, and optional spaces: every instance up to a bound,
   for verifying a refinement strategy on all of them).
 - **Run and look**: the run bar's *Shown* line says which run the result tabs
   hold, and when the project was edited since; *Output* (solutions, trace, messages, the audit's verdict:
@@ -35,6 +35,7 @@ Advanced mode, the Tutorial and the Manual are toggles under *Tabs* in the
 Control tab; the browser remembers them. The Control tab also keeps named
 projects (the workspace) and snapshots of the project being edited, with an
 Undo after a restore or after loading another project over an edited one.
+**Reset everything** forgets all that the page keeps in this browser.
 - **Trust**: *Audit* (every candidate and counterexample of an instance against
   the loop's refinements), certificates per refinement, lifted refinements,
   proof logs checked by an independent Python checker, and recordings that
@@ -113,7 +114,7 @@ Push the repository and enable Pages for the `main` branch, root folder. Nothing
 needs building. GitHub Pages cannot send the cross-origin isolation headers, so
 `coi-serviceworker.js` (loaded first by `index.html`) adds them through a
 service worker: on the first visit the page reloads once and is then isolated.
-Isolation enables Pause, Step and Stop, and the threaded engine (`clingo-mt`,
+Isolation enables Pause and Stop, and the threaded engine (`clingo-mt`,
 solver options such as `-t 2`). Everything else works without it; `?nocoi=1`
 skips the service worker.
 
@@ -125,7 +126,8 @@ skips the service worker.
   fragments and the loop script.
 - A single solve call that never returns can only be ended by Abort (or by the
   time limit backstop, two seconds after the time limit).
-- The seed changes the search only together with randomising solver options,
+- The seed changes the search only with *Randomized search* (Loop tab, or
+  *randomized* next to the seed in the run bar) or randomising solver options,
   such as `--rand-freq=0.05`.
 
 ## Tests

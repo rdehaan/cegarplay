@@ -367,11 +367,13 @@ export function resultMatrix(rows, metric = 'time', order = {}) {
         disagree: rs.some((r) => bad.has(r.key)), solutions: rs[0].solutions, cost: rs[0].cost || null };
     }
     // the best cell: the smallest value among the solved cells, when no other cell ties with it
+    // compared at the precision the matrix shows (time: 3 decimals), so that equal-looking cells tie
+    const shown = (x) => (metric === 'time' ? Math.round(x * 1000) : Math.round(x));
     let best = null, ties = 0;
     for (const v of variants) {
       const c = cells[v];
       if (!c || !c.solved || c.value === null) continue;
-      if (best === null || c.value < cells[best].value) { best = v; ties = 0; } else if (c.value === cells[best].value) ties++;
+      if (best === null || shown(c.value) < shown(cells[best].value)) { best = v; ties = 0; } else if (shown(c.value) === shown(cells[best].value)) ties++;
     }
     if (ties || metric === 'solutions') best = null;   // fewer solutions is not better
     return { instance, cells, best };

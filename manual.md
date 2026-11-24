@@ -18,11 +18,12 @@ no request to another origin.
 
 The page's tabs follow the work: **Control** (the library, files, recordings, share and export) and
 **Tutorial**; then the project: **Programs** (the ASP fragments), **Loop** (the loop script,
-constants, limits, recording and certificates) and **Instances** (inputs, generators, Run all,
+constants, limits, recording and certificates) and **Instances** (inputs, generators, Run all instances,
 Fuzz); then a run: **Output**, **Statistics** and **Observatory**; and many runs: **Campaign**. The
-run bar above the tabs has two rows: the actions (**Run**, **Audit** with its mode, Abort, Pause,
-Step and Stop on an isolated page, Clear, and the status), then **Run with**: the Instance and
-Variant pickers (for a project with instances or variants) and Solutions. Below them, **Shown:** says
+run bar above the tabs has two rows: the actions (**Run**, **Audit** with its mode, Abort, Pause
+and Stop on an isolated page, Clear, and the status), then **Run with**: the Instance and
+Variant pickers (for a project with instances or variants), Solutions, and **Seed** with
+**randomized** (the Loop tab's settings). Below them, **Shown:** says
 what the Output, Statistics and Observatory tabs hold now: the run, audit or replay (with its
 instance, variant and start time), how it ended, how much of it was recorded, whether the
 candidate space was computed for it, and, in amber, when the project was edited since (or another
@@ -149,7 +150,7 @@ clingo about an instance fact name `instance:<line>`. The loop language does not
 | `instances[].expected.solutions` | Whole number or null: the solution count of an exhausted run with all solutions (checked by "Run all", `--instance all` and the library tests). |
 | `instances[].expected.optimum` | Whole number, list of whole numbers (one per priority level, as clingo reports costs; a maximised value is negated) or null: the cost of every reported solution of a finished run. For optimisation loops that `stop` at their optimum: the run need not be exhausted, but it must report at least one solution, all with this cost. With `solutions` too, both are checked (the count only when the run is exhausted). Checked by the same tools; the Instances tab has an *Expected optimum* field and shows the cost of the last run. |
 | `instances[].tags` | List of strings (`slow` instances are skipped by the default test run). |
-| `instances[].recipe` | `{ generator, params, seed }`: the facts come from a generator (below) when a run uses the instance; a file stores the recipe only. |
+| `instances[].recipe` | `{ generator, params, seed }`: where the facts came from. Without `facts`, they are generated when a run uses the instance (recipe-only: library examples, suites); with `facts` (Add as instance, Write out its facts, mining) the recipe is only a note. |
 | `variants[].name` | Matches `[A-Za-z0-9_-]+`; unique; not `default`. |
 | `variants[].loop` | A loop script (string) or `{ language, text }` that replaces the project's. |
 | `variants[].swap` | Fragment name to fragment name: the first gets the text of the second. |
@@ -314,8 +315,8 @@ preview** removes them, and so does any edit of the space), which is the quickes
 empty and whose one parameter is a constant of the project is the constants family n = 1, 2, …
 (the tutorial's space `n`).
 
-**Instances that only make sense from some size on.** Set **First k** (the field `from`, default
-1): the audit then starts there, the run bar shows "every instance with k = 3 up to", and the verdict says "sound for k
+**Instances that only make sense from some size on.** Set the first value in the **Bound** row of the parameter table ("from … up to the run bar's
+value"; the field `from`, default 1): the audit then starts there, the run bar shows "every instance with k = 3 up to", and the verdict says "sound for k
 from 3 up to 10". (Without it, a constraint such as `:- k < 3.` in the text also works: the space is
 empty below 3, and an empty space is trivially sound; but the verdict then counts those k as
 checked.)
@@ -1064,7 +1065,8 @@ only once`.
 | Time limit | Loop tab | Seconds of CPU time in the engine (`os.clock`); 0 = none. Outcome `limit`. The page also aborts the worker 2 s after the limit in case one solve call never returns. |
 | Candidate limit | Loop tab | 0 = none. Outcome `limit`. |
 | Trace steps | Loop tab | Number of refinement steps recorded for the trace view; 0 = off. Recording costs a little time. |
-| Seed | Loop tab | `--seed=N` for every solver; 0 = clingo's default. It changes the search only together with randomising options such as `options "--rand-freq=0.05"`. |
+| Seed | Loop tab | `--seed=N` for every solver; 0 = clingo's default. It changes the search only with **Randomized search** (Loop tab, or **randomized** in the run bar) or randomising solver options such as `options "--rand-freq=0.05"`. Also in the run bar (**Seed**). |
+| Randomized search | Loop tab, run bar | `settings.randomize`: `--rand-freq=0.2 --sign-def=rnd` in every solver, so that the seed changes the search. |
 | Threads | Loop tab | Loads the threaded engine (`clingo-mt`); then `options "-t 2"` works. Needs a cross-origin isolated page. Not stored in the project. |
 | Constants | Loop tab | `settings.constants`, see [Constants](#manual-constants). |
 | Solver options | loop script | `options "..."` on a `solver` line: any clingo option, such as `--heuristic=Domain`, `--enum-mode=record`, `--opt-strategy=usc`. |
@@ -1187,7 +1189,8 @@ back; a project without it opens with enumeration.
   at once, and stops at the first k that is not sound. "Sound up to K" holds for every instance of
   the space up to K, and says nothing about larger ones. An unsound verdict shows the instance it
   breaks on, with **Save as regression instance**. The run history's Audit column shows `sound ≤ K`
-  or `unsound at k = 2`.
+  or `unsound at n = 2` (the bound by its own name, with the values of ranged parameters:
+  `unsound at n = 2, w = 3`).
 
 After a verdict the panel offers the next step: an unsound audit, **See it in the candidate space**
 (Observatory, Advanced mode); a sound or unsound one, **Check a space** (or **Write a space** when
@@ -1255,7 +1258,11 @@ abstraction), with a note saying so; the next Run replaces them. The run history
 
 ### Output tab
 
-- **Result line**: outcome, time, solution count, whether the search was exhausted.
+- **Result line**: outcome, time, solution count, whether the search was exhausted ("the loop finds
+  no more": that these are all the solutions holds only for a sound loop). When the instance's true
+  count is known (its expected count, or an enumeration audit of the same program in the run
+  history) and an exhausted run found fewer, the line says so in red: "But the instance has 61 (the
+  audit of the same program): this run lost 50."
 - **Solutions**: numbered, shown atoms and cost. At most 1,000 are shown; **Download** saves all
   kept solutions (up to 200,000) as text, one per line (`n: atoms`).
 - **Trace**: one recorded step at a time (slider, Previous, Next). Its label counts the trace's own
@@ -1280,7 +1287,7 @@ abstraction), with a note saying so; the next Run replaces them. The run history
 | Cores | After a run that refines by cores: how many cores and their lengths (the clause-length buckets), as clasp returns them and minimised (`core.minimal`), with an approximate mean. The `S` event's `cores` (`plain`, `minimal`). |
 | Charts | Candidates and refinements over time (a run too short for a curve shows its points, with a note; after an audit, a note);  time split per solver; clause length distribution (1, 2, 3–4, 5–8, 9–16, 17–32, 33–64, 65+); after a `track` statement, the tracked values per round (one line per name, a value holds until the next). |
 | Custom counters and tracked values | The `count` statements, and the last value of each `track` series. |
-| Run history | One row per run: time, loop and instance (**Loop [instance]**: the loop's first line, the instance in brackets, the variant), outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. The row of the run the tabs show is marked ▶ (none after Clear, or after another project is loaded). **Rerun with 5 seeds**, **Clear run history** (asks first; disabled while empty), **✕** on a row removes that run only (the ▶ mark and the Compare picks follow), copy as text or JSON. Each row has a **Note** (kept with the run history in the project) and a **Compare** box: two ticked rows are shown side by side below the table (counts, mean clause, per-solver calls, time and conflicts, with the change). |
+| Run history | One row per run: time, loop and instance (**Loop [instance]**: the loop's first line, the instance in brackets, the variant), outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. The row of the run the tabs show is marked ▶ (none after Clear, or after another project is loaded). **Rerun with 5 seeds** (seeds 1 to 5 with a randomized search, whatever the Loop tab's setting), **Clear run history** (asks first; disabled while empty), **✕** on a row removes that run only (the ▶ mark and the Compare picks follow), copy as text or JSON. Each row has a **Note** (kept with the run history in the project) and a **Compare** box: two ticked rows are shown side by side below the table (counts, mean clause, per-solver calls, time and conflicts, with the change). |
 
 Counting rules: *candidates* are the assignments seen by `on candidate` plus models returned by
 `solve`/`models` of solvers without incoming links; *counterexamples* are satisfiable solves that
@@ -1320,8 +1327,11 @@ offers **Record every step, run, compute**, which sets that recording, runs and 
 square is its fate up to the refinement chosen with the slider or the cursor: alive, alive and a
 solution, removed earlier, removed by this refinement, a lost solution (a solution some refinement
 removed: the run is unsound), an accepted solution; a legend under the map names them. The summary
-names the first unsound refinement and how many solutions it removes, and counts the removals that
-hit a candidate already removed (redundant refinements). Hover shows a candidate's atoms and the
+has three parts: **This instance** (candidates, solutions), **This run** (refinements, candidates
+left, removals that hit a candidate already removed and clauses that contain an earlier one: wasted
+work) and **Lost solutions** (the first refinement that removes a solution: the run is wrong; or
+none, with the reminder that this does not make the loop sound, and the buttons **Audit this
+instance** and **Find a run that loses one**, a seed sweep). Hover shows a candidate's atoms and the
 refinement that removed it; a click moves the cursor to that step. **The refinement at the cursor**
 is shown under the map: its number and step, the candidate it refined, the counterexample (from the
 trace, which keeps the first **Trace steps** of a run), the clause it added ("at least one of" its
@@ -1426,7 +1436,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | Parameter | Effect |
 | --- | --- |
 | `?example=<id>` | Load the library example `<id>` (also `?file=<id>`). It does not replace the project kept in the browser until you edit it. |
-| `&fragment=<name>` | With `?example`: open the Programs tab on that fragment's editor (`loop` opens the Loop tab). Overrides `?tab`. An unknown name is ignored with a note in the status line. |
+| `&fragment=<name>` | With `?example`: open the Programs tab on that fragment's editor (`loop` opens the Loop tab; a view fragment opens its view's editor in the Observatory, **Edit this view**). Overrides `?tab`. An unknown name is ignored with a note in the status line. |
 | `&from=guide/<page>.html#<anchor>` | Show a link "← Back to the guide" at the top left, to that guide page. Only a page of the guide is accepted. |
 | `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory. The numbers are fixed; they are not the order on screen. |
 | `&instance=<id>` | Pick that instance of the project in the run bar. An unknown id is ignored with a note. |
@@ -1438,7 +1448,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?replay=examples/replays/<id>.cprec` | Replay a library recording without the engine (it loads its example first). Only paths of that form are accepted. |
 | `&step=N`, `&view=<name>` | Open the Observatory with the linked cursor on step N and that domain view. |
 | `?lecture=1` | Lecture mode: the domain view alone, its notes as captions, the arrow keys move the cursor. |
-| `?nocoi=1` | Do not use the isolation service worker (and remove it). Pause, Step, Stop and threads are then unavailable. |
+| `?nocoi=1` | Do not use the isolation service worker (and remove it). Pause, Stop and threads are then unavailable. |
 
 The address bar follows the page (without new history entries): loading an example from the library
 or the tutorial sets `?example=<id>`, switching tabs sets `?tab=N` (none for the Control tab), and
@@ -1483,7 +1493,7 @@ Browser storage (`localStorage`, per browser and site):
   Campaign tab's rows (IndexedDB `cegarplay`), after a question, and loads the page afresh (no
   query, no hash): a first visit.
 
-Keyboard: Ctrl+Enter or Cmd+Enter runs from anywhere, also inside an editor.
+Keyboard: Ctrl+Enter or Cmd+Enter runs from anywhere, also inside an editor. Ctrl+S or Cmd+S does nothing (no browser save dialog: the project is kept in this browser as you edit).
 
 Every control shows a ring in the link colour when it has keyboard focus. Verdicts (the audit
 panel, the Fuzz card, the exercise box) and the status lines of Spaces, Snapshots and Compare
@@ -1493,7 +1503,7 @@ in their own box).
 
 Cross-origin isolation: `coi-serviceworker.js` adds the isolation headers through a service worker
 and reloads the page once on the first visit. Without it (or with `?nocoi=1`) everything except
-Pause, Step, Stop and threads works.
+Pause, Stop and threads works.
 
 ## Import and export
 
@@ -1702,5 +1712,5 @@ ground truth for an exhausted run. Chains, searches of a check and optimisation 
 | `G.block needs a total candidate; ...` (also `G.clause`, `G.above`, `G.below`, `G.lift`) | Inside `on partial`, a clause about the candidate's own values would cut completions that are solutions. Use a core or `G.clause(X)`; see [Checks on partial candidates](#manual-checks-on-partial-candidates). |
 | `for: expected a list, got ...` | `for` walks lists only: write `X.atoms(p/n)` for the atoms of a model, `C.core` for a core. |
 | `flip: the atom is not in the list` | `E.flip(a)` and `E.without(a)` need an element of `E`. The atoms of a clause (`G.core(C)`, `G.block(M)`) are literals of the solver it refines, not assumptions of `C`; walk `C.core` or `E` itself. |
-| Seeds give the same statistics | The seed needs randomising options (`--rand-freq=0.05`, `--sign-def=rnd`). |
+| Seeds give the same statistics | Tick **Randomized search** (Loop tab, or **randomized** in the run bar), or give randomising solver options (`--rand-freq=0.05`, `--sign-def=rnd`). |
 | `-t` rejected | Threads need a cross-origin isolated page and the Threads box in the Loop tab. |

@@ -1,8 +1,9 @@
 // Engine worker: one clingo-wasm instance; one blocking run per message; output streamed in batches.
 // Control word (cross-origin isolated pages only): Int32Array on a SharedArrayBuffer,
-//   0 run | 1 pause | 2 stop | 3 step. The runtime polls it through io.read() -> stdin.
+//   0 run | 1 pause | 2 stop | 3 step (one read through, then back to 1; the page no longer sends
+//   it since its Step button went). The runtime polls it through io.read() -> stdin.
 // On a pause the first read answers 'pause' (the runtime then sends fresh statistics) and the
-// next read blocks; a step lets one read through and sets the word back to 1.
+// next read blocks.
 let control = null, module = null, out = [], err = [], lastFlush = 0, runId = null;
 
 function flush() {

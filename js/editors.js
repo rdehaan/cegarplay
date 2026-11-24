@@ -155,9 +155,20 @@ export class Editors {
     }
     for (const x of document.querySelectorAll('.frag-tool, #add-fragment-button, #insert-template-button, #edit-as-lua-button')) x.disabled = b;
     if (!b) document.getElementById('edit-as-lua-button').disabled = this.loopLanguage === 'lua';
+    this.syncMoveButtons();
     if (this.app && this.app.instancesTab) this.app.instancesTab.setReadOnly(b);
     if (this.app && this.app.variants) this.app.variants.setReadOnly(b);
     if (this.app && this.app.views) this.app.views.setReadOnly(b);
+  }
+
+  // ↑ on the first fragment of the Programs tab and ↓ on the last do nothing: disabled
+  syncMoveButtons() {
+    const blocks = [...this.container.querySelectorAll(':scope > .fragment')];
+    blocks.forEach((bl, i) => {
+      const up = bl.querySelector('button[title="Move up"]'), down = bl.querySelector('button[title="Move down"]');
+      if (up) up.disabled = this.readOnly || i === 0;
+      if (down) down.disabled = this.readOnly || i === blocks.length - 1;
+    });
   }
 
   // ---- annotations ---------------------------------------------------------

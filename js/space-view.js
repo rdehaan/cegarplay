@@ -174,7 +174,7 @@ export class SpaceView {
 
   runName(rec) {
     const hd = (rec && rec.header) || {};
-    return `the run on ${hd.instance ? `instance ${hd.instance}` : 'the project as written'}${hd.variant ? ` (variant ${hd.variant})` : ''}`;
+    return `the run on ${hd.instance ? `instance ${hd.instance}` : (this.app.project.instances || []).length ? 'no instance' : 'the project as written'}${hd.variant ? ` (variant ${hd.variant})` : ''}`;
   }
 
   // A new run, audit or replay, or another project: a map of an earlier run would no longer match

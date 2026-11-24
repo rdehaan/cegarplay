@@ -53,7 +53,7 @@ test('S8: a space audit shows its k; the witness instance can be saved', async (
   assert.match(await page.textContent('#audit-panel'), /Space n: unsound at n = 2/);
   await page.$eval('#audit-panel .save-witness', (b) => b.click());   // the panel is in the Output tab
   const inst = await page.evaluate(() => window.cegarplay.project.instances.map((x) => [x.id, x.constants]));
-  assert.deepEqual(inst, [['regression', { n: '2' }]]);
+  assert.deepEqual(inst, [['regression-n2', { n: '2' }]]);
   assert.deepEqual(errors, []);
   await context.close();
 });
@@ -120,7 +120,7 @@ test('UI: modes a loop does not support are marked with the reason; next steps; 
   await page.fill('#space-preview-k', '2');
   await page.click('#preview-space-button');
   await page.waitForSelector('[data-space-instance="6"]');
-  assert.match(await page.textContent('#space-status'), /6 of more instances at size = 2/);
+  assert.match(await page.textContent('#space-status'), /The first 6 instances at size = 2 \(there are more\)/);
   assert.match(await page.textContent('[data-space-instance="1"]'), /arg\(1\)\.\s*arg\(2\)\./);
   assert.deepEqual(errors, []);
   await context.close();
@@ -229,8 +229,8 @@ test('a seed sweep finds a run that loses the solution an unsound space audit na
   await settled(page);
   assert.match(await page.textContent('#result-line'), /unsound at n = 2/);
   await page.click('#audit-panel button[data-action="space-seed-sweep"]');
-  await page.waitForFunction(() => /the candidate space shows the refinement that removes it/.test(document.getElementById('run-message-text').textContent), null, { timeout: 120000 });
-  assert.match(await page.textContent('#run-message-text'), /Seed sweep: seed \d+ loses a solution \(2 of 3 found\)/);
+  await page.waitForFunction(() => /the candidate space \(Observatory\) shows the refinement that removes it/.test(document.getElementById('run-message-text').textContent), null, { timeout: 120000 });
+  assert.match(await page.textContent('#run-message-text'), /Seed sweep: seed \d+ loses 1 solution \(2 of 3 found\)/);
   assert.match(await page.textContent('#space-summary'), /Lost solutions: refinement \d+ is the first that removes a solution/);
   // the seed and the randomized search stay, so Run repeats that run
   const st = await page.evaluate(() => window.cegarplay.project.settings);

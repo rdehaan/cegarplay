@@ -100,7 +100,8 @@
 relevant(pick(X)) :- sum(X,Y).
 relevant(pick(Y)) :- sum(X,Y).
 relevant(pick(X+Y)) :- sum(X,Y).</div>
-<p>(The project has a fifth fragment, <b>view</b>, which draws the run as a picture. Lesson 5 uses it.)</p>
+<p>(The project has a fifth fragment, <b>view</b>, which draws the run as a picture. It is not part of the loop, so it is
+  not listed here: it is edited with its view in the Observatory. Lesson 5 uses it.)</p>
 <p><span class="web-only">Now open the <b>Loop</b> tab.</span><span class="book-only">The <b>Loop</b> tab holds the loop script.</span> The loop script first declares the <b>solvers</b> (clingo instances, each grounding
   a list of fragments) and a <b>link</b> between them:</p>
 <div class="example-code" data-mode="loop">solver A = shared + abstraction
@@ -163,7 +164,8 @@ search A:
   <li><b>Domain view</b>: the step in the problem's own terms. The numbers 1..8 stand in a circle; the
     candidate's numbers are filled, and the ringed ones are those of the counterexample, which cannot all stay.
     The view is the fragment <b>view</b>: ASP that turns a step into drawing marks (see
-    <a href="#manual-writing-views">Writing views</a>). For a project without one, <b>Suggest a view</b> writes a first draft.</li>
+    <a href="#manual-writing-views">Writing views</a>); <b>Edit this view</b> opens its rules beside the drawing, which follows as you
+    type. For a project without one, <b>New view</b> starts from a commented skeleton and <b>Suggest a view</b> writes a first draft.</li>
   <li><b>The cursor</b>: the bar at the top moves one step through the run, and every picture follows it, the
     trace in the Output tab too. With Recording set to every step it counts recorded steps, which include the
     solutions ("recorded step 16"); otherwise it counts the trace's steps ("traced step 13"). The trace names
@@ -252,7 +254,7 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
 <ul>
   <li>The <b>Instance</b> picker in the run bar chooses the instance of the next run; the run history names it.</li>
   <li>The <b>Instances</b> tab lists them with their tags, the expected solution count and the count of the last run,
-    and edits their facts and constants. <b>Run all</b> runs each one and marks a count other than the expected
+    and edits their facts and constants. <b>Run all instances</b> runs each one (with the run bar's variant) and marks a count other than the expected
     one with ✗. (The instance <code>n6</code> is tagged <code>slow</code>.)</li>
   <li><b>Import file</b> turns a file into an instance: facts, DIMACS graphs, QDIMACS formulas, argumentation
     frameworks, PrefLib elections.</li>
@@ -564,8 +566,9 @@ if Y: reject M with GXC.core(C)</div>
   <li>List the atoms the check needs in <b>glue</b>, wrapped as <code>glue(T)</code>.</li>
   <li>Write the <b>check</b>: rules that have an answer set exactly when the candidate is wrong. Add
     <code>relevant(T)</code> rules for the interface atoms each counterexample depends on.</li>
-  <li>Audit a small instance (lesson 6). Unsound? Look at the witness and at the candidate space.</li>
-  <li>Add a few instances with their expected counts and check them with <b>Run all</b>; let <b>Fuzz</b> look for an instance
+  <li>Audit a small instance (lesson 6). Unsound? Look at the witness and at the candidate space<span class="web-only">, or press <b>Find a run that loses it</b> for a run
+    that shows the bad refinement</span>.</li>
+  <li>Add a few instances with their expected counts and check them with <b>Run all instances</b>; let <b>Fuzz</b> look for an instance
     that breaks the loop; write a suite to see how the run time grows (lessons 7 and 8).</li>
   <li>Let <b>Suggest a view</b> (Observatory) write a first picture of your problem, and adapt it.</li>
 </ol>

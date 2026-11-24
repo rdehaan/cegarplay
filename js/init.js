@@ -194,13 +194,14 @@ app.sweepAndShow = async ({ instance, target }) => {
   app.project.settings = { ...app.project.settings, seed: r.seed, randomize: true };
   app.loopTab.load(app.project);
   app.dirty();
-  app.control.runMessage(`Seed sweep: seed ${r.seed} loses a solution (${r.solutions} of ${r.target} found). ` +
-    `The Loop tab's seed is now ${r.seed}, with a randomized search, so Run repeats this run; the candidate space shows its first bad refinement.`);
+  const lost = r.target - r.solutions;
+  const what = `Seed sweep: seed ${r.seed} loses ${lost} solution${lost === 1 ? '' : 's'} (${r.solutions} of ${r.target} found)`;
+  app.control.runMessage(`${what}. The run bar's seed is now ${r.seed}, randomized, so Run repeats this run.`);
   if ($('tab11').hidden) showTabs('advanced', true, { store: false });
   showTab(11);
   await app.space.recordAndRun();
-  app.control.runMessage(`Seed sweep: seed ${r.seed} loses a solution (${r.solutions} of ${r.target} found); the candidate space shows the refinement that removes it. ` +
-    `The Loop tab's seed is now ${r.seed}, with a randomized search: Run repeats this run.`);
+  app.control.runMessage(`${what}; the candidate space (Observatory) shows the refinement that removes it. The run bar's seed is now ${r.seed}, randomized: Run repeats this run.`);
+  requestAnimationFrame(() => { const c = $('candidate-space'); if (c) c.scrollIntoView({ block: 'start' }); });
   return r;
 };
 app.variants = new Variants(app);
@@ -649,7 +650,12 @@ function snapNormOf(id) {
   return snapNorm.get(id);
 }
 function currentNorm() { try { return Project.save(structuredClone(app.collect()), { runs: false }); } catch { return null; } }
-const when = (iso) => { const d = new Date(iso); return isNaN(d) ? String(iso) : d.toLocaleString(); }
+// today: the time only; another day: date and time
+const when = (iso) => {
+  const d = new Date(iso);
+  if (isNaN(d)) return String(iso);
+  return d.toDateString() === new Date().toDateString() ? `today ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+};
 function showUndo() {
   const u = undoSnapshot;
   $('snapshot-undo').hidden = !u;
@@ -749,10 +755,18 @@ function restoreSnapshot(x) {
   app.setProject(p);
   urlForgetProject();
   renderSnapshots();
-  snapStatus(`Restored the snapshot ${x.name}: it is now the project you are editing. Undo brings back the project as it was before.`);
+  snapStatus(`Restored the snapshot ${x.name}: it is now the project you are editing.`);
 }
 $('snapshot-save-button').addEventListener('click', () => {
-  const name = $('snapshot-name').value.trim() || new Date().toLocaleString();
+  // without a name: "Snapshot 3" (the time is shown next to it anyway)
+  let name = $('snapshot-name').value.trim();
+  if (!name) {
+    let mine = [];
+    try { mine = snapshots ? snapshots.list(app.project.title) : []; } catch { mine = []; }
+    let n = mine.length + 1;
+    while (mine.some((x) => x.name === `Snapshot ${n}`)) n++;
+    name = `Snapshot ${n}`;
+  }
   const r = takeSnapshot(name);
   if (!r || !r.kept) { snapStatus('Not kept: browser storage is full or unavailable; download the project to keep it.', true); return; }
   $('snapshot-name').value = '';

@@ -150,7 +150,8 @@ export renderer).
 
 Export (`views.js frameSVG`, `svgFile`; pure, no DOM, fixed light palette, coordinates rounded to
 0.1): "Export view (SVG)", "Storyboard (SVG)" (the frames of chosen steps side by side, 1,100 units
-apart), "Export map (PNG)" (`canvas.toBlob`), "Data as table" (the frame's marks per element; the
+apart), "Export candidate map (PNG)" (`canvas.toBlob`; this and "Export view (SVG)" are disabled,
+with the reason in their tooltip, until there is a map or a view: `ObservatoryBar.syncExports`), "Data as table" (the frame's marks per element; the
 fates per refinement). `test/fixtures/view-fixture.svg` is the export of the V3 fixture frame.
 
 URL: `?replay=examples/replays/<id>.cprec&step=N&view=<name>` opens the recording on step N (the

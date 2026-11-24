@@ -122,8 +122,6 @@ export class Control {
     this.abortButton.disabled = !active;
     this.pauseButton.disabled = !active || !!this.batch;
     this.pauseButton.innerHTML = state === 'paused' ? '&#x23F5; Resume' : '&#x23F8; Pause';
-    // Step: from idle it starts a run that pauses after its first candidate; while running it
-    // pauses after the next candidate; while paused it advances by one candidate.
     this.stopButton.disabled = !active;
     // Clear: something of an earlier run is on screen and no run is active
     this.clearButton.disabled = active || state === 'validating' || (state === 'idle' && !this.app.recording);
@@ -325,6 +323,8 @@ export class Control {
       engine: app.engineVersion, solvers: compiled ? compiled.solvers : [], noHistory,
       fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])),
       programHash: programHash(project),
+      // the facts the run used (a recipe instance's are generated): to tell later whether it still holds
+      instanceFacts: ((project.fragments || []).find((f) => f.name === 'instance') || {}).text ?? null,
     };
     return new Promise((resolve) => {
       app.engine.start(assembled.program, '--outf=3', {
@@ -332,7 +332,6 @@ export class Control {
         onLine: (text, isErr) => { app.internals && app.internals.raw(text); app.output.line(text, isErr); },
         onDone: (d) => resolve(this.onDone(d, info)),
       }, { seconds: mode === 'bounded' ? budget : Number(project.settings.seconds) || 0 });
-      // started by Step: the first poll lets one candidate through, then the run waits
     });
   }
 
@@ -388,7 +387,10 @@ export class Control {
     } else if (this.D) {
       const D = this.D;
       state = D.outcome === 'error' ? 'error' : 'finished';
-      app.output.result(this.describe(D), state === 'error' ? 'error' : '');
+      const lost = this.mode === 'run' && D.outcome === 'finished' && D.exhausted ? this.knownCount(info) : null;
+      if (lost && app.stats.S && app.stats.S.solutions < lost.n) {
+        app.output.result(`${this.describe(D)} But the instance has ${fmt(lost.n)} (${lost.from}): this run lost ${fmt(lost.n - app.stats.S.solutions)}.`, 'error');
+      } else app.output.result(this.describe(D), state === 'error' ? 'error' : '');
     } else {
       state = 'error';
       app.output.result('clingo stopped unexpectedly', 'error');
@@ -412,6 +414,18 @@ export class Control {
     return { state, D: this.D, E: this.E, audit: this.audit, S: app.stats.S, info };
   }
 
+  // The true number of solutions of the instance a run used, when known: its expected count, or
+  // the count of the latest enumeration audit of the same program. { n, from } or null.
+  knownCount(info) {
+    const app = this.app;
+    const x = info && info.instance ? (app.project.instances || []).find((i) => i.id === info.instance) : null;
+    if (x && x.expected && Number.isInteger(x.expected.solutions) && !info.variant) return { n: x.expected.solutions, from: 'its expected count' };
+    const rows = (app.stats.history || []).filter((r) => r.mode === 'audit' && r.audit && !r.audit.mode && r.audit.verdict !== 'limit' && Number.isInteger(r.solutions) &&
+      r.fragmentsHash === info.fragmentsHash && (r.instance || '') === (info.instance || ''));
+    const r = rows.at(-1);
+    return r ? { n: r.solutions, from: 'the audit of the same program' } : null;
+  }
+
   describe(D) {
     const S = this.app.stats.S;
     const A = this.audit;
@@ -429,7 +443,8 @@ export class Control {
     const n = S ? fmt(S.solutions) : '?';
     const sol = S && S.solutions === 1 ? 'solution' : 'solutions';
     switch (D.outcome) {
-      case 'finished': return `Finished: ${n} ${sol}${D.exhausted ? ', all found (search exhausted)' : ''}.`;
+      // "exhausted": the loop finds no more; that they are all the solutions holds only for a sound loop
+      case 'finished': return `Finished: ${n} ${sol}${D.exhausted ? '; the search is exhausted (the loop finds no more)' : ''}.`;
       case 'solutions': return `Finished: ${n} ${sol} (the number asked for).`;
       case 'limit': return `Finished at a limit: ${D.detail}. ${n} ${sol} so far.`;
       case 'stopped': return `Stopped: ${D.detail || 'stop'}. ${n} ${sol} so far.`;
@@ -635,7 +650,8 @@ export class Control {
     try {
       for (let seed = 1; seed <= 5; seed++) {
         this.batchProgress(`seed ${seed} of 5`);
-        const r = await this.run({ seed });
+        // a randomized search: without it every seed searches the same way
+        const r = await this.run({ seed, randomize: true });
         if (b.cancelled || !r || r.state === 'aborted' || (r.problems && r.problems.length)) break;
       }
     } finally { this.endBatch(b); }

@@ -1921,3 +1921,36 @@ number count". Found and fixed:
 - Fuzz: a card for every outcome, with what Fuzz does and what it tried (the constants grid is
   named as such: it does not use the instances in the table); **Find a run that loses it** when
   the loop's own run does not.
+
+## Consolidation (2026-11-24, on request)
+
+Two read-only reviews (documentation against the code; a walk through the interface with
+screenshots), then the fixes:
+
+- Docs: manual (run bar, recipe instances, First value of the bound, Seed/Randomized search rows,
+  Audit column naming, fragment= for view fragments, Pause/Stop without Step, Ctrl+S, candidate
+  space summary, result line), tutorial, README, guide (howto-instances, howto-unsound,
+  howto-campaign, 04-soundness, chapters), spec-app, spec-instances, spec-soundness, spec-views,
+  chat-package START-HERE (a space parameter named like a constant sets it), in-page texts; stale
+  developer comments (Step, compare results, recipes).
+- Interface: an exhausted run that finds fewer solutions than a known count (expected, or an
+  enumeration audit of the same program) says how many it lost (`Control.knownCount`); "all found"
+  is gone. One name each: (no variant) (run bar, Compare, Campaign), (no instance). The Shown line
+  and run history name the bound. The Instances context line says what Fuzz tries. Run all
+  instances: disabled with an empty table; names the run the tabs show; stale marks also for recipe
+  instances, and the old summary is dimmed. Seed sweep: "loses N solutions", scrolls to the map,
+  witness instances named `regression-n2`. One label "See it in the candidate space". Result cards
+  without the separator rule and with full-contrast text. Disabled buttons keep their size. Fragment
+  ↑/↓ disabled at the ends. Variant examples from the project's fragments; a pending swap keeps its
+  warning after a rename. Exports, storyboard and data table disabled until there is something.
+  "Record calls" in the Loop tab too. Unnamed snapshots are "Snapshot N"; times "today 16:17".
+  Plurals. The space preview says "The first 6 instances … (there are more)". Add as instance says
+  "Added ✓". The CSV column map is hidden for other formats. "(picked in the run bar)" and "Editing
+  instance X". Campaign: "Parallel runs", best cell at the shown precision. Rerun with 5 seeds uses
+  a randomized search. An empty space text says it is the constants family (the Ace placeholder
+  option, unsupported in this build, warned on every load).
+- Not done (larger; for the user to decide): one cursor slider instead of the view's own; inline
+  adds instead of prompt() dialogs; Ace editors for variant loop scripts; the campaign suite as a
+  form instead of JSON; tab bar wrapping at narrow widths; dark-mode colours of the candidate map;
+  placeholders for empty Observatory regions; the run history's "Loop [instance]" column.
+- Full suite: 1135 pass, 0 fail, 9 skipped; book check and lint pass; examples unchanged.
