@@ -1182,3 +1182,10 @@ summary:focus-visible, a:focus-visible {
 .view-read { white-space: nowrap; }
 .view-fragment h3 { font-size: 14px; }
 .view-fragment .fragment-description { display: none; }
+/* A thin line above each part of a tab (its h3), so the parts are told apart at a glance. Not in
+   the Tutorial and Manual (documents), nor for a heading nested inside a part. */
+main > section:not(#section-tutorial):not(#section-manual) h3:not(summary h3, .view-fragment h3, #history-compare-box h3) {
+  border-top: 1px solid var(--border);
+  margin-top: 18px;
+  padding-top: 14px;
+}

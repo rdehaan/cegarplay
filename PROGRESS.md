@@ -1829,3 +1829,6 @@ number count". Found and fixed:
 - New tests: `test/browser/observatory.test.mjs` (view editing, fragment height, `?fragment=view`).
   All 121 browser tests pass. Node tests that need `reference/` (not cloned in this container) fail
   the same way without the change.
+- Thin separators: a 1 px line (`--border`) above each part heading (`h3`) of a tab, except in the
+  Tutorial and Manual, a `summary` heading, a view's fragment heading and the history comparison
+  (`css/main.css`, end).
