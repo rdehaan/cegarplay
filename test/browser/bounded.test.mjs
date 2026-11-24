@@ -162,3 +162,27 @@ test('UI: the audit mode, space and bound are kept with the project (settings.au
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('UI: a space\'s First k: the audit starts there, the bar and the verdict say so', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=9');
+  assert.equal(await page.$eval('#space-from', (e) => e.value), '1');
+  await page.fill('#space-from', '3');
+  await page.dispatchEvent('#space-from', 'change');
+  assert.equal(await page.evaluate(() => window.cegarplay.project.spaces[0].from), 3);
+  await page.selectOption('#audit-mode', 'space');
+  assert.equal(await page.textContent('#space-bound-label'), 'k = 3 up to');
+  await page.fill('#space-bound', '5');
+  await page.click('#audit-button');
+  await settled(page);
+  const text = await page.textContent('#audit-panel');
+  assert.match(text, /Space n: sound up to k = 5/);
+  assert.match(text, /every instance of the space for k from 3 up to 5 was checked/);
+  assert.match(text, /Per k: 3-5 sound/);
+  // back to 1: the field is dropped again
+  await page.fill('#space-from', '1');
+  await page.dispatchEvent('#space-from', 'change');
+  assert.equal(await page.evaluate(() => 'from' in window.cegarplay.project.spaces[0]), false);
+  assert.equal(await page.textContent('#space-bound-label'), 'up to k =');
+  assert.deepEqual(errors, []);
+  await context.close();
+});

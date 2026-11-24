@@ -97,6 +97,7 @@ export class Output {
     const ctx = this.auditContext ? this.auditContext() : {};
     if (a.mode === 'space') {
       if (a.verdict === 'unsound') act('save-and-audit', 'Save it and audit it', 'Keep the instance as a regression instance and audit it by enumeration: the full list of unsound refinements');
+      if (a.verdict === 'unsound' && ctx.observatory) act('space-candidate-space', 'Run on it in the candidate space', 'Keep the instance as a regression instance, run the loop on it with every step recorded, and draw every candidate (Observatory). The map shows the refinements this run makes; its search order may avoid the unsound one, which the witness above shows.');
       if (a.verdict === 'sound') act('larger-bound', 'Try a larger bound', 'The same space with k two higher');
     } else {
       if (a.verdict === 'unsound' && ctx.observatory) act('candidate-space', 'See it in the candidate space', 'Run with every step recorded and draw every candidate, with the lost solutions marked (Observatory)');
@@ -266,9 +267,14 @@ function symbolicDetail(a) {
   const link = a.link ? `Link ${a.link}${(a.kinds || []).length ? ` (${a.kinds.join(' and ')})` : ''}: ` : '';
   if (a.mode === 'space') {
     const n = (a.perK || []).length;
-    const what = a.verdict === 'sound' ? `every instance of the space for ${n === 1 ? `k = ${a.k}` : `k up to ${a.k}`} was checked; no refinement removes a solution on any of them. Larger instances are not covered.`
-      : a.verdict === 'unsound' ? `the smaller values of k are sound; at k = ${a.k} a clause removes the lost solution below, on the instance shown.`
-        : `no verdict at k = ${a.k}${a.reason ? ` (${a.reason})` : ''}; the smaller values of k are sound.`;
+    // the first k of the space (its "from"): a space may start above k = 1
+    const k0 = n ? a.perK[0].k : a.k;
+    const range = n === 1 ? `k = ${a.k}` : k0 > 1 ? `k from ${k0} up to ${a.k}` : `k up to ${a.k}`;
+    const below = k0 > 1 ? `the values of k from ${k0} on below ${a.k} are sound (the space starts at k = ${k0})` : 'the smaller values of k are sound';
+    const what = a.verdict === 'sound' ? `every instance of the space for ${range} was checked; no refinement removes a solution on any of them. Larger instances are not covered.`
+      : a.verdict === 'unsound' ? (a.k === k0 && k0 > 1 ? `at k = ${a.k}, the first k of the space, a clause removes the lost solution below, on the instance shown.`
+        : `${below}; at k = ${a.k} a clause removes the lost solution below, on the instance shown.`)
+        : `no verdict at k = ${a.k}${a.reason ? ` (${a.reason})` : ''}${a.k === k0 ? '' : `; ${below}`}.`;
     return `${link}${what} Last step: ${steps}.`;
   }
   const what = a.verdict === 'sound' ? 'no candidate, counterexample and solution exist such that the clause removes the solution.'

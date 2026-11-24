@@ -62,3 +62,50 @@ test('candidate space: an audit: false instance gets no empty map; the blame mat
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+const settled = (page) => page.waitForFunction(() => ['finished', 'error'].includes(document.getElementById('run-status').dataset.state) && !window.cegarplay.control.batch, null, { timeout: 120000 });
+
+test('a space audit to the candidate space: which run the map shows, the refinement at the cursor, the trace; a new run clears it', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant');
+  assert.match(await page.textContent('#shown-line'), /^Shown: no results yet/);
+  await page.selectOption('#audit-mode', 'space');
+  await page.click('#audit-button');
+  await settled(page);
+  await page.waitForFunction(() => /^Shown: the space audit of space n, started \S+ · unsound at k = 2$/.test(document.getElementById('shown-line').textContent));
+  // after an audit alone the map explains why it has nothing to show
+  await page.evaluate(() => window.cegarplay.space.compute());
+  assert.match(await page.textContent('#space-message'), /The last action was an audit, which records no steps of the loop/);
+  await page.click('label[for="tab5"]');
+  await page.click('#audit-panel button[data-action="space-candidate-space"]');
+  await page.waitForFunction(() => Number(document.getElementById('space-map').dataset.cells) > 0, null, { timeout: 120000 });
+  assert.equal(await page.$eval('#instance-select', (s) => s.value), 'regression');
+  assert.match(await page.textContent('#space-source'), /^The map of the run on instance regression: \d+ recorded steps\./);
+  await page.waitForFunction(() => /candidate space computed for it/.test(document.getElementById('shown-line').textContent));
+  // the refinement at the cursor: its step, candidate, counterexample and clause
+  const detail = await page.textContent('#space-refinement');
+  assert.match(detail, /^Refinement \d+ of \d+: step \d+ \((reject|add|expand), solver A\)/);
+  assert.match(detail, /Candidate\{/);
+  assert.match(detail, /Counterexample\S/);
+  assert.match(detail, /Clauseat least one of: /);
+  assert.equal(await page.getAttribute('#space-refinement', 'aria-live'), 'polite');
+  // the first refinement: its own box, and Show in the trace lands on the paired trace step
+  await page.fill('#space-step', '1');
+  await page.dispatchEvent('#space-step', 'input');
+  await page.waitForFunction(() => /^Refinement 1 of/.test(document.getElementById('space-refinement').textContent));
+  await page.click('#space-show-trace');
+  assert.equal(await page.$eval('#tab5', (t) => t.checked), true);
+  assert.match(await page.textContent('#trace-label'), /^step 1 of /);
+  // another run: the map is of a run no longer shown, so it is cleared with a note
+  await page.click('#run-button');
+  await settled(page);
+  assert.match(await page.textContent('#space-message'), /The map of the run on instance regression was cleared: a newer run, audit or replay replaced it/);
+  assert.equal(await page.$eval('#space-map', (c) => c.dataset.cells ?? null), null);
+  assert.equal(await page.isHidden('#space-refinement'), true);
+  assert.doesNotMatch(await page.textContent('#shown-line'), /candidate space/);
+  // an edit: the Shown line warns that the results are of the earlier version
+  await B.setEditor(page, 'editor-check', (await B.getEditor(page, 'editor-check')) + '% an edit\n');
+  await page.waitForFunction(() => document.getElementById('shown-line').dataset.state === 'stale');
+  assert.match(await page.textContent('#shown-line'), /the project was edited since: these results are of the earlier version/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

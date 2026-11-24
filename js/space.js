@@ -173,3 +173,26 @@ export function sampleSpace(n, count, seed = 1) {
   sp.hex = []; sp.sample = true;
   return sp;
 }
+
+// What a refinement was, for the candidate space's detail box: its R step (k, s = solver, c =
+// candidate as hex, q = clause as signed atom indices, 1-based into atoms) and, when the trace
+// kept it, its paired T event (the counterexample). The clause removes every candidate that
+// falsifies all its literals: "at least one of" the literals must hold.
+export function refinementDetail(step, atoms, t = null) {
+  const name = (j) => atoms[j - 1] ?? `#${j}`;
+  let candidate = null;
+  if (step.c !== undefined && step.c !== null) {
+    const b = hexBits(step.c, atoms.length);
+    candidate = [];
+    for (let j = 1; j <= atoms.length; j++) if (b[j]) candidate.push(name(j));
+  }
+  const clause = (step.q || []).map((x) => (x > 0 ? name(x) : `not ${name(-x)}`));
+  return {
+    // the R step's s is the solver's index; the trace has its name
+    step: step.i, kind: step.k, solver: (t && t.solver) || (typeof step.s === 'string' ? step.s : ''),
+    candidate: candidate ?? (t && t.candidate ? String(t.candidate).split(' ').filter(Boolean) : []),
+    clause,
+    counterexample: t ? (t.counterexample ?? null) : null,
+    traced: !!t,
+  };
+}

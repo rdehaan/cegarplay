@@ -379,7 +379,7 @@ test('V4: the candidate space of gc-shape1: 3,373 cells, alive 101, a cursor mov
   await page.waitForFunction(() => /candidates/.test(document.getElementById('space-summary').textContent), null, { timeout: 60000 });
   const sum = await page.textContent('#space-summary');
   assert.match(sum, /3,373 candidates, 101 solutions, 1,320 refinements; alive at the end 101/);
-  assert.match(sum, /No refinement removes a solution/);
+  assert.match(sum, /No refinement of this run removes a solution/);
   const ms = await page.evaluate(() => {
     const v = window.cegarplay.space, t = [];
     for (const r of [10, 500, 1000, 1320, 1]) { v.slider.value = String(r); v.draw(); t.push(v.lastDrawMs); }

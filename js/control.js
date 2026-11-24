@@ -131,6 +131,8 @@ export class Control {
     const dl = document.getElementById('download-recording-button');
     if (dl) dl.disabled = active || state === 'validating' || !this.app.recording;
     document.body.dataset.runState = state;
+    // after the run history's row is written (it follows the state)
+    if (this.app.updateShown) setTimeout(() => this.app.updateShown(), 0);
   }
 
   // Remove the results of the last run (output, statistics, trace, annotations, recording) and
@@ -146,6 +148,7 @@ export class Control {
     app.editors.clearAnnotations();
     if (keepRecording) { this.setState('idle'); return true; }
     app.recording = null;
+    if (app.space) app.space.recordingChanged();
     this.assembled = null;
     this.audit = null;
     delete document.body.dataset.lastMode;
@@ -305,6 +308,12 @@ export class Control {
     this.audit = null;
     app.recording = new Recording({ title: project.title || '', instance: instanceId, variant: project.variant || null, mode, engine: app.engineVersion || '',
       example: app.exampleId || null, fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])) });
+    // the project as it was at the start (in memory only, not in the recording's header): the
+    // run bar's "Shown" line says when the project was edited since
+    app.recording.sourceHash = app.sourceHash ? app.sourceHash() : null;
+    app.recording.started = new Date().toTimeString().slice(0, 8);
+    // the candidate space shows one recorded run: a map of the previous one no longer matches
+    if (app.space) app.space.recordingChanged();
     this.D = null;
     this.E = null;
     this.marks = [];
@@ -453,6 +462,7 @@ export class Control {
     app.stats.done(this.D, null);
     if (app.anatomy) app.anatomy.done();
     app.recording = rec;
+    if (app.space) app.space.recordingChanged();
     if (app.views) app.views.updateSteps();
     if (app.observatory) app.observatory.update();
     if (app.views) app.views.show();

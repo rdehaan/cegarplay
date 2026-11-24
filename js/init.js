@@ -2,8 +2,9 @@
 import { Engine } from './engine.js';
 import * as Project from './project.js';
 import { Editors } from './editors.js';
-import { Output } from './output.js';
-import { Stats } from './stats.js';
+import { Output, fmt as fmtNum } from './output.js';
+import { Stats, hashText } from './stats.js';
+import { verdictText } from './compare.js';
 import { Control } from './control.js';
 import { LoopTab } from './loop-tab.js';
 import { Internals } from './internals.js';
@@ -158,6 +159,13 @@ app.output.onAuditAction = async (name, a) => {
     return;
   }
   if (name === 'candidate-space') { showTab(11); return app.space.recordAndRun(); }
+  if (name === 'space-candidate-space') {
+    // the map is of one run: on the instance the space audit broke on
+    const id = app.instancesTab.saveWitness(a);
+    app.instancesTab.pick(id);
+    showTab(11);
+    return app.space.recordAndRun();
+  }
 };
 app.variants = new Variants(app);
 app.cursor = new Cursor();
@@ -212,6 +220,10 @@ app.setProject = (p, { save = true } = {}) => {
   markLoadedExample();
   // the results of an earlier run belong to the earlier project
   app.control.clearResults({ keepRecording: true });
+  // the candidate space of the earlier project's run no longer applies
+  if (app.space) app.space.forget('another project was loaded');
+  // the recording stays for the Observatory, but it is of the earlier project
+  if (app.recording) app.recording.otherProject = true;
   app.editors.build(p);
   app.loopTab.load(p);
   app.instancesTab.load();
@@ -267,8 +279,53 @@ app.dirty = (edit = true) => {
   }
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 800);
+  if (shownTimer) clearTimeout(shownTimer);
+  shownTimer = setTimeout(() => { shownTimer = null; app.updateShown(); }, 300);
 };
+let shownTimer = null;
 app.projectChanged = () => app.dirty();
+
+// ---- "Shown:" in the run bar: what the result tabs hold now --------------------------------
+// One line: the run, audit or replay whose results the Output, Statistics and Observatory tabs
+// show; its instance and variant; how it ended; how much of it was recorded; whether the
+// candidate space is of it; and whether the project was edited since (the results are then of the
+// earlier version).
+app.sourceHash = () => {
+  const p = app.project;
+  if (!p) return null;
+  try { app.collect(); } catch { /* editors not built yet */ }
+  return hashText(JSON.stringify([p.fragments.map((f) => [f.name, f.text]), p.loop && p.loop.text, p.settings && p.settings.constants, p.variants || []]));
+};
+app.updateShown = () => {
+  const el = $('shown-line');
+  if (!el) return;
+  const rec = app.recording, c = app.control;
+  if (!rec) { el.textContent = 'Shown: no results yet. Run or audit; the Output, Statistics and Observatory tabs then show that run.'; el.dataset.state = 'empty'; return; }
+  const hd = rec.header || {};
+  const state = c ? c.state : '';
+  const space = hd.mode === 'bounded' && /^space-/.test(hd.instance || '') ? hd.instance.slice(6) : null;
+  const what = state === 'replayed' ? 'a replayed recording' : space ? `the space audit of space ${space}`
+    : hd.mode === 'bounded' ? 'the symbolic audit' : hd.mode === 'audit' ? 'the audit by enumeration' : 'the run';
+  const parts = [what + (space ? '' : ` on ${hd.instance ? `instance ${hd.instance}` : 'the project as written'}`) + (hd.variant ? ` (variant ${hd.variant})` : '') +
+    (rec.started ? `, started ${rec.started}` : '')];
+  const active = state === 'running' || state === 'paused' || state === 'validating';
+  const row = (app.stats && app.stats.history || []).at(-1);
+  if (active) parts.push(state === 'paused' ? 'paused' : 'running');
+  else if (row && (row.fragmentsHash === hd.fragmentsHash || space)) {
+    if (row.audit) parts.push(verdictText(row.audit));
+    else parts.push(`${row.outcome}, ${fmtNum(row.solutions)} solution${row.solutions === 1 ? '' : 's'}${row.exhausted ? ' (all)' : ''}`);
+  }
+  if (hd.mode === 'run' || state === 'replayed') {
+    parts.push(rec.steps.length ? `every step recorded (${fmtNum(rec.steps.length)})` : rec.traces.length ? (rec.traces.length >= Number(app.project.settings.trace ?? 200) ? `trace of the first ${fmtNum(rec.traces.length)} steps only` : `trace of all ${fmtNum(rec.traces.length)} steps`) : 'no steps recorded');
+    if (app.space && app.space.rec === rec && app.space.F) parts.push('candidate space computed for it');
+  }
+  let edited = false;
+  if (!active && rec.sourceHash && !rec.otherProject) { const h = app.sourceHash(); edited = !!h && h !== rec.sourceHash; }
+  if (rec.otherProject) { parts.push('of a project loaded before this one'); edited = true; }
+  else if (edited) parts.push('the project was edited since: these results are of the earlier version');
+  el.textContent = 'Shown: ' + parts.join(' · ');
+  el.dataset.state = edited ? 'stale' : active ? 'active' : 'current';
+};
 for (const ev of ['input', 'change']) {
   document.querySelector('main').addEventListener(ev, (e) => {
     if (e.target.closest && e.target.closest('#section-programs, #section-loop, .run-bar')) app.dirty();

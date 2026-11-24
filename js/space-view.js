@@ -1,8 +1,8 @@
 // The candidate space region of the Observatory (docs/spec-views.md section 5): the map of
 // every candidate coloured by its fate at the cursor's refinement, the alive curve and the blame
 // matrix, from the audit's vectors and the last run's recorded steps.
-import { Space, fates, mapOrder, blameMatrix, redundancy } from './space.js';
-import { Recording } from './recording.js';
+import { Space, fates, mapOrder, blameMatrix, redundancy, refinementDetail } from './space.js';
+import { Recording, pairSteps } from './recording.js';
 import { auditPlan, auditBody, assemble, modulesFor, validate } from './driver.js';
 import { derive, selectedInstance } from './project.js';
 import { fmt } from './output.js';
@@ -48,6 +48,10 @@ export class SpaceView {
     this.curve = h('div', { id: 'space-curve' });
     this.matrix = h('canvas', { id: 'space-blame', class: 'space-map', 'aria-label': 'Blame matrix: refinements by atoms' });
     this.summary = h('p', { id: 'space-summary' });
+    // which run the map shows, and the refinement at the cursor (its step, candidate,
+    // counterexample and clause): the map is of one recorded run, and says so
+    this.source = h('p', { id: 'space-source', class: 'note' });
+    this.detail = h('div', { id: 'space-refinement', class: 'space-refinement', 'aria-live': 'polite', hidden: true });
     this.root.append(
       h('h3', {}, 'Candidate space'),
       h('p', { class: 'note' }, 'Every candidate of the unrefined abstraction (from the audit), coloured by what the run\'s refinements did to it up to the chosen refinement. ',
@@ -56,7 +60,7 @@ export class SpaceView {
         h('button', { class: 'control-button small-button', id: 'space-compare', onclick: () => this.compareFile.click(), title: 'A second recording of the same project and instance' }, 'Compare with a recording'),
         this.compareFile = h('input', { type: 'file', id: 'space-compare-file', hidden: true, accept: '.cprec,.jsonl,.txt', onchange: () => this.openCompare() }),
         this.order, h('label', {}, 'Refinement ', this.slider), this.label),
-      this.msg, this.summary, this.canvas, this.legend, this.tip, this.curve, h('h4', {}, 'Blame matrix'),
+      this.msg, this.source, this.summary, this.canvas, this.legend, this.tip, this.detail, this.curve, h('h4', {}, 'Blame matrix'),
       h('p', { class: 'note', id: 'space-blame-note' }, 'One row per refinement, one column per interface atom that some refinement\'s clause contains: a cell is ' +
         'coloured when that clause names the atom (one colour for a positive literal, another for a negative one). Atoms blamed by the same refinements stand side by side, ' +
         'so a block shows a group of atoms the refinements keep relying on together.'),
@@ -81,7 +85,12 @@ export class SpaceView {
     const app = this.app;
     const rec = app.recording;
     if (!rec || !rec.I || !rec.steps.length || (rec.header && rec.header.mode === 'audit')) {
-      this.msg.textContent = 'The map needs a run recorded with every step. ';
+      const m = rec && rec.header && rec.header.mode;
+      this.msg.textContent = (m === 'audit' || m === 'bounded'
+        ? 'The last action was an audit, which records no steps of the loop. The map shows one run of the loop, recorded with every step: '
+        : 'The map needs a run recorded with every step. ') + (m === 'bounded'
+        ? 'for the instance a space audit broke on, use its "See it in the candidate space" (or Save as regression instance, then pick it in the run bar). '
+        : '');
       this.msg.append(h('button', { class: 'control-button small-button', id: 'space-record-run', onclick: () => this.recordAndRun() }, 'Record every step, run, compute'));
       return;
     }
@@ -131,6 +140,9 @@ export class SpaceView {
   // the recorded steps.
   noMap(text, rec = this.app.recording, linkName) {
     this.F = null; this.space = null; this.B = null;
+    this.rec = rec;
+    this.source.textContent = '';
+    this.detail.hidden = true; this.detail.textContent = ''; this.detailKey = null;
     this.summary.textContent = ''; this.label.textContent = ''; this.tip.textContent = '';
     this.legend.textContent = ''; delete this.legend.dataset.keys;
     this.curve.textContent = '';
@@ -138,15 +150,54 @@ export class SpaceView {
     delete this.canvas.dataset.cells;
     this.slider.max = '0'; this.slider.value = '0';
     this.msg.textContent = text;
+    if (this.app.updateShown) setTimeout(() => this.app.updateShown(), 0);
     if (rec && rec.I && rec.I.links.length) {
       const li = Math.max(0, rec.I.links.findIndex((L) => L.link === linkName));
       this.atoms = rec.I.links[li].atoms;
       this.steps = rec.steps.filter((x) => x.l === li + 1 || x.k === 's');
       this.drawMatrix();
+    } else {
+      this.atoms = []; this.steps = [];
+      const cv = this.matrix;
+      cv.width = 0; cv.height = 0; cv.style.width = '0px'; cv.style.height = '0px';
+      cv.dataset.cols = '0';
     }
   }
 
+  // "The map of the run on instance n4 (variant v1): 2,326 recorded steps."
+  runText(rec) {
+    const steps = rec && rec.steps ? rec.steps.length : 0;
+    return `The map of ${this.runName(rec)}: ${fmt(steps)} recorded steps. ` +
+      'It is cleared when another run, an audit or a replay replaces that run.';
+  }
+
+  runName(rec) {
+    const hd = (rec && rec.header) || {};
+    return `the run on ${hd.instance ? `instance ${hd.instance}` : 'the project as written'}${hd.variant ? ` (variant ${hd.variant})` : ''}`;
+  }
+
+  // A new run, audit or replay, or another project: a map of an earlier run would no longer match
+  // the Output tab, the cursor or the trace. Clear it, and say what it was.
+  // a new project: the map, even of the recording kept for the Observatory, is of the old one
+  forget(why) {
+    if (!this.rec) return;
+    const was = this.runName(this.rec);
+    this.noMap(`The map of ${was} was cleared: ${why}.`, null);
+    this.rec = null;
+  }
+
+  recordingChanged() {
+    if (!this.rec || this.app.recording === this.rec) return;
+    const was = this.runName(this.rec);
+    this.noMap(`The map of ${was} was cleared: a newer run, audit or replay replaced it. Compute again for the last run.`, null);
+    this.rec = null;
+  }
+
   setData(cands, sols, rec, linkName) {
+    this.rec = rec;
+    this.pairT = new Map(pairSteps(rec).filter((x) => x.r && x.t).map((x) => [x.i, x.t]));
+    this.detailKey = null;
+    this.source.textContent = this.runText(rec);
     const li = Math.max(0, rec.I.links.findIndex((L) => L.link === linkName));
     this.atoms = rec.I.links[li].atoms;
     this.steps = rec.steps.filter((s) => s.l === li + 1 || s.k === 's');
@@ -161,7 +212,8 @@ export class SpaceView {
     const red = redundancy(this.steps);
     this.summary.textContent = `${fmt(this.space.count)} candidates, ${fmt(this.truth.size)} solutions, ${fmt(this.F.rows.length)} refinements; ` +
       `alive at the end ${fmt(this.F.alive)}; ${fmt(this.F.already)} of ${fmt(this.F.total)} removals hit a candidate already removed; ` +
-      `${fmt(red.length)} clauses contain an earlier one.` + (this.F.firstUnsound ? ` First unsound refinement: ${this.F.firstUnsound.ref} (it removes ${fmt(this.F.firstUnsound.lost)} solutions).` : ' No refinement removes a solution.');
+      `${fmt(red.length)} clauses contain an earlier one.` + (this.F.firstUnsound ? ` First unsound refinement: ${this.F.firstUnsound.ref} (it removes ${fmt(this.F.firstUnsound.lost)} solutions).`
+        : ' No refinement of this run removes a solution. (An audit can still be unsound: it checks every refinement the loop could make, this map only those this run made.)');
     this.msg.textContent = '';
     this.layout();
     const c = this.app.cursor;
@@ -169,6 +221,7 @@ export class SpaceView {
     this.draw();
     this.drawCurve();
     this.drawMatrix();
+    if (this.app.updateShown) this.app.updateShown();
   }
 
   async openCompare() {
@@ -281,6 +334,44 @@ export class SpaceView {
     this.label.textContent = row ? `${r} of ${this.F.rows.length} (step ${row.i}: removes ${fmt(row.removed)}, ${fmt(row.fresh)} new, ${fmt(row.lost)} solutions)` : `before the first refinement (${this.F.rows.length} in all)`;
     this.lastDrawMs = performance.now() - t0;
     this.canvas.dataset.cells = String(this.space.count);
+    // the refinement's box is text, not the map: outside the map's frame time
+    this.renderDetail(row);
+  }
+
+  // The refinement at the cursor: which step, the candidate it refined, the counterexample (from
+  // the trace, when the trace kept that step), the clause it added, and what it removed.
+  renderDetail(row) {
+    const key = row ? `${row.i}` : '';
+    if (key === this.detailKey) return;
+    this.detailKey = key;
+    const box = this.detail;
+    box.textContent = '';
+    box.hidden = !row;
+    if (!row) return;
+    const st = this.steps.find((x) => x.i === row.i);
+    if (!st) { box.hidden = true; return; }
+    const d = refinementDetail(st, this.atoms, this.pairT ? this.pairT.get(row.i) : null);
+    const KIND = { r: 'reject', a: 'add', e: 'expand' };
+    const set = (l) => `{${l.join(' ')}}`;
+    const dl = h('dl');
+    const add = (k, v) => dl.append(h('dt', {}, k), h('dd', {}, v));
+    add('Candidate', set(d.candidate));
+    add('Counterexample', d.traced ? (d.counterexample || '(no shown atoms)')
+      : 'not in the trace: it keeps the first steps of a run only (raise Trace steps in the Loop tab and run again)');
+    if (d.clause.length) add('Clause', `at least one of: ${d.clause.join(', ')}`);
+    add('Removes', `${fmt(row.removed)} candidates (${fmt(row.fresh)} not removed before)` + (row.lost ? `, ${fmt(row.lost)} solutions: an unsound refinement` : ', no solution'));
+    box.dataset.verdict = row.lost ? 'unsound' : 'sound';
+    box.append(h('h4', {}, `Refinement ${row.ref} of ${this.F.rows.length}: step ${d.step} (${KIND[d.kind] || d.kind}${d.solver ? `, solver ${d.solver}` : ''})`), dl,
+      h('button', { class: 'control-button small-button', id: 'space-show-trace', type: 'button', disabled: !d.traced,
+        title: d.traced ? 'The Output tab\'s trace at this step' : 'The trace did not keep this step', onclick: () => this.showInTrace(row.i) }, 'Show in the trace'));
+  }
+
+  showInTrace(i) {
+    const c = this.app.cursor;
+    if (c && c.ticks.length) c.setByStep(i);
+    if (this.app.observatory) this.app.observatory.update();
+    const t = document.getElementById('tab5');
+    if (t) { t.checked = true; t.dispatchEvent(new Event('change', { bubbles: true })); }
   }
 
   cellAt(e) {
@@ -297,7 +388,7 @@ export class SpaceView {
     const f = this.F.fate[i];
     const row = f ? this.F.rows.find((x) => x.i === f) : null;
     this.tip.textContent = `{${this.space.atoms(i, this.atoms).join(' ')}}${this.truth.has(i) ? ' (a solution)' : ''}` +
-      (this.F.accepted[i] ? ', accepted' : row ? `, removed by refinement ${row.ref}` : ', never removed');
+      (this.F.accepted[i] ? ', accepted' : row ? `, removed by refinement ${row.ref} (step ${row.i}; click to see it below)` : ', never removed');
   }
 
   click(e) {

@@ -697,10 +697,24 @@ export class InstancesTab {
     this.spStatus = el('p', { id: 'space-status', class: 'note', role: 'status', 'aria-live': 'polite' });
     const box = el('div', { class: 'instance-editor', id: 'space-editor' });
     this.spBoundLabel = el('label', { title: 'The parameter that runs over k = 1, 2, ...' }, 'Bound ', this.spBound);
+    // the first k (space.from): for spaces whose instances only make sense from some size on
+    this.spFrom = el('input', { id: 'space-from', size: 3, inputmode: 'numeric', 'aria-label': 'First k of the space' });
+    this.spFrom.addEventListener('change', () => {
+      const x = this.spaceItem;
+      if (!x) return;
+      const t = this.spFrom.value.trim(), n = Number(t);
+      if (t === '' || n === 1) delete x.from;
+      else if (Number.isInteger(n) && n >= 0) x.from = n;
+      else { this.spStatus.textContent = 'First k: a whole number (0 or more).'; this.spFrom.value = String(x.from ?? 1); return; }
+      this.spStatus.textContent = '';
+      this.renderSpaces();
+      this.app.dirty();
+    });
+    this.spFromLabel = el('label', { title: 'The audit starts at this k (default 1): for instances that only make sense from some size on' }, 'First k ', this.spFrom);
     this.spK = el('input', { id: 'space-preview-k', size: 3, inputmode: 'numeric', value: '2', 'aria-label': 'k for the preview' });
     this.spPreview = el('div', { id: 'space-preview', class: 'generator-preview' });
     this.spBody = el('div', { id: 'space-body', hidden: true },
-      el('div', { class: 'instance-fields' }, el('label', {}, 'Name ', this.spName), this.spBoundLabel,
+      el('div', { class: 'instance-fields' }, el('label', {}, 'Name ', this.spName), this.spBoundLabel, this.spFromLabel,
         el('button', { class: 'control-button small-button', id: 'delete-space-button', onclick: () => this.removeSpace() }, 'Delete')),
       el('div', { class: 'instance-fields' }, el('label', { class: 'wide-field' }, 'Description ', this.spDesc)),
       el('p', { class: 'note' }, 'Every instance up to the bound k: choice rules and constraints over the instance predicates (with the fragment "schema", if there is one). ' +
@@ -744,6 +758,7 @@ export class InstancesTab {
     const bound = spaceBound(x);
     // a choice only with two or more parameters
     this.spBoundLabel.hidden = Object.keys(x.params || {}).length < 2;
+    this.spFrom.value = String(x.from ?? 1);
     if (this.spPreviewOf !== x.name) { this.spPreview.textContent = ''; this.spPreviewOf = x.name; this.spK.value = String(x.from ?? 2); }
     this.spBound.textContent = '';
     for (const k of Object.keys(x.params || {})) this.spBound.append(el('option', { value: k, selected: k === bound }, k));
@@ -808,7 +823,9 @@ export class InstancesTab {
     sel.hidden = bound.hidden = !on;
     document.getElementById('space-bound-label').hidden = !on;
     const y = list.find((z) => z.name === sel.value);
-    if (y && (!bound.value || bound.dataset.space !== y.name)) { bound.value = String(y.expected ? y.expected.k : 3); bound.dataset.space = y.name; }
+    if (y && (!bound.value || bound.dataset.space !== y.name)) { bound.value = String(y.expected ? y.expected.k : Math.max(3, y.from ?? 1)); bound.dataset.space = y.name; }
+    // a space that starts later than k = 1 says so in the bar
+    document.getElementById('space-bound-label').textContent = y && (y.from ?? 1) !== 1 ? `k = ${y.from} up to` : 'up to k =';
     // the space's description says what the name does not: in the options' tooltips and, greyed,
     // after the select (cut with an ellipsis; the whole text in its tooltip)
     for (const o of sel.options) {

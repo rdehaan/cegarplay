@@ -89,3 +89,18 @@ test('review of wave 4: rt.enumerate reports limit when the raw models reach the
   const r = await H.run(a.program);
   assert.equal(H.ofKind(r, 'A').at(-1).verdict, 'limit');
 });
+
+test('refinementDetail: the candidate from its hex, the clause from its signed indices, the counterexample from the trace', async () => {
+  const { refinementDetail } = await import('../js/space.js');
+  const atoms = ['a', 'b', 'c', 'd', 'e'];
+  // bits 1 and 3 set: 0b00101 = 5
+  const st = { i: 9, k: 'r', s: 1, c: '5', q: [2, -3] };
+  const t = { i: 4, kind: 'reject', solver: 'A', candidate: 'a c', counterexample: 'x(1)' };
+  assert.deepEqual(refinementDetail(st, atoms, t),
+    { step: 9, kind: 'r', solver: 'A', candidate: ['a', 'c'], clause: ['b', 'not c'], counterexample: 'x(1)', traced: true });
+  // not in the trace: no counterexample, and no solver name (the R step has only its index)
+  const d = refinementDetail(st, atoms, null);
+  assert.deepEqual([d.traced, d.counterexample, d.solver, d.candidate], [false, null, '', ['a', 'c']]);
+  // no candidate in the R step: the trace's text
+  assert.deepEqual(refinementDetail({ i: 1, k: 'a', q: [1] }, atoms, t).candidate, ['a', 'c']);
+});

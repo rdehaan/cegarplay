@@ -1742,3 +1742,38 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
 - Tests: `test/browser/observatory.test.mjs` (the switch on af-preferred with a 3-step trace and
   with every step recorded; the candidate space of an `audit: false` instance, Try anyway).
 - Full suite: 1124 tests, 1115 pass, 0 fail, 9 skipped. `make-examples` leaves `examples/` unchanged.
+
+### What corresponds to what: Shown line, candidate space of one run, refinement details, first k (2026-11-24)
+
+- **Shown:** (run bar, third row, `#shown-line`, `app.updateShown` in `js/init.js`): what the
+  Output, Statistics and Observatory tabs hold: the run, audit, space audit or replay, its instance,
+  variant and start time, its outcome or verdict (the last run-history row), how much was recorded
+  (every step / the trace of the first N steps only / all N steps), whether the candidate space was
+  computed for it, and in amber (`data-state="stale"`) when the project was edited since or another
+  project was loaded. The comparison uses a hash of fragments, loop, constants and variants kept on
+  the in-memory recording (`rec.sourceHash`, `rec.started`), not in its header: recordings and
+  replays are unchanged.
+- **Candidate space of one run:** the map remembers its recording (`SpaceView.rec`), names it
+  (`#space-source`), and is cleared with a note when another run, audit or replay replaces it
+  (`recordingChanged`, called where `js/control.js` sets `app.recording`) or another project is
+  loaded (`forget`, from `setProject`, which keeps the recording for the Observatory). After an audit
+  alone, Compute says that an audit records no steps of the loop.
+- **The refinement at the cursor** (`#space-refinement`, `refinementDetail` in `js/space.js`):
+  number and step, kind and solver, the candidate, the counterexample (from the paired T event; "not
+  in the trace" past the trace limit), the clause ("at least one of" its literals), what it removed;
+  **Show in the trace** moves the cursor there and opens the Output tab (the trace follows the
+  cursor). Hover says "removed by refinement 6 (step 9; click to see it below)".
+- When no refinement of the run removes a solution the summary now says so for this run and that
+  an audit can still be unsound (the run's search order may avoid the unsound refinement).
+  `test/browser/directions.test.mjs` V4 matched the old wording; updated on purpose.
+- Space audit, next step **Run on it in the candidate space** (Advanced mode): saves the breaking
+  instance, picks it, records a run with every step and computes the map.
+- **First k** in the Spaces editor (`#space-from`, the existing field `from`); the run bar says
+  "k = 3 up to"; the default bound is at least the first k; the verdict says "for k from 3 up to 5".
+  `manual.md`: the Spaces section gained "What a space audit does", "Writing a space" and
+  "Instances that only make sense from some size on" (with the `:- k < 3.` workaround and why
+  First k is better); the Candidate space section and the run bar paragraph describe the above.
+- Tests: `test/browser/observatory.test.mjs` (space audit -> candidate space -> refinement ->
+  trace -> a new run clears the map -> an edit marks Shown stale), `test/browser/bounded.test.mjs`
+  (First k), `test/space.test.mjs` (`refinementDetail`).
+- Full suite: 1127 tests, 1118 pass, 0 fail, 9 skipped. `make-examples` leaves `examples/` unchanged.

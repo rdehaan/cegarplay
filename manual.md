@@ -22,7 +22,11 @@ constants, limits, recording and certificates) and **Instances** (inputs, genera
 Fuzz); then a run: **Output**, **Statistics** and **Observatory**; and many runs: **Campaign**. The
 run bar above the tabs has two rows: the actions (**Run**, **Audit** with its mode, Abort, Pause,
 Step and Stop on an isolated page, Clear, and the status), then **Run with**: the Instance and
-Variant pickers (for a project with instances or variants) and Solutions; below them, the live counts. **Manual** and **Internals** appear when
+Variant pickers (for a project with instances or variants) and Solutions. Below them, **Shown:** says
+what the Output, Statistics and Observatory tabs hold now: the run, audit or replay (with its
+instance, variant and start time), how it ended, how much of it was recorded, whether the
+candidate space was computed for it, and, in amber, when the project was edited since (or another
+project was loaded): the results are then of the earlier version. Then the live counts. **Manual** and **Internals** appear when
 asked for. The Control tab's **Tabs** block has three toggles, kept in this browser: **Tutorial**
 (shown by default), **Technical manual**, and **Advanced mode** (off by default), which adds the
 Observatory and Campaign tabs. A link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`,
@@ -267,11 +271,35 @@ Optional. `spaces[]` describes every instance up to a bound, for the Audit's mod
   "expected": { "verdict": "sound", "k": 12 } }
 ```
 
+**What a space audit does.** An audit checks one instance; a space describes many at once, one
+family per value of the bound k (graphs on k nodes, the numbers 1..k, frameworks of k arguments).
+Audit with the mode **space** runs the symbolic audit on every instance of the space at k = 1 (or
+the space's first k), then k = 2, and so on up to the bound you give in the run bar, and stops at the
+first k where some instance is unsound. "Sound up to k = K" then holds for every instance of the
+space with k at most K; it says nothing about larger instances, nor about instances outside the
+space. An unsound verdict shows the instance it broke on, with **Save as regression instance**,
+**Save it and audit it** (the full list of unsound refinements, by enumeration) and **Run on it in
+the candidate space** (Advanced mode: the instance is saved and picked, and the loop runs on it with
+every step recorded; the map shows the refinements that run makes, which may avoid the unsound one).
+
+**Writing a space** (Instances tab, **Spaces**, **New space**): a name; the text, which replaces the
+instance: choice rules and constraints over the instance's predicates, written with the bound
+parameter (`node(1..k). { edge(X,Y) : node(X), node(Y), X < Y }.`); the parameters (the bound,
+and for two or more, which one is the bound and the values of the others); **First k**; and a
+description. **Check** runs clingo on the text; **Preview** lists the first 6 instances at a k as
+facts, which is the quickest way to see that the space is what you meant. A space whose text is
+empty and whose one parameter is a constant of the project is the constants family n = 1, 2, …
+(the tutorial's space `n`).
+
+**Instances that only make sense from some size on.** Set **First k** (the field `from`, default
+1): the audit then starts there, the run bar shows "k = 3 up to", and the verdict says "sound for k
+from 3 up to 10". (Without it, a constraint such as `:- k < 3.` in the text also works: the space is
+empty below 3, and an empty space is trivially sound; but the verdict then counts those k as
+checked.)
+
 The fixed part (what the glue is built from) must be facts: when the glue's `glue/1` atoms differ
 between the instances of the space, the verdict is `unsupported` ("the interface depends on the
-instance"). The Instances tab lists the spaces (name, bound (with two or more parameters),
-description, text, parameters; **Check** runs clingo on the text; **Preview** shows the first 6
-instances at a given k as facts). The instance table tags an instance whose stored symbolic verdict
+instance"). The instance table tags an instance whose stored symbolic verdict
 is unsound, and the instance form shows that verdict. 40 library examples have one; an instance field
 `symbolic: "sound" | "unsound"` records the symbolic audit's expected verdict.
 
@@ -1227,15 +1255,26 @@ info annotations. The **Domain view** (see [Writing views](#manual-writing-views
 ### Candidate space
 
 The **Candidate space** region (Observatory) shows every candidate of the unrefined abstraction at
-once, one square each, from the audit's enumeration (so the same limit of 200,000 applies).
+once, one square each, from the audit's enumeration (so the same limit of 200,000 applies). The map
+is of **one recorded run**: the line above it names that run (instance, variant, recorded steps),
+and the map is cleared, with a note, as soon as another run, an audit or a replay replaces it, or
+another project is loaded (the run bar's **Shown** line says which run the tabs hold). An instance
+marked `audit: false`, or one whose candidates do not fit in memory, gets no map, with the reason;
+the blame matrix is still drawn from the recorded steps.
 **Compute** audits the instance and variant the recorded run used, and needs a run recorded with every step (Recording "every step", Loop tab); without one it
 offers **Record every step, run, compute**, which sets that recording, runs and computes. The colour of a
 square is its fate up to the refinement chosen with the slider or the cursor: alive, alive and a
 solution, removed earlier, removed by this refinement, a lost solution (a solution some refinement
 removed: the run is unsound), an accepted solution; a legend under the map names them. The summary
 names the first unsound refinement and how many solutions it removes, and counts the removals that
-hit a candidate already removed (redundant refinements). Hover shows a candidate's atoms, a click
-moves the cursor to the step that removed it. Two orders: by the most blamed atoms (a Z-order over
+hit a candidate already removed (redundant refinements). Hover shows a candidate's atoms and the
+refinement that removed it; a click moves the cursor to that step. **The refinement at the cursor**
+is shown under the map: its number and step, the candidate it refined, the counterexample (from the
+trace, which keeps the first **Trace steps** of a run), the clause it added ("at least one of" its
+literals), and how many candidates and solutions it removed; **Show in the trace** opens the Output
+tab's trace at that step. The map shows the refinements this run made: when no refinement of the run
+removes a solution, an audit can still be unsound (it checks every refinement the loop could make,
+and the run's search order may avoid the unsound one). Two orders: by the most blamed atoms (a Z-order over
 the atoms the refinements rely on most), or rows by the number of true atoms. Below the map: the
 number of alive candidates per refinement, and the **blame matrix** (refinements by atoms; a cell is
 coloured when the refinement's clause contains the atom, by its sign). **Compare with a recording**
