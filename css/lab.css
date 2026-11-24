@@ -1,0 +1,61 @@
+/* The Refinement lab tab (tab 12; docs/lab-design.md). Colours come from css/theme.css tokens,
+   so the light and dark themes both apply. */
+#tab12:checked ~ #section-lab { display: block; }
+label[for='tab12']:before { content: '\f0c3'; }
+
+#section-lab .lab-bar { border: 1px solid var(--border); background: var(--subtle); padding: 8px 10px; margin-bottom: 8px; }
+#section-lab .lab-row { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: 4px 0; }
+#section-lab .lab-row label { white-space: nowrap; }
+#section-lab .lab-limits summary { cursor: pointer; }
+#section-lab .lab-limits input { width: 6.5em; }
+#section-lab .lab-stale { color: var(--warn); background: var(--warn-bg); padding: 4px 8px; margin: 4px 0; }
+#section-lab .lab-region { margin-bottom: 18px; }
+#section-lab .lab-disabled { font-style: italic; }
+#section-lab .lab-verdict { font-weight: 600; color: var(--text); }
+#section-lab .lab-scroll { max-width: 100%; overflow-x: auto; }
+#section-lab .lab-table { border-collapse: collapse; margin: 6px 0; font-size: 13px; }
+#section-lab .lab-table th, #section-lab .lab-table td { border: 1px solid var(--border-light); padding: 3px 7px; text-align: left; vertical-align: top; }
+#section-lab .lab-table thead th { background: var(--subtle); }
+#section-lab .lab-table tr.lab-in th, #section-lab .lab-table tr.lab-in td { background: var(--highlight); }
+#section-lab .lab-table tr.lab-used td { background: var(--selected-bg); }
+#section-lab .lab-atoms { font-family: monospace; word-break: break-word; }
+#section-lab .lab-chart { max-width: 760px; }
+#section-lab .lab-svg { width: 100%; height: auto; display: block; }
+#section-lab .lab-axis { stroke: var(--chart-axis); stroke-width: 1; }
+#section-lab .lab-edge { stroke: var(--border-strong); stroke-width: 1; }
+#section-lab .lab-label { fill: var(--text); font-size: 12px; }
+#section-lab .lab-strong { font-weight: 700; }
+#section-lab .lab-tick, #section-lab .lab-node-label { fill: var(--text-muted); font-size: 11px; }
+#section-lab .lab-front { fill: none; stroke: var(--chart-3); stroke-width: 1.5; stroke-dasharray: 4 3; }
+#section-lab .lab-pt { stroke: var(--panel); stroke-width: 1; }
+#section-lab .lab-point { cursor: pointer; }
+#section-lab .lab-sound .lab-pt, #section-lab .lab-legend .lab-sound { fill: var(--chart-2); }
+#section-lab .lab-justified .lab-pt { fill: var(--ok); }
+#section-lab .lab-unsound .lab-pt { fill: var(--error); }
+#section-lab .lab-point .lab-run, #section-lab .lab-pt.lab-run { stroke: var(--text); stroke-width: 2.5; }
+#section-lab .lab-point .lab-block { stroke: var(--text); }
+#section-lab .lab-legend { list-style: none; padding: 0; margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; }
+#section-lab .lab-legend .lab-pt { fill: var(--chart-7); }
+#section-lab .lab-legend .lab-unsound { fill: var(--error); }
+#section-lab .lab-legend .lab-justified { fill: var(--ok); }
+#section-lab .lab-legend .lab-sound { fill: var(--chart-2); }
+#section-lab .lab-legend .lab-run { stroke: var(--text); stroke-width: 2; }
+#section-lab rect.lab-hbar { fill: var(--chart-2); opacity: 0.75; }
+#section-lab .lab-mark { stroke-width: 2; }
+#section-lab .lab-mark-exact { stroke: var(--chart-5); fill: var(--chart-5); }
+#section-lab .lab-mark-greedy { stroke: var(--chart-1); }
+#section-lab .lab-mark-median { stroke: var(--chart-3); }
+#section-lab rect.lab-interval { opacity: 0.12; stroke: none; }
+#section-lab .lab-interval-bar { fill: var(--chart-1); opacity: 0.35; }
+#section-lab .lab-rung { fill: var(--chart-2); }
+#section-lab .lab-line { fill: none; stroke-width: 1.5; }
+#section-lab .lab-line-run { stroke: var(--chart-1); }
+#section-lab .lab-line-opt { stroke: var(--chart-2); }
+#section-lab .lab-line-min { stroke: var(--chart-3); stroke-dasharray: 3 2; }
+#section-lab .lab-line-cmp { stroke: var(--chart-4); }
+#section-lab .link-button { background: none; border: none; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; text-align: left; }
+#section-lab .lab-exports { margin-top: 6px; }
+@media screen and (max-width: 650px) {
+  #section-lab .lab-row { gap: 4px 8px; }
+  #section-lab .lab-table { font-size: 12px; }
+}

@@ -29,7 +29,7 @@ const app = { ready: false, project: Project.newProject() };
 window.cegarplay = app;
 
 // ---- the address bar: ?example=<id> and ?tab=N follow the page (replaceState, no history entries)
-const KEEP_PARAMS = ['nocoi', 'manual', 'internals', 'from', 'tab', 'instance', 'replay', 'view', 'step', 'lecture'];
+const KEEP_PARAMS = ['nocoi', 'manual', 'internals', 'from', 'tab', 'instance', 'replay', 'view', 'step', 'lecture', 'lab'];
 function setUrl({ example, tab, keepHash = false } = {}) {
   const now = new URLSearchParams(location.search);
   const next = new URLSearchParams();
@@ -80,6 +80,7 @@ for (const c of document.querySelectorAll('.manual-checkbox')) {
 const TAB_PREFS = {
   advanced: { key: 'cegarplay.advanced', fallback: false, tabs: ['tab10', 'tab11'], box: '.advanced-checkbox' },
   tutorial: { key: 'cegarplay.tutorial', fallback: true, tabs: ['tab2'], box: '.tutorial-checkbox' },
+  lab: { key: 'cegarplay.lab', fallback: false, tabs: ['tab12'], box: '.lab-checkbox' },
 };
 function prefStored(name) {
   const p = TAB_PREFS[name];
@@ -104,6 +105,7 @@ app.showTabs = showTabs;
     params.has('lecture') || params.has('view') || params.has('step');
   showTabs('advanced', prefStored('advanced') || visitAdvanced, { store: false });
   showTabs('tutorial', prefStored('tutorial') || params.get('tab') === '2', { store: false });
+  showTabs('lab', prefStored('lab') || params.get('lab') === '1' || params.get('tab') === '12', { store: false });
 }
 for (const name of Object.keys(TAB_PREFS)) {
   for (const c of document.querySelectorAll(TAB_PREFS[name].box)) c.addEventListener('change', () => showTabs(name, c.checked));
@@ -121,7 +123,7 @@ const FROM_PATTERN = /^guide\/[a-z0-9-]+\.html(#[a-z0-9-]+)?$/;
 }
 
 const tab = params.get('tab');
-if (tab && /^([1-9]|1[01])$/.test(tab) && $('tab' + tab) && (tab !== '7' || params.get('internals') === 'true') && !$('tab' + tab).hidden) $('tab' + tab).checked = true;
+if (tab && /^([1-9]|1[012])$/.test(tab) && $('tab' + tab) && (tab !== '7' || params.get('internals') === 'true') && !$('tab' + tab).hidden) $('tab' + tab).checked = true;
 
 app.engine = new Engine({ threads: false });
 app.editors = new Editors(app);
@@ -971,11 +973,22 @@ for (const r of document.querySelectorAll('input[name="tabs"]')) {
   r.addEventListener('change', () => {
     requestAnimationFrame(resizeVisibleEditors);
     if (r.checked && r.id === 'tab10') requestAnimationFrame(() => app.campaign.draw());
+    if (r.checked && r.id === 'tab12' && app.ready) showLab();
     if (r.checked && r.id === 'tab11') requestAnimationFrame(() => { app.anatomy.dirty = { diagram: true, timeline: true, table: true }; app.anatomy.render(); app.views.updateSteps(); app.views.show(); });
     if (r.checked) setUrl({ example: new URLSearchParams(location.search).get('example'), tab: r.id === 'tab1' ? '' : r.id.slice(3), keepHash: true });
   });
 }
 app.resizeVisibleEditors = resizeVisibleEditors;
+
+// ---- the Refinement lab (tab 12): its code and its own worker are loaded on its first show only
+let labLoading = null;
+function showLab() {
+  if (!labLoading) {
+    labLoading = import('./lab/tab.js').then((m) => { app.lab = new m.LabTab(app, $('lab')); return app.lab; })
+      .catch((e) => { $('lab').textContent = `The lab could not be loaded: ${e.message}`; return null; });
+  }
+  labLoading.then((lab) => { if (lab) lab.shown(); });
+}
 
 // Ctrl+Enter (Cmd+Enter) runs, from anywhere on the page, also inside an editor.
 addEventListener('keydown', (ev) => {
@@ -1072,6 +1085,7 @@ async function start() {
   app.ready = true;
   app.internals.facts();
   app.control.setState(app.control.state === 'replayed' ? 'replayed' : 'idle');
+  if ($('tab12').checked) showLab();
   document.body.dataset.ready = 'true';
 }
 // ?fragment=<name>: open the Programs tab on that fragment's editor; "loop" opens the Loop tab.

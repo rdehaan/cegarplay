@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="vendor/fonts/fonts.css">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/lab.css">
 </head>
 
 <body>
@@ -115,6 +116,9 @@
 
     <input id="tab10" aria-controls="section-campaign" type="radio" name="tabs">
     <label for="tab10" class="tab-label" id="label-campaign" title="Campaign"><span class="tab-text">Campaign</span></label>
+
+    <input id="tab12" aria-controls="section-lab" type="radio" name="tabs" hidden>
+    <label for="tab12" class="tab-label" id="label-lab" hidden title="Refinement lab" aria-label="Refinement lab"><span class="tab-text">Lab</span></label>
 
     <input id="tab7" aria-controls="section-internals" type="radio" name="tabs">
     <label for="tab7" class="tab-label" title="Internals"><span class="tab-text">Internals</span></label>
@@ -247,6 +251,9 @@
       <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="advanced-checkbox">
         Advanced mode</label> <span class="note">adds the <b>Observatory</b> (a run as pictures: anatomy, call
         timeline, domain view, candidate space) and the <b>Campaign</b> tab (grids of runs on several engines)</span></p>
+      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="lab-checkbox">
+        Refinement lab</label> <span class="note">adds the <b>Lab</b> tab: every refinement a loop could have made
+        at a step, and the shortest and longest runs its refinements allow (small instances)</span></p>
       <p class="note">These choices are kept in this browser.</p>
 
       <h3>Reset</h3>
@@ -433,6 +440,18 @@
       <div id="anatomy" class="observatory-region"></div>
       <div id="domain-view" class="observatory-region" hidden></div>
       <div id="candidate-space" class="observatory-region" hidden></div>
+    </section>
+
+    <!-- 12. Refinement lab (hidden unless its toggle is on, ?lab=1 or ?tab=12) -->
+    <section id="section-lab">
+      <p class="tab-intro">
+        What a loop could have done, not just what it did: at one step, every refinement clause that
+        was possible there; over a whole run, how its length compares with the shortest and longest runs
+        the same refinements allow. Computed on small instances, from every candidate and counterexample, by
+        the lab's own engine (runs and audits go on as usual).
+        <span class="tab-help">Manual: <a href="#manual-refinement-lab-tab">Refinement lab tab</a> · <a href="#manual-audit">Audit</a> · <a href="#manual-candidate-space">Candidate space</a>.</span>
+      </p>
+      <div id="lab"><p class="note">Loading the lab…</p></div>
     </section>
 
     <!-- 7. Internals -->
