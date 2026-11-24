@@ -1662,3 +1662,25 @@ All three phases are done (S6, S7, S8). Open: nothing of PLAN3; see FUTURE-DIREC
 - Full suite: 1113 tests, 1103 pass, 9 skipped, 1 fail: `V4: the candidate space of gc-shape1 ...
   a cursor move redraws within one frame` took 22.6 ms under the load of the full run; alone it
   passes 3 times in 3 (the Observatory, untouched here; FUTURE-DIRECTIONS "Flaky browser tests").
+
+### Project snapshots with undo (2026-11-24)
+
+- `js/snapshots.js` (no DOM, no Node; storage passed in, as `Workspace`): `list(title)`, `all()`,
+  `save(title, name, text, { auto })`, `load(id)`, `remove(id)`; keys `cegarplay.snap` (index) and
+  `cegarplay.snap.<id>`. A snapshot belongs to the project's title; at most 20 per project, past
+  that the oldest automatic one goes first, then the oldest. A failed write leaves nothing half
+  written and reaches the caller.
+- Control tab, **Snapshots** below the workspace (`js/init.js`): Take snapshot (name optional),
+  Restore, Delete, this project's list and *Other projects*. `replaceOk(what)` now takes an
+  automatic snapshot after the question, so an example from the library, a file, New project and
+  Open in the workspace all get one, and so does a restore; **Undo** (`#snapshot-undo-button`, and
+  `#load-undo-button` beside the library's "Loaded example" line) brings that project back. Undo
+  keeps its copy in memory, so it works when storage is full or blocked. The question's text
+  changed to say so ("It is kept as an automatic snapshot ..."); no test read it.
+- Every storage access is in try/catch; without storage the list says so (not the status line,
+  which keeps the last action's message: the browser test found that `setProject`'s re-render
+  overwrote the Undo message).
+- Tests: `test/snapshots.test.mjs` (5, with a Map as storage), `test/browser/snapshots.test.mjs`
+  (take, load over an edit + Undo, restore + Undo, delete, reload; a page whose storage throws).
+  `manual.md`: the storage keys list.
+- Full suite: 1120 tests, 1111 pass, 0 fail, 9 skipped.

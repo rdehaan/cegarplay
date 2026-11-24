@@ -1355,6 +1355,17 @@ Browser storage (`localStorage`, per browser and site):
 - `cegarplay.ws` and `cegarplay.ws.<name>`: the **Workspace** (Control tab): projects saved by name
   (**Save in workspace** asks before it overwrites a name; **Open** asks before it replaces an edited
   project; **Delete**). Only in this browser: download a project to keep it.
+- `cegarplay.snap` and `cegarplay.snap.<id>`: **Snapshots** (Control tab, below the workspace):
+  copies of the project being edited, with its run history, to go back to. **Take snapshot** (a
+  name is optional; without one, the date and time), **Restore**, **Delete**. Snapshots belong to
+  the project's title: the list shows this project's, newest first; those of other projects are under
+  *Other projects*. At most 20 per project; past that the oldest automatic snapshot goes first, then
+  the oldest. Before a restore, and before another project replaces an edited one (an example from
+  the library, a file, **New project**, **Open** in the workspace, after the question), an
+  automatic snapshot "before …" is taken and **Undo** appears (also beside the library's "Loaded
+  example" line); Undo brings that project back. Undo keeps its copy in memory, so it works for this
+  visit also when browser storage is full or blocked; the snapshot list then says that storage is
+  not available.
 - `cegarplay.manual`: `"1"` when "Show the technical manual" is ticked.
 - `cegarplay.advanced`: `"1"` when Advanced mode is on (absent when off).
 - `cegarplay.tutorial`: `"0"` when the Tutorial tab is hidden (absent when shown).

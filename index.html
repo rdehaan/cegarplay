@@ -201,6 +201,19 @@
       <ul id="workspace-list" class="workspace-list"></ul>
       <p id="workspace-status" class="status-line"></p>
 
+      <h3>Snapshots</h3>
+      <p class="note">Copies of this project to go back to, kept in this browser (at most 20 per project).
+        Restoring one, or loading another project over an edited one, first takes an automatic snapshot;
+        <b>Undo</b> brings that project back.</p>
+      <div class="inline-controls">
+        <input type="text" id="snapshot-name" placeholder="name (optional)" size="24" aria-label="Snapshot name">
+        <button class="control-button" id="snapshot-save-button">Take snapshot</button>
+        <button class="control-button" id="snapshot-undo-button" hidden>Undo</button>
+      </div>
+      <ul id="snapshot-list" class="workspace-list"></ul>
+      <div id="snapshot-others"></div>
+      <p id="snapshot-status" class="status-line" role="status" aria-live="polite"></p>
+
       <h3>Recordings</h3>
       <button class="control-button" id="download-recording-button" disabled>Download recording</button>
       <button type="button" class="control-button" id="open-recording-button">Open recording</button>

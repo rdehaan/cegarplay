@@ -19,6 +19,7 @@ import { Cursor, bindKeys } from './cursor.js';
 import { ObservatoryBar, lectureMode } from './observatory.js';
 import { renderMarkdown } from './markdown.js';
 import { Workspace, WS_INDEX, WS_NAME } from './workspace.js';
+import { Snapshots, SNAP_INDEX, projectKey } from './snapshots.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
 
 const $ = (id) => document.getElementById(id);
@@ -223,6 +224,8 @@ app.setProject = (p, { save = true } = {}) => {
   showProjectInfo(p);
   editProjectInfo(false);
   requestAnimationFrame(() => app.resizeVisibleEditors());
+  // the snapshot list follows the project (its title); not yet drawn while the page starts
+  try { renderSnapshots(); } catch { /* the snapshot block has not run yet */ }
   app.saveBlocked = !save;      // until the first edit
   if (save) app.dirty();
   else if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
@@ -402,11 +405,16 @@ document.addEventListener('click', async (ev) => {
   const btn = ev.target.closest && ev.target.closest('[data-load-example]');
   if (!btn) return;
   ev.preventDefault();
-  if (!guard() || !replaceOk()) return;
   const name = btn.dataset.loadExample;
+  if (!guard() || !replaceOk(`loading example ${name}`)) return;
   try {
     await loadExample(name, undefined, { url: true });
     status('load-status', `Loaded example "${app.project.title}".`);
+    if (undoSnapshot && undoSnapshot.what === `loading example ${name}`) {
+      const u = make('button', { class: 'control-button small-button', id: 'load-undo-button', type: 'button' }, 'Undo');
+      u.addEventListener('click', () => $('snapshot-undo-button').click());
+      $('load-status').append(' ', u);
+    }
     const t = btn.dataset.tab;
     if (t && $('tab' + t)) { $('tab' + t).checked = true; requestAnimationFrame(resizeVisibleEditors); }
     if (btn.closest('#section-tutorial, #section-manual')) flash(btn, `Loaded "${app.project.title}"`);
@@ -437,7 +445,14 @@ const guard = () => {
   return true;
 };
 // Before replacing a project that was edited.
-const replaceOk = () => !app.edited || window.confirm('Replace the current project? Your changes to it are lost unless you download it first.');
+// Before another project replaces an edited one: ask, then keep the edited one as an automatic
+// snapshot with an Undo (what: "loading example X", for the snapshot's name and the Undo button).
+const replaceOk = (what = 'replacing the project') => {
+  if (!app.edited) return true;
+  if (!window.confirm('Replace the current project? It is kept as an automatic snapshot (Control tab, Snapshots), and Undo brings it back.')) return false;
+  snapshotBefore(what);
+  return true;
+};
 
 // ---- the workspace: named projects in this browser (FUTURE-DIRECTIONS D9) ---------------
 let workspace = null;
@@ -450,7 +465,7 @@ function renderWorkspace() {
     const li = make('li', { 'data-name': x.name });
     const open = make('button', { class: 'control-button small-button' }, 'Open');
     open.addEventListener('click', () => {
-      if (!guard() || !replaceOk()) return;
+      if (!guard() || !replaceOk(`opening ${x.name}`)) return;
       try {
         app.setProject(Project.load(workspace.load(x.name)));
         urlForgetProject();
@@ -486,9 +501,113 @@ $('workspace-save-button').addEventListener('click', () => {
 });
 renderWorkspace();
 
+// ---- snapshots: copies of this project to go back to (js/snapshots.js) --------------------
+// Kept in browser storage next to the workspace. Before a restore, and before a project replaces
+// an edited one (an example, a file, New, the workspace), an automatic snapshot is taken and
+// Undo brings that project back. Undo keeps its copy in memory, so it works without storage.
+let snapshots = null;
+try { snapshots = new Snapshots(localStorage); localStorage.getItem(SNAP_INDEX); } catch { snapshots = null; }
+let undoSnapshot = null;   // { text, what }
+function projectText() {
+  const p = structuredClone(app.collect());
+  p.runs = app.stats.history;
+  return p;
+}
+// Take a snapshot of the project being edited; returns the text kept (for Undo), or null.
+function takeSnapshot(name, { auto = false } = {}) {
+  let p;
+  try { p = projectText(); } catch { return null; }
+  let text = Project.save(p);
+  if (!snapshots) return { text, kept: false };
+  try { snapshots.save(p.title, name, text, { auto }); return { text, kept: true }; } catch { /* full: without the run history */ }
+  try { text = Project.save(p, { runs: false }); snapshots.save(p.title, name, text, { auto }); return { text, kept: true, noRuns: true }; } catch { return { text, kept: false }; }
+}
+// Before the project being edited is replaced: an automatic snapshot and an Undo.
+function snapshotBefore(what) {
+  const r = takeSnapshot(`before ${what}`, { auto: true });
+  if (!r) return;
+  undoSnapshot = { text: r.text, what };
+  renderSnapshots();
+  $('snapshot-undo-button').hidden = false;
+  $('snapshot-undo-button').textContent = `Undo ${what}`;
+  status('snapshot-status', r.kept ? `Kept the project before ${what} as an automatic snapshot.`
+    : `The project before ${what} could not be kept in browser storage; Undo still brings it back during this visit.`, !r.kept);
+}
+app.snapshotBefore = snapshotBefore;
+function renderSnapshots() {
+  const ul = $('snapshot-list'), others = $('snapshot-others');
+  ul.textContent = '';
+  others.textContent = '';
+  const usable = !!snapshots;
+  $('snapshot-save-button').disabled = !usable;
+  $('snapshot-name').disabled = !usable;
+  // said in the list, so that the status line keeps the last action's message
+  if (!usable) { ul.append(make('li', { class: 'note', id: 'snapshot-unavailable' }, 'Browser storage is not available here: no snapshots (Undo still works during this visit).')); return; }
+  let all = [];
+  try { all = snapshots.all(); } catch { all = []; }
+  const key = projectKey(app.project && app.project.title);
+  const item = (x, showProject) => {
+    const li = make('li', { 'data-snapshot': x.id });
+    const restore = make('button', { class: 'control-button small-button', 'aria-label': `Restore snapshot ${x.name}` }, 'Restore');
+    restore.addEventListener('click', () => restoreSnapshot(x));
+    const del = make('button', { class: 'control-button small-button', 'aria-label': `Delete snapshot ${x.name}` }, 'Delete');
+    del.addEventListener('click', () => {
+      try { snapshots.remove(x.id); } catch { /* gone already */ }
+      renderSnapshots();
+      status('snapshot-status', `Deleted the snapshot ${x.name}.`);
+    });
+    li.append(make('b', {}, x.name), ' ', x.auto ? make('span', { class: 'note' }, '(automatic) ') : '',
+      showProject ? `(${x.project}) ` : '', make('span', { class: 'note' }, String(x.saved).slice(0, 19).replace('T', ' ')), ' ', restore, ' ', del);
+    return li;
+  };
+  const mine = all.filter((x) => x.project === key), rest = all.filter((x) => x.project !== key);
+  for (const x of mine) ul.append(item(x, false));
+  if (!mine.length) ul.append(make('li', { class: 'note' }, 'No snapshots of this project yet.'));
+  if (rest.length) {
+    const d = make('details', {});
+    d.append(make('summary', {}, `Other projects (${rest.length})`));
+    const u = make('ul', { class: 'workspace-list' });
+    for (const x of rest) u.append(item(x, true));
+    d.append(u);
+    others.append(d);
+  }
+}
+function restoreSnapshot(x) {
+  if (!guard()) return;
+  let text;
+  try { text = snapshots.load(x.id); } catch { text = null; }
+  if (!text) { status('snapshot-status', `The snapshot ${x.name} is no longer in this browser.`, true); renderSnapshots(); return; }
+  let p;
+  try { p = Project.load(text); } catch (e) { status('snapshot-status', `${x.name}: ${e.message || e}`, true); return; }
+  snapshotBefore(`restoring ${x.name}`);
+  app.setProject(p);
+  urlForgetProject();
+  renderSnapshots();
+  status('snapshot-status', `Restored the snapshot ${x.name}. Undo brings back the project as it was before.`);
+}
+$('snapshot-save-button').addEventListener('click', () => {
+  const name = $('snapshot-name').value.trim() || new Date().toLocaleString();
+  const r = takeSnapshot(name);
+  if (!r || !r.kept) { status('snapshot-status', 'Not kept: browser storage is full or unavailable; download the project to keep it.', true); return; }
+  $('snapshot-name').value = '';
+  renderSnapshots();
+  status('snapshot-status', `Took the snapshot ${name}${r.noRuns ? ' (without the run history: storage is full)' : ''}.`);
+});
+$('snapshot-undo-button').addEventListener('click', () => {
+  if (!undoSnapshot || !guard()) return;
+  const u = undoSnapshot;
+  undoSnapshot = null;
+  $('snapshot-undo-button').hidden = true;
+  try { app.setProject(Project.load(u.text)); } catch (e) { status('snapshot-status', `Undo failed: ${e.message || e}`, true); return; }
+  urlForgetProject();
+  renderSnapshots();
+  status('snapshot-status', `Undone: back to the project before ${u.what}.`);
+});
+renderSnapshots();
+
 // ---- Control tab ----------------------------------------------------------------
 $('new-button').addEventListener('click', () => {
-  if (!guard() || !replaceOk()) return;
+  if (!guard() || !replaceOk('starting a new project')) return;
   app.setProject(Project.starterProject());
   urlForgetProject();
   status('new-status', 'Started a new project. See the Programs tab.');
@@ -533,7 +652,7 @@ $('file-button').addEventListener('click', () => $('file-input').click());
 $('file-input').addEventListener('change', async (ev) => {
   const f = ev.target.files[0];
   ev.target.value = '';
-  if (!f || !guard() || !replaceOk()) return;
+  if (!f || !guard() || !replaceOk(`loading ${f.name}`)) return;
   try { app.setProject(Project.load(await f.text())); urlForgetProject(); status('upload-status', `Loaded ${f.name}.`); }
   catch (e) { status('upload-status', `${f.name}: ${e.message || e}`, true); }
 });
