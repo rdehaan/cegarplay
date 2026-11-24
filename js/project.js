@@ -305,6 +305,15 @@ function loadGenerators(list) {
       if (!GENERATOR_PARAM_TYPES.includes(t)) throw new ProjectError(`generator ${g.name}: parameter ${k} has type '${t}' (use int or permille)`);
     }
     if (g.defaults !== undefined && !isObj(g.defaults)) throw new ProjectError(`generator ${g.name}: defaults must be an object`);
+    // constants: { name: value } given to each of its instances; a value that names a parameter
+    // takes that parameter's value (js/generate.js generatorConstants)
+    if (g.constants !== undefined) {
+      if (!isObj(g.constants)) throw new ProjectError(`generator ${g.name}: constants must be an object`);
+      for (const [k, v] of Object.entries(g.constants)) {
+        if (!/^[a-z][A-Za-z0-9_]*$/.test(k)) throw new ProjectError(`generator ${g.name}: constant name '${k}' must start with a lower case letter`);
+        if (typeof v !== 'string' && typeof v !== 'number') throw new ProjectError(`generator ${g.name}: constant ${k} must be a string or a number`);
+      }
+    }
     return { ...g, params };
   });
 }

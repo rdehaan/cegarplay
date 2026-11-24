@@ -263,8 +263,10 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="voting-justification">Load: Voting justifications</button></p>
 <h3 id="tut-generators">Generators</h3>
 <p>A <b>generator</b> is an ASP program whose shown atoms are an instance, with seeded random draws such as
-  <code>@flip(500, X, Y)</code> (1 with probability 1/2). The QBF example has one<span class="web-only">: open the Instances tab, scroll to <b>Generators</b>, and press <b>Preview 6</b> for six instances from six seeds. <b>Add as instance</b> keeps one;</span><span class="book-only">, in the <b>Generators</b> part of the Instances tab, which draws instances from seeds; an instance kept from it is stored as a recipe:</span>
-  the file stores only its recipe (generator, parameters, seed), and the same recipe always gives the same facts.</p>
+  <code>@flip(500, X, Y)</code> (1 with probability 1/2). The QBF example has one<span class="web-only">: open the Instances tab, scroll to <b>Generators</b>, and press <b>Preview 6</b> for six instances from six seeds. <b>Add as instance</b> keeps one,</span><span class="book-only">, in the <b>Generators</b> part of the Instances tab, which draws instances from seeds; an instance kept from it</span>
+  with its facts as text you can read and edit (and the recipe it came from: generator, parameters, seed; the same recipe always
+  gives the same facts). A generator's <b>Constants of its instances</b> (<code>n=n</code> passes its parameter <code>n</code> on) are added to
+  each instance it makes.</p>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="qbf">Load: QBF</button></p>
 <h3 id="tut-fuzz">Fuzz</h3>
 <p><span class="web-only">Load the too weak sum-free sets again and press <b>Fuzz</b> in the Instances tab.</span><span class="book-only"><b>Fuzz</b> (Instances tab), run on the too weak sum-free sets,</span> It audits the project on

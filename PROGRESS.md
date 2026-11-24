@@ -1854,3 +1854,10 @@ number count". Found and fixed:
   title; Undo is on its own line saying what replaced the project; **Last action (time)** above the
   list.
 - Full suite: 1125 pass, 0 fail, 9 skipped (with the reference clones and Python clingo). `make-replays` changes only timings (not committed); `guide-numbers --check` passes; book regenerated.
+- **Generators and instances:** a generator's `constants` (Instances tab, "Constants of its
+  instances"; `n=n` passes a parameter on) reach each instance it makes (`generatorConstants`,
+  `resolveInstance`; campaign cache key includes them). **Add as instance** (preview and mining) now
+  stores the generated facts as text, so the instance is fixed and editable; the recipe stays as a
+  note. A recipe-only instance has **Write out its facts**. The run bar's "(project as written)" is
+  now **(no instance)**, explained by a note in the Instances tab while picked; the Shown line says
+  "with no instance". Docs: manual, tutorial, spec-instances.

@@ -3714,7 +3714,7 @@ Most examples of the library keep their input in instances. The voting example h
 
 ### Generators {#t07-tut-generators}
 
-A **generator** is an ASP program whose shown atoms are an instance, with seeded random draws such as `@flip(500, X, Y)` (1 with probability 1/2). The QBF example has one, in the **Generators** part of the Instances tab, which draws instances from seeds; an instance kept from it is stored as a recipe: the file stores only its recipe (generator, parameters, seed), and the same recipe always gives the same facts.
+A **generator** is an ASP program whose shown atoms are an instance, with seeded random draws such as `@flip(500, X, Y)` (1 with probability 1/2). The QBF example has one, in the **Generators** part of the Instances tab, which draws instances from seeds; an instance kept from it with its facts as text you can read and edit (and the recipe it came from: generator, parameters, seed; the same recipe always gives the same facts). A generator's **Constants of its instances** (`n=n` passes its parameter `n` on) are added to each instance it makes.
 
 [Playground: qbf]{.play}
 

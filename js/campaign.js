@@ -121,7 +121,7 @@ export async function cellKey(project, cell, suite, engineVersion = '') {
   if (inst && inst.facts === undefined && inst.recipe) {
     const g = (project.generators || []).find((x) => x.name === inst.recipe.generator);
     d = derive({ ...c.project, instances: [{ ...inst, facts: '' }] }, { instance: inst.id, variant: c.variant });
-    d = { ...d, recipe: [inst.recipe, g ? g.text : '', g ? g.defaults || {} : {}] };
+    d = { ...d, recipe: [inst.recipe, g ? g.text : '', g ? g.defaults || {} : {}, g ? g.constants || {} : {}] };
   } else {
     d = derive(c.project, { instance: c.instance, variant: c.variant });
   }

@@ -3,7 +3,7 @@
 // An importer is (text, names) -> { facts, constants }, where names renames the canonical
 // predicates (for instance { node: 'vertex' }). Facts are one ground fact per line.
 import { INSTANCE_FRAGMENT, INSTANCE_ID, selectedInstance } from './project.js';
-import { runRecipe, recipeKey } from './generate.js';
+import { runRecipe, recipeKey, generatorConstants } from './generate.js';
 import { parseClingoErrors } from './driver.js';
 
 export class ImportError extends Error {}
@@ -305,7 +305,10 @@ export async function resolveInstance(project, id, engineRun, luaTexts) {
     }
     facts = atoms.join(' ');
   }
-  return { ...x, facts, generated: { attempt: r.attempt, exact: r.exact } };
+  // the generator's constants, under the instance's own
+  const g = (project.generators || []).find((y) => y.name === x.recipe.generator);
+  const constants = { ...generatorConstants(g, x.recipe.params || {}), ...(x.constants || {}) };
+  return { ...x, facts, constants, generated: { attempt: r.attempt, exact: r.exact } };
 }
 
 // A copy of the project whose selected (or given) instance has facts; other instances unchanged.

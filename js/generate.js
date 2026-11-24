@@ -27,6 +27,21 @@ export function paramList(generator, params = {}) {
   return { list: out, problems };
 }
 
+// The constants a generator gives each of its instances ({ name: value } as strings): a value
+// that names one of its parameters takes that parameter's value (the recipe's, else the default).
+export function generatorConstants(generator, params = {}) {
+  const out = {};
+  const types = (generator && generator.params) || {};
+  for (const [k, v] of Object.entries((generator && generator.constants) || {})) {
+    const s = String(v).trim();
+    if (s in types) {
+      const x = params[s] !== undefined && params[s] !== '' ? params[s] : generator.defaults && generator.defaults[s];
+      if (x !== undefined && x !== '') out[k] = String(x);
+    } else if (s) out[k] = s;
+  }
+  return out;
+}
+
 // The program of one generator run (the Lua texts of lua/draw.lua and lua/generate.lua).
 export function assembleGenerator(generator, params, seeds, luaTexts, { attempts = 100 } = {}) {
   const { list, problems } = paramList(generator, params);

@@ -1,7 +1,7 @@
 // Instances tab (tab 9) and the instance picker of the run bar (docs/spec-instances.md).
 import { makeEditor } from './editors.js';
-import { IMPORTERS, importerFor, freshId, checkFacts, ImportError } from './instances.js';
-import { generate, PARAM_TYPES } from './generate.js';
+import { IMPORTERS, importerFor, freshId, checkFacts, ImportError, resolveInstance } from './instances.js';
+import { generate, PARAM_TYPES, generatorConstants } from './generate.js';
 import { fuzz, shrinkInstance, diagnose, defaultSource, auditOf, symbolicOf } from './fuzz.js';
 import { mine } from './mine.js';
 import { BatchStopped } from './control.js';
@@ -23,6 +23,8 @@ const el = (tag, attrs = {}, ...kids) => {
   for (const k of kids) if (k !== null && k !== undefined) e.append(k);
   return e;
 };
+// generated facts ("a. b(1). c.") one per line
+const factsText = (facts) => String(facts || '').split(/(?<=\.)\s+/).filter(Boolean).join('\n') + '\n';
 const constText = (c) => Object.entries(c || {}).map(([k, v]) => `${k}=${v}`).join(', ');
 function parseConsts(text) {
   const out = {};
@@ -99,14 +101,19 @@ export class InstancesTab {
         el('button', { class: 'control-button small-button', id: 'delete-instance-button', onclick: () => this.remove() }, 'Delete')),
       el('p', { class: 'note' }, 'Facts of this instance. A run gives them to every solver and every glue control, as the fragment "instance".'),
       this.recipeNote = el('p', { class: 'note', id: 'instance-recipe', hidden: true }),
+      this.writeOut = el('button', { class: 'control-button small-button', id: 'instance-write-out', hidden: true, onclick: () => this.writeOutFacts(),
+        title: 'Generate the facts now and keep them in this instance, as text you can read and edit' }, 'Write out its facts'),
       this.symbolicNote = el('p', { class: 'note', id: 'instance-symbolic', hidden: true }),
       editorBox);
     for (const [inp, fn] of [[this.idInput, 'rename'], [this.expInput, 'setExpected'], [this.optInput, 'setOptimum'], [this.tagsInput, 'setTags'], [this.constInput, 'setConstants']]) {
       inp.addEventListener('change', () => this[fn](inp.value));
     }
     this.exerciseBox = el('div', { id: 'exercise-box', class: 'audit-panel exercise-box', hidden: true });
+    this.noneNote = el('p', { class: 'note audit-note', id: 'instance-none-note', hidden: true },
+      'The run bar says (no instance): a run uses none of these instances. The solvers get the fragments alone, with the project\'s own constants (Loop tab); ',
+      'no instance facts and no instance constants. Pick an instance in the run bar, or press Use in the table, to run on one.');
     this.root.append(
-      bar, this.status, this.exerciseBox, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table), this.form);
+      bar, this.status, this.noneNote, this.exerciseBox, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table), this.form);
     this.buildGenerators();
     this.buildSpaces();
     this.editor = makeEditor(editorBox, 'ace/mode/gringo');
@@ -145,10 +152,12 @@ export class InstancesTab {
     this.select.hidden = list.length === 0;
     $('instance-select-label').hidden = list.length === 0;
     if (list.length) {
-      this.select.append(el('option', { value: '' }, '(project as written)'));
+      this.select.append(el('option', { value: '', title: 'Run the fragments alone, with the project\'s own constants: no instance facts, no instance constants' }, '(no instance)'));
       for (const x of list) this.select.append(el('option', { value: x.id }, x.id));
       this.select.value = sel;
     }
+    // what "(no instance)" means, said where the instances are listed
+    this.noneNote.hidden = !(list.length && sel === '');
     // the table
     this.table.textContent = '';
     this.table.append(el('tr', {}, ...['Instance', 'Facts', 'Constants', 'Tags', 'Expected', 'Last count', ''].map((h) => el('th', {}, h))));
@@ -216,13 +225,15 @@ export class InstancesTab {
     this.tagsInput.value = (x.tags || []).join(', ');
     this.constInput.value = constText(x.constants);
     this.recipeNote.hidden = !x.recipe;
+    this.writeOut.hidden = !(x.recipe && x.facts === undefined);
     // the stored expected verdict of the symbolic audit (library instances)
     this.symbolicNote.hidden = !x.symbolic;
     this.symbolicNote.textContent = x.symbolic ? `Expected verdict of the symbolic audit on this instance: ${x.symbolic}.` : '';
     if (x.recipe) {
       const r = x.recipe;
-      this.recipeNote.textContent = `Recipe: generator ${r.generator}, ${constText(r.params) || 'default parameters'}, seed ${r.seed || 0}. ` +
-        (x.facts === undefined ? 'Its facts are generated when a run uses it.' : 'Facts written here replace the recipe\'s.');
+      this.recipeNote.textContent = x.facts === undefined
+        ? `Recipe: generator ${r.generator}, ${constText(r.params) || 'default parameters'}, seed ${r.seed || 0}. Its facts are generated when a run uses it; Write out its facts keeps them here, to read and edit.`
+        : `Generated by ${r.generator} (${constText(r.params) || 'default parameters'}, seed ${r.seed || 0}). The facts below are this instance's own: edit them freely; the generator is not run again.`;
     }
     this.loading = true;
     this.editor.setValue(x.facts || '', -1);
@@ -453,6 +464,8 @@ export class InstancesTab {
     this.genName = el('input', { id: 'generator-name', size: 14, 'aria-label': 'Generator name' });
     this.genName.addEventListener('change', () => this.renameGenerator(this.genName.value));
     this.genParams = el('table', { class: 'internals-table', id: 'generator-params' });
+    this.genConsts = el('input', { id: 'generator-constants', size: 24, placeholder: 'n=n, k=3', 'aria-label': 'Constants of its instances' });
+    this.genConsts.addEventListener('change', () => this.setGenConstants(this.genConsts.value));
     this.genSeed = el('input', { id: 'generator-seed', size: 6, inputmode: 'numeric', value: '1', 'aria-label': 'First seed' });
     this.genStatus = el('p', { id: 'generator-status', class: 'note', role: 'status', 'aria-live': 'polite' });
     this.preview = el('div', { id: 'generator-preview', class: 'generator-preview' });
@@ -464,6 +477,8 @@ export class InstancesTab {
         '@perm(N, I, K...), @subset(M, N, I, K...), @mallows(N, Phi, I, K...); P and Phi in thousandths. An unsatisfiable draw is redrawn.'),
       box,
       el('div', { class: 'table-wrapper' }, this.genParams),
+      el('div', { class: 'instance-fields' }, el('label', { title: 'name=value, ...; a value that names a parameter takes its value' }, 'Constants of its instances ', this.genConsts)),
+      el('p', { class: 'note' }, 'Given to every instance it makes (added to the instance\'s Constants): for example n=n passes the parameter n on as the constant n, k=3 a fixed value.'),
       el('div', { class: 'instances-bar' },
         el('button', { class: 'control-button small-button', id: 'add-param-button', onclick: () => this.addParam() }, 'Add parameter'),
         el('label', {}, 'Seed ', this.genSeed),
@@ -492,6 +507,7 @@ export class InstancesTab {
     this.genBody.hidden = !g;
     if (!g) return;
     this.genName.value = g.name;
+    this.genConsts.value = constText(g.constants);
     this.genLoading = true;
     if (this.genEditor.getValue() !== g.text) this.genEditor.setValue(g.text || '', -1);
     this.genLoading = false;
@@ -539,6 +555,34 @@ export class InstancesTab {
     this.app.dirty();
   }
 
+  setGenConstants(v) {
+    const g = this.generator;
+    if (!g) return;
+    let c;
+    try { c = parseConsts(v); } catch (e) { this.genStatus.textContent = `Constants: ${e.message}`; return; }
+    for (const k of Object.keys(c)) if (!/^[a-z][A-Za-z0-9_]*$/.test(k)) { this.genStatus.textContent = `Constants: ${k} must start with a lower case letter.`; return; }
+    if (Object.keys(c).length) g.constants = c; else delete g.constants;
+    this.genStatus.textContent = '';
+    this.app.dirty();
+  }
+
+  // A recipe instance becomes a fixed one: its facts generated now and kept as text, with the
+  // generator's constants added to its own.
+  async writeOutFacts() {
+    const x = this.list.find((i) => i.id === this.current);
+    if (!x || !x.recipe || !this.app.ready || this.app.engine.active) return;
+    let r;
+    try { r = await resolveInstance(this.app.project, x.id, (p, o) => this.app.engine.exec(p, o), this.app.genLua()); }
+    catch (e) { this.say(`Not written out: ${e.message || e}`, true); return; }
+    x.facts = factsText(r.facts);
+    x.constants = r.constants;
+    delete x.mutations;
+    this.render();
+    this.showForm();
+    this.app.dirty();
+    this.say(`Wrote out the facts of ${x.id}: they are its own now.`);
+  }
+
   addParam() {
     const g = this.generator;
     if (!g) return;
@@ -576,8 +620,16 @@ export class InstancesTab {
       const card = el('div', { class: 'generator-card mined', 'data-mined': x.id });
       card.append(el('p', {}, `${x.id}: ${x.score.toFixed(2)} candidates per solution (${x.res ? `${x.res.candidates} candidates, ${x.res.solutions} solutions, ${x.res.outcome}` : 'no run'})` +
         `${x.instance.mutations && x.instance.mutations.length ? `; ${x.instance.mutations.length} facts removed` : ''}`),
-        el('button', { class: 'control-button small-button', onclick: () => {
-          const id = this.add({ ...structuredClone(x.instance), id: freshId(this.app.project, x.id) });
+        el('button', { class: 'control-button small-button', onclick: async () => {
+          const inst = { ...structuredClone(x.instance), id: freshId(this.app.project, x.id) };
+          // a fixed instance: its facts (with the removals) as text, the generator's constants added
+          try {
+            const r = await resolveInstance({ ...this.app.project, instances: [inst] }, inst.id, (p, o) => this.app.engine.exec(p, o), this.app.genLua());
+            inst.facts = factsText(r.facts);
+            inst.constants = r.constants;
+            delete inst.mutations;
+          } catch (e) { this.genStatus.textContent = `Not added: ${e.message || e}`; return; }
+          const id = this.add(inst);
           this.genStatus.textContent = `Added instance ${id} (tag hard).`;
         } }, 'Add as instance'));
       this.preview.append(card);
@@ -609,15 +661,15 @@ export class InstancesTab {
       if (r.error) card.append(el('p', { class: 'error' }, `Seed ${r.seed}: ${r.error}`));
       else {
         const params = Object.fromEntries(Object.keys(g.params || {}).filter((k) => g.defaults && g.defaults[k] !== undefined).map((k) => [k, g.defaults[k]]));
+        const constants = generatorConstants(g, params);
         card.append(
           el('p', {}, `Seed ${r.seed}, attempt ${r.attempt}, `, el('span', { class: r.exact ? 'label-exact' : 'label-completed' }, r.exact ? 'exact' : 'solver-completed')),
           el('pre', { class: 'generator-facts' }, r.facts.split(' ').join('\n')),
           el('button', { class: 'control-button small-button', onclick: () => {
             const id = freshId(this.app.project, `${g.name}-s${r.seed}`);
-            this.add({ id, recipe: { generator: g.name, params, seed: r.seed }, constants: {}, tags: ['generated'] });
-            delete this.list.find((x) => x.id === id).facts;
-            this.showForm();
-            this.say(`Added instance ${id} (recipe: ${g.name}, seed ${r.seed}).`);
+            // a fixed instance: the facts as text (the recipe says where they came from)
+            this.add({ id, facts: factsText(r.facts), recipe: { generator: g.name, params, seed: r.seed }, constants, tags: ['generated'] });
+            this.say(`Added instance ${id} (generated by ${g.name}, seed ${r.seed}${constText(constants) ? `; constants ${constText(constants)}` : ''}).`);
           } }, 'Add as instance'));
       }
       this.preview.append(card);

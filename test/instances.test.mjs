@@ -208,3 +208,19 @@ test('CSV import: row/N facts without a map, named predicates with a column map 
   assert.throws(() => I.fromCsv('a,b\n1\n'), /line 2: 1 fields/);
   assert.equal(I.importerFor('data.tsv'), 'csv');
 });
+
+test('generator constants: a value naming a parameter takes its value; a recipe instance gets them under its own', async () => {
+  const { generatorConstants } = await import('../js/generate.js');
+  const g = { name: 'g', text: 'node(1..n).\n#show node/1.\n', params: { n: 'int' }, defaults: { n: 4 }, constants: { n: 'n', k: '3' } };
+  assert.deepEqual(generatorConstants(g, {}), { n: '4', k: '3' });
+  assert.deepEqual(generatorConstants(g, { n: 6 }), { n: '6', k: '3' });
+  assert.deepEqual(generatorConstants({ ...g, constants: undefined }, {}), {});
+  // the project format keeps them, and checks them
+  const p = P.load({ format: 'cegarplay', fragments: [{ name: 'shared', text: '' }], generators: [g],
+    instances: [{ id: 'a', recipe: { generator: 'g', params: { n: 5 }, seed: 1 }, constants: { k: '7' } }] });
+  assert.deepEqual(p.generators[0].constants, { n: 'n', k: '3' });
+  assert.throws(() => P.load({ format: 'cegarplay', fragments: [], generators: [{ ...g, constants: { N: '1' } }] }), /constant name 'N'/);
+  const x = await I.resolveInstance(p, 'a', H.engineRun, H.GEN_LUA);
+  assert.match(x.facts, /node\(5\)/);
+  assert.deepEqual(x.constants, { n: '5', k: '7' });
+});

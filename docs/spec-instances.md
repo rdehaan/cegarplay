@@ -70,7 +70,11 @@ reference run. `test/instances.test.mjs` runs every instance with an expected co
 
 ## 4. Generators
 
-`generators[]`: `{ name, text, params: { name: "int" | "permille" }, defaults, description }`.
+`generators[]`: `{ name, text, params: { name: "int" | "permille" }, defaults, constants, description }`.
+`constants` (optional, since 2026-11-24): `{ name: value }` given to each instance of the generator,
+under the instance's own; a value that names a parameter takes that parameter's value
+(`generatorConstants` in `js/generate.js`; applied by `resolveInstance`, and written into the
+instance by the page's **Add as instance** and **Write out its facts**, which store the facts as text).
 A recipe `{ generator, params, seed, attempts }` names one instance: the first accepted attempt
 0, 1, ... (at most `attempts`, default 100) of the generator with `defaults` overridden by `params`.
 

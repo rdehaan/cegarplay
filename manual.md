@@ -116,7 +116,7 @@ two-space indentation.
 | `instances` | list | none | Format version 2. See [Instances](#manual-instances). |
 | `variants` | list | none | Format version 2. See [Instances](#manual-instances). |
 | `spaces` | list | none | Optional, format version 2: every instance up to a bound, for the Audit's mode Space. See [Spaces](#manual-spaces). |
-| `settings.instance` | string | the first instance | The instance a run uses; `""` = the project as written. |
+| `settings.instance` | string | the first instance | The instance a run uses; `""` = no instance (the run bar's **(no instance)**: the fragments alone, with the project's own constants). |
 | `settings.variant` | string | none | The variant a run uses (the run bar's Variant picker); absent or `""` = the project as it is; a name that is no variant is ignored. Dropped on save when the project has no variants. |
 | `settings.audit` | object | none | The run bar's audit mode: `{ mode, space, bound }`, `mode` one of `"enumerate"`, `"symbolic"`, `"space"`; `space` and `bound` only for `"space"`. Written when the mode is changed; not written for enumeration (the default), nor for `"space"` when the project has no spaces. See [Audit modes](#manual-audit-modes). |
 
@@ -350,7 +350,13 @@ follow the stated distribution, conditioned on acceptance) and **solver-complete
 more (clingo returns some model, not a uniform one). A bad argument (`@flip(a, 1)`) stops the
 generator with a message. The Instances tab has a generator list and editor, a parameter table, a
 seed and **Preview 6** (six instances from six seeds, with attempt and label); **Add as instance**
-stores the recipe. `tools/draw.py` is the Python twin used by `tools/cegarcheck.py --instance`; both
+adds a fixed instance: the generated facts as text (to read and edit; the generator is not run again),
+the recipe kept as a note of where they came from, and the generator's constants. **Constants of its
+instances** (`constants` in the project: `n=n, k=3`) are given to every instance a generator makes: a
+value that names one of its parameters takes that parameter's value (the recipe's, else the default),
+anything else is used as it is; the instance's own constants win. An instance stored as a recipe only
+(library examples, suites) gets them at run time, and has **Write out its facts**, which makes it a
+fixed instance. Mined instances are added as fixed instances too. `tools/draw.py` is the Python twin used by `tools/cegarcheck.py --instance`; both
 give byte-identical facts. Library generators: `gnp`, `gnm` (`clique-colouring`, `arrowing`,
 `choosability`), `af-gnp` (`af-preferred`, `af-semi-stable`), `qbf-dnf` (`qbf`), `ballots-ic` and
 `ballots-mallows` (`kemeny-control`).

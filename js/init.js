@@ -343,7 +343,8 @@ app.updateShown = () => {
   const space = hd.mode === 'bounded' && /^space-/.test(hd.instance || '') ? hd.instance.slice(6) : null;
   const what = state === 'replayed' ? 'a replayed recording' : space ? `the space audit of space ${space}`
     : hd.mode === 'bounded' ? 'the symbolic audit' : hd.mode === 'audit' ? 'the audit by enumeration' : 'the run';
-  const parts = [what + (space ? '' : ` on ${hd.instance ? `instance ${hd.instance}` : 'the project as written'}`) + (hd.variant ? ` (variant ${hd.variant})` : '') +
+  const noInstance = (app.project.instances || []).length ? ' with no instance' : ' on the project as written';
+  const parts = [what + (space ? '' : hd.instance ? ` on instance ${hd.instance}` : noInstance) + (hd.variant ? ` (variant ${hd.variant})` : '') +
     (rec.started ? `, started ${rec.started}` : '')];
   const active = state === 'running' || state === 'paused' || state === 'validating';
   const row = (app.stats && app.stats.history || []).at(-1);
