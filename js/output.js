@@ -93,12 +93,12 @@ export class Output {
     h.textContent = `${what}: ${a.mode === 'space' && a.verdict === 'sound' ? `sound up to k = ${a.k}` : a.verdict === 'unsound' && a.mode === 'space' ? `unsound at k = ${a.k}` : a.verdict}`;
     el.append(h);
     const p = document.createElement('p');
-    p.textContent = symbolicText(a);
+    p.textContent = symbolicDetail(a);
     el.append(p);
     if (a.mode === 'space' && a.perK && a.perK.length) {
       const q = document.createElement('p');
       q.className = 'note space-steps';
-      q.textContent = 'Per k: ' + a.perK.map((r) => `${r.k} ${r.verdict}${r.rounds != null ? ` (${fmt(r.rounds)} rounds)` : ''}`).join(' · ');
+      q.textContent = 'Per k: ' + a.perK.map((r) => `${r.k} ${r.verdict}${r.rounds != null ? ` (${plural(r.rounds, 'round')})` : ''}`).join(' · ');
       el.append(q);
     }
     const w = a.witness;
@@ -106,7 +106,10 @@ export class Output {
       const dl = document.createElement('dl');
       const row = (k, v) => { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; dl.append(dt, dd); return dd; };
       const set = (l) => `{${(l || []).join(' ')}}`;
-      if (w.instance != null) row(`Instance (k = ${w.k ?? a.k})`, w.instance || '(no facts)').className = 'witness-instance';
+      if (w.instance != null) {
+        const c = Object.entries(w.constants || {}).map(([k, v]) => `${k} = ${v}`).join(', ');
+        row(`Instance (k = ${w.k ?? a.k})`, [w.instance, c && `constants ${c}`].filter(Boolean).join('; ') || '(no facts)').className = 'witness-instance';
+      }
       row('Candidate', set(w.candidate));
       row('Counterexample', w.counterexample || '(no shown atoms)');
       if (w.kind === 'clauses') row('Clause', set(w.clause));
@@ -263,9 +266,28 @@ export class Output {
   }
 }
 
+const plural = (n, word) => `${fmt(n)} ${word}${n === 1 ? '' : 's'}`;
+
+// The panel's explanation under its heading (the result line already says the verdict).
+function symbolicDetail(a) {
+  const steps = `${plural(a.rounds ?? 0, 'round')} of the inner loop, ${plural(a.refinements ?? 0, 'refinement')}${a.fallback ? ` (${plural(a.fallback, 'block')})` : ''}`;
+  const link = a.link ? `Link ${a.link}${(a.kinds || []).length ? ` (${a.kinds.join(' and ')})` : ''}: ` : '';
+  if (a.mode === 'space') {
+    const n = (a.perK || []).length;
+    const what = a.verdict === 'sound' ? `every instance of the space for ${n === 1 ? `k = ${a.k}` : `k up to ${a.k}`} was checked; no refinement removes a solution on any of them. Larger instances are not covered.`
+      : a.verdict === 'unsound' ? `the smaller values of k are sound; at k = ${a.k} a clause removes the lost solution below, on the instance shown.`
+        : `no verdict at k = ${a.k}${a.reason ? ` (${a.reason})` : ''}; the smaller values of k are sound.`;
+    return `${link}${what} Last step: ${steps}.`;
+  }
+  const what = a.verdict === 'sound' ? 'no candidate, counterexample and solution exist such that the clause removes the solution.'
+    : a.verdict === 'unsound' ? 'the counterexample\'s clause removes the lost solution below.'
+      : a.verdict === 'budget' ? `no verdict within ${fmt(a.seconds || 60)} s.` : `${a.reason || a.verdict}.`;
+  return `${link}${what} ${steps[0].toUpperCase()}${steps.slice(1)}.`;
+}
+
 // One line for a symbolic or space verdict (PLAN3), for the result line and the panel.
 export function symbolicText(a) {
-  const steps = `${fmt(a.rounds ?? 0)} rounds, ${fmt(a.refinements ?? 0)} refinements${a.fallback ? ` (${fmt(a.fallback)} blocks)` : ''}`;
+  const steps = `${plural(a.rounds ?? 0, 'round')}, ${plural(a.refinements ?? 0, 'refinement')}${a.fallback ? ` (${plural(a.fallback, 'block')})` : ''}`;
   if (a.mode === 'space') {
     if (a.verdict === 'sound') return `Space ${a.space}: sound for every instance up to k = ${a.k} (the strategy loses no solution on any of them).`;
     if (a.verdict === 'unsound') return `Space ${a.space}: unsound at k = ${a.k}: a clause removes a solution on the instance shown.`;

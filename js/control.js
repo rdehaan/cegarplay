@@ -3,7 +3,7 @@ import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody, boun
 import { verifySpace } from './bounded.js';
 import { TEMPLATES, template, derive, pickedVariant, deriveSpace, spaceBound } from './project.js';
 import { resolveProject } from './instances.js';
-import { hashText } from './stats.js';
+import { hashText, auditLiveText } from './stats.js';
 import { fmt, symbolicText } from './output.js';
 import { Recording } from './recording.js';
 
@@ -531,11 +531,15 @@ export class Control {
       this.runMessage(msg); app.output.result(msg, 'error');
       return null;
     }
-    const A = { ...(result.last || {}), verdict: result.verdict, mode: 'space', space: sp.name, k: result.k, witness: result.witness, reason: result.reason, perK: result.perK };
+    // the constants of the space at k (a constants-only space has no facts: they are its instance)
+    const consts = { ...(sp.defaults || {}), [spaceBound(sp)]: result.k };
+    const witness = result.witness ? { ...result.witness, constants: Object.fromEntries(Object.entries(consts).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])) } : null;
+    const A = { ...(result.last || {}), verdict: result.verdict, mode: 'space', space: sp.name, k: result.k, witness, reason: result.reason, perK: result.perK };
     this.audit = A;
     app.output.auditVerdict(A);
     app.output.result(symbolicText(A), result.verdict === 'unsound' ? 'error' : '');
     if (last && last.info && app.stats.S) { app.stats.record({ ...last.info, noHistory: false, audit: A }); app.stats.render(); }
+    app.stats.live.textContent = auditLiveText(A);   // the whole space, not its last step
     return result;
   }
 

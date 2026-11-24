@@ -21,7 +21,9 @@ export function liveText(s) {
 // The run bar after an audit: its own counts (the S events of an audit count raw models).
 export function auditLiveText(a) {
   if (!a || !a.verdict) return ' ';
-  if (a.mode) return `${a.mode === 'space' ? `space ${a.space} · k = ${a.k}` : 'symbolic audit'} · ${fmt(a.rounds ?? 0)} rounds · ${fmt(a.refinements ?? 0)} refinements · ${a.verdict}`;
+  if (a.mode === 'space' && a.space) return `space ${a.space} · ${a.verdict === 'sound' ? `sound up to k = ${a.k}` : `${a.verdict} at k = ${a.k}`}`;
+  if (a.mode === 'space') return ' ';   // one step of a space audit: the space's line follows
+  if (a.mode) return `symbolic audit · ${fmt(a.rounds ?? 0)} rounds · ${fmt(a.refinements ?? 0)} refinements · ${a.verdict}`;
   const verdict = a.verdict === 'sound' ? 'sound' : a.verdict === 'unsound'
     ? `unsound: ${fmt(a.unsound)} remove a solution` : a.verdict;
   return `audit · ${fmt(a.candidates)} candidates · ${fmt(a.solutions)} solutions · ` +
