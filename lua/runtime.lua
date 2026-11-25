@@ -20,6 +20,12 @@ rt.partials = 0          -- calls of on partial (G5)
 rt.clauses, rt.literals, rt.maxlen = 0, 0, 0
 rt.hist = { 0, 0, 0, 0, 0, 0, 0, 0 }
 rt.expansions, rt.restarts, rt.blocks = 0, 0, 0
+-- Refinements by source (manual: Counting): from_models (clauses and expansions built from a
+-- counterexample), from_cores (G.core, C.core.on(G), .minimal), blocks (G.block, G.above,
+-- G.below and the automatic blocks of accepted solutions), other (clauses the script builds
+-- itself, expansions from neither a model nor a core). The same counts per link (rt.by_link).
+rt.from_models, rt.from_cores, rt.other = 0, 0, 0
+rt.by_link = {}
 rt.counters, rt.counter_order = {}, {}
 rt.tracked, rt.track_order, rt.track_n = {}, {}, {}
 rt.traced = 0
@@ -137,13 +143,42 @@ local function bucket(len)
   elseif len <= 64 then return 7 end
   return 8
 end
+local count_source_late   -- set below (count_source is defined after the statistics helpers)
 local function count_clause(c)
   local n = #c
+  if count_source_late then count_source_late(type(c) == "table" and c.source or nil, type(c) == "table" and c.link or nil) end
   rt.clauses = rt.clauses + 1
   rt.literals = rt.literals + n
   if n > rt.maxlen then rt.maxlen = n end
   local b = bucket(n); rt.hist[b] = rt.hist[b] + 1
 end
+
+-- per link: { counterexamples, from_models, from_cores, blocks, other }
+local function link_count(L)
+  local c = rt.by_link[L]
+  if not c then c = { counterexamples = 0, from_models = 0, from_cores = 0, blocks = 0, other = 0 }; rt.by_link[L] = c end
+  return c
+end
+-- A counterexample is a model that refuted a candidate: a snapshot is counted the first time a
+-- refinement is built from it (G.clause(M, X), G.clause(X), G.clauses(X), G.lift(M, X), or
+-- S.expand with its atoms), once, and credited to the link whose refinement used it.
+local function refuting(X, L)
+  if type(X) ~= "table" or X.lazy or rawget(X, "refuting") then return end
+  rawset(X, "refuting", true)
+  rt.counterexamples = rt.counterexamples + 1
+  if L then local c = link_count(L); c.counterexamples = c.counterexamples + 1 end
+end
+rt.refuting = refuting
+-- a refinement added (S.add, reject, an expansion, an automatic block), by its source
+local SOURCE_FIELD = { model = "from_models", core = "from_cores", block = "blocks", other = "other" }
+local function count_source(source, L, n)
+  local f = SOURCE_FIELD[source or "other"] or "other"
+  n = n or 1
+  rt[f] = rt[f] + n
+  if L then local c = link_count(L); c[f] = c[f] + n end
+end
+rt.count_source = count_source
+count_source_late = count_source
 
 local function num(v) if v == nil then return NULL end return v end
 
@@ -176,7 +211,19 @@ local function stats_event()
   for i = 1, 8 do hist[i] = rt.hist[i] end
   local e = { t = clock() - rt.t0, candidates = rt.candidates, counterexamples = rt.counterexamples,
     solutions = rt.solutions, clauses = rt.clauses, literals = rt.literals, maxlen = rt.maxlen, hist = hist,
-    expansions = rt.expansions, restarts = rt.restarts, blocks = rt.blocks, solvers = sv, counters = counters }
+    expansions = rt.expansions, restarts = rt.restarts, blocks = rt.blocks, solvers = sv, counters = counters,
+    from_models = rt.from_models, from_cores = rt.from_cores }
+  if rt.other > 0 then e.other = rt.other end
+  -- per link, in the order of the links: counterexamples and refinements by source
+  local bl = {}
+  for _, L in ipairs(rt.links) do
+    local c = rt.by_link[L]
+    if c then
+      bl[L.name] = { counterexamples = c.counterexamples, from_models = c.from_models, from_cores = c.from_cores, blocks = c.blocks }
+      if c.other > 0 then bl[L.name].other = c.other end
+    end
+  end
+  if next(bl) then e.links = bl end
   if rt.partials > 0 then e.partials = rt.partials end
   if rt.labels and #rt.label_order > 0 then
     local lb = {}
@@ -384,7 +431,12 @@ function rt.solver(name, frags, options)
       if init.check_mode ~= mode then init.check_mode = mode end
       guarded(s, function()
         if #s.queue > 0 then local q = s.queue; s.queue = {}; inject(s, init, q) end
-        if #s.blocks > 0 then local q = s.blocks; s.blocks = {}; rt.blocks = rt.blocks + #q; inject(s, init, q) end
+        if #s.blocks > 0 then
+          local q = s.blocks; s.blocks = {}
+          -- automatic blocks of accepted solutions: credited to the solver's link when it has one
+          count_source("block", #s.out == 1 and s.out[1] or nil, #q)
+          inject(s, init, q)
+        end
         for _, L in ipairs(s.out) do
           local sl, src = L.slit, L.src
           for j = 1, L.n do sl[j] = init:solver_literal(src[j]) end
@@ -676,14 +728,18 @@ function Link:clause(M, X)
       if r[j] then local k = #c + 1; c[k] = val[j] and -lits[j] or lits[j]; c.j[k] = j end
     end
     c.empty_ok = true
+    c.source = "model"
+    refuting(X, self)
     return c
   end
   check_model(self, M, "clause", "from")
   check_model(self, X, "clause", "to")
-  if self.lifting then return rt.LIFT.lift(self, M, X) end
+  refuting(X, self)
+  if self.lifting then local c = rt.LIFT.lift(self, M, X); c.source = c.source or "model"; return c end
   local v, r = M[self], X[self]
   local lits = M.lazy and self.slit or self.src
   local c = new_clause(self, M.lazy, M, X)
+  c.source = "model"
   local idx = c.j
   for j = 1, self.n do
     if r[j] then
@@ -822,6 +878,7 @@ function Link:above(x)
   local v, lazy, M = values_of(self, x, "above")
   local lits = lazy and self.slit or self.src
   local c = new_clause(self, lazy, M, nil)
+  c.source = "block"
   for j = 1, self.n do if v[j] then local k = #c + 1; c[k] = -lits[j]; c.j[k] = j end end
   c.empty_ok = true
   return c
@@ -830,6 +887,7 @@ function Link:below(x)
   local v, lazy, M = values_of(self, x, "below")
   local lits = lazy and self.slit or self.src
   local c = new_clause(self, lazy, M, nil)
+  c.source = "block"
   for j = 1, self.n do if not v[j] then local k = #c + 1; c[k] = lits[j]; c.j[k] = j end end
   c.empty_ok = true
   return c
@@ -858,6 +916,7 @@ function Core:on(G)
   local lazy = G.from.searching and true or false
   local lits = lazy and G.slit or G.src
   local c = new_clause(G, lazy, nil, nil)
+  c.source = "core"
   local seen = {}
   for _, l in ipairs(self.lits) do
     for _, L in ipairs(self.solver.inn) do
@@ -1058,7 +1117,10 @@ function Link:lift(M, X)
   check_model(self, M, "lift", "from")
   check_model(self, X, "lift", "to")
   if not rt.LIFT then fail(self.name .. ".lift needs lua/ground.lua") end
-  return rt.LIFT.lift(self, M, X)
+  refuting(X, self)
+  local c = rt.LIFT.lift(self, M, X)
+  c.source = c.source or "model"
+  return c
 end
 
 function Link:block(M)
@@ -1066,6 +1128,7 @@ function Link:block(M)
   local v = M[self]
   local lits = M.lazy and self.slit or self.src
   local c = new_clause(self, M.lazy, M, nil)
+  c.source = "block"
   local idx = c.j
   for j = 1, self.n do c[j] = v[j] and -lits[j] or lits[j]; idx[j] = j end
   return c
@@ -1083,6 +1146,7 @@ function Link:core(S, core_lits, minimal, uncounted)
   local lazy = self.from.searching
   local lits = lazy and self.slit or self.src
   local c = new_clause(self, lazy, nil, nil)
+  c.source = "core"
   local seen = {}
   -- core_lits: the literals of a core value (core.on(G), also a minimised core); else the last core
   for _, l in ipairs(core_lits or S.last_core) do
@@ -1113,6 +1177,7 @@ function Link:clauses(X)
   local lazy = self.from.searching
   local lits = lazy and self.slit or self.src
   local out, byid = array({}), {}
+  refuting(X, self)
   for _, a in ipairs(atoms) do
     local args = a.arguments
     local id, t, val = tostring(args[1]), tostring(args[2]), tostring(args[3])
@@ -1120,7 +1185,7 @@ function Link:clauses(X)
     if not j then fail(self.name .. ".clauses: " .. t .. " is not an interface atom of link " .. self.name) end
     if val ~= "true" and val ~= "false" then fail(self.name .. ".clauses: the third argument of clause/3 must be true or false, got " .. val) end
     local c = byid[id]
-    if not c then c = new_clause(self, lazy, nil, X); byid[id] = c; out[#out + 1] = c end
+    if not c then c = new_clause(self, lazy, nil, X); c.source = "model"; byid[id] = c; out[#out + 1] = c end
     local k = #c + 1
     c[k] = val == "true" and lits[j] or -lits[j]
     c.j[k] = j
@@ -1515,8 +1580,8 @@ local function run_solve(s, o, limit, optimal, what)
   if #models > 0 then s.n.sat = s.n.sat + 1 else s.n.unsat = s.n.unsat + 1 end
   -- without assumptions, the run is exhausted when the solver has no (more) model: a solve that
   -- found none, or an enumeration of every model (S.models without a limit) that ran to its end
-  if #assume > 0 then rt.counterexamples = rt.counterexamples + #models
-  else rt.exhausted = (#models == 0) or (limit == math.huge and not optimal) end
+  -- (counterexamples are counted when a refinement is built from a model: refuting)
+  if #assume == 0 then rt.exhausted = (#models == 0) or (limit == math.huge and not optimal) end
   if #s.inn == 0 then
     for _ = 1, #models do count_candidate() end
   end
@@ -1588,7 +1653,7 @@ function Solver:add(c, o)
     if math.type(g) ~= "integer" then fail(self.name .. ".add(c, while a): the guard must be an atom such as " .. self.name .. ".atom(\"frame\", t)") end
     local function guarded_copy(x)
       if type(x) ~= "table" then return x end
-      local q = { link = x.link, lazy = x.lazy, m = x.m, x = x.x, j = {} }
+      local q = { link = x.link, lazy = x.lazy, m = x.m, x = x.x, source = x.source, j = {} }
       for k = 1, #x do q[k] = x[k]; q.j[k] = x.j and x.j[k] end
       q[#q + 1] = -g
       return q
@@ -1654,6 +1719,28 @@ function Solver:expand(part, facts)
   local names = {}
   for name in pairs(facts) do names[#names + 1] = name end
   table.sort(names)
+  -- the source of this expansion (manual: Counting): a counterexample's atoms (the model is
+  -- counted as a counterexample, credited to the link from this solver to the model's solver),
+  -- a core, a clause (its own source), or neither
+  local source, slink
+  local function link_to(S2) for _, x in ipairs(self.out) do if x.to == S2 then return x end end end
+  for _, name in ipairs(names) do
+    local v = facts[name]
+    if type(v) == "table" then
+      local M = owner[v]
+      if M and M.solver ~= self and not M.lazy then
+        source = "model"
+        local L = link_to(M.solver)
+        refuting(M, L)
+        slink = slink or L
+      elseif getmetatable(v) == Core then
+        source = source or "core"; slink = slink or link_to(rawget(v, "solver"))
+      elseif getmetatable(v) == nil and v.link and v.j and v.source then
+        source = source or v.source; slink = slink or v.link
+        if v.x then refuting(v.x, v.link) end
+      end
+    end
+  end
   local texts = array({})
   local all_facts = array({})
   local b = self.ctl:backend()
@@ -1683,6 +1770,7 @@ function Solver:expand(part, facts)
   self.ctl:ground(parts)
   self:resolve()
   rt.expansions = rt.expansions + 1
+  count_source(source or "other", slink)
   self.n.ground = self.n.ground + (clock() - t0)
   if REC then
     -- the check domain of the facts (docs/spec-instances.md section 7): pools are keyed by it

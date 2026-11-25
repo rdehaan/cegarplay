@@ -1,4 +1,4 @@
-// Refinement lab, Feature C: a recorded run against the bounds (docs/lab-design.md).
+// Refinery, Feature C: a recorded run against the bounds (docs/lab-design.md).
 // No DOM, no Node APIs.
 //
 //   runReport(exec, sp, rec, o)          the run on the space: length, regret per step, top regrets

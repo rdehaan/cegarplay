@@ -30,13 +30,13 @@ The page's tabs follow the work:
 - **Compare** (Advanced mode): *Campaign* (grids of instances × variants ×
   seeds on several engines, with plots and the runs whose counts disagree in
   red).
-- **What the loop could have done** (the *Refinement lab*, its own toggle): for a
+- **What the loop could have done** (the *Refinery*, its own toggle): for a
   step of a run, every clause the loop could have added there, which are sound,
   how much each removes and which atoms every sound clause needs; the shortest
   and longest runs the same refinements allow, exact on small instances; and a
   recorded run placed among them. `node tools/lab.mjs` gives the same numbers.
 
-Advanced mode, the Refinement lab, the Tutorial and the Manual are toggles under *Tabs* in the
+Advanced mode, the Refinery, the Tutorial and the Manual are toggles under *Tabs* in the
 Control tab; the browser remembers them. The Control tab also keeps named
 projects (the workspace) and snapshots of the project being edited, with an
 Undo after a restore or after loading another project over an edited one.

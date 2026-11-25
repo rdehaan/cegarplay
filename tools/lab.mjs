@@ -1,4 +1,4 @@
-// The Refinement lab, headless (docs/lab-design.md; manual: Refinement lab tab). Every number the
+// The Refinery, headless (docs/lab-design.md; manual: Refinery tab). Every number the
 // tab shows comes from the same modules (js/lab/*.js).
 //
 //   node tools/lab.mjs <project.json | library id> [options]

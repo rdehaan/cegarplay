@@ -474,3 +474,34 @@ export function stripAspComments(text) {
   }
   return out;
 }
+
+// The counts of a run (S event; manual: Counting). A counterexample is a model that refuted a
+// candidate: the runtime counts a model the first time a refinement is built from it, so a loop
+// that refines by cores (a witness check) shows its refutations under cores, not counterexamples.
+// Refinements by source: from_models (clauses and expansions from a counterexample), from_cores
+// (G.core, C.core.on(G), .minimal), blocks (G.block, G.above, G.below, and the automatic blocks
+// of accepted solutions) and other (clauses the script builds itself, expansions from neither).
+// An S event of an older recording has none of these: its refinements are its clauses and
+// expansions.
+export const COUNT_TIP = 'A counterexample is a model that refuted a candidate (a refinement was built from it). ' +
+  'Refinements by source: from counterexamples (clauses and expansions built from one), from cores (G.core, C.core.on(G), .minimal) and blocks ' +
+  '(G.block, G.above, G.below and the automatic blocks of accepted solutions). A witness-check loop refines by cores, so its refutations are counted under cores.';
+export function refinementCounts(S) {
+  if (!S) return null;
+  if (S.from_models === undefined) {
+    const total = (S.clauses ?? 0) + (S.expansions ?? 0);
+    return { total, from_models: null, from_cores: null, blocks: null, other: null, split: false };
+  }
+  const other = S.other ?? 0;
+  return { total: S.from_models + S.from_cores + S.blocks + other, from_models: S.from_models, from_cores: S.from_cores, blocks: S.blocks, other, split: true };
+}
+// "12 from counterexamples, 3 from cores, 2 blocks" (zeros left out; "none" when all are zero)
+export function refinementSplitText(r) {
+  if (!r || !r.split) return '';
+  const parts = [];
+  if (r.from_models) parts.push(`${r.from_models.toLocaleString('en-US')} from counterexamples`);
+  if (r.from_cores) parts.push(`${r.from_cores.toLocaleString('en-US')} from cores`);
+  if (r.blocks) parts.push(`${r.blocks.toLocaleString('en-US')} ${r.blocks === 1 ? 'block' : 'blocks'}`);
+  if (r.other) parts.push(`${r.other.toLocaleString('en-US')} other`);
+  return parts.length ? parts.join(', ') : 'none';
+}

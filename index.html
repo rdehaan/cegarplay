@@ -79,7 +79,7 @@
         <span class="run-field" title="clingo's --seed (0 = clingo's default). The seed changes the search only with a randomized search (or randomizing solver options); the same seed gives the same run again. Also in the Loop tab."><label class="inline-label" for="run-seed">Seed:</label>
           <input type="number" min="0" step="1" id="run-seed" class="run-seed">
           <label class="inline-label"><input type="checkbox" id="run-randomize"> randomized</label></span>
-        <span class="run-field" title="Record every step of the next runs, for the trace, the replay, the Observatory and the Refinement lab (Download recording in the Control tab). The Loop tab's Recording has more choices: the first, every or last N steps, solver calls, a proof log."><label class="inline-label"><input type="checkbox" id="run-record"> record steps</label></span>
+        <span class="run-field" title="Record every step of the next runs, for the trace, the replay, the Observatory and the Refinery (Download recording in the Control tab). The Loop tab's Recording has more choices: the first, every or last N steps, solver calls, a proof log."><label class="inline-label"><input type="checkbox" id="run-record"> record steps</label></span>
       </div>
       <!-- what the Output, Statistics and Observatory tabs show now: which run, audit or replay -->
       <div id="shown-line" class="shown-line" aria-live="polite"></div>
@@ -119,7 +119,7 @@
     <label for="tab10" class="tab-label" id="label-campaign" title="Campaign"><span class="tab-text">Campaign</span></label>
 
     <input id="tab12" aria-controls="section-lab" type="radio" name="tabs" hidden>
-    <label for="tab12" class="tab-label" id="label-lab" hidden title="Refinement lab" aria-label="Refinement lab"><span class="tab-text">Lab</span></label>
+    <label for="tab12" class="tab-label" id="label-lab" hidden title="Refinery" aria-label="Refinery"><span class="tab-text">Refinery</span></label>
 
     <input id="tab7" aria-controls="section-internals" type="radio" name="tabs">
     <label for="tab7" class="tab-label" title="Internals"><span class="tab-text">Internals</span></label>
@@ -132,7 +132,7 @@
         here. A project is written in the <b>Programs</b>, <b>Loop</b> and <b>Instances</b> tabs;
         press <b>Run</b> (or <b>Audit</b>) and look at the run in <b>Output</b> and <b>Statistics</b>.
         The <b>Advanced</b> tabs (under Tabs, below) are the <b>Observatory</b>, which shows a run as
-        pictures, the <b>Campaign</b> tab, which compares many runs, and the <b>Refinement lab</b>. New here? Start with the
+        pictures, the <b>Campaign</b> tab, which compares many runs, and the <b>Refinery</b>. New here? Start with the
         <b>Tutorial</b> tab.
       </p>
       <div class="project-box">
@@ -257,7 +257,7 @@
         <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="observatory-checkbox">
           Observatory</label> <span class="note">a run as pictures: anatomy, call timeline, domain view, candidate space</span></p>
         <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="lab-checkbox">
-          Refinement lab</label> <span class="note">the <b>Lab</b> tab: every refinement a loop could have made
+          Refinery</label> <span class="note">a tab of its own: every refinement a loop could have made
           at a step, and the shortest and longest runs its refinements allow (small instances)</span></p>
       </div>
       <p class="note">These choices are kept in this browser.</p>
@@ -449,16 +449,16 @@
       <div id="candidate-space" class="observatory-region" hidden></div>
     </section>
 
-    <!-- 12. Refinement lab (hidden unless its toggle is on, ?lab=1 or ?tab=12) -->
+    <!-- 12. Refinery (hidden unless its toggle is on, ?lab=1 or ?tab=12) -->
     <section id="section-lab">
       <p class="tab-intro">
         What a loop could have done, not just what it did: at one step, every refinement clause that
         was possible there; over a whole run, how its length compares with the shortest and longest runs
         the same refinements allow. Computed on small instances, from every candidate and counterexample, by
-        the lab's own engine (runs and audits go on as usual).
-        <span class="tab-help">Manual: <a href="#manual-refinement-lab-tab">Refinement lab tab</a> · <a href="#manual-audit">Audit</a> · <a href="#manual-candidate-space">Candidate space</a>.</span>
+        the Refinery's own engine (runs and audits go on as usual).
+        <span class="tab-help">Manual: <a href="#manual-refinery-tab">Refinery tab</a> · <a href="#manual-audit">Audit</a> · <a href="#manual-candidate-space">Candidate space</a>.</span>
       </p>
-      <div id="lab"><p class="note">Loading the lab…</p></div>
+      <div id="lab"><p class="note">Loading the Refinery…</p></div>
     </section>
 
     <!-- 7. Internals -->

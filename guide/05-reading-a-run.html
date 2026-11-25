@@ -103,9 +103,11 @@ edge(U,V) :- node(U), node(V), U &lt; V, square((V-U) \ n).</pre>
         <h2 id="statistics">The Statistics tab</h2>
         <p>The Statistics tab summarises the whole run:</p>
         <ul>
-          <li><strong>Summary</strong>: candidates, counterexamples, refinements, solutions. Here
-            every candidate is either a solution or has a counterexample, so candidates =
-            counterexamples + solutions.</li>
+          <li><strong>Summary</strong>: candidates, counterexamples, refinements (by source: from
+            counterexamples, from cores, blocks), solutions. Here every candidate is either a
+            solution or is refuted and blocked, so candidates = refinements + solutions. A
+            counterexample counts only when a refinement is built from it (a clause from
+            <code>relevant/1</code>), so the blocking loop shows its refutations as blocks.</li>
           <li><strong>Solvers</strong>: per solver the calls, satisfiable and unsatisfiable answers,
             solving time and grounding time. Solver A is called once: Shape 1 runs one search.
             Solver C is called once per candidate,
@@ -160,7 +162,7 @@ edge(U,V) :- node(U), node(V), U &lt; V, square((V-U) \ n).</pre>
           <span data-stat="guide-05-paley-clause@k=9,n=17:candidates">185</span> at n = 17. Worth a
           try, not a rule.
           <a class="play" href="../?example=guide-05-paley-record&amp;fragment=loop&amp;from=guide/05-reading-a-run.html%23record-run" target="cegarplay">Open the run with enum-mode record</a></p>
-        <p id="lab">How long could a run of these refinements be? The <b>Refinement lab</b> (the Lab tab)
+        <p id="lab">How long could a run of these refinements be? The <b>Refinery</b> tab
           answers on a small instance: the shortest and the longest run its refinements allow, and the
           lengths of runs that take the candidates in random order. Placed among them, a recorded run shows
           where its length comes from: how many bad candidates the abstraction admits, how many refinements
@@ -232,7 +234,7 @@ edge(U,V) :- node(U), node(V), U &lt; V, square((V-U) \ n).</pre>
             <li><a href="../?tab=2#tut-reading">Tutorial: reading the trace and the statistics</a></li>
             <li><a href="../?tab=2#tut-observatory">Tutorial: the Observatory</a></li>
             <li><a href="howto-time.html">How to find where the time goes</a></li>
-            <li><a href="../?tab=2#tut-lab">Tutorial: a run against the shortest and longest runs (the Refinement lab)</a></li>
+            <li><a href="../?tab=2#tut-lab">Tutorial: a run against the shortest and longest runs (the Refinery)</a></li>
           </ul>
         </section>
 

@@ -2427,7 +2427,8 @@
       "summary": "Envy-free and Pareto-efficient allocations of indivisible goods; a dominating allocation becomes a rule in the abstraction (Shape 3; 3 agents, 7 goods, 3 solutions).",
       "shape": "shape3",
       "tags": [
-        "fast"
+        "fast",
+        "project"
       ],
       "expected": {
         "solutions": 3
@@ -2435,7 +2436,8 @@
       "has": {
         "instances": 6,
         "generators": 1,
-        "suites": 1
+        "suites": 1,
+        "readme": 1
       },
       "level": 2,
       "after": 9

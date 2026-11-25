@@ -1,4 +1,4 @@
-// Refinement lab (docs/lab-design.md): the precomputed space of one link. No DOM, no Node APIs.
+// Refinery (docs/lab-design.md): the precomputed space of one link. No DOM, no Node APIs.
 //
 //   labPlan(compiled, linkName, { loop, instance })   which link, which schemes, or why not
 //   spaceBody(compiled, plan, { limit })               the Lua body of rt.lab_space

@@ -1,4 +1,4 @@
-// Refinement lab: removal sets, soundness, forced atoms, the one-atom neighbourhood
+// Refinery: removal sets, soundness, forced atoms, the one-atom neighbourhood
 // (docs/lab-design.md, "Definitions"). No DOM, no Node APIs.
 //
 // A set is a pair of atom word masks (r, v): S = the atoms of r, v = the values the clause's

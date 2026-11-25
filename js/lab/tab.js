@@ -1,4 +1,4 @@
-// The Refinement lab tab (docs/lab-design.md; manual: Refinement lab tab). The only lab module
+// The Refinery tab (docs/lab-design.md; manual: Refinery tab). The only lab module
 // that touches the DOM. It talks only to the lab worker (js/lab/worker.js); it reads the page's
 // project, run bar and latest recording, and changes none of them.
 import { Recording } from '../recording.js';
@@ -56,11 +56,11 @@ class LabClient {
       this.pending = null;
       if (d.type === 'result') p.resolve(d.data); else { const e = new Error(d.message); e.code = d.code; p.reject(e); }
     };
-    this.worker.onerror = (e) => { const p = this.pending; this.pending = null; this.worker = null; if (p) { const x = new Error(`the lab's engine stopped: ${e.message || 'worker error'}`); x.code = 1; p.reject(x); } };
+    this.worker.onerror = (e) => { const p = this.pending; this.pending = null; this.worker = null; if (p) { const x = new Error(`the Refinery's engine stopped: ${e.message || 'worker error'}`); x.code = 1; p.reject(x); } };
   }
   get busy() { return !!this.pending; }
   request(type, payload = {}, onProgress = null) {
-    if (this.pending) return Promise.reject(Object.assign(new Error('the lab is busy'), { code: 5 }));
+    if (this.pending) return Promise.reject(Object.assign(new Error('the Refinery is busy'), { code: 5 }));
     if (!this.worker) this.spawn();
     return new Promise((resolve, reject) => {
       const id = this.next++;
@@ -143,7 +143,7 @@ export class LabTab {
     this.source.addEventListener('change', () => { store.set('source', this.source.value); if (!this.client.busy) this.loadSteps(); });
     this.file = h('input', { type: 'file', id: 'lab-file', accept: '.cprec,.jsonl,.txt', hidden: true, onchange: () => this.openFile(this.file, 'file') });
     this.computeBtn = h('button', { class: 'control-button', id: 'lab-compute', type: 'button', onclick: () => this.computeSpace() }, 'Compute space');
-    this.cancelBtn = h('button', { class: 'control-button', id: 'lab-cancel', type: 'button', disabled: true, onclick: () => this.cancel(), title: 'Stop the lab\'s computation (only the lab\'s engine; runs and audits are not affected)' }, 'Cancel');
+    this.cancelBtn = h('button', { class: 'control-button', id: 'lab-cancel', type: 'button', disabled: true, onclick: () => this.cancel(), title: 'Stop the Refinery\'s computation (only the Refinery\'s engine; runs and audits are not affected)' }, 'Cancel');
     this.status = h('p', { id: 'lab-status', class: 'status-line', role: 'status', 'aria-live': 'polite' }, 'No space yet: press Compute space.');
     this.stale = h('p', { id: 'lab-stale', class: 'lab-stale', hidden: true });
     const lim = (key, label, title) => {
@@ -159,7 +159,7 @@ export class LabTab {
         lim('exact', 'exact-bounds threshold', 'Skip the exact bounds above this many bad candidates'),
         lim('seconds', 'time budget (s)', 'Time budget of each clingo computation and of the simulation'),
         lim('runs', 'simulation runs', 'Idealised runs in random order')));
-    const bar = h('div', { class: 'lab-bar', role: 'group', 'aria-label': 'Lab bar' },
+    const bar = h('div', { class: 'lab-bar', role: 'group', 'aria-label': 'Refinery bar' },
       h('div', { class: 'lab-row' },
         h('label', { class: 'inline-label' }, 'Instance ', this.inst), h('label', { class: 'inline-label' }, 'Variant ', this.variant),
         h('label', { class: 'inline-label' }, 'Link ', this.link),
@@ -205,7 +205,7 @@ export class LabTab {
         h('div', { class: 'modal-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': `${id}-title` },
           h('header', { class: 'modal-header' }, h('button', { class: 'close-modal', 'aria-label': 'close modal', 'data-close': '' }, '✕')),
           h('div', { class: 'modal-content' }, h('h3', { id: `${id}-title` }, title), ...paras.map((p) => h('p', {}, p)),
-            h('p', {}, h('a', { href: '#manual-refinement-lab-tab' }, 'Manual: Refinement lab tab')))));
+            h('p', {}, h('a', { href: '#manual-refinery-tab' }, 'Manual: Refinery tab')))));
       document.body.append(m);
     }
     return h('a', { href: '#', class: 'modal-link', 'data-open': id, title: `About: ${title}`, 'aria-label': `About: ${title}` }, '');
@@ -230,21 +230,21 @@ export class LabTab {
 
   shown() { this.syncPickers(); this.checkStale(); if (this.source.value === 'latest' && this.space && !this.client.busy) this.loadSteps(); }
 
-  setBusy(text, { stop = () => this.cancel(), stopTitle = 'Stop the lab\'s computation (runs and audits are not affected)' } = {}) {
+  setBusy(text, { stop = () => this.cancel(), stopTitle = 'Stop the Refinery\'s computation (runs and audits are not affected)' } = {}) {
     this.computeBtn.disabled = !!text;
     this.cancelBtn.disabled = !text;
     this.root.classList.toggle('lab-busy-now', !!text);
     for (const b of this.root.querySelectorAll('.lab-needs-idle')) b.disabled = !!text;
     if (text) { this.status.textContent = text; this.showBusy(text, stop, stopTitle); } else {
       this.hideBusy();
-      // a run of the page ended while the lab computed: read its steps once the lab is free (a
+      // a run of the page ended while the Refinery computed: read its steps once the Refinery is free (a
       // chain of requests starts its next one before this timer fires, and this waits for it)
       if (this.stepsStale) setTimeout(() => { if (this.stepsStale && !this.client.busy && !this.ownRun) { this.stepsStale = false; this.loadSteps(); } }, 0);
     }
   }
 
   // A run of the page ended (js/control.js). With "the latest run of the page" as the source, the
-  // steps and the run's part depend on it: read them again now, or when the lab is free. A run
+  // steps and the run's part depend on it: read them again now, or when the Refinery is free. A run
   // started by Record a run and place it is read by that chain itself.
   runDone() {
     if (this.ownRun || this.source.value !== 'latest' || !this.space) return;
@@ -265,7 +265,7 @@ export class LabTab {
     this.busyStop.title = stopTitle;
     this.busyBase = text.replace(/…$/, '');
     if (!this.busyEl.isConnected || this.busyT0 == null) this.busyT0 = Date.now();
-    // after the control that started it (its row), else under the lab bar
+    // after the control that started it (its row), else under the Refinery bar
     const a = this.anchor && this.root.contains(this.anchor) && !this.root.querySelector('.lab-bar').contains(this.anchor) ? this.anchor : null;
     const host = a ? (a.closest('.lab-row, p, .lab-chart, td, li') || a.parentElement) : this.status;
     if (host.nextSibling !== this.busyEl) host.after(this.busyEl);
@@ -281,8 +281,8 @@ export class LabTab {
 
   async call(type, payload, what) {
     if (this.client.busy) {
-      this.status.textContent = `${what}: the lab is still computing; wait for it or press Cancel.`;
-      throw Object.assign(new Error('the lab is busy'), { code: 'busy' });
+      this.status.textContent = `${what}: the Refinery is still computing; wait for it or press Cancel.`;
+      throw Object.assign(new Error('the Refinery is busy'), { code: 'busy' });
     }
     this.setBusy(`${what}…`);
     const t0 = Date.now();
@@ -300,7 +300,7 @@ export class LabTab {
 
   failed(e, what) {
     if (e.code === 'busy') return;
-    if (e.code === 'cancel') { this.status.textContent = `${what}: cancelled. The lab's engine stopped; results shown before stay (the space is computed again on the next request).`; return; }
+    if (e.code === 'cancel') { this.status.textContent = `${what}: cancelled. The Refinery's engine stopped; results shown before stay (the space is computed again on the next request).`; return; }
     this.status.textContent = `${what}: ${e.code === 4 ? '' : 'stopped: '}${e.message}`;
   }
 
@@ -764,7 +764,7 @@ export class LabTab {
   // newSeed: a random seed and a randomized search first; the run bar shows the seed.
   async recordAndPlace({ newSeed = false } = {}) {
     const c = this.app.control;
-    if (this.client.busy) { this.status.textContent = 'The lab is still computing: wait for it or press Stop.'; return; }
+    if (this.client.busy) { this.status.textContent = 'The Refinery is still computing: wait for it or press Stop.'; return; }
     if (!c || !this.app.ready || !c.canStart) { this.status.textContent = 'A run, audit or batch is going on (run bar): wait for it, or Abort it there.'; return; }
     const st = this.app.project.settings;
     if (newSeed) {

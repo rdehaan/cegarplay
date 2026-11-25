@@ -1,4 +1,4 @@
-// Refinement lab, milestone 1: on every `fast` library example the audit supports, the lab's
+// Refinery, milestone 1: on every `fast` library example the audit supports, the Refinery's
 // soundness of the loop scheme equals the audit's verdict, and its counts equal the audit's
 // (sharded over test/lab-library-[1-3].test.mjs). Unsupported loops (cores, expand, ...) are
 // counted, not compared: the lab says why it does not look at them.
@@ -29,7 +29,7 @@ export async function checkLibrary(shard, shards) {
     }
     const a = await auditProject(p, { seconds: 120 });
     const v = a.verdict;
-    // a loop refined only by blocks: the audit declines (blocks need no audit); the lab's scheme is the block
+    // a loop refined only by blocks: the audit declines (blocks need no audit); the Refinery's scheme is the block
     if (!v && sp.meta.blockOnly) { seen.blockOnly = (seen.blockOnly || 0) + 1; if (Lab.loopSoundness(sp).sound !== true) wrong.push(`${id}: a block scheme reported unsound`); continue; }
     if (!v || !['sound', 'unsound'].includes(v.verdict)) { wrong.push(`${id}: audit gave ${v ? v.verdict : 'no verdict'}`); continue; }
     seen.compared++;

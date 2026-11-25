@@ -19,8 +19,8 @@ no request to another origin.
 The page's tabs follow the work: **Control** (the library, files, recordings, share and export) and
 **Tutorial**; then the project: **Programs** (the ASP fragments), **Loop** (the loop script,
 constants, limits, recording and certificates) and **Instances** (inputs, generators, Run all instances,
-Fuzz); then a run: **Output**, **Statistics** and **Observatory**; and many runs: **Campaign**. **Lab** (the
-[Refinement lab](#manual-refinement-lab-tab), off by default) shows what a loop could have done. The
+Fuzz); then a run: **Output**, **Statistics** and **Observatory**; and many runs: **Campaign**. The
+[**Refinery**](#manual-refinery-tab) (off by default) shows what a loop could have done. The
 run bar above the tabs has two rows: the actions (**Run**, **Audit** with its mode, Abort, Pause
 and Stop on an isolated page, Clear, and the status), then **Run with**: the Instance and
 Variant pickers (for a project with instances or variants), Solutions, and **Seed** with
@@ -32,7 +32,7 @@ candidate space was computed for it, and, in amber, when the project was edited 
 project was loaded): the results are then of the earlier version. Then the live counts. **Manual** and **Internals** appear when
 asked for. The Control tab's **Tabs** block has toggles kept in this browser: **Tutorial**
 (shown by default), **Technical manual**, and **Advanced** with three indented toggles under it,
-**Campaign**, **Observatory** and **Refinement lab** (the Lab tab), all off by default. **Advanced**
+**Campaign**, **Observatory** and **Refinery**, all off by default. **Advanced**
 turns all three on or off; it is ticked when all three are on and shows a dash when some are. The
 Tutorial tab repeats the Observatory and Campaign toggles. A
 link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`, `?tab=12`, `?lecture=1`, `?view=`,
@@ -964,7 +964,8 @@ search A:
 Examples: [knapsack-fortification](?example=knapsack-fortification) (the innermost solver does
 not read the outer candidate, so two links suffice) and
 [qbf-three-blocks](?example=qbf-three-blocks). The counter *counterexamples* then counts the
-satisfiable solves of both `B` and `C`.
+models of `C` that refuted a candidate of `B` (on link `GXY`); the cores of `C` that refine `A`
+are counted under cores (on link `GXC`): see the counting rules (Statistics tab).
 
 ## Loops from the literature
 
@@ -1291,17 +1292,46 @@ abstraction), with a note saying so; the next Run replaces them. The run history
 
 | Part | Content |
 | --- | --- |
-| Summary | Outcome, elapsed time, candidates, counterexamples, refinements (clauses + expansions), solutions. After an audit: the audit's verdict and its own figures instead. The run bar's live counts use the same time format. |
+| Summary | Outcome, elapsed time, candidates, counterexamples (models that refuted a candidate), refinements and their split (from counterexamples, from cores, blocks, and other when there are any), solutions; the headers' tooltips give the counting rules (below). **Per link**: the same counts per link. After an audit: the audit's verdict and its own figures instead. The run bar's live counts use the same time format and show the split in brackets. |
 | Solvers | Per solver: fragments, options, calls, sat, unsat, solving time (exclusive of nested solves), time per call, grounding time, choices, conflicts, restarts, atoms, rules, expansions. |
 | Refinements | Clauses, mean and largest length, expansions, restarts, automatic blocks (solutions blocked so that a later search does not report them again). |
 | Cores | After a run that refines by cores: how many cores and their lengths (the clause-length buckets), as clasp returns them and minimised (`core.minimal`), with an approximate mean. The `S` event's `cores` (`plain`, `minimal`). |
 | Charts | Candidates and refinements over time (a run too short for a curve shows its points, with a note; after an audit, a note);  time split per solver; clause length distribution (1, 2, 3–4, 5–8, 9–16, 17–32, 33–64, 65+); after a `track` statement, the tracked values per round (one line per name, a value holds until the next). |
 | Custom counters and tracked values | The `count` statements, and the last value of each `track` series. |
-| Run history | One row per run: time, loop and instance (**Loop [instance]**: the loop's first line, the instance in brackets, the variant), outcome, elapsed, candidates, refinements, mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. The row of the run the tabs show is marked ▶ (none after Clear, or after another project is loaded). **Rerun with 5 seeds** (seeds 1 to 5 with a randomized search, whatever the Loop tab's setting), **Clear run history** (asks first; disabled while empty), **✕** on a row removes that run only (the ▶ mark and the Compare picks follow), copy as text or JSON. Each row has a **Note** (kept with the run history in the project) and a **Compare** box: two ticked rows are shown side by side below the table (counts, mean clause, per-solver calls, time and conflicts, with the change). |
+| Run history | One row per run: time, loop and instance (**Loop [instance]**: the loop's first line, the instance in brackets, the variant), outcome, elapsed, candidates, refinements (in brackets: from counterexamples · from cores · blocks), mean clause length, solutions, seed. Two runs of the same fragments with all solutions, both exhausted, with different counts are marked red: one of them is unsound. The row of the run the tabs show is marked ▶ (none after Clear, or after another project is loaded). **Rerun with 5 seeds** (seeds 1 to 5 with a randomized search, whatever the Loop tab's setting), **Clear run history** (asks first; disabled while empty), **✕** on a row removes that run only (the ▶ mark and the Compare picks follow), copy as text or JSON. Each row has a **Note** (kept with the run history in the project) and a **Compare** box: two ticked rows are shown side by side below the table (counts, mean clause, per-solver calls, time and conflicts, with the change). |
 
-Counting rules: *candidates* are the assignments seen by `on candidate` plus models returned by
-`solve`/`models` of solvers without incoming links; *counterexamples* are satisfiable solves that
-were given assumptions.
+Counting rules:
+
+- *Candidates* are the assignments seen by `on candidate` plus models returned by `solve`/`models`
+  of solvers without incoming links.
+- A *counterexample* is **a model that refuted a candidate**: a model is counted the first time a
+  refinement is built from it, by `G.clause(M, X)`, `G.clause(X)`, `G.clauses(X)`, `G.lift(M, X)`
+  or `S.expand(...)` with its atoms (`X.atoms(...)`), and at most once, however many clauses come
+  from it. A satisfiable solve whose model is not used for a refinement (a ranking listed by
+  `C.models`, a witness) is not a counterexample. A loop with a witness check refines by cores
+  (`C.core.on(G)`: `lang-core`, `maxsat-ihs`), so it has no counterexamples: its refutations are
+  counted under cores.
+- *Refinements* are counted by source: **from counterexamples** (`from_models`: clauses and
+  expansions built from a counterexample), **from cores** (`from_cores`: `G.core(C)`,
+  `C.core.on(G)`, `.minimal`, and expansions with a core), **blocks** (`G.block`, `G.above`,
+  `G.below`, and the automatic blocks of accepted solutions in a search) and, only when there
+  are any, **other** (clauses the script builds itself, such as a unit clause `S.add(u)`, and
+  expansions from neither a counterexample nor a core). The refinements of a run are their sum.
+- The same counts are kept **per link**: a counterexample and a refinement are credited to the
+  link whose refinement used them, so in a chain A -> B -> C the models of C that refute B's
+  candidates count on B -> C, and the cores of C that refine A on A -> C (`qbf-three-blocks`). An
+  expansion is credited to the link from the expanded solver to the model's (or core's) solver;
+  an automatic block to the solver's link when it has exactly one.
+- The raw satisfiable and unsatisfiable solves stay in the per-solver statistics (Solvers table:
+  `sat`, `unsat`).
+
+The Statistics tab's **Summary** shows the counterexamples and the refinements with their split,
+and **Per link** the same per link; the run bar's live line shows the split in brackets, the run
+history in brackets after the refinements (from counterexamples · from cores · blocks), campaign
+rows have the fields `counterexamples`, `from_models`, `from_cores` and `blocks` (also as
+metrics), and `tools/run.mjs` prints them. A recording made before this rule counts every
+satisfiable solve under assumptions as a counterexample, and its refinements are its clauses and
+expansions.
 
 ### Observatory tab
 
@@ -1423,15 +1453,15 @@ generator found is its solution (Show: solutions). A view program gets the proje
 `#const k = default.` takes the project's value. `cand/1` holds only interface atoms that are not
 facts: draw what the instance fixes in the scene part.
 
-### Refinement lab tab
+### Refinery tab
 
-Tab 12 (`?tab=12`), shown with the toggle **Refinement lab** in the Control tab's **Tabs** block
+Tab 12 (`?tab=12`), shown with the toggle **Refinery** in the Control tab's **Tabs** block
 (`cegarplay.lab`), or for one visit with `?lab=1`. It shows what a loop *could* have done, not
 just what it did: at one step, every refinement clause that was possible there, and over a whole run,
 how its length compares with the best and worst runs that the same refinements allow. Everything is
 computed on small instances by enumerating the candidate space, as the [audit](#manual-audit) does,
-in the lab's own Web Worker with its own clingo-wasm instance. **Run**, **Audit**, **Abort** and the
-batches work as usual while the lab computes, and the lab's **Cancel** stops only the lab. The lab
+in the Refinery's own Web Worker with its own clingo-wasm instance. **Run**, **Audit**, **Abort** and the
+batches work as usual while the Refinery computes, and the Refinery's **Cancel** stops only the Refinery. The Refinery
 stores nothing in the project and writes nothing to the run history; its settings are kept in
 `cegarplay.lab.*` (removed by **Reset everything**). The tab's parts depend on each other in order,
 and say why when they are disabled. When the project was edited after the space was computed, an
@@ -1457,14 +1487,14 @@ The idealised run ignores clasp's weak retention of clauses in Shape 1 (`--enum-
 real Shape 1 run can propose a removed candidate again and be longer than the worst idealised run.
 The tab says so wherever it compares a real run with idealised ones.
 
-**Lab bar.** The instance and variant (at first those of the run bar; changing them here does not
+**Refinery bar.** The instance and variant (at first those of the run bar; changing them here does not
 change the run bar), the link (empty: as the audit chooses it), **Steps from** (the latest run of the
 page, an opened recording, or free), **Compute space**, **Cancel**, the status line ("space: 412
 candidates, 37 solutions, 375 bad, 12 interface atoms"), and **Limits**: candidate cap (200,000, the
 audit's), counterexamples per candidate (20), minimal sets per candidate (200), exact-bounds
 threshold (3,000 bad candidates), time budget (30 s per clingo computation and for the simulation),
 simulation runs (1,000). The space is computed once per project version, instance, variant and
-link, and kept in the lab worker's memory.
+link, and kept in the Refinery worker's memory.
 
 **Space.** The counts, the options per scheme, and whether the loop scheme is sound on this instance
 (the same answer as the audit, with the same witness: the fewest differing atoms).
@@ -1473,9 +1503,9 @@ link, and kept in the lab worker's memory.
 counterexample, option; the inspector's tables, option map and lattice; the three schemes; the run
 against the bounds). Under **Scheme** a line says what the chosen scheme lets an idealised run do.
 
-**Busy line.** While the lab computes, or while a run started from the lab runs, a line with a
+**Busy line.** While the Refinery computes, or while a run started from the Refinery runs, a line with a
 spinner, what is being computed, the elapsed time and **Stop** appears under the control that
-started it (Stop is Cancel for the lab's computations and Abort for a run). The lab bar's status line
+started it (Stop is Cancel for the Refinery's computations and Abort for a run). The Refinery bar's status line
 and Cancel say the same.
 
 **Step inspector.** From a run (a run recorded with every step: Loop tab, Recording, or the run bar's **record steps**) with a step
@@ -1521,7 +1551,7 @@ When the loop scheme is unsound, the bounds name the solutions their runs put at
 simulation counts the runs that lose solutions, and the text says to audit the instance.
 
 **This run against the bounds.** Needs a recorded run of the same instance and variant and the loop
-scheme's bounds. **Record a run and place it** does all of it: the page's Run on the lab's instance and
+scheme's bounds. **Record a run and place it** does all of it: the page's Run on the Refinery's instance and
 variant, to all solutions (as the idealised runs), recording every step whatever the Recording
 setting says (the setting is not changed), then the steps, the loop scheme's bounds when missing, and
 the placement. **New seed: run again** does the same after setting a random seed and a randomized
@@ -1577,7 +1607,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | Kind | When | Fields |
 | --- | --- | --- |
 | `H` | after grounding | `solvers` (`name`, `fragments`, `options`, `atoms`, `ground`), `links` (`name`, `from`, `to`, `atoms` = non-fact interface atoms), `settings` |
-| `S` | every 0.25 s and at the end | `t`, `candidates`, `counterexamples`, `solutions`, `clauses`, `literals`, `maxlen`, `hist`, `expansions`, `restarts`, `blocks`, `solvers` (per solver: `calls`, `sat`, `unsat`, `time`, `ground`, `busy`, `choices`, `conflicts`, `restarts`, `atoms`, `rules`, `vars`, `constraints`, `k`), `counters`, `tracked` (only after a `track`: the last value per name), `partials` (only after an `on partial` call: their number), `minimised` (only after a `C.core.minimal`: their number), `labels` (only after an `accept … as NAME`: the count per name) |
+| `S` | every 0.25 s and at the end | `t`, `candidates`, `counterexamples` (models that refuted a candidate), `solutions`, `clauses`, `literals`, `maxlen`, `hist`, `expansions`, `restarts`, `from_models`, `from_cores`, `blocks` (refinements by source; `other` only when nonzero), `links` (per link name: `counterexamples`, `from_models`, `from_cores`, `blocks`, `other`), `solvers` (per solver: `calls`, `sat`, `unsat`, `time`, `ground`, `busy`, `choices`, `conflicts`, `restarts`, `atoms`, `rules`, `vars`, `constraints`, `k`), `counters`, `tracked` (only after a `track`: the last value per name), `partials` (only after an `on partial` call: their number), `minimised` (only after a `C.core.minimal`: their number), `labels` (only after an `accept … as NAME`: the count per name) |
 | `V` | each `track` (the first 2,000 values per name) | `n` name, `i` round, `v` value, `t` |
 | `M` | each solution | `n`, `atoms`, `cost` |
 | `N` | each `accept … as NAME` | `label`, `n` (per label), `atoms`, `cost` |
@@ -1600,11 +1630,11 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?example=<id>` | Load the library example `<id>` (also `?file=<id>`). It does not replace the project kept in the browser until you edit it. |
 | `&fragment=<name>` | With `?example`: open the Programs tab on that fragment's editor (`loop` opens the Loop tab; a view fragment opens its view's editor in the Observatory, **Edit this view**). Overrides `?tab`. An unknown name is ignored with a note in the status line. |
 | `&from=guide/<page>.html#<anchor>` | Show a link "← Back to the guide" at the top left, to that guide page. Only a page of the guide is accepted. |
-| `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory, 12 Lab (the Refinement lab). The numbers are fixed; they are not the order on screen. |
+| `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory, 12 Refinery. The numbers are fixed; they are not the order on screen. |
 | `&instance=<id>` | Pick that instance of the project in the run bar. An unknown id is ignored with a note. |
 | `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
 | `?advanced=1` | The Observatory and Campaign tabs for this visit (without changing the remembered toggles). `?tab=10` shows the Campaign tab; `?tab=11`, `?lecture=1`, `?view=` and `?step=` show the Observatory. |
-| `?lab=1` | Show the Lab tab ([Refinement lab](#manual-refinement-lab-tab)) for this visit, without changing the remembered toggle. `?tab=12` implies it. |
+| `?lab=1`, `?refinery=1` | Show the [Refinery](#manual-refinery-tab) tab for this visit, without changing the remembered toggle. `?tab=12` implies it. |
 | `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
 | `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
 | `#p=<data>` | A share link (**Copy share link** in the Control tab): the whole project without its run history, in the URL fragment, which never reaches the server. `<data>` is `z` + base64url of the deflate-raw compressed project JSON (`u` + base64url of the plain JSON in a browser without `CompressionStream`). Takes precedence over the kept project and, like `?example`, does not replace it until you edit. A damaged link opens the default example with an error in the status line. Links over 8,000 characters get a warning. |
@@ -1653,8 +1683,8 @@ Browser storage (`localStorage`, per browser and site):
   older `cegarplay.advanced` (`"1"`: both on) is read as the choice for both until one of them is
   changed, and is then replaced by the two keys.
 - `cegarplay.tutorial`: `"0"` when the Tutorial tab is hidden (absent when shown).
-- `cegarplay.lab`: `"1"` when the Refinement lab is on (absent when off); `cegarplay.lab.*`: the
-  lab's settings (its Limits, the source of steps, the candidate order, the scheme), as JSON.
+- `cegarplay.lab`: `"1"` when the Refinery is on (absent when off); `cegarplay.lab.*`: the
+  Refinery's settings (its Limits, the source of steps, the candidate order, the scheme), as JSON.
 - `cegarplay.theme`: `"light"` or `"dark"` when the colour theme was chosen by hand (absent for Auto).
 - **Reset everything** (Control tab, last block) removes every `cegarplay*` key above and the
   Campaign tab's rows (IndexedDB `cegarplay`), after a question, and loads the page afresh (no
@@ -1855,7 +1885,8 @@ node tools/run.mjs <project.json | library id> [-c name=value] [--solutions N|al
 
 It uses the same engine, validation and runtime as the page. Output: one `Solution n: atoms` line
 per solution, `log:` and clingo lines, then `Outcome: ...; exhausted: ...` and `Solutions: ...;
-candidates: ...; counterexamples: ...; clauses: ...; time: ... s`. Validation problems are printed
+candidates: ...; counterexamples: ...; clauses: ...; time: ... s`, then `Refinements: N (from
+counterexamples ..., from cores ..., blocks ...)` and one line per link. Validation problems are printed
 as `fragment:line:col: error: message`. Exit code 0 when the run ends without an error, 1 on a
 problem or error, 2 on bad usage. With a time limit above 0, a run that does not stop by itself (a
 raw Lua loop without `rt.tick()`) is ended `N + 2` s after the start with `Outcome: limit (the run

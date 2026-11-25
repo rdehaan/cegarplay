@@ -266,7 +266,7 @@ export class CampaignTab {
     if (!this.rows.length) return;
     const m = resultMatrix(this.rows, this.metric, this.order());
     const pick = h('select', { id: 'campaign-metric', 'aria-label': 'Matrix metric' },
-      ...[['time', 'time (s)'], ['solutions', 'solutions'], ['candidates', 'candidates'], ['refinements', 'refinements']].map(([v, l]) => h('option', { value: v, selected: v === this.metric }, l)));
+      ...[['time', 'time (s)'], ['solutions', 'solutions'], ['candidates', 'candidates'], ['refinements', 'refinements'], ['counterexamples', 'counterexamples'], ['from_models', 'refinements from counterexamples'], ['from_cores', 'refinements from cores'], ['blocks', 'blocks']].map(([v, l]) => h('option', { value: v, selected: v === this.metric }, l)));
     pick.addEventListener('change', () => { this.metric = pick.value; this.drawMatrix(); });
     const rows = m.rows.slice();
     if (this.sortBy === 'instance') rows.sort((a, b) => String(a.instance).localeCompare(String(b.instance), undefined, { numeric: true }));

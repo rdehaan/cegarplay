@@ -1,4 +1,4 @@
-// Refinement lab: the computations end to end (docs/lab-design.md). No DOM, no Node APIs.
+// Refinery: the computations end to end (docs/lab-design.md). No DOM, no Node APIs.
 // The worker (js/lab/worker.js) and tools/lab.mjs both call these functions, so the tab and the
 // tool give the same numbers.
 //

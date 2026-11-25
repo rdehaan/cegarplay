@@ -9,6 +9,7 @@ import { derive, spaceBound, spaceCombos, spaceKeeps, auditable, INSTANCE_ID, ap
 import { fmt, spaceAt } from './output.js';
 import { spaceProblems } from './bounded.js';
 import { resultCard } from './result-card.js';
+import { refinementCounts } from './driver.js';
 
 const $ = (id) => document.getElementById(id);
 // the Expected column: "12", "optimum 8" or both
@@ -564,7 +565,7 @@ export class InstancesTab {
           if (r && r.state === 'aborted') { this.say('Stopped.'); return; }
           const last = this.results.get(it.instance);
           runs.set(it.instance, r && r.D && last ? { ...last, candidates: r.S ? r.S.candidates : undefined,
-            refinements: r.S ? (r.S.clauses || 0) + (r.S.expansions || 0) : undefined } : r ? { outcome: r.state } : null);
+            refinements: r.S ? refinementCounts(r.S).total : undefined } : r ? { outcome: r.state } : null);
         }
         res = runs.get(it.instance);
       }

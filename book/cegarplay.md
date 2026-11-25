@@ -428,7 +428,7 @@ Change the problem: no clique of c = 4 nodes may survive, instead of no triangle
 ::: {.answer #c02-predict-1-answer}
 [Back to the question](#c02-predict-1)
 
-Every one of the 176 sets of at most three nodes. Each block rules out only the candidate it was made from, so no candidate is skipped. Of these, 173 have a counterexample and 3 are solutions.
+Every one of the 176 sets of at most three nodes. Each block rules out only the candidate it was made from, so no candidate is skipped. Of these, 173 have a counterexample (and are blocked) and 3 are solutions.
 :::
 
 ::: {.answer #c02-exercise-1-solution}
@@ -855,7 +855,7 @@ Write `lift` after a link's fragments (`link G = A -> C via shared + glue lift`)
 
 The audit names one witness. To see every candidate at once, the Observatory's **Candidate space** draws one square per candidate of the unrefined abstraction and marks the solutions a refinement removed; its blame matrix shows which atoms each clause relies on. The map shows one run; when its search avoids the bad refinement, **Find a run that loses one** tries seeds until a run does not. When the instance is large, **Fuzz** (Instances tab) audits instances from small to large and shrinks the first unsound one to a handful of facts. The how-to hunting an unsound refinement walks through both on this chapter's example.
 
-To see what the right clause would have been, the **Refinement lab** (the Lab tab, a switch under Tabs in the Control tab) takes the witness candidate and lists every clause the loop could make there: which are sound, how much each removes, and the smallest sound one. It also names the **forced** atoms, those every sound clause must contain, each with the solution that differs from the candidate only there. A forced atom that `relevant/1` did not mark is the atom this chapter's test looks for.
+To see what the right clause would have been, the **Refinery** (a switch under Tabs in the Control tab) takes the witness candidate and lists every clause the loop could make there: which are sound, how much each removes, and the smallest sound one. It also names the **forced** atoms, those every sound clause must contain, each with the solution that differs from the candidate only there. A forced atom that `relevant/1` did not mark is the atom this chapter's test looks for.
 :::
 
 ::: exercise
@@ -964,7 +964,7 @@ When something goes wrong, the trace is where you look first. A refinement that 
 
 The Statistics tab summarises the whole run:
 
-- **Summary**: candidates, counterexamples, refinements, solutions. Here every candidate is either a solution or has a counterexample, so candidates = counterexamples + solutions.
+- **Summary**: candidates, counterexamples, refinements (by source: from counterexamples, from cores, blocks), solutions. Here every candidate is either a solution or is refuted and blocked, so candidates = refinements + solutions. A counterexample counts only when a refinement is built from it (a clause from `relevant/1`), so the blocking loop shows its refutations as blocks.
 - **Solvers**: per solver the calls, satisfiable and unsatisfiable answers, solving time and grounding time. Solver A is called once: Shape 1 runs one search. Solver C is called once per candidate, 96 times.
 - **Refinements**: the number of clauses, their mean and largest length, and a histogram of clause lengths. All clauses here have length 3; the blocking loop's have length 13, one literal per node.
 - **Charts**: candidates and refinements over time, and the time split between the solvers and grounding.
@@ -997,7 +997,7 @@ Predict: the clause loop needed 96 candidates. With `--enum-mode=record`, more, 
 
 It changes the number of candidates, never the solutions: 84 instead of 96 at n = 13, but 186 instead of 185 at n = 17. Worth a try, not a rule. [Playground: guide-05-paley-record]{.play}
 
-[]{#c05-lab}How long could a run of these refinements be? The **Refinement lab** (the Lab tab) answers on a small instance: the shortest and the longest run its refinements allow, and the lengths of runs that take the candidates in random order. Placed among them, a recorded run shows where its length comes from: how many bad candidates the abstraction admits, how many refinements a better `relevant/1` could save, and how many the order cost. Refinements of candidates that an earlier clause had already removed, the effect described above, are counted there.
+[]{#c05-lab}How long could a run of these refinements be? The **Refinery** tab answers on a small instance: the shortest and the longest run its refinements allow, and the lengths of runs that take the candidates in random order. Placed among them, a recorded run shows where its length comes from: how many bad candidates the abstraction admits, how many refinements a better `relevant/1` could save, and how many the order cost. Refinements of candidates that an earlier clause had already removed, the effect described above, are counted there.
 
 The templates also give the check the option `--heuristic=Domain`. It makes clingo follow `#heuristic` statements in the check, which can steer which counterexample it finds; chapter 6 uses that. Without such statements it only changes the order of clasp's choices. The manual's section Settings lists the options.
 
@@ -1629,7 +1629,7 @@ From the fragment `refine` of `fair-division` (this problem has no constant k, s
 | Best clause | 11 | 8 | 85 | 3 |
 | Rule | 6 | 6 | 196 | 3 |
 
-The clause is the block with 7.0 literals instead of 21.0, and learns nothing more. The rule needs 3 expansions where blocking needed 8 refutations. (Its refinements include one block per solution, as in every Shape 2 loop.) The instance is tiny; on larger ones the gap grows with the number of allocations a single alternative dominates.
+The clause is the block with 7.0 literals instead of 21.0, and learns nothing more. The rule needs 3 expansions where blocking needed 8 blocks, one per refuted candidate. (Its refinements include one block per solution, as in every Shape 2 loop.) The instance is tiny; on larger ones the gap grows with the number of allocations a single alternative dominates.
 
 ### The cost {#c09-cost}
 
@@ -2388,7 +2388,7 @@ The loop meets 6 counterexamples and looks at 2,454 candidates: the 2,448 soluti
 
 ### Clauses or copies {#c13-compare}
 
-| Refinement | Candidates | Counterexamples | Mean clause | Rules of A | Solutions |
+| Refinement | Candidates | Refuted candidates | Mean clause | Rules of A | Solutions |
 |---|---:|---:|---:|---:|---:|
 | Block | 4,096 | 1,648 | 12.0 | 92 | 2,448 |
 | Clause | 3,168 | 720 | 8.4 | 92 | 2,448 |
@@ -3457,10 +3457,10 @@ Bounded-sound
 :   Sound on every instance of a space up to the bound k ("sound up to k"); it says nothing about larger instances. [Chapter 4](#c04-bounded).
 
 Forced atom
-:   An interface atom that every sound clause for a candidate must contain: some solution differs from the candidate only in that atom. The Refinement lab names them, with that solution. How-to.
+:   An interface atom that every sound clause for a candidate must contain: some solution differs from the candidate only in that atom. The Refinery names them, with that solution. How-to.
 
 Idealised run
-:   A run in which each step refines one candidate that is still alive with one of the clauses its loop could make. The Refinement lab computes the shortest and longest such runs and compares a real run with them; Shape 1 runs can be longer, because clasp keeps clauses only weakly. [Chapter 5](#c05-lab).
+:   A run in which each step refines one candidate that is still alive with one of the clauses its loop could make. The Refinery computes the shortest and longest such runs and compares a real run with them; Shape 1 runs can be longer, because clasp keeps clauses only weakly. [Chapter 5](#c05-lab).
 
 Witness check
 :   A check whose answer set means the candidate is *good*; a failed witness check is refined by its unsat core. [Chapter 10](#c10).
@@ -3590,7 +3590,7 @@ The examples are in the playground's library. [Playground: qbf]{.play}
 
 # Part II: The playground {#part-2}
 
-The playground (CegarPlay) is the browser application in which every example of this book runs. A project has **fragments** of ASP text, a **loop script** that says how the solvers call each other, and **instances** (the input of the problem). Its tabs follow the work: a project is written in the Programs, Loop and Instances tabs, run, and looked at in the Output, Statistics and Observatory tabs; the Campaign tab compares many runs. Each lesson below names the library example it uses, as in \[Playground: tutorial-first-run\], and describes what a run of it shows. The Observatory and the Campaign tab belong to the playground's Advanced mode; the Lab tab (the Refinement lab, lesson 6) has a switch of its own.
+The playground (CegarPlay) is the browser application in which every example of this book runs. A project has **fragments** of ASP text, a **loop script** that says how the solvers call each other, and **instances** (the input of the problem). Its tabs follow the work: a project is written in the Programs, Loop and Instances tabs, run, and looked at in the Output, Statistics and Observatory tabs; the Campaign tab compares many runs. Each lesson below names the library example it uses, as in \[Playground: tutorial-first-run\], and describes what a run of it shows. The Observatory and the Campaign tab belong to the playground's Advanced mode; the Refinery tab (the Refinery, lesson 6) has a switch of its own.
 
 ## What CEGAR is {#t01}
 
@@ -3728,13 +3728,13 @@ A second way to find out, which works for any loop: `G.block(M)` removes only th
 
 The Observatory's **Candidate space** draws the project's own loop as a map, from a run with every step recorded. Each square is one of the 256 sets, marked by what the run's refinements have done to it so far (alive, removed, a lost solution), step by step through the run. The summary names the first unsound refinement: number 6, which removes 13 solutions at once.  Under the map, a box shows the refinement at the cursor: its step, the candidate it refined, the counterexample, and its clause ("at least one of …"). For refinement 6 the clause names only the sum, not the two numbers that add up to it, so it also removes sets that contain the sum without those numbers: among them, solutions.  The line above the map names the run it is of; another run, an audit or a replay clears it. The blame matrix below shows which atoms the refinements relied on.
 
-### What the loop could have done: the Refinement lab {#t06-tut-lab}
+### What the loop could have done: the Refinery {#t06-tut-lab}
 
-The candidate space shows what one run did. The **Lab** tab (the Refinement lab) shows what the loop *could* have done, from the same enumeration as the audit. Its **step inspector**, on the audit's witness, shows the following. The candidate `{pick(2) pick(4)}` has one counterexample, `sum(2,2)`. Its clause names one atom, `pick(4)`, removes 128 of the 256 candidates and is unsound: 13 of them are solutions. The smallest sound clause names two atoms and removes 64. Both atoms are **forced**: the solution `{pick(4)}` differs from the candidate only in `pick(2)`, and `{pick(2)}` only in `pick(4)`, so every sound clause must name both. That is what the first example's `relevant/1` rules do. The **option map** draws every clause the loop could have made there by its length and the candidates it removes, unsound ones apart; the **atom table** says what dropping or adding one atom would change.
+The candidate space shows what one run did. The **Refinery** tab shows what the loop *could* have done, from the same enumeration as the audit. Its **step inspector**, on the audit's witness, shows the following. The candidate `{pick(2) pick(4)}` has one counterexample, `sum(2,2)`. Its clause names one atom, `pick(4)`, removes 128 of the 256 candidates and is unsound: 13 of them are solutions. The smallest sound clause names two atoms and removes 64. Both atoms are **forced**: the solution `{pick(4)}` differs from the candidate only in `pick(2)`, and `{pick(2)}` only in `pick(4)`, so every sound clause must name both. That is what the first example's `relevant/1` rules do. The **option map** draws every clause the loop could have made there by its length and the candidates it removes, unsound ones apart; the **atom table** says what dropping or adding one atom would change.
 
 [Playground: tutorial-first-run]{.play}
 
-For the sound loop, **Run bounds** asks how long a run of these refinements can be. Each of the 195 bad candidates costs a refinement unless an earlier clause removed it. The shortest possible run makes 14 refinements (proven: there are 14 bad candidates of which no single clause removes two), and runs that take the candidates in random order make 14 to 16. The project's own run, recorded with every step (Loop tab, Recording), makes 46. **This run against the bounds** says why: 32 of its refinements refine a candidate that an earlier clause had already removed. That is the weak clause retention of Shape 1 from lesson 2. The same loop written in Shape 2 (lesson 9) makes 14 refinements, the shortest possible. The lab computes everything in its own engine, so runs and audits go on while it works; see Refinement lab tab in the manual.
+For the sound loop, **Run bounds** asks how long a run of these refinements can be. Each of the 195 bad candidates costs a refinement unless an earlier clause removed it. The shortest possible run makes 14 refinements (proven: there are 14 bad candidates of which no single clause removes two), and runs that take the candidates in random order make 14 to 16. The project's own run, recorded with every step (Loop tab, Recording), makes 46. **This run against the bounds** says why: 32 of its refinements refine a candidate that an earlier clause had already removed. That is the weak clause retention of Shape 1 from lesson 2. The same loop written in Shape 2 (lesson 9) makes 14 refinements, the shortest possible. The Refinery computes everything in its own engine, so runs and audits go on while it works; see Refinery tab in the manual.
 
 ## One project, many instances {#t07}
 

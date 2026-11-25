@@ -1,5 +1,6 @@
 // Statistics tab, live line, charts, run history (spec-app.md section 10).
 import { fmt, spaceAt } from './output.js';
+import { refinementCounts, refinementSplitText, COUNT_TIP } from './driver.js';
 
 const MAX_POINTS = 500;
 const HIST_LABELS = ['1', '2', '3–4', '5–8', '9–16', '17–32', '33–64', '65+'];
@@ -9,14 +10,15 @@ const COLORS = [1, 2, 3, 4, 5, 6, 7].map((i) => `var(--chart-${i})`);
 
 const secs = (t) => (typeof t === 'number' ? (t < 10 ? t.toFixed(2) : t.toFixed(1)) + ' s' : '–');
 const dash = (v) => (v === null || v === undefined ? '–' : fmt(typeof v === 'number' && !Number.isInteger(v) ? Math.round(v) : v));
-const refinements = (s) => (s ? s.clauses + s.expansions : 0);
+const refinements = (s) => (s ? refinementCounts(s).total : 0);
 const meanLen = (s) => (s && s.clauses ? s.literals / s.clauses : null);
 
 export function liveText(s) {
   if (!s) return ' ';
   // the same time format as the Summary and the run history (0.05 s, not 0.1 s)
+  const r = refinementCounts(s), split = refinementSplitText(r);
   return `${secs(s.t)} · ${fmt(s.candidates)} candidates · ${fmt(s.counterexamples)} counterexamples · ` +
-    `${fmt(refinements(s))} refinements · ${fmt(s.solutions)} solutions`;
+    `${fmt(r.total)} refinements${split && split !== 'none' ? ` (${split})` : ''} · ${fmt(s.solutions)} solutions`;
 }
 
 // The run bar after an audit: its own counts (the S events of an audit count raw models).
@@ -59,6 +61,7 @@ export class Stats {
   constructor(app) {
     this.app = app;
     this.live = document.getElementById('live-line');
+    this.live.title = COUNT_TIP;
     this.root = document.getElementById('statistics');
     this.history = [];
     this.build();
@@ -68,7 +71,9 @@ export class Stats {
   build() {
     const r = this.root;
     r.innerHTML = `
-      <div class="stats-block"><h3>Summary</h3><div class="table-wrapper"><table class="internals-table" id="stats-summary"></table></div></div>
+      <div class="stats-block"><h3>Summary</h3><div class="table-wrapper"><table class="internals-table" id="stats-summary"></table></div>
+        <div id="links-block" hidden><h4>Per link</h4><div class="table-wrapper"><table class="internals-table" id="links-table"></table></div>
+        <p class="note">Each counterexample and refinement is credited to the link whose refinement used it (in a chain A -> B -> C, the link that consumed it).</p></div></div>
       <div class="stats-block" id="certificates-block" hidden><h3>Certificates</h3>
         <div class="table-wrapper"><table class="internals-table" id="certificates-table"></table></div>
         <p class="note">Each refinement gets the cheapest certificate that holds: 0 a block, 1 an unsat core, 2 the
@@ -186,7 +191,8 @@ export class Stats {
     const t = this.root.querySelector('#' + id);
     t.textContent = '';
     const tr = h('tr');
-    head.forEach((x, i) => tr.append(h('th', numeric.includes(i) ? { class: 'num' } : {}, x)));
+    // a header cell is a text, or [text, tooltip]
+    head.forEach((x, i) => tr.append(h('th', { ...(numeric.includes(i) ? { class: 'num' } : {}), ...(Array.isArray(x) ? { title: x[1] } : {}) }, Array.isArray(x) ? x[0] : x)));
     t.append(h('thead', {}, tr));
     const tb = h('tbody');
     for (const r of rows) {
@@ -196,6 +202,17 @@ export class Stats {
     }
     t.append(tb);
     return t;
+  }
+
+  // counterexamples and refinements per link (S event: links), when the run has a link
+  renderLinks() {
+    const s = this.S, box = this.root.querySelector('#links-block');
+    const L = s && s.links && !(this.audit && this.audit.verdict) ? Object.entries(s.links) : [];
+    box.hidden = !L.length;
+    if (!L.length) return;
+    const other = L.some(([, x]) => x.other);
+    this.table('links-table', ['Link', ['Counterexamples', COUNT_TIP], ['From counterexamples', COUNT_TIP], ['From cores', COUNT_TIP], ['Blocks', COUNT_TIP], ...(other ? ['Other'] : [])],
+      L.map(([name, x]) => [name, fmt(x.counterexamples), fmt(x.from_models), fmt(x.from_cores), fmt(x.blocks), ...(other ? [fmt(x.other || 0)] : [])]), [1, 2, 3, 4, 5]);
   }
 
   renderSummary() {
@@ -213,10 +230,17 @@ export class Stats {
         [[a.mode === 'space' && a.space ? (a.verdict === 'sound' ? `sound up to ${a.bound || 'k'} = ${a.k}` : `${a.verdict} at ${spaceAt(a)}`) : `${a.verdict} (symbolic)`, s ? secs(s.t) : '–', dash(a.rounds), dash(a.refinements)]],
         [1, 2, 3]);
     } else {
-      this.table('stats-summary', ['Outcome', 'Elapsed', 'Candidates', 'Counterexamples', 'Refinements', 'Solutions'],
-        [[outcome, s ? secs(s.t) : '–', dash(s && s.candidates), dash(s && s.counterexamples), s ? fmt(refinements(s)) : '–', dash(s && s.solutions)]],
-        [1, 2, 3, 4, 5]);
+      const r = refinementCounts(s);
+      const split = r && r.split;
+      const other = split && r.other > 0;
+      this.table('stats-summary', ['Outcome', 'Elapsed', 'Candidates', ['Counterexamples', COUNT_TIP], ['Refinements', COUNT_TIP],
+        ...(split ? [['From counterexamples', COUNT_TIP], ['From cores', COUNT_TIP], ['Blocks', COUNT_TIP]] : []),
+        ...(other ? [['Other', 'Clauses the script builds itself, and expansions from neither a counterexample nor a core']] : []), 'Solutions'],
+        [[outcome, s ? secs(s.t) : '–', dash(s && s.candidates), dash(s && s.counterexamples), s ? fmt(r.total) : '–',
+          ...(split ? [fmt(r.from_models), fmt(r.from_cores), fmt(r.blocks)] : []), ...(other ? [fmt(r.other)] : []), dash(s && s.solutions)]],
+        [1, 2, 3, 4, 5, 6, 7, 8, 9]);
     }
+    this.renderLinks();
     const c = s && s.certificates;
     const box = this.root.querySelector('#certificates-block');
     box.hidden = !c;
@@ -280,7 +304,7 @@ export class Stats {
   renderRefinements() {
     const s = this.S;
     const m = meanLen(s);
-    this.table('refinement-table', ['Clauses', 'Mean length', 'Largest', 'Expansions', 'Restarts', 'Automatic blocks'],
+    this.table('refinement-table', ['Clauses', 'Mean length', 'Largest', 'Expansions', 'Restarts', ['Blocks', 'G.block, G.above, G.below and the automatic blocks of accepted solutions']],
       [[dash(s && s.clauses), m == null ? '–' : m.toFixed(2), dash(s && s.maxlen), dash(s && s.expansions), dash(s && s.restarts), dash(s && s.blocks)]],
       [0, 1, 2, 3, 4, 5]);
   }
@@ -426,6 +450,7 @@ export class Stats {
       elapsed: s.t,
       candidates: s.candidates,
       refinements: refinements(s),
+      ...(refinementCounts(s).split ? { from_models: s.from_models, from_cores: s.from_cores, blocks: s.blocks } : {}),
       meanLength: meanLen(s),
       solutions: info.audit && info.audit.verdict !== 'limit' && !info.audit.mode ? info.audit.solutions : s.solutions,
       seed: info.settings.seed,
@@ -529,10 +554,11 @@ export class Stats {
         ...(bad.has(i) ? { 'data-mismatch': 'true' } : {}), ...(i === this.shownIndex ? { 'data-shown': 'true', title: 'The run whose results the tabs show now' } : {}),
         ...(r.audit ? { 'data-audit': r.audit.verdict } : {}) },
       cells: [(i === this.shownIndex ? '▶ ' : '') + (bad.has(i) ? '⚠ ' : '') + r.time, r.loop, r.outcome + (r.exhausted ? ' (exhausted)' : ''), secs(r.elapsed), fmt(r.candidates),
-        fmt(r.refinements), typeof r.meanLength !== 'number' ? '–' : r.meanLength.toFixed(2), fmt(r.solutions), String(r.seed ?? 0), this.auditText(r) + (r.certcheck ? ` · ${r.certcheck}` : '')],
+        fmt(r.refinements) + (r.from_models !== undefined ? ` (${fmt(r.from_models)} · ${fmt(r.from_cores)} · ${fmt(r.blocks)})` : ''), typeof r.meanLength !== 'number' ? '–' : r.meanLength.toFixed(2), fmt(r.solutions), String(r.seed ?? 0), this.auditText(r) + (r.certcheck ? ` · ${r.certcheck}` : '')],
     }));
     // 'Loop [instance]': the loop's first line, then the instance in brackets and the variant
-    const t = this.table('history-table', ['Time', 'Loop [instance]', 'Outcome', 'Elapsed', 'Candidates', 'Refinements', 'Mean clause', 'Solutions', 'Seed', 'Audit'],
+    const t = this.table('history-table', ['Time', 'Loop [instance]', 'Outcome', 'Elapsed', 'Candidates',
+      ['Refinements', 'In brackets: from counterexamples · from cores · blocks. ' + COUNT_TIP], 'Mean clause', 'Solutions', 'Seed', 'Audit'],
       rows.length ? rows : [['(no finished runs yet)', '', '', '', '', '', '', '', '', '']], [3, 4, 5, 6, 7, 8]);
     // the lab notebook (a note per run) and the pick of two runs to compare
     if (this.history.length) {

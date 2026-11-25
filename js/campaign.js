@@ -11,7 +11,7 @@
 //     limits: { seconds, candidates }   (default { seconds: 30 })
 //     where: ["solutions(reference) >= 1", ...]   (instance filters)
 import { derive, ProjectError, costTracker } from './project.js';
-import { validate, assemble, modulesFor, parseEvent } from './driver.js';
+import { validate, assemble, modulesFor, parseEvent, refinementCounts } from './driver.js';
 import { resolveProject } from './instances.js';
 
 export class SuiteError extends Error {}
@@ -203,9 +203,13 @@ export class Reducer {
       exhausted: D ? D.exhausted === true : false,
       detail: D ? D.detail || '' : (this.E ? this.E.message : ''),
       solutions: S.solutions ?? this.n, candidates: S.candidates ?? 0,
-      refinements: (S.clauses ?? 0) + (S.expansions ?? 0), time: S.t ?? 0,
+      refinements: refinementCounts(S).total, time: S.t ?? 0,
       hash: this.sum.toString(16).padStart(8, '0'),
     };
+    // counterexamples (models that refuted a candidate) and refinements by source (manual: Counting)
+    if (S.counterexamples !== undefined) row.counterexamples = S.counterexamples;
+    const rc = refinementCounts(S);
+    if (rc.split) { row.from_models = rc.from_models; row.from_cores = rc.from_cores; row.blocks = rc.blocks; if (rc.other) row.other = rc.other; }
     // the metrics that explain a difference between variants (FUTURE-DIRECTIONS D4)
     if (S.clauses) row.meanClause = Math.round((S.literals || 0) / S.clauses * 100) / 100;
     if (S.solvers && typeof S.solvers === 'object') {

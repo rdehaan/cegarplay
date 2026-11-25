@@ -2,7 +2,7 @@
 // report: an instance x variant matrix as Markdown and CSV, per-variant totals, and an SVG
 // cactus plot.
 //
-//   node tools/report.mjs <rows.jsonl> [--metric time|candidates|refinements] [--suite NAME]
+//   node tools/report.mjs <rows.jsonl> [--metric time|candidates|refinements|counterexamples|from_models|from_cores|blocks] [--suite NAME]
 //                         [--limit SECONDS] [--out PREFIX]
 //
 // Without --out the Markdown report goes to stdout. With --out PREFIX it writes PREFIX.md,
@@ -14,7 +14,7 @@ import { resultMatrix, matrixCSV, matrixMarkdown, variantTotals, cactusSvg, inco
 
 function usage(msg) {
   if (msg) console.error(msg);
-  console.error('usage: node tools/report.mjs <rows.jsonl> [--metric time|candidates|refinements] [--suite NAME] [--limit SECONDS] [--out PREFIX]');
+  console.error('usage: node tools/report.mjs <rows.jsonl> [--metric time|candidates|refinements|counterexamples|from_models|from_cores|blocks] [--suite NAME] [--limit SECONDS] [--out PREFIX]');
   process.exit(2);
 }
 
@@ -43,7 +43,7 @@ function main(argv) {
   let file = null, metric = 'time', suite = null, limit = 0, out = null;
   while (args.length) {
     const a = args.shift();
-    if (a === '--metric') { metric = args.shift(); if (!['time', 'candidates', 'refinements'].includes(metric)) usage('--metric: time, candidates or refinements'); }
+    if (a === '--metric') { metric = args.shift(); if (!['time', 'candidates', 'refinements', 'counterexamples', 'from_models', 'from_cores', 'blocks'].includes(metric)) usage('--metric: time, candidates, refinements, counterexamples, from_models, from_cores or blocks'); }
     else if (a === '--suite') suite = args.shift() || usage('--suite needs a name');
     else if (a === '--limit') { limit = Number(args.shift()); if (!(limit > 0)) usage('--limit needs a number > 0'); }
     else if (a === '--out') out = args.shift() || usage('--out needs a prefix');

@@ -1,4 +1,4 @@
-// Refinement lab: minimal sound sets with clingo (docs/lab-design.md). No DOM, no Node APIs.
+// Refinery: minimal sound sets with clingo (docs/lab-design.md). No DOM, no Node APIs.
 //
 // The sound sets of a bad candidate M are the hitting sets of D(M) = { D(M, s) : s a solution }.
 // One plain clingo run (a Lua main, no runtime) handles many candidates: per family a fresh

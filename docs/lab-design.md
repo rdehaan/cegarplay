@@ -1,6 +1,6 @@
-# Refinement lab: design note
+# Refinery: design note
 
-The Refinement lab (tab 12) shows what a CEGAR loop *could* have done at a step and over a whole run,
+The Refinery (tab 12) shows what a CEGAR loop *could* have done at a step and over a whole run,
 from an enumerated candidate space. This note is for the reviewer: what the lab imports, what it
 adds, and how its data looks. Milestone entries are at the end.
 
@@ -19,7 +19,7 @@ adds, and how its data looks. Milestone entries are at the end.
   lowest bit of the last digit. The lab uses `Space.fromHex` as is, so a recorded step's `c`
   (hex) and `q` (signed 1-based atom indices) land on the same candidate and atoms.
 - "Reset everything" already removes every `localStorage` key that starts with `cegarplay`
-  (`app.factoryReset` in `js/init.js`), so it also removes the lab's keys (`cegarplay.lab` and
+  (`app.factoryReset` in `js/init.js`), so it also removes the Refinery's keys (`cegarplay.lab` and
   `cegarplay.lab.*`). No change to that control is needed.
 - `G.block` appears in nearly every Shape 2 loop, because Shape 2 blocks *accepted solutions*
   with it (gc-shape2). So "the loop uses `G.block`" does not mean bad candidates are blocked. The
@@ -77,7 +77,7 @@ None. Everything the lab needs is already exported.
 | `js/lab/runs.js` | A recording read onto the space: steps, alive sets by replay, regret, percentile. |
 | `js/lab/report.js` | Feature C composed: `runReport`, `ladder`, `decomposition`. |
 | `js/lab/core.js` | The computations end to end, given an `exec(program, options, onLine)` function. Shared by the worker and `tools/lab.mjs`, so the tab and the tool give the same numbers. |
-| `js/lab/worker.js` | The lab's Web Worker: its own clingo-wasm instance, its own space cache, `core.js` behind messages. |
+| `js/lab/worker.js` | The Refinery's Web Worker: its own clingo-wasm instance, its own space cache, `core.js` behind messages. |
 | `js/lab/tab.js` | The tab's UI. Talks only to the lab worker. Loaded lazily when the tab is first shown. |
 | `css/lab.css` | The tab's styles, with theme tokens from `css/theme.css`. |
 | `tools/lab.mjs` | The headless tool. |
@@ -94,7 +94,7 @@ All modules except `tab.js` use neither the DOM nor Node APIs.
   `?tab=12` show it for the visit; the `?tab=` pattern accepts 12; `lab` is kept in the address
   bar; on the first show of tab 12, `import('./lab/tab.js')`. Without the toggle, no lab code is
   loaded and no lab worker is started.
-- `manual.md`: a new section "Refinement lab tab", plus a row in the tab list, the URL table and
+- `manual.md`: a new section "Refinery tab", plus a row in the tab list, the URL table and
   the storage list.
 
 ## Data structures
@@ -195,7 +195,7 @@ Built: `lua/lab.lua` (`rt.lab_space`, `rt.lab_detail`), `js/lab/space.js`, `sets
 `minimal.js`, `core.js`, and `tools/lab.mjs` for the space, removal sets, soundness, forced
 atoms, minimal sound sets and justification. Tests: `test/lab-sets.test.mjs` (brute force over
 every subset on synthetic spaces and the two 8-atom tutorial examples) and
-`test/lab-library-[1-3].test.mjs`. On every `fast` library example the lab supports, the lab's
+`test/lab-library-[1-3].test.mjs`. On every `fast` library example the lab supports, the Refinery's
 candidates, solutions, options (= the audit's pairs), soundness, unsound pairs and solutions at
 risk equal the audit's. The lab declines the others with a reason: expand, cores, `above`/`below`,
 several links, instances with `audit: false`, raw Lua.
@@ -212,7 +212,7 @@ and from-a-run modes, the counterexample table, the atom table, the option map w
 frontier, the lattice, the verdict line, CSV/SVG/JSON exports, and `css/lab.css`. A browser test
 (`test/browser/lab.test.mjs`) checks that the default page is unchanged: the same visible tabs,
 the same Control-tab ids, no lab module requested. It also checks that a Run finishes while the
-lab computes and that Cancel stops only the lab.
+lab computes and that Cancel stops only the Refinery.
 Deviation: after Cancel the lab worker is gone, and its space with it. The next request computes
 the space again with the same parameters, without asking; the results already on screen stay.
 Later version: drawing M, the counterexample and a clause with the project's domain view would
@@ -246,7 +246,7 @@ idealised runs (85 to 113). clingo's candidate order is far better than a random
 
 ### 5. Documentation and polish
 
-Built: the manual section "Refinement lab tab", plus the tab list, `?tab=12`, `?lab=1` and the
+Built: the manual section "Refinery tab", plus the tab list, `?tab=12`, `?lab=1` and the
 storage keys in the manual. Also: polite live regions for the status, the verdict and the
 ladder's sentence; keyboard access (every control is a button, select or range; the option map
 has a **Set** list as its keyboard alternative); theme tokens for light and dark; no sideways
@@ -258,11 +258,11 @@ past. That page never loads the lab.
 
 ### Consolidation (2026-11-25)
 
-The tutorial (lesson 6, "What the loop could have done: the Refinement lab", `#tut-lab`) and the
+The tutorial (lesson 6, "What the loop could have done: the Refinery", `#tut-lab`) and the
 guide now mention the lab. In the guide: chapter 4's tool moment and tool list, chapter 3's tool
 list, chapter 5's note on enumeration (`#lab`), the unsound how-to (a step "Understand it"), the
 glossary (forced atom, idealised run) and the reading order. The guide's numbers stay
-`data-stat` spans, so the lab's figures appear in the tutorial and the manual only. Code: the
+`data-stat` spans, so the Refinery's figures appear in the tutorial and the manual only. Code: the
 packing and matching bounds, the early stop at a bound, the clamped refinement strength, and the
 "not certainly outside" reason. Docs now name the program's facts as the code writes them (`o/2`,
 `r/2`).
@@ -282,7 +282,7 @@ cover the fixes.
   changes do not start one while busy.
 - `tools/lab.mjs` crashed when the bounds or the simulation were skipped. It now prints the
   reason.
-- "(as written)" in the lab's variant picker fell back to the run bar's variant. `''` now means
+- "(as written)" in the Refinery's variant picker fell back to the run bar's variant. `''` now means
   no variant (`undefined` still means the run bar's).
 - A set over the member cap that certificate level 2 justified was shown as "unchecked". It now
   stays justified.
@@ -318,8 +318,8 @@ project): 102,508 candidates, 10,698 solutions, 606,030 options, 54 interface at
    - A `lift` link: the loop scheme reported unsupported; the lifted clause in the inspector.
    - Justification's per-candidate fallback (when level 2 does not certify), its "not justified"
      verdict and its cap.
-   - Generated instances in the lab bar, and the **Link** field.
-2. **Browsers and isolation:** the lab's browser tests have run only in Chromium on pages without
+   - Generated instances in the Refinery bar, and the **Link** field.
+2. **Browsers and isolation:** the Refinery's browser tests have run only in Chromium on pages without
    cross-origin isolation (`?nocoi=1`). To do: `BROWSER=firefox` (needs Playwright's Firefox), and
    an isolated page (`coi`), where the module worker loads under COEP.
 3. **Accessibility:** `test/browser/a11y.test.mjs` does not visit tab 12 (keyboard path, live

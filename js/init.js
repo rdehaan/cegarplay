@@ -29,7 +29,7 @@ const app = { ready: false, project: Project.newProject() };
 window.cegarplay = app;
 
 // ---- the address bar: ?example=<id> and ?tab=N follow the page (replaceState, no history entries)
-const KEEP_PARAMS = ['nocoi', 'manual', 'internals', 'from', 'tab', 'instance', 'replay', 'view', 'step', 'lecture', 'lab'];
+const KEEP_PARAMS = ['nocoi', 'manual', 'internals', 'from', 'tab', 'instance', 'replay', 'view', 'step', 'lecture', 'lab', 'refinery'];
 function setUrl({ example, tab, keepHash = false } = {}) {
   const now = new URLSearchParams(location.search);
   const next = new URLSearchParams();
@@ -74,10 +74,10 @@ for (const c of document.querySelectorAll('.manual-checkbox')) {
   c.addEventListener('change', () => showManual(c.checked));
 }
 
-// ---- which tabs show: the Advanced tabs (Campaign, Observatory, Lab) and the Tutorial ----------------
+// ---- which tabs show: the Advanced tabs (Campaign, Observatory, Refinery) and the Tutorial ----------------
 // Both are kept in this browser. A link that opens one of these tabs (?tab=, ?lecture=, ?view=,
 // ?step=, ?advanced=1, a #tut- link) shows it for this visit without changing the stored choice.
-// The Advanced tabs (Campaign, Observatory, Refinement lab) each have a toggle; the Advanced
+// The Advanced tabs (Campaign, Observatory, Refinery) each have a toggle; the Advanced
 // toggle above them turns all three on or off (checked: all on; indeterminate: some on).
 // An older browser may still keep cegarplay.advanced (Campaign and Observatory together): it is
 // the fallback of both until one of them is changed.
@@ -136,7 +136,7 @@ app.showTabs = showTabs;
   showTabs('observatory', prefStored('observatory') || all || params.get('tab') === '11' ||
     params.has('lecture') || params.has('view') || params.has('step'), { store: false });
   showTabs('tutorial', prefStored('tutorial') || params.get('tab') === '2', { store: false });
-  showTabs('lab', prefStored('lab') || params.get('lab') === '1' || params.get('tab') === '12', { store: false });
+  showTabs('lab', prefStored('lab') || params.get('lab') === '1' || params.get('refinery') === '1' || params.get('tab') === '12', { store: false });
 }
 for (const name of Object.keys(TAB_PREFS)) {
   for (const c of document.querySelectorAll(TAB_PREFS[name].box)) c.addEventListener('change', () => showTabs(name, c.checked));
@@ -1014,12 +1014,12 @@ for (const r of document.querySelectorAll('input[name="tabs"]')) {
 }
 app.resizeVisibleEditors = resizeVisibleEditors;
 
-// ---- the Refinement lab (tab 12): its code and its own worker are loaded on its first show only
+// ---- the Refinery (tab 12): its code and its own worker are loaded on its first show only
 let labLoading = null;
 function showLab() {
   if (!labLoading) {
     labLoading = import('./lab/tab.js').then((m) => { app.lab = new m.LabTab(app, $('lab')); return app.lab; })
-      .catch((e) => { $('lab').textContent = `The lab could not be loaded: ${e.message}`; return null; });
+      .catch((e) => { $('lab').textContent = `The Refinery could not be loaded: ${e.message}`; return null; });
   }
   labLoading.then((lab) => { if (lab) lab.shown(); });
 }

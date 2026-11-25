@@ -20,7 +20,7 @@
   Loop and Instances tabs, run, and looked at in the Output, Statistics and Observatory tabs; the Campaign tab
   compares many runs. Each lesson below names the library example it uses, as in [Playground: tutorial-first-run],
   and describes what a run of it shows. The Observatory and the Campaign tab belong to the playground's Advanced
-  mode; the Lab tab (the Refinement lab, lesson 6) has a switch of its own.</p>
+  mode; the Refinery tab (the Refinery, lesson 6) has a switch of its own.</p>
 <p class="web-only">Every lesson has a <b>Load</b> button. It replaces the project you are editing (the page asks first
   if you changed it), and you stay in this tab. Press <b>Run</b> or <b>Ctrl+Enter</b> (<b>Cmd+Enter</b> on a
   Mac): the run bar at the top shows the counts while you read on. All examples are also in the
@@ -30,7 +30,7 @@
   Lessons 2 to 6 use one small problem throughout; lessons 7 to 11 add the tools for larger ones.</p>
 <p class="web-only">The Observatory and the Campaign tab are Advanced tabs: tick them at the top of this tab or under
   <b>Tabs</b> in the Control tab (lessons 5, 6 and 8 use them). There you can also hide this tab once you no longer
-  need it, and turn on the <b>Refinement lab</b>, which adds the <b>Lab</b> tab (the end of lesson 6); the page
+  need it, and turn on the <b>Refinery</b>, which adds the <b>Refinery</b> tab (the end of lesson 6); the page
   remembers these choices.</p>
 <p class="web-only">This tutorial shows where each tool is. The <a href="guide/index.html#howto" target="cegarplay-guide">how-to
   pages</a> of the design guide show how to use the tools to answer a question (compare strategies, find
@@ -247,10 +247,10 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
   removes sets that contain the sum without those numbers: among them, solutions. <span class="web-only"><b>Show in the trace</b> opens the same step in the Output tab.</span> The line
   above the map names the run it is of; another run, an audit or a replay clears it. The blame matrix below shows
   which atoms the refinements relied on.</p>
-<h3 id="tut-lab">What the loop could have done: the Refinement lab</h3>
-<p>The candidate space shows what one run did. The <b>Lab</b> tab (the Refinement lab) shows what the loop
-  <em>could</em> have done, from the same enumeration as the audit. <span class="web-only">Turn on <b>Refinement lab</b> under
-  <b>Tabs</b> in the Control tab and open the Lab tab. With this project loaded, set <b>Steps from</b> to free and
+<h3 id="tut-lab">What the loop could have done: the Refinery</h3>
+<p>The candidate space shows what one run did. The <b>Refinery</b> tab shows what the loop
+  <em>could</em> have done, from the same enumeration as the audit. <span class="web-only">Turn on <b>Refinery</b> under
+  <b>Tabs</b> in the Control tab and open the Refinery tab. With this project loaded, set <b>Steps from</b> to free and
   press <b>Compute space</b>; under <b>Space</b>, <b>Inspect this candidate</b> opens the audit's witness in the
   <b>Step inspector</b>.</span><span class="book-only">Its <b>step inspector</b>, on the audit's witness, shows the
   following.</span> The candidate <code>{pick(2) pick(4)}</code> has one counterexample, <code>sum(2,2)</code>. Its clause
@@ -268,9 +268,9 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
   candidates in random order make 14 to 16. The project's own run, recorded with every step (Loop tab,
   Recording), makes 46. <b>This run against the bounds</b> says why: 32 of its refinements refine a candidate that an
   earlier clause had already removed. That is the weak clause retention of Shape 1 from lesson 2. The same loop
-  written in Shape 2 (lesson 9) makes 14 refinements, the shortest possible. The lab
+  written in Shape 2 (lesson 9) makes 14 refinements, the shortest possible. The Refinery
   computes everything in its own engine, so runs and audits go on while it works; see
-  <a href="#manual-refinement-lab-tab">Refinement lab tab</a> in the manual.</p>
+  <a href="#manual-refinery-tab">Refinery tab</a> in the manual.</p>
 
 <h2 id="tut-instances">7. One project, many instances</h2>
 <p>An <b>instance</b> is a set of facts and constant values that a run puts on top of the project: the input of

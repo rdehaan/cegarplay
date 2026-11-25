@@ -1,4 +1,4 @@
-// Refinement lab, milestone 3: exact best and worst runs against a brute-force enumeration of every
+// Refinery, milestone 3: exact best and worst runs against a brute-force enumeration of every
 // idealised run on tiny spaces; invariants of the schemes, the simulation and the greedy policies.
 import test from 'node:test';
 import assert from 'node:assert/strict';

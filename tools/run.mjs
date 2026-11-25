@@ -26,7 +26,7 @@ import factory from '../vendor/clingo-wasm/clingo.js';
 import { load, derive, pickedVariant, ProjectError, expectedCheck, costTracker, costText } from '../js/project.js';
 import { Recording } from '../js/recording.js';
 import { hashText } from '../js/stats.js';
-import { assemble, parseEvent, validate, auditPlan, auditBody, boundedPlan, boundedBody, modulesFor } from '../js/driver.js';
+import { assemble, parseEvent, validate, auditPlan, auditBody, boundedPlan, boundedBody, modulesFor, refinementCounts } from '../js/driver.js';
 
 const root = new URL('..', import.meta.url);
 
@@ -211,6 +211,10 @@ async function main(argv) {
     console.log(`Outcome: ${D.outcome}${D.detail ? ` (${D.detail})` : ''}; exhausted: ${D.exhausted}`);
     if (S) {
       console.log(`Solutions: ${S.solutions}; candidates: ${S.candidates}; counterexamples: ${S.counterexamples}; clauses: ${S.clauses}; time: ${S.t} s`);
+      // refinements by source and per link (manual: Counting); a counterexample is a model that refuted a candidate
+      const rc = refinementCounts(S);
+      if (rc.split) console.log(`Refinements: ${rc.total} (from counterexamples ${rc.from_models}, from cores ${rc.from_cores}, blocks ${rc.blocks}${rc.other ? `, other ${rc.other}` : ''})`);
+      for (const [name, x] of Object.entries(S.links || {})) console.log(`  link ${name}: counterexamples ${x.counterexamples}; from counterexamples ${x.from_models}, from cores ${x.from_cores}, blocks ${x.blocks}${x.other ? `, other ${x.other}` : ''}`);
       if (S.counters && Object.keys(S.counters).length) console.log(`Counters: ${JSON.stringify(S.counters)}`);
       if (S.labels && Object.keys(S.labels).length) console.log(`Accepted as: ${Object.entries(S.labels).map(([k, v]) => `${k} ${v}`).join(', ')}`);
       if (S.partials) console.log(`Partial checks: ${S.partials}`);

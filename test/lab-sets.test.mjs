@@ -1,4 +1,4 @@
-// Refinement lab, milestone 1: brute-force cross-checks of removal sets, soundness, forced atoms and
+// Refinery, milestone 1: brute-force cross-checks of removal sets, soundness, forced atoms and
 // minimal sound sets on tiny spaces (synthetic ones and the tutorial's), docs/lab-design.md.
 import test from 'node:test';
 import assert from 'node:assert/strict';

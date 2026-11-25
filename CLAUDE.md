@@ -10,7 +10,7 @@ programming, solved with clingo compiled to WebAssembly.
   prototypes it cites were removed too (git history). PLAN3 (bounded verification: symbolic audit,
   instance spaces) is specified in `docs/spec-soundness.md` sections 7-8 and
   `docs/spec-instances.md` section 8; `spike3/` holds its measuring scripts and results.
-- `docs/lab-design.md`: the Refinement lab (tab 12, `js/lab/`, `lua/lab.lua`, `tools/lab.mjs`): imports,
+- `docs/lab-design.md`: the Refinery (tab 12, `js/lab/`, `lua/lab.lua`, `tools/lab.mjs`): imports,
   data structures, deviations, milestones.
 - `FUTURE-DIRECTIONS.md`: what was considered and not built (language, tools, views, library).
 - `PROGRESS.md`: what is done and what is next. **Read it first after any
@@ -79,7 +79,7 @@ node tools/make-replays.mjs                  # rebuild examples/replays/*.cprec 
 node tools/audit.mjs <id> [--json]           # audit a project (exit 0 sound, 1 unsound)
 node tools/audit.mjs <id> --symbolic         # the symbolic audit (exit 3 budget, 4 unsupported)
 node tools/audit.mjs <id> --space NAME --bound K   # bounded verification over a space
-node tools/lab.mjs <id> [--bounds loop] [--simulate N] [--record F]   # the Refinement lab (exit 3 not proven, 4 unsupported)
+node tools/lab.mjs <id> [--bounds loop] [--simulate N] [--record F]   # the Refinery (exit 3 not proven, 4 unsupported)
 node tools/survey.mjs [id ...] [--variants]  # per instance: counts, refinements, audit time; variants vs expected
 node tools/make-chat-package.mjs             # dist/chat-package/: docs for writing examples in web chat
 node tools/guide-numbers.mjs [--check]       # measure the guide's examples into guide/numbers.json

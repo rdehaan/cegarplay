@@ -1,4 +1,4 @@
--- CegarPlay Refinement lab (docs/lab-design.md): the audit's enumeration kept as data.
+-- CegarPlay Refinery (docs/lab-design.md): the audit's enumeration kept as data.
 -- Appended after runtime.lua (and ground.lua for rt.lab_detail) by the lab only: no other run
 -- loads this file, so the main engine's events and programs are unchanged.
 --

@@ -943,6 +943,37 @@ Test in `test/browser/stats.test.mjs`; row in docs/spec-app.md §5.1.
 - Docs: manual section "Voting examples" (all six, input format, instances, generators, loops);
   `llms.txt` points to it; bibliography (Alon 2006; Charbit, Thomassé and Yeo 2007).
 
+## Counting, candidate space, fair division, Refinery (2026-11-25, on request)
+
+- Candidate space: the map draws one link (the one the audit enumerates); it now names the
+  refinements of other links (kemeny-winners' W: 1 of 6 refinements was drawn, without a word). A
+  block right after a reported solution of another solver is an acceptance (kemeny-rankings), and
+  the detail box names a block or a core instead of "no shown atoms". Every model snapshot keeps
+  its shown atoms (accepted models of a check showed none; cost measured: none).
+- Counting (lua/runtime.lua): a counterexample is a model that refuted a candidate, counted the
+  first time G.clause(M, X), G.clause(X), G.clauses(X), G.lift(M, X) or S.expand with its atoms
+  uses it, once, per link. Refinements by source: from_models, from_cores, blocks (G.block,
+  above, below, automatic blocks), and other (script-built clauses, expansions from neither; only
+  when nonzero: without it the three do not add up). S event: these fields and `links`. Shown in
+  the Statistics tab (Summary with tooltips, Per link), the live line, the run history, campaign
+  rows and metrics, tools/run.mjs and tools/report.mjs; refinementCounts() in js/driver.js. The
+  refinements of a run now include automatic blocks. gc-shape1 keeps 1,320 counterexamples;
+  lang-core 958 -> 0. Blocking loops report their refutations as blocks: the guide quotes
+  `blocks` there (chapters 2, 9, 13; chapter 5's sentence reworded); guide/numbers.json changed
+  only in counterexamples. test/counting.test.mjs.
+- fair-division: variants algorithm-1 (Conati, Niskanen, de Haan and Järvisalo, AAMAS 2025,
+  Algorithm 1 for additive values, from the paper's text: the climb of lines 7-10 as a program
+  part `climb(k)` under an assumption `up(k)`; the counterexample: any dominating allocation; the
+  refinement of line 14: some agent gets strictly more than in it, part `beat(k)`; to list every
+  solution, each candidate the climb leaves is blocked), optimal-counterexample (a Pareto-optimal
+  counterexample of maximum total value, then the dominance rule), lazy-envy (envy as a second
+  check, clauses over an envious pair), lazy-envy-optimal-counterexample, welfare-first; a readme
+  with a measured table. Cross-checked: default, algorithm-1 and lazy-envy-optimal-counterexample
+  agree on 21 generated instances.
+- "Refinement lab" / "Lab" is now "Refinery" in the page, the docs and the tests' names; file
+  paths, ids, classes and the storage keys `cegarplay.lab.*` keep "lab"; `?refinery=1` works
+  like `?lab=1`.
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.

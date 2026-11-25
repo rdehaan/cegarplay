@@ -230,7 +230,7 @@ export class Control {
     if (randomize !== undefined) { if (randomize) project.settings.randomize = true; else delete project.settings.randomize; }
     // Run all: an instance with an expected count is run to all solutions (as tools/run.mjs does)
     if (allSolutions) project.settings.solutions = 0;
-    // recordSteps: this run records every step, whatever the Recording setting says (the Refinement lab)
+    // recordSteps: this run records every step, whatever the Recording setting says (the Refinery)
     if (recordSteps) project.settings.record = { ...(project.settings.record || {}), steps: 'all', n: 0 };
     app.editors.clearAnnotations();
     let problems, instanceId = null;
@@ -409,7 +409,7 @@ export class Control {
     if (app.views) app.views.updateSteps();
     if (app.observatory) app.observatory.update();
     if (app.views) app.views.show();
-    // the Refinement lab reads the latest run: it may have drawn its parts while this run was going on
+    // the Refinery reads the latest run: it may have drawn its parts while this run was going on
     if (app.lab) app.lab.runDone();
     if (state === 'error') {
       const line = this.E && this.assembled ? mapLine(this.assembled, this.E.line) : null;

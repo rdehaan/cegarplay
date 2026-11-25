@@ -1,4 +1,4 @@
-/* The Refinement lab tab (tab 12; docs/lab-design.md). Colours come from css/theme.css tokens,
+/* The Refinery tab (tab 12; docs/lab-design.md). Colours come from css/theme.css tokens,
    so the light and dark themes both apply. */
 #tab12:checked ~ #section-lab { display: block; }
 label[for='tab12']:before { content: '\f0c3'; }

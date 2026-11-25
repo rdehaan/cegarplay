@@ -1,4 +1,4 @@
-// The Refinement lab tab (tab 12, docs/lab-design.md): off by default and invisible then; the toggle,
+// The Refinery tab (tab 12, docs/lab-design.md): off by default and invisible then; the toggle,
 // ?lab=1 and ?tab=12; its own worker beside the main engine; the inspector, bounds and the run
 // against the bounds; Reset everything clears its keys.
 import { test, before, after } from 'node:test';
@@ -43,7 +43,7 @@ test('lab off (the default): the same tabs and Control tab as before, no lab cod
   await context.close();
 });
 
-test('the toggle shows the Lab tab and is remembered; ?lab=1 and ?tab=12 show it for the visit only', async () => {
+test('the toggle shows the Refinery tab and is remembered; ?lab=1 and ?tab=12 show it for the visit only', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?fresh=1', { advanced: false });
   assert.equal(await shown(page, 'tab12'), false);
   await page.check('#section-control .lab-checkbox');
@@ -104,7 +104,7 @@ test('free mode: space, inspector (verdict, atom table, option map, lattice), co
   await context.close();
 });
 
-test('from a run: gc-shape2 n3 recorded with every step; the run against the bounds; Run works while the lab computes; Cancel stops only the lab', async () => {
+test('from a run: gc-shape2 n3 recorded with every step; the run against the bounds; Run works while the Refinery computes; Cancel stops only the Refinery', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3&lab=1', { advanced: false });
   await page.click('label[for="tab4"]');
   await page.selectOption('#record-select', 'all');
@@ -124,14 +124,14 @@ test('from a run: gc-shape2 n3 recorded with every step; the run against the bou
   // bounds for the loop scheme; the main engine runs meanwhile
   await page.click('#lab-compute-bounds');
   await page.click('#run-button');
-  assert.equal(await B.waitState(page, ['finished']), 'finished', 'a run during the lab\'s computation');
+  assert.equal(await B.waitState(page, ['finished']), 'finished', 'a run during the Refinery\'s computation');
   await page.waitForSelector('#lab-histogram', { timeout: 180000 });
   await page.click('#lab-compute-run');
   await page.waitForSelector('#lab-ladder', { timeout: 180000 });
   assert.match(await page.textContent('#lab-ladder-sentence'), /This run made 19 refinements/);
   assert.match(await page.textContent('#lab-decomposition'), /Abstraction looseness/);
   assert.ok(await page.$('#lab-regret'));
-  // the shown line of the run bar is the run's, not the lab's
+  // the shown line of the run bar is the run's, not the Refinery's
   assert.match(await page.textContent('#shown-line'), /run/i);
   // Cancel: a long computation of the lab stops; the run bar stays idle
   await page.click('#lab-limits summary'); await page.fill('#lab-limit-runs', '100000000');
@@ -150,7 +150,7 @@ test('from a run: gc-shape2 n3 recorded with every step; the run against the bou
   await context.close();
 });
 
-test('Reset everything also removes the lab\'s keys', async () => {
+test('Reset everything also removes the Refinery\'s keys', async () => {
   const { page, context } = await B.openPage(browser, server, '?fresh=1&tab=12', { advanced: false });
   await page.check('#section-control .lab-checkbox');
   await page.waitForSelector('#lab-compute');
@@ -174,21 +174,21 @@ test('review fixes: omniscient bounds and the run share no slot; a recording of 
   assert.equal(await B.waitState(page, ['finished']), 'finished');
   await page.click('label[for="tab12"]');
   await page.waitForSelector('#lab-compute');
-  // the latest run is of n4; the lab's space of n3: no step lands on it, so free mode, without an error
+  // the latest run is of n4; the Refinery's space of n3: no step lands on it, so free mode, without an error
   await page.selectOption('#lab-instance', 'n3');
   await page.selectOption('#lab-source', 'latest');
   await page.click('#lab-compute');
   await waitStatus(page, /^space: 19 candidates/);
   await page.waitForSelector('#lab-candidate');
   assert.match(await page.textContent('#lab-inspect'), /no refinement of a bad candidate on this space/);
-  // a second request while the lab computes: refused, and Cancel stays available
+  // a second request while the Refinery computes: refused, and Cancel stays available
   await page.click('#lab-limits summary');
   await page.fill('#lab-limit-runs', '100000000');
   await page.dispatchEvent('#lab-limit-runs', 'change');
   await page.click('#lab-compute-bounds');
   await page.waitForFunction(() => /simulat/i.test(document.getElementById('lab-status').textContent), null, { timeout: 120000 });
   await page.evaluate(() => window.cegarplay.lab.inspectCandidate(0));
-  assert.match(await status(page), /the lab is still computing/);
+  assert.match(await status(page), /the Refinery is still computing/);
   assert.equal(await page.$eval('#lab-cancel', (b) => b.disabled), false);
   await page.click('#lab-cancel');
   await waitStatus(page, /cancelled/);

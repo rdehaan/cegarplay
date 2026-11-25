@@ -1,4 +1,4 @@
-// Shared helpers of the Refinement lab tests.
+// Shared helpers of the Refinery tests.
 import { LabSpace } from '../js/lab/space.js';
 
 // A seeded random space over n atoms: distinct candidates, some solutions, random options.

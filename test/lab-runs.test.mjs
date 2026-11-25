@@ -1,4 +1,4 @@
-// Refinement lab, milestone 4: recorded runs read onto the space; their length against the exact
+// Refinery, milestone 4: recorded runs read onto the space; their length against the exact
 // loop-scheme bounds (Shape 2 and the reference run); the unsound tutorial example.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -109,7 +109,7 @@ test('tutorial-weak-relevant: unsound options and lost solutions; the witness ag
   assert.equal(R.rows.findIndex((r) => r.lost > 0) >= 0, true);
 });
 
-test('the tutorial\'s figures for the Refinement lab (lesson 6, #tut-lab) hold', async () => {
+test('the tutorial\'s figures for the Refinery (lesson 6, #tut-lab) hold', async () => {
   const H2 = H.read('tutorial.html');
   const lab = H2.slice(H2.indexOf('id="tut-lab"'), H2.indexOf('<h2', H2.indexOf('id="tut-lab"')));
   for (const t of ['removes 128 of the 256', '13 of them are solutions', 'names two atoms and removes 64', 'makes 14', '14 to 16', 'makes 46', '32 of its refinements', 'makes 14 refinements']) assert.ok(lab.includes(t), t);
