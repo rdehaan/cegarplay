@@ -31,7 +31,10 @@
 - [Example library](manual.md#example-library): the groups and their examples. Voting (elections):
   [Voting examples](manual.md#voting-examples): `kemeny-rankings` and `slater-rankings` (every
   optimal ranking), `dodgson-winners`, `young-winners`, `kemeny-control`, `voting-justification`;
-  the input format (`ballot/2`, PrefLib), instances, generators and loops. Each example's own
+  the input format (`ballot/2`, PrefLib), instances, generators and loops. Judgment aggregation:
+  [Judgment aggregation examples](manual.md#judgment-aggregation-examples): `ja-kemeny`,
+  `ja-slater`, `ja-leximax`, `ja-msa`, `ja-young`, `ja-dodgson` (the outcomes of six rules, one loop
+  each; the input format `issue/1`, `cl/1`, `pos/2`, `neg/2`, `voter/1`, `yes/2`). Each example's own
   readme is the `readme` field of its project file.
 - Open an example in the page: `index.html?example=<id>`; add `&tab=4` for the loop script,
   `&manual=true&tab=8` for the manual.

@@ -48,6 +48,11 @@
       "description": "The Kemeny and Slater rankings and the Dodgson and Young winners (with Formula 1 seasons from PrefLib), control of a Kemeny election, and justifications of voting outcomes by axioms."
     },
     {
+      "id": "judgment",
+      "title": "Judgment aggregation",
+      "description": "Outcomes of six judgment aggregation rules (Kemeny, Slater, Leximax, MSA, Young, Dodgson) on agendas with an integrity constraint, each with a different loop: implicit hitting sets, OLL, level by level, MARCO, row generation and binary search."
+    },
+    {
       "id": "planning",
       "title": "Planning and optimisation",
       "description": "Conformant planning, bilevel and trilevel knapsack problems."
@@ -2640,6 +2645,156 @@
       "has": {
         "instances": 13,
         "generators": 2,
+        "suites": 2,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 20
+    },
+    {
+      "id": "ja-dodgson",
+      "title": "Judgment aggregation: Dodgson",
+      "group": "judgment",
+      "summary": "Dodgson outcomes by a doubling and binary search over the number of changed judgments, one NP query per step (P^NP[log]; 11 judges, 1 outcome); variants with a plain binary search, linear searches up and down, and one optimisation.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "bounds",
+        "judgment-aggregation",
+        "project"
+      ],
+      "expected": {
+        "solutions": 1
+      },
+      "has": {
+        "instances": 14,
+        "generators": 1,
+        "suites": 2,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 11
+    },
+    {
+      "id": "ja-kemeny",
+      "title": "Judgment aggregation: Kemeny",
+      "group": "judgment",
+      "summary": "Kemeny outcomes by implicit hitting sets: the minimally inconsistent subsets of the majority judgment are the minimal unsat cores (11 judges, 1 outcome); variants with plain or disjoint cores, lazy constraints, and the blocking loop.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "ihs",
+        "cores",
+        "core-minimisation",
+        "judgment-aggregation",
+        "project"
+      ],
+      "expected": {
+        "solutions": 1
+      },
+      "has": {
+        "instances": 15,
+        "generators": 1,
+        "suites": 2,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 14
+    },
+    {
+      "id": "ja-leximax",
+      "title": "Judgment aggregation: Leximax",
+      "group": "judgment",
+      "summary": "Leximax outcomes level by level: one optimal query per margin, each fixing the judgments given up on its level (11 judges, 1 outcome); variants with satisfiability queries only, implicit hitting sets with priorities, and the blocking loop.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "bounds",
+        "judgment-aggregation",
+        "project"
+      ],
+      "expected": {
+        "solutions": 1
+      },
+      "has": {
+        "instances": 15,
+        "generators": 1,
+        "suites": 2,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 11
+    },
+    {
+      "id": "ja-msa",
+      "title": "Judgment aggregation: MSA",
+      "group": "judgment",
+      "summary": "MSA (maximal subagenda) outcomes by MARCO: maximal consistent subsets of the majority judgment give the outcomes, minimal inconsistent ones are listed apart (Sigma-2; 11 judges, 3 outcomes); variants with cores, exists-forall, and the blocking loop.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "marco",
+        "exists-forall",
+        "judgment-aggregation",
+        "project"
+      ],
+      "expected": {
+        "solutions": 3
+      },
+      "has": {
+        "instances": 15,
+        "generators": 1,
+        "suites": 2,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 15
+    },
+    {
+      "id": "ja-slater",
+      "title": "Judgment aggregation: Slater",
+      "group": "judgment",
+      "summary": "Slater (maxcard subagenda) outcomes by core-guided optimisation (OLL), then every model under the final assumptions (11 judges, 2 outcomes); variants with implicit hitting sets, a linear search, plain cores, and the blocking loop.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "oll",
+        "cores",
+        "core-minimisation",
+        "judgment-aggregation",
+        "project"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "has": {
+        "instances": 15,
+        "generators": 1,
+        "suites": 2,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 17
+    },
+    {
+      "id": "ja-young",
+      "title": "Judgment aggregation: Young",
+      "group": "judgment",
+      "summary": "Young outcomes by row generation: the deletion solver learns the conflicts of the majority judgment from minimal unsat cores (11 judges, 4 outcomes); variants with plain cores, one optimisation, and a linear search.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "lazy-constraints",
+        "cores",
+        "judgment-aggregation",
+        "project"
+      ],
+      "expected": {
+        "solutions": 4
+      },
+      "has": {
+        "instances": 14,
+        "generators": 1,
         "suites": 2,
         "readme": 1
       },

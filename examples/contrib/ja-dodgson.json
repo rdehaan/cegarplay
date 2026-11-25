@@ -1,0 +1,375 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Judgment aggregation: Dodgson",
+  "description": "The outcomes of the Dodgson rule in judgment aggregation: change the fewest individual judgments (every judgment set staying consistent) so that the majority judgment becomes consistent; the outcomes are its consistent completions (Lang, Pigozzi, Slavkovik and van der Torre). Outcome determination is Theta-2-complete. The loop is a doubling and then binary search over the number of changes with one NP query per step (P^NP[log]), then one enumeration of the outcomes at the score.",
+  "readme": "# Project: Dodgson outcomes in judgment aggregation\n\n## Research question\n\nThe Dodgson rule of judgment aggregation changes the fewest individual judgments, every judgment\nset staying consistent, so that the majority judgment becomes consistent; the outcomes are its\nconsistent completions (Lang, Pigozzi, Slavkovik, van der Torre and Vesic 2017). Outcome\ndetermination is Theta-2-complete (see Conati, Niskanen and Järvisalo 2023). Theta-2 is\nP^NP[log]: logarithmically many NP queries suffice (Wagner 1990). Does the textbook search,\none NP query per step, pay off against linear searches and one optimisation, and which search\nshould it be?\n\n## The scenario\n\nA scenario is an instance, in the formula-based framework of Endriss, de Haan, Lang and\nSlavkovik (2020) with the integrity constraint over the issues: `issue(X)` for the issues of the\nagenda, the integrity constraint in CNF as `cl(C)`, `pos(C,X)` and `neg(C,X)` (clause C holds when\na judgment set accepts some X with `pos(C,X)` or rejects some X with `neg(C,X)`), and the profile as\n`voter(V)` with `yes(V,X)` for the issues judge V accepts (it rejects the others) and optionally\n`count(V,N)` (N judges hold this judgment set). A formula on the agenda is an issue whose\ndefinition is part of the constraint (the doctrinal paradox: `c` holds exactly when `p` and `q`\ndo). The fragment `shared` derives `sup(X,N)` (N judges accept X) and `maj(X,S,M)` (a strict\nmajority judges X to be S, yes or no, by a margin of M); the set of these literals is the\nmajority judgment. An outcome is a complete judgment set that satisfies the constraint, shown\nas `in/1` (the accepted issues). With all solutions, the solution count is the number of\noutcomes.\n\nWith the constant `complete` set to 1 (the instances `example-complete` and\n`doctrinal-complete`) the majority must also be complete (no tie on any issue), as in the\ndefinitions that take the majority judgment itself as the outcome; with 0 (the default, as in\njaggpy's encoding) a consistent majority judgment is completed in every consistent way.\n\n## The loops\n\n- **default**: doubling, then binary search. Each query asks \"can the judges change at most k\n  judgments so that the majority has a consistent completion?\" (`C.ground(bound, k)` grounds the\n  bound; `within(k)` assumes it). k = 0, 1, 3, 7, ... until the first yes, then bisection: about\n  2 log2(score) queries. Then the score becomes a fact and one enumeration, projected on `in/1`,\n  lists the outcomes.\n- **binary**: bisection from the changes of any first model: few queries when that bound is\n  good, but a first model may change hundreds of judgments where two suffice.\n- **linear-up**: UNSAT-SAT, k = 0, 1, 2, ... until a query is satisfiable.\n- **linear-down**: SAT-UNSAT, each witness an upper bound, one change fewer each time.\n- **direct**: one optimisation of the number of changes (`#minimize`), then the enumeration.\n\n## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added (clauses, cores, blocks and unit clauses); the outcome count is after the instance name. The small instances take under 1.3 s with every loop.\n\n| instance | default | binary | linear-up | linear-down | direct |\n| --- | --- | --- | --- | --- | --- |\n| 1964: 9 drivers, 10 races (18) | 0.2 s (1) | 0.4 s (1) | 0.1 s (1) | 4.3 s (1) | 13.3 s (1) |\n| 1970: 9 drivers, 13 races (3) | 0.2 s (1) | 2.2 s (1) | 0.3 s (1) | 52.0 s (1) | 38.0 s (1) |\n| random-22a: 22 issues, 21 judges (2) | 3.6 s (1) | 11.4 s (1) | 3.1 s (1) | 58.0 s (1) | 13.2 s (1) |\n| random-22b: 22 issues, 21 judges (1) | 1.1 s (1) | 5.2 s (1) | 1.2 s (1) | > 60 s | 11.0 s (1) |\n\nThe doubling search asks about 2 log2(score) queries from below; the plain binary search starts at the changes of a first model (hundreds where the score is 1 to 3) and so asks more and harder queries; the linear search up is as good here because the scores are small, and the linear search down, from that first model, is the slowest. One optimisation (direct) is slower than a few bounded queries: proving the optimum of the change count is harder than answering \"within k?\". The large random scenarios do not finish in minutes.\n\n## Instances\n\nThe same in each example of the group: `example` (the running example of Endriss, de Haan,\nLang and Slavkovik 2020: four issues, two clauses, 11 judges), `doctrinal` (the doctrinal\nparadox), `consistent` (a majority that is consistent: every rule keeps it), `tie` (a tie that\nthe outcome must complete), `paradox` and `election` (the Condorcet paradox and the election\n`example` of the Voting group in the preference agenda of Dietrich and List: the Kemeny and\nSlater outcomes there are the Kemeny and Slater rankings of `kemeny-rankings` and\n`slater-rankings`), two scenarios of the generator `ja-random` (premises and conclusions defined\nfrom them, judged around a hidden truth), and for the suites the Formula 1 seasons 1964 and 1970\nfrom PrefLib (36 issues, 168 transitivity clauses) and three larger random scenarios.\n\n## Things to try\n\n- Symmetry: judges with the same judgment set are interchangeable, but only the order in which\n  they change is fixed here; their new judgment sets could be ordered too.\n- Count a changed judge instead of a changed judgment (a Young-like Dodgson).\n\n## How to measure\n\nEach suite runs its variants (Campaign tab, Advanced mode); headless:\n`node tools/bench.mjs ja-dodgson --suite loops --out rows.jsonl` and `node tools/report.mjs rows.jsonl`.\nThe instances tagged `bench` (two Formula 1 seasons in the preference agenda and three large\nrandom scenarios) are where the loops differ; they run in the suites, never in the tests. The\nsmall ones are for the audit and the tests. The suite `random` draws scenarios from the\ngenerator `ja-random`. Every expected count was checked by `tools/ja-check.py`: brute force on\nthe small scenarios and an independent clingo encoding (clingo's own optimisation, or for MSA a\ndisjunctive encoding with saturation) on all of them.\n\n## References\n\n- J. Lang, G. Pigozzi, M. Slavkovik, L. van der Torre and S. Vesic. A partial taxonomy of judgment aggregation rules and their properties. *Social Choice and Welfare* 48(2):327–356, 2017.\n- K. W. Wagner. Bounded query classes. *SIAM Journal on Computing* 19(5):833–846, 1990.\n- U. Endriss, R. de Haan, J. Lang and M. Slavkovik. The complexity landscape of outcome determination in judgment aggregation. *Journal of Artificial Intelligence Research* 69:687–731, 2020.\n- R. de Haan and M. Slavkovik. Complexity results for aggregating judgments using scoring or distance-based procedures. *AAMAS 2017*.\n- R. de Haan and M. Slavkovik. Answer set programming for judgment aggregation. *IJCAI 2019*.\n- A. Conati, A. Niskanen and M. Järvisalo. SAT-based judgment aggregation. *AAMAS 2023*.\n- A. Conati, A. Niskanen and M. Järvisalo. Declarative approaches to outcome determination in judgment aggregation. *Journal of Artificial Intelligence Research* 81:793–836, 2024.\n",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The scenario is the instance (Instances tab), in the formula-based framework of Endriss, de\n% Haan, Lang and Slavkovik (2020), with the integrity constraint over the issues:\n%   issue(X)                    an issue of the agenda; a judgment set accepts or rejects it\n%   cl(C), pos(C,X), neg(C,X)   the integrity constraint in CNF: clause C holds when a judgment\n%                               set accepts some X with pos(C,X) or rejects some X with neg(C,X)\n%   voter(V), yes(V,X)          judge V accepts X and rejects every issue it does not list\n%   count(V,N)                  (optional) N judges hold judgment set V\n% Every judgment set of the profile satisfies the constraint (fragment schema).\n#defined cl/1.  #defined pos/2.  #defined neg/2.  #defined yes/2.  #defined count/2.\nvotes(V,N) :- voter(V), N = #max { 1; M : count(V,M) }.\ntotal(T) :- T = #sum { N,V : votes(V,N) }.\n% sup(X,N): N judges accept issue X.\nsup(X,N) :- issue(X), N = #sum { W,V : votes(V,W), yes(V,X) }.\n% maj(X,S,M): a strict majority judges X to be S (yes: accept, no: reject), by a margin of M\n% judges; a tie gives no majority. These literals are the majority judgment m(P). When it\n% breaks the constraint, the rules differ in how they repair it.\nmaj(X,yes,N+N-T) :- sup(X,N), total(T), N+N > T.\nmaj(X,no,T-N-N) :- sup(X,N), total(T), N+N < T.\n",
+      "description": "The scenario: issues, the integrity constraint, the profile, the support of every issue and the majority judgment maj/3. Added to every solver."
+    },
+    {
+      "name": "schema",
+      "text": "% Every instance satisfies this (Fuzz and the instance checks): each judgment set of the\n% profile satisfies the integrity constraint, and every name is an issue.\n:- voter(V), cl(C), yes(V,X) : neg(C,X); not yes(V,X) : pos(C,X).\n:- yes(V,X), not issue(X).\n:- pos(C,X), not issue(X).\n:- neg(C,X), not issue(X).\n",
+      "description": "Constraints every instance satisfies (not in any solver)."
+    },
+    {
+      "name": "outcome",
+      "text": "% An outcome: a complete judgment set, in(X) for every accepted issue (the others are\n% rejected), that satisfies the integrity constraint.\n{ in(X) : issue(X) }.\n:- cl(C), in(X) : neg(C,X); not in(X) : pos(C,X).\n% agree(X): the outcome agrees with the majority on X.\nagree(X) :- maj(X,yes,_), in(X).\nagree(X) :- maj(X,no,_), not in(X).\n#show in/1.\n",
+      "description": "An outcome: a complete judgment set that satisfies the integrity constraint, shown as in/1."
+    },
+    {
+      "name": "changes",
+      "text": "#const complete = 0.\n% unit(V,K): the K-th judge with judgment set V. j(V,K,X): after the changes, that judge\n% accepts X. Every new judgment set satisfies the constraint.\nunit(V,K) :- votes(V,N), K = 1..N.\n{ j(V,K,X) : issue(X) } :- unit(V,K).\n:- unit(V,K), cl(C), j(V,K,X) : neg(C,X); not j(V,K,X) : pos(C,X).\n% change(V,K,X): that judge changed its judgment on X. Judges with the same set are\n% interchangeable: the K-th changes something only if the (K-1)-th does.\nchange(V,K,X) :- unit(V,K), issue(X), j(V,K,X), not yes(V,X).\nchange(V,K,X) :- unit(V,K), yes(V,X), not j(V,K,X).\nchanged(V,K) :- change(V,K,_).\n:- changed(V,K), K > 1, not changed(V,K-1).\n% m2(X,S): a strict majority of the changed profile judges X to be S.\ns2(X,N) :- issue(X), N = #count { V,K : j(V,K,X) }.\nm2(X,yes) :- s2(X,N), total(T), N+N > T.\nm2(X,no) :- s2(X,N), total(T), N+N < T.\n% With complete = 1 (the instances *-complete) that majority must also be complete.\n:- complete = 1, issue(X), not m2(X,yes), not m2(X,no).\n",
+      "description": "The changed profile: a new consistent judgment set per judge, the changes, and its majority m2/2."
+    },
+    {
+      "name": "follow",
+      "text": "% An outcome that contains the majority judgment m2/2 (of the judges left, or of the changed\n% profile). There is none exactly when that majority breaks the constraint.\n:- m2(X,yes), not in(X).\n:- m2(X,no), in(X).\n",
+      "description": "An outcome that contains the majority m2/2."
+    },
+    {
+      "name": "within",
+      "text": "#program bound(b).\n% A query \"within b changes\": a free choice the loop assumes (or makes a fact).\n{ within(b) }.\n:- within(b), #count { V,K,X : change(V,K,X) } > b.\n",
+      "description": "The bound \"within b changes\", grounded per query."
+    },
+    {
+      "name": "fewest",
+      "text": "% The cost: the number of changed judgments.\n#minimize { 1,V,K,X : change(V,K,X) }.\n",
+      "description": "Variant direct: the cost, the number of changed judgments."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver C = shared + changes + outcome + follow + within     options \"--project\"\n\n# Theta-2 is P^NP[log]: polynomial time with logarithmically many NP queries (Wagner 1990). The\n# question of each query: \"can the judges change at most k judgments so that the majority has a\n# consistent completion?\"; each query grounds its bound (C.ground) and assumes it. A doubling\n# search (k = 0, 1, 3, 7, ...) finds an upper bound within twice the score, then a binary\n# search closes the interval: about 2 log2(score) queries, few when the score is small.\nlo = -1                            # no profile within lo changes\nk = 0\nstep = 1\ngrounded = none                    # set to hi when a query has grounded the bound hi\nloop:\n    C.ground(bound, k)\n    count queries\n    Y = C.solve(assume C.atom(\"within\", k))\n    if Y:\n        hi = Y.count(change/3)     # a witness within k changes, perhaps fewer\n        if hi == k: grounded = k\n        break\n    lo = k\n    track lower = lo + 1\n    k = k + step\n    step = step * 2\nwhile hi - lo > 1:\n    k = (lo + hi) // 2\n    C.ground(bound, k)\n    count queries\n    Y = C.solve(assume C.atom(\"within\", k))\n    if Y:\n        hi = Y.count(change/3)\n        if hi == k: grounded = k\n    else:\n        lo = k\n    track lower = lo + 1\n    track upper = hi\nbest = hi\nif grounded != best: C.ground(bound, best)\nlog \"Dodgson score (judgments changed)\", best\n# The outcomes: every consistent completion of the majority of a profile within best changes.\n# C projects its models on in/1 (option --project), so each outcome comes once.\nC.add(C.atom(\"within\", best))      # the score as a fact: the enumeration exhausts C\nfor X in C.models():\n    accept X                       # a Dodgson outcome: in(X) for the accepted issues\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0,
+    "instance": "example"
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% The running example of Endriss, de Haan, Lang and Slavkovik (JAIR 2020, Example 2.1):\n% four issues, two clauses (x1, x2 and x3 not all three; x1, x3 and x4 not all three)\n% and 11 judges. The majority accepts all four issues, which breaks both clauses.\nissue(x1). issue(x2). issue(x3). issue(x4).\ncl(1). neg(1,x1). neg(1,x2). neg(1,x3).\ncl(2). neg(2,x1). neg(2,x3). neg(2,x4).\nvoter(1). yes(1,x2). yes(1,x3). yes(1,x4). count(1,3).\nvoter(2). yes(2,x1). yes(2,x2).\nvoter(3). yes(3,x1). yes(3,x2). yes(3,x4). count(3,3).\nvoter(4). yes(4,x1). yes(4,x3). count(4,4).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "doctrinal",
+      "facts": "% The doctrinal paradox (Kornhauser and Sager 1986): three judges decide whether a contract\n% was valid (p), whether it was breached (q), and so whether the defendant is liable (c).\n% The constraint says c holds exactly when p and q do. The majority accepts p and q and\n% rejects c.\nissue(p). issue(q). issue(c).\ncl(1). neg(1,c). pos(1,p).\ncl(2). neg(2,c). pos(2,q).\ncl(3). neg(3,p). neg(3,q). pos(3,c).\nvoter(1). yes(1,p). yes(1,q). yes(1,c).\nvoter(2). yes(2,p).\nvoter(3). yes(3,q).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "consistent",
+      "facts": "% The doctrinal agenda with five judges whose majority is consistent (p, q and c): every\n% rule here keeps the majority judgment, so each gives that one outcome.\nissue(p). issue(q). issue(c).\ncl(1). neg(1,c). pos(1,p).\ncl(2). neg(2,c). pos(2,q).\ncl(3). neg(3,p). neg(3,q). pos(3,c).\nvoter(1). yes(1,p). yes(1,q). yes(1,c). count(1,3).\nvoter(2). yes(2,p).\nvoter(3). yes(3,q).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "tie",
+      "facts": "% The doctrinal agenda with four judges: p and q have a majority, c is a tie. The\n% majority judgment is incomplete but consistent, and the rules differ in how they\n% complete it.\nissue(p). issue(q). issue(c).\ncl(1). neg(1,c). pos(1,p).\ncl(2). neg(2,c). pos(2,q).\ncl(3). neg(3,p). neg(3,q). pos(3,c).\nvoter(1). yes(1,p). yes(1,q). yes(1,c). count(1,2).\nvoter(2). yes(2,p).\nvoter(3). yes(3,q).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "paradox",
+      "facts": "% The Condorcet paradox in the preference agenda (Dietrich and List 2007): an issue xy says\n% \"x is above y\", and the constraint says the order is transitive. The majority is a\n% cycle: a above b, b above c, c above a.\nissue(ab). issue(ac). issue(bc).\ncl(1). neg(1,ab). neg(1,bc). pos(1,ac).\ncl(2). neg(2,ac). pos(2,bc). pos(2,ab).\nvoter(1). yes(1,ab). yes(1,ac). yes(1,bc).\nvoter(2). yes(2,bc).\nvoter(3). yes(3,ab).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": []
+    },
+    {
+      "id": "election",
+      "facts": "% The election \"example\" of the Voting group (8 voters, 5 candidates) in the preference\n% agenda: 10 issues and 20 transitivity clauses. The Kemeny outcomes here are exactly the\n% Kemeny rankings of kemeny-rankings, the Slater outcomes those of slater-rankings.\nissue(ab). issue(ac). issue(ad). issue(ae). issue(bc). issue(bd). issue(be). issue(cd). issue(ce). issue(de).\ncl(1). neg(1,ab). neg(1,bc). pos(1,ac).\ncl(2). neg(2,ab). neg(2,bd). pos(2,ad).\ncl(3). neg(3,ab). neg(3,be). pos(3,ae).\ncl(4). neg(4,ac). pos(4,bc). pos(4,ab).\ncl(5). neg(5,ac). neg(5,cd). pos(5,ad).\ncl(6). neg(6,ac). neg(6,ce). pos(6,ae).\ncl(7). neg(7,ad). pos(7,bd). pos(7,ab).\ncl(8). neg(8,ad). pos(8,cd). pos(8,ac).\ncl(9). neg(9,ad). neg(9,de). pos(9,ae).\ncl(10). neg(10,ae). pos(10,be). pos(10,ab).\ncl(11). neg(11,ae). pos(11,ce). pos(11,ac).\ncl(12). neg(12,ae). pos(12,de). pos(12,ad).\ncl(13). neg(13,bc). neg(13,cd). pos(13,bd).\ncl(14). neg(14,bc). neg(14,ce). pos(14,be).\ncl(15). neg(15,bd). pos(15,cd). pos(15,bc).\ncl(16). neg(16,bd). neg(16,de). pos(16,be).\ncl(17). neg(17,be). pos(17,ce). pos(17,bc).\ncl(18). neg(18,be). pos(18,de). pos(18,bd).\ncl(19). neg(19,cd). neg(19,de). pos(19,ce).\ncl(20). neg(20,ce). pos(20,de). pos(20,cd).\nvoter(1). yes(1,ac). yes(1,bc). count(1,3).\nvoter(2). yes(2,bc). yes(2,bd). yes(2,be).\nvoter(3). yes(3,ab). yes(3,ac). yes(3,ad). yes(3,ae). yes(3,bc). yes(3,be). yes(3,de).\nvoter(4). yes(4,ae). yes(4,bc). yes(4,be). yes(4,ce). yes(4,de).\nvoter(5). yes(5,ab). yes(5,ac). yes(5,ad). yes(5,ae). yes(5,bc). yes(5,bd). yes(5,be). yes(5,cd). count(5,2).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "f1-1964",
+      "facts": "% PrefLib 00052-00000015, Formula 1 seasons: the 1964 season.\n% The 10 races are the judges, in the preference agenda over the 9 drivers: 36 issues and\n% 168 transitivity clauses.\nissue(bandini_clark). issue(bandini_ginther). issue(bandini_gurney). issue(bandini_hill). issue(bandini_jack_brabham). issue(bandini_mclaren). issue(bandini_siffert). issue(bandini_surtees). issue(clark_ginther). issue(clark_gurney). issue(clark_hill). issue(clark_jack_brabham). issue(clark_mclaren). issue(clark_siffert). issue(clark_surtees). issue(ginther_gurney). issue(ginther_hill). issue(ginther_jack_brabham). issue(ginther_mclaren). issue(ginther_siffert). issue(ginther_surtees). issue(gurney_hill). issue(gurney_jack_brabham). issue(gurney_mclaren). issue(gurney_siffert). issue(gurney_surtees). issue(hill_jack_brabham). issue(hill_mclaren). issue(hill_siffert). issue(hill_surtees). issue(jack_brabham_mclaren). issue(jack_brabham_siffert). issue(jack_brabham_surtees). issue(mclaren_siffert). issue(mclaren_surtees). issue(siffert_surtees).\ncl(1). neg(1,bandini_clark). neg(1,clark_ginther). pos(1,bandini_ginther).\ncl(2). neg(2,bandini_clark). neg(2,clark_gurney). pos(2,bandini_gurney).\ncl(3). neg(3,bandini_clark). neg(3,clark_hill). pos(3,bandini_hill).\ncl(4). neg(4,bandini_clark). neg(4,clark_jack_brabham). pos(4,bandini_jack_brabham).\ncl(5). neg(5,bandini_clark). neg(5,clark_mclaren). pos(5,bandini_mclaren).\ncl(6). neg(6,bandini_clark). neg(6,clark_siffert). pos(6,bandini_siffert).\ncl(7). neg(7,bandini_clark). neg(7,clark_surtees). pos(7,bandini_surtees).\ncl(8). neg(8,bandini_ginther). pos(8,clark_ginther). pos(8,bandini_clark).\ncl(9). neg(9,bandini_ginther). neg(9,ginther_gurney). pos(9,bandini_gurney).\ncl(10). neg(10,bandini_ginther). neg(10,ginther_hill). pos(10,bandini_hill).\ncl(11). neg(11,bandini_ginther). neg(11,ginther_jack_brabham). pos(11,bandini_jack_brabham).\ncl(12). neg(12,bandini_ginther). neg(12,ginther_mclaren). pos(12,bandini_mclaren).\ncl(13). neg(13,bandini_ginther). neg(13,ginther_siffert). pos(13,bandini_siffert).\ncl(14). neg(14,bandini_ginther). neg(14,ginther_surtees). pos(14,bandini_surtees).\ncl(15). neg(15,bandini_gurney). pos(15,clark_gurney). pos(15,bandini_clark).\ncl(16). neg(16,bandini_gurney). pos(16,ginther_gurney). pos(16,bandini_ginther).\ncl(17). neg(17,bandini_gurney). neg(17,gurney_hill). pos(17,bandini_hill).\ncl(18). neg(18,bandini_gurney). neg(18,gurney_jack_brabham). pos(18,bandini_jack_brabham).\ncl(19). neg(19,bandini_gurney). neg(19,gurney_mclaren). pos(19,bandini_mclaren).\ncl(20). neg(20,bandini_gurney). neg(20,gurney_siffert). pos(20,bandini_siffert).\ncl(21). neg(21,bandini_gurney). neg(21,gurney_surtees). pos(21,bandini_surtees).\ncl(22). neg(22,bandini_hill). pos(22,clark_hill). pos(22,bandini_clark).\ncl(23). neg(23,bandini_hill). pos(23,ginther_hill). pos(23,bandini_ginther).\ncl(24). neg(24,bandini_hill). pos(24,gurney_hill). pos(24,bandini_gurney).\ncl(25). neg(25,bandini_hill). neg(25,hill_jack_brabham). pos(25,bandini_jack_brabham).\ncl(26). neg(26,bandini_hill). neg(26,hill_mclaren). pos(26,bandini_mclaren).\ncl(27). neg(27,bandini_hill). neg(27,hill_siffert). pos(27,bandini_siffert).\ncl(28). neg(28,bandini_hill). neg(28,hill_surtees). pos(28,bandini_surtees).\ncl(29). neg(29,bandini_jack_brabham). pos(29,clark_jack_brabham). pos(29,bandini_clark).\ncl(30). neg(30,bandini_jack_brabham). pos(30,ginther_jack_brabham). pos(30,bandini_ginther).\ncl(31). neg(31,bandini_jack_brabham). pos(31,gurney_jack_brabham). pos(31,bandini_gurney).\ncl(32). neg(32,bandini_jack_brabham). pos(32,hill_jack_brabham). pos(32,bandini_hill).\ncl(33). neg(33,bandini_jack_brabham). neg(33,jack_brabham_mclaren). pos(33,bandini_mclaren).\ncl(34). neg(34,bandini_jack_brabham). neg(34,jack_brabham_siffert). pos(34,bandini_siffert).\ncl(35). neg(35,bandini_jack_brabham). neg(35,jack_brabham_surtees). pos(35,bandini_surtees).\ncl(36). neg(36,bandini_mclaren). pos(36,clark_mclaren). pos(36,bandini_clark).\ncl(37). neg(37,bandini_mclaren). pos(37,ginther_mclaren). pos(37,bandini_ginther).\ncl(38). neg(38,bandini_mclaren). pos(38,gurney_mclaren). pos(38,bandini_gurney).\ncl(39). neg(39,bandini_mclaren). pos(39,hill_mclaren). pos(39,bandini_hill).\ncl(40). neg(40,bandini_mclaren). pos(40,jack_brabham_mclaren). pos(40,bandini_jack_brabham).\ncl(41). neg(41,bandini_mclaren). neg(41,mclaren_siffert). pos(41,bandini_siffert).\ncl(42). neg(42,bandini_mclaren). neg(42,mclaren_surtees). pos(42,bandini_surtees).\ncl(43). neg(43,bandini_siffert). pos(43,clark_siffert). pos(43,bandini_clark).\ncl(44). neg(44,bandini_siffert). pos(44,ginther_siffert). pos(44,bandini_ginther).\ncl(45). neg(45,bandini_siffert). pos(45,gurney_siffert). pos(45,bandini_gurney).\ncl(46). neg(46,bandini_siffert). pos(46,hill_siffert). pos(46,bandini_hill).\ncl(47). neg(47,bandini_siffert). pos(47,jack_brabham_siffert). pos(47,bandini_jack_brabham).\ncl(48). neg(48,bandini_siffert). pos(48,mclaren_siffert). pos(48,bandini_mclaren).\ncl(49). neg(49,bandini_siffert). neg(49,siffert_surtees). pos(49,bandini_surtees).\ncl(50). neg(50,bandini_surtees). pos(50,clark_surtees). pos(50,bandini_clark).\ncl(51). neg(51,bandini_surtees). pos(51,ginther_surtees). pos(51,bandini_ginther).\ncl(52). neg(52,bandini_surtees). pos(52,gurney_surtees). pos(52,bandini_gurney).\ncl(53). neg(53,bandini_surtees). pos(53,hill_surtees). pos(53,bandini_hill).\ncl(54). neg(54,bandini_surtees). pos(54,jack_brabham_surtees). pos(54,bandini_jack_brabham).\ncl(55). neg(55,bandini_surtees). pos(55,mclaren_surtees). pos(55,bandini_mclaren).\ncl(56). neg(56,bandini_surtees). pos(56,siffert_surtees). pos(56,bandini_siffert).\ncl(57). neg(57,clark_ginther). neg(57,ginther_gurney). pos(57,clark_gurney).\ncl(58). neg(58,clark_ginther). neg(58,ginther_hill). pos(58,clark_hill).\ncl(59). neg(59,clark_ginther). neg(59,ginther_jack_brabham). pos(59,clark_jack_brabham).\ncl(60). neg(60,clark_ginther). neg(60,ginther_mclaren). pos(60,clark_mclaren).\ncl(61). neg(61,clark_ginther). neg(61,ginther_siffert). pos(61,clark_siffert).\ncl(62). neg(62,clark_ginther). neg(62,ginther_surtees). pos(62,clark_surtees).\ncl(63). neg(63,clark_gurney). pos(63,ginther_gurney). pos(63,clark_ginther).\ncl(64). neg(64,clark_gurney). neg(64,gurney_hill). pos(64,clark_hill).\ncl(65). neg(65,clark_gurney). neg(65,gurney_jack_brabham). pos(65,clark_jack_brabham).\ncl(66). neg(66,clark_gurney). neg(66,gurney_mclaren). pos(66,clark_mclaren).\ncl(67). neg(67,clark_gurney). neg(67,gurney_siffert). pos(67,clark_siffert).\ncl(68). neg(68,clark_gurney). neg(68,gurney_surtees). pos(68,clark_surtees).\ncl(69). neg(69,clark_hill). pos(69,ginther_hill). pos(69,clark_ginther).\ncl(70). neg(70,clark_hill). pos(70,gurney_hill). pos(70,clark_gurney).\ncl(71). neg(71,clark_hill). neg(71,hill_jack_brabham). pos(71,clark_jack_brabham).\ncl(72). neg(72,clark_hill). neg(72,hill_mclaren). pos(72,clark_mclaren).\ncl(73). neg(73,clark_hill). neg(73,hill_siffert). pos(73,clark_siffert).\ncl(74). neg(74,clark_hill). neg(74,hill_surtees). pos(74,clark_surtees).\ncl(75). neg(75,clark_jack_brabham). pos(75,ginther_jack_brabham). pos(75,clark_ginther).\ncl(76). neg(76,clark_jack_brabham). pos(76,gurney_jack_brabham). pos(76,clark_gurney).\ncl(77). neg(77,clark_jack_brabham). pos(77,hill_jack_brabham). pos(77,clark_hill).\ncl(78). neg(78,clark_jack_brabham). neg(78,jack_brabham_mclaren). pos(78,clark_mclaren).\ncl(79). neg(79,clark_jack_brabham). neg(79,jack_brabham_siffert). pos(79,clark_siffert).\ncl(80). neg(80,clark_jack_brabham). neg(80,jack_brabham_surtees). pos(80,clark_surtees).\ncl(81). neg(81,clark_mclaren). pos(81,ginther_mclaren). pos(81,clark_ginther).\ncl(82). neg(82,clark_mclaren). pos(82,gurney_mclaren). pos(82,clark_gurney).\ncl(83). neg(83,clark_mclaren). pos(83,hill_mclaren). pos(83,clark_hill).\ncl(84). neg(84,clark_mclaren). pos(84,jack_brabham_mclaren). pos(84,clark_jack_brabham).\ncl(85). neg(85,clark_mclaren). neg(85,mclaren_siffert). pos(85,clark_siffert).\ncl(86). neg(86,clark_mclaren). neg(86,mclaren_surtees). pos(86,clark_surtees).\ncl(87). neg(87,clark_siffert). pos(87,ginther_siffert). pos(87,clark_ginther).\ncl(88). neg(88,clark_siffert). pos(88,gurney_siffert). pos(88,clark_gurney).\ncl(89). neg(89,clark_siffert). pos(89,hill_siffert). pos(89,clark_hill).\ncl(90). neg(90,clark_siffert). pos(90,jack_brabham_siffert). pos(90,clark_jack_brabham).\ncl(91). neg(91,clark_siffert). pos(91,mclaren_siffert). pos(91,clark_mclaren).\ncl(92). neg(92,clark_siffert). neg(92,siffert_surtees). pos(92,clark_surtees).\ncl(93). neg(93,clark_surtees). pos(93,ginther_surtees). pos(93,clark_ginther).\ncl(94). neg(94,clark_surtees). pos(94,gurney_surtees). pos(94,clark_gurney).\ncl(95). neg(95,clark_surtees). pos(95,hill_surtees). pos(95,clark_hill).\ncl(96). neg(96,clark_surtees). pos(96,jack_brabham_surtees). pos(96,clark_jack_brabham).\ncl(97). neg(97,clark_surtees). pos(97,mclaren_surtees). pos(97,clark_mclaren).\ncl(98). neg(98,clark_surtees). pos(98,siffert_surtees). pos(98,clark_siffert).\ncl(99). neg(99,ginther_gurney). neg(99,gurney_hill). pos(99,ginther_hill).\ncl(100). neg(100,ginther_gurney). neg(100,gurney_jack_brabham). pos(100,ginther_jack_brabham).\ncl(101). neg(101,ginther_gurney). neg(101,gurney_mclaren). pos(101,ginther_mclaren).\ncl(102). neg(102,ginther_gurney). neg(102,gurney_siffert). pos(102,ginther_siffert).\ncl(103). neg(103,ginther_gurney). neg(103,gurney_surtees). pos(103,ginther_surtees).\ncl(104). neg(104,ginther_hill). pos(104,gurney_hill). pos(104,ginther_gurney).\ncl(105). neg(105,ginther_hill). neg(105,hill_jack_brabham). pos(105,ginther_jack_brabham).\ncl(106). neg(106,ginther_hill). neg(106,hill_mclaren). pos(106,ginther_mclaren).\ncl(107). neg(107,ginther_hill). neg(107,hill_siffert). pos(107,ginther_siffert).\ncl(108). neg(108,ginther_hill). neg(108,hill_surtees). pos(108,ginther_surtees).\ncl(109). neg(109,ginther_jack_brabham). pos(109,gurney_jack_brabham). pos(109,ginther_gurney).\ncl(110). neg(110,ginther_jack_brabham). pos(110,hill_jack_brabham). pos(110,ginther_hill).\ncl(111). neg(111,ginther_jack_brabham). neg(111,jack_brabham_mclaren). pos(111,ginther_mclaren).\ncl(112). neg(112,ginther_jack_brabham). neg(112,jack_brabham_siffert). pos(112,ginther_siffert).\ncl(113). neg(113,ginther_jack_brabham). neg(113,jack_brabham_surtees). pos(113,ginther_surtees).\ncl(114). neg(114,ginther_mclaren). pos(114,gurney_mclaren). pos(114,ginther_gurney).\ncl(115). neg(115,ginther_mclaren). pos(115,hill_mclaren). pos(115,ginther_hill).\ncl(116). neg(116,ginther_mclaren). pos(116,jack_brabham_mclaren). pos(116,ginther_jack_brabham).\ncl(117). neg(117,ginther_mclaren). neg(117,mclaren_siffert). pos(117,ginther_siffert).\ncl(118). neg(118,ginther_mclaren). neg(118,mclaren_surtees). pos(118,ginther_surtees).\ncl(119). neg(119,ginther_siffert). pos(119,gurney_siffert). pos(119,ginther_gurney).\ncl(120). neg(120,ginther_siffert). pos(120,hill_siffert). pos(120,ginther_hill).\ncl(121). neg(121,ginther_siffert). pos(121,jack_brabham_siffert). pos(121,ginther_jack_brabham).\ncl(122). neg(122,ginther_siffert). pos(122,mclaren_siffert). pos(122,ginther_mclaren).\ncl(123). neg(123,ginther_siffert). neg(123,siffert_surtees). pos(123,ginther_surtees).\ncl(124). neg(124,ginther_surtees). pos(124,gurney_surtees). pos(124,ginther_gurney).\ncl(125). neg(125,ginther_surtees). pos(125,hill_surtees). pos(125,ginther_hill).\ncl(126). neg(126,ginther_surtees). pos(126,jack_brabham_surtees). pos(126,ginther_jack_brabham).\ncl(127). neg(127,ginther_surtees). pos(127,mclaren_surtees). pos(127,ginther_mclaren).\ncl(128). neg(128,ginther_surtees). pos(128,siffert_surtees). pos(128,ginther_siffert).\ncl(129). neg(129,gurney_hill). neg(129,hill_jack_brabham). pos(129,gurney_jack_brabham).\ncl(130). neg(130,gurney_hill). neg(130,hill_mclaren). pos(130,gurney_mclaren).\ncl(131). neg(131,gurney_hill). neg(131,hill_siffert). pos(131,gurney_siffert).\ncl(132). neg(132,gurney_hill). neg(132,hill_surtees). pos(132,gurney_surtees).\ncl(133). neg(133,gurney_jack_brabham). pos(133,hill_jack_brabham). pos(133,gurney_hill).\ncl(134). neg(134,gurney_jack_brabham). neg(134,jack_brabham_mclaren). pos(134,gurney_mclaren).\ncl(135). neg(135,gurney_jack_brabham). neg(135,jack_brabham_siffert). pos(135,gurney_siffert).\ncl(136). neg(136,gurney_jack_brabham). neg(136,jack_brabham_surtees). pos(136,gurney_surtees).\ncl(137). neg(137,gurney_mclaren). pos(137,hill_mclaren). pos(137,gurney_hill).\ncl(138). neg(138,gurney_mclaren). pos(138,jack_brabham_mclaren). pos(138,gurney_jack_brabham).\ncl(139). neg(139,gurney_mclaren). neg(139,mclaren_siffert). pos(139,gurney_siffert).\ncl(140). neg(140,gurney_mclaren). neg(140,mclaren_surtees). pos(140,gurney_surtees).\ncl(141). neg(141,gurney_siffert). pos(141,hill_siffert). pos(141,gurney_hill).\ncl(142). neg(142,gurney_siffert). pos(142,jack_brabham_siffert). pos(142,gurney_jack_brabham).\ncl(143). neg(143,gurney_siffert). pos(143,mclaren_siffert). pos(143,gurney_mclaren).\ncl(144). neg(144,gurney_siffert). neg(144,siffert_surtees). pos(144,gurney_surtees).\ncl(145). neg(145,gurney_surtees). pos(145,hill_surtees). pos(145,gurney_hill).\ncl(146). neg(146,gurney_surtees). pos(146,jack_brabham_surtees). pos(146,gurney_jack_brabham).\ncl(147). neg(147,gurney_surtees). pos(147,mclaren_surtees). pos(147,gurney_mclaren).\ncl(148). neg(148,gurney_surtees). pos(148,siffert_surtees). pos(148,gurney_siffert).\ncl(149). neg(149,hill_jack_brabham). neg(149,jack_brabham_mclaren). pos(149,hill_mclaren).\ncl(150). neg(150,hill_jack_brabham). neg(150,jack_brabham_siffert). pos(150,hill_siffert).\ncl(151). neg(151,hill_jack_brabham). neg(151,jack_brabham_surtees). pos(151,hill_surtees).\ncl(152). neg(152,hill_mclaren). pos(152,jack_brabham_mclaren). pos(152,hill_jack_brabham).\ncl(153). neg(153,hill_mclaren). neg(153,mclaren_siffert). pos(153,hill_siffert).\ncl(154). neg(154,hill_mclaren). neg(154,mclaren_surtees). pos(154,hill_surtees).\ncl(155). neg(155,hill_siffert). pos(155,jack_brabham_siffert). pos(155,hill_jack_brabham).\ncl(156). neg(156,hill_siffert). pos(156,mclaren_siffert). pos(156,hill_mclaren).\ncl(157). neg(157,hill_siffert). neg(157,siffert_surtees). pos(157,hill_surtees).\ncl(158). neg(158,hill_surtees). pos(158,jack_brabham_surtees). pos(158,hill_jack_brabham).\ncl(159). neg(159,hill_surtees). pos(159,mclaren_surtees). pos(159,hill_mclaren).\ncl(160). neg(160,hill_surtees). pos(160,siffert_surtees). pos(160,hill_siffert).\ncl(161). neg(161,jack_brabham_mclaren). neg(161,mclaren_siffert). pos(161,jack_brabham_siffert).\ncl(162). neg(162,jack_brabham_mclaren). neg(162,mclaren_surtees). pos(162,jack_brabham_surtees).\ncl(163). neg(163,jack_brabham_siffert). pos(163,mclaren_siffert). pos(163,jack_brabham_mclaren).\ncl(164). neg(164,jack_brabham_siffert). neg(164,siffert_surtees). pos(164,jack_brabham_surtees).\ncl(165). neg(165,jack_brabham_surtees). pos(165,mclaren_surtees). pos(165,jack_brabham_mclaren).\ncl(166). neg(166,jack_brabham_surtees). pos(166,siffert_surtees). pos(166,jack_brabham_siffert).\ncl(167). neg(167,mclaren_siffert). neg(167,siffert_surtees). pos(167,mclaren_surtees).\ncl(168). neg(168,mclaren_surtees). pos(168,siffert_surtees). pos(168,mclaren_siffert).\nvoter(1). yes(1,bandini_gurney). yes(1,bandini_jack_brabham). yes(1,bandini_mclaren). yes(1,bandini_surtees). yes(1,clark_gurney). yes(1,clark_jack_brabham). yes(1,clark_mclaren). yes(1,clark_siffert). yes(1,clark_surtees). yes(1,ginther_gurney). yes(1,ginther_jack_brabham). yes(1,ginther_mclaren). yes(1,ginther_siffert). yes(1,ginther_surtees). yes(1,gurney_jack_brabham). yes(1,gurney_mclaren). yes(1,gurney_surtees). yes(1,hill_jack_brabham). yes(1,hill_mclaren). yes(1,hill_siffert). yes(1,hill_surtees). yes(1,jack_brabham_mclaren). yes(1,jack_brabham_surtees). yes(1,mclaren_surtees). yes(1,siffert_surtees).\nvoter(2). yes(2,clark_ginther). yes(2,clark_gurney). yes(2,clark_hill). yes(2,clark_jack_brabham). yes(2,clark_mclaren). yes(2,clark_siffert). yes(2,clark_surtees). yes(2,ginther_gurney). yes(2,ginther_jack_brabham). yes(2,ginther_siffert). yes(2,hill_jack_brabham). yes(2,hill_mclaren). yes(2,hill_siffert). yes(2,mclaren_siffert).\nvoter(3). yes(3,bandini_surtees). yes(3,clark_ginther). yes(3,clark_gurney). yes(3,clark_hill). yes(3,clark_jack_brabham). yes(3,clark_mclaren). yes(3,clark_siffert). yes(3,clark_surtees). yes(3,ginther_gurney). yes(3,ginther_hill). yes(3,ginther_siffert). yes(3,ginther_surtees). yes(3,gurney_siffert). yes(3,gurney_surtees). yes(3,hill_siffert). yes(3,hill_surtees). yes(3,jack_brabham_siffert). yes(3,jack_brabham_surtees). yes(3,mclaren_siffert). yes(3,mclaren_surtees). yes(3,siffert_surtees).\nvoter(4). yes(4,bandini_clark). yes(4,bandini_siffert). yes(4,bandini_surtees). yes(4,clark_siffert). yes(4,clark_surtees). yes(4,ginther_mclaren). yes(4,ginther_siffert). yes(4,ginther_surtees). yes(4,gurney_hill). yes(4,gurney_jack_brabham). yes(4,gurney_mclaren). yes(4,gurney_siffert). yes(4,gurney_surtees). yes(4,hill_jack_brabham). yes(4,hill_mclaren). yes(4,hill_siffert). yes(4,hill_surtees). yes(4,jack_brabham_mclaren). yes(4,jack_brabham_siffert). yes(4,jack_brabham_surtees). yes(4,mclaren_siffert). yes(4,mclaren_surtees).\nvoter(5). yes(5,bandini_ginther). yes(5,bandini_gurney). yes(5,bandini_mclaren). yes(5,bandini_siffert). yes(5,clark_ginther). yes(5,clark_gurney). yes(5,clark_hill). yes(5,clark_jack_brabham). yes(5,clark_mclaren). yes(5,clark_siffert). yes(5,clark_surtees). yes(5,ginther_gurney). yes(5,ginther_mclaren). yes(5,ginther_siffert). yes(5,gurney_mclaren). yes(5,hill_jack_brabham). yes(5,hill_mclaren). yes(5,hill_siffert). yes(5,hill_surtees). yes(5,jack_brabham_mclaren). yes(5,jack_brabham_siffert).\nvoter(6). yes(6,bandini_clark). yes(6,bandini_ginther). yes(6,bandini_gurney). yes(6,bandini_jack_brabham). yes(6,bandini_mclaren). yes(6,bandini_siffert). yes(6,clark_mclaren). yes(6,ginther_gurney). yes(6,ginther_jack_brabham). yes(6,ginther_mclaren). yes(6,gurney_jack_brabham). yes(6,gurney_mclaren). yes(6,hill_jack_brabham). yes(6,hill_mclaren). yes(6,hill_siffert). yes(6,jack_brabham_mclaren).\nvoter(7). yes(7,bandini_clark). yes(7,bandini_ginther). yes(7,bandini_gurney). yes(7,bandini_hill). yes(7,bandini_jack_brabham). yes(7,bandini_mclaren). yes(7,bandini_siffert). yes(7,bandini_surtees). yes(7,clark_hill). yes(7,clark_siffert). yes(7,clark_surtees). yes(7,ginther_gurney). yes(7,ginther_hill). yes(7,ginther_jack_brabham). yes(7,ginther_mclaren). yes(7,ginther_siffert). yes(7,ginther_surtees). yes(7,gurney_hill). yes(7,gurney_mclaren). yes(7,gurney_siffert). yes(7,gurney_surtees). yes(7,jack_brabham_mclaren). yes(7,jack_brabham_siffert). yes(7,jack_brabham_surtees). yes(7,mclaren_siffert). yes(7,mclaren_surtees). yes(7,siffert_surtees).\nvoter(8). yes(8,bandini_clark). yes(8,bandini_ginther). yes(8,bandini_gurney). yes(8,bandini_hill). yes(8,bandini_jack_brabham). yes(8,bandini_siffert). yes(8,clark_hill). yes(8,ginther_gurney). yes(8,ginther_hill). yes(8,ginther_jack_brabham). yes(8,ginther_siffert). yes(8,gurney_hill). yes(8,gurney_jack_brabham). yes(8,mclaren_siffert).\nvoter(9). yes(9,bandini_jack_brabham). yes(9,bandini_mclaren). yes(9,clark_gurney). yes(9,clark_jack_brabham). yes(9,clark_mclaren). yes(9,ginther_gurney). yes(9,ginther_jack_brabham). yes(9,ginther_mclaren). yes(9,gurney_jack_brabham). yes(9,gurney_mclaren). yes(9,hill_jack_brabham). yes(9,hill_mclaren). yes(9,hill_siffert). yes(9,hill_surtees).\nvoter(10). yes(10,bandini_clark). yes(10,bandini_ginther). yes(10,bandini_hill). yes(10,bandini_jack_brabham). yes(10,bandini_mclaren). yes(10,bandini_siffert). yes(10,clark_ginther). yes(10,clark_hill). yes(10,clark_jack_brabham). yes(10,clark_mclaren). yes(10,clark_siffert). yes(10,ginther_hill). yes(10,ginther_jack_brabham). yes(10,ginther_siffert). yes(10,gurney_hill). yes(10,gurney_jack_brabham). yes(10,gurney_mclaren). yes(10,gurney_siffert). yes(10,gurney_surtees). yes(10,hill_jack_brabham). yes(10,hill_siffert). yes(10,jack_brabham_siffert). yes(10,mclaren_siffert).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 18
+      },
+      "tags": [
+        "slow",
+        "bench",
+        "preflib"
+      ],
+      "audit": false
+    },
+    {
+      "id": "f1-1970",
+      "facts": "% PrefLib 00052-00000021, Formula 1 seasons: the 1970 season.\n% The 13 races are the judges, in the preference agenda over the 9 drivers: 36 issues and\n% 168 transitivity clauses.\nissue(amon_beltoise). issue(amon_ickx). issue(amon_jack_brabham). issue(amon_oliver). issue(amon_pescarolo). issue(amon_rodriguez). issue(amon_siffert). issue(amon_stewart). issue(beltoise_ickx). issue(beltoise_jack_brabham). issue(beltoise_oliver). issue(beltoise_pescarolo). issue(beltoise_rodriguez). issue(beltoise_siffert). issue(beltoise_stewart). issue(ickx_jack_brabham). issue(ickx_oliver). issue(ickx_pescarolo). issue(ickx_rodriguez). issue(ickx_siffert). issue(ickx_stewart). issue(jack_brabham_oliver). issue(jack_brabham_pescarolo). issue(jack_brabham_rodriguez). issue(jack_brabham_siffert). issue(jack_brabham_stewart). issue(oliver_pescarolo). issue(oliver_rodriguez). issue(oliver_siffert). issue(oliver_stewart). issue(pescarolo_rodriguez). issue(pescarolo_siffert). issue(pescarolo_stewart). issue(rodriguez_siffert). issue(rodriguez_stewart). issue(siffert_stewart).\ncl(1). neg(1,amon_beltoise). neg(1,beltoise_ickx). pos(1,amon_ickx).\ncl(2). neg(2,amon_beltoise). neg(2,beltoise_jack_brabham). pos(2,amon_jack_brabham).\ncl(3). neg(3,amon_beltoise). neg(3,beltoise_oliver). pos(3,amon_oliver).\ncl(4). neg(4,amon_beltoise). neg(4,beltoise_pescarolo). pos(4,amon_pescarolo).\ncl(5). neg(5,amon_beltoise). neg(5,beltoise_rodriguez). pos(5,amon_rodriguez).\ncl(6). neg(6,amon_beltoise). neg(6,beltoise_siffert). pos(6,amon_siffert).\ncl(7). neg(7,amon_beltoise). neg(7,beltoise_stewart). pos(7,amon_stewart).\ncl(8). neg(8,amon_ickx). pos(8,beltoise_ickx). pos(8,amon_beltoise).\ncl(9). neg(9,amon_ickx). neg(9,ickx_jack_brabham). pos(9,amon_jack_brabham).\ncl(10). neg(10,amon_ickx). neg(10,ickx_oliver). pos(10,amon_oliver).\ncl(11). neg(11,amon_ickx). neg(11,ickx_pescarolo). pos(11,amon_pescarolo).\ncl(12). neg(12,amon_ickx). neg(12,ickx_rodriguez). pos(12,amon_rodriguez).\ncl(13). neg(13,amon_ickx). neg(13,ickx_siffert). pos(13,amon_siffert).\ncl(14). neg(14,amon_ickx). neg(14,ickx_stewart). pos(14,amon_stewart).\ncl(15). neg(15,amon_jack_brabham). pos(15,beltoise_jack_brabham). pos(15,amon_beltoise).\ncl(16). neg(16,amon_jack_brabham). pos(16,ickx_jack_brabham). pos(16,amon_ickx).\ncl(17). neg(17,amon_jack_brabham). neg(17,jack_brabham_oliver). pos(17,amon_oliver).\ncl(18). neg(18,amon_jack_brabham). neg(18,jack_brabham_pescarolo). pos(18,amon_pescarolo).\ncl(19). neg(19,amon_jack_brabham). neg(19,jack_brabham_rodriguez). pos(19,amon_rodriguez).\ncl(20). neg(20,amon_jack_brabham). neg(20,jack_brabham_siffert). pos(20,amon_siffert).\ncl(21). neg(21,amon_jack_brabham). neg(21,jack_brabham_stewart). pos(21,amon_stewart).\ncl(22). neg(22,amon_oliver). pos(22,beltoise_oliver). pos(22,amon_beltoise).\ncl(23). neg(23,amon_oliver). pos(23,ickx_oliver). pos(23,amon_ickx).\ncl(24). neg(24,amon_oliver). pos(24,jack_brabham_oliver). pos(24,amon_jack_brabham).\ncl(25). neg(25,amon_oliver). neg(25,oliver_pescarolo). pos(25,amon_pescarolo).\ncl(26). neg(26,amon_oliver). neg(26,oliver_rodriguez). pos(26,amon_rodriguez).\ncl(27). neg(27,amon_oliver). neg(27,oliver_siffert). pos(27,amon_siffert).\ncl(28). neg(28,amon_oliver). neg(28,oliver_stewart). pos(28,amon_stewart).\ncl(29). neg(29,amon_pescarolo). pos(29,beltoise_pescarolo). pos(29,amon_beltoise).\ncl(30). neg(30,amon_pescarolo). pos(30,ickx_pescarolo). pos(30,amon_ickx).\ncl(31). neg(31,amon_pescarolo). pos(31,jack_brabham_pescarolo). pos(31,amon_jack_brabham).\ncl(32). neg(32,amon_pescarolo). pos(32,oliver_pescarolo). pos(32,amon_oliver).\ncl(33). neg(33,amon_pescarolo). neg(33,pescarolo_rodriguez). pos(33,amon_rodriguez).\ncl(34). neg(34,amon_pescarolo). neg(34,pescarolo_siffert). pos(34,amon_siffert).\ncl(35). neg(35,amon_pescarolo). neg(35,pescarolo_stewart). pos(35,amon_stewart).\ncl(36). neg(36,amon_rodriguez). pos(36,beltoise_rodriguez). pos(36,amon_beltoise).\ncl(37). neg(37,amon_rodriguez). pos(37,ickx_rodriguez). pos(37,amon_ickx).\ncl(38). neg(38,amon_rodriguez). pos(38,jack_brabham_rodriguez). pos(38,amon_jack_brabham).\ncl(39). neg(39,amon_rodriguez). pos(39,oliver_rodriguez). pos(39,amon_oliver).\ncl(40). neg(40,amon_rodriguez). pos(40,pescarolo_rodriguez). pos(40,amon_pescarolo).\ncl(41). neg(41,amon_rodriguez). neg(41,rodriguez_siffert). pos(41,amon_siffert).\ncl(42). neg(42,amon_rodriguez). neg(42,rodriguez_stewart). pos(42,amon_stewart).\ncl(43). neg(43,amon_siffert). pos(43,beltoise_siffert). pos(43,amon_beltoise).\ncl(44). neg(44,amon_siffert). pos(44,ickx_siffert). pos(44,amon_ickx).\ncl(45). neg(45,amon_siffert). pos(45,jack_brabham_siffert). pos(45,amon_jack_brabham).\ncl(46). neg(46,amon_siffert). pos(46,oliver_siffert). pos(46,amon_oliver).\ncl(47). neg(47,amon_siffert). pos(47,pescarolo_siffert). pos(47,amon_pescarolo).\ncl(48). neg(48,amon_siffert). pos(48,rodriguez_siffert). pos(48,amon_rodriguez).\ncl(49). neg(49,amon_siffert). neg(49,siffert_stewart). pos(49,amon_stewart).\ncl(50). neg(50,amon_stewart). pos(50,beltoise_stewart). pos(50,amon_beltoise).\ncl(51). neg(51,amon_stewart). pos(51,ickx_stewart). pos(51,amon_ickx).\ncl(52). neg(52,amon_stewart). pos(52,jack_brabham_stewart). pos(52,amon_jack_brabham).\ncl(53). neg(53,amon_stewart). pos(53,oliver_stewart). pos(53,amon_oliver).\ncl(54). neg(54,amon_stewart). pos(54,pescarolo_stewart). pos(54,amon_pescarolo).\ncl(55). neg(55,amon_stewart). pos(55,rodriguez_stewart). pos(55,amon_rodriguez).\ncl(56). neg(56,amon_stewart). pos(56,siffert_stewart). pos(56,amon_siffert).\ncl(57). neg(57,beltoise_ickx). neg(57,ickx_jack_brabham). pos(57,beltoise_jack_brabham).\ncl(58). neg(58,beltoise_ickx). neg(58,ickx_oliver). pos(58,beltoise_oliver).\ncl(59). neg(59,beltoise_ickx). neg(59,ickx_pescarolo). pos(59,beltoise_pescarolo).\ncl(60). neg(60,beltoise_ickx). neg(60,ickx_rodriguez). pos(60,beltoise_rodriguez).\ncl(61). neg(61,beltoise_ickx). neg(61,ickx_siffert). pos(61,beltoise_siffert).\ncl(62). neg(62,beltoise_ickx). neg(62,ickx_stewart). pos(62,beltoise_stewart).\ncl(63). neg(63,beltoise_jack_brabham). pos(63,ickx_jack_brabham). pos(63,beltoise_ickx).\ncl(64). neg(64,beltoise_jack_brabham). neg(64,jack_brabham_oliver). pos(64,beltoise_oliver).\ncl(65). neg(65,beltoise_jack_brabham). neg(65,jack_brabham_pescarolo). pos(65,beltoise_pescarolo).\ncl(66). neg(66,beltoise_jack_brabham). neg(66,jack_brabham_rodriguez). pos(66,beltoise_rodriguez).\ncl(67). neg(67,beltoise_jack_brabham). neg(67,jack_brabham_siffert). pos(67,beltoise_siffert).\ncl(68). neg(68,beltoise_jack_brabham). neg(68,jack_brabham_stewart). pos(68,beltoise_stewart).\ncl(69). neg(69,beltoise_oliver). pos(69,ickx_oliver). pos(69,beltoise_ickx).\ncl(70). neg(70,beltoise_oliver). pos(70,jack_brabham_oliver). pos(70,beltoise_jack_brabham).\ncl(71). neg(71,beltoise_oliver). neg(71,oliver_pescarolo). pos(71,beltoise_pescarolo).\ncl(72). neg(72,beltoise_oliver). neg(72,oliver_rodriguez). pos(72,beltoise_rodriguez).\ncl(73). neg(73,beltoise_oliver). neg(73,oliver_siffert). pos(73,beltoise_siffert).\ncl(74). neg(74,beltoise_oliver). neg(74,oliver_stewart). pos(74,beltoise_stewart).\ncl(75). neg(75,beltoise_pescarolo). pos(75,ickx_pescarolo). pos(75,beltoise_ickx).\ncl(76). neg(76,beltoise_pescarolo). pos(76,jack_brabham_pescarolo). pos(76,beltoise_jack_brabham).\ncl(77). neg(77,beltoise_pescarolo). pos(77,oliver_pescarolo). pos(77,beltoise_oliver).\ncl(78). neg(78,beltoise_pescarolo). neg(78,pescarolo_rodriguez). pos(78,beltoise_rodriguez).\ncl(79). neg(79,beltoise_pescarolo). neg(79,pescarolo_siffert). pos(79,beltoise_siffert).\ncl(80). neg(80,beltoise_pescarolo). neg(80,pescarolo_stewart). pos(80,beltoise_stewart).\ncl(81). neg(81,beltoise_rodriguez). pos(81,ickx_rodriguez). pos(81,beltoise_ickx).\ncl(82). neg(82,beltoise_rodriguez). pos(82,jack_brabham_rodriguez). pos(82,beltoise_jack_brabham).\ncl(83). neg(83,beltoise_rodriguez). pos(83,oliver_rodriguez). pos(83,beltoise_oliver).\ncl(84). neg(84,beltoise_rodriguez). pos(84,pescarolo_rodriguez). pos(84,beltoise_pescarolo).\ncl(85). neg(85,beltoise_rodriguez). neg(85,rodriguez_siffert). pos(85,beltoise_siffert).\ncl(86). neg(86,beltoise_rodriguez). neg(86,rodriguez_stewart). pos(86,beltoise_stewart).\ncl(87). neg(87,beltoise_siffert). pos(87,ickx_siffert). pos(87,beltoise_ickx).\ncl(88). neg(88,beltoise_siffert). pos(88,jack_brabham_siffert). pos(88,beltoise_jack_brabham).\ncl(89). neg(89,beltoise_siffert). pos(89,oliver_siffert). pos(89,beltoise_oliver).\ncl(90). neg(90,beltoise_siffert). pos(90,pescarolo_siffert). pos(90,beltoise_pescarolo).\ncl(91). neg(91,beltoise_siffert). pos(91,rodriguez_siffert). pos(91,beltoise_rodriguez).\ncl(92). neg(92,beltoise_siffert). neg(92,siffert_stewart). pos(92,beltoise_stewart).\ncl(93). neg(93,beltoise_stewart). pos(93,ickx_stewart). pos(93,beltoise_ickx).\ncl(94). neg(94,beltoise_stewart). pos(94,jack_brabham_stewart). pos(94,beltoise_jack_brabham).\ncl(95). neg(95,beltoise_stewart). pos(95,oliver_stewart). pos(95,beltoise_oliver).\ncl(96). neg(96,beltoise_stewart). pos(96,pescarolo_stewart). pos(96,beltoise_pescarolo).\ncl(97). neg(97,beltoise_stewart). pos(97,rodriguez_stewart). pos(97,beltoise_rodriguez).\ncl(98). neg(98,beltoise_stewart). pos(98,siffert_stewart). pos(98,beltoise_siffert).\ncl(99). neg(99,ickx_jack_brabham). neg(99,jack_brabham_oliver). pos(99,ickx_oliver).\ncl(100). neg(100,ickx_jack_brabham). neg(100,jack_brabham_pescarolo). pos(100,ickx_pescarolo).\ncl(101). neg(101,ickx_jack_brabham). neg(101,jack_brabham_rodriguez). pos(101,ickx_rodriguez).\ncl(102). neg(102,ickx_jack_brabham). neg(102,jack_brabham_siffert). pos(102,ickx_siffert).\ncl(103). neg(103,ickx_jack_brabham). neg(103,jack_brabham_stewart). pos(103,ickx_stewart).\ncl(104). neg(104,ickx_oliver). pos(104,jack_brabham_oliver). pos(104,ickx_jack_brabham).\ncl(105). neg(105,ickx_oliver). neg(105,oliver_pescarolo). pos(105,ickx_pescarolo).\ncl(106). neg(106,ickx_oliver). neg(106,oliver_rodriguez). pos(106,ickx_rodriguez).\ncl(107). neg(107,ickx_oliver). neg(107,oliver_siffert). pos(107,ickx_siffert).\ncl(108). neg(108,ickx_oliver). neg(108,oliver_stewart). pos(108,ickx_stewart).\ncl(109). neg(109,ickx_pescarolo). pos(109,jack_brabham_pescarolo). pos(109,ickx_jack_brabham).\ncl(110). neg(110,ickx_pescarolo). pos(110,oliver_pescarolo). pos(110,ickx_oliver).\ncl(111). neg(111,ickx_pescarolo). neg(111,pescarolo_rodriguez). pos(111,ickx_rodriguez).\ncl(112). neg(112,ickx_pescarolo). neg(112,pescarolo_siffert). pos(112,ickx_siffert).\ncl(113). neg(113,ickx_pescarolo). neg(113,pescarolo_stewart). pos(113,ickx_stewart).\ncl(114). neg(114,ickx_rodriguez). pos(114,jack_brabham_rodriguez). pos(114,ickx_jack_brabham).\ncl(115). neg(115,ickx_rodriguez). pos(115,oliver_rodriguez). pos(115,ickx_oliver).\ncl(116). neg(116,ickx_rodriguez). pos(116,pescarolo_rodriguez). pos(116,ickx_pescarolo).\ncl(117). neg(117,ickx_rodriguez). neg(117,rodriguez_siffert). pos(117,ickx_siffert).\ncl(118). neg(118,ickx_rodriguez). neg(118,rodriguez_stewart). pos(118,ickx_stewart).\ncl(119). neg(119,ickx_siffert). pos(119,jack_brabham_siffert). pos(119,ickx_jack_brabham).\ncl(120). neg(120,ickx_siffert). pos(120,oliver_siffert). pos(120,ickx_oliver).\ncl(121). neg(121,ickx_siffert). pos(121,pescarolo_siffert). pos(121,ickx_pescarolo).\ncl(122). neg(122,ickx_siffert). pos(122,rodriguez_siffert). pos(122,ickx_rodriguez).\ncl(123). neg(123,ickx_siffert). neg(123,siffert_stewart). pos(123,ickx_stewart).\ncl(124). neg(124,ickx_stewart). pos(124,jack_brabham_stewart). pos(124,ickx_jack_brabham).\ncl(125). neg(125,ickx_stewart). pos(125,oliver_stewart). pos(125,ickx_oliver).\ncl(126). neg(126,ickx_stewart). pos(126,pescarolo_stewart). pos(126,ickx_pescarolo).\ncl(127). neg(127,ickx_stewart). pos(127,rodriguez_stewart). pos(127,ickx_rodriguez).\ncl(128). neg(128,ickx_stewart). pos(128,siffert_stewart). pos(128,ickx_siffert).\ncl(129). neg(129,jack_brabham_oliver). neg(129,oliver_pescarolo). pos(129,jack_brabham_pescarolo).\ncl(130). neg(130,jack_brabham_oliver). neg(130,oliver_rodriguez). pos(130,jack_brabham_rodriguez).\ncl(131). neg(131,jack_brabham_oliver). neg(131,oliver_siffert). pos(131,jack_brabham_siffert).\ncl(132). neg(132,jack_brabham_oliver). neg(132,oliver_stewart). pos(132,jack_brabham_stewart).\ncl(133). neg(133,jack_brabham_pescarolo). pos(133,oliver_pescarolo). pos(133,jack_brabham_oliver).\ncl(134). neg(134,jack_brabham_pescarolo). neg(134,pescarolo_rodriguez). pos(134,jack_brabham_rodriguez).\ncl(135). neg(135,jack_brabham_pescarolo). neg(135,pescarolo_siffert). pos(135,jack_brabham_siffert).\ncl(136). neg(136,jack_brabham_pescarolo). neg(136,pescarolo_stewart). pos(136,jack_brabham_stewart).\ncl(137). neg(137,jack_brabham_rodriguez). pos(137,oliver_rodriguez). pos(137,jack_brabham_oliver).\ncl(138). neg(138,jack_brabham_rodriguez). pos(138,pescarolo_rodriguez). pos(138,jack_brabham_pescarolo).\ncl(139). neg(139,jack_brabham_rodriguez). neg(139,rodriguez_siffert). pos(139,jack_brabham_siffert).\ncl(140). neg(140,jack_brabham_rodriguez). neg(140,rodriguez_stewart). pos(140,jack_brabham_stewart).\ncl(141). neg(141,jack_brabham_siffert). pos(141,oliver_siffert). pos(141,jack_brabham_oliver).\ncl(142). neg(142,jack_brabham_siffert). pos(142,pescarolo_siffert). pos(142,jack_brabham_pescarolo).\ncl(143). neg(143,jack_brabham_siffert). pos(143,rodriguez_siffert). pos(143,jack_brabham_rodriguez).\ncl(144). neg(144,jack_brabham_siffert). neg(144,siffert_stewart). pos(144,jack_brabham_stewart).\ncl(145). neg(145,jack_brabham_stewart). pos(145,oliver_stewart). pos(145,jack_brabham_oliver).\ncl(146). neg(146,jack_brabham_stewart). pos(146,pescarolo_stewart). pos(146,jack_brabham_pescarolo).\ncl(147). neg(147,jack_brabham_stewart). pos(147,rodriguez_stewart). pos(147,jack_brabham_rodriguez).\ncl(148). neg(148,jack_brabham_stewart). pos(148,siffert_stewart). pos(148,jack_brabham_siffert).\ncl(149). neg(149,oliver_pescarolo). neg(149,pescarolo_rodriguez). pos(149,oliver_rodriguez).\ncl(150). neg(150,oliver_pescarolo). neg(150,pescarolo_siffert). pos(150,oliver_siffert).\ncl(151). neg(151,oliver_pescarolo). neg(151,pescarolo_stewart). pos(151,oliver_stewart).\ncl(152). neg(152,oliver_rodriguez). pos(152,pescarolo_rodriguez). pos(152,oliver_pescarolo).\ncl(153). neg(153,oliver_rodriguez). neg(153,rodriguez_siffert). pos(153,oliver_siffert).\ncl(154). neg(154,oliver_rodriguez). neg(154,rodriguez_stewart). pos(154,oliver_stewart).\ncl(155). neg(155,oliver_siffert). pos(155,pescarolo_siffert). pos(155,oliver_pescarolo).\ncl(156). neg(156,oliver_siffert). pos(156,rodriguez_siffert). pos(156,oliver_rodriguez).\ncl(157). neg(157,oliver_siffert). neg(157,siffert_stewart). pos(157,oliver_stewart).\ncl(158). neg(158,oliver_stewart). pos(158,pescarolo_stewart). pos(158,oliver_pescarolo).\ncl(159). neg(159,oliver_stewart). pos(159,rodriguez_stewart). pos(159,oliver_rodriguez).\ncl(160). neg(160,oliver_stewart). pos(160,siffert_stewart). pos(160,oliver_siffert).\ncl(161). neg(161,pescarolo_rodriguez). neg(161,rodriguez_siffert). pos(161,pescarolo_siffert).\ncl(162). neg(162,pescarolo_rodriguez). neg(162,rodriguez_stewart). pos(162,pescarolo_stewart).\ncl(163). neg(163,pescarolo_siffert). pos(163,rodriguez_siffert). pos(163,pescarolo_rodriguez).\ncl(164). neg(164,pescarolo_siffert). neg(164,siffert_stewart). pos(164,pescarolo_stewart).\ncl(165). neg(165,pescarolo_stewart). pos(165,rodriguez_stewart). pos(165,pescarolo_rodriguez).\ncl(166). neg(166,pescarolo_stewart). pos(166,siffert_stewart). pos(166,pescarolo_siffert).\ncl(167). neg(167,rodriguez_siffert). neg(167,siffert_stewart). pos(167,rodriguez_stewart).\ncl(168). neg(168,rodriguez_stewart). pos(168,siffert_stewart). pos(168,rodriguez_siffert).\nvoter(1). yes(1,beltoise_ickx). yes(1,beltoise_oliver). yes(1,beltoise_pescarolo). yes(1,beltoise_rodriguez). yes(1,beltoise_siffert). yes(1,ickx_oliver). yes(1,jack_brabham_oliver). yes(1,jack_brabham_pescarolo). yes(1,jack_brabham_rodriguez). yes(1,jack_brabham_siffert). yes(1,jack_brabham_stewart). yes(1,pescarolo_rodriguez). yes(1,pescarolo_siffert). yes(1,rodriguez_siffert).\nvoter(2). yes(2,amon_ickx). yes(2,amon_oliver). yes(2,amon_rodriguez). yes(2,amon_siffert). yes(2,beltoise_ickx). yes(2,beltoise_oliver). yes(2,beltoise_rodriguez). yes(2,beltoise_siffert). yes(2,ickx_oliver). yes(2,ickx_siffert). yes(2,jack_brabham_oliver). yes(2,jack_brabham_pescarolo). yes(2,jack_brabham_rodriguez). yes(2,jack_brabham_siffert). yes(2,oliver_siffert). yes(2,pescarolo_rodriguez). yes(2,pescarolo_siffert). yes(2,rodriguez_siffert).\nvoter(3). yes(3,amon_beltoise). yes(3,amon_ickx). yes(3,amon_oliver). yes(3,amon_stewart). yes(3,beltoise_ickx). yes(3,jack_brabham_oliver). yes(3,jack_brabham_pescarolo). yes(3,jack_brabham_rodriguez). yes(3,jack_brabham_siffert). yes(3,jack_brabham_stewart). yes(3,pescarolo_rodriguez). yes(3,pescarolo_siffert). yes(3,pescarolo_stewart). yes(3,rodriguez_siffert). yes(3,rodriguez_stewart). yes(3,siffert_stewart).\nvoter(4). yes(4,amon_beltoise). yes(4,amon_ickx). yes(4,amon_jack_brabham). yes(4,amon_oliver). yes(4,amon_pescarolo). yes(4,amon_siffert). yes(4,amon_stewart). yes(4,beltoise_ickx). yes(4,beltoise_jack_brabham). yes(4,beltoise_oliver). yes(4,beltoise_pescarolo). yes(4,beltoise_siffert). yes(4,beltoise_stewart). yes(4,ickx_jack_brabham). yes(4,ickx_oliver). yes(4,ickx_stewart). yes(4,jack_brabham_oliver). yes(4,jack_brabham_stewart). yes(4,pescarolo_siffert). yes(4,pescarolo_stewart). yes(4,rodriguez_siffert). yes(4,rodriguez_stewart). yes(4,siffert_stewart).\nvoter(5). yes(5,beltoise_jack_brabham). yes(5,beltoise_oliver). yes(5,beltoise_pescarolo). yes(5,beltoise_rodriguez). yes(5,beltoise_siffert). yes(5,ickx_jack_brabham). yes(5,ickx_oliver). yes(5,ickx_pescarolo). yes(5,ickx_rodriguez). yes(5,ickx_siffert). yes(5,jack_brabham_oliver). yes(5,jack_brabham_siffert). yes(5,oliver_siffert). yes(5,pescarolo_rodriguez). yes(5,pescarolo_siffert). yes(5,rodriguez_siffert).\nvoter(6). yes(6,amon_beltoise). yes(6,amon_ickx). yes(6,amon_jack_brabham). yes(6,amon_oliver). yes(6,amon_pescarolo). yes(6,amon_rodriguez). yes(6,amon_siffert). yes(6,amon_stewart). yes(6,beltoise_ickx). yes(6,beltoise_oliver). yes(6,beltoise_rodriguez). yes(6,beltoise_siffert). yes(6,ickx_oliver). yes(6,ickx_rodriguez). yes(6,jack_brabham_oliver). yes(6,jack_brabham_pescarolo). yes(6,jack_brabham_rodriguez). yes(6,jack_brabham_siffert). yes(6,jack_brabham_stewart). yes(6,pescarolo_rodriguez). yes(6,pescarolo_siffert). yes(6,pescarolo_stewart).\nvoter(7). yes(7,amon_beltoise). yes(7,amon_ickx). yes(7,amon_oliver). yes(7,amon_pescarolo). yes(7,amon_rodriguez). yes(7,amon_siffert). yes(7,amon_stewart). yes(7,beltoise_ickx). yes(7,beltoise_siffert). yes(7,jack_brabham_oliver). yes(7,jack_brabham_pescarolo). yes(7,jack_brabham_rodriguez). yes(7,jack_brabham_siffert). yes(7,jack_brabham_stewart). yes(7,oliver_pescarolo). yes(7,oliver_siffert). yes(7,oliver_stewart). yes(7,pescarolo_siffert). yes(7,rodriguez_siffert). yes(7,rodriguez_stewart).\nvoter(8). yes(8,amon_beltoise). yes(8,amon_jack_brabham). yes(8,amon_oliver). yes(8,amon_rodriguez). yes(8,amon_stewart). yes(8,ickx_jack_brabham). yes(8,ickx_oliver). yes(8,ickx_pescarolo). yes(8,ickx_rodriguez). yes(8,ickx_siffert). yes(8,ickx_stewart). yes(8,pescarolo_rodriguez). yes(8,pescarolo_siffert). yes(8,pescarolo_stewart). yes(8,siffert_stewart).\nvoter(9). yes(9,amon_jack_brabham). yes(9,amon_pescarolo). yes(9,amon_siffert). yes(9,amon_stewart). yes(9,beltoise_jack_brabham). yes(9,beltoise_pescarolo). yes(9,beltoise_siffert). yes(9,beltoise_stewart). yes(9,ickx_jack_brabham). yes(9,ickx_oliver). yes(9,ickx_pescarolo). yes(9,ickx_rodriguez). yes(9,ickx_siffert). yes(9,ickx_stewart). yes(9,jack_brabham_pescarolo). yes(9,jack_brabham_stewart). yes(9,oliver_pescarolo). yes(9,oliver_siffert). yes(9,oliver_stewart). yes(9,pescarolo_stewart). yes(9,rodriguez_siffert). yes(9,rodriguez_stewart). yes(9,siffert_stewart).\nvoter(10). yes(10,amon_ickx). yes(10,amon_jack_brabham). yes(10,amon_oliver). yes(10,amon_pescarolo). yes(10,amon_rodriguez). yes(10,amon_siffert). yes(10,beltoise_ickx). yes(10,beltoise_jack_brabham). yes(10,beltoise_oliver). yes(10,beltoise_pescarolo). yes(10,beltoise_rodriguez). yes(10,beltoise_siffert). yes(10,ickx_pescarolo). yes(10,ickx_rodriguez). yes(10,ickx_siffert). yes(10,jack_brabham_pescarolo). yes(10,jack_brabham_rodriguez). yes(10,jack_brabham_siffert). yes(10,oliver_pescarolo). yes(10,oliver_rodriguez). yes(10,oliver_siffert). yes(10,pescarolo_rodriguez). yes(10,pescarolo_siffert). yes(10,rodriguez_siffert).\nvoter(11). yes(11,amon_beltoise). yes(11,amon_jack_brabham). yes(11,amon_oliver). yes(11,amon_pescarolo). yes(11,amon_rodriguez). yes(11,amon_siffert). yes(11,amon_stewart). yes(11,beltoise_jack_brabham). yes(11,beltoise_oliver). yes(11,beltoise_siffert). yes(11,beltoise_stewart). yes(11,ickx_jack_brabham). yes(11,ickx_oliver). yes(11,ickx_pescarolo). yes(11,ickx_rodriguez). yes(11,ickx_siffert). yes(11,ickx_stewart). yes(11,jack_brabham_oliver). yes(11,jack_brabham_siffert). yes(11,jack_brabham_stewart). yes(11,oliver_siffert). yes(11,oliver_stewart). yes(11,pescarolo_siffert). yes(11,pescarolo_stewart). yes(11,rodriguez_siffert). yes(11,rodriguez_stewart).\nvoter(12). yes(12,amon_beltoise). yes(12,amon_jack_brabham). yes(12,amon_oliver). yes(12,amon_pescarolo). yes(12,amon_siffert). yes(12,amon_stewart). yes(12,beltoise_oliver). yes(12,ickx_jack_brabham). yes(12,ickx_oliver). yes(12,ickx_pescarolo). yes(12,ickx_siffert). yes(12,ickx_stewart). yes(12,jack_brabham_oliver). yes(12,jack_brabham_stewart). yes(12,pescarolo_siffert). yes(12,pescarolo_stewart). yes(12,rodriguez_siffert). yes(12,rodriguez_stewart). yes(12,siffert_stewart).\nvoter(13). yes(13,amon_beltoise). yes(13,amon_jack_brabham). yes(13,amon_oliver). yes(13,amon_pescarolo). yes(13,amon_rodriguez). yes(13,amon_siffert). yes(13,amon_stewart). yes(13,beltoise_jack_brabham). yes(13,beltoise_oliver). yes(13,beltoise_pescarolo). yes(13,beltoise_rodriguez). yes(13,beltoise_siffert). yes(13,beltoise_stewart). yes(13,ickx_jack_brabham). yes(13,ickx_oliver). yes(13,ickx_pescarolo). yes(13,ickx_rodriguez). yes(13,ickx_siffert). yes(13,ickx_stewart). yes(13,jack_brabham_siffert). yes(13,jack_brabham_stewart). yes(13,oliver_pescarolo). yes(13,oliver_siffert). yes(13,oliver_stewart). yes(13,pescarolo_siffert). yes(13,pescarolo_stewart). yes(13,rodriguez_siffert). yes(13,rodriguez_stewart).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": [
+        "slow",
+        "bench",
+        "preflib"
+      ],
+      "audit": false
+    },
+    {
+      "id": "example-complete",
+      "facts": "% The instance example with complete = 1: the majority must also be complete (no tie).\n% The running example of Endriss, de Haan, Lang and Slavkovik (JAIR 2020, Example 2.1):\n% four issues, two clauses (x1, x2 and x3 not all three; x1, x3 and x4 not all three)\n% and 11 judges. The majority accepts all four issues, which breaks both clauses.\nissue(x1). issue(x2). issue(x3). issue(x4).\ncl(1). neg(1,x1). neg(1,x2). neg(1,x3).\ncl(2). neg(2,x1). neg(2,x3). neg(2,x4).\nvoter(1). yes(1,x2). yes(1,x3). yes(1,x4). count(1,3).\nvoter(2). yes(2,x1). yes(2,x2).\nvoter(3). yes(3,x1). yes(3,x2). yes(3,x4). count(3,3).\nvoter(4). yes(4,x1). yes(4,x3). count(4,4).\n",
+      "constants": {
+        "complete": "1"
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "doctrinal-complete",
+      "facts": "% The instance doctrinal with complete = 1: the majority must also be complete (no tie).\n% The doctrinal paradox (Kornhauser and Sager 1986): three judges decide whether a contract\n% was valid (p), whether it was breached (q), and so whether the defendant is liable (c).\n% The constraint says c holds exactly when p and q do. The majority accepts p and q and\n% rejects c.\nissue(p). issue(q). issue(c).\ncl(1). neg(1,c). pos(1,p).\ncl(2). neg(2,c). pos(2,q).\ncl(3). neg(3,p). neg(3,q). pos(3,c).\nvoter(1). yes(1,p). yes(1,q). yes(1,c).\nvoter(2). yes(2,p).\nvoter(3). yes(3,q).\n",
+      "constants": {
+        "complete": "1"
+      },
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "random-1",
+      "recipe": {
+        "generator": "ja-random",
+        "params": {
+          "n": 6,
+          "k": 4,
+          "v": 9
+        },
+        "seed": 2
+      },
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "id": "random-2",
+      "recipe": {
+        "generator": "ja-random",
+        "params": {
+          "n": 10,
+          "k": 8,
+          "v": 15
+        },
+        "seed": 3
+      },
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "id": "random-22a",
+      "recipe": {
+        "generator": "ja-random",
+        "params": {
+          "n": 12,
+          "k": 10,
+          "v": 21,
+          "e": 350
+        },
+        "seed": 1
+      },
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": [
+        "slow",
+        "bench",
+        "generated"
+      ],
+      "audit": false
+    },
+    {
+      "id": "random-22b",
+      "recipe": {
+        "generator": "ja-random",
+        "params": {
+          "n": 12,
+          "k": 10,
+          "v": 21,
+          "e": 350
+        },
+        "seed": 2
+      },
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "slow",
+        "bench",
+        "generated"
+      ],
+      "audit": false
+    }
+  ],
+  "generators": [
+    {
+      "name": "ja-random",
+      "description": "Premises x(1..n) and conclusions c(1..k), each the conjunction or the disjunction of up to r random premises (a doctrinal paradox in general form); v judges judge the premises around a hidden truth (each judgment wrong with probability e/1000) and derive the conclusions. The majority often breaks a definition.",
+      "params": {
+        "n": "int",
+        "k": "int",
+        "r": "int",
+        "v": "int",
+        "e": "permille"
+      },
+      "defaults": {
+        "n": 6,
+        "k": 4,
+        "r": 3,
+        "v": 9,
+        "e": 300
+      },
+      "text": "% ja-random: premises x(1..n), conclusions c(1..k), judges 1..v. A hidden truth: premise I\n% is true with probability 1/2; each judge gets each premise wrong with probability e/1000.\nissue(x(1..n)).\nissue(c(1..k)).\nvoter(1..v).\ntruth(I) :- I = 1..n, @flip(500, I) = 1.\nyes(V,x(I)) :- voter(V), I = 1..n, truth(I), @flip(e, V, I) = 0.\nyes(V,x(I)) :- voter(V), I = 1..n, not truth(I), @flip(e, V, I) = 1.\n% Conclusion J is the conjunction (and(J)) or the disjunction of its premises prem(J,I): r\n% draws, so up to r premises. Every judge derives the conclusions from its premises.\nprem(J,@int(1,n,J,L)) :- J = 1..k, L = 1..r.\nand(J) :- J = 1..k, @flip(500, J, 0, 0) = 1.\nyes(V,c(J)) :- voter(V), and(J), yes(V,x(I)) : prem(J,I).\nyes(V,c(J)) :- voter(V), J = 1..k, not and(J), prem(J,I), yes(V,x(I)).\n% The integrity constraint in CNF: the definition of every conclusion. For a conjunction,\n% c(J) implies each premise (clause a(J,I)) and all premises imply c(J) (clause b(J)); for\n% a disjunction the other way round.\ncl(a(J,I)) :- prem(J,I).\ncl(b(J)) :- J = 1..k.\nneg(a(J,I),c(J)) :- prem(J,I), and(J).\npos(a(J,I),x(I)) :- prem(J,I), and(J).\npos(b(J),c(J)) :- and(J).\nneg(b(J),x(I)) :- prem(J,I), and(J).\npos(a(J,I),c(J)) :- prem(J,I), not and(J).\nneg(a(J,I),x(I)) :- prem(J,I), not and(J).\nneg(b(J),c(J)) :- J = 1..k, not and(J).\npos(b(J),x(I)) :- prem(J,I), not and(J).\n#show issue/1.\n#show voter/1.\n#show yes/2.\n#show cl/1.\n#show pos/2.\n#show neg/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "binary",
+      "swap": {},
+      "constants": {},
+      "note": "Binary search from the changes of a first model: few queries when that bound is good, many when it is far above the score.",
+      "loop": {
+        "language": "loop",
+        "text": "solver C = shared + changes + outcome + follow + within     options \"--project\"\n\n# Theta-2 is P^NP[log]: polynomial time with logarithmically many NP queries (Wagner 1990). A\n# binary search for the Dodgson score asks \"can the judges change at most k judgments so that\n# the majority has a consistent completion?\", one NP query per step; each query grounds its\n# bound (C.ground) and assumes it. It starts from the changes of any first model.\nX = C.solve()                      # some changes: an upper bound\nhi = X.count(change/3)\nlo = -1                            # no profile within lo changes\ngrounded = none                    # set to hi when a query has grounded the bound hi\nwhile hi - lo > 1:\n    k = (lo + hi) // 2\n    C.ground(bound, k)\n    count queries\n    Y = C.solve(assume C.atom(\"within\", k))\n    if Y:\n        hi = Y.count(change/3)     # a witness within k changes, perhaps fewer\n        if hi == k: grounded = k\n    else:\n        lo = k\n    track lower = lo + 1\n    track upper = hi\nbest = hi\nif grounded != best: C.ground(bound, best)\nlog \"Dodgson score (judgments changed)\", best\n# The outcomes: every consistent completion of the majority of a profile within best changes.\n# C projects its models on in/1 (option --project), so each outcome comes once.\nC.add(C.atom(\"within\", best))      # the score as a fact: the enumeration exhausts C\nfor X in C.models():\n    accept X                       # a Dodgson outcome: in(X) for the accepted issues\n"
+      }
+    },
+    {
+      "name": "linear-up",
+      "swap": {},
+      "constants": {},
+      "note": "UNSAT-SAT: k = 0, 1, 2, ... until a query is satisfiable.",
+      "loop": {
+        "language": "loop",
+        "text": "solver C = shared + changes + outcome + follow + within     options \"--project\"\n\n# UNSAT-SAT: k = 0, 1, 2, ... until a query is satisfiable: as many queries as the score plus one.\nbest = 0\nloop:\n    C.ground(bound, best)\n    count queries\n    if C.solve(assume C.atom(\"within\", best)): break\n    best = best + 1\n    track lower = best\nlog \"Dodgson score (judgments changed)\", best\n# The outcomes: every consistent completion of the majority of a profile within best changes.\n# C projects its models on in/1 (option --project), so each outcome comes once.\nC.add(C.atom(\"within\", best))      # the score as a fact: the enumeration exhausts C\nfor X in C.models():\n    accept X                       # a Dodgson outcome: in(X) for the accepted issues\n"
+      }
+    },
+    {
+      "name": "linear-down",
+      "swap": {},
+      "constants": {},
+      "note": "SAT-UNSAT: each witness is an upper bound; ask for one change fewer.",
+      "loop": {
+        "language": "loop",
+        "text": "solver C = shared + changes + outcome + follow + within     options \"--project\"\n\n# SAT-UNSAT: each witness is an upper bound; ask for one change fewer until there is none.\nX = C.solve()\nbest = X.count(change/3)\ngrounded = none\nloop:\n    track upper = best\n    if best == 0: break\n    k = best - 1\n    C.ground(bound, k)\n    count queries\n    Y = C.solve(assume C.atom(\"within\", k))\n    if not Y: break\n    best = Y.count(change/3)\n    if best == k: grounded = k\nif grounded != best: C.ground(bound, best)\nlog \"Dodgson score (judgments changed)\", best\n# The outcomes: every consistent completion of the majority of a profile within best changes.\n# C projects its models on in/1 (option --project), so each outcome comes once.\nC.add(C.atom(\"within\", best))      # the score as a fact: the enumeration exhausts C\nfor X in C.models():\n    accept X                       # a Dodgson outcome: in(X) for the accepted issues\n"
+      }
+    },
+    {
+      "name": "direct",
+      "swap": {},
+      "constants": {},
+      "note": "One optimisation of the number of changes, then the enumeration.",
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + changes + outcome + follow + fewest\nsolver C = shared + changes + outcome + follow + within     options \"--project\"\n\n# One optimisation: A changes the fewest judgments so that the majority has a consistent\n# completion; its optimum is the Dodgson score. Then C lists the outcomes, as in the default.\nM = A.solve(optimal)\nbest = M.cost\nC.ground(bound, best)\nlog \"Dodgson score (judgments changed)\", best\n# The outcomes: every consistent completion of the majority of a profile within best changes.\n# C projects its models on in/1 (option --project), so each outcome comes once.\nC.add(C.atom(\"within\", best))      # the score as a fact: the enumeration exhausts C\nfor X in C.models():\n    accept X                       # a Dodgson outcome: in(X) for the accepted issues\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "binary",
+        "linear-up",
+        "linear-down",
+        "direct"
+      ],
+      "limits": {
+        "seconds": 60
+      }
+    },
+    {
+      "name": "random",
+      "instances": {
+        "generator": "ja-random",
+        "grid": {
+          "n": [
+            8,
+            12,
+            16
+          ],
+          "k": [
+            6,
+            10
+          ],
+          "v": [
+            15
+          ]
+        },
+        "seeds": 3
+      },
+      "variants": [
+        "default",
+        "binary",
+        "linear-up",
+        "linear-down",
+        "direct"
+      ],
+      "limits": {
+        "seconds": 60
+      }
+    }
+  ],
+  "library": {
+    "summary": "Dodgson outcomes by a doubling and binary search over the number of changed judgments, one NP query per step (P^NP[log]; 11 judges, 1 outcome); variants with a plain binary search, linear searches up and down, and one optimisation.",
+    "shape": "custom",
+    "tags": [
+      "fast",
+      "bounds",
+      "judgment-aggregation"
+    ],
+    "level": 4,
+    "after": 11,
+    "id": "ja-dodgson",
+    "group": "judgment",
+    "expected": 1
+  }
+}

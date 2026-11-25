@@ -2112,3 +2112,57 @@ expressions, the literature table, the library table), spec and a compiler test 
 Deviation: the runtime cannot stop a single long clingo call at the time limit (`run.mjs` ends such
 a run 2 s later with "did not stop at the time limit"); several variants hit this on the large F1
 seasons, which is why those instances are tagged `slow`.
+
+
+## Judgment aggregation group: six rules (2026-11-25, on request)
+
+A new library category **Judgment aggregation** (`judgment` in `tools/library.mjs` GROUPS,
+`tools/make-examples.mjs` CATEGORIES and `test/library.test.mjs`). Six contrib examples, one per
+rule, each with a different loop as its default. They are written by `tools/make-ja.py` (one
+source for the shared fragments, instances, generator, readmes); edit it, run it, then
+`node tools/make-examples.mjs`. Counts come from `tools/ja-check.py` and are cached in the
+contrib files (`--recount` recounts all).
+
+| Example | Rule | Complexity | Default loop | Variants |
+| --- | --- | --- | --- | --- |
+| `ja-kemeny` | fewest disagreements with the judges | Theta-2-c | implicit hitting sets, MUSes of the majority judgment as minimal cores | plain-cores, disjoint-cores, lazy-constraints (Γ clause by clause from relevant/1), reference |
+| `ja-slater` | fewest majority judgments given up (= MCSA) | Theta-2-c | OLL, then models under the final assumptions | plain-cores, ihs, linear-down, reference |
+| `ja-leximax` | lexicographic by support | Theta-2-c | level by level: `#minimize` over the level assumed by `focus(R)`, optima kept as `atmost(R,G)` | linear-levels (SAT queries only), ihs (priorities), reference |
+| `ja-msa` | agreement a maximal consistent subset of the majority | Sigma-2-c | MARCO: MSSes give the outcomes, MUSes listed `as mus` | cores, exists-forall (G.below), reference |
+| `ja-young` | complete the majority of a largest subprofile with a consistent majority | Theta-2-c | row generation: conflicts learnt from minimal cores on `m2/2`; outcomes from a `--project` solver | plain-cores, direct, linear-up |
+| `ja-dodgson` | fewest changed judgments (sets stay consistent) | Theta-2-c | doubling then binary search (P^NP[log]) | binary, linear-up, linear-down, direct |
+
+Input (shared by the six, fragment `shared`): `issue/1`, the integrity constraint over the issues
+in CNF as `cl/1`, `pos/2`, `neg/2` (the names of the `.jagg` importer), the profile as `voter/1`,
+`yes/2`, optional `count/2`; `maj(X,S,M)` is the majority judgment. Outcomes are `in/1`. Young and
+Dodgson read a constant `complete` (instances `*-complete`: the majority must also be complete).
+Instances: JEHLS 2020 Example 2.1 (`example`), the doctrinal paradox, a consistent majority, a tie,
+the Condorcet paradox and the Voting election `example` in the preference agenda (Kemeny/Slater
+outcomes = the rankings of kemeny-rankings/slater-rankings: 2 and 4), two recipes of the new
+generator `ja-random` (premises and conclusions, judges around a hidden truth), and tagged
+`bench`: F1 1964 and 1970 in the preference agenda (Kemeny 26 and 3, Slater 30 and 3, as in the
+ranking examples), `random-22a/b`, and `random-30/38/44` for Kemeny, Slater, Leximax and MSA only
+(Young and Dodgson do not finish them in minutes with any loop or with clingo's optimisation).
+
+Checked: every variant gives every expected count; audits sound on every small instance for the
+loops that refine by clauses or cores (Kemeny default, plain-cores, disjoint-cores,
+lazy-constraints; Slater ihs; Leximax ihs; MSA cores; Young default, plain-cores). Expected
+counts: brute force (small) and independent clingo encodings (MSA: saturation) agree.
+
+Deviations and findings:
+- An `#external` atom is false unless assigned, so assuming it true is a contradiction; the
+  query bounds (`within/1`, Leximax's `focus/1`) are choice rules, and the enumerations over them
+  use `--project` (as do Young's and Dodgson's outcome solvers, whose models carry deletions or
+  changes).
+- `S.models()` on a solver with a `#minimize` enumerates only improving models (clingo's default
+  opt-mode), so the enumerating solvers have none (Leximax's D next to C).
+- `keep` and `count` are loop keywords and cannot be fragment names.
+- Dodgson's binary search from a first model's changes (variant `binary`) starts far above small
+  scores; the default searches by doubling first.
+- Not verified against the papers' full texts (the network blocks jair.org, helsinki.fi and the
+  university hosts): the complexity attributions come from search summaries (Leximax Theta-2-c per
+  Conati et al. 2023 citing de Haan and Slavkovik 2017; Dodgson Theta-2-c per Conati et al. 2023;
+  MSA Sigma-2-c per Lang and Slavkovik 2014). Young and Dodgson follow jaggpy's convention: a
+  consistent majority, completed in every consistent way.
+- The `.jagg` importer reads its own `[variables]`/`[clauses]` sections, not jaggpy's real file
+  format, and gives no profile; not changed.

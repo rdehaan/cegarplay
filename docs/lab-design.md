@@ -54,7 +54,7 @@ None. Everything the lab needs is already exported.
 
 - The plan checks of `auditPlan` and `boundedPlan` in `js/driver.js` are reused by calling
   `auditPlan`. The extra unsupported cases (cores, expand, lift for the bounds, `on partial`,
-  families, several outgoing links, raw Lua) are checked again in `js/lab/space.js` (`labPlan`).
+  families, several outgoing links, no link at all, raw Lua) are checked again in `js/lab/space.js` (`labPlan`).
   Their wording follows `boundedPlan`.
 - Loading clingo-wasm in a worker (`load` in `js/worker.js`) is repeated in `js/lab/worker.js`
   (about ten lines). The lab worker has no control word and no stdin.

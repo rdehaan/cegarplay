@@ -23,7 +23,7 @@ export async function checkLibrary(shard, shards) {
     } catch (e) { why = e; }
     if (why) {
       // the lab declines only loops it does not support (version 1), with the reason
-      if (why.code === 4 && /expand|cores|several links|partial|families|audit: false|raw Lua|chain|other means/.test(why.message)) { seen.unsupported++; continue; }
+      if (why.code === 4 && /expand|cores|several links|partial|families|audit: false|raw Lua|chain|other means|no link/.test(why.message)) { seen.unsupported++; continue; }
       wrong.push(`${id}: ${why.message} (code ${why.code})`);
       continue;
     }

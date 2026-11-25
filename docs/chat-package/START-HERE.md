@@ -72,7 +72,7 @@ from `contrib-template.json`. It is a normal project plus a top-level `library` 
 ```
 
 - `id`: `[A-Za-z0-9_-]+`, short, lower case with hyphens.
-- `group`: the category of the problem: `logic` (QBF, minimal formulas, stable models), `reasoning` (abduction, defaults, diagnosis, causality, argumentation, explanation), `graphs`, `games` (equilibria, coalitions, fair division), `voting` (winners, control and justification of elections), `planning` (planning, bilevel optimisation) or `puzzles`. Add the tag `several-solvers` when the loop has more than one check, staged searches or raw Lua.
+- `group`: the category of the problem: `logic` (QBF, minimal formulas, stable models), `reasoning` (abduction, defaults, diagnosis, causality, argumentation, explanation), `graphs`, `games` (equilibria, coalitions, fair division), `voting` (winners, control and justification of elections), `judgment` (judgment aggregation: outcomes of aggregation rules), `planning` (planning, bilevel optimisation) or `puzzles`. Add the tag `several-solvers` when the loop has more than one check, staged searches or raw Lua.
 - `shape`: `shape1`, `shape2`, `shape3`, `shape4`, `reference` (the templates in the
   manual) or `custom` when you write your own loop.
 - `tags`: `["fast"]` when a run with `solutions` = all takes under about 2 s (the test suite

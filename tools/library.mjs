@@ -239,6 +239,7 @@ export const GROUPS = [
   { id: 'graphs', title: 'Graphs', description: 'Colourings, list colourings, cliques and Ramsey-type arrowing.' },
   { id: 'games', title: 'Games and other social choice', description: 'Equilibria, stable coalitions, fair division, games on graphs and numbers.' },
   { id: 'voting', title: 'Voting', description: 'The Kemeny and Slater rankings and the Dodgson and Young winners (with Formula 1 seasons from PrefLib), control of a Kemeny election, and justifications of voting outcomes by axioms.' },
+  { id: 'judgment', title: 'Judgment aggregation', description: 'Outcomes of six judgment aggregation rules (Kemeny, Slater, Leximax, MSA, Young, Dodgson) on agendas with an integrity constraint, each with a different loop: implicit hitting sets, OLL, level by level, MARCO, row generation and binary search.' },
   { id: 'planning', title: 'Planning and optimisation', description: 'Conformant planning, bilevel and trilevel knapsack problems.' },
   { id: 'puzzles', title: 'Puzzles', description: 'Generating puzzles with a unique solution: Sudoku, Binairo, Futoshiki, Akari, Slitherlink.' },
   { id: 'other', title: 'Other problems', description: 'Contributed problems without a category.' },

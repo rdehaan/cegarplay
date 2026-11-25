@@ -389,7 +389,8 @@ fixed instance. Mined instances are added as fixed instances too. `tools/draw.py
 give byte-identical facts. Library generators: `gnp`, `gnm` (`clique-colouring`, `arrowing`,
 `choosability`), `af-gnp` (`af-preferred`, `af-semi-stable`), `qbf-dnf` (`qbf`), `ballots-ic` and
 `ballots-mallows` (`kemeny-control`), `election-mallows` and `election-latin` (`kemeny-rankings`,
-`slater-rankings`, `dodgson-winners`, `young-winners`).
+`slater-rankings`, `dodgson-winners`, `young-winners`), `ja-random` (the six examples of the
+[Judgment aggregation](#manual-judgment-aggregation-examples) group).
 
 `Project.load` errors (exact texts): `not a JSON file: ...`, `not a CegarPlay project: expected a
 JSON object`, `this is a logic-game file, not a CegarPlay project`, `not a CegarPlay project (format
@@ -981,15 +982,16 @@ of these loops step by step (2QBF, implicit hitting sets, MARCO, ...).
 | Expansion: AReQS for 2QBF (Janota and Marques-Silva) | Shape 3: each counterexample grounds a copy of the matrix | [qbf-expansion](?example=qbf-expansion) | `expansion` |
 | CEGIS, counterexample-guided inductive synthesis (Solar-Lezama et al.) | Shape 3: each counterexample input is simulated in the synthesiser; the specification stays in the check | [cegis-circuit](?example=cegis-circuit), [min-dnf](?example=min-dnf) | `cegis` |
 | Several oracles (equilibria: one deviation check per player) | One candidate, several checks or several `reject`s | [nash](?example=nash), [boolean-game](?example=boolean-game), [abduction-two-checks](?example=abduction-two-checks) | `several-solvers` |
-| Implicit hitting sets: MaxHS (Davies and Bacchus), IHS beyond NP (Saikko, Wallner and Järvisalo) | `A.solve(optimal)` for a minimum-cost hitting set; a witness check refined by minimised cores (`C.core.minimal`); disjoint cores by `for a in K: E = E.without(a)`; `track` for the bounds | [maxsat-ihs](?example=maxsat-ihs); the dual form (correction sets from models): [smallest-mus](?example=smallest-mus); abduction (AbHS): [abduction-ihs](?example=abduction-ihs); majority cycles as cores, every optimal ranking: [kemeny-rankings](?example=kemeny-rankings) | `ihs` |
-| MARCO, MUS and MSS enumeration (Liffiton, Previti, Malik and Marques-Silva) | A map solver with maximal seeds; grow or shrink by walking `G(M)` (`a.true`, `E.flip(a)`); `G.below` and `G.above` block both ways | [marco](?example=marco), [reasons-by-shrinking](?example=reasons-by-shrinking) | `marco` |
-| Core-guided optimisation: OLL (Morgado, Dodaro and Marques-Silva), Fu-Malik | One solver under assumptions; each core is relaxed (`E.without`) and grounded as a totaliser (`C.expand(relax, core = K)`); new soft constraints from `C.atom` | [maxsat-oll](?example=maxsat-oll); weighted, weights split into unit copies: [maxsat-oll-weighted](?example=maxsat-oll-weighted); the final assumptions as the set of optimal solutions, listed by one enumeration: [slater-rankings](?example=slater-rankings) | `oll` |
+| Implicit hitting sets: MaxHS (Davies and Bacchus), IHS beyond NP (Saikko, Wallner and Järvisalo) | `A.solve(optimal)` for a minimum-cost hitting set; a witness check refined by minimised cores (`C.core.minimal`); disjoint cores by `for a in K: E = E.without(a)`; `track` for the bounds | [maxsat-ihs](?example=maxsat-ihs); the dual form (correction sets from models): [smallest-mus](?example=smallest-mus); abduction (AbHS): [abduction-ihs](?example=abduction-ihs); majority cycles as cores, every optimal ranking: [kemeny-rankings](?example=kemeny-rankings); minimally inconsistent subsets of a majority judgment as cores: [ja-kemeny](?example=ja-kemeny) | `ihs` |
+| MARCO, MUS and MSS enumeration (Liffiton, Previti, Malik and Marques-Silva) | A map solver with maximal seeds; grow or shrink by walking `G(M)` (`a.true`, `E.flip(a)`); `G.below` and `G.above` block both ways | [marco](?example=marco), [reasons-by-shrinking](?example=reasons-by-shrinking); the outcomes of the maximal subagenda rule from the MSSes of a majority judgment: [ja-msa](?example=ja-msa) | `marco` |
+| Core-guided optimisation: OLL (Morgado, Dodaro and Marques-Silva), Fu-Malik | One solver under assumptions; each core is relaxed (`E.without`) and grounded as a totaliser (`C.expand(relax, core = K)`); new soft constraints from `C.atom` | [maxsat-oll](?example=maxsat-oll); weighted, weights split into unit copies: [maxsat-oll-weighted](?example=maxsat-oll-weighted); the final assumptions as the set of optimal solutions, listed by one enumeration: [slater-rankings](?example=slater-rankings), [ja-slater](?example=ja-slater) | `oll` |
 | Logic-based Benders decomposition (Hooker and Ottosson) | An optimal master and an optimal subproblem; optimality cuts as rules from `refine(k)`; bounds read with `M.cost`, `X.cost`, `a.arg(i)` | [benders-tardiness](?example=benders-tardiness), [knapsack-bounds](?example=knapsack-bounds) | `benders` |
 | Optimisation over a Σ2 check, 2-ASP(Q) with weak constraints | An optimal abstraction whose first surviving candidate is optimal (`A.solve(optimal)` or `search A optimal`) | [knapsack-optimum](?example=knapsack-optimum), [reasons-by-size](?example=reasons-by-size); a weak constraint on the outer level: [robust-facilities](?example=robust-facilities) | `bounds`, `aspq` |
 | Recursive CEGAR for any number of quantifier blocks: RAReQS (Janota, Klieber, Marques-Silva and Clarke) | Solver and link families and a recursive `def` | [qbf-deep](?example=qbf-deep) | `rareqs` |
 | Clausal abstraction, multi-level QBF: CAQE (Rabe and Tentrup), QESTO | A chain of solvers; cores along the chain with `core.on(G)`; an inner `search ... keep` | [qbf-three-blocks](?example=qbf-three-blocks), [qbf-caqe](?example=qbf-caqe) (clause-satisfaction atoms on the links), [knapsack-fortification](?example=knapsack-fortification) | `caqe` |
-| Theta-2 as P^NP[log] (Wagner): a binary search over a bound with one NP query per step, then one query per candidate | `C.ground(bound, k)` grounds the bound of a query; `S.atom("within", k)` assumes it; `//` halves the interval | [dodgson-winners](?example=dodgson-winners) | `bounds` |
-| Row generation (lazy constraints); for Kemeny, the ordering formulation of Conitzer, Davenport and Kalagnanam with its 3-cycle constraints added lazily | An optimal abstraction without most constraints; each counterexample grounds one (`refine(k)`) or adds a clause from `relevant/1` | [young-winners](?example=young-winners); lazy transitivity: variant `lazy-transitivity` of [kemeny-rankings](?example=kemeny-rankings) | `lazy-constraints` |
+| Theta-2 as P^NP[log] (Wagner): a binary search over a bound with one NP query per step, then one query per candidate | `C.ground(bound, k)` grounds the bound of a query; `S.atom("within", k)` assumes it; `//` halves the interval | [dodgson-winners](?example=dodgson-winners); a doubling search first: [ja-dodgson](?example=ja-dodgson) | `bounds` |
+| Lexicographic optimisation one level at a time (the iterative algorithms of Conati, Niskanen and Järvisalo for Leximax) | A `#minimize` over the level assumed by a choice atom (`focus(R)`); the optimum of each level kept as an order-encoding assumption `atmost(R,G)`; at the end the assumptions become unit clauses and `S.models()` lists the optimal models | [ja-leximax](?example=ja-leximax) | `bounds` |
+| Row generation (lazy constraints); for Kemeny, the ordering formulation of Conitzer, Davenport and Kalagnanam with its 3-cycle constraints added lazily | An optimal abstraction without most constraints; each counterexample grounds one (`refine(k)`) or adds a clause from `relevant/1` | [young-winners](?example=young-winners); lazy transitivity: variant `lazy-transitivity` of [kemeny-rankings](?example=kemeny-rankings); conflicts of a majority judgment learnt from cores: [ja-young](?example=ja-young); the integrity constraint clause by clause: variant `lazy-constraints` of [ja-kemeny](?example=ja-kemeny) | `lazy-constraints` |
 | Branch-and-check (Thorsteinsson), lazy clause generation | `on partial P:` in the search: the check also runs at partial assignments; cores or `G.clause(X)` with `G(P, false)` cut whole subtrees | [colourable-partial](?example=colourable-partial), [triangle-free-lazy](?example=triangle-free-lazy) | `branch-and-check`, `lazy-constraints` |
 | Omission-based abstraction (Saribatur and Eiter) | Constraints guarded by `#external` atoms, switched on with `A.set` when a candidate breaks them | [queens-omission](?example=queens-omission), [conformant-growing](?example=conformant-growing) (a growing horizon) | `omission` |
 
@@ -1578,8 +1580,8 @@ them on removed candidates; the same loop in Shape 2 makes 14.
 
 **Unsupported** (version 1; the tab and the tool give the reason, exit code 4): `expand`
 refinements, cores, refinements other than `G.clause`, `G.clauses` and `G.block`, checks on partial
-candidates, chains, solver and link families, several links leaving the top solver, raw Lua loops,
-and instances marked `audit: false`. A `lift` link gets a space, the omniscient and block schemes
+candidates, chains, solver and link families, several links leaving the top solver, loops without links (queries to one
+solver, as in `ja-leximax`), raw Lua loops, and instances marked `audit: false`. A `lift` link gets a space, the omniscient and block schemes
 and lifted clauses in the inspector, but no loop-scheme bounds. A `clause/3` group is one option
 with its own removal set; a group that does not remove its candidate is left out of the bounds.
 
@@ -1743,6 +1745,7 @@ may set `library.level` and `library.after`).
 | `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction`, `colourable-partial`, `triangle-free-lazy` |
 | `games` | `nash`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `strong-nash`, `subset-sum-game` |
 | `voting` | `kemeny-rankings`, `slater-rankings`, `dodgson-winners`, `young-winners`, `kemeny-control`, `voting-justification` |
+| `judgment` | `ja-kemeny`, `ja-slater`, `ja-leximax`, `ja-msa`, `ja-young`, `ja-dodgson` |
 | `planning` | `benders-tardiness`, `conformant-growing`, `conformant-planning`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-interdiction`, `knapsack-optimum`, `robust-facilities` |
 | `exercises` | `exercise-sum-free`, `exercise-triangles` |
 | `puzzles` | `akari`, `binairo`, `fewest-clues`, `futoshiki`, `queens-omission`, `slitherlink`, `sudoku-graded`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `sudoku-unique` |
@@ -1786,7 +1789,7 @@ count in `expected`.
 
 Without editing the tools: put a project file with a top-level `library` block
 (`{ "id", "group", "summary", "shape", "tags", "expected" }`, where `group` is a category
-(`logic`, `reasoning`, `graphs`, `games`, `voting`, `planning`, `puzzles`), a tag `several-solvers` for a
+(`logic`, `reasoning`, `graphs`, `games`, `voting`, `judgment`, `planning`, `puzzles`), a tag `several-solvers` for a
 loop with more than one check, staged searches or raw Lua, and `expected` is the solution count or `null`), with its input in instances, in
 `examples/contrib/`; `node tools/make-examples.mjs` adds it to the
 library (the block is dropped from `examples/<id>.json`). See `examples/contrib/README.md`.
@@ -1850,6 +1853,52 @@ it wins (both winner problems are Theta-2-complete). Dodgson's variants are the 
 rows.jsonl` compare the variants; `node tools/audit.mjs slater-rankings --instance all --variant ihs`
 audits. The [loops from the literature](#manual-loops-from-the-literature) table maps each default
 loop to its pattern.
+
+### Judgment aggregation examples
+
+The library group **Judgment aggregation** (`judgment`) holds six examples, one per rule, each
+with a different loop as its default. Each loads with `?example=<id>`; its readme has the research
+question, the loops, measured times and references. Outcome determination is in the second level
+of the polynomial hierarchy for each rule (Endriss, de Haan, Lang and Slavkovik 2020).
+
+| Example | Rule: the outcomes are the consistent complete judgment sets ... | Complexity | Default loop |
+| --- | --- | --- | --- |
+| `ja-kemeny` | ... with the fewest disagreements with the judges | Theta-2-complete | implicit hitting sets: minimally inconsistent subsets of the majority judgment as minimal unsat cores |
+| `ja-slater` | ... that go against the fewest majority judgments (= MCSA) | Theta-2-complete | core-guided optimisation (OLL), then every model under the final assumptions |
+| `ja-leximax` | ... lexicographically best by support, most supported judgments first | Theta-2-complete | level by level: one optimal query per margin |
+| `ja-msa` | ... whose agreement with the majority is a maximal consistent subset of it | Sigma-2-complete | MARCO: MSSes give the outcomes, MUSes listed as a second kind |
+| `ja-young` | ... that complete the majority of a largest subprofile whose majority is consistent | Theta-2-complete | row generation: conflicts of a majority learnt from cores |
+| `ja-dodgson` | ... that complete the majority of a profile with the fewest changed judgments whose majority is consistent | Theta-2-complete | doubling and binary search over the score (P^NP[log]) |
+
+**Input.** The six share the input format and the fragment `shared`: `issue(X)` for the issues,
+the integrity constraint in CNF as `cl(C)`, `pos(C,X)`, `neg(C,X)` (over the issues), and the
+profile as `voter(V)`, `yes(V,X)` (judge V accepts X and rejects the issues it does not list) and
+optionally `count(V,N)` (N judges hold this judgment set). A formula on the agenda is an issue
+whose definition is part of the constraint. `shared` derives `sup(X,N)` (N judges accept X) and
+`maj(X,S,M)` (a strict majority judges X to be S, `yes` or `no`, by margin M); the fragment
+`outcome` guesses an outcome `in/1` that satisfies the constraint, and `agree/1`. The fragment
+`schema` states that every judgment set of the profile is consistent. Young and Dodgson take a
+constant `complete` (default 0): with 1 the majority must also be complete (no tie). Solutions are
+outcomes, shown as `in/1`; with all solutions the count is the number of outcomes.
+
+**Instances.** The same in each: the running example of Endriss, de Haan, Lang and Slavkovik
+(`example`, 11 judges), the doctrinal paradox (`doctrinal`), a consistent majority (`consistent`),
+a tie (`tie`), the Condorcet paradox and the Voting group's election `example` in the preference
+agenda (`paradox`, `election`: there the Kemeny and Slater outcomes are the rankings of
+`kemeny-rankings` and `slater-rankings`), two scenarios of the generator `ja-random` (premises,
+and conclusions defined as conjunctions or disjunctions of them, judged around a hidden truth),
+and, tagged `bench`, the Formula 1 seasons 1964 and 1970 in the preference agenda and three larger
+random scenarios. Young and Dodgson add `example-complete` and `doctrinal-complete`. Each example
+has the suites `loops` and `random`. `python3 tools/ja-check.py <project.json> --instance all`
+counts the outcomes of every rule independently (brute force, and clingo's own optimisation or,
+for MSA, a disjunctive encoding with saturation); `python3 tools/make-ja.py` writes the six
+project files from one source.
+
+**Running them.** `node tools/run.mjs ja-msa --instance all --solutions all`; `node tools/bench.mjs
+ja-young --suite loops --out rows.jsonl` and `node tools/report.mjs rows.jsonl` compare the
+variants; `node tools/audit.mjs ja-kemeny --instance all` audits (the loops that refine with
+clauses or cores: the Kemeny loops, the `ihs` variants of Slater and Leximax, MSA's `cores`, and
+Young's).
 
 ## For agents
 

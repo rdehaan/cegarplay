@@ -39,6 +39,9 @@ export function labPlan(compiled, linkName, { loop = null, instance = null } = {
     if (incoming.has(L0.from)) return { unsupported: `link ${linkName} does not leave a top solver (${L0.from} has incoming links)` };
     cands = [L0];
   }
+  // a loop without links (queries to one solver, as in ja-leximax or ja-dodgson) has no candidates
+  // to check: nothing for the lab to compare
+  if (!compiled.links.length) return { unsupported: 'the script declares no link (its solvers are queried, not refined by a check)' };
   if (!cands.length) return { error: 'the script declares no link that leaves a top solver' };
   const usesOf = (x) => (compiled.linkUses && compiled.linkUses[x.name]) || [];
   if (cands.length > 1) {

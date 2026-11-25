@@ -18,7 +18,7 @@ CegarPlay project (`"format": "cegarplay"`) with one extra top-level block:
 - `group`: the category of the problem: `logic` (QBF, minimal formulas, stable models),
   `reasoning` (abduction, defaults, diagnosis, causality, argumentation, explanation), `graphs`,
   `games` (equilibria, coalitions, fair division), `voting` (winners, control and justification of
-  elections), `planning` (planning, bilevel
+  elections), `judgment` (judgment aggregation: outcomes of aggregation rules), `planning` (planning, bilevel
   optimisation) or `puzzles`. The older `exists-forall`, `problems` and `several-solvers` are
   still accepted: they go to the group `other`. Tag a loop with more than one check, staged
   searches or raw Lua `several-solvers` (the library filter finds the tag).
