@@ -19,7 +19,7 @@
 - Specifications of the newer parts: [instances, generators, campaigns, fuzz, pools](docs/spec-instances.md),
   [recordings](docs/spec-recording.md), [audit, certificates, lift, proof logs, symbolic audit, bounded verification](docs/spec-soundness.md),
   [domain views, candidate space, cursor](docs/spec-views.md). The page's tabs: Instances (9),
-  Campaign (10), Observatory (11).
+  Campaign (10), Observatory (11), Lab (12: the Refinement lab, manual section "Refinement lab tab").
 
 ## Examples
 
@@ -42,7 +42,9 @@
   search (also for instances too large to enumerate); `--space NAME --bound K` checks every instance of a project's
   space up to K (optional `spaces[]`, manual "Spaces"); `node tools/run.mjs <id> --proof log.jsonl`
   then `python3 tools/certcheck.py <project.json> log.jsonl` certifies a solution count;
-  `node tools/bench.mjs <id> --suite NAME` runs a campaign suite.
+  `node tools/bench.mjs <id> --suite NAME` runs a campaign suite;
+  `node tools/lab.mjs <id> [--candidate HEX] [--bounds loop|omniscient|block] [--simulate N] [--record FILE]`
+  computes the Refinement lab's figures (every possible clause at a step, best and worst runs).
 
 ## Contributing examples
 

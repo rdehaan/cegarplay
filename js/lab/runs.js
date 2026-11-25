@@ -109,17 +109,23 @@ export function topRegret(rows, n = 5) {
   return rows.filter((r) => r.regret > 0).sort((a, b) => b.regret - a.regret || a.ref - b.ref).slice(0, n);
 }
 
-// Why a real run can fall outside the idealised range.
-export function outsideReason(run, { length, best, worst, shape1 }) {
+// Why a real run can fall outside the idealised range. best/worst: exact bounds (lower, upper,
+// status); longest: the longest idealised run seen (worst found, greedy worst, simulation maximum),
+// used when the worst is not proven.
+export function outsideReason(run, { length, best, worst, shape1, longest = null }) {
   const lo = best && best.lower != null ? best.lower : null, hi = worst && worst.upper != null ? worst.upper : null;
   if (lo != null && length < lo) return 'shorter than the best idealised run: the run probably did not refine every bad candidate (it stopped early, at a solution or candidate limit) or the recording misses steps';
-  if (hi != null && length > hi) {
-    const why = [];
-    if (shape1) why.push('weak clause retention in Shape 1 (clasp may forget a clause and propose a removed candidate again)');
-    if (run.expands) why.push('expand steps, which the idealised model does not have');
-    why.push('restarts, or refinements of a candidate already removed');
-    return `longer than the worst idealised run: ${why.join('; ')}`;
-  }
+  const why = () => {
+    const w = [];
+    if (shape1) w.push('weak clause retention in Shape 1 (clasp may forget a clause and propose a removed candidate again)');
+    if (run.expands) w.push('expand steps, which the idealised model does not have');
+    if (run.deadCand) w.push(`${run.deadCand} refinements of a candidate an earlier clause had already removed`);
+    w.push('restarts');
+    return w.join('; ');
+  };
+  if (hi != null && length > hi) return `longer than the worst idealised run (${hi}): ${why()}`;
+  if (longest != null && length > longest && !(worst && worst.status === 'proven'))
+    return `longer than every idealised run found (at most ${longest}; the worst is not proven, so not certainly outside): ${why()}`;
   return null;
 }
 

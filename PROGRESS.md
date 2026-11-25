@@ -1968,3 +1968,11 @@ clingo-wasm ignores `--time-limit`; random and greedy simulation), and the run a
 (brute force, audit agreement on every fast library example, bounds, recorded runs) and
 `test/browser/lab.test.mjs` (non-interference, flows, widths). The manual has a section
 "Refinement lab tab". Design, deviations and open points: `docs/lab-design.md`.
+
+Consolidation (2026-11-25): the tutorial (lesson 6, `#tut-lab`) and the guide (chapters 3, 4 and 5,
+the unsound how-to, the glossary, the reading order) mention the lab. Exact bounds gained a packing
+bound (best) and a matching bound (worst) computed without clingo; the driver stops at them. That
+proves the tutorial examples' best runs at once. Refinement strength is never negative for a sound
+loop. A run longer than every idealised run found is flagged even when the worst is not proven.
+`test/lab-runs.test.mjs` checks the tutorial's lab figures. README, llms.txt and CLAUDE.md list the
+lab and `tools/lab.mjs`.

@@ -78,6 +78,15 @@
           <dt id="bounded-sound">Bounded-sound</dt>
           <dd>Sound on every instance of a space up to the bound k ("sound up to k"); it says nothing
             about larger instances. <a href="04-soundness.html#bounded">Chapter 4</a>.</dd>
+          <dt id="forced-atom">Forced atom</dt>
+          <dd>An interface atom that every sound clause for a candidate must contain: some solution differs
+            from the candidate only in that atom. The Refinement lab names them, with that solution.
+            <a href="howto-unsound.html#steps">How-to</a>.</dd>
+          <dt id="idealised-run">Idealised run</dt>
+          <dd>A run in which each step refines one candidate that is still alive with one of the clauses its
+            loop could make. The Refinement lab computes the shortest and longest such runs and compares a
+            real run with them; Shape 1 runs can be longer, because clasp keeps clauses only weakly.
+            <a href="05-reading-a-run.html#lab">Chapter 5</a>.</dd>
           <dt id="witness">Witness check</dt>
           <dd>A check whose answer set means the candidate is <em>good</em>; a failed witness check is
             refined by its unsat core. <a href="10-witness-and-cores.html">Chapter 10</a>.</dd>

@@ -61,6 +61,13 @@
             verdict) or <b>Find a run that loses one</b> (under the map) runs the instance with a
             randomized search for seeds 1 to 50 until a run loses a solution, keeps that seed, and shows
             that run's bad refinement.</li>
+          <li><b>Understand it.</b> The <b>Refinement lab</b> (a switch under Tabs in the Control tab adds the
+            Lab tab) computes the same candidates and counterexamples and keeps them. Its step inspector, on
+            the audit's witness (<b>Inspect this candidate</b>), lists every clause the loop could make for
+            that candidate, marks the unsound ones with the solution they lose, draws the smallest sound
+            clause, and names the <b>forced</b> atoms: every sound clause must contain them, because some
+            solution differs from the candidate only there. The forced atoms missing from the loop's clause
+            are the ones to mark relevant.</li>
           <li><b>Shrink it.</b> If the instance is large, <b>Fuzz</b> (Instances tab) audits instances
             from small to large, stops at the first unsound one and shrinks it (instances marked
             "no audit" get the symbolic audit). With a space (Audit by <b>space</b>) the

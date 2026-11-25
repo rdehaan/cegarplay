@@ -146,7 +146,7 @@ export class LabTab {
         'Pruning counts the removed candidates that are still alive at this step (all, in free mode).'])), this.inspectBox,
       h('h3', {}, 'Run bounds ', this.info('lab-info-bounds', 'Run bounds', [
         'An idealised run proposes alive candidates: a solution is accepted at no cost, a bad candidate is refined with one of its scheme\'s options. Its length is its number of refinements.',
-        'Best and worst are exact (an ASP program with an acyclicity constraint, solved by clingo) when proven within the time budget; otherwise the result says what is known. The simulation runs the scheme in random orders.',
+        'Best and worst are exact (an ASP program with an acyclicity constraint, solved by clingo) when proven: by clingo within the time budget, or by reaching a bound computed without clingo (the packing bound for the best, the matching bound for the worst). Otherwise the result is an interval. The simulation runs the scheme in random orders.',
         'The idealisation ignores clasp\'s weak retention of clauses in Shape 1: a real Shape 1 run can be longer than the worst idealised run.'])), this.boundsBox,
       h('h3', {}, 'This run against the bounds ', this.info('lab-info-run', 'This run against the bounds', [
         'A recorded run (every step) placed among the idealised runs of the same instance: the ladder, its percentile among the simulated runs, and a decomposition of its length.',

@@ -59,7 +59,8 @@ export function ladder({ sp, run = null, compare = null, loop = null, omni = nul
   ];
   const max = Math.max(1, ...rungs.filter((r) => r.hi != null).map((r) => r.hi));
   const pct = run && sim && sim.random ? percentile(sim.random.lengths, run.length) : null;
-  const outside = run && loop && !loop.skipped ? outsideReason(run, { length: run.length, best: loop.best, worst: loop.worst, shape1: run.shape1 }) : null;
+  const longest = Math.max(-Infinity, ...[loop && !loop.skipped && loop.worst ? loop.worst.value : null, sim && sim.greedyWorst ? sim.greedyWorst.length : null, sim && sim.random ? sim.random.max : null].filter((x) => x != null));
+  const outside = run && loop && !loop.skipped ? outsideReason(run, { length: run.length, best: loop.best, worst: loop.worst, shape1: run.shape1, longest: Number.isFinite(longest) ? longest : null }) : null;
   let sentence = null;
   if (run && pct != null) sentence = `This run made ${run.length} refinements: ${pct.toFixed(1)}% of ${sim.random.runs} simulated runs in random order are shorter (ties count half).`;
   else if (run) sentence = `This run made ${run.length} refinements.`;
@@ -80,7 +81,10 @@ export function decomposition({ sp, run = null, loop = null, omni = null, sim = 
     text: `${bad} bad of ${cand} candidates (${cand ? ((100 * bad) / cand).toFixed(1) : 0}%)`,
     meaning: 'How many spurious candidates the abstraction admits at all' }];
   const lb = loop && !loop.skipped ? loop.best : null, ob = omni && !omni.skipped ? omni.best : null;
-  const rs = diffI(lb, ob);
+  let rs = diffI(lb, ob);
+  // for a sound loop scheme the omniscient best is never longer (each sound option contains a minimal
+  // sound set, which removes at least as much): the difference is at least 0
+  if (rs && loop && loop.unsound === 0 && !rs.exact && rs.lo < 0) rs = rs.hi <= 0 ? { value: 0, exact: true, text: '0' } : { ...rs, lo: 0, text: `0 to ${rs.hi}` };
   rows.push({ factor: 'Refinement strength', key: 'strength', ...(rs || {}),
     text: rs ? `best (loop) ${fmtI(lb)} − best (omniscient) ${fmtI(ob)} = ${rs.text}${omni && omni.exact === false ? ' (minimal sets capped: omniscient best is an upper bound)' : ''}` : `not known: ${!lb ? (loop && loop.skipped) || 'loop-scheme bounds not computed' : (omni && omni.skipped) || 'omniscient bounds not computed'}`,
     meaning: 'Refinements a better relevant/1 could save at best' });

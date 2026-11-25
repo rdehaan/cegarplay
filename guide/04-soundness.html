@@ -206,6 +206,12 @@ relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
             instance is large, <b>Fuzz</b> (Instances tab) audits instances from small to large and shrinks the
             first unsound one to a handful of facts. The how-to <a href="howto-unsound.html">hunting an unsound
             refinement</a> walks through both on this chapter's example.</p>
+          <p id="lab">To see what the right clause would have been, the <b>Refinement lab</b> (the Lab tab, a
+            switch under Tabs in the Control tab) takes the witness candidate and lists every clause the loop
+            could make there: which are sound, how much each removes, and the smallest sound one. It also
+            names the <b>forced</b> atoms, those every sound clause must contain, each with the solution
+            that differs from the candidate only there. A forced atom that <code>relevant/1</code> did not
+            mark is the atom this chapter's test looks for.</p>
         </aside>
 
         <section class="exercise" id="exercise-1">
@@ -247,6 +253,7 @@ relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
             <li><a href="../?tab=2#tut-audit">Tutorial: the audit</a></li>
             <li><a href="../?tab=2#tut-symbolic">Tutorial: the symbolic audit and spaces</a></li>
             <li><a href="../?tab=2#tut-space">Tutorial: which refinement went wrong</a></li>
+            <li><a href="../?tab=2#tut-lab">Tutorial: what the loop could have done (the Refinement lab)</a></li>
             <li><a href="howto-unsound.html">How to hunt an unsound refinement</a></li>
           </ul>
         </section>

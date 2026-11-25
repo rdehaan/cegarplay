@@ -160,6 +160,12 @@ edge(U,V) :- node(U), node(V), U &lt; V, square((V-U) \ n).</pre>
           <span data-stat="guide-05-paley-clause@k=9,n=17:candidates">185</span> at n = 17. Worth a
           try, not a rule.
           <a class="play" href="../?example=guide-05-paley-record&amp;fragment=loop&amp;from=guide/05-reading-a-run.html%23record-run" target="cegarplay">Open the run with enum-mode record</a></p>
+        <p id="lab">How long could a run of these refinements be? The <b>Refinement lab</b> (the Lab tab)
+          answers on a small instance: the shortest and the longest run its refinements allow, and the
+          lengths of runs that take the candidates in random order. Placed among them, a recorded run shows
+          where its length comes from: how many bad candidates the abstraction admits, how many refinements
+          a better <code>relevant/1</code> could save, and how many the order cost. Refinements of candidates that
+          an earlier clause had already removed, the effect described above, are counted there.</p>
         <p>The templates also give the check the option <code>--heuristic=Domain</code>. It makes
           clingo follow <code>#heuristic</code> statements in the check, which can steer which
           counterexample it finds; chapter 6 uses that. Without such statements it only changes the
@@ -226,6 +232,7 @@ edge(U,V) :- node(U), node(V), U &lt; V, square((V-U) \ n).</pre>
             <li><a href="../?tab=2#tut-reading">Tutorial: reading the trace and the statistics</a></li>
             <li><a href="../?tab=2#tut-observatory">Tutorial: the Observatory</a></li>
             <li><a href="howto-time.html">How to find where the time goes</a></li>
+            <li><a href="../?tab=2#tut-lab">Tutorial: a run against the shortest and longest runs (the Refinement lab)</a></li>
           </ul>
         </section>
 

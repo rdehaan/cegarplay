@@ -1480,11 +1480,16 @@ Minimal sound sets come from clingo (`--heuristic=Domain --enum-mode=domRec` wit
 heuristic on the chosen atoms; under the cap, one cardinality-minimal set by `#minimize`).
 
 **Run bounds.** For a scheme (loop, omniscient, block), the exact best and worst idealised runs: one
-ASP program, with `opt/2` and `rem/2` facts, chosen options, the condition "every bad candidate is
-chosen or removed by a chosen clause", and clingo's `#edge` acyclicity constraint on "the clause of
-C removes the chosen D, so D comes first", minimised or maximised. Each value is **proven** or, when
-the time budget runs out, a bound ("best ≤ 14, ≥ 4, not proven"; the other side is trivial: ⌈\|Bad\| /
-largest removal⌉ for the best, \|Bad\| for the worst). Under the block scheme best = worst = \|Bad\|.
+ASP program, with facts `o(O,C)` (option O of bad candidate C) and `r(O,D)` (O removes D), one
+chosen option per chosen candidate, the condition "every bad candidate is chosen or removed by a
+chosen clause", and clingo's `#edge` acyclicity constraint on "the clause of C removes the chosen D,
+so D comes first", minimised or maximised. Two bounds come without clingo. The **packing bound**:
+bad candidates of which no single option removes two each need a refinement, so the best is at least
+their number. The **matching bound**: of two candidates whose every option removes the other, at most
+one is refined, so the worst is at most \|Bad\| minus the number of such disjoint pairs. A value is
+**proven** when clingo proves it optimal or when it reaches its bound (the sum-free sets: best 14,
+the packing bound). When the time budget runs out first, the result is an interval ("worst ≥ 16,
+≤ 162, not proven within the budget of 30 s"). Under the block scheme best = worst = \|Bad\|.
 Above the exact-bounds threshold only the simulation runs. The simulation: idealised runs in random
 order (an option at random; for the loop scheme also the first counterexample's option), and two
 greedy policies (each step the candidate and option that remove the most, or the fewest, alive
@@ -1499,11 +1504,15 @@ scheme), greedy best, the simulation's median, this run, greedy worst, worst (lo
 simulated runs (shorter runs, ties counting half). **The decomposition**: abstraction looseness
 (\|Bad\| and \|Bad\| / \|Cand\|), refinement strength (best of the loop scheme − best omniscient: what a
 better `relevant/1` could save at best), order luck (this run − best of the loop scheme, and the
-percentile). **Regret per step**: the pruning of the run's clause, of the best option of Opt(M) at
+percentile; for a sound loop scheme the strength is never negative, as every sound clause contains a
+minimal sound set that removes at least as much). **Regret per step**: the pruning of the run's clause, of the best option of Opt(M) at
 that step, and of the best minimal sound set; the five steps with the largest regret open in the
 inspector. **Compare with a recording** lays a second recording of the same instance over the ladder
 and the regret chart. A run outside the idealised range is shown with the likely cause (weak clause
-retention in Shape 1, restarts, refinements outside the model).
+retention in Shape 1, refinements of candidates an earlier clause had already removed, restarts,
+refinements outside the model); when the worst is not proven, a run longer than every idealised run
+found is shown as "not certainly outside". The sum-free sets' Shape 1 run makes 46 refinements, 32 of
+them on removed candidates; the same loop in Shape 2 makes 14.
 
 **Exports**: the space and all results as JSON, each table as CSV, each chart as SVG.
 

@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as Lab from '../js/lab/core.js';
-import { schemeOptions, incidence, exactBounds, boundsProgram } from '../js/lab/bounds.js';
+import { schemeOptions, incidence, exactBounds, boundsProgram, cheapBounds } from '../js/lab/bounds.js';
 import { simulate, greedy, stats, rng } from '../js/lab/simulate.js';
 import { agrees } from '../js/lab/sets.js';
 import { nodeExec, LUA } from '../tools/lab.mjs';
@@ -47,6 +47,8 @@ test('the exact program gives the brute-force best and worst on synthetic spaces
       const so = schemeOptions(sp, scheme, { minimal });
       const inc = incidence(sp, so);
       const [lo, hi] = bruteRuns(sp, so);
+      const cb = cheapBounds(inc);
+      assert.ok(cb.lower <= lo && cb.upper >= hi, `cheap bounds ${cb.lower}..${cb.upper} around ${lo}..${hi}`);
       const r = await exactBounds(nodeExec, sp, inc, { seconds: 20 });
       assert.equal(r.best.status, 'proven', `${scheme} n=${n} seed=${seed}`);
       assert.equal(r.worst.status, 'proven');
@@ -74,7 +76,7 @@ test('the bounds program stops at its budget with what it knows', async () => {
   assert.ok(Date.now() - t0 < 30000);
   for (const b of [r.best, r.worst]) {
     assert.ok(['proven', 'budget'].includes(b.status));
-    if (b.status === 'budget') assert.match(b.text, /not proven: budget of 1 s/);
+    if (b.status === 'budget') assert.match(b.text, /not proven within the budget of 1 s/);
     assert.ok(b.lower <= b.upper);
   }
   assert.ok(boundsProgram(inc).includes('#edge (C,D)'));
@@ -131,5 +133,20 @@ test('the simulation handles the audit\'s full cap of 200,000 candidates, and a 
   assert.equal(r.runs, 3);
   assert.ok(r.min > 0 && r.max <= sp.bad.length);
   const cut = simulate(sp, so, { runs: 1000, seed: 1, budgetMs: 300 });
-  assert.ok(cut.runs < 1000 && /budget of 0 s: \d+ of 1000 runs/.test(cut.stopped));
+  assert.ok(cut.runs < 1000 && /budget of 0\.3 s: \d+ of 1000 runs/.test(cut.stopped));
+});
+
+test('the packing bound proves the best runs of the tutorial examples at once (14 and 4)', async () => {
+  for (const [id, best] of [['tutorial-first-run', 14], ['tutorial-weak-relevant', 4]]) {
+    const ctx = await Lab.prepare(loadTarget(id), {}, nodeExec, LUA);
+    const sp = await Lab.computeSpace(ctx);
+    const inc = incidence(sp, schemeOptions(sp, 'loop'));
+    assert.equal(cheapBounds(inc).packing, best);
+    const t0 = Date.now();
+    const r = await exactBounds(nodeExec, sp, inc, { seconds: 30 });
+    assert.deepEqual([r.best.status, r.best.value, r.best.by], ['proven', best, 'bound'], id);
+    assert.match(r.best.text, /proven: no run is shorter than the packing bound/);
+    assert.ok(r.worst.upper <= sp.bad.length);
+    void t0;
+  }
 });

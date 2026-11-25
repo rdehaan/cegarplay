@@ -108,3 +108,32 @@ test('tutorial-weak-relevant: unsound options and lost solutions; the witness ag
   assert.ok(R.lost > 0, 'the run removes solutions');
   assert.equal(R.rows.findIndex((r) => r.lost > 0) >= 0, true);
 });
+
+test('the tutorial\'s figures for the Refinement lab (lesson 6, #tut-lab) hold', async () => {
+  const H2 = H.read('tutorial.html');
+  const lab = H2.slice(H2.indexOf('id="tut-lab"'), H2.indexOf('<h2', H2.indexOf('id="tut-lab"')));
+  for (const t of ['removes 128 of the 256', '13 of them are solutions', 'names two atoms and removes 64', 'makes 14', '14 to 16', 'makes 46', '32 of its refinements', 'makes 14 refinements']) assert.ok(lab.includes(t), t);
+  // the witness of tutorial-weak-relevant
+  const pw = loadTarget('tutorial-weak-relevant');
+  const spw = await Lab.computeSpace(await Lab.prepare(pw, {}, nodeExec, LUA));
+  const w = Lab.loopSoundness(spw).witness;
+  assert.deepEqual(w.candidateAtoms, ['pick(2)', 'pick(4)']);
+  const I = Lab.inspect(spw, w.candidate, { minimal: (await Lab.minimalFor(nodeExec, spw, [w.candidate])).get(w.candidate) });
+  assert.deepEqual([I.options.length, I.options[0].atoms.length, I.options[0].total, I.options[0].lost], [1, 1, 128, 13]);
+  assert.deepEqual([I.smallest.size, I.smallest.total], [2, 64]);
+  assert.deepEqual(I.forced.map((f) => spw.atoms[f.atom - 1]), ['pick(2)', 'pick(4)']);
+  // the sum-free sets: best 14 (packing bound), random orders 14 to 16, the recorded Shape 1 run 46 (32 on removed candidates)
+  const { rec, sp } = await recorded('tutorial-first-run', undefined);
+  const b = await Lab.bounds(nodeExec, sp, 'loop', { seconds: 10 });
+  assert.deepEqual([b.best.value, b.best.status], [14, 'proven']);
+  const sim = await Lab.simulation(nodeExec, sp, 'loop', { runs: 1000, seed: 1 });
+  assert.deepEqual([sim.random.min, sim.random.max], [14, 16]);
+  const R = await runReport(nodeExec, sp, rec, { minimalCap: 20, seconds: 10 });
+  assert.deepEqual([R.length, R.deadCand], [46, 32]);
+  // the same loop in Shape 2
+  const p2 = loadTarget('tutorial-first-run');
+  p2.loop = { language: 'loop', text: 'solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n' };
+  const r2 = await runProject({ ...p2, settings: { ...p2.settings, solutions: 0, trace: 0, record: { steps: 'all', n: 0 } } }, {});
+  const R2 = await runReport(nodeExec, sp, Recording.fromText(recordingOf(p2, r2.events).text()), { minimalCap: 20, seconds: 10 });
+  assert.equal(R2.length, 14);
+});

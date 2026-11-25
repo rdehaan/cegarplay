@@ -75,20 +75,54 @@ export function incidence(sp, so, { maxWork = 4e8, onProgress = null } = {}) {
 }
 const popc = (w) => { let c = 0; for (const x of w) { let y = x; while (y) { y &= y - 1; c++; } } return c; };
 
-// Trivial bounds: every refinement removes at most maxR bad candidates (itself included), so a run
-// needs at least ceil(|Bad| / maxR); a run never has more than |Bad| refinements.
-export function trivialBounds(inc) {
+// Bounds without clingo, valid for every scheme (sound or not):
+//   best ≥ ⌈|Bad| / largest removal⌉, and best ≥ |P| for a packing P: bad candidates no single option
+//   removes two of (every run needs one refinement per member of P; greedy, fewest options first);
+//   worst ≤ |Bad| − |N| for a matching N of pairs (c, d) where every option of c removes d and every
+//   option of d removes c (whichever comes first removes the other, so at most one is refined).
+export function cheapBounds(inc) {
   let maxR = 1;
   for (const l of inc.rem) if (l.length + 1 > maxR) maxR = l.length + 1;
-  return { lower: inc.bad ? Math.ceil(inc.bad / maxR) : 0, upper: inc.bad };
+  const ratio = inc.bad ? Math.ceil(inc.bad / maxR) : 0;
+  const covers = new Map();
+  const optsOf = new Map();
+  for (let o = 0; o < inc.nopt; o++) {
+    const c = inc.owner[o];
+    if (!covers.has(c)) covers.set(c, []);
+    if (!optsOf.has(c)) optsOf.set(c, []);
+    covers.get(c).push(o); optsOf.get(c).push(o);
+    for (const d of inc.rem[o]) { if (!covers.has(d)) covers.set(d, []); covers.get(d).push(o); }
+  }
+  const used = new Uint8Array(inc.nopt);
+  let packing = 0;
+  for (const c of [...covers.keys()].sort((a, b) => covers.get(a).length - covers.get(b).length || a - b)) {
+    const list = covers.get(c);
+    if (list.some((o) => used[o])) continue;
+    packing++;
+    for (const o of list) used[o] = 1;
+  }
+  const remSet = new Map();
+  const removesAll = (c, d) => optsOf.get(c).every((o) => { if (!remSet.has(o)) remSet.set(o, new Set(inc.rem[o])); return remSet.get(o).has(d); });
+  const matched = new Set();
+  let matching = 0;
+  for (const c of optsOf.keys()) {
+    if (matched.has(c)) continue;
+    const first = inc.rem[optsOf.get(c)[0]];
+    for (const d of first) {
+      if (matched.has(d) || !optsOf.has(d)) continue;
+      if (removesAll(c, d) && removesAll(d, c)) { matched.add(c); matched.add(d); matching++; break; }
+    }
+  }
+  return { lower: Math.max(ratio, packing), upper: inc.bad - matching, ratio, packing, matching };
 }
+export const trivialBounds = cheapBounds;
 
 // The program. Candidates and options are numbered 1.. in the facts (b/1 bad candidate, o/2
 // option of a candidate, r/2 option removes a bad candidate). The Lua main solves with
 // --opt-mode=opt, prints each better model (@@B), and stops at the budget: a propagator checks
 // the clock at every fixpoint and then makes the search unsatisfiable (clingo-wasm has no
 // --time-limit). goal: 'min' (best) or 'max' (worst).
-export function boundsProgram(inc, { goal = 'min', seconds = 30 } = {}) {
+export function boundsProgram(inc, { goal = 'min', seconds = 30, stopAt = null } = {}) {
   const facts = [];
   const cid = new Map();
   let k = 0;
@@ -110,6 +144,8 @@ c(D) :- s(O), r(O,D).
   const lua = `#script (lua)
 local clingo = require("clingo")
 local BUDGET = ${Number(seconds) > 0 ? Number(seconds) : 30}
+local STOP = ${stopAt == null ? 'nil' : Number(stopAt) | 0}   -- a model with this value is optimal (a bound computed outside)
+local hit = false
 local over, t0, lastp = false, 0, 0
 local P = { lit = nil }
 function P:init(init)
@@ -144,12 +180,14 @@ function main(prg)
       n = n + 1
       local sel = {}
       for _, a in ipairs(m:symbols{ shown = true }) do sel[#sel + 1] = tostring(a.arguments[1].number) end
-      print('@@B {"t":"m","cost":' .. tostring(m.cost[1] or 0) .. ',"sel":[' .. table.concat(sel, ",") .. ']}')
+      local cost = m.cost[1] or 0
+      print('@@B {"t":"m","cost":' .. tostring(cost) .. ',"sel":[' .. table.concat(sel, ",") .. ']}')
+      if STOP and math.abs(cost) == STOP then hit = true; break end
       if os.clock() - t0 > BUDGET then over = true end
     end
   end)
   h:close()
-  print('@@B {"t":"end","over":' .. tostring(over) .. ',"models":' .. n .. ',"ok":' .. tostring(ok) .. ',"s":' .. string.format("%.2f", os.clock() - t0) .. '}')
+  print('@@B {"t":"end","over":' .. tostring(over and not hit) .. ',"hit":' .. tostring(hit) .. ',"models":' .. n .. ',"ok":' .. tostring(ok) .. ',"s":' .. string.format("%.2f", os.clock() - t0) .. '}')
 end
 #end.
 `;
@@ -167,8 +205,8 @@ export function parseBounds(lines, goal) {
   if (!last) return { status: end && !end.over ? 'error' : 'none', value: null, sel: [] };
   // clingo reports a #maximize as the negated sum
   const value = Math.abs(last.cost);
-  const proven = !!(end && !end.over && end.ok);
-  return { status: proven ? 'proven' : 'budget', value, sel: last.sel.map((x) => x - 1), seconds: end ? end.s : null, goal };
+  const proven = !!(end && ((!end.over && end.ok) || end.hit));
+  return { status: proven ? 'proven' : 'budget', value, sel: last.sel.map((x) => x - 1), seconds: end ? end.s : null, goal, by: end && end.hit ? 'bound' : proven ? 'clingo' : null };
 }
 
 // Order a selection into a run (a topological order of the "removes" graph) and check it:
@@ -196,10 +234,10 @@ export function orderSelection(sp, inc, sel) {
 // Best and worst for one scheme. Returns { best, worst, trivial } with
 // { status: 'proven' | 'budget' | 'none' | 'skipped', value, lower, upper, text, atRisk }.
 export async function exactBounds(exec, sp, inc, { seconds = 30, onProgress = null } = {}) {
-  const triv = trivialBounds(inc);
+  const triv = cheapBounds(inc);
   const out = { trivial: triv };
   for (const goal of ['min', 'max']) {
-    const prog = boundsProgram(inc, { goal, seconds });
+    const prog = boundsProgram(inc, { goal, seconds, stopAt: goal === 'min' ? triv.lower : triv.upper });
     const r = await exec(prog, '--outf=3', onProgress ? (l) => { if (l.startsWith('@@B {"t":"p"')) { try { onProgress({ phase: goal === 'min' ? 'best' : 'worst', s: JSON.parse(l.slice(4)).s }); } catch { /* skip */ } } } : null);
     const p = parseBounds(r.out || [], goal);
     if (r.status === 'trap') p.status = 'error';
@@ -208,12 +246,12 @@ export async function exactBounds(exec, sp, inc, { seconds = 30, onProgress = nu
     if (goal === 'min') {
       res.lower = p.status === 'proven' ? p.value : triv.lower;
       res.upper = p.value ?? triv.upper;
-      res.text = p.status === 'proven' ? `${p.value} (proven)` : p.value != null ? `≤ ${p.value}, ≥ ${triv.lower} (not proven: budget of ${seconds} s)` : `≥ ${triv.lower} (no run found within ${seconds} s)`;
+      res.text = p.status === 'proven' ? `${p.value} (proven${p.by === 'bound' ? ': no run is shorter than the packing bound' : ''})` : p.value != null ? `≤ ${p.value}, ≥ ${triv.lower} (not proven within the budget of ${seconds} s)` : `≥ ${triv.lower} (no run found within ${seconds} s)`;
       out.best = res;
     } else {
       res.lower = p.value ?? triv.lower;
       res.upper = p.status === 'proven' ? p.value : triv.upper;
-      res.text = p.status === 'proven' ? `${p.value} (proven)` : p.value != null ? `≥ ${p.value}, ≤ ${triv.upper} (not proven: budget of ${seconds} s)` : `≤ ${triv.upper} (no run found within ${seconds} s)`;
+      res.text = p.status === 'proven' ? `${p.value} (proven${p.by === 'bound' ? ': it reaches the upper bound' : ''})` : p.value != null ? `≥ ${p.value}, ≤ ${triv.upper} (not proven within the budget of ${seconds} s)` : `≤ ${triv.upper} (no run found within ${seconds} s)`;
       out.worst = res;
     }
   }

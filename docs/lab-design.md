@@ -72,7 +72,7 @@ None. Everything the lab needs is already exported.
 | `js/lab/space.js` | `labPlan`, the Lua bodies, parsing `Y` lines into a `LabSpace`, per-atom bitsets. |
 | `js/lab/sets.js` | Removal sets, soundness, forced atoms with witnesses, D(M), the one-atom neighbourhood, brute-force minimal sets (tests and tiny spaces). |
 | `js/lab/minimal.js` | The clingo program for minimal sound sets (subset-minimal by `domRec`, one cardinality-minimal set), many candidates in one run. |
-| `js/lab/bounds.js` | The ASP program for exact best and worst runs, its budgeted Lua driver, trivial bounds. |
+| `js/lab/bounds.js` | The ASP program for exact best and worst runs, its budgeted Lua driver, the packing and matching bounds. |
 | `js/lab/simulate.js` | Idealised runs: random order, two option policies, greedy best and worst. |
 | `js/lab/runs.js` | A recording read onto the space: steps, alive sets by replay, regret, percentile. |
 | `js/lab/report.js` | Feature C composed: `runReport`, `ladder`, `decomposition`. |
@@ -161,9 +161,19 @@ same condition, because a picked candidate is removed by its own clause.
   one clingo run for up to 20,000 bad candidates (`OMNISCIENT_MAX` in `core.js`); above that the
   scheme is reported as not computed. When a candidate's minimal sets are capped, the omniscient
   bounds are marked as not exact (the best is then an upper bound on the true best).
-- An unproven bound shows its other side as a trivial bound: best ≥ ⌈|Bad| / largest removal⌉,
-  worst ≤ |Bad|. clingo's own lower bound is not used: its `bb` strategy has none, and after a
-  budget stop clasp's statistics would describe the cut search.
+- Bounds without clingo (`cheapBounds`, added at consolidation): best ≥ max(⌈|Bad| / largest
+  removal⌉, a greedy packing: bad candidates no single option removes two of), and worst ≤ |Bad| −
+  a greedy matching of pairs whose every option removes the other. The Lua driver stops as soon as
+  a model reaches the bound (proven, `by: 'bound'`). On the tutorial examples the packing bound
+  proves the best (14, 4) at once. clingo's core-guided strategy (`--opt-strategy=usc`) was tried
+  and proved less than the default `bb`. clingo's own lower bound is not used: `bb` has none, and
+  after a budget stop clasp's statistics would describe the cut search.
+- Refinement strength is clamped at 0 for a sound loop scheme. Choosing, for every sound option, a
+  minimal sound subset removes at least as much, so the omniscient best is never longer. Without
+  the clamp, two unproven intervals gave "−10 to 10".
+- A run longer than every idealised run found (worst found, greedy worst, simulation maximum)
+  while the worst is not proven is reported as "not certainly outside", with the count of
+  refinements of already removed candidates.
 - Unsupported (exit code 4), beyond the prompt's list: refinements other than `G.clause`,
   `G.clauses` and `G.block` (`above`, `below`, hand-made clauses: marco, maxsat-oll), because
   their options are not a function of the counterexample's relevant set.
@@ -217,8 +227,9 @@ of every idealised run on 7 synthetic spaces × 3 schemes, and every simulated a
 lies within those bounds. Block best = worst = |Bad| on gc-shape2 n3 and n4. Omniscient best ≤
 loop best. The budget stop is checked, and so is the unsound case.
 Note: on spaces of a few hundred bad candidates, clingo often finds the best and worst runs but
-cannot prove them within 30 s (gc-shape2 n4: best ≤ 64, not proven; tutorial-first-run: neither
-proven). The tab then shows intervals.
+cannot prove them within 30 s. The tab then shows intervals. Since consolidation, the packing bound
+proves tutorial-first-run's best (14); its worst (≥ 16, ≤ 162) and gc-shape2 n4's best (≤ 64, ≥ 6)
+stay open.
 
 ### 4. Run against bounds
 
@@ -244,3 +255,15 @@ Observed, not changed: `test/browser/directions.test.mjs` "Run all, Fuzz and the
 instances..." failed once in a loaded full run and passed in 3 reruns and in the other full run. It
 waits for the short-lived run-bar text "running audit (1 of N: ...)", which a busy machine can skip
 past. That page never loads the lab.
+
+### Consolidation (2026-11-25)
+
+The tutorial (lesson 6, "What the loop could have done: the Refinement lab", `#tut-lab`) and the
+guide now mention the lab. In the guide: chapter 4's tool moment and tool list, chapter 3's tool
+list, chapter 5's note on enumeration (`#lab`), the unsound how-to (a step "Understand it"), the
+glossary (forced atom, idealised run) and the reading order. The guide's numbers stay
+`data-stat` spans, so the lab's figures appear in the tutorial and the manual only. Code: the
+packing and matching bounds, the early stop at a bound, the clamped refinement strength, and the
+"not certainly outside" reason. Docs now name the program's facts as the code writes them (`o/2`,
+`r/2`).
+

@@ -48,7 +48,7 @@ export function simulate(sp, so, { runs = 1000, seed = 1, policy = 'uniform', bu
     lengths.push(r.length); lostList.push(r.lost);
     const now = Date.now();
     if (onProgress && now - last >= 250) { last = now; onProgress({ phase: `simulation (${policy})`, done: k + 1, of: runs }); }
-    if (now - t0 > budgetMs && k + 1 < runs) { stopped = `budget of ${Math.round(budgetMs / 1000)} s: ${k + 1} of ${runs} runs`; break; }
+    if (now - t0 > budgetMs && k + 1 < runs) { stopped = `budget of ${budgetMs < 1000 ? (budgetMs / 1000).toFixed(1) : Math.round(budgetMs / 1000)} s: ${k + 1} of ${runs} runs`; break; }
   }
   return { policy, ...stats(lengths), lengths, lost: lostList.reduce((a, b) => a + b, 0), lostRuns: lostList.filter((x) => x > 0).length,
     lostMax: Math.max(0, ...lostList), lostList, stopped, ms: Date.now() - t0 };
