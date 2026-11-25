@@ -52,6 +52,7 @@ export class LoopTab {
       if (proof && steps !== 'all') { steps = 'all'; $('record-select').value = 'all'; }
       const n = Math.max(0, Math.floor(Number($('record-n').value) || 0));
       $('record-n').hidden = steps === 'off' || steps === 'all';
+      $('run-record').checked = steps !== 'off';
       const ac = $('anatomy-calls');
       if (ac) ac.checked = calls;
       if (steps === 'off' && !calls && !proof) delete this.app.project.settings.record;
@@ -59,6 +60,13 @@ export class LoopTab {
       this.app.dirty && this.app.dirty();
     };
     for (const id of ['record-select', 'record-n', 'record-calls', 'record-proof']) $(id).addEventListener('change', rec);
+    // the run bar's "record steps": every step, or off (the Loop tab's Recording has the other choices)
+    $('run-record').addEventListener('change', (e) => {
+      $('record-select').value = e.target.checked ? 'all' : 'off';
+      if (!e.target.checked) $('record-proof').checked = false;
+      rec();
+    });
+    this.setRecordSteps = (on) => { if ($('run-record').checked !== on) { $('run-record').checked = on; $('run-record').dispatchEvent(new Event('change')); } };
     $('certify-select').addEventListener('change', (e) => {
       if (e.target.value === 'off') delete this.app.project.settings.certify;
       else this.app.project.settings.certify = e.target.value;
@@ -105,6 +113,7 @@ export class LoopTab {
     $('record-n').hidden = !r.steps || r.steps === 'off' || r.steps === 'all';
     $('record-calls').checked = !!r.calls;
     $('record-proof').checked = !!r.proof;
+    $('run-record').checked = !!r.steps && r.steps !== 'off';
     const sel = $('solutions-select');
     const v = String(st.solutions);
     if (![...sel.options].some((o) => o.value === v)) {

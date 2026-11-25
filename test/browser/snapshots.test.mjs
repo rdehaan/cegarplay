@@ -81,7 +81,7 @@ test('Reset everything forgets the project, workspace, snapshots and choices; Ca
   await page.click('#snapshot-save-button');
   await page.fill('#workspace-name', 'mine');
   await page.click('#workspace-save-button');
-  await page.check('#section-control .advanced-checkbox');
+  await page.check('#section-control .observatory-checkbox');
   await B.setEditor(page, 'editor-check', '% my edit\n');
   await page.waitForFunction(() => localStorage.getItem('cegarplay.project') && /my edit/.test(localStorage.getItem('cegarplay.project')));
   const ours = () => page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('cegarplay')).sort());

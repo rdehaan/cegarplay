@@ -805,7 +805,7 @@ What "sound up to k" does not say: anything about k + 1, or about instances the 
 
 Which solutions a too-strong refinement removes depends on which counterexamples the check happens to return, and so on the search order, the loop shape and the instance. A wrong loop can lose nothing on one instance and lose many on the next. Apply the soundness test to several small instances, and to several values of the constants.
 
-The playground keeps them together. The Instances tab holds the instances of one project, each with its expected count; **Run all instances** marks every count that differs. **Fuzz** audits instances from small to large, stops at the first unsound one and shrinks it. A campaign (Campaign tab, in Advanced mode) runs your loop and the blocking loop, as a variant, over a grid of instances, and marks every instance where the two disagree.
+The playground keeps them together. The Instances tab holds the instances of one project, each with its expected count; **Run all instances** marks every count that differs. **Fuzz** audits instances from small to large, stops at the first unsound one and shrinks it. A campaign (Campaign tab, an Advanced tab) runs your loop and the blocking loop, as a variant, over a grid of instances, and marks every instance where the two disagree.
 
 ### Too weak and too strong {#c04-both-ways}
 
@@ -3790,7 +3790,7 @@ The Loop tab has five templates. They use the same declarations and differ in ho
 | Shape 4 | 327 | 226 | 226 blocks + 226 expansions |
 | Reference run | 3,373 | 3,272 | 3,272 blocks |
 
-Two of them, run with **Record calls**, can be compared by their loop anatomies and timelines in the Observatory (Advanced mode): the picture shows where each shape spends its time.
+Two of them, run with **Record calls**, can be compared by their loop anatomies and timelines in the Observatory: the picture shows where each shape spends its time.
 
 ### Shape 1: check inside the search {#t09-tut-shape1}
 

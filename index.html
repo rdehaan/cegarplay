@@ -79,6 +79,7 @@
         <span class="run-field" title="clingo's --seed (0 = clingo's default). The seed changes the search only with a randomized search (or randomizing solver options); the same seed gives the same run again. Also in the Loop tab."><label class="inline-label" for="run-seed">Seed:</label>
           <input type="number" min="0" step="1" id="run-seed" class="run-seed">
           <label class="inline-label"><input type="checkbox" id="run-randomize"> randomized</label></span>
+        <span class="run-field" title="Record every step of the next runs, for the trace, the replay, the Observatory and the Refinement lab (Download recording in the Control tab). The Loop tab's Recording has more choices: the first, every or last N steps, solver calls, a proof log."><label class="inline-label"><input type="checkbox" id="run-record"> record steps</label></span>
       </div>
       <!-- what the Output, Statistics and Observatory tabs show now: which run, audit or replay -->
       <div id="shown-line" class="shown-line" aria-live="polite"></div>
@@ -130,8 +131,8 @@
         set programming, with clingo running in your browser. Load an example or a project file
         here. A project is written in the <b>Programs</b>, <b>Loop</b> and <b>Instances</b> tabs;
         press <b>Run</b> (or <b>Audit</b>) and look at the run in <b>Output</b> and <b>Statistics</b>.
-        <b>Advanced mode</b> (under Tabs, below) adds the <b>Observatory</b>, which shows a run as
-        pictures, and the <b>Campaign</b> tab, which compares many runs. New here? Start with the
+        The <b>Advanced</b> tabs (under Tabs, below) are the <b>Observatory</b>, which shows a run as
+        pictures, the <b>Campaign</b> tab, which compares many runs, and the <b>Refinement lab</b>. New here? Start with the
         <b>Tutorial</b> tab.
       </p>
       <div class="project-box">
@@ -249,11 +250,16 @@
       <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="manual-checkbox">
         Technical manual</label> <span class="note">the complete reference, for lookup and for AI agents</span></p>
       <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="advanced-checkbox">
-        Advanced mode</label> <span class="note">adds the <b>Observatory</b> (a run as pictures: anatomy, call
-        timeline, domain view, candidate space) and the <b>Campaign</b> tab (grids of runs on several engines)</span></p>
-      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="lab-checkbox">
-        Refinement lab</label> <span class="note">adds the <b>Lab</b> tab: every refinement a loop could have made
-        at a step, and the shortest and longest runs its refinements allow (small instances)</span></p>
+        Advanced</label> <span class="note">all three tabs below, on or off</span></p>
+      <div class="advanced-toggles">
+        <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="campaign-checkbox">
+          Campaign</label> <span class="note">grids of runs on several engines, instances and variants</span></p>
+        <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="observatory-checkbox">
+          Observatory</label> <span class="note">a run as pictures: anatomy, call timeline, domain view, candidate space</span></p>
+        <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="lab-checkbox">
+          Refinement lab</label> <span class="note">the <b>Lab</b> tab: every refinement a loop could have made
+          at a step, and the shortest and longest runs its refinements allow (small instances)</span></p>
+      </div>
       <p class="note">These choices are kept in this browser.</p>
 
       <h3>Reset</h3>
@@ -267,7 +273,8 @@
     <section id="section-tutorial">
       <p class="manual-toggle tab-toggles">
         <label class="inline-label" title="The complete reference, for lookup and for AI agents, in its own tab"><input type="checkbox" class="manual-checkbox"> Technical manual</label>
-        <label class="inline-label" title="The Observatory and Campaign tabs (lessons 5, 6 and 8)"><input type="checkbox" class="advanced-checkbox"> Advanced mode</label>
+        <label class="inline-label" title="The Observatory tab (lessons 5 and 6)"><input type="checkbox" class="observatory-checkbox"> Observatory</label>
+        <label class="inline-label" title="The Campaign tab (lesson 8)"><input type="checkbox" class="campaign-checkbox"> Campaign</label>
         <label class="inline-label" title="Tabs in the Control tab brings it back"><input type="checkbox" class="tutorial-checkbox" checked> Show this tab</label>
         <span class="note">Kept in this browser; also under Tabs in the Control tab.</span></p>
       <div id="tutorial"></div>

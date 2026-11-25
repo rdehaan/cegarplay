@@ -79,6 +79,39 @@ class LabClient {
 }
 
 const SCHEME_TEXT = { loop: 'loop (the loop\'s own options)', omniscient: 'omniscient (every minimal sound set)', block: 'block (the whole interface)' };
+// what each scheme lets an idealised run do with a bad candidate M (shown under the picker)
+const SCHEME_HELP = {
+  loop: 'The loop scheme: at a bad candidate M the run may add any clause your loop could add there, one per distinct relevant set of M\'s counterexamples (G.clause), or the block when the loop refines only by blocks. These are the runs your loop, as written, could make in some order.',
+  omniscient: 'The omniscient scheme: at M the run may add any minimal sound clause, as if it knew all solutions. No sound loop can do better, so its best run is a lower bound for every sound relevant/1.',
+  block: 'The block scheme: at M the run adds the block of M (all interface atoms), which removes M only. Every run then makes one refinement per bad candidate: best = worst = the number of bad candidates, the most a sound loop ever needs.',
+};
+
+// "How to read this": a short, always available explanation under each heading
+const HELP = {
+  space: [
+    ['Candidate', 'a model of the unrefined abstraction (the top solver before any refinement), seen through the link\'s interface atoms: one candidate per assignment of those atoms. The loop proposes candidates; the check looks at each.'],
+    ['Counterexample', 'a model of the check for a candidate: the reason that candidate is not a solution. A candidate can have many; the loop refines with the clause of one of them (its relevant set).'],
+    ['Solution / bad candidate', 'a solution has no counterexample (the loop accepts it); a bad candidate has at least one (the loop must refine it away).'],
+    ['Option', 'one clause the loop could add for a bad candidate: here one per distinct relevant set over all its counterexamples.'],
+  ],
+  inspect: [
+    ['What you pick', 'one bad candidate M, either at a step of a recorded run (the slider walks through its refinements) or freely from the list of bad candidates (the hex code names the candidate; then its number of true interface atoms and of counterexamples).'],
+    ['Inspect', 'shows every clause that could refine M: which atoms of the interface it names (the set S; the clause says "one atom of S changes"), whether it is sound (removes no solution) and how many candidates it prunes.'],
+    ['Counterexamples', 'the check\'s models for M, each with its relevant set (the clause the loop would add for it) and how much that clause removes. The one the run used is marked.'],
+    ['Atoms', 'one row per interface atom: M\'s value, whether the loop\'s clause names it, forced (every sound clause must name it), and what dropping or adding it would do.'],
+    ['Option map', 'every candidate clause as a point: shorter clauses (left) that prune more (up) are better; the line is the best trade-off among the sound ones.'],
+    ['Lattice', 'all subsets of the atoms of the loop\'s clause (plus the forced atoms), drawn bottom (empty set) to top (all of them), each node a clause on that subset, coloured sound or unsound (it would remove a solution; see the legend under it); the number in a node is its pruning. Going up a line adds one atom: the clause gets weaker (prunes less) but can only become sound. The lowest sound nodes are the minimal sound clauses within the loop\'s clause.'],
+  ],
+  bounds: [
+    ['Idealised run', 'proposes candidates that are still alive, in some order; a solution costs nothing, a bad candidate is refined by one option of the scheme. Its length is its number of refinements.'],
+    ['The three schemes', 'which options a run may use: loop (what your loop can add), omniscient (the best possible sound clauses), block (one candidate at a time). Compare loop with omniscient to see how much a better relevant/1 could save, and with block to see what the loop saves already.'],
+    ['Best and worst', 'the shortest and longest idealised runs, exact when proven by clingo; otherwise an interval. The histogram shows the lengths of random runs (the simulation).'],
+  ],
+  run: [
+    ['What it does', 'places one recorded run of the loop (every step recorded) among the idealised runs of the loop scheme: shorter or longer than random orders, and how far from the best.'],
+    ['Record a run and place it', 'runs the loop on the instance and variant above, to all solutions (as the idealised runs), records every step, and places the run. New seed does the same with a random seed and a randomized search, so the order of candidates changes; the seed is shown in the run bar (Seed) and a run there repeats it.'],
+  ],
+};
 
 export class LabTab {
   constructor(app, root) {
@@ -88,6 +121,10 @@ export class LabTab {
     this.space = null;          // { key, summary, atoms, count, hex, sol, ncex, pop, params }
     this.results = {};          // bounds by scheme, simulation, run, compare
     this.inspected = null;
+    // the control the user last pressed: the busy line (spinner, what runs, Stop) goes next to it
+    this.anchor = null;
+    root.addEventListener('pointerdown', (e) => { this.anchor = e.target.closest('button, input, select, svg') || this.anchor; }, true);
+    root.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') this.anchor = e.target.closest('button, input, select') || this.anchor; }, true);
     this.build();
     this.syncPickers();
     this.timer = setInterval(() => this.checkStale(), 1500);
@@ -138,20 +175,28 @@ export class LabTab {
     R.append(bar,
       h('h3', {}, 'Space ', this.info('lab-info-space', 'The space', [
         'Every candidate of the unrefined abstraction (one per assignment of the link\'s interface atoms, as the audit enumerates them), every counterexample of each, and each distinct relevant set as one option of the loop.',
-        'Solutions are candidates without a counterexample; bad candidates are the others. The loop scheme is sound on this instance when no option removes a solution: the same answer as the audit.'])), this.summaryBox,
+        'Solutions are candidates without a counterexample; bad candidates are the others. The loop scheme is sound on this instance when no option removes a solution: the same answer as the audit.'])), this.help('space'), this.summaryBox,
       h('h3', {}, 'Step inspector ', this.info('lab-info-inspect', 'The step inspector', [
         'For one bad candidate M: every clause the loop could add there and how good each is. A set S of interface atoms gives the clause "one atom of S changes"; it removes R(M, S), the candidates that agree with M on S. It is sound when R(M, S) has no solution.',
         'Forced atoms are in every sound set: a solution differs from M only there (the witness). Minimal sound sets are the minimal hitting sets of the sets D(M, s) of atoms on which M and a solution s differ.',
         'Justified by X: X is a counterexample of every candidate the clause removes. That is the most a loop can know without knowing the solutions; justified implies sound.',
-        'Pruning counts the removed candidates that are still alive at this step (all, in free mode).'])), this.inspectBox,
+        'Pruning counts the removed candidates that are still alive at this step (all, in free mode).'])), this.help('inspect'), this.inspectBox,
       h('h3', {}, 'Run bounds ', this.info('lab-info-bounds', 'Run bounds', [
         'An idealised run proposes alive candidates: a solution is accepted at no cost, a bad candidate is refined with one of its scheme\'s options. Its length is its number of refinements.',
         'Best and worst are exact (an ASP program with an acyclicity constraint, solved by clingo) when proven: by clingo within the time budget, or by reaching a bound computed without clingo (the packing bound for the best, the matching bound for the worst). Otherwise the result is an interval. The simulation runs the scheme in random orders.',
-        'The idealisation ignores clasp\'s weak retention of clauses in Shape 1: a real Shape 1 run can be longer than the worst idealised run.'])), this.boundsBox,
+        'The idealisation ignores clasp\'s weak retention of clauses in Shape 1: a real Shape 1 run can be longer than the worst idealised run.'])), this.help('bounds'), this.boundsBox,
       h('h3', {}, 'This run against the bounds ', this.info('lab-info-run', 'This run against the bounds', [
         'A recorded run (every step) placed among the idealised runs of the same instance: the ladder, its percentile among the simulated runs, and a decomposition of its length.',
-        'Regret at a step: the pruning of the best option the loop had there minus the pruning of the clause the run used.'])), this.runBox);
+        'Regret at a step: the pruning of the best option the loop had there minus the pruning of the clause the run used.'])), this.help('run'), this.runBox);
     this.renderAll();
+  }
+
+  help(key) {
+    const d = h('details', { class: 'lab-help', id: `lab-help-${key}` }, h('summary', {}, 'How to read this'),
+      h('dl', {}, HELP[key].flatMap(([a, b]) => [h('dt', {}, a), h('dd', {}, b)])));
+    d.open = store.get(`help.${key}`, key === 'space');
+    d.addEventListener('toggle', () => store.set(`help.${key}`, d.open));
+    return d;
   }
 
   info(id, title, paras) {
@@ -185,11 +230,38 @@ export class LabTab {
 
   shown() { this.syncPickers(); this.checkStale(); if (this.source.value === 'latest' && this.space && !this.client.busy) this.loadSteps(); }
 
-  setBusy(text) {
+  setBusy(text, { stop = () => this.cancel(), stopTitle = 'Stop the lab\'s computation (runs and audits are not affected)' } = {}) {
     this.computeBtn.disabled = !!text;
     this.cancelBtn.disabled = !text;
+    this.root.classList.toggle('lab-busy-now', !!text);
     for (const b of this.root.querySelectorAll('.lab-needs-idle')) b.disabled = !!text;
-    if (text) this.status.textContent = text;
+    if (text) { this.status.textContent = text; this.showBusy(text, stop, stopTitle); } else this.hideBusy();
+  }
+
+  showBusy(text, stop, stopTitle) {
+    if (!this.busyEl) {
+      this.busyText = h('span', { class: 'lab-busy-text' });
+      this.busyStop = h('button', { class: 'control-button small-button', type: 'button', id: 'lab-busy-stop' }, 'Stop');
+      this.busyEl = h('div', { class: 'lab-busy', id: 'lab-busy', role: 'status', 'aria-live': 'polite' },
+        h('span', { class: 'lab-spinner', 'aria-hidden': 'true' }), this.busyText, ' ', this.busyStop);
+      this.busyStop.addEventListener('click', () => { if (this.busyStopFn) this.busyStopFn(); });
+    }
+    this.busyStopFn = stop;
+    this.busyStop.title = stopTitle;
+    this.busyBase = text.replace(/…$/, '');
+    if (!this.busyEl.isConnected || this.busyT0 == null) this.busyT0 = Date.now();
+    // after the control that started it (its row), else under the lab bar
+    const a = this.anchor && this.root.contains(this.anchor) && !this.root.querySelector('.lab-bar').contains(this.anchor) ? this.anchor : null;
+    const host = a ? (a.closest('.lab-row, p, .lab-chart, td, li') || a.parentElement) : this.status;
+    if (host.nextSibling !== this.busyEl) host.after(this.busyEl);
+    this.tickBusy();
+    clearInterval(this.busyTimer);
+    this.busyTimer = setInterval(() => this.tickBusy(), 500);
+  }
+  tickBusy() { if (this.busyText) this.busyText.textContent = `${this.busyBase} (${((Date.now() - this.busyT0) / 1000).toFixed(1)} s)…`; }
+  hideBusy() {
+    clearInterval(this.busyTimer); this.busyTimer = null; this.busyT0 = null;
+    if (this.busyEl) this.busyEl.remove();
   }
 
   async call(type, payload, what) {
@@ -205,6 +277,8 @@ export class LabTab {
         if (p.done != null && p.of) parts.push(`${fmt(p.done)} of ${fmt(p.of)}`);
         else if (p.s != null) parts.push(`${p.s} s`);
         this.status.textContent = `${parts.join(': ')} (${((Date.now() - t0) / 1000).toFixed(1)} s)…`;
+        this.busyBase = parts.join(': ');
+        this.tickBusy();
       });
     } finally { this.setBusy(null); }
   }
@@ -381,7 +455,7 @@ export class LabTab {
         h('button', { class: 'control-button small-button lab-needs-idle', type: 'button', id: 'lab-inspect-go', onclick: () => this.inspectCandidate(Number(pick.value)) }, 'Inspect'));
       B.append(h('p', { class: 'note' }, this.source.value === 'free' ? 'Free mode: any bad candidate, with every candidate alive.'
         : this.runSteps && this.runSteps.steps.length ? 'The recording has no refinement of a bad candidate on this space (another instance, or a run that only accepted solutions): free mode.'
-          : 'No recorded run to step through (record a run with every step: Loop tab, Recording; or open a recording): free mode.'));
+          : 'No recorded run to step through (Record a run and place it, under This run against the bounds; or tick "record steps" in the run bar and Run; or open a recording): free mode.'));
     }
     B.prepend(ctl);
     this.verdict = h('p', { id: 'lab-verdict', class: 'lab-verdict', role: 'status', 'aria-live': 'polite' });
@@ -582,9 +656,11 @@ export class LabTab {
     B.textContent = '';
     const sel = h('select', { id: 'lab-scheme', 'aria-label': 'Scheme' }, ...Object.entries(SCHEME_TEXT).map(([v, t]) => h('option', { value: v }, t)));
     sel.value = store.get('scheme', 'loop');
-    sel.addEventListener('change', () => { store.set('scheme', sel.value); this.drawBounds(sel.value); });
+    const about = h('p', { class: 'note lab-scheme-help', id: 'lab-scheme-help' }, SCHEME_HELP[sel.value]);
+    sel.addEventListener('change', () => { store.set('scheme', sel.value); about.textContent = SCHEME_HELP[sel.value]; this.drawBounds(sel.value); });
     B.append(h('div', { class: 'lab-row' }, h('label', { class: 'inline-label' }, 'Scheme ', sel),
       h('button', { class: 'control-button lab-needs-idle', type: 'button', id: 'lab-compute-bounds', onclick: () => this.computeBounds(sel.value) }, 'Compute bounds')),
+    about,
     h('p', { class: 'note' }, 'Idealised runs: they ignore clasp\'s weak retention of clauses in Shape 1 (Loop tab, --enum-mode=record), so a real Shape 1 run can be longer than the worst idealised run.'));
     this.boundsBody = h('div', { id: 'lab-bounds-body', 'aria-live': 'polite' });
     B.append(this.boundsBody);
@@ -668,13 +744,67 @@ export class LabTab {
   }
 
   // ---- Feature C --------------------------------------------------------------------------
+  // Record a run and place it: the page's Run (instance and variant as here, all solutions, every
+  // step recorded), then the steps, the loop scheme's bounds when missing, and the placement.
+  // newSeed: a random seed and a randomized search first; the run bar shows the seed.
+  async recordAndPlace({ newSeed = false } = {}) {
+    const c = this.app.control;
+    if (this.client.busy) { this.status.textContent = 'The lab is still computing: wait for it or press Stop.'; return; }
+    if (!c || !this.app.ready || !c.canStart) { this.status.textContent = 'A run, audit or batch is going on (run bar): wait for it, or Abort it there.'; return; }
+    const st = this.app.project.settings;
+    if (newSeed) {
+      let seed;
+      do seed = 1 + Math.floor(Math.random() * 99999); while (seed === st.seed);
+      this.app.project.settings = { ...st, seed, randomize: true };
+      if (this.app.loopTab) this.app.loopTab.syncSeed();
+      if (this.app.dirty) this.app.dirty();
+    }
+    const S = this.app.project.settings;
+    const seedText = `seed ${S.seed || 0}${S.randomize ? ', randomized' : ''}`;
+    const prm = this.params();
+    const what = `Running the loop (${seedText}; every step recorded, all solutions)`;
+    this.setBusy(`${what}…`, { stop: () => c.abort(), stopTitle: 'Abort the run (as Abort in the run bar)' });
+    let r;
+    try { r = await c.run({ instance: prm.instance, variant: prm.variant, recordSteps: true, allSolutions: true }); }
+    finally { this.setBusy(null); }
+    const rec = this.app.recording;
+    if (!r || r.state === 'error' || r.state === 'aborted' || !rec || !rec.steps || !rec.steps.length) {
+      this.status.textContent = !r ? 'The run did not start (another run is going on).'
+        : r.state === 'aborted' ? 'The run was aborted: nothing to place.' : `The run ended without recorded steps (${r.state}): see the Output tab.`;
+      return;
+    }
+    this.lastRun = { rec, seed: S.seed || 0, randomize: !!S.randomize, instance: rec.header && rec.header.instance, variant: rec.header && rec.header.variant };
+    if (this.source.value !== 'latest') { this.source.value = 'latest'; store.set('source', 'latest'); }
+    if (!this.space || this.space.hash !== projectHash(this.app.collect())) { if (!(await this.computeSpace())) return; }
+    else await this.loadSteps();
+    if (!this.runSteps) return;
+    if (!this.results.loop || !this.results.loop.bounds) { await this.computeBounds('loop'); if (!this.results.loop) return; }
+    await this.computeRun();
+    this.status.textContent = `${seedText}: ${this.status.textContent}`;
+  }
+
   renderRun() {
     const B = this.runBox;
     if (!this.space) return this.needs(B, 'Disabled until the space is computed.');
-    const rec = this.recording();
-    if (!rec) return this.needs(B, 'Needs a recorded run (every step) of this instance: the latest run of the page, recorded with every step (Loop tab, Recording), or an opened recording (Steps from).');
-    if (!this.results.loop || !this.results.loop.bounds) return this.needs(B, 'Needs the loop scheme\'s bounds: choose the loop scheme under Run bounds and press Compute bounds.');
     B.textContent = '';
+    const S = this.app.project.settings;
+    B.append(h('div', { class: 'lab-row', id: 'lab-record-row' },
+      h('button', { class: 'control-button lab-needs-idle', type: 'button', id: 'lab-record-run', onclick: () => this.recordAndPlace(),
+        title: 'Run the loop on the instance and variant above, to all solutions, recording every step; then place the run (the loop scheme\'s bounds are computed first when missing)' }, 'Record a run and place it'),
+      h('button', { class: 'control-button lab-needs-idle', type: 'button', id: 'lab-new-seed', onclick: () => this.recordAndPlace({ newSeed: true }),
+        title: 'The same with a random seed and a randomized search (random decisions and signs), so the candidates come in another order. The seed is set in the run bar (Seed), where Run repeats this run.' }, 'New seed: run again'),
+      h('span', { class: 'note', id: 'lab-seed-note' }, `run bar: seed ${S.seed || 0}${S.randomize ? ', randomized' : ''}`)));
+    const rec = this.recording();
+    if (!rec) { B.append(h('p', { class: 'note lab-disabled' }, 'No recorded run of this instance yet: press Record a run and place it, or record one with the run bar\'s "record steps" and Run, or open a recording (Steps from).')); return; }
+    if (!this.results.loop || !this.results.loop.bounds) {
+      B.append(h('p', { class: 'note lab-disabled' }, 'To place the run, the loop scheme\'s bounds are needed. ',
+        h('button', { class: 'control-button small-button lab-needs-idle', type: 'button', id: 'lab-loop-bounds', onclick: async () => { await this.computeBounds('loop'); if (this.results.loop) await this.computeRun(); } }, 'Compute them and place the run')));
+      return;
+    }
+    const h0 = rec.header || {};
+    B.append(h('p', { class: 'note', id: 'lab-placed-of' }, `The run: ${this.source.value === 'file' ? `the opened recording ${this.fileName || ''}` : `the latest run of the page${rec.started ? ` (started ${rec.started})` : ''}`}` +
+      `${h0.instance ? `, instance ${h0.instance}` : ''}${h0.variant ? `, variant ${h0.variant}` : ''}` +
+      `${this.lastRun && this.lastRun.rec === rec ? `, seed ${this.lastRun.seed}${this.lastRun.randomize ? ' (randomized)' : ''}` : ''}; ${fmt(rec.steps.length)} recorded steps.`));
     B.append(h('div', { class: 'lab-row' }, h('button', { class: 'control-button lab-needs-idle', type: 'button', id: 'lab-compute-run', onclick: () => this.computeRun() }, 'Place this run'),
       h('button', { class: 'control-button small-button lab-needs-idle', type: 'button', id: 'lab-compare', onclick: () => this.compareFile.click(), title: 'A second recording of the same instance (another variant or seed)' }, 'Compare with a recording'),
       this.compareFile = h('input', { type: 'file', hidden: true, id: 'lab-compare-file', accept: '.cprec,.jsonl,.txt', onchange: () => this.openFile(this.compareFile, 'compare') })),

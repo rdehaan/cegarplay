@@ -92,7 +92,7 @@ test('free mode: space, inspector (verdict, atom table, option map, lattice), co
   await page.click('#lab-compute-bounds');
   await page.waitForSelector('#lab-histogram', { timeout: 180000 });
   assert.match(await page.textContent('#lab-bounds-table'), /Best \(shortest run\)/);
-  assert.match(await page.textContent('#lab-run'), /Needs a recorded run|Needs the loop/);
+  assert.match(await page.textContent('#lab-run'), /No recorded run of this instance yet|the loop scheme's bounds are needed/);
   // no sideways page scroll from 1400 px down to 400 px, with every part filled
   for (const width of [1400, 650, 400]) {
     await page.setViewportSize({ width, height: 900 });
@@ -212,6 +212,46 @@ test('review fixes: omniscient bounds and the run share no slot; a recording of 
   await page.click('#lab-compute-run');
   await page.waitForFunction(() => /refinements/.test((document.getElementById('lab-ladder-sentence') || {}).textContent || ''), null, { timeout: 180000 });
   assert.doesNotMatch(await page.textContent('#lab-decomposition'), /not known/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('Record a run and place it, New seed, the busy line with Stop, and the run bar\'s "record steps"', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3&lab=1', { advanced: false });
+  // the run bar's toggle is the Loop tab's "every step" / "off"
+  assert.equal(await page.isChecked('#run-record'), false);
+  await page.check('#run-record');
+  assert.equal(await page.$eval('#record-select', (s) => s.value), 'all');
+  await page.uncheck('#run-record');
+  assert.equal(await page.$eval('#record-select', (s) => s.value), 'off');
+  await page.click('label[for="tab12"]');
+  await page.selectOption('#lab-source', 'latest');
+  await page.click('#lab-compute');
+  await waitStatus(page, /^space: 19 candidates/);
+  // no recording yet: the button runs, records, computes the loop bounds and places the run
+  assert.match(await page.textContent('#lab-run'), /No recorded run of this instance yet/);
+  await page.click('#lab-record-run');
+  await page.waitForSelector('#lab-busy');
+  await page.waitForSelector('#lab-ladder', { timeout: 180000 });
+  assert.match(await page.textContent('#lab-ladder-sentence'), /This run made 19 refinements/);
+  assert.equal(await page.$eval('#record-select', (s) => s.value), 'off', 'the project\'s Recording setting is unchanged');
+  assert.match(await page.textContent('#lab-placed-of'), /seed 0/);
+  // New seed: a random seed in the run bar, a randomized search, placed again
+  await page.click('#lab-new-seed');
+  await page.waitForFunction(() => document.getElementById('run-seed').value !== '0');
+  const seed = await page.$eval('#run-seed', (e) => e.value);
+  assert.equal(await page.isChecked('#run-randomize'), true);
+  await page.waitForFunction((s) => { const e = document.getElementById('lab-placed-of'); return e && e.textContent.includes(`seed ${s} (randomized)`) && document.getElementById('lab-ladder'); }, seed, { timeout: 180000 });
+  await page.waitForFunction(() => !document.getElementById('lab-busy'));
+  // a long computation: the busy line sits next to the button that started it; Stop ends it
+  await page.click('#lab-limits summary'); await page.fill('#lab-limit-runs', '100000000');
+  await page.dispatchEvent('#lab-limit-runs', 'change');
+  await page.click('#lab-compute-bounds');
+  await page.waitForFunction(() => { const b = document.getElementById('lab-busy'); return b && /simulat/i.test(b.textContent); }, null, { timeout: 120000 });
+  assert.equal(await page.$eval('#lab-busy', (b) => !!b.previousElementSibling.querySelector('#lab-compute-bounds')), true);
+  await page.click('#lab-busy-stop');
+  await waitStatus(page, /cancelled/);
+  assert.equal(await page.$('#lab-busy'), null);
   assert.deepEqual(errors, []);
   await context.close();
 });

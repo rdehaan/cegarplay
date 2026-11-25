@@ -216,7 +216,8 @@ export class Control {
   //   mode 'bounded': the symbolic audit of lua/bounded.lua (PLAN3); with spaceRun = { name, k },
   //   on the project derived from that space at bound k (js/project.js deriveSpace).
   //   noHistory: no row in the run history (the steps of a space audit).
-  async runOne({ seed, randomize, mode = 'run', instance, variant, allSolutions = false, spaceRun = null, noHistory = false } = {}) {
+  //   recordSteps: record every step of this run (the project's Recording setting is unchanged).
+  async runOne({ seed, randomize, mode = 'run', instance, variant, allSolutions = false, spaceRun = null, noHistory = false, recordSteps = false } = {}) {
     const app = this.app;
     this.mode = mode;
     this.setState('validating');
@@ -229,6 +230,8 @@ export class Control {
     if (randomize !== undefined) { if (randomize) project.settings.randomize = true; else delete project.settings.randomize; }
     // Run all: an instance with an expected count is run to all solutions (as tools/run.mjs does)
     if (allSolutions) project.settings.solutions = 0;
+    // recordSteps: this run records every step, whatever the Recording setting says (the Refinement lab)
+    if (recordSteps) project.settings.record = { ...(project.settings.record || {}), steps: 'all', n: 0 };
     app.editors.clearAnnotations();
     let problems, instanceId = null;
     try {

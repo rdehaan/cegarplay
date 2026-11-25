@@ -24,14 +24,17 @@ Fuzz); then a run: **Output**, **Statistics** and **Observatory**; and many runs
 run bar above the tabs has two rows: the actions (**Run**, **Audit** with its mode, Abort, Pause
 and Stop on an isolated page, Clear, and the status), then **Run with**: the Instance and
 Variant pickers (for a project with instances or variants), Solutions, and **Seed** with
-**randomized** (the Loop tab's settings). Below them, **Shown:** says
+**randomized** (the Loop tab's settings), and **record steps**, which records every step of the next
+runs (the Loop tab's Recording set to "every step"; unticked, "off"). Below them, **Shown:** says
 what the Output, Statistics and Observatory tabs hold now: the run, audit or replay (with its
 instance, variant and start time), how it ended, how much of it was recorded, whether the
 candidate space was computed for it, and, in amber, when the project was edited since (or another
 project was loaded): the results are then of the earlier version. Then the live counts. **Manual** and **Internals** appear when
-asked for. The Control tab's **Tabs** block has four toggles, kept in this browser: **Tutorial**
-(shown by default), **Technical manual**, **Advanced mode** (off by default), which adds the
-Observatory and Campaign tabs, and **Refinement lab** (off by default), which adds the Lab tab. A
+asked for. The Control tab's **Tabs** block has toggles kept in this browser: **Tutorial**
+(shown by default), **Technical manual**, and **Advanced** with three indented toggles under it,
+**Campaign**, **Observatory** and **Refinement lab** (the Lab tab), all off by default. **Advanced**
+turns all three on or off; it is ticked when all three are on and shows a dash when some are. The
+Tutorial tab repeats the Observatory and Campaign toggles. A
 link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`, `?tab=12`, `?lecture=1`, `?view=`,
 `?step=`, `?advanced=1`, `?lab=1`, a link to a tutorial lesson) shows it for that visit without
 changing the stored choice.
@@ -300,7 +303,7 @@ first k where some instance is unsound. "Sound up to k = K" then holds for every
 space with k at most K; it says nothing about larger instances, nor about instances outside the
 space. An unsound verdict shows the instance it broke on, with **Save as regression instance**,
 **Save it and audit it** (the full list of unsound refinements, by enumeration) and **Run on it in
-the candidate space** (Advanced mode: the instance is saved and picked, and the loop runs on it with
+the candidate space** (it opens the Observatory: the instance is saved and picked, and the loop runs on it with
 every step recorded; the map shows the refinements that run makes, which may avoid the unsound one).
 
 **Writing a space** (Instances tab, **Spaces**, **New space**): a name; the text, which replaces the
@@ -1199,7 +1202,7 @@ back; a project without it opens with enumeration.
   `unsound at n = 2, w = 3`).
 
 After a verdict the panel offers the next step: an unsound audit, **See it in the candidate space**
-(Observatory, Advanced mode); a sound or unsound one, **Check a space** (or **Write a space** when
+(Observatory); a sound or unsound one, **Check a space** (or **Write a space** when
 the project has none); an audit stopped at its candidate limit, **Audit by symbolic search**; an
 unsound space, **Save it and audit it** (a regression instance, audited by enumeration); a sound
 space, **Try a larger bound**. The per-k line joins runs of sound steps (`1-11 sound (1 round
@@ -1245,7 +1248,7 @@ verify, solutions have no counterexample (for a witness check: every solution ha
 nothing else is left). Its `--json` verdict can be
 imported in the Statistics tab ("Import certcheck verdict").
 
-**Recording** (Loop tab, limits block) records the steps of a run as compact `R` events: every
+**Recording** (Loop tab, limits block; **record steps** in the run bar sets it to every step or off) records the steps of a run as compact `R` events: every
 step, the first N, every N-th, the last N, or a sample of N; **solver calls** adds a `C` event per
 call. The setting is `settings.record` (absent when off). Every run's events are kept:
 **Download recording** (Control tab) saves them as a `.cprec` file (gzip; header line, then the event
@@ -1459,7 +1462,16 @@ link, and kept in the lab worker's memory.
 **Space.** The counts, the options per scheme, and whether the loop scheme is sound on this instance
 (the same answer as the audit, with the same witness: the fewest differing atoms).
 
-**Step inspector.** From a run (a run recorded with every step: Loop tab, Recording) with a step
+**How to read this.** Under each heading a folding block defines the terms of that part (candidate,
+counterexample, option; the inspector's tables, option map and lattice; the three schemes; the run
+against the bounds). Under **Scheme** a line says what the chosen scheme lets an idealised run do.
+
+**Busy line.** While the lab computes, or while a run started from the lab runs, a line with a
+spinner, what is being computed, the elapsed time and **Stop** appears under the control that
+started it (Stop is Cancel for the lab's computations and Abort for a run). The lab bar's status line
+and Cancel say the same.
+
+**Step inspector.** From a run (a run recorded with every step: Loop tab, Recording, or the run bar's **record steps**) with a step
 slider, **Previous** and **Next**; the alive set before the step comes from replaying the run's
 earlier clauses over the space. Or free: any bad candidate from a list ordered by true atoms, by
 counterexamples or at random, with every candidate alive. For the candidate M:
@@ -1502,7 +1514,14 @@ When the loop scheme is unsound, the bounds name the solutions their runs put at
 simulation counts the runs that lose solutions, and the text says to audit the instance.
 
 **This run against the bounds.** Needs a recorded run of the same instance and variant and the loop
-scheme's bounds. **The ladder** puts on one axis of refinements: best (omniscient), best (loop
+scheme's bounds. **Record a run and place it** does all of it: the page's Run on the lab's instance and
+variant, to all solutions (as the idealised runs), recording every step whatever the Recording
+setting says (the setting is not changed), then the steps, the loop scheme's bounds when missing, and
+the placement. **New seed: run again** does the same after setting a random seed and a randomized
+search in the run bar (**Seed**, **randomized**), where Run repeats that run. A line names the placed
+run: the latest run of the page (with its start time, instance, variant and, for a run started here,
+its seed) or the opened recording. When only the bounds are missing, **Compute them and place the
+run** does that. **The ladder** puts on one axis of refinements: best (omniscient), best (loop
 scheme), greedy best, the simulation's median, this run, greedy worst, worst (loop scheme) and
 \|Bad\| (the block scheme); unproven values are intervals. Under it, the run's percentile among the
 simulated runs (shorter runs, ties counting half). **The decomposition**: abstraction looseness
@@ -1577,7 +1596,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory, 12 Lab (the Refinement lab). The numbers are fixed; they are not the order on screen. |
 | `&instance=<id>` | Pick that instance of the project in the run bar. An unknown id is ignored with a note. |
 | `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
-| `?advanced=1` | Advanced mode for this visit: the Observatory and Campaign tabs (without changing the remembered toggle). `?tab=10`, `?tab=11`, `?lecture=1`, `?view=` and `?step=` imply it. |
+| `?advanced=1` | The Observatory and Campaign tabs for this visit (without changing the remembered toggles). `?tab=10` shows the Campaign tab; `?tab=11`, `?lecture=1`, `?view=` and `?step=` show the Observatory. |
 | `?lab=1` | Show the Lab tab ([Refinement lab](#manual-refinement-lab-tab)) for this visit, without changing the remembered toggle. `?tab=12` implies it. |
 | `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
 | `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
@@ -1623,7 +1642,9 @@ Browser storage (`localStorage`, per browser and site):
   snapshots. "The same" ignores the run history and follows each edit. **Last action** names what the
   block did last, with the time.
 - `cegarplay.manual`: `"1"` when "Show the technical manual" is ticked.
-- `cegarplay.advanced`: `"1"` when Advanced mode is on (absent when off).
+- `cegarplay.campaign`, `cegarplay.observatory`: `"1"` when that tab is on (absent when off). An
+  older `cegarplay.advanced` (`"1"`: both on) is read as the choice for both until one of them is
+  changed, and is then replaced by the two keys.
 - `cegarplay.tutorial`: `"0"` when the Tutorial tab is hidden (absent when shown).
 - `cegarplay.lab`: `"1"` when the Refinement lab is on (absent when off); `cegarplay.lab.*`: the
   lab's settings (its Limits, the source of steps, the candidate order, the scheme), as JSON.

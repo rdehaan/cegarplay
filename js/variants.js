@@ -143,15 +143,15 @@ export class Variants {
         'the run bar then gets a Variant picker, and a campaign suite can compare variants on the same instances.'));
     }
     if (this.list.length) {
-      // the Campaign tab compares variants on many instances; it is shown only in Advanced mode
+      // the Campaign tab compares variants on many instances; it is shown only when ticked (Tabs, Advanced)
       const open = el('a', { href: '#', id: 'variants-campaign-link', onclick: (e) => {
         e.preventDefault();
-        if (this.app.showTabs) this.app.showTabs('advanced', true, { store: false });
+        if (this.app.showTabs) this.app.showTabs('campaign', true, { store: false });
         const t = document.getElementById('tab10');
         if (t) { t.checked = true; t.dispatchEvent(new Event('change', { bubbles: true })); }
       } }, 'Campaign tab');
       this.root.append(el('p', { class: 'note' }, 'To compare the variants on many instances (a table per instance and variant, plots, CSV), use the ', open,
-        el('span', { class: 'advanced-off-only' }, ' (an Advanced tab; this link shows it for this visit)'), '.'));
+        el('span', { class: 'campaign-off-only' }, ' (an Advanced tab, now hidden; this link shows it for this visit)'), '.'));
     }
     this.list.forEach((v, i) => this.root.append(this.card(v, i, fragments)));
     this.root.append(el('p', { class: 'inline-controls' },
@@ -230,7 +230,7 @@ export class Variants {
     // results per instance: the Campaign tab runs every variant on every instance (a suite)
     const open = el('a', { href: '#', id: 'compare-campaign-link', onclick: (e) => {
       e.preventDefault();
-      if (this.app.showTabs) this.app.showTabs('advanced', true, { store: false });
+      if (this.app.showTabs) this.app.showTabs('campaign', true, { store: false });
       const t = document.getElementById('tab10');
       if (t) { t.checked = true; t.dispatchEvent(new Event('change', { bubbles: true })); }
     } }, 'Campaign tab');

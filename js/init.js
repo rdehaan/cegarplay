@@ -74,22 +74,51 @@ for (const c of document.querySelectorAll('.manual-checkbox')) {
   c.addEventListener('change', () => showManual(c.checked));
 }
 
-// ---- which tabs show: Advanced mode (Campaign, Observatory) and the Tutorial ----------------
+// ---- which tabs show: the Advanced tabs (Campaign, Observatory, Lab) and the Tutorial ----------------
 // Both are kept in this browser. A link that opens one of these tabs (?tab=, ?lecture=, ?view=,
 // ?step=, ?advanced=1, a #tut- link) shows it for this visit without changing the stored choice.
+// The Advanced tabs (Campaign, Observatory, Refinement lab) each have a toggle; the Advanced
+// toggle above them turns all three on or off (checked: all on; indeterminate: some on).
+// An older browser may still keep cegarplay.advanced (Campaign and Observatory together): it is
+// the fallback of both until one of them is changed.
+const LEGACY_ADVANCED = 'cegarplay.advanced';
 const TAB_PREFS = {
-  advanced: { key: 'cegarplay.advanced', fallback: false, tabs: ['tab10', 'tab11'], box: '.advanced-checkbox' },
+  campaign: { key: 'cegarplay.campaign', fallback: false, legacy: true, tabs: ['tab10'], box: '.campaign-checkbox' },
+  observatory: { key: 'cegarplay.observatory', fallback: false, legacy: true, tabs: ['tab11'], box: '.observatory-checkbox' },
   tutorial: { key: 'cegarplay.tutorial', fallback: true, tabs: ['tab2'], box: '.tutorial-checkbox' },
   lab: { key: 'cegarplay.lab', fallback: false, tabs: ['tab12'], box: '.lab-checkbox' },
 };
+const ADVANCED = ['campaign', 'observatory', 'lab'];
 function prefStored(name) {
   const p = TAB_PREFS[name];
-  try { const v = localStorage.getItem(p.key); return v === null ? p.fallback : v === '1'; } catch { return p.fallback; }
+  try {
+    const v = localStorage.getItem(p.key);
+    if (v !== null) return v === '1';
+    if (p.legacy && localStorage.getItem(LEGACY_ADVANCED) !== null) return localStorage.getItem(LEGACY_ADVANCED) === '1';
+    return p.fallback;
+  } catch { return p.fallback; }
+}
+function tabShown(name) { return !$(TAB_PREFS[name].tabs[0]).hidden; }
+function syncAdvancedBox() {
+  const on = ADVANCED.filter(tabShown).length;
+  for (const c of document.querySelectorAll('.advanced-checkbox')) { c.checked = on === ADVANCED.length; c.indeterminate = on > 0 && on < ADVANCED.length; }
 }
 function showTabs(name, on, { store = true } = {}) {
+  // 'advanced': Campaign and Observatory, as the old Advanced mode (links that need one of them)
+  if (name === 'advanced') { showTabs('campaign', on, { store }); showTabs('observatory', on, { store }); return; }
   const p = TAB_PREFS[name];
   if (store) {
-    try { if (on === p.fallback) localStorage.removeItem(p.key); else localStorage.setItem(p.key, on ? '1' : '0'); } catch { /* no storage */ }
+    try {
+      // the first change of a legacy-backed toggle moves the old choice into the new keys
+      if (p.legacy && localStorage.getItem(LEGACY_ADVANCED) !== null) {
+        for (const [n, q] of Object.entries(TAB_PREFS)) if (q.legacy && n !== name) {
+          const v = prefStored(n);
+          if (v === q.fallback) localStorage.removeItem(q.key); else localStorage.setItem(q.key, v ? '1' : '0');
+        }
+        localStorage.removeItem(LEGACY_ADVANCED);
+      }
+      if (on === p.fallback) localStorage.removeItem(p.key); else localStorage.setItem(p.key, on ? '1' : '0');
+    } catch { /* no storage */ }
   }
   for (const id of p.tabs) {
     $(id).hidden = !on;
@@ -98,17 +127,22 @@ function showTabs(name, on, { store = true } = {}) {
   }
   for (const c of document.querySelectorAll(p.box)) c.checked = on;
   document.body.classList.toggle(`no-${name}`, !on);
+  syncAdvancedBox();
 }
 app.showTabs = showTabs;
 {
-  const visitAdvanced = params.get('advanced') === '1' || ['10', '11'].includes(params.get('tab')) ||
-    params.has('lecture') || params.has('view') || params.has('step');
-  showTabs('advanced', prefStored('advanced') || visitAdvanced, { store: false });
+  const all = params.get('advanced') === '1';
+  showTabs('campaign', prefStored('campaign') || all || params.get('tab') === '10', { store: false });
+  showTabs('observatory', prefStored('observatory') || all || params.get('tab') === '11' ||
+    params.has('lecture') || params.has('view') || params.has('step'), { store: false });
   showTabs('tutorial', prefStored('tutorial') || params.get('tab') === '2', { store: false });
   showTabs('lab', prefStored('lab') || params.get('lab') === '1' || params.get('tab') === '12', { store: false });
 }
 for (const name of Object.keys(TAB_PREFS)) {
   for (const c of document.querySelectorAll(TAB_PREFS[name].box)) c.addEventListener('change', () => showTabs(name, c.checked));
+}
+for (const c of document.querySelectorAll('.advanced-checkbox')) {
+  c.addEventListener('change', () => { const on = c.checked; for (const n of ADVANCED) showTabs(n, on); });
 }
 
 // ?from=guide/<page>.html#<anchor>: a link back to the guide page that opened this example.
@@ -199,7 +233,7 @@ app.sweepAndShow = async ({ instance, target }) => {
   const lost = r.target - r.solutions;
   const what = `Seed sweep: seed ${r.seed} loses ${lost} solution${lost === 1 ? '' : 's'} (${r.solutions} of ${r.target} found)`;
   app.control.runMessage(`${what}. The run bar's seed is now ${r.seed}, randomized, so Run repeats this run.`);
-  if ($('tab11').hidden) showTabs('advanced', true, { store: false });
+  if ($('tab11').hidden) showTabs('observatory', true, { store: false });
   showTab(11);
   await app.space.recordAndRun();
   app.control.runMessage(`${what}; the candidate space (Observatory) shows the refinement that removes it. The run bar's seed is now ${r.seed}, randomized: Run repeats this run.`);
@@ -214,7 +248,7 @@ app.campaign = new CampaignTab(app);
 app.views = new ViewPanel(app, $('domain-view'));
 // A view's rules are edited in the Observatory (an Advanced tab): open it for this visit.
 app.views.openTab = () => {
-  if ($('tab11').hidden) showTabs('advanced', true, { store: false });
+  if ($('tab11').hidden) showTabs('observatory', true, { store: false });
   $('tab11').checked = true;
   $('tab11').dispatchEvent(new Event('change', { bubbles: true }));
 };

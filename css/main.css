@@ -847,6 +847,8 @@ tr.mismatch td {
 .manual-toc ol { margin: 0; padding-left: 22px; }
 .manual-toc li { break-inside: avoid; }
 .manual-toggle { margin: 0 0 12px; }
+.advanced-toggles { margin: -4px 0 12px 1.6em; padding-left: 0.8em; border-left: 2px solid var(--border-strong); }
+.advanced-toggles .manual-toggle { margin-bottom: 6px; }
 
 .small-button {
   font-size: 12px;
@@ -1204,5 +1206,5 @@ main > section:not(#section-tutorial):not(#section-manual) h3:not(summary h3, .v
 #instances-status.stale-status { opacity: 0.55; }
 /* inside a result card the text is the full text colour (muted grey on a tinted ground is hard to read, in dark mode above all) */
 .audit-panel .note, .result-card .note, .audit-panel p, .result-card p { color: var(--text); }
-body:not(.no-advanced) .advanced-off-only { display: none; }
+body:not(.no-campaign) .campaign-off-only { display: none; }
 #certify-select { justify-self: start; max-width: 100%; }

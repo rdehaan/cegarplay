@@ -895,6 +895,20 @@ active or when nothing is shown. `Control.clearResults()`; `app.setProject` uses
 the engine for a frame before the precomputed frames are in (V5 test in directions.test.mjs).
 Test in `test/browser/stats.test.mjs`; row in docs/spec-app.md §5.1.
 
+## Advanced toggles, lab help, record and new seed (2026-11-25, on request)
+
+- Control tab, Tabs: **Advanced** (all three; a dash when some are on) with indented **Campaign**,
+  **Observatory** and **Refinement lab**. Keys `cegarplay.campaign` and `cegarplay.observatory`; an older
+  `cegarplay.advanced` is read as both until one changes (then migrated). The Tutorial tab's toggle
+  became Observatory and Campaign. `showTabs('advanced', ...)` still shows both (links); callers now
+  name their tab. `.advanced-off-only` became `.campaign-off-only`.
+- Run bar: **record steps** (every step / off; the Loop tab's Recording).
+- Lab: a busy line (spinner, what, elapsed time, **Stop**) next to the control that started the
+  computation; "How to read this" blocks under each heading; a description of the chosen scheme;
+  **Record a run and place it** and **New seed: run again** under This run against the bounds
+  (`control.run({ recordSteps: true, allSolutions: true })`; the new seed and randomized go to the run bar).
+- Tests: tabs.test.mjs rewritten for the toggles and the migration; one new lab test. 1233 tests: all pass, 32 skipped.
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.
