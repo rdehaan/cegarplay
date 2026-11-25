@@ -130,6 +130,19 @@ export function setupTopbar() {
   new MutationObserver(showTitle).observe(heading, { childList: true, characterData: true, subtree: true });
   showTitle();
 
+  // ---- each tab's help: open on the first visit to that tab; once closed, it stays closed
+  const HELP_KEY = 'cegarplay.help-seen';
+  let seen = {};
+  try { seen = JSON.parse(localStorage.getItem(HELP_KEY) || '{}') || {}; } catch { /* no storage */ }
+  for (const d of document.querySelectorAll('details.help-fold[data-help]')) {
+    d.open = !seen[d.dataset.help];
+    d.addEventListener('toggle', () => {
+      if (d.open === !seen[d.dataset.help]) return;
+      if (d.open) delete seen[d.dataset.help]; else seen[d.dataset.help] = 1;
+      try { localStorage.setItem(HELP_KEY, JSON.stringify(seen)); } catch { /* no storage */ }
+    });
+  }
+
   // ---- the sticky tab bar (large screens): it sits under the top bar, whose height can change
   // (a wrapped row); a shadow once it sticks; a tab chosen while it sticks opens at its top
   const bar = $('topbar'), tabbar = $('tab-bar'), main = document.querySelector('main');

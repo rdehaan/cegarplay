@@ -126,3 +126,22 @@ test('the tab bar: grouped, sticky under the top bar on a large screen; a tab ch
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('each tab\'s help: open on the first visit, and closed once it is closed (remembered)', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?fresh=1&tab=4', { advanced: false });
+  assert.equal(await page.isVisible('#section-loop .tab-intro'), true, 'open on the first visit');
+  await page.click('#section-loop .help-fold > summary');
+  assert.equal(await page.isVisible('#section-loop .tab-intro'), false);
+  // stored in the toggle event, which comes just after the click
+  await page.waitForFunction(() => /section-loop/.test(localStorage.getItem('cegarplay.help-seen') || ''));
+  await page.reload();
+  await page.waitForSelector('body[data-ready="true"]');
+  assert.equal(await page.isVisible('#section-loop .tab-intro'), false, 'stays closed');
+  await page.click('label[for="tab3"]');
+  assert.equal(await page.isVisible('#section-programs .tab-intro'), true, 'another tab: still open');
+  await page.click('label[for="tab4"]');
+  await page.click('#section-loop .help-fold > summary');
+  assert.equal(await page.isVisible('#section-loop .tab-intro'), true, 'the "?" opens it again');
+  assert.deepEqual(errors, []);
+  await context.close();
+});

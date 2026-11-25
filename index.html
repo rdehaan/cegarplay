@@ -246,11 +246,14 @@
 
     <!-- 3. Programs -->
     <section id="section-programs">
-      <p class="tab-intro">
+      <details class="help-fold" data-help="section-programs">
+        <summary><span class="help-title">Programs</span> <span class="help-q" title="What is this tab?">?</span></summary>
+      <p class="tab-intro help-box">
         The ASP fragments of the project. A solver is built from fragments (see the <b>Loop</b>
         tab). Problems found before a run are marked in the editors.
         <span class="tab-help">Tutorial: <a href="#tut-fragments">Fragments, solvers and links</a>. Manual: <a href="#manual-asp-conventions">ASP conventions</a>.</span>
       </p>
+      </details>
       <div id="fragments"></div>
       <p class="note" id="view-fragments-note" hidden>The rules of the project's domain views are edited with
         their view in the Observatory tab: a view only draws the steps of a run and is not part of the loop.
@@ -262,11 +265,14 @@
 
     <!-- 4. Loop -->
     <section id="section-loop">
-      <p class="tab-intro">
+      <details class="help-fold" data-help="section-loop">
+        <summary><span class="help-title">Loop</span> <span class="help-q" title="What is this tab?">?</span></summary>
+      <p class="tab-intro help-box">
         The loop script declares the solvers and the links between them and says how they call
         each other; below it are the constants and the settings of a run.
         <span class="tab-help">Tutorial: <a href="#tut-language">Writing loop scripts</a> · <a href="#tut-shapes">Choosing a loop shape</a>. Manual: <a href="#manual-the-loop-language">The loop language</a> · <a href="#manual-settings">Settings</a>.</span>
       </p>
+      </details>
       <div class="inline-controls">
         <label class="inline-label" for="template-select">Template:</label>
         <select id="template-select"></select>
@@ -336,18 +342,23 @@
     <!-- 5. Output -->
     <!-- 9. Instances -->
     <section id="section-instances">
-      <p class="tab-intro">
+      <details class="help-fold" data-help="section-instances">
+        <summary><span class="help-title">Instances</span> <span class="help-q" title="What is this tab?">?</span></summary>
+      <p class="tab-intro help-box">
         An instance is a set of facts and constant values that a run applies on top of the project:
         the problem's input, kept apart from its encoding. The run bar picks the instance a run uses;
         <b>Run all instances</b> runs each one and compares its count with the expected one; <b>Fuzz</b> looks
         for an instance on which the loop is unsound.
         <span class="tab-help">Tutorial: <a href="#tut-instances">One project, many instances</a>. Manual: <a href="#manual-instances">Instances</a> · <a href="#manual-generators">Generators</a> · <a href="#manual-fuzz">Fuzz</a>.</span>
       </p>
+      </details>
       <div id="instances"></div>
     </section>
 
     <section id="section-campaign">
-      <p class="tab-intro">
+      <details class="help-fold" data-help="section-campaign">
+        <summary><span class="help-title">Campaign</span> <span class="help-q" title="What is this tab?">?</span></summary>
+      <p class="tab-intro help-box">
         A suite is a grid of instances × variants × solver seeds; each cell is one run with all
         solutions. Rows are kept in this browser: <b>Start</b> again resumes and skips the cells
         already run. Exhausted variants that disagree on an instance are marked red;
@@ -355,15 +366,19 @@
         do not apply here: a suite names its own instances and variants.
         <span class="tab-help">Tutorial: <a href="#tut-campaign">Campaigns</a>. Manual: <a href="#manual-campaigns">Campaigns</a>.</span>
       </p>
+      </details>
       <div id="campaign"></div>
     </section>
 
     <section id="section-output">
-      <p class="tab-intro">
+      <details class="help-fold" data-help="section-output">
+        <summary><span class="help-title">Output</span> <span class="help-q" title="What is this tab?">?</span></summary>
+      <p class="tab-intro help-box">
         The last run or audit: its result, the solutions, the trace one step at a time, and the
         messages.
         <span class="tab-help">Tutorial: <a href="#tut-reading">Reading the trace and the statistics</a> · <a href="#tut-audit">The audit</a>. Manual: <a href="#manual-output-tab">Output tab</a> · <a href="#manual-audit">Audit</a>.</span>
       </p>
+      </details>
       <div class="result-row"><div id="result-line" class="result-line">No run yet.</div>
         <button class="control-button small-button" id="clear-button" title="Remove the results of the last run: output, statistics, trace and recording (the run history stays)" disabled>Clear</button></div>
       <div id="audit-panel" class="audit-panel" hidden></div>
@@ -379,11 +394,14 @@
 
     <!-- 6. Statistics -->
     <section id="section-statistics">
-      <p class="tab-intro">
+      <details class="help-fold" data-help="section-statistics">
+        <summary><span class="help-title">Statistics</span> <span class="help-q" title="What is this tab?">?</span></summary>
+      <p class="tab-intro help-box">
         Counts, solver tables and charts of the last run, certificates when asked for, and the run
         history of this session, which marks runs whose counts disagree.
         <span class="tab-help">Tutorial: <a href="#tut-reading">Reading the trace and the statistics</a>. Manual: <a href="#manual-statistics-tab">Statistics tab</a> · <a href="#manual-certificates">Certificates</a>.</span>
       </p>
+      </details>
       <p class="audit-only audit-note">The last action was an <b>audit</b>: the figures below are those of the
         audit's own solving (every candidate of the unrefined abstraction and its counterexamples), not of
         the loop. Its verdict is in the Output tab; press <b>Run</b> to see the loop again.</p>
@@ -391,12 +409,15 @@
     </section>
 
     <section id="section-observatory">
-      <p class="tab-intro">
+      <details class="help-fold" data-help="section-observatory">
+        <summary><span class="help-title">Observatory</span> <span class="help-q" title="What is this tab?">?</span></summary>
+      <p class="tab-intro help-box">
         The last run, or an opened recording, as pictures: the loop's anatomy and its calls, each
         step in the problem's own terms, and every candidate at once. One cursor moves them all. The project's domain views are
         written here too (Domain view: New view, Edit this view).
         <span class="tab-help">Tutorial: <a href="#tut-observatory">Watching a run</a> · <a href="#tut-space">Which refinement went wrong</a>. Manual: <a href="#manual-observatory-tab">Observatory tab</a> · <a href="#manual-writing-views">Writing views</a> · <a href="#manual-candidate-space">Candidate space</a>.</span>
       </p>
+      </details>
       <p class="audit-only audit-note">The last action was an <b>audit</b>: the figures below are those of the
         audit's own solving (every candidate of the unrefined abstraction and its counterexamples), not of
         the loop. Its verdict is in the Output tab; press <b>Run</b> to see the loop again.</p>
@@ -408,13 +429,16 @@
 
     <!-- 12. Refinery (hidden unless its toggle is on, ?lab=1 or ?tab=12) -->
     <section id="section-lab">
-      <p class="tab-intro">
+      <details class="help-fold" data-help="section-lab">
+        <summary><span class="help-title">Refinery</span> <span class="help-q" title="What is this tab?">?</span></summary>
+      <p class="tab-intro help-box">
         What a loop could have done, not just what it did: at one step, every refinement clause that
         was possible there; over a whole run, how its length compares with the shortest and longest runs
         the same refinements allow. Computed on small instances, from every candidate and counterexample, by
         the Refinery's own engine (runs and audits go on as usual).
         <span class="tab-help">Manual: <a href="#manual-refinery-tab">Refinery tab</a> · <a href="#manual-audit">Audit</a> · <a href="#manual-candidate-space">Candidate space</a>.</span>
       </p>
+      </details>
       <div id="lab"><p class="note">Loading the Refinery…</p></div>
     </section>
 

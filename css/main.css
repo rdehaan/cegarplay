@@ -1338,3 +1338,11 @@ dialog.dialog::backdrop { background: var(--backdrop); }
   .tab-group { font-size: 0; margin: 0 4px; padding: 0; height: 28px; }
   .tab-group:last-of-type { margin-left: 4px; }
 }
+
+/* ---- each tab's help: its title and a "?", the intro under it (open on the first visit) ---- */
+.help-fold { margin: 0 0 12px; }
+.help-fold > summary { list-style: none; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.help-fold > summary::-webkit-details-marker { display: none; }
+.help-title { font-size: 18px; color: var(--text); }
+.help-fold > .tab-intro { margin: 8px 0 0; }
+body:has(#run-status[data-state="idle"]) .run-summary:not(:has(#run-message:not([hidden]))) { padding: 4px 0 0; }
