@@ -990,7 +990,7 @@ of these loops step by step (2QBF, implicit hitting sets, MARCO, ...).
 | Recursive CEGAR for any number of quantifier blocks: RAReQS (Janota, Klieber, Marques-Silva and Clarke) | Solver and link families and a recursive `def` | [qbf-deep](?example=qbf-deep) | `rareqs` |
 | Clausal abstraction, multi-level QBF: CAQE (Rabe and Tentrup), QESTO | A chain of solvers; cores along the chain with `core.on(G)`; an inner `search ... keep` | [qbf-three-blocks](?example=qbf-three-blocks), [qbf-caqe](?example=qbf-caqe) (clause-satisfaction atoms on the links), [knapsack-fortification](?example=knapsack-fortification) | `caqe` |
 | Theta-2 as P^NP[log] (Wagner): a binary search over a bound with one NP query per step, then one query per candidate | `C.ground(bound, k)` grounds the bound of a query; `S.atom("within", k)` assumes it; `//` halves the interval | [dodgson-winners](?example=dodgson-winners); a doubling search first: [ja-dodgson](?example=ja-dodgson) | `bounds` |
-| Lexicographic optimisation one level at a time (the iterative algorithms of Conati, Niskanen and Järvisalo for Leximax) | A `#minimize` over the level assumed by a choice atom (`focus(R)`); the optimum of each level kept as an order-encoding assumption `atmost(R,G)`; at the end the assumptions become unit clauses and `S.models()` lists the optimal models | [ja-leximax](?example=ja-leximax) | `bounds` |
+| Lexicographic optimisation one level at a time (Algorithm 5 of Conati, Niskanen and Järvisalo for Leximax) | A `#minimize` over the level assumed by a choice atom (`focus(R)`); the optimum of each level kept as an order-encoding assumption `atmost(R,G)`; at the end the assumptions become unit clauses and `S.models()` lists the optimal models | [ja-leximax](?example=ja-leximax) | `bounds` |
 | Row generation (lazy constraints); for Kemeny, the ordering formulation of Conitzer, Davenport and Kalagnanam with its 3-cycle constraints added lazily | An optimal abstraction without most constraints; each counterexample grounds one (`refine(k)`) or adds a clause from `relevant/1` | [young-winners](?example=young-winners); lazy transitivity: variant `lazy-transitivity` of [kemeny-rankings](?example=kemeny-rankings); conflicts of a majority judgment learnt from cores: [ja-young](?example=ja-young); the integrity constraint clause by clause: variant `lazy-constraints` of [ja-kemeny](?example=ja-kemeny) | `lazy-constraints` |
 | Branch-and-check (Thorsteinsson), lazy clause generation | `on partial P:` in the search: the check also runs at partial assignments; cores or `G.clause(X)` with `G(P, false)` cut whole subtrees | [colourable-partial](?example=colourable-partial), [triangle-free-lazy](?example=triangle-free-lazy) | `branch-and-check`, `lazy-constraints` |
 | Omission-based abstraction (Saribatur and Eiter) | Constraints guarded by `#external` atoms, switched on with `A.set` when a candidate breaks them | [queens-omission](?example=queens-omission), [conformant-growing](?example=conformant-growing) (a growing horizon) | `omission` |
@@ -1858,15 +1858,16 @@ loop to its pattern.
 
 The library group **Judgment aggregation** (`judgment`) holds six examples, one per rule, each
 with a different loop as its default. Each loads with `?example=<id>`; its readme has the research
-question, the loops, measured times and references. Outcome determination is in the second level
-of the polynomial hierarchy for each rule (Endriss, de Haan, Lang and Slavkovik 2020).
+question, the loops, measured times and references. Outcome determination (is there an outcome
+that contains given judgments?) is complete for Theta-2, Delta-2 or Sigma-2 (Endriss, de Haan,
+Lang and Slavkovik 2020; the summary in Conati, Niskanen and Järvisalo 2024, Proposition 2.1).
 
 | Example | Rule: the outcomes are the consistent complete judgment sets ... | Complexity | Default loop |
 | --- | --- | --- | --- |
 | `ja-kemeny` | ... with the fewest disagreements with the judges | Theta-2-complete | implicit hitting sets: minimally inconsistent subsets of the majority judgment as minimal unsat cores |
 | `ja-slater` | ... that go against the fewest majority judgments (= MCSA) | Theta-2-complete | core-guided optimisation (OLL), then every model under the final assumptions |
-| `ja-leximax` | ... lexicographically best by support, most supported judgments first | Theta-2-complete | level by level: one optimal query per margin |
-| `ja-msa` | ... whose agreement with the majority is a maximal consistent subset of it | Sigma-2-complete | MARCO: MSSes give the outcomes, MUSes listed as a second kind |
+| `ja-leximax` | ... lexicographically best by support, most supported judgments first | Delta-2-complete | level by level: one optimal query per margin |
+| `ja-msa` | ... whose agreement with the majority is a maximal consistent subset of it (the Condorcet rule of Conati et al.) | Sigma-2-complete | MARCO: MSSes give the outcomes, MUSes listed as a second kind |
 | `ja-young` | ... that complete the majority of a largest subprofile whose majority is consistent | Theta-2-complete | row generation: conflicts of a majority learnt from cores |
 | `ja-dodgson` | ... that complete the majority of a profile with the fewest changed judgments whose majority is consistent | Theta-2-complete | doubling and binary search over the score (P^NP[log]) |
 
@@ -1882,7 +1883,8 @@ constant `complete` (default 0): with 1 the majority must also be complete (no t
 outcomes, shown as `in/1`; with all solutions the count is the number of outcomes.
 
 **Instances.** The same in each: the running example of Endriss, de Haan, Lang and Slavkovik
-(`example`, 11 judges), the doctrinal paradox (`doctrinal`), a consistent majority (`consistent`),
+(`example`, 11 judges), Example 1 of de Haan and Slavkovik 2019 (`taxonomy`, 17 judges: the outcomes
+stated there and by Lang and Slavkovik 2014 are reproduced for every rule), the doctrinal paradox (`doctrinal`), a consistent majority (`consistent`),
 a tie (`tie`), the Condorcet paradox and the Voting group's election `example` in the preference
 agenda (`paradox`, `election`: there the Kemeny and Slater outcomes are the rankings of
 `kemeny-rankings` and `slater-rankings`), two scenarios of the generator `ja-random` (premises,
@@ -1897,7 +1899,7 @@ project files from one source.
 **Running them.** `node tools/run.mjs ja-msa --instance all --solutions all`; `node tools/bench.mjs
 ja-young --suite loops --out rows.jsonl` and `node tools/report.mjs rows.jsonl` compare the
 variants; `node tools/audit.mjs ja-kemeny --instance all` audits (the loops that refine with
-clauses or cores: the Kemeny loops, the `ihs` variants of Slater and Leximax, MSA's `cores`, and
+clauses or cores: the Kemeny loops but `maxsat`, the `ihs` variants of Slater and Leximax, MSA's `cores`, and
 Young's).
 
 ## For agents

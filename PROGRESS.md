@@ -2125,9 +2125,9 @@ contrib files (`--recount` recounts all).
 
 | Example | Rule | Complexity | Default loop | Variants |
 | --- | --- | --- | --- | --- |
-| `ja-kemeny` | fewest disagreements with the judges | Theta-2-c | implicit hitting sets, MUSes of the majority judgment as minimal cores | plain-cores, disjoint-cores, lazy-constraints (Γ clause by clause from relevant/1), reference |
-| `ja-slater` | fewest majority judgments given up (= MCSA) | Theta-2-c | OLL, then models under the final assumptions | plain-cores, ihs, linear-down, reference |
-| `ja-leximax` | lexicographic by support | Theta-2-c | level by level: `#minimize` over the level assumed by `focus(R)`, optima kept as `atmost(R,G)` | linear-levels (SAT queries only), ihs (priorities), reference |
+| `ja-kemeny` | fewest disagreements with the judges | Theta-2-c | implicit hitting sets, MUSes of the majority judgment as minimal cores | plain-cores, disjoint-cores, lazy-constraints (Γ clause by clause from relevant/1), maxsat, reference |
+| `ja-slater` | fewest majority judgments given up (= MCSA) | Theta-2-c | OLL, then models under the final assumptions | plain-cores, ihs, linear-down, maxsat, reference |
+| `ja-leximax` | lexicographic by support | Delta-2-c | level by level: `#minimize` over the level assumed by `focus(R)`, optima kept as `atmost(R,G)` | linear-levels (SAT queries only), ihs (priorities), reference |
 | `ja-msa` | agreement a maximal consistent subset of the majority | Sigma-2-c | MARCO: MSSes give the outcomes, MUSes listed `as mus` | cores, exists-forall (G.below), reference |
 | `ja-young` | complete the majority of a largest subprofile with a consistent majority | Theta-2-c | row generation: conflicts learnt from minimal cores on `m2/2`; outcomes from a `--project` solver | plain-cores, direct, linear-up |
 | `ja-dodgson` | fewest changed judgments (sets stay consistent) | Theta-2-c | doubling then binary search (P^NP[log]) | binary, linear-up, linear-down, direct |
@@ -2159,10 +2159,16 @@ Deviations and findings:
 - `keep` and `count` are loop keywords and cannot be fragment names.
 - Dodgson's binary search from a first model's changes (variant `binary`) starts far above small
   scores; the default searches by doubling first.
-- Not verified against the papers' full texts (the network blocks jair.org, helsinki.fi and the
-  university hosts): the complexity attributions come from search summaries (Leximax Theta-2-c per
-  Conati et al. 2023 citing de Haan and Slavkovik 2017; Dodgson Theta-2-c per Conati et al. 2023;
-  MSA Sigma-2-c per Lang and Slavkovik 2014). Young and Dodgson follow jaggpy's convention: a
-  consistent majority, completed in every consistent way.
+- Checked against the papers (PDFs from the user): Conati, Niskanen and Järvisalo JAIR 2024 and
+  AAMAS 2023, de Haan KR 2018, Lang and Slavkovik ECAI 2014, de Haan and Slavkovik IJCAI 2019.
+  Leximax is Delta-2-complete (JAIR 2024 Prop. 2.1, citing Endriss et al. 2020), not Theta-2 as
+  first written; so the group spans Theta-2, Delta-2 and Sigma-2. MSA (their Condorcet rule) is
+  Sigma-2 for the credulous question (LS14 prove the sceptical one Pi-2-c). Dodgson is MNAC of
+  LS14 (Prop. 5, Theta-2-c) and Def. 11 of JAIR 2024; Young is Def. 10 of JAIR 2024 and HS19 (de
+  Haan 2018's variant with a complete majority is `complete = 1`). The new instance `taxonomy`
+  (HS19 Example 1 = LS14 Example 2) reproduces every outcome stated there. Leximax's default is
+  JAIR 2024's Algorithm 5; Kemeny and Slater got a variant `maxsat` (their Algorithm 1); MSA's
+  exists-forall clause is the candidate's, not the counterexample's of their Algorithm 3 (sound
+  there only for a single query L).
 - The `.jagg` importer reads its own `[variables]`/`[clauses]` sections, not jaggpy's real file
   format, and gives no profile; not changed.

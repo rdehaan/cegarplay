@@ -3591,9 +3591,12 @@ Examples: `ja-kemeny`, `ja-slater`, `ja-leximax`, `ja-msa`, `ja-young` and `ja-d
 - U. Endriss, U. Grandi and D. Porello. Complexity of judgment aggregation. *Journal of Artificial Intelligence Research* 45 (2012).
 - J. Lang and M. Slavkovik. How hard is it to compute majority-preserving judgment aggregation rules? *ECAI 2014*.
 - U. Endriss and R. de Haan. Complexity of the winner determination problem in judgment aggregation: Kemeny, Slater, Tideman, Young. *AAMAS 2015*.
+- P. Everaere, S. Konieczny and P. Marquis. Counting votes for aggregating judgments. *AAMAS 2014*. Leximax.
 - J. Lang, G. Pigozzi, M. Slavkovik, L. van der Torre and S. Vesic. A partial taxonomy of judgment aggregation rules and their properties. *Social Choice and Welfare* 48(2) (2017).
+- R. de Haan. Hunting for tractable languages for judgment aggregation. *KR 2018*.
 - R. de Haan and M. Slavkovik. Complexity results for aggregating judgments using scoring or distance-based procedures. *AAMAS 2017*.
 - R. de Haan and M. Slavkovik. Answer set programming for judgment aggregation. *IJCAI 2019*.
+- K. Nehring and M. Pivato. Majority rule in the absence of a majority. *Journal of Economic Theory* 183 (2019).
 - U. Endriss, R. de Haan, J. Lang and M. Slavkovik. The complexity landscape of outcome determination in judgment aggregation. *Journal of Artificial Intelligence Research* 69 (2020).
 - A. Conati, A. Niskanen and M. Järvisalo. SAT-based judgment aggregation. *AAMAS 2023*.
 - A. Conati, A. Niskanen and M. Järvisalo. Declarative approaches to outcome determination in judgment aggregation. *Journal of Artificial Intelligence Research* 81 (2024).

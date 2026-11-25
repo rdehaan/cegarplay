@@ -50,7 +50,7 @@
     {
       "id": "judgment",
       "title": "Judgment aggregation",
-      "description": "Outcomes of six judgment aggregation rules (Kemeny, Slater, Leximax, MSA, Young, Dodgson) on agendas with an integrity constraint, each with a different loop: implicit hitting sets, OLL, level by level, MARCO, row generation and binary search."
+      "description": "Outcomes of six judgment aggregation rules (Kemeny, Slater, Leximax, MSA, Young, Dodgson) on agendas with an integrity constraint, complete for Theta-2, Delta-2 (Leximax) and Sigma-2 (MSA), each with a different loop: implicit hitting sets, OLL, level by level, MARCO, row generation and binary search."
     },
     {
       "id": "planning",
@@ -2667,7 +2667,7 @@
         "solutions": 1
       },
       "has": {
-        "instances": 14,
+        "instances": 15,
         "generators": 1,
         "suites": 2,
         "readme": 1
@@ -2679,7 +2679,7 @@
       "id": "ja-kemeny",
       "title": "Judgment aggregation: Kemeny",
       "group": "judgment",
-      "summary": "Kemeny outcomes by implicit hitting sets: the minimally inconsistent subsets of the majority judgment are the minimal unsat cores (11 judges, 1 outcome); variants with plain or disjoint cores, lazy constraints, and the blocking loop.",
+      "summary": "Kemeny outcomes by implicit hitting sets: the minimally inconsistent subsets of the majority judgment are the minimal unsat cores (11 judges, 1 outcome); variants with plain or disjoint cores, lazy constraints, direct MaxSAT, and the blocking loop.",
       "shape": "custom",
       "tags": [
         "fast",
@@ -2693,7 +2693,7 @@
         "solutions": 1
       },
       "has": {
-        "instances": 15,
+        "instances": 16,
         "generators": 1,
         "suites": 2,
         "readme": 1
@@ -2705,7 +2705,7 @@
       "id": "ja-leximax",
       "title": "Judgment aggregation: Leximax",
       "group": "judgment",
-      "summary": "Leximax outcomes level by level: one optimal query per margin, each fixing the judgments given up on its level (11 judges, 1 outcome); variants with satisfiability queries only, implicit hitting sets with priorities, and the blocking loop.",
+      "summary": "Leximax outcomes level by level (Delta-2): one optimal query per margin, each fixing the judgments given up on its level (11 judges, 1 outcome); variants with satisfiability queries only, implicit hitting sets with priorities, and the blocking loop.",
       "shape": "custom",
       "tags": [
         "fast",
@@ -2717,7 +2717,7 @@
         "solutions": 1
       },
       "has": {
-        "instances": 15,
+        "instances": 16,
         "generators": 1,
         "suites": 2,
         "readme": 1
@@ -2742,7 +2742,7 @@
         "solutions": 3
       },
       "has": {
-        "instances": 15,
+        "instances": 16,
         "generators": 1,
         "suites": 2,
         "readme": 1
@@ -2754,7 +2754,7 @@
       "id": "ja-slater",
       "title": "Judgment aggregation: Slater",
       "group": "judgment",
-      "summary": "Slater (maxcard subagenda) outcomes by core-guided optimisation (OLL), then every model under the final assumptions (11 judges, 2 outcomes); variants with implicit hitting sets, a linear search, plain cores, and the blocking loop.",
+      "summary": "Slater (maxcard subagenda) outcomes by core-guided optimisation (OLL), then every model under the final assumptions (11 judges, 2 outcomes); variants with implicit hitting sets, a linear search, plain cores, direct MaxSAT, and the blocking loop.",
       "shape": "custom",
       "tags": [
         "fast",
@@ -2768,7 +2768,7 @@
         "solutions": 2
       },
       "has": {
-        "instances": 15,
+        "instances": 16,
         "generators": 1,
         "suites": 2,
         "readme": 1
@@ -2793,7 +2793,7 @@
         "solutions": 4
       },
       "has": {
-        "instances": 14,
+        "instances": 15,
         "generators": 1,
         "suites": 2,
         "readme": 1

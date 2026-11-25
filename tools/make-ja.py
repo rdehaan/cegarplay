@@ -98,6 +98,19 @@ INSTANCES = [
         'tags': ['library'],
     },
     {
+        'id': 'taxonomy',
+        'facts': facts(
+            '% Example 1 of de Haan and Slavkovik (IJCAI 2019), the profile of Lang, Pigozzi, Slavkovik,\n'
+            '% van der Torre and Vesic (2017), also Example 2 of Lang and Slavkovik (ECAI 2014): five issues,\n'
+            '% three clauses, 17 judges. The majority accepts i1, i2, i3, i5 and rejects i4, which breaks\n'
+            '% the first clause. The outcomes stated there: Kemeny {i1..i5}; Slater (MCSA) {i1..i5} and\n'
+            '% {i1,i2,i5}; Leximax {i3,i5}; MSA {i1..i5}, {i1,i2,i5} and {i3,i5}; Young {i3,i5} and {i3};\n'
+            '% Dodgson (MNAC) {i1..i5}.\n',
+            ['i1', 'i2', 'i3', 'i4', 'i5'],
+            [[P('i3'), N('i4')], [N('i3'), P('i4'), N('i1')], [N('i3'), P('i4'), N('i2')]],
+            [(['i1', 'i2', 'i3', 'i4', 'i5'], 6), (['i1', 'i2', 'i5'], 4), (['i3'], 7)]),
+    },
+    {
         'id': 'doctrinal',
         'facts': facts(
             '% The doctrinal paradox (Kornhauser and Sager 1986): three judges decide whether a contract\n'
@@ -435,6 +448,45 @@ loop:
     else:
         accept M
         A.add(G.block(M))
+"""
+
+
+MAXSAT_FRAGS = {
+    'kemeny': ("""\
+% Direct MaxSAT (variant maxsat): the outcome goes against majority judgments of least total
+% margin; base/1 is the cost every outcome pays anyway.
+#minimize { M,X : maj(X,_,M), not agree(X) }.
+base(S) :- S = #sum { N,X : sup(X,N), total(T), N+N <= T ; T-N,X : sup(X,N), total(T), N+N > T }.
+""", """\
+#program bound(b).
+% The outcomes of total margin b given up (variant maxsat; no #minimize, so that every model is listed).
+:- #sum { M,X : maj(X,_,M), not agree(X) } != b.
+"""),
+    'slater': ("""\
+% Direct MaxSAT (variant maxsat): the outcome goes against as few majority judgments as possible.
+#minimize { 1,X : maj(X,_,_), not agree(X) }.
+""", """\
+#program bound(b).
+% The outcomes that give up exactly b majority judgments (variant maxsat).
+:- #count { X : maj(X,_,_), not agree(X) } != b.
+"""),
+}
+
+
+def maxsat_loop(rule, score, score_expr):
+    return f"""\
+solver A = shared + outcome + mincost
+solver B = shared + outcome + atcost
+
+# Direct MaxSAT, Algorithm 1 of Conati, Niskanen and Jarvisalo (2024): the integrity
+# constraint is hard, each majority judgment a soft constraint ({'weight: its margin' if rule == 'Kemeny' else 'weight 1'}). One
+# optimal solve of A gives the optimum; B, the same without #minimize, lists the outcomes at
+# that cost (their paper blocks each judgment set found and calls the solver again).
+M = A.solve(optimal)
+log "{score}", {score_expr}
+B.ground(bound, M.cost)
+for X in B.models():
+    accept X
 """
 
 
@@ -1139,6 +1191,8 @@ EXAMPLES['ja-kemeny'] = {
         frag('violated', VIOLATED, 'Variant lazy-constraints: a clause of the constraint that the candidate breaks.'),
         frag('glue_in', GLUE_IN, 'The interface of the variants that read the outcome: in/1.'),
         frag('better', KEMENY_BETTER, 'Variant reference: an outcome of a smaller Kemeny distance.'),
+        frag('mincost', MAXSAT_FRAGS['kemeny'][0], 'Variant maxsat: the Kemeny cost as one #minimize.'),
+        frag('atcost', MAXSAT_FRAGS['kemeny'][1], 'Variant maxsat: the outcomes at the optimal cost.'),
     ],
     'loop': ihs_loop('Kemeny', 'Kemeny distance', KEMENY_IHS_COMMENT, score_expr='M.value(base/1) + M.cost'),
     'variants': [
@@ -1146,16 +1200,17 @@ EXAMPLES['ja-kemeny'] = {
                 'The cores as clasp returns them (C.core), not minimised: larger conflicts, weaker clauses.'),
         variant('disjoint-cores', KEMENY_DISJOINT, 'MaxHS with disjoint cores: after each conflict its judgments are left open and C looks for another one before A solves again.'),
         variant('lazy-constraints', KEMENY_LAZY, 'Cutting planes: A optimises without the integrity constraint, and each clause the candidate breaks is added (a clause from relevant/1).'),
+        variant('maxsat', maxsat_loop('Kemeny', 'Kemeny distance', 'M.value(base/1) + M.cost'), 'Direct MaxSAT (Algorithm 1 of Conati, Niskanen and Jarvisalo): one optimal solve with the constraint hard, then the outcomes at that cost.'),
         variant('reference', reference_loop('Kemeny', 'a smaller total disagreement with the judges'), 'The blocking loop: outcomes blocked one by one, each checked against a better one (small instances only).'),
     ],
-    'library': {'summary': 'Kemeny outcomes by implicit hitting sets: the minimally inconsistent subsets of the majority judgment are the minimal unsat cores (11 judges, 1 outcome); variants with plain or disjoint cores, lazy constraints, and the blocking loop.',
+    'library': {'summary': 'Kemeny outcomes by implicit hitting sets: the minimally inconsistent subsets of the majority judgment are the minimal unsat cores (11 judges, 1 outcome); variants with plain or disjoint cores, lazy constraints, direct MaxSAT, and the blocking loop.',
                 'shape': 'custom', 'tags': ['fast', 'ihs', 'cores', 'core-minimisation', 'judgment-aggregation'], 'level': 4, 'after': 14},
     'rule': 'kemeny',
 }
 
 EXAMPLES['ja-slater'] = {
     'title': 'Judgment aggregation: Slater',
-    'description': 'The outcomes of the Slater rule in judgment aggregation: the consistent complete judgment sets that go against the fewest majority judgments, whatever their margins (also the maxcard subagenda rule, MCSA, of Lang, Pigozzi, Slavkovik and van der Torre). Outcome determination is Theta-2-complete. The loop is core-guided optimisation (OLL): unsat cores of "keep every majority judgment" are relaxed with totalisers until an outcome exists; the final assumptions then describe exactly the Slater outcomes, which one enumeration lists.',
+    'description': 'The outcomes of the Slater rule in judgment aggregation: the consistent complete judgment sets that go against the fewest majority judgments, whatever their margins (also the maxcard subagenda rule, MCSA, of Lang, Pigozzi, Slavkovik and van der Torre). Outcome determination is Theta-2-complete (Lang and Slavkovik 2014). The loop is core-guided optimisation (OLL): unsat cores of "keep every majority judgment" are relaxed with totalisers until an outcome exists; the final assumptions then describe exactly the Slater outcomes, which one enumeration lists.',
     'fragments': COMMON + [
         frag('drops', SLATER_DROPS, 'The abstraction of the variants ihs: the majority judgments to give up, as few as possible.'),
         frag('glue', GLUE_DROP, 'The interface: drop/1.'),
@@ -1165,22 +1220,25 @@ EXAMPLES['ja-slater'] = {
         frag('within', WITHIN_DIS, 'Variant linear-down: the bound "at most b judgments given up", grounded per query.'),
         frag('glue_in', GLUE_IN, 'The interface of the reference variant: in/1.'),
         frag('better', SLATER_BETTER, 'Variant reference: an outcome that gives up fewer majority judgments.'),
+        frag('mincost', MAXSAT_FRAGS['slater'][0], 'Variant maxsat: the Slater cost as one #minimize.'),
+        frag('atcost', MAXSAT_FRAGS['slater'][1], 'Variant maxsat: the outcomes at the optimal cost.'),
     ],
     'loop': oll_loop('C.core.minimal'),
     'variants': [
         variant('plain-cores', oll_loop('C.core'), 'OLL with the cores as clasp returns them (C.core).'),
         variant('ihs', ihs_loop('Slater', 'Slater distance', SLATER_IHS_COMMENT), 'Implicit hitting sets, as for Kemeny with unit weights.'),
         variant('linear-down', SLATER_LINEAR, 'Solution-improving linear search (SAT-UNSAT): one satisfiability query per improvement.'),
+        variant('maxsat', maxsat_loop('Slater', 'Slater distance', 'M.cost'), 'Direct MaxSAT (Algorithm 1 of Conati, Niskanen and Jarvisalo): one optimal solve, then the outcomes at that cost.'),
         variant('reference', reference_loop('Slater', 'fewer majority judgments given up'), 'The blocking loop (small instances only).'),
     ],
-    'library': {'summary': 'Slater (maxcard subagenda) outcomes by core-guided optimisation (OLL), then every model under the final assumptions (11 judges, 2 outcomes); variants with implicit hitting sets, a linear search, plain cores, and the blocking loop.',
+    'library': {'summary': 'Slater (maxcard subagenda) outcomes by core-guided optimisation (OLL), then every model under the final assumptions (11 judges, 2 outcomes); variants with implicit hitting sets, a linear search, plain cores, direct MaxSAT, and the blocking loop.',
                 'shape': 'custom', 'tags': ['fast', 'oll', 'cores', 'core-minimisation', 'judgment-aggregation'], 'level': 4, 'after': 17},
     'rule': 'slater',
 }
 
 EXAMPLES['ja-leximax'] = {
     'title': 'Judgment aggregation: Leximax',
-    'description': 'The outcomes of the Leximax rule in judgment aggregation: compare the consistent complete judgment sets by the judgments they accept, most supported first, and keep the lexicographically best. Outcome determination is Theta-2-complete (de Haan and Slavkovik 2017). The loop goes level by level: one optimal query per margin, each fixing the number of majority judgments given up on its level for the levels below; then one enumeration lists the outcomes.',
+    'description': 'The outcomes of the Leximax rule in judgment aggregation: compare the consistent complete judgment sets by the judgments they accept, most supported first, and keep the lexicographically best. Outcome determination is Delta-2-complete (Endriss, de Haan, Lang and Slavkovik 2020), a class of its own in this group. The loop goes level by level, as Algorithm 5 of Conati, Niskanen and Jarvisalo (2024): one optimal query per margin, each fixing the number of majority judgments given up on its level for the levels below; then one enumeration lists the outcomes.',
     'fragments': COMMON + [
         frag('ranks', RANKS, 'The levels: the majority judgments grouped by margin.'),
         frag('tally', LEVELCOUNT, 'The judgments an outcome gives up per level, and the order encoding atmost/2 the loop assumes.'),
@@ -1197,14 +1255,14 @@ EXAMPLES['ja-leximax'] = {
         variant('ihs', LEX_IHS, 'Implicit hitting sets with clingo priorities (one per margin) in the hitting set solver.'),
         variant('reference', reference_loop('Leximax', 'lexicographically fewer judgments given up, most supported first', extra='ranks + '), 'The blocking loop (small instances only).'),
     ],
-    'library': {'summary': 'Leximax outcomes level by level: one optimal query per margin, each fixing the judgments given up on its level (11 judges, 1 outcome); variants with satisfiability queries only, implicit hitting sets with priorities, and the blocking loop.',
+    'library': {'summary': 'Leximax outcomes level by level (Delta-2): one optimal query per margin, each fixing the judgments given up on its level (11 judges, 1 outcome); variants with satisfiability queries only, implicit hitting sets with priorities, and the blocking loop.',
                 'shape': 'custom', 'tags': ['fast', 'bounds', 'judgment-aggregation'], 'level': 4, 'after': 11},
     'rule': 'leximax',
 }
 
 EXAMPLES['ja-msa'] = {
     'title': 'Judgment aggregation: MSA',
-    'description': 'The outcomes of the maximal subagenda rule (MSA) in judgment aggregation: the consistent complete judgment sets whose agreement with the majority is a maximal consistent subset of the majority judgment (Lang, Pigozzi, Slavkovik and van der Torre 2011). Outcome determination is Sigma-2-complete (Lang and Slavkovik 2014), a level above the other rules of this group. The loop is MARCO: seeds of majority judgments grow to maximal consistent subsets, whose outcomes are listed, or shrink to minimal inconsistent ones, listed as a second kind.',
+    'description': 'The outcomes of the maximal subagenda rule (MSA) in judgment aggregation: the consistent complete judgment sets whose agreement with the majority is a maximal consistent subset of the majority judgment (Lang, Pigozzi, Slavkovik and van der Torre 2011). Deciding whether some outcome contains a judgment is Sigma-2-complete (Lang and Slavkovik 2014 prove the sceptical question Pi-2-complete), a level above the other rules of this group; Conati, Niskanen and Jarvisalo call it the Condorcet rule. The loop is MARCO: seeds of majority judgments grow to maximal consistent subsets, whose outcomes are listed, or shrink to minimal inconsistent ones, listed as a second kind.',
     'fragments': COMMON + [
         frag('map', MAP, 'The map of MARCO: seeds of majority judgments.'),
         frag('glue', GLUE_SEED, 'The interface: seed/1.'),
@@ -1225,7 +1283,7 @@ EXAMPLES['ja-msa'] = {
 
 EXAMPLES['ja-young'] = {
     'title': 'Judgment aggregation: Young',
-    'description': 'The outcomes of the Young rule in judgment aggregation: delete the fewest judges so that the majority judgment of the others is consistent; the outcomes are its consistent completions (Lang, Pigozzi, Slavkovik and van der Torre; the encoding of jaggpy). Outcome determination is Theta-2-complete (Endriss and de Haan 2015). The loop is row generation by cores: the deletion solver knows only the conflicts found so far (minimally inconsistent subsets of a majority judgment, from minimal unsat cores) and learns one per refinement.',
+    'description': 'The outcomes of the Young rule in judgment aggregation: delete the fewest judges so that the majority judgment of the others is consistent; the outcomes are its consistent completions (Lang, Pigozzi, Slavkovik and van der Torre 2011; as in de Haan and Slavkovik 2019 and Conati, Niskanen and Jarvisalo 2024). Outcome determination is Theta-2-complete (Endriss and de Haan 2015). The loop is row generation by cores: the deletion solver knows only the conflicts found so far (minimally inconsistent subsets of a majority judgment, from minimal unsat cores) and learns one per refinement.',
     'fragments': COMMON + [
         frag('deletions', DELETIONS, 'The judges to delete and the majority m2/2 of the others.'),
         frag('fewest', FEWEST, 'The cost: the number of deleted judges.'),
@@ -1247,7 +1305,7 @@ EXAMPLES['ja-young'] = {
 
 EXAMPLES['ja-dodgson'] = {
     'title': 'Judgment aggregation: Dodgson',
-    'description': 'The outcomes of the Dodgson rule in judgment aggregation: change the fewest individual judgments (every judgment set staying consistent) so that the majority judgment becomes consistent; the outcomes are its consistent completions (Lang, Pigozzi, Slavkovik and van der Torre). Outcome determination is Theta-2-complete. The loop is a doubling and then binary search over the number of changes with one NP query per step (P^NP[log]), then one enumeration of the outcomes at the score.',
+    'description': 'The outcomes of the Dodgson rule in judgment aggregation: change the fewest individual judgments (every judgment set staying consistent) so that the majority judgment becomes consistent; the outcomes are its consistent completions (Miller and Osherson 2009; MNAC in Lang and Slavkovik 2014). Outcome determination is Theta-2-complete (Lang and Slavkovik 2014). The loop is a doubling and then binary search over the number of changes with one NP query per step (P^NP[log]), then one enumeration of the outcomes at the score.',
     'fragments': COMMON + [
         frag('changes', CHANGES, 'The changed profile: a new consistent judgment set per judge, the changes, and its majority m2/2.'),
         frag('follow', FOLLOW, 'An outcome that contains the majority m2/2.'),
@@ -1401,7 +1459,10 @@ disjunctive encoding with saturation) on all of them."""
 INSTANCES_MD = """## Instances
 
 The same in each example of the group: `example` (the running example of Endriss, de Haan,
-Lang and Slavkovik 2020: four issues, two clauses, 11 judges), `doctrinal` (the doctrinal
+Lang and Slavkovik 2020: four issues, two clauses, 11 judges), `taxonomy` (Example 1 of de Haan
+and Slavkovik 2019, the profile of Lang, Pigozzi, Slavkovik, van der Torre and Vesic 2017: the
+outcomes those papers and Lang and Slavkovik 2014 state for every rule here are reproduced, see
+the comment of the instance), `doctrinal` (the doctrinal
 paradox), `consistent` (a majority that is consistent: every rule keeps it), `tie` (a tie that
 the outcome must complete), `paradox` and `election` (the Condorcet paradox and the election
 `example` of the Voting group in the preference agenda of Dietrich and List: the Kemeny and
@@ -1411,9 +1472,9 @@ from them, judged around a hidden truth), and for the suites the Formula 1 seaso
 from PrefLib (36 issues, 168 transitivity clauses) and three larger random scenarios."""
 
 REFS_JA = """- U. Endriss, R. de Haan, J. Lang and M. Slavkovik. The complexity landscape of outcome determination in judgment aggregation. *Journal of Artificial Intelligence Research* 69:687–731, 2020.
-- R. de Haan and M. Slavkovik. Complexity results for aggregating judgments using scoring or distance-based procedures. *AAMAS 2017*.
-- R. de Haan and M. Slavkovik. Answer set programming for judgment aggregation. *IJCAI 2019*.
-- A. Conati, A. Niskanen and M. Järvisalo. SAT-based judgment aggregation. *AAMAS 2023*.
+- R. de Haan and M. Slavkovik. Complexity results for aggregating judgments using scoring or distance-based procedures. *AAMAS 2017*, 952–961.
+- R. de Haan and M. Slavkovik. Answer set programming for judgment aggregation. *IJCAI 2019*, 1668–1674.
+- A. Conati, A. Niskanen and M. Järvisalo. SAT-based judgment aggregation. *AAMAS 2023*, 1412–1420.
 - A. Conati, A. Niskanen and M. Järvisalo. Declarative approaches to outcome determination in judgment aggregation. *Journal of Artificial Intelligence Research* 81:793–836, 2024."""
 
 READMES = {}
@@ -1451,6 +1512,9 @@ clause?
   integrity constraint (at first the majority judgment itself, with the ties open); C finds a
   clause it breaks, and that clause, built from `relevant/1`, goes to A. A consistent candidate of
   least cost is a Kemeny outcome.
+- **maxsat**: direct MaxSAT, Algorithm 1 of Conati, Niskanen and Järvisalo (2024): the
+  integrity constraint hard, every majority judgment soft with its margin as weight; one optimal
+  solve, then the outcomes at that cost from a copy without `#minimize`.
 - **reference**: outcomes blocked one by one, each checked against a better one (small instances
   only).
 
@@ -1460,6 +1524,9 @@ clause?
 
 ## Things to try
 
+- Conati, Niskanen and Järvisalo benchmark on PrefLib profiles in the preference agenda; their
+  query is one literal set L (is the first candidate a winner), not every outcome. Restrict the
+  loops to that query (assume L in C) and compare.
 - Stratification: give up the judgments of large margins last (MaxHS's stratified mode).
 - MaxHamming, the egalitarian sibling: minimise the largest distance to a judge.
 - Which conflicts does the hitting set loop meet on the preference agenda? They are majority
@@ -1501,6 +1568,8 @@ hitting sets and a plain linear search here, and what do the cores look like?
 - **ihs**: implicit hitting sets, the Kemeny loop with unit weights.
 - **linear-down**: solution-improving linear search (SAT-UNSAT): each outcome is an upper bound;
   ask for one judgment fewer until there is none (`C.ground(bound, k)` per query).
+- **maxsat**: direct MaxSAT, Algorithm 1 of Conati, Niskanen and Järvisalo (2024): one optimal
+  solve with the constraint hard, then the outcomes at that cost.
 - **reference**: the blocking loop (small instances only).
 
 {BASELINE}
@@ -1517,9 +1586,9 @@ hitting sets and a plain linear search here, and what do the cores look like?
 
 ## References
 
-- J. Lang, G. Pigozzi, M. Slavkovik and L. van der Torre. Judgment aggregation rules based on minimization. *TARK 2011*.
+- J. Lang, G. Pigozzi, M. Slavkovik and L. van der Torre. Judgment aggregation rules based on minimization. *TARK 2011*, 238–246.
 - J. Lang and M. Slavkovik. How hard is it to compute majority-preserving judgment aggregation rules? *ECAI 2014*, 501–506.
-- U. Endriss and R. de Haan. Complexity of the winner determination problem in judgment aggregation: Kemeny, Slater, Tideman, Young. *AAMAS 2015*.
+- U. Endriss and R. de Haan. Complexity of the winner determination problem in judgment aggregation: Kemeny, Slater, Tideman, Young. *AAMAS 2015*, 117–125.
 - B. Andres, B. Kaufmann, O. Matheis and T. Schaub. Unsatisfiability-based optimization in clasp. *ICLP 2012 (Technical Communications)*.
 - A. Morgado, C. Dodaro and J. Marques-Silva. Core-guided MaxSAT with soft cardinality constraints. *CP 2014*.
 """ + REFS_JA + "\n"
@@ -1532,8 +1601,11 @@ The Leximax rule compares consistent complete judgment sets by the support of th
 accept, most supported first: an outcome must accept as many judgments of the highest support as
 possible, then as many of the next, and so on. Since an outcome accepts one of X and not X, this
 is the same as giving up as few majority judgments as possible level by level, largest margin
-first. Outcome determination is Theta-2-complete (de Haan and Slavkovik 2017). Conati,
-Niskanen and Järvisalo (2023, 2024) compute it with iterative algorithms; which form of
+first (Everaere, Konieczny and Marquis 2014; Nehring and Pivato 2019; procedurally in Lang et al.
+2017, Definition 4; the scores of de Haan and Slavkovik 2019). Outcome determination is
+Delta-2-complete (Endriss, de Haan, Lang and Slavkovik 2020): the only rule of this group in
+that class, since the levels are many and each depends on the ones above. Conati, Niskanen and
+Järvisalo (2023, 2024) compute it level by level with MaxSAT (their Algorithm 5); which form of
 lexicographic optimisation is best as a loop: one optimal query per level, satisfiability queries
 only, or a hitting set solver with clingo's priorities?
 
@@ -1541,7 +1613,8 @@ only, or a hitting set solver with clingo's priorities?
 
 ## The loops
 
-- **default**: level by level. The majority judgments are grouped by margin (`ranks`: level 1 is
+- **default**: level by level, as Algorithm 5 of Conati, Niskanen and Järvisalo (2024), which
+  fixes the count of each level with a cardinality constraint. The majority judgments are grouped by margin (`ranks`: level 1 is
   the largest margin). For each level R in turn, C minimises the number of judgments of level R
   given up (its `#minimize` counts only the level assumed by `focus(R)`), under the numbers
   already fixed for the levels above (assumptions `atmost(R',G)`). Then the numbers become facts
@@ -1569,6 +1642,9 @@ only, or a hitting set solver with clingo's priorities?
 
 ## References
 
+- P. Everaere, S. Konieczny and P. Marquis. Counting votes for aggregating judgments. *AAMAS 2014*, 1177–1184.
+- K. Nehring and M. Pivato. Majority rule in the absence of a majority. *Journal of Economic Theory* 183:213–257, 2019.
+- J. Lang, G. Pigozzi, M. Slavkovik, L. van der Torre and S. Vesic. A partial taxonomy of judgment aggregation rules and their properties. *Social Choice and Welfare* 48(2):327–356, 2017.
 - J. Davies and F. Bacchus. Solving MAXSAT by solving a sequence of simpler SAT instances. *CP 2011*, LNCS 6876, 225–239.
 """ + REFS_JA + "\n"
 
@@ -1579,9 +1655,10 @@ READMES['ja-msa'] = """# Project: MSA outcomes in judgment aggregation
 The maximal subagenda rule (MSA; Lang, Pigozzi, Slavkovik and van der Torre 2011) outputs the
 consistent complete judgment sets whose agreement with the majority is a maximal consistent
 subset of the majority judgment: no outcome agrees with the majority on more, in the sense of
-sets. Deciding whether a judgment is in some outcome is Sigma-2-complete (Lang and Slavkovik
-2014), a level above every other rule of this group: checking that an agreement is maximal is a
-coNP question. Its outcomes are the outcomes of the maximal satisfiable subsets (MSSes) of the
+sets. Conati, Niskanen and Järvisalo (2024) call it the Condorcet rule. Deciding whether some
+outcome contains a judgment is Sigma-2-complete (Lang and Slavkovik 2014 prove the sceptical
+question, whether every outcome contains it, Pi-2-complete), a level above every other rule of
+this group: checking that an agreement is maximal is a coNP question. Its outcomes are the outcomes of the maximal satisfiable subsets (MSSes) of the
 majority judgment under the integrity constraint, which MARCO enumerates together with the
 minimal unsatisfiable ones (MUSes). Is MARCO, built for MUSes, a good outcome enumerator, and how
 does it compare with the plain exists-forall loop?
@@ -1601,9 +1678,12 @@ does it compare with the plain exists-forall loop?
 - **exists-forall**: the Sigma-2 template. A guesses an outcome; C looks for an outcome whose
   agreement with the majority is a strict superset. Such a counterexample refutes every outcome
   that agrees on a subset of the candidate's agreement, so `G.below(M)` (a clause over `agree/1`)
-  removes them all. The clause built from `relevant/1` on the judgments the counterexample leaves
-  out would be unsound: it also removes the outcomes that agree exactly where the counterexample
-  does, which may be MSA outcomes.
+  removes them all. The clause built from the counterexample instead (agree on a judgment it
+  leaves out) would be unsound here: it also removes the outcomes that agree exactly where the
+  counterexample does, which may be MSA outcomes. Algorithm 3 of Conati, Niskanen and Järvisalo
+  (2024) uses that stronger clause soundly because it answers one query L with candidates that are
+  subset-maximal under L (preferential SAT): a set with the counterexample's agreement cannot
+  contain L.
 - **reference**: the blocking loop (`G.block` over `agree/1`; small instances only).
 
 {BASELINE}
@@ -1621,7 +1701,7 @@ does it compare with the plain exists-forall loop?
 
 ## References
 
-- J. Lang, G. Pigozzi, M. Slavkovik and L. van der Torre. Judgment aggregation rules based on minimization. *TARK 2011*.
+- J. Lang, G. Pigozzi, M. Slavkovik and L. van der Torre. Judgment aggregation rules based on minimization. *TARK 2011*, 238–246.
 - J. Lang and M. Slavkovik. How hard is it to compute majority-preserving judgment aggregation rules? *ECAI 2014*, 501–506.
 - M. H. Liffiton, A. Previti, A. Malik and J. Marques-Silva. Fast, flexible MUS enumeration. *Constraints* 21(2):223–250, 2016.
 """ + REFS_JA + "\n"
@@ -1636,9 +1716,11 @@ READMES['ja-young'] = """# Project: Young outcomes in judgment aggregation
 ## Research question
 
 The Young rule of judgment aggregation deletes the fewest judges so that the majority judgment of
-the others is consistent; the outcomes are its consistent completions (Lang, Pigozzi, Slavkovik,
-van der Torre and Vesic 2017; the encoding follows jaggpy). Outcome determination is
-Theta-2-complete (Endriss and de Haan 2015). The integrity constraint matters only through the
+the others is consistent; the outcomes are its consistent completions, over every largest such
+subprofile (Lang, Pigozzi, Slavkovik and van der Torre 2011; the definition of de Haan and
+Slavkovik 2019 and of Conati, Niskanen and Järvisalo 2024, Definition 10). Outcome determination
+is Theta-2-complete (Endriss and de Haan 2015). With `complete = 1` it is the variant of de Haan
+(2018), whose subprofile must have a complete and consistent majority, which is the outcome. The integrity constraint matters only through the
 conflicts of a majority judgment, and few of them matter: can a deletion solver that learns them
 one at a time (row generation) beat one that has the whole constraint from the start?
 
@@ -1657,7 +1739,8 @@ one at a time (row generation) beat one that has the whole constraint from the s
   O lists the outcomes: every consistent completion of the majority of some subprofile with that
   many deletions, projected on `in/1` (option `--project`), so that each outcome comes once.
 - **plain-cores**: the same with the cores as clasp returns them.
-- **direct**: the constraint in the deletion solver from the start; one optimal solve.
+- **direct**: the constraint in the deletion solver from the start; one optimal solve (the MaxSAT
+  encoding of Conati, Niskanen and Järvisalo, whose soft constraints keep each judge).
 - **linear-up**: UNSAT-SAT, "at most 0 deletions?", "at most 1?", ... until the answer is yes.
 
 {BASELINE}
@@ -1676,7 +1759,9 @@ one at a time (row generation) beat one that has the whole constraint from the s
 ## References
 
 - J. Lang, G. Pigozzi, M. Slavkovik, L. van der Torre and S. Vesic. A partial taxonomy of judgment aggregation rules and their properties. *Social Choice and Welfare* 48(2):327–356, 2017.
-- U. Endriss and R. de Haan. Complexity of the winner determination problem in judgment aggregation: Kemeny, Slater, Tideman, Young. *AAMAS 2015*.
+- U. Endriss and R. de Haan. Complexity of the winner determination problem in judgment aggregation: Kemeny, Slater, Tideman, Young. *AAMAS 2015*, 117–125.
+- J. Lang, G. Pigozzi, M. Slavkovik and L. van der Torre. Judgment aggregation rules based on minimization. *TARK 2011*, 238–246.
+- R. de Haan. Hunting for tractable languages for judgment aggregation. *KR 2018*.
 """ + REFS_JA + "\n"
 
 READMES['ja-dodgson'] = """# Project: Dodgson outcomes in judgment aggregation
@@ -1685,8 +1770,9 @@ READMES['ja-dodgson'] = """# Project: Dodgson outcomes in judgment aggregation
 
 The Dodgson rule of judgment aggregation changes the fewest individual judgments, every judgment
 set staying consistent, so that the majority judgment becomes consistent; the outcomes are its
-consistent completions (Lang, Pigozzi, Slavkovik, van der Torre and Vesic 2017). Outcome
-determination is Theta-2-complete (see Conati, Niskanen and Järvisalo 2023). Theta-2 is
+consistent completions, over every optimal changed profile (Miller and Osherson 2009; MNAC, the
+minimal number of atomic changes, in Lang and Slavkovik 2014; Conati, Niskanen and Järvisalo 2024,
+Definition 11). Outcome determination is Theta-2-complete (Lang and Slavkovik 2014, for MNAC). Theta-2 is
 P^NP[log]: logarithmically many NP queries suffice (Wagner 1990). Does the textbook search,
 one NP query per step, pay off against linear searches and one optimisation, and which search
 should it be?
@@ -1706,7 +1792,8 @@ should it be?
   good, but a first model may change hundreds of judgments where two suffice.
 - **linear-up**: UNSAT-SAT, k = 0, 1, 2, ... until a query is satisfiable.
 - **linear-down**: SAT-UNSAT, each witness an upper bound, one change fewer each time.
-- **direct**: one optimisation of the number of changes (`#minimize`), then the enumeration.
+- **direct**: one optimisation of the number of changes (`#minimize`), then the enumeration (the
+  MaxSAT encoding of Conati, Niskanen and Järvisalo: a soft constraint per individual judgment).
 
 {BASELINE}
 
@@ -1722,13 +1809,14 @@ should it be?
 
 ## References
 
-- J. Lang, G. Pigozzi, M. Slavkovik, L. van der Torre and S. Vesic. A partial taxonomy of judgment aggregation rules and their properties. *Social Choice and Welfare* 48(2):327–356, 2017.
+- M. K. Miller and D. Osherson. Methods for distance-based judgment aggregation. *Social Choice and Welfare* 32(4):575–601, 2009.
+- J. Lang and M. Slavkovik. How hard is it to compute majority-preserving judgment aggregation rules? *ECAI 2014*, 501–506.
 - K. W. Wagner. Bounded query classes. *SIAM Journal on Computing* 19(5):833–846, 1990.
 """ + REFS_JA + "\n"
 
 BASELINES = {
- "ja-kemeny": "## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added (clauses, cores, blocks and unit clauses); the outcome count is after the instance name. The small instances take under 0.1 s with every loop.\n\n| instance | default | plain-cores | disjoint-cores | lazy-constraints |\n| --- | --- | --- | --- | --- |\n| 1964: 9 drivers, 10 races (26) | 0.1 s (5) | 0.1 s (103) | 0.1 s (5) | 0.0 s (37) |\n| 1970: 9 drivers, 13 races (3) | 0.1 s (8) | 0.5 s (239) | 0.1 s (8) | 0.1 s (9) |\n| random-22a: 22 issues, 21 judges (2) | 0.0 s (7) | 0.0 s (23) | 0.0 s (6) | 0.0 s (6) |\n| random-22b: 22 issues, 21 judges (1) | 0.0 s (4) | 0.0 s (8) | 0.0 s (4) | 0.0 s (4) |\n| random-30: 30 issues, 31 judges (1) | 0.0 s (6) | 0.6 s (257) | 0.0 s (6) | 0.1 s (6) |\n| random-38: 38 issues, 41 judges (2) | 0.1 s (6) | 0.7 s (147) | 0.0 s (6) | 0.0 s (6) |\n| random-44: 44 issues, 51 judges (1) | 0.1 s (6) | 0.4 s (80) | 0.1 s (6) | 0.1 s (6) |\n\nEvery loop is fast on these scenarios: the majority judgments conflict in few places. The loops differ in what they learn: the cores as clasp returns them are long, so the hitting set solver needs 15 to 40 times more of them (hundreds on the F1 seasons, whose conflicts are majority cycles), and disjoint cores save a round now and then. The lazy constraints need few clauses on the random scenarios, but 37 on the 1964 season, one per 3-cycle the candidates run into.",
- "ja-slater": "## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added (clauses, cores, blocks and unit clauses); the outcome count is after the instance name. The small instances take under 0.1 s with every loop.\n\n| instance | default | plain-cores | ihs | linear-down |\n| --- | --- | --- | --- | --- |\n| 1964: 9 drivers, 10 races (30) | 0.0 s (28) | 0.1 s (28) | 0.0 s (6) | 0.0 s (1) |\n| 1970: 9 drivers, 13 races (3) | 0.1 s (36) | 0.0 s (36) | 0.0 s (8) | 0.0 s (1) |\n| random-22a: 22 issues, 21 judges (9) | 0.0 s (22) | 0.0 s (22) | 0.0 s (14) | 0.0 s (1) |\n| random-22b: 22 issues, 21 judges (2) | 0.0 s (22) | 0.0 s (22) | 0.0 s (5) | 0.0 s (1) |\n| random-30: 30 issues, 31 judges (7) | 0.0 s (30) | 0.0 s (30) | 0.1 s (13) | 0.0 s (1) |\n| random-38: 38 issues, 41 judges (36) | 0.1 s (38) | 0.1 s (38) | 0.1 s (42) | 0.0 s (1) |\n| random-44: 44 issues, 51 judges (26) | 0.1 s (44) | 0.1 s (44) | 0.1 s (32) | 0.0 s (1) |\n\nOLL needs one core per judgment given up (the Slater distance: 22 to 44 here) and then one enumeration; implicit hitting sets need fewer conflicts but an optimal hitting set per round; the linear search adds one unit clause (the optimum). All are fast at these sizes: the differences grow with the distance.",
+ "ja-kemeny": "## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added (clauses, cores, blocks and unit clauses); the outcome count is after the instance name. The small instances take under 0.1 s with every loop.\n\n| instance | default | plain-cores | disjoint-cores | lazy-constraints | maxsat |\n| --- | --- | --- | --- | --- | --- |\n| 1964: 9 drivers, 10 races (26) | 0.0 s (5) | 0.1 s (103) | 0.1 s (5) | 0.1 s (37) | 0.0 s (0) |\n| 1970: 9 drivers, 13 races (3) | 0.1 s (8) | 0.5 s (239) | 0.1 s (8) | 0.1 s (9) | 0.0 s (0) |\n| random-22a: 22 issues, 21 judges (2) | 0.0 s (7) | 0.0 s (23) | 0.0 s (6) | 0.0 s (6) | 0.0 s (0) |\n| random-22b: 22 issues, 21 judges (1) | 0.0 s (4) | 0.0 s (8) | 0.0 s (4) | 0.0 s (4) | 0.0 s (0) |\n| random-30: 30 issues, 31 judges (1) | 0.0 s (6) | 0.5 s (257) | 0.0 s (6) | 0.0 s (6) | 0.0 s (0) |\n| random-38: 38 issues, 41 judges (2) | 0.0 s (6) | 0.6 s (147) | 0.0 s (6) | 0.0 s (6) | 0.0 s (0) |\n| random-44: 44 issues, 51 judges (1) | 0.1 s (6) | 0.4 s (80) | 0.1 s (6) | 0.1 s (6) | 0.0 s (0) |\n\nEvery loop is fast on these scenarios: the majority judgments conflict in few places. The loops differ in what they learn: the cores as clasp returns them are long, so the hitting set solver needs 15 to 40 times more of them (hundreds on the F1 seasons, whose conflicts are majority cycles), and disjoint cores save a round now and then. The lazy constraints need few clauses on the random scenarios, but 37 on the 1964 season, one per 3-cycle the candidates run into. Direct MaxSAT (maxsat) is as fast: one optimal solve with the whole constraint, no rounds; at these sizes clingo's own optimisation needs no help, as Conati, Niskanen and Järvisalo found with MaxSAT solvers on much larger PrefLib profiles.",
+ "ja-slater": "## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added (clauses, cores, blocks and unit clauses); the outcome count is after the instance name. The small instances take under 0.1 s with every loop.\n\n| instance | default | plain-cores | ihs | linear-down | maxsat |\n| --- | --- | --- | --- | --- | --- |\n| 1964: 9 drivers, 10 races (30) | 0.1 s (28) | 0.1 s (28) | 0.1 s (6) | 0.0 s (1) | 0.0 s (0) |\n| 1970: 9 drivers, 13 races (3) | 0.0 s (36) | 0.0 s (36) | 0.1 s (8) | 0.0 s (1) | 0.0 s (0) |\n| random-22a: 22 issues, 21 judges (9) | 0.0 s (22) | 0.0 s (22) | 0.0 s (14) | 0.0 s (1) | 0.0 s (0) |\n| random-22b: 22 issues, 21 judges (2) | 0.0 s (22) | 0.0 s (22) | 0.0 s (5) | 0.0 s (1) | 0.0 s (0) |\n| random-30: 30 issues, 31 judges (7) | 0.1 s (30) | 0.0 s (30) | 0.0 s (13) | 0.0 s (1) | 0.0 s (0) |\n| random-38: 38 issues, 41 judges (36) | 0.1 s (38) | 0.0 s (38) | 0.1 s (42) | 0.0 s (1) | 0.0 s (0) |\n| random-44: 44 issues, 51 judges (26) | 0.1 s (44) | 0.1 s (44) | 0.1 s (32) | 0.0 s (1) | 0.0 s (0) |\n\nOLL needs one core per judgment given up (the Slater distance: 22 to 44 here) and then one enumeration; implicit hitting sets need fewer conflicts but an optimal hitting set per round; the linear search adds one unit clause (the optimum). All are fast at these sizes: the differences grow with the distance. Direct MaxSAT (maxsat) is as fast: one optimal solve, no rounds.",
  "ja-leximax": "## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added (clauses, cores, blocks and unit clauses); the outcome count is after the instance name. The small instances take under 0.1 s with every loop.\n\n| instance | default | linear-levels | ihs |\n| --- | --- | --- | --- |\n| 1964: 9 drivers, 10 races (26) | 0.1 s (3) | 0.0 s (3) | 0.0 s (6) |\n| 1970: 9 drivers, 13 races (3) | 0.1 s (6) | 0.0 s (6) | 0.1 s (10) |\n| random-22a: 22 issues, 21 judges (2) | 0.0 s (9) | 0.0 s (9) | 0.0 s (12) |\n| random-22b: 22 issues, 21 judges (1) | 0.0 s (10) | 0.0 s (10) | 0.0 s (14) |\n| random-30: 30 issues, 31 judges (1) | 0.0 s (14) | 0.0 s (14) | 0.1 s (19) |\n| random-38: 38 issues, 41 judges (2) | 0.0 s (17) | 0.0 s (17) | 0.1 s (21) |\n| random-44: 44 issues, 51 judges (1) | 0.0 s (19) | 0.0 s (19) | 0.1 s (24) |\n\nLevel by level needs one query per margin (the refinements are the unit clauses that fix the levels at the end); with satisfiability queries only, as many queries as the levels plus the judgments given up, and as fast here. The hitting set solver with priorities needs a few conflicts more than the levels.",
  "ja-msa": "## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added (clauses, cores, blocks and unit clauses); the outcome count is after the instance name. The small instances take under 0.1 s with every loop.\n\n| instance | default | cores | exists-forall |\n| --- | --- | --- | --- |\n| 1964: 9 drivers, 10 races (141) | 0.1 s (18) | 0.1 s (18) | 0.1 s (286) |\n| 1970: 9 drivers, 13 races (69) | 0.3 s (127) | 0.3 s (127) | 0.3 s (1078) |\n| random-22a: 22 issues, 21 judges (18) | 0.0 s (26) | 0.0 s (26) | 0.0 s (148) |\n| random-22b: 22 issues, 21 judges (8) | 0.0 s (12) | 0.0 s (12) | 0.0 s (72) |\n| random-30: 30 issues, 31 judges (102) | 0.2 s (111) | 0.2 s (111) | 0.2 s (942) |\n| random-38: 38 issues, 41 judges (576) | 0.6 s (584) | 0.5 s (584) | 1.1 s (6085) |\n| random-44: 44 issues, 51 judges (431) | 0.6 s (445) | 0.6 s (445) | 1.3 s (6836) |\n\nMARCO's refinements are one block per MSS and one per MUS, close to the number of outcomes; the exists-forall loop blocks every refuted candidate's subsets separately and needs about ten times as many refinements, but its checks are cheap, so it is only twice as slow on the largest scenarios. Shrinking a seed one judgment at a time and the minimal core cost the same here.",
  "ja-young": "## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added (clauses, cores, blocks and unit clauses); the outcome count is after the instance name. The small instances take under 0.1 s with every loop.\n\n| instance | default | plain-cores | direct | linear-up |\n| --- | --- | --- | --- | --- |\n| 1964: 9 drivers, 10 races (535) | 0.2 s (1) | 0.2 s (12) | 0.2 s (0) | 0.2 s (1) |\n| 1970: 9 drivers, 13 races (40) | 0.1 s (1) | 0.1 s (1) | 0.1 s (0) | 0.1 s (1) |\n| random-22a: 22 issues, 21 judges (20) | 0.9 s (6) | 8.6 s (57) | 0.5 s (0) | 1.4 s (1) |\n| random-22b: 22 issues, 21 judges (41) | 16.0 s (5) | 18.4 s (36) | 6.7 s (0) | 10.4 s (1) |\n\nThe Young score is found in a few rounds (minimal cores: 5 to 6 conflicts; plain cores: up to 57, which costs 8 s on random-22a); most of the time is the enumeration of the outcomes over every subprofile of that size, which the direct loop does fastest only because it has no rounds before it. The large random scenarios (30 to 44 issues) do not finish in minutes with any loop: there are too many subprofiles of the optimal size.",
