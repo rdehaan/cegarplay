@@ -102,6 +102,7 @@ export class Editors {
     this.loop.setValue(loop.text, -1);
     this.loop.session.getUndoManager().reset();
     document.getElementById('loop-language').textContent = loop.language === 'lua' ? '(raw Lua)' : '';
+    if (this.onLoopLanguage) this.onLoopLanguage();
     document.getElementById('edit-as-lua-button').disabled = loop.language === 'lua' || this.readOnly;
   }
 

@@ -519,6 +519,23 @@ A loop script declares solvers and links, then says how they call each other. It
 Lua by `js/compiler.js` (each statement becomes one Lua statement) and runs inside clingo's Lua.
 The compiler runs 500 ms after each edit in the Loop tab and marks errors at once.
 
+In the Loop tab, the editor helps to read and write a script (`js/loop-help.js`, `js/loop-tips.js`):
+
+- **Tooltips.** Pointing at a word shows its syntax and meaning: a keyword (`search`, `reject`,
+  `assume`, ...), a member (`solve`, `clause`, `atoms`, ...; `C.core` and `G.core(C)` are told apart
+  by their receiver), a solver or link of the script (its fragments, and its role: it proposes the
+  candidates, or it checks another solver's), a fragment named in a declaration (its description in
+  the Programs tab, or that there is no such fragment), the candidate variable, an assigned variable
+  (what it holds, such as "a counterexample, or none"), a predicate `p/n`, and the labels of
+  `count`, `track`, `accept ... as` and `S.expand(part, name = L)`. Words in strings and comments
+  have none.
+- **Hint line.** The line under the editor explains the statement at the cursor in the script's own
+  names, such as "X = a counterexample from solver C under the values of G's interface atoms in M,
+  or none if there is none (the candidate passes)." Without the focus in the editor it says how to
+  get help.
+
+Neither is shown for a loop in raw Lua (**Edit as Lua**).
+
 ### Lexical rules
 
 - Indentation-based, like Python. Spaces only; a tab is an error. Blank lines and comment-only

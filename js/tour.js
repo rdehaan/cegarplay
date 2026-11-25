@@ -89,7 +89,9 @@ function makeSteps(app) {
         <b>link</b> <tt>G</tt> between them, through the glue.</p>
         <p><tt>search A:</tt> runs solver <tt>A</tt>; for each candidate <tt>M</tt>, solver <tt>C</tt> is asked for a
         counterexample <tt>X</tt>. If there is one, <tt>reject M with G.clause(M, X)</tt> adds the refinement:
-        one of the atoms marked relevant must change. A candidate that is not rejected is a solution.</p>`,
+        one of the atoms marked relevant must change. A candidate that is not rejected is a solution.</p>
+        <p>Point at a word of the script for its meaning; the line under the editor explains the statement
+        at the cursor.</p>`,
     },
     {
       title: 'Run it',

@@ -24,6 +24,7 @@ import { Snapshots, SNAP_INDEX, projectKey } from './snapshots.js';
 import { setupTopbar } from './topbar.js';
 import { bindPageKeys, openShortcuts } from './keys.js';
 import { Tour } from './tour.js';
+import { attachLoopTips } from './loop-tips.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
 
 const $ = (id) => document.getElementById(id);
@@ -168,6 +169,8 @@ app.editors = new Editors(app);
 app.output = new Output(app);
 app.stats = new Stats(app);
 app.loopTab = new LoopTab(app);
+app.loopTips = attachLoopTips(app, app.editors.loop, $('loop-hint'));
+app.editors.onLoopLanguage = () => app.loopTips.update();
 app.internals = new Internals(app);
 app.control = new Control(app);
 app.instancesTab = new InstancesTab(app);

@@ -2236,3 +2236,10 @@ Deviations and findings:
 - Named "Guided tour", not "tutorial": the Tutorial tab (lessons) already has that name.
 - Tests: `test/browser/keys.test.mjs`, `test/browser/tour.test.mjs`, a Space test in
   `isolated.test.mjs`; the help-fold test in `tabs.test.mjs` follows the new default.
+- Loop script help (on request): `js/loop-help.js` (no DOM; `scriptNames`, `wordHelp`, `lineHint`)
+  gives a tooltip per word (keywords by place, members by receiver kind, declared solvers/links with
+  their role, fragment descriptions, variables by what set them, labels of count/track/expand/as) and
+  a hint per statement in the script's names; `js/loop-tips.js` shows them in the Loop tab (tooltip
+  after 350 ms, `#loop-hint` under the editor; off for raw Lua). Library scan: about 95% of words and
+  98% of statements get help (strings and comments none). Tests: `test/loop-help.test.mjs`,
+  `test/browser/loop-tips.test.mjs`.

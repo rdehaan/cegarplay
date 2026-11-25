@@ -1382,3 +1382,16 @@ body:has(#run-status[data-state="idle"]) .run-summary:not(:has(#run-message:not(
 @media (max-width: 650px) {
   .tour-card { left: 8px; right: 8px; bottom: 8px; width: auto; max-width: none; max-height: 45vh; }
 }
+
+/* ---- the loop script's help (js/loop-tips.js): a tooltip per word, a hint line per statement ---- */
+.loop-tip {
+  position: fixed; z-index: 140; box-sizing: border-box; padding: 6px 10px; border-radius: 5px;
+  background: var(--tooltip-bg); color: var(--tooltip-text); border: 1px solid var(--border);
+  box-shadow: 0 4px 16px var(--shadow); font-size: 13px; line-height: 1.4; pointer-events: none;
+}
+.loop-tip-title { display: block; margin-bottom: 2px; font: 600 12.5px/1.4 monospace; }
+.loop-hint {
+  margin: 4px 0 0; padding: 4px 10px; min-height: 1.4em; border-left: 3px solid var(--primary);
+  background: var(--hint-bg); font-size: 13px; line-height: 1.4;
+}
+.loop-hint.idle { border-left-color: var(--border); color: var(--text-muted); }
