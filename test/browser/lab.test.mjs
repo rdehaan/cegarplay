@@ -15,7 +15,8 @@ const status = (page) => page.$eval('#lab-status', (e) => e.textContent);
 const waitStatus = (page, re, timeout = 120000) => page.waitForFunction((r) => new RegExp(r).test(document.getElementById('lab-status').textContent), re.source, { timeout });
 
 // Taken from the page before the lab existed (fresh visit, Advanced mode off).
-const TABS_BEFORE = ['tab1', 'tab2', 'tab3', 'tab4', 'tab9', 'tab5', 'tab6'];
+// (in the order of the grouped tab row: Home, Write, Results, Learn)
+const TABS_BEFORE = ['tab1', 'tab3', 'tab4', 'tab9', 'tab5', 'tab6', 'tab2'];
 const CONTROL_IDS_BEFORE = ['project-info', 'edit-project-button', 'project-heading', 'project-description', 'project-readme', 'project-readme-body', 'project-form', 'project-title-input',
   'project-description-input', 'project-readme-input', 'save-project-info', 'cancel-project-info', 'library-section', 'library-filter', 'library-level', 'library-read', 'library', 'load-status',
   'storage-status', 'new-button', 'new-status', 'file-button', 'file-input', 'upload-status', 'download-button', 'include-history', 'workspace-name', 'workspace-save-button', 'workspace-list',
@@ -25,7 +26,7 @@ const CONTROL_IDS_BEFORE = ['project-info', 'edit-project-button', 'project-head
   // the reorganised page: the library's "?", the dialogs' titles, Recordings as a target
   'library-help-button', 'library-help', 'dialog-versions-title', 'recordings', 'dialog-settings-title'].sort();
 
-test('lab off (the default): the same tabs and Control tab as before, no lab code or worker loaded', async () => {
+test('lab off (the default): the same tabs and Home as before, no lab code or worker loaded', async () => {
   const { page, context, errors, foreign } = await B.openPage(browser, server, '?fresh=1', { advanced: false });
   const requests = [];
   page.on('request', (r) => requests.push(r.url()));

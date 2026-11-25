@@ -29,9 +29,10 @@ test('B1: Tab reaches the tab row, arrow keys switch tabs, the focus ring is vis
   assert.equal(a.id, 'tab1');
   const ring = await page.$eval('label[for="tab1"]', (l) => getComputedStyle(l).outlineStyle);
   assert.notEqual(ring, 'none');
+  // the radios are in the order of the tab row: Home, then Programs (Write)
   await page.keyboard.press('ArrowRight');
-  assert.equal(await page.$eval('#tab2', (e) => e.checked), true);
-  assert.equal(await page.isVisible('#section-tutorial'), true);
+  assert.equal(await page.$eval('#tab3', (e) => e.checked), true);
+  assert.equal(await page.isVisible('#section-programs'), true);
   // hidden Manual and Internals tabs are skipped
   for (let i = 0; i < 6; i++) {
     await page.keyboard.press('ArrowRight');

@@ -130,6 +130,37 @@ export function setupTopbar() {
   new MutationObserver(showTitle).observe(heading, { childList: true, characterData: true, subtree: true });
   showTitle();
 
+  // ---- the sticky tab bar (large screens): it sits under the top bar, whose height can change
+  // (a wrapped row); a shadow once it sticks; a tab chosen while it sticks opens at its top
+  const bar = $('topbar'), tabbar = $('tab-bar'), main = document.querySelector('main');
+  const setTop = () => document.documentElement.style.setProperty('--topbar-height', `${bar.offsetHeight}px`);
+  new ResizeObserver(setTop).observe(bar);
+  setTop();
+  const stuck = () => getComputedStyle(tabbar).position === 'sticky' && tabbar.getBoundingClientRect().top <= bar.offsetHeight + 1;
+  addEventListener('scroll', () => tabbar.classList.toggle('stuck', stuck()), { passive: true });
+  // A tab that opens can re-render and shrink the page for a moment, and the browser then
+  // scrolls up; so hold the page's height while it switches, then put the bar at its place.
+  let fromStuck = false;
+  const before = () => {
+    fromStuck = stuck();
+    if (fromStuck) main.style.minHeight = `${main.offsetHeight + innerHeight}px`;
+  };
+  tabbar.addEventListener('pointerdown', before, true);
+  for (const r of document.querySelectorAll('input[name="tabs"]')) {
+    r.addEventListener('keydown', (e) => { if (e.key.startsWith('Arrow')) before(); });
+    r.addEventListener('change', () => {
+      if (!fromStuck || !r.checked) return;
+      fromStuck = false;
+      setTimeout(() => {
+        const y = document.querySelector('.run-summary').getBoundingClientRect().bottom + scrollY - bar.offsetHeight;
+        scrollTo({ top: Math.max(0, y) });
+        main.style.minHeight = '';
+      }, 60);
+    });
+  }
+  // a pointerdown that chose no other tab: let go of the held height
+  tabbar.addEventListener('click', () => setTimeout(() => { if (fromStuck) { fromStuck = false; main.style.minHeight = ''; } }, 100));
+
   // ---- Run options: the summary on the button follows the choices
   $('run-options').addEventListener('change', runOptionsSummary);
   $('run-options').addEventListener('input', runOptionsSummary);

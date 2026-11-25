@@ -104,3 +104,25 @@ test('the Tutorial can be hidden and comes back; a lesson link shows it for the 
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('the tab bar: grouped, sticky under the top bar on a large screen; a tab chosen there opens at its top', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=5', { advanced: false, contextOptions: { viewport: { width: 1400, height: 900 } } });
+  assert.deepEqual(await page.$$eval('#tab-bar .tab-group', (g) => g.map((x) => x.textContent)), ['Write', 'Results', 'Learn']);
+  await page.click('#run-button');
+  await page.waitForFunction(() => document.getElementById('run-status').dataset.state === 'finished');
+  await page.mouse.wheel(0, 600);
+  await page.waitForFunction(() => document.getElementById('tab-bar').classList.contains('stuck'));
+  const top = await page.evaluate(() => [document.getElementById('tab-bar').getBoundingClientRect().top, document.getElementById('topbar').offsetHeight]);
+  assert.ok(Math.abs(top[0] - top[1]) <= 1, `the tab bar sits under the top bar: ${top}`);
+  // a click on Statistics (by position: a locator click would scroll first)
+  const bb = await (await page.$('label[for="tab6"]')).boundingBox();
+  await page.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2);
+  await page.waitForFunction(() => document.getElementById('tab6').checked && document.querySelector('main').style.minHeight === '');
+  const rest = await page.evaluate(() => document.querySelector('.run-summary').getBoundingClientRect().bottom - document.getElementById('topbar').offsetHeight);
+  assert.ok(Math.abs(rest) <= 2, `Statistics opens at its top, the tab bar at its place (${rest})`);
+  // a narrow screen: the tab bar scrolls with the page
+  await page.setViewportSize({ width: 900, height: 900 });
+  assert.equal(await page.$eval('#tab-bar', (t) => getComputedStyle(t).position), 'static');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
