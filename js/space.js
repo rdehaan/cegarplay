@@ -53,7 +53,9 @@ export function removedBy(space, q) {
 // fates: per refinement step { ref (1-based among refinements), i (the R step), k, len, removed, fresh, already, lost, accepted }; per
 // candidate the step that removed it (0 = alive) and whether it was accepted. truth: a Set of
 // candidate indices that are solutions (from an audit) or null. reported: hex vectors of the
-// solution steps (R kind s). A full-length clause on a reported candidate is an acceptance.
+// solution steps (R kind s). A full-length clause on a reported candidate is an acceptance, and
+// so is one that comes right after the run reported solutions of another solver (a loop that
+// lists the outcomes of a candidate with C.models and then blocks it: kemeny-rankings).
 export function fates(space, steps, { truth = null } = {}) {
   const fate = new Int32Array(space.count);           // step number that removed it, 0 = alive
   const accepted = new Int32Array(space.count);         // the R step that accepted it, 0 = not
@@ -61,15 +63,18 @@ export function fates(space, steps, { truth = null } = {}) {
   const rows = [];
   let firstUnsound = null, alive = space.count;
   const aliveSeries = [], removals = [];
+  let since = false;                                    // a solution reported since the last refinement
   for (const st of steps) {
-    if (st.k === 's') { if (st.c) reported.add(normHex(st.c)); continue; }
+    if (st.k === 's') { if (st.c) reported.add(normHex(st.c)); else since = true; continue; }
     if (!(st.k === 'r' || st.k === 'a') || !st.q) continue;
     const gone = removedBy(space, st.q);
     let fresh = 0, lost = 0, acc = 0;
     const full = st.q.length === space.n;
+    const listed = full && since;
+    since = false;
     for (const i of gone) {
       if (fate[i] || accepted[i]) continue;
-      if (full && reported.has(normHex(space.hex[i]))) { accepted[i] = st.i; acc++; continue; }
+      if (full && (listed || reported.has(normHex(space.hex[i])))) { accepted[i] = st.i; acc++; continue; }
       fate[i] = st.i; fresh++;
       if (truth && truth.has(i)) lost++;
     }

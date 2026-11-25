@@ -165,6 +165,23 @@ export class SpaceView {
     }
   }
 
+  // Which refinements of the run the map shows: only those of its link (the one the audit
+  // enumerates). Refinements of other links (a winner link W, the links of a chain) are counted
+  // and named, so that "6 refinements" in the run bar and 1 on the map are not a mystery.
+  coverage(rec, li) {
+    const links = rec && rec.I ? rec.I.links : [];
+    const link = links[li] ? links[li].link : '?';
+    const ref = (x) => (x.k === 'a' || x.k === 'r') && x.q;
+    const by = new Map();
+    for (const x of (rec && rec.steps) || []) if (ref(x) && x.l !== li + 1) {
+      const name = x.l && links[x.l - 1] ? links[x.l - 1].link : 'no link (a clause of the script)';
+      by.set(name, (by.get(name) || 0) + 1);
+    }
+    const other = [...by.values()].reduce((a, b) => a + b, 0);
+    const parts = [...by].map(([n, k]) => `${fmt(k)} on ${n.startsWith('no link') ? n : `link ${n}`}`);
+    return { link, other, text: other ? `the run also made ${parts.join(', ')}. The map shows the candidates of link ${link} only (the link the audit enumerates), so it does not draw ${other === 1 ? 'that refinement' : 'those refinements'}; the blame matrix and the slider count link ${link} only too.` : '' };
+  }
+
   // "The map of the run on instance n4 (variant v1): 2,326 recorded steps."
   runText(rec) {
     const steps = rec && rec.steps ? rec.steps.length : 0;
@@ -215,8 +232,10 @@ export class SpaceView {
     // in three parts: the instance, this run, and what it says about soundness
     this.summary.textContent = '';
     const line = (label, text) => h('span', { class: 'space-summary-line' }, h('b', {}, label), ' ', text);
+    const cover = this.coverage(rec, li);
     this.summary.append(
-      line('This instance:', `${fmt(this.space.count)} candidates, ${fmt(this.truth.size)} of them solutions.`), h('br'),
+      line('This instance:', `${fmt(this.space.count)} candidates, ${fmt(this.truth.size)} of them solutions. The candidates are those of link ${cover.link} (its ${fmt(this.atoms.length)} interface atoms); a solution has no counterexample.`), h('br'),
+      ...(cover.other ? [line('Other links:', cover.text), h('br')] : []),
       line('This run:', `${fmt(this.F.rows.length)} refinements; ${fmt(this.F.alive)} candidates left at the end. ` +
         `Of the ${fmt(this.F.total)} removals, ${fmt(this.F.already)} hit a candidate an earlier refinement had already removed` +
         `${red.length ? `, and ${fmt(red.length)} clauses contain an earlier clause (both: wasted work)` : ' (wasted work)'}.`), h('br'),
@@ -380,7 +399,10 @@ export class SpaceView {
     const dl = h('dl');
     const add = (k, v) => dl.append(h('dt', {}, k), h('dd', {}, v));
     add('Candidate', set(d.candidate));
-    add('Counterexample', d.traced ? (d.counterexample || '(no shown atoms)')
+    // a block or a core has no counterexample: say which it is instead of "no shown atoms"
+    const none = st.c === undefined || st.c === null ? 'none: a core (the check had no model; the clause names the atoms of its unsat core)'
+      : d.clause.length === this.atoms.length ? 'none: a block (the whole interface of the candidate)' : '(no shown atoms)';
+    add('Counterexample', d.counterexample ? d.counterexample : d.traced || none !== '(no shown atoms)' ? none
       : 'not in the trace: it keeps the first steps of a run only (raise Trace steps in the Loop tab and run again)');
     if (d.clause.length) add('Clause', `at least one of: ${d.clause.join(', ')}`);
     add('Removes', `${fmt(row.removed)} candidates (${fmt(row.fresh)} not removed before)` + (row.lost ? `, ${fmt(row.lost)} solutions: an unsound refinement` : ', no solution'));

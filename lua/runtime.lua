@@ -1154,7 +1154,9 @@ local function snapshot(s, m)
     M[key] = t
     owner[t] = M
   end
-  if #s.inn == 0 or tracing() then M.shown = tostring(m) end
+  -- every model keeps its shown atoms: a script may accept a model of a check (an outcome listed
+  -- by C.models), and the trace and the audit's witness name the counterexample (cost: negligible)
+  M.shown = tostring(m)
   if s.truth and #s.inn > 0 then M.tv = s.truth(m) end
   local cost = m.cost
   if cost and #cost > 0 then M.cost = cost end

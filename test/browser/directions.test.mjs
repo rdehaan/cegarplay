@@ -383,7 +383,7 @@ test('V4: the candidate space of gc-shape1: 3,373 cells, alive 101, a cursor mov
   await page.click('#space-compute');
   await page.waitForFunction(() => /candidates/.test(document.getElementById('space-summary').textContent), null, { timeout: 60000 });
   const sum = await page.textContent('#space-summary');
-  assert.match(sum, /This instance: 3,373 candidates, 101 of them solutions\.\s*This run: 1,320 refinements; 101 candidates left at the end/);
+  assert.match(sum, /This instance: 3,373 candidates, 101 of them solutions\. The candidates are those of link G[^.]*\.\s*This run: 1,320 refinements; 101 candidates left at the end/);
   assert.match(sum, /Lost solutions: none: no refinement of this run removes a solution/);
   assert.equal(await page.isVisible('#space-audit-instance'), true);
   const ms = await page.evaluate(() => {

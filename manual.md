@@ -1327,7 +1327,13 @@ is a view or a map to save.
 
 The **Candidate space** region (Observatory) shows every candidate of the unrefined abstraction at
 once, one square each, from the audit's enumeration (so the same limit of 200,000 applies). The map
-is of **one recorded run**: the line above it names that run (instance, variant, recorded steps),
+is of **one recorded run** and of **one link**: the link the audit enumerates (the candidates are
+the assignments of its interface atoms), so it draws only that link's refinements. When the run
+also refines other links (a winner link, the links of a chain), the summary says how many and on
+which link (**Other links**), so that the run bar's refinement count and the map's can differ
+without a mystery. A block that follows a reported solution of another solver (a loop that lists a
+candidate's outcomes with `C.models` and then blocks it, as `kemeny-rankings`) counts as an
+acceptance, not as a lost solution. The line above the map names the run (instance, variant, recorded steps),
 and the map is cleared, with a note, as soon as another run, an audit or a replay replaces it, or
 another project is loaded (the run bar's **Shown** line says which run the tabs hold). An instance
 marked `audit: false`, or one whose candidates do not fit in memory, gets no map, with the reason;
