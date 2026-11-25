@@ -3,7 +3,7 @@
   "version": 2,
   "title": "Dodgson winners",
   "description": "The Dodgson winners: the candidates that need the fewest swaps of neighbours in the ballots to become Condorcet winners (Theta-2-complete, Hemaspaandra, Hemaspaandra and Rothe 1997). Theta-2 is P with logarithmically many NP queries (Wagner 1990), and the loop is exactly that: a binary search for the best score, one NP query per step (C.ground grounds each bound), then one query per candidate. Compare with the linear searches up and down, and with the Sigma-2 template on the large Latin-square election.",
-  "readme": "# Project: Dodgson winners\n\n## Research question\n\nTheta-2 is the class of problems decided in polynomial time with logarithmically many queries to\nan NP oracle (Wagner 1990), and Dodgson's rule (Dodgson 1876) is complete for it (Hemaspaandra,\nHemaspaandra and Rothe 1997). Dodgson's rule fits the definition: a binary search for the best score, then one\nquery per candidate. Is the binary search worth it in practice? An unsatisfiable query just below\nthe optimum is the hard one, and every search makes at least one.\n\n## The loops\n\n- **default**: binary search on k (P^NP[log], Wagner 1990) with the query \"is some candidate within k swaps of being a\n  Condorcet winner?\". Each query grounds its own bound (`C.ground(bound, k)`, `#program\n  bound(b)`) and assumes it (`C.atom(\"within\", k)`); `//` halves the interval. Every satisfiable\n  query lowers the upper bound to the swaps of its witness.\n- **linear-up**: k = 0, 1, 2, ...: every query but the last is unsatisfiable.\n- **linear-down**: every witness is an upper bound; ask for one swap fewer until no candidate makes\n  it.\n- **exists-forall**: the Sigma-2 template. A proposes a winner with its swaps, C a candidate that\n  needs fewer; the clause from relevant/1 is one literal, `atmost(S)`.\n\n## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added, counting the blocks that rule out a winner. The small instances take under 0.2 s with every loop.\n\n| instance | default | linear-up | linear-down | exists-forall |\n| --- | --- | --- | --- | --- |\n| 1964: 9 drivers | 0.0 s (9) | 0.0 s (9) | 0.1 s (9) | 0.1 s (13) |\n| 1970: 9 drivers | 0.0 s (9) | 0.0 s (9) | 0.1 s (9) | 0.1 s (20) |\n| 1978: 20 drivers | 0.2 s (20) | 0.1 s (20) | 0.7 s (20) | 1.2 s (37) |\n| 1993: 23 drivers | 0.2 s (23) | 0.1 s (23) | 0.7 s (23) | 0.5 s (2) |\n| 1991: 31 drivers | 0.3 s (31) | 0.2 s (31) | 1.0 s (31) | 0.6 s (2) |\n| Latin square: 5, 65 voters | 0.4 s (5) | 1.0 s (5) | 0.7 s (5) | 2.6 s (15) |\n\nIn the F1 seasons the best score is at most 3 (1991 and 1993 have a Condorcet winner), so the search from below needs the fewest queries. On the Latin square (score 17) the binary search asks 11 queries in all against 23 for either linear search, and is fastest. The hard queries are the unsatisfiable ones just below the optimum: every search asks at least one.\n\n## Things to try\n\n- Elections with large scores: the generator `election-latin` with larger counts (`lo`, `hi`).\n- A galloping search (k = 1, 2, 4, 8, ... then binary) from below.\n- Share learnt clauses between queries: they are, since C is one solver; compare with a fresh\n  solver per query (a solver family).\n\n## How to measure\n\nEach suite runs its variants on the instances (Campaign tab, Advanced mode); headless:\n`node tools/bench.mjs dodgson-winners --suite loops --out rows.jsonl` and `node tools/report.mjs rows.jsonl`.\nThe instances tagged `slow` (the larger F1 seasons and the Latin square) are where the loops differ;\nthe small ones are for the audit (`node tools/audit.mjs dodgson-winners --instance all --variant exists-forall --link G --symbolic`) and the tests.\nThe suite `mallows` draws elections of 6 to 10 candidates. Every expected count was checked\nagainst an independent encoding with clingo's own optimisation, or by brute force on the small ones.\n\n## References\n\n- C. L. Dodgson. *A method of taking votes on more than two issues*. Pamphlet, Clarendon Press, Oxford, 1876.\n- J. Bartholdi III, C. A. Tovey and M. A. Trick. Voting schemes for which it can be difficult to tell who won the election. *Social Choice and Welfare* 6(2):157–165, 1989.\n- E. Hemaspaandra, L. A. Hemaspaandra and J. Rothe. Exact analysis of Dodgson elections: Lewis Carroll's 1876 voting system is complete for parallel access to NP. *Journal of the ACM* 44(6):806–825, 1997.\n- K. W. Wagner. Bounded query classes. *SIAM Journal on Computing* 19(5):833–846, 1990.\n- N. Mattei and T. Walsh. PrefLib: a library for preferences. *ADT 2013*, LNCS 8176, 259–270. Data: dataset 00052 (Formula 1 seasons), https://www.preflib.org.\n",
+  "readme": "# Project: Dodgson winners\n\n## Research question\n\nTheta-2 is the class of problems decided in polynomial time with logarithmically many queries to\nan NP oracle (Wagner 1990), and Dodgson's rule (Dodgson 1876) is complete for it (Hemaspaandra,\nHemaspaandra and Rothe 1997). Dodgson's rule fits the definition: a binary search for the best score, then one\nquery per candidate. Is the binary search worth it in practice? An unsatisfiable query just below\nthe optimum is the hard one, and every search makes at least one.\n\n## The loops\n\n- **default**: binary search on k (P^NP[log], Wagner 1990) with the query \"is some candidate within k swaps of being a\n  Condorcet winner?\". Each query grounds its own bound (`C.ground(bound, k)`, `#program\n  bound(b)`) and assumes it (`C.atom(\"within\", k)`); `//` halves the interval. Every satisfiable\n  query lowers the upper bound to the swaps of its witness.\n- **linear-up**: k = 0, 1, 2, ...: every query but the last is unsatisfiable.\n- **linear-down**: every witness is an upper bound; ask for one swap fewer until no candidate makes\n  it.\n- **exists-forall**: the Sigma-2 template. A proposes a winner with its swaps, C a candidate that\n  needs fewer; the clause from relevant/1 is one literal, `atmost(S)`.\n\n## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added, counting the blocks that rule out a winner. The small instances take under 0.2 s with every loop.\n\n| instance | default | linear-up | linear-down | exists-forall |\n| --- | --- | --- | --- | --- |\n| 1964: 9 drivers | 0.0 s (9) | 0.0 s (9) | 0.1 s (9) | 0.1 s (13) |\n| 1970: 9 drivers | 0.0 s (9) | 0.0 s (9) | 0.1 s (9) | 0.1 s (20) |\n| 1978: 20 drivers | 0.2 s (20) | 0.1 s (20) | 0.7 s (20) | 1.2 s (37) |\n| 1993: 23 drivers | 0.2 s (23) | 0.1 s (23) | 0.7 s (23) | 0.5 s (2) |\n| 1991: 31 drivers | 0.3 s (31) | 0.2 s (31) | 1.0 s (31) | 0.6 s (2) |\n| Latin square: 5, 65 voters | 0.4 s (5) | 1.0 s (5) | 0.7 s (5) | 2.6 s (15) |\n\nIn the F1 seasons the best score is at most 3 (1991 and 1993 have a Condorcet winner), so the search from below needs the fewest queries. On the Latin square (score 17) the binary search asks 11 queries in all against 23 for either linear search, and is fastest. The hard queries are the unsatisfiable ones just below the optimum: every search asks at least one.\n\n## Things to try\n\n- Elections with large scores: the generator `election-latin` with larger counts (`lo`, `hi`).\n- A galloping search (k = 1, 2, 4, 8, ... then binary) from below.\n- Share learnt clauses between queries: they are, since C is one solver; compare with a fresh\n  solver per query (a solver family).\n\n## How to measure\n\nEach suite runs its variants on the instances (Campaign tab, Advanced mode); headless:\n`node tools/bench.mjs dodgson-winners --suite loops --out rows.jsonl` and `node tools/report.mjs rows.jsonl`.\nThe instances tagged `slow` and `bench` (the larger F1 seasons and the Latin square) are where the loops differ;\nthey run in the suites, never in the tests;\nthe small ones are for the audit (`node tools/audit.mjs dodgson-winners --instance all --variant exists-forall --link G --symbolic`) and the tests.\nThe suite `mallows` draws elections of 6 to 10 candidates. Every expected count was checked\nagainst an independent encoding with clingo's own optimisation, or by brute force on the small ones.\n\n## References\n\n- C. L. Dodgson. *A method of taking votes on more than two issues*. Pamphlet, Clarendon Press, Oxford, 1876.\n- J. Bartholdi III, C. A. Tovey and M. A. Trick. Voting schemes for which it can be difficult to tell who won the election. *Social Choice and Welfare* 6(2):157–165, 1989.\n- E. Hemaspaandra, L. A. Hemaspaandra and J. Rothe. Exact analysis of Dodgson elections: Lewis Carroll's 1876 voting system is complete for parallel access to NP. *Journal of the ACM* 44(6):806–825, 1997.\n- K. W. Wagner. Bounded query classes. *SIAM Journal on Computing* 19(5):833–846, 1990.\n- N. Mattei and T. Walsh. PrefLib: a library for preferences. *ADT 2013*, LNCS 8176, 259–270. Data: dataset 00052 (Formula 1 seasons), https://www.preflib.org.\n",
   "fragments": [
     {
       "name": "shared",
@@ -111,7 +111,8 @@
       },
       "tags": [
         "slow",
-        "preflib"
+        "preflib",
+        "bench"
       ],
       "audit": false
     },
@@ -124,7 +125,8 @@
       },
       "tags": [
         "slow",
-        "preflib"
+        "preflib",
+        "bench"
       ],
       "audit": false
     },
@@ -137,7 +139,8 @@
       },
       "tags": [
         "slow",
-        "preflib"
+        "preflib",
+        "bench"
       ],
       "audit": false
     },
@@ -150,7 +153,8 @@
       },
       "tags": [
         "slow",
-        "preflib"
+        "preflib",
+        "bench"
       ],
       "audit": false
     },
@@ -163,7 +167,8 @@
       },
       "tags": [
         "slow",
-        "preflib"
+        "preflib",
+        "bench"
       ],
       "audit": false
     },
@@ -175,7 +180,8 @@
         "solutions": 1
       },
       "tags": [
-        "slow"
+        "slow",
+        "bench"
       ],
       "audit": false
     },

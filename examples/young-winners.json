@@ -3,7 +3,7 @@
   "version": 2,
   "title": "Young winners",
   "description": "The Young winners: the candidates that become weak Condorcet winners after deleting the fewest voters (Theta-2-complete, Rothe, Spakowski and Vogel 2003). The loop generates rows lazily: A deletes the fewest voters so that no opponent found so far beats its winner, C finds an opponent that still does, and the refinement grounds that opponent's majority constraint for every winner at once (refine(k)). Compare with implicit hitting sets whose cores name the winner, and with all constraints from the start.",
-  "readme": "# Project: Young winners\n\n## Research question\n\nA Young score (Young 1977) is the least number of voters to delete so that no candidate beats the\nwinner; the winner problem is Theta-2-complete (Rothe, Spakowski and Vogel 2003). Its\nconstraints are one majority count per opponent, so few of them matter. Which refinement learns\nthem best: the whole constraint of an opponent (a rule), or a core that forces one more deletion?\n\n## The loops\n\n- **default**: row generation. A deletes the fewest voters so that no opponent found so far beats\n  its winner; C finds an opponent that still does, and `refine(k)` grounds that opponent's\n  constraint for every winner. At most m - 1 refinements.\n- **cores**: implicit hitting sets with a witness check. A minimal core names the winner and a set\n  of kept voters of whom one must go: one more deletion per core.\n- **plain-cores**: the same with the cores as clasp returns them.\n- **all-opponents**: every constraint from the start (no refinement).\n- **exists-forall**: the Sigma-2 template with one-literal clauses `atmost(S)`.\n\n## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added, counting the blocks that rule out a winner. The small instances take under 0.2 s with every loop.\n\n| instance | default | cores | plain-cores | all-opponents | exists-forall |\n| --- | --- | --- | --- | --- | --- |\n| 1964: 9 drivers | 0.0 s (12) | 0.2 s (58) | 0.1 s (103) | 0.1 s (9) | 0.0 s (8) |\n| 1970: 9 drivers | 0.1 s (15) | 0.1 s (33) | 0.1 s (58) | 0.1 s (9) | 0.1 s (4) |\n| 1978: 20 drivers | 0.2 s (25) | 0.5 s (72) | 0.3 s (103) | 0.2 s (20) | 0.1 s (2) |\n| 1993: 23 drivers | 0.1 s (24) | 0.2 s (45) | 0.1 s (45) | 0.2 s (23) | 0.1 s (2) |\n| 1991: 31 drivers | 0.2 s (32) | 0.5 s (61) | 0.2 s (61) | 0.2 s (31) | 0.2 s (2) |\n| Latin square: 5, 65 voters | 0.2 s (10) | > 60 s | > 60 s | 0.3 s (5) | 0.3 s (2) |\n\nRow generation needs one refinement per opponent that matters; a core forces one more deletion, so on the Latin square (Young score 27) the core variants need dozens of rounds per winner and do not finish in a minute.\n\n## Things to try\n\n- Strict Young (no candidate ties with the winner) and the variant that keeps the most voters.\n- Cores of a check that may delete voters itself (an OLL loop per winner).\n- Which opponents does row generation find first, and does the order matter?\n\n## How to measure\n\nEach suite runs its variants on the instances (Campaign tab, Advanced mode); headless:\n`node tools/bench.mjs young-winners --suite loops --out rows.jsonl` and `node tools/report.mjs rows.jsonl`.\nThe instances tagged `slow` (the larger F1 seasons and the Latin square) are where the loops differ;\nthe small ones are for the audit (`node tools/audit.mjs young-winners --instance all --link G`) and the tests.\nThe suite `mallows` draws elections of 6 to 10 candidates. Every expected count was checked\nagainst an independent encoding with clingo's own optimisation, or by brute force on the small ones.\n\n## References\n\n- H. P. Young. Extending Condorcet's rule. *Journal of Economic Theory* 16(2):335–353, 1977.\n- J. Rothe, H. Spakowski and J. Vogel. Exact complexity of the winner problem for Young elections. *Theory of Computing Systems* 36(4):375–386, 2003.\n- J. Davies and F. Bacchus. Solving MAXSAT by solving a sequence of simpler SAT instances. *CP 2011*, LNCS 6876, 225–239.\n- N. Mattei and T. Walsh. PrefLib: a library for preferences. *ADT 2013*, LNCS 8176, 259–270. Data: dataset 00052 (Formula 1 seasons), https://www.preflib.org.\n",
+  "readme": "# Project: Young winners\n\n## Research question\n\nA Young score (Young 1977) is the least number of voters to delete so that no candidate beats the\nwinner; the winner problem is Theta-2-complete (Rothe, Spakowski and Vogel 2003). Its\nconstraints are one majority count per opponent, so few of them matter. Which refinement learns\nthem best: the whole constraint of an opponent (a rule), or a core that forces one more deletion?\n\n## The loops\n\n- **default**: row generation. A deletes the fewest voters so that no opponent found so far beats\n  its winner; C finds an opponent that still does, and `refine(k)` grounds that opponent's\n  constraint for every winner. At most m - 1 refinements.\n- **cores**: implicit hitting sets with a witness check. A minimal core names the winner and a set\n  of kept voters of whom one must go: one more deletion per core.\n- **plain-cores**: the same with the cores as clasp returns them.\n- **all-opponents**: every constraint from the start (no refinement).\n- **exists-forall**: the Sigma-2 template with one-literal clauses `atmost(S)`.\n\n## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added, counting the blocks that rule out a winner. The small instances take under 0.2 s with every loop.\n\n| instance | default | cores | plain-cores | all-opponents | exists-forall |\n| --- | --- | --- | --- | --- | --- |\n| 1964: 9 drivers | 0.0 s (12) | 0.2 s (58) | 0.1 s (103) | 0.1 s (9) | 0.0 s (8) |\n| 1970: 9 drivers | 0.1 s (15) | 0.1 s (33) | 0.1 s (58) | 0.1 s (9) | 0.1 s (4) |\n| 1978: 20 drivers | 0.2 s (25) | 0.5 s (72) | 0.3 s (103) | 0.2 s (20) | 0.1 s (2) |\n| 1993: 23 drivers | 0.1 s (24) | 0.2 s (45) | 0.1 s (45) | 0.2 s (23) | 0.1 s (2) |\n| 1991: 31 drivers | 0.2 s (32) | 0.5 s (61) | 0.2 s (61) | 0.2 s (31) | 0.2 s (2) |\n| Latin square: 5, 65 voters | 0.2 s (10) | > 60 s | > 60 s | 0.3 s (5) | 0.3 s (2) |\n\nRow generation needs one refinement per opponent that matters; a core forces one more deletion, so on the Latin square (Young score 27) the core variants need dozens of rounds per winner and do not finish in a minute.\n\n## Things to try\n\n- Strict Young (no candidate ties with the winner) and the variant that keeps the most voters.\n- Cores of a check that may delete voters itself (an OLL loop per winner).\n- Which opponents does row generation find first, and does the order matter?\n\n## How to measure\n\nEach suite runs its variants on the instances (Campaign tab, Advanced mode); headless:\n`node tools/bench.mjs young-winners --suite loops --out rows.jsonl` and `node tools/report.mjs rows.jsonl`.\nThe instances tagged `slow` and `bench` (the larger F1 seasons and the Latin square) are where the loops differ;\nthey run in the suites, never in the tests;\nthe small ones are for the audit (`node tools/audit.mjs young-winners --instance all --link G`) and the tests.\nThe suite `mallows` draws elections of 6 to 10 candidates. Every expected count was checked\nagainst an independent encoding with clingo's own optimisation, or by brute force on the small ones.\n\n## References\n\n- H. P. Young. Extending Condorcet's rule. *Journal of Economic Theory* 16(2):335–353, 1977.\n- J. Rothe, H. Spakowski and J. Vogel. Exact complexity of the winner problem for Young elections. *Theory of Computing Systems* 36(4):375–386, 2003.\n- J. Davies and F. Bacchus. Solving MAXSAT by solving a sequence of simpler SAT instances. *CP 2011*, LNCS 6876, 225–239.\n- N. Mattei and T. Walsh. PrefLib: a library for preferences. *ADT 2013*, LNCS 8176, 259–270. Data: dataset 00052 (Formula 1 seasons), https://www.preflib.org.\n",
   "fragments": [
     {
       "name": "shared",
@@ -131,7 +131,8 @@
       },
       "tags": [
         "slow",
-        "preflib"
+        "preflib",
+        "bench"
       ],
       "audit": false
     },
@@ -144,7 +145,8 @@
       },
       "tags": [
         "slow",
-        "preflib"
+        "preflib",
+        "bench"
       ],
       "audit": false
     },
@@ -157,7 +159,8 @@
       },
       "tags": [
         "slow",
-        "preflib"
+        "preflib",
+        "bench"
       ],
       "audit": false
     },
@@ -170,7 +173,8 @@
       },
       "tags": [
         "slow",
-        "preflib"
+        "preflib",
+        "bench"
       ],
       "audit": false
     },
@@ -183,7 +187,8 @@
       },
       "tags": [
         "slow",
-        "preflib"
+        "preflib",
+        "bench"
       ],
       "audit": false
     },
@@ -195,7 +200,8 @@
         "solutions": 1
       },
       "tags": [
-        "slow"
+        "slow",
+        "bench"
       ],
       "audit": false
     },

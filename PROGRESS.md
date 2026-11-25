@@ -917,6 +917,32 @@ Test in `test/browser/stats.test.mjs`; row in docs/spec-app.md §5.1.
   (at once, or when its current computation ends). A test runs the two in that order on purpose
   (it timed out without the fix).
 
+## Voting: rankings as outcomes, and the voting docs (2026-11-25, on request)
+
+- `kemeny-winners` and `slater-winners` became `kemeny-rankings` and `slater-rankings` (old ids
+  dropped, on request): every optimal ranking is one solution (`place(X,P)`). Dodgson and Young stay
+  winner problems (on request). Kemeny's IHS: once C has a ranking for a cheapest set of reversed
+  preferences, `C.models` lists its rankings, the set is blocked, and the loop stops when the cost
+  goes up. Slater's OLL: phase 2 is `for X in C.models(assume E): accept X`; fragment `exact`
+  (`:- rev(X,Y), above(X,Y).`) makes each ranking one model. Variants likewise; the winner link W
+  and fragments `first`, `glue_top` are gone.
+- Exhaustion (a count needs an exhausted run): the IHS and lazy loops ground the optimum into A
+  (`A.ground(bound, best)`, `:- cost != b.`), so A runs out after the last cheapest set. Slater's OLL
+  makes the final assumptions unit clauses of C (`u = []; u.push(a); C.add(u)`) and lists
+  `C.models()`. Runtime change (lua/runtime.lua run_solve): an unbounded `S.models()` without
+  assumptions that runs to its end sets the run exhausted, as a solve that finds none does. No
+  other example calls `models()` without assumptions, so no reference number moves.
+- Tag `bench` (on request: the heavy elections must not run in the tests): instances for the
+  benchmark suites only; coverage, instances and bounded tests skip them even with SLOW=1. On the
+  larger F1 seasons and the Latin square of kemeny-rankings, slater-rankings, dodgson-winners and
+  young-winners.
+- Counts (optimal rankings) checked against clingo `--opt-mode=optN` and brute force over all
+  permutations (instances of at most 9 candidates). Kemeny: example 2, paradox 3, condorcet 2,
+  eleven 1, f1-1956 2, f1-1964 26, f1-1970 3, f1-1978 10, f1-1993 1, f1-1991 36 (no longer open:
+  5 s), cyclic 1, random-1 1, random-2 2. Slater: 4, 3, 3, 1, 3, 30, 3, 6, 3, 108, 5, 1, 5.
+- Docs: manual section "Voting examples" (all six, input format, instances, generators, loops);
+  `llms.txt` points to it; bibliography (Alon 2006; Charbit, Thomassé and Yeo 2007).
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.

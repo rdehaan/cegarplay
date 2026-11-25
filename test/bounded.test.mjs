@@ -127,7 +127,7 @@ test('S6: the library instances reach their expected symbolic verdicts', async (
     for (const x of p.instances || []) {
       if (!x.symbolic) continue;
       const slow = (x.tags || []).some((t) => ['slow', 'hard', 'original'].includes(t)) || x.audit === false;
-      if (slow && !SLOW) continue;
+      if ((slow && !SLOW) || (x.tags || []).includes('bench')) continue;
       const v = await symbolic(p, { instance: x.id });
       checked++;
       if (!v || v.verdict !== x.symbolic) wrong.push(`${e.id}/${x.id}: ${v ? v.verdict : 'none'} (expected ${x.symbolic})`);

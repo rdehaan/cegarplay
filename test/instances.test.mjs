@@ -148,8 +148,10 @@ for (const e of lib.examples.filter((x) => !x.tags.includes('exercise'))) {
   for (const x of p.instances || []) {
     if (!x.expected || (!Number.isInteger(x.expected.solutions) && x.expected.optimum == null)) continue;
     const slow = (x.tags || []).includes('slow');
+    // bench: for the benchmark suites only, never in the tests (manual: Instances, tags)
+    const bench = (x.tags || []).includes('bench');
     const what = P.expectedCheck(x.expected, { outcome: 'finished', exhausted: true, solutions: 0 }).want;
-    test(`instance ${e.id}/${x.id} gives ${what}`, { skip: slow && !H.SLOW && 'slow (SLOW=1)' }, async () => {
+    test(`instance ${e.id}/${x.id} gives ${what}`, { skip: bench ? 'bench (tools/bench.mjs only)' : slow && !H.SLOW && 'slow (SLOW=1)' }, async () => {
       const q = structuredClone(p);
       q.settings = { ...q.settings, solutions: 0, trace: 0, seconds: 0 };
       const r = await H.runProject(q, { instance: x.id });

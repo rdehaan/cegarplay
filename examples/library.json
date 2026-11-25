@@ -45,7 +45,7 @@
     {
       "id": "voting",
       "title": "Voting",
-      "description": "Winners under the Theta-2-complete rules of Kemeny, Slater, Dodgson and Young (with Formula 1 seasons from PrefLib), control of a Kemeny election, and justifications of voting outcomes by axioms."
+      "description": "The Kemeny and Slater rankings and the Dodgson and Young winners (with Formula 1 seasons from PrefLib), control of a Kemeny election, and justifications of voting outcomes by axioms."
     },
     {
       "id": "planning",
@@ -2569,10 +2569,10 @@
       "after": 7
     },
     {
-      "id": "kemeny-winners",
-      "title": "Kemeny winners",
+      "id": "kemeny-rankings",
+      "title": "Kemeny rankings",
       "group": "voting",
-      "summary": "Kemeny winners by implicit hitting sets: majority cycles are the minimal unsat cores, and bounds decide the winners (8 voters, 2 winners); F1 seasons from PrefLib; variants with plain or disjoint cores and lazy transitivity.",
+      "summary": "Kemeny rankings, every optimal one, by implicit hitting sets: majority cycles are the minimal unsat cores (8 voters, 2 rankings); F1 seasons from PrefLib; variants with plain or disjoint cores and lazy transitivity.",
       "shape": "custom",
       "tags": [
         "fast",
@@ -2595,10 +2595,10 @@
       "after": 14
     },
     {
-      "id": "slater-winners",
-      "title": "Slater winners",
+      "id": "slater-rankings",
+      "title": "Slater rankings",
       "group": "voting",
-      "summary": "Slater winners by core-guided optimisation (OLL), then one query per candidate on the reformulated problem (8 voters, 3 winners); F1 seasons from PrefLib; variants with implicit hitting sets and lazy transitivity.",
+      "summary": "Slater rankings, every optimal one, by core-guided optimisation (OLL), then every model under the final assumptions (8 voters, 4 rankings); F1 seasons from PrefLib; variants with implicit hitting sets and lazy transitivity.",
       "shape": "custom",
       "tags": [
         "fast",
@@ -2609,7 +2609,7 @@
         "project"
       ],
       "expected": {
-        "solutions": 3
+        "solutions": 4
       },
       "has": {
         "instances": 13,

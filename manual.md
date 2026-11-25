@@ -154,7 +154,7 @@ clingo about an instance fact name `instance:<line>`. The loop language does not
 | `instances[].audit` | `false`: the audit and Fuzz skip this instance (too large to enumerate); runs, Run all and campaigns still use it. The **audit** box in the instance form sets it; the table shows `no audit`. **Audit** on such an instance audits every other instance in turn; `tools/audit.mjs --instance all` does the same headless. |
 | `instances[].expected.solutions` | Whole number or null: the solution count of an exhausted run with all solutions (checked by "Run all", `--instance all` and the library tests). |
 | `instances[].expected.optimum` | Whole number, list of whole numbers (one per priority level, as clingo reports costs; a maximised value is negated) or null: the cost of every reported solution of a finished run. For optimisation loops that `stop` at their optimum: the run need not be exhausted, but it must report at least one solution, all with this cost. With `solutions` too, both are checked (the count only when the run is exhausted). Checked by the same tools; the Instances tab has an *Expected optimum* field and shows the cost of the last run. |
-| `instances[].tags` | List of strings (`slow` instances are skipped by the default test run). |
+| `instances[].tags` | List of strings (`slow` instances are skipped by the default test run; `bench` instances are for the benchmark suites only and never run by the tests, not even with `SLOW=1`). |
 | `instances[].recipe` | `{ generator, params, seed }`: where the facts came from. Without `facts`, they are generated when a run uses the instance (recipe-only: library examples, suites); with `facts` (Add as instance, Write out its facts, mining) the recipe is only a note. |
 | `variants[].name` | Matches `[A-Za-z0-9_-]+`; unique; not `default`. |
 | `variants[].loop` | A loop script (string) or `{ language, text }` that replaces the project's. |
@@ -171,7 +171,7 @@ The **Instances** tab (tab 9) lists the instances with their tags, expected coun
 their last run; it edits facts, constants, expected count and tags; **Import file** reads facts
 (`.lp`), DIMACS graphs (`.col`: `node/1`, `edge/2`), QDIMACS (`qblock/2`, `qvar/2`, `clause/1`,
 `qlit/3`), ASPARTIX (`.apx`: `arg/1`, `att/2`), Trivial Graph Format (`.tgf`: `arg/1`, `att/2`),
-PrefLib strict orders (`.soc`, `.soi`: `ballot/2` as `kemeny-control` and the `*-winners` examples of the Voting group read them) and jaggpy
+PrefLib strict orders (`.soc`, `.soi`: `ballot/2` as `kemeny-control` and the rule examples of the Voting group read them; see [Voting examples](#manual-voting-examples)) and jaggpy
 scenarios (`.jagg`: `var/1`, `cl/1`, `pos/2`, `neg/2`) and CSV (`.csv`, `.tsv`: a header line, then
 `row(I, V1, ..., Vn)` per record, or the facts of a **column map** such as `edge(from,to); w(from,to,cost)`
 over the header's names or column numbers). Several files can be chosen at once (one instance each; a
@@ -388,8 +388,8 @@ anything else is used as it is; the instance's own constants win. An instance st
 fixed instance. Mined instances are added as fixed instances too. `tools/draw.py` is the Python twin used by `tools/cegarcheck.py --instance`; both
 give byte-identical facts. Library generators: `gnp`, `gnm` (`clique-colouring`, `arrowing`,
 `choosability`), `af-gnp` (`af-preferred`, `af-semi-stable`), `qbf-dnf` (`qbf`), `ballots-ic` and
-`ballots-mallows` (`kemeny-control`), `election-mallows` and `election-latin` (`kemeny-winners`,
-`slater-winners`, `dodgson-winners`, `young-winners`).
+`ballots-mallows` (`kemeny-control`), `election-mallows` and `election-latin` (`kemeny-rankings`,
+`slater-rankings`, `dodgson-winners`, `young-winners`).
 
 `Project.load` errors (exact texts): `not a JSON file: ...`, `not a CegarPlay project: expected a
 JSON object`, `this is a logic-game file, not a CegarPlay project`, `not a CegarPlay project (format
@@ -603,8 +603,8 @@ A block may follow the colon on the same line if it is one simple statement: `if
 | `S.solve(assume E)` | Solve under the assumption list `E` (usually `G(M)`). |
 | `S.solve(assume E1, E2)` | Every positional argument after `assume E1` is one more assumption list. |
 | `S.solve(assume E, optimal)` | With a `#minimize` in `S`: the optimal model. |
-| `S.models(assume E, limit n)` | A list of up to `n` models (empty if unsatisfiable). |
-| `S.add(c)` | Add a clause or a list of clauses to `S` before its next solve. Not inside `on candidate` of `S`. |
+| `S.models(assume E, limit n)` | A list of up to `n` models (empty if unsatisfiable). Without `limit`: every model. Without assumptions or limit it lists every model of `S`, and the run counts as exhausted (as after a solve that finds none), so a loop may end with `for X in S.models(): accept X` (example `slater-rankings`). |
+| `S.add(c)` | Add a clause or a list of clauses to `S` before its next solve. A list of literals of `S` is one clause: `u = []`, `u.push(a)`, `S.add(u)` makes an assumption `a` a fact. Not inside `on candidate` of `S`. |
 | `S.expand(refine, cex = L)` | Add the facts `cex(k, T)` for each atom `T` in the list `L`, then ground `refine(k)` with the next `k`. More named lists are allowed: `S.expand(refine, cex = L1, old = L2)`. `L` may also be a core (`C.core`: the atoms C was assumed), a clause (the atoms of its link) or a list `G(M)`; the facts name the atoms, whatever value they had (example `maxsat-oll`). Not inside `on candidate` of `S`. |
 | `S.exhausted` | Whether the last search of `S` ran to the end (not interrupted, model limit not reached). |
 | `S.step` | The number of expansions of `S` so far (the last `k`). |
@@ -980,15 +980,15 @@ of these loops step by step (2QBF, implicit hitting sets, MARCO, ...).
 | Expansion: AReQS for 2QBF (Janota and Marques-Silva) | Shape 3: each counterexample grounds a copy of the matrix | [qbf-expansion](?example=qbf-expansion) | `expansion` |
 | CEGIS, counterexample-guided inductive synthesis (Solar-Lezama et al.) | Shape 3: each counterexample input is simulated in the synthesiser; the specification stays in the check | [cegis-circuit](?example=cegis-circuit), [min-dnf](?example=min-dnf) | `cegis` |
 | Several oracles (equilibria: one deviation check per player) | One candidate, several checks or several `reject`s | [nash](?example=nash), [boolean-game](?example=boolean-game), [abduction-two-checks](?example=abduction-two-checks) | `several-solvers` |
-| Implicit hitting sets: MaxHS (Davies and Bacchus), IHS beyond NP (Saikko, Wallner and Järvisalo) | `A.solve(optimal)` for a minimum-cost hitting set; a witness check refined by minimised cores (`C.core.minimal`); disjoint cores by `for a in K: E = E.without(a)`; `track` for the bounds | [maxsat-ihs](?example=maxsat-ihs); the dual form (correction sets from models): [smallest-mus](?example=smallest-mus); abduction (AbHS): [abduction-ihs](?example=abduction-ihs); majority cycles as cores, winners by bounds: [kemeny-winners](?example=kemeny-winners) | `ihs` |
+| Implicit hitting sets: MaxHS (Davies and Bacchus), IHS beyond NP (Saikko, Wallner and Järvisalo) | `A.solve(optimal)` for a minimum-cost hitting set; a witness check refined by minimised cores (`C.core.minimal`); disjoint cores by `for a in K: E = E.without(a)`; `track` for the bounds | [maxsat-ihs](?example=maxsat-ihs); the dual form (correction sets from models): [smallest-mus](?example=smallest-mus); abduction (AbHS): [abduction-ihs](?example=abduction-ihs); majority cycles as cores, every optimal ranking: [kemeny-rankings](?example=kemeny-rankings) | `ihs` |
 | MARCO, MUS and MSS enumeration (Liffiton, Previti, Malik and Marques-Silva) | A map solver with maximal seeds; grow or shrink by walking `G(M)` (`a.true`, `E.flip(a)`); `G.below` and `G.above` block both ways | [marco](?example=marco), [reasons-by-shrinking](?example=reasons-by-shrinking) | `marco` |
-| Core-guided optimisation: OLL (Morgado, Dodaro and Marques-Silva), Fu-Malik | One solver under assumptions; each core is relaxed (`E.without`) and grounded as a totaliser (`C.expand(relax, core = K)`); new soft constraints from `C.atom` | [maxsat-oll](?example=maxsat-oll); weighted, weights split into unit copies: [maxsat-oll-weighted](?example=maxsat-oll-weighted); the final assumptions as the set of optimal solutions, one query per candidate: [slater-winners](?example=slater-winners) | `oll` |
+| Core-guided optimisation: OLL (Morgado, Dodaro and Marques-Silva), Fu-Malik | One solver under assumptions; each core is relaxed (`E.without`) and grounded as a totaliser (`C.expand(relax, core = K)`); new soft constraints from `C.atom` | [maxsat-oll](?example=maxsat-oll); weighted, weights split into unit copies: [maxsat-oll-weighted](?example=maxsat-oll-weighted); the final assumptions as the set of optimal solutions, listed by one enumeration: [slater-rankings](?example=slater-rankings) | `oll` |
 | Logic-based Benders decomposition (Hooker and Ottosson) | An optimal master and an optimal subproblem; optimality cuts as rules from `refine(k)`; bounds read with `M.cost`, `X.cost`, `a.arg(i)` | [benders-tardiness](?example=benders-tardiness), [knapsack-bounds](?example=knapsack-bounds) | `benders` |
 | Optimisation over a Σ2 check, 2-ASP(Q) with weak constraints | An optimal abstraction whose first surviving candidate is optimal (`A.solve(optimal)` or `search A optimal`) | [knapsack-optimum](?example=knapsack-optimum), [reasons-by-size](?example=reasons-by-size); a weak constraint on the outer level: [robust-facilities](?example=robust-facilities) | `bounds`, `aspq` |
 | Recursive CEGAR for any number of quantifier blocks: RAReQS (Janota, Klieber, Marques-Silva and Clarke) | Solver and link families and a recursive `def` | [qbf-deep](?example=qbf-deep) | `rareqs` |
 | Clausal abstraction, multi-level QBF: CAQE (Rabe and Tentrup), QESTO | A chain of solvers; cores along the chain with `core.on(G)`; an inner `search ... keep` | [qbf-three-blocks](?example=qbf-three-blocks), [qbf-caqe](?example=qbf-caqe) (clause-satisfaction atoms on the links), [knapsack-fortification](?example=knapsack-fortification) | `caqe` |
 | Theta-2 as P^NP[log] (Wagner): a binary search over a bound with one NP query per step, then one query per candidate | `C.ground(bound, k)` grounds the bound of a query; `S.atom("within", k)` assumes it; `//` halves the interval | [dodgson-winners](?example=dodgson-winners) | `bounds` |
-| Row generation (lazy constraints); for Kemeny, the ordering formulation of Conitzer, Davenport and Kalagnanam with its 3-cycle constraints added lazily | An optimal abstraction without most constraints; each counterexample grounds one (`refine(k)`) or adds a clause from `relevant/1` | [young-winners](?example=young-winners); lazy transitivity: variant `lazy-transitivity` of [kemeny-winners](?example=kemeny-winners) | `lazy-constraints` |
+| Row generation (lazy constraints); for Kemeny, the ordering formulation of Conitzer, Davenport and Kalagnanam with its 3-cycle constraints added lazily | An optimal abstraction without most constraints; each counterexample grounds one (`refine(k)`) or adds a clause from `relevant/1` | [young-winners](?example=young-winners); lazy transitivity: variant `lazy-transitivity` of [kemeny-rankings](?example=kemeny-rankings) | `lazy-constraints` |
 | Branch-and-check (Thorsteinsson), lazy clause generation | `on partial P:` in the search: the check also runs at partial assignments; cores or `G.clause(X)` with `G(P, false)` cut whole subtrees | [colourable-partial](?example=colourable-partial), [triangle-free-lazy](?example=triangle-free-lazy) | `branch-and-check`, `lazy-constraints` |
 | Omission-based abstraction (Saribatur and Eiter) | Constraints guarded by `#external` atoms, switched on with `A.set` when a candidate breaks them | [queens-omission](?example=queens-omission), [conformant-growing](?example=conformant-growing) (a growing horizon) | `omission` |
 
@@ -1706,7 +1706,7 @@ may set `library.level` and `library.after`).
 | `reasoning` | `abduction-two-checks`, `abduction`, `actual-cause`, `af-preferred`, `af-semi-stable`, `belief-update`, `default-extensions`, `diagnosis`, `minimal-reasons`, `reasons-by-shrinking`, `reasons-by-size`, `sufficient-reason`, `abduction-ihs` |
 | `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction`, `colourable-partial`, `triangle-free-lazy` |
 | `games` | `nash`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `strong-nash`, `subset-sum-game` |
-| `voting` | `kemeny-winners`, `slater-winners`, `dodgson-winners`, `young-winners`, `kemeny-control`, `voting-justification` |
+| `voting` | `kemeny-rankings`, `slater-rankings`, `dodgson-winners`, `young-winners`, `kemeny-control`, `voting-justification` |
 | `planning` | `benders-tardiness`, `conformant-growing`, `conformant-planning`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-interdiction`, `knapsack-optimum`, `robust-facilities` |
 | `exercises` | `exercise-sum-free`, `exercise-triangles` |
 | `puzzles` | `akari`, `binairo`, `fewest-clues`, `futoshiki`, `queens-omission`, `slitherlink`, `sudoku-graded`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `sudoku-unique` |
@@ -1720,7 +1720,7 @@ the guide and the tutorial has three or more instances that make its loop refine
 two or more [variants](#manual-variants) (the blocking loop `reference` where it can finish, other
 loop shapes, other refinements) and, where random input makes sense, a generator with recipe
 instances. `test/coverage-*.test.mjs` runs every variant on every instance with an expected count
-(instances tagged `slow`, `hard` or `original` only with `SLOW=1`), and the audit finishes within
+(instances tagged `slow`, `hard` or `original` only with `SLOW=1`, those tagged `bench` never), and the audit finishes within
 about a minute on every instance not marked `audit: false`. Parametric problems (`graph-coloring`, `min-dnf`,
 `clique-interdiction`) use constants-only instances and `settings.instance: ""`, so that the
 project as written runs with its own constants. `voting-justification` has fourteen instances,
@@ -1757,6 +1757,63 @@ library (the block is dropped from `examples/<id>.json`). See `examples/contrib/
 `node tools/make-chat-package.mjs` writes `dist/chat-package/`, a flat folder (this manual, the
 tutorial, every example, a template, the checker below, a guide) for writing examples in a chat
 without the repository.
+
+### Voting examples
+
+The library group **Voting** (`voting`) holds six examples about elections. Each loads with
+`?example=<id>`; its readme (Control tab, **Readme**) has the research question, the loops, measured
+times and references.
+
+| Example | Question | Outcome (one solution each) | Default loop |
+| --- | --- | --- | --- |
+| `kemeny-rankings` | The Kemeny rankings: the rankings with the fewest disagreements with the voters (Kemeny 1959). | a ranking, `place(X,P)` | implicit hitting sets: majority cycles as minimal unsat cores |
+| `slater-rankings` | The Slater rankings: the rankings that go against the fewest majority preferences, whatever their margins (Slater 1961). | a ranking, `place(X,P)` | core-guided optimisation (OLL), then every model under the final assumptions |
+| `dodgson-winners` | The Dodgson winners: the fewest swaps of neighbours in the ballots that make a candidate a Condorcet winner. | a winner | binary search on the score (P^NP[log]), then one query per candidate |
+| `young-winners` | The Young winners: the fewest voters to delete so that a candidate becomes a weak Condorcet winner. | a winner | row generation: an opponent's majority constraint per refinement |
+| `kemeny-control` | Can deleting at most `budget` voters make the favourite top a Kemeny ranking? (Sigma-2) | the deleted voters | Shape 4: counterexamples grounded in batches |
+| `voting-justification` | Why does a profile have this outcome? A set of axiom instances that forces it. | a justification | Shape 1 over axiom instances; one question per instance |
+
+**Input.** The four rule examples share the input format. An instance holds the ballots:
+`ballot(V,(A,B,...))` (voter or ballot V ranks A first, B second, ...) and optionally `count(V,N)`
+(N voters cast ballot V, as PrefLib's `N: a,b,...`). Ballots of 3 to 12 candidates are read;
+longer ones are given as `rank(V,P,X)`. A ballot need not rank every candidate (PrefLib `.soi`):
+a voter counts for a pair only when the ballot ranks both. The
+fragment `shared` derives `n(X,Y,N)` (N voters prefer X to Y), `edge(X,Y,M)` (a majority prefers
+X to Y by margin M) and `w(X,Y,W)` (the weight a ranking pays for going against `edge(X,Y,_)`: the
+margin for Kemeny, 1 for Slater). PrefLib files (`.soc`, `.soi`) import in the Instances tab
+(**Import file**).
+
+**Instances.** The same thirteen in each of the four: small elections for the audit and the tests
+(`example`, `paradox`, `condorcet`, `eleven`), six Formula 1 seasons from PrefLib (dataset 00052:
+`f1-1956`, `f1-1964`, `f1-1970`, `f1-1978`, `f1-1993`, `f1-1991`, the larger ones tagged `slow`
+and `bench`: run by the suites, never by the tests),
+a Latin-square election (`cyclic`), and two generated ones. The generators `election-mallows`
+(`v` voters over `m` candidates, each ballot drawn from a Mallows model with dispersion `phi`/1000;
+1000 is impartial culture) and `election-latin` (the `m` cyclic shifts of one ranking, each cast by
+`lo` to `hi` voters) draw more. Each example has the
+suites `loops` (its variants on every instance) and `mallows` (6 to 10 candidates).
+
+**Rankings as outcomes.** `kemeny-rankings` and `slater-rankings` report every optimal ranking,
+not just the winners: with all solutions, the solution count is the number of optimal rankings
+(ties in the majority relation give several: the 1964 season has one Kemeny winner and 26 Kemeny
+rankings). The winners are the candidates in place 1 of some solution. In both, a set of majority
+preferences that a ranking goes against is a feedback arc set of the majority graph, and a
+ranking's cost is the total weight of that set; a cheapest set has only optimal rankings.
+Variants: `plain-cores` (cores as clasp returns them), `disjoint-cores` (Kemeny) or `ihs`
+(Slater: the implicit hitting sets of Kemeny with unit weights), `lazy-transitivity` (an order of
+every pair, 3-cycles added lazily as clauses from `relevant/1`; Conitzer, Davenport and Kalagnanam
+2006) and `reference` (the blocking loop, small instances only).
+
+**Winners as outcomes.** `dodgson-winners` and `young-winners` decide for each candidate whether
+it wins (both winner problems are Theta-2-complete). Dodgson's variants are the linear searches
+`linear-up` and `linear-down` and the Sigma-2 template `exists-forall`; Young's are `cores`,
+`plain-cores`, `all-opponents` (every constraint from the start) and `exists-forall`.
+
+**Running them.** `node tools/run.mjs kemeny-rankings --instance f1-1978 --solutions all`;
+`node tools/bench.mjs kemeny-rankings --suite loops --out rows.jsonl` and `node tools/report.mjs
+rows.jsonl` compare the variants; `node tools/audit.mjs slater-rankings --instance all --variant ihs`
+audits. The [loops from the literature](#manual-loops-from-the-literature) table maps each default
+loop to its pattern.
 
 ## For agents
 

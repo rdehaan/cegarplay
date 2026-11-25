@@ -12,6 +12,9 @@ export const COVERED = LIB.filter((e) => !['guide', 'tutorial'].includes(e.group
 // - exercise-triangles: its loop is the blocking loop the reader replaces; a finished variant would give the answer away.
 const FEW_VARIANTS = { 'exercise-triangles': 0, 'exercise-sum-free': 1 };
 const SLOW_TAGS = ['slow', 'hard', 'original'];
+// bench: for the benchmark suites only (tools/bench.mjs, the Campaign tab), never in the tests,
+// not even with SLOW=1 (the large elections of the Voting group, where some variants need minutes)
+const BENCH = (x) => (x.tags || []).includes('bench');
 
 const project = (id) => load(H.read(`examples/${id}.json`));
 
@@ -43,7 +46,7 @@ async function check(p, inst, variant) {
 export function shard(k, of = 4) {
   for (const id of COVERED.filter((_, i) => i % of === k)) {
     const p = project(id);
-    const insts = (p.instances || []).filter((x) => x.expected && (H.SLOW || !(x.tags || []).some((t) => SLOW_TAGS.includes(t))));
+    const insts = (p.instances || []).filter((x) => x.expected && !BENCH(x) && (H.SLOW || !(x.tags || []).some((t) => SLOW_TAGS.includes(t))));
     // the normal suite runs the default loop and the reference variant (or the first one);
     // SLOW=1 runs every variant
     const names = (p.variants || []).map((v) => v.name);

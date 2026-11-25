@@ -78,7 +78,7 @@
 
         <h2 id="ihs">Implicit hitting sets</h2>
         <p>Examples: <code>maxsat-ihs</code>, <code>smallest-mus</code>, <code>abduction-ihs</code> (AbHS),
-          <code>kemeny-winners</code> (majority cycles as cores); chapter
+          <code>kemeny-rankings</code> (majority cycles as cores); chapter
           <a href="14-hitting-sets.html">14</a>.</p>
         <ul class="bib">
           <li id="davies2011">J. Davies and F. Bacchus. Solving MAXSAT by solving a sequence of simpler
@@ -92,7 +92,7 @@
             algorithms for reasoning beyond NP. <i>KR 2016</i>.</li>
           <li id="baharev2021">A. Baharev, H. Schichl, A. Neumaier and T. Achterberg. An exact method
             for the minimum feedback arc set problem. <i>ACM Journal of Experimental Algorithmics</i> 26
-            (2021). Cycles generated lazily, as in <code>kemeny-winners</code>.</li>
+            (2021). Cycles generated lazily, as in <code>kemeny-rankings</code>.</li>
         </ul>
 
         <h2 id="marco">MUS and MSS enumeration</h2>
@@ -108,7 +108,7 @@
         </ul>
 
         <h2 id="core-guided">Core-guided optimisation</h2>
-        <p>Examples: <code>maxsat-oll</code>, <code>maxsat-oll-weighted</code>, <code>slater-winners</code>.</p>
+        <p>Examples: <code>maxsat-oll</code>, <code>maxsat-oll-weighted</code>, <code>slater-rankings</code>.</p>
         <ul class="bib">
           <li id="fu2006">Z. Fu and S. Malik. On solving the partial MAX-SAT problem. <i>SAT 2006</i>.</li>
           <li id="andres2012">B. Andres, B. Kaufmann, O. Matheis and T. Schaub. Unsatisfiability-based
@@ -121,7 +121,7 @@
         <p>Examples: <code>benders-tardiness</code>, <code>knapsack-bounds</code>,
           <code>colourable-partial</code>, <code>triangle-free-lazy</code>; lazy constraints:
           <code>young-winners</code>, the variant <code>lazy-transitivity</code> of
-          <code>kemeny-winners</code>.</p>
+          <code>kemeny-rankings</code>.</p>
         <ul class="bib">
           <li id="hooker2003">J. N. Hooker and G. Ottosson. Logic-based Benders decomposition.
             <i>Mathematical Programming</i> 96(1) (2003).</li>
@@ -140,9 +140,9 @@
             Programming</i> 21(2) (2021).</li>
         </ul>
 
-        <h2 id="winners">Voting rules and the complexity of their winners</h2>
-        <p>Examples: <code>kemeny-winners</code>, <code>slater-winners</code>, <code>dodgson-winners</code>,
-          <code>young-winners</code>, with data from PrefLib.</p>
+        <h2 id="winners">Voting rules and the complexity of their outcomes</h2>
+        <p>Examples: <code>kemeny-rankings</code> and <code>slater-rankings</code> (every optimal ranking),
+          <code>dodgson-winners</code> and <code>young-winners</code> (the winners), with data from PrefLib.</p>
         <ul class="bib">
           <li id="dodgson1876">C. L. Dodgson. <i>A method of taking votes on more than two issues</i>.
             Pamphlet, Oxford, 1876.</li>
@@ -161,6 +161,10 @@
             <i>Journal of the ACM</i> 44(6) (1997).</li>
           <li id="rothe2003">J. Rothe, H. Spakowski and J. Vogel. Exact complexity of the winner problem
             for Young elections. <i>Theory of Computing Systems</i> 36(4) (2003).</li>
+          <li id="alon2006">N. Alon. Ranking tournaments. <i>SIAM Journal on Discrete Mathematics</i>
+            20(1) (2006).</li>
+          <li id="charbit2007">P. Charbit, S. Thomassé and A. Yeo. The minimum feedback arc set problem is
+            NP-hard for tournaments. <i>Combinatorics, Probability and Computing</i> 16(1) (2007).</li>
           <li id="hemaspaandra2005">E. Hemaspaandra, H. Spakowski and J. Vogel. The complexity of Kemeny
             elections. <i>Theoretical Computer Science</i> 349(3) (2005).</li>
           <li id="lampis2022">M. Lampis. Determining a Slater winner is complete for parallel access to

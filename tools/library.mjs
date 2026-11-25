@@ -238,7 +238,7 @@ export const GROUPS = [
   { id: 'reasoning', title: 'Knowledge representation and explanation', description: 'Abduction, defaults, belief update, diagnosis, causality, argumentation, reasons for a classifier.' },
   { id: 'graphs', title: 'Graphs', description: 'Colourings, list colourings, cliques and Ramsey-type arrowing.' },
   { id: 'games', title: 'Games and other social choice', description: 'Equilibria, stable coalitions, fair division, games on graphs and numbers.' },
-  { id: 'voting', title: 'Voting', description: 'Winners under the Theta-2-complete rules of Kemeny, Slater, Dodgson and Young (with Formula 1 seasons from PrefLib), control of a Kemeny election, and justifications of voting outcomes by axioms.' },
+  { id: 'voting', title: 'Voting', description: 'The Kemeny and Slater rankings and the Dodgson and Young winners (with Formula 1 seasons from PrefLib), control of a Kemeny election, and justifications of voting outcomes by axioms.' },
   { id: 'planning', title: 'Planning and optimisation', description: 'Conformant planning, bilevel and trilevel knapsack problems.' },
   { id: 'puzzles', title: 'Puzzles', description: 'Generating puzzles with a unique solution: Sudoku, Binairo, Futoshiki, Akari, Slitherlink.' },
   { id: 'other', title: 'Other problems', description: 'Contributed problems without a category.' },

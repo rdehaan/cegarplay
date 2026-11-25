@@ -1511,8 +1511,10 @@ local function run_solve(s, o, limit, optimal, what)
   if not ok then error(err, 0) end
   reraise()
   if #models > 0 then s.n.sat = s.n.sat + 1 else s.n.unsat = s.n.unsat + 1 end
+  -- without assumptions, the run is exhausted when the solver has no (more) model: a solve that
+  -- found none, or an enumeration of every model (S.models without a limit) that ran to its end
   if #assume > 0 then rt.counterexamples = rt.counterexamples + #models
-  else rt.exhausted = (#models == 0) end
+  else rt.exhausted = (#models == 0) or (limit == math.huge and not optimal) end
   if #s.inn == 0 then
     for _ = 1, #models do count_candidate() end
   end
