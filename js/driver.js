@@ -20,7 +20,7 @@ export function constantList(settings) {
   return Object.entries((settings && settings.constants) || {}).map(([k, v]) => `${k}=${v}`);
 }
 
-// settings.record (docs/spec-recording.md): { steps, n, calls, proof }, or null when nothing is
+// settings.record: { steps, n, calls, proof }, or null when nothing is
 // recorded (then the program text is the same as without the key).
 export const RECORD_STEPS = ['off', 'first', 'every', 'last', 'sample', 'all'];
 export function recordSetting(r) {
@@ -32,7 +32,7 @@ export function recordSetting(r) {
   return { steps, n, calls, proof };
 }
 
-// settings.certify (docs/spec-soundness.md): off (default), report, exact (phase S4).
+// settings.certify: off (default), report, exact (phase S4).
 export const CERTIFY = ['off', 'report', 'exact'];
 
 // Whether a loop uses `lift` on a link (then lua/ground.lua is needed): the compiler's result,
@@ -85,7 +85,7 @@ export function assemble(project, compiled, runtimeLua, { poll = false, plain = 
     lines.push(`SETTINGS.record = { steps = ${luaStr(rec.steps)}, n = ${rec.n}, calls = ${rec.calls ? 'true' : 'false'}` +
       `${rec.proof ? ', proof = true' : ''} }`);
   }
-  // pools (docs/spec-instances.md section 7): only with the key, so other programs are unchanged
+  // pools: only with the key, so other programs are unchanged
   if (Array.isArray(project.pools) && project.pools.length) {
     lines.push('POOLS = {}');
     for (const p of project.pools) {
@@ -177,8 +177,8 @@ export function auditBody(compiled, plan, { limit = 200000, vectors = false } = 
   return lines.map((l) => '    ' + l).join('\n') + '\n';
 }
 
-// Which link the symbolic audit (lua/bounded.lua) looks at, and what it verifies (docs/spec-soundness.md
-// section 7). Returns { link, clause, clauses, kinds } or { error } (no plan) or { unsupported }
+// Which link the symbolic audit (lua/bounded.lua) looks at, and what it verifies.
+// Returns { link, clause, clauses, kinds } or { error } (no plan) or { unsupported }
 // (a plan the verifier does not cover: the verdict is 'unsupported' with that reason).
 export function boundedPlan(compiled, linkName) {
   if (!compiled || !compiled.ok) return { error: 'the symbolic audit needs a loop script without errors' };
@@ -421,7 +421,7 @@ export function groundTerm(text) {
   return i === s.length;
 }
 
-// A generator (docs/spec-instances.md section 4) checked by clingo --mode=gringo behind a
+// A generator checked by clingo --mode=gringo behind a
 // one-line stub script that defines every draw function (returning 0), so syntax errors and
 // unsafe variables are reported with their line and never reach ctl:add. params: ["n=7", ...].
 export const GENERATOR_STUB = '#script (lua) local clingo = require("clingo"); local function z() return clingo.Number(0) end; ' +
@@ -437,7 +437,7 @@ export async function validateGenerator(generator, engineRun, params = []) {
   return errs;
 }
 
-// A space (docs/spec-instances.md section 8) checked by clingo --mode=gringo with its parameters
+// A space checked by clingo --mode=gringo with its parameters
 // as constants (and the project's schema text, when given), so syntax errors and unsafe
 // variables are reported with their line and never reach ctl:add. params: ["k=3", ...].
 export async function validateSpace(space, engineRun, params = [], schema = '') {

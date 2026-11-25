@@ -5,18 +5,13 @@ programming, solved with clingo compiled to WebAssembly.
 
 ## Where things are
 
-- The implementation plans (PLAN.md, PLAN2.md, PLAN3.md) are done and were removed; they are in
-  the git history. `docs/directions/*.md` holds the design behind PLAN2's features; the `spike2/`
-  prototypes it cites were removed too (git history). PLAN3 (bounded verification: symbolic audit,
-  instance spaces) is specified in `docs/spec-soundness.md` sections 7-8 and
-  `docs/spec-instances.md` section 8; `spike3/` holds its measuring scripts and results.
-- `docs/lab-design.md`: the Refinery (tab 12, `js/lab/`, `lua/lab.lua`, `tools/lab.mjs`): imports,
-  data structures, deviations, milestones.
+- The implementation plans (PLAN.md, PLAN2.md, PLAN3.md), the specifications (`docs/spec-*.md`,
+  `docs/reference-numbers.md`), the design notes (`docs/directions/`, `docs/lab-design.md`) and the
+  prototypes and measurements (`spike2/`, `spike3/`) are done and were removed; they are in the git
+  history. `manual.md` is the reference for what the code does now.
 - `FUTURE-DIRECTIONS.md`: what was considered and not built (language, tools, views, library).
 - `PROGRESS.md`: what is done and what is next. **Read it first after any
   context clear. Update it at every checkpoint.**
-- `docs/spec-*.md`: specifications. Read only the ones the current phase names.
-- `docs/reference-numbers.md`: numbers the implementation must reproduce.
 - `spike/`: verified prototype code. Read-only; copy from it.
 - `reference/`: clones of logic-game and declarative-cegar. Read-only, git-ignored.
 - `guide/`: the design guide (static pages, `chapters.js`, `numbers.json`).
@@ -40,7 +35,7 @@ programming, solved with clingo compiled to WebAssembly.
 7. No build step, no framework, no request to another origin.
 8. `js/compiler.js`, `js/driver.js`, `js/project.js` must not use the DOM or Node APIs.
 9. Trust tests over the plan; record deviations in `PROGRESS.md`. Do not change
-   reference numbers without finding the cause.
+   the reference numbers in the tests without finding the cause.
 10. An atom that the backend adds to a control before it is grounded must also reach the
     grounder as program text (a choice rule or a fact): clingo 5.8 grounds a rule that projects
     backend-only choice atoms away (`b :- q(X).`) with one instance. See `iface_part` in
@@ -53,7 +48,7 @@ PyPI. Run this from the repo root. It also works as a cloud environment's setup 
 
 ```
 git clone https://github.com/rdehaan/declarative-cegar reference/declarative-cegar  # required: tests + make-examples read its .lp files
-git clone https://github.com/rdehaan/logic-game reference/logic-game                # read-only reference (docs/spec-app.md)
+git clone https://github.com/rdehaan/logic-game reference/logic-game                # read-only reference
 (cd test && npm ci && npx playwright install --with-deps chromium)  # browser tests; add firefox for BROWSER=firefox
 (cd spike && npm ci)
 pip install clingo                                                  # Python clingo 5.8.x

@@ -1,4 +1,4 @@
-// Domain views (docs/spec-views.md): an ASP fragment turns one recorded step into marks, drawn as
+// Domain views: an ASP fragment turns one recorded step into marks, drawn as
 // SVG. The logic (facts, programs, marks, layouts, suggestions, cache) uses no DOM; the
 // renderer (renderView, ViewPanel) touches the DOM only when called.
 //

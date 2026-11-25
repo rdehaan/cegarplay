@@ -1,4 +1,4 @@
-// Fuzz and diagnose (docs/spec-instances.md section 6): walk instances from small to large, ask
+// Fuzz and diagnose: walk instances from small to large, ask
 // the audit for a verdict on each, shrink the first unsound one, and name the refinement that
 // removes a solution. No DOM, no Node APIs.
 import { derive } from './project.js';

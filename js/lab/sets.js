@@ -1,5 +1,5 @@
 // Refinery: removal sets, soundness, forced atoms, the one-atom neighbourhood
-// (docs/lab-design.md, "Definitions"). No DOM, no Node APIs.
+//. No DOM, no Node APIs.
 //
 // A set is a pair of atom word masks (r, v): S = the atoms of r, v = the values the clause's
 // removed candidates have on them (M's values for a relevant set or a block). For a bad candidate

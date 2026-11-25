@@ -1,4 +1,4 @@
-// Phase S5: proof logs and tools/certcheck.py (docs/spec-soundness.md section 6).
+// Phase S5: proof logs and tools/certcheck.py.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

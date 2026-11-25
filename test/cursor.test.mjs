@@ -1,4 +1,4 @@
-// Phase V5: the linked cursor, alignment, export (docs/spec-views.md section 6).
+// Phase V5: the linked cursor, alignment, export.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

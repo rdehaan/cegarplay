@@ -16,10 +16,9 @@
   relevant/1, soundness testing, loop shapes, rule refinements, cores, optimisation), each step
   an example of the library group "guide"; page 12 has a checklist of all its rules.
 
-- Specifications of the newer parts: [instances, generators, campaigns, fuzz, pools](docs/spec-instances.md),
-  [recordings](docs/spec-recording.md), [audit, certificates, lift, proof logs, symbolic audit, bounded verification](docs/spec-soundness.md),
-  [domain views, candidate space, cursor](docs/spec-views.md). The page's tabs: Instances (9),
-  Campaign (10), Observatory (11), Refinery (12, manual section "Refinery tab").
+- The page's tabs: Instances (9), Campaign (10), Observatory (11), Refinery (12); the manual
+  describes each (instances, generators, campaigns, fuzz, recordings, audit, certificates, proof
+  logs, symbolic audit, bounded verification, domain views, candidate space, the Refinery).
 
 ## Examples
 

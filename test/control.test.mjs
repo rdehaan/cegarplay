@@ -1,4 +1,4 @@
-// Phase L2: control (docs/directions/generality.md, G4 and G8).
+// Phase L2: control (G4 and G8).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as H from './helpers.mjs';

@@ -1,4 +1,4 @@
--- CegarPlay candidate space (docs/spec-views.md section 5): the models of the unrefined
+-- CegarPlay candidate space: the models of the unrefined
 -- abstraction, one per interface assignment of a link, as P events of 1,024 hex vectors.
 -- Appended after runtime.lua for the assemble mode `enumerate`.
 --

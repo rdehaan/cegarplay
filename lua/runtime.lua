@@ -1,6 +1,6 @@
 -- CegarPlay runtime: solvers, links, models, refinements, limits and events.
 -- Loaded inside one `#script (lua)` block after FRAGMENTS, CONSTS and SETTINGS.
--- See docs/spec-runtime.md. Golden rule: no Lua error may cross a clingo frame.
+-- Golden rule: no Lua error may cross a clingo frame.
 local clingo = require("clingo")
 local clock = os.clock
 local tointeger, floor, abs = math.tointeger, math.floor, math.abs
@@ -283,7 +283,7 @@ local function count_candidate()
 end
 
 -- Timing with exclusive times: nested solve time is subtracted from the enclosing one.
-local REC = nil           -- SETTINGS.record when recording (docs/spec-recording.md), set in rt.prepare
+local REC = nil           -- SETTINGS.record when recording, set in rt.prepare
 local record             -- defined with the recording helpers below (used earlier, in Link:clause)
 local rng = 0            -- the state of the sample policy's generator (seeded in rt.prepare)
 rt.calls = 0
@@ -323,7 +323,7 @@ local function join(frags, header)
   for _, p in ipairs(frags) do t[#t + 1] = (header or "#program base.") .. "\n" .. FRAGMENTS[p] end
   return concat(t, "\n")
 end
--- An instance (docs/spec-instances.md) is delivered as the fragment "instance": every solver
+-- An instance is delivered as the fragment "instance": every solver
 -- and every link's glue control gets it first.
 local function with_instance(frags)
   if FRAGMENTS.instance == nil or type(frags) ~= "table" then return frags end
@@ -583,7 +583,7 @@ function rt.prepare()
     local solvers = array({})
     for _, x in ipairs(rt.solvers) do solvers[#solvers + 1] = x.name end
     emit("I", { links = links, solvers = solvers, record = REC })
-    -- proof logs (docs/spec-soundness.md section 6): the symbolic atoms of every check solver,
+    -- proof logs: the symbolic atoms of every check solver,
     -- the table over which R events give a counterexample as hex (x)
     if REC.proof then
       for _, x in ipairs(rt.solvers) do
@@ -1284,7 +1284,7 @@ local function trace(kind, s, c, M, facts)
 end
 
 -------------------------------------------------------------------------------
--- Recording: compact events I, R and C (docs/spec-recording.md). Only with SETTINGS.record.
+-- Recording: compact events I, R and C. Only with SETTINGS.record.
 -------------------------------------------------------------------------------
 -- The program line of the innermost loop statement on the stack (mapped to the script by the page).
 local function loop_line()
@@ -1773,7 +1773,7 @@ function Solver:expand(part, facts)
   count_source(source or "other", slink)
   self.n.ground = self.n.ground + (clock() - t0)
   if REC then
-    -- the check domain of the facts (docs/spec-instances.md section 7): pools are keyed by it
+    -- the check domain of the facts: pools are keyed by it
     local domain
     pcall(function()
       local src
@@ -1994,7 +1994,7 @@ function rt.stop(message)
   rt.finish("stopped", tostring(message), false)
 end
 
--- Pools of recorded counterexamples (docs/spec-instances.md section 7).
+-- Pools of recorded counterexamples.
 -- rt.pool_key(S, pred, arity): FNV-1a (32 bits, hex) of the sorted texts of the atoms of pred/arity
 -- in solver S, the check domain. rt.domain_of gives "S:pred/arity:key", the pool's domain.
 local domain_cache = {}

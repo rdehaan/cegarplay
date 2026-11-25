@@ -1,4 +1,4 @@
-// Phase I1: instances and variants (docs/directions/instance-lab.md, docs/spec-instances.md).
+// Phase I1: instances and variants.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

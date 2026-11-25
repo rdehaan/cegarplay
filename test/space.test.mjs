@@ -1,4 +1,4 @@
-// Phase V4: the candidate space (docs/spec-views.md section 5), from stored recordings.
+// Phase V4: the candidate space, from stored recordings.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

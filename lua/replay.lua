@@ -1,4 +1,4 @@
--- CegarPlay replay of rule refinements (docs/spec-instances.md section 6). Appended after
+-- CegarPlay replay of rule refinements. Appended after
 -- runtime.lua for the assemble mode `replay`.
 --
 --   rt.replay{ solver = A, link = G, part = "refine", expansions = { { "cex(1,color(1,2))", ... }, ... },

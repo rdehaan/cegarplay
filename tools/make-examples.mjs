@@ -394,7 +394,7 @@ export function buildExamples() {
       frag(p, 'abstraction').text = frag(p, 'abstraction').text.replace(/\s*$/, '\n') + REFINE_PART;
       p.loop.text = template('shape1');
     }, { constants: { n: '6' }, solutions: 0 });
-  // three constants-only instances (docs/spec-instances.md); "" = the project as written (n = 6)
+  // three constants-only instances; "" = the project as written (n = 6)
   gc.instances = [
     { id: 'n4', facts: '', constants: { n: '4' }, expected: { solutions: 1 }, tags: ['small'] },
     { id: 'n5', facts: '', constants: { n: '5' }, expected: { solutions: 101 }, tags: [] },

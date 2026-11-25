@@ -1,4 +1,4 @@
-// Campaign rows (docs/spec-instances.md section 5): an IndexedDB store `cells` in the database
+// Campaign rows: an IndexedDB store `cells` in the database
 // `cegarplay`, keyed by cell key, and a memory store with the same interface. Rows travel as JSON
 // lines (one row per line), the format tools/bench.mjs writes. No DOM.
 const DB = 'cegarplay', STORE = 'cells';

@@ -1,4 +1,4 @@
-// The candidate space (docs/spec-views.md section 5): the fate of every candidate of the
+// The candidate space: the fate of every candidate of the
 // unrefined abstraction under the clauses of a recording. No DOM.
 //
 //   const S = Space.fromHex(candidateHex, n)          // one hex vector per candidate (P events)

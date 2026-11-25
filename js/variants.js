@@ -1,5 +1,5 @@
 // Variants: the top bar's Variant picker and the editor in the Loop tab.
-// A variant (project.variants, docs/spec-instances.md section 1) changes the project for a run:
+// A variant (project.variants) changes the project for a run:
 // swap (fragment -> the fragment whose text it gets), its own loop script, constants. The picker
 // sets settings.variant ('' = the project as it is); a run, an audit and "Run all" use it, and a
 // campaign suite names variants explicitly.

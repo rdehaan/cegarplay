@@ -1,4 +1,4 @@
--- CegarPlay audit (docs/spec-soundness.md section 1): enumerate every candidate of the
+-- CegarPlay audit: enumerate every candidate of the
 -- unrefined abstraction and every counterexample of each, and report each refinement that
 -- would remove a solution. Appended after runtime.lua by assemble(..., { mode = 'audit' }).
 --
@@ -383,7 +383,7 @@ local function audit_expand(A, C, L, cands, sols, spec, st)
   end
 end
 
--- P events: packed vectors as hex, 1,024 per event (docs/spec-soundness.md; V4 reads them).
+-- P events: packed vectors as hex, 1,024 per event (V4 reads them).
 local function emit_vectors(set, L, list)
   local chunk, from = rt.array({}), 1
   for i, c in ipairs(list) do

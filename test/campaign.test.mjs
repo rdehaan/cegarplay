@@ -1,4 +1,4 @@
-// Phase I3: campaigns (docs/spec-instances.md section 5).
+// Phase I3: campaigns.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

@@ -1,4 +1,4 @@
-// Phase L1: values in the loop language (docs/directions/generality.md, G1-G3).
+// Phase L1: values in the loop language.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as H from './helpers.mjs';

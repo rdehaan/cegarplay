@@ -1,4 +1,4 @@
-// The linked cursor of the Observatory (docs/spec-views.md section 6): one model that every view
+// The linked cursor of the Observatory: one model that every view
 // reads; none keeps a step of its own. No DOM except bindKeys.
 //
 //   cursor.ticks: [{ i, t, k }] the recorded steps (R events, else traceSteps: the T events)

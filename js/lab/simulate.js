@@ -1,4 +1,4 @@
-// Refinery, Feature B: idealised runs simulated on the space (docs/lab-design.md).
+// Refinery, Feature B: idealised runs simulated on the space.
 // No DOM, no Node APIs.
 //
 //   simulate(sp, so, { runs, seed, policy, budgetMs, onProgress })  random order; policy 'uniform'

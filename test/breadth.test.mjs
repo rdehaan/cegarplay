@@ -1,4 +1,4 @@
-// Breadth (docs/directions/breadth.md): cores as lists, the for guard, cores as expand facts,
+// Breadth: cores as lists, the for guard, cores as expand facts,
 // track, interface atoms grounded as text, and the examples for loops from the literature.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -80,7 +80,7 @@ test('track: V events per round, the last value in S, a compile error without a 
 });
 
 test('the loops from the literature: each example agrees with brute force or direct clingo', async () => {
-  // counts and optima measured independently (docs/directions/breadth.md, "Examples")
+  // counts and optima measured independently
   const want = {
     'maxsat-ihs': { example: 'optimum: 8', 'small-opt': 'optimum: 3', 'opt-6': 'optimum: 6' },
     'benders-tardiness': { example: 'optimum: 20', tight: 'optimum: 7',   // tight: 4 jobs since 2026-11-23 (was 5 jobs, 16)

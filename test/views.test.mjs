@@ -1,4 +1,4 @@
-// Phase V3: domain views (docs/spec-views.md).
+// Phase V3: domain views.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as H from './helpers.mjs';

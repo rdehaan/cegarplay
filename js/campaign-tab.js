@@ -1,4 +1,4 @@
-// Campaign tab (tab 10, docs/spec-instances.md section 5): a suite editor, Start / Pause /
+// Campaign tab (tab 10): a suite editor, Start / Pause /
 // Resume / Abort, a progress grid, four plots and a growth fit, on rows kept in IndexedDB.
 import { runSuite, expandSuite, cellKey, inconsistencies, scaling, growthFit, solvedCurves, SuiteError, engineTag, resultMatrix, matrixCSV } from './campaign.js';
 import { Pool, defaultPoolSize } from './pool.js';

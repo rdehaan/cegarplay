@@ -1,4 +1,4 @@
-// Refinery: a recorded run read onto the space (docs/lab-design.md, Feature C).
+// Refinery: a recorded run read onto the space.
 // No DOM, no Node APIs.
 //
 //   mapRun(sp, rec)            the run's steps over the space: refinements, acceptances, problems

@@ -1,4 +1,4 @@
-// Observatory, loop anatomy (docs/directions/observatory.md, phase V2): the loop as a diagram
+// Observatory, loop anatomy: the loop as a diagram
 // with live counters, the run as a timeline of solver calls, and the cost of each script line.
 // The pure helpers (layout, lineTable, binCalls) use no DOM; the Anatomy class draws.
 import { mapLine } from './driver.js';

@@ -203,7 +203,7 @@ export class Control {
   }
 
   // Validate, assemble and start. Resolves when the run is over.
-  //   mode 'audit': the audit of lua/audit.lua instead of the loop (docs/spec-soundness.md).
+  //   mode 'audit': the audit of lua/audit.lua instead of the loop.
   //   allSolutions: look for all solutions, whatever settings.solutions says.
   //   instance, variant: the run uses the derived project (js/project.js derive); without
   //   instance, the one picked in the top bar.

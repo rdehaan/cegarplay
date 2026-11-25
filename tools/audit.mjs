@@ -1,5 +1,5 @@
 // Audit a CegarPlay project: every candidate and every counterexample of its instance,
-// against the solution set (docs/spec-soundness.md section 1).
+// against the solution set.
 //
 //   node tools/audit.mjs <project.json | library id> [options]
 //

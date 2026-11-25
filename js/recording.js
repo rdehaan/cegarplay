@@ -1,4 +1,4 @@
-// Recordings: the event stream of one run, kept, saved and replayed (docs/spec-recording.md).
+// Recordings: the event stream of one run, kept, saved and replayed.
 // No DOM, no Node APIs (CompressionStream and Blob exist in browsers and in Node 18+).
 
 export const RECORDING_FORMAT = 'cegarplay-recording';

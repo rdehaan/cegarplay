@@ -1,4 +1,4 @@
-// Campaigns (docs/spec-instances.md section 5): a suite expands into cells (instance x variant x
+// Campaigns: a suite expands into cells (instance x variant x
 // solver seed); each cell is one run; one row per cell. No DOM, no Node APIs: the page
 // (js/campaign-tab.js with js/pool.js) and tools/bench.mjs run the same code.
 //

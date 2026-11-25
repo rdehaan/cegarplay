@@ -1,4 +1,4 @@
-// Phase V1: compact events, policies, recordings and replay files (docs/spec-recording.md).
+// Phase V1: compact events, policies, recordings and replay files.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

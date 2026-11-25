@@ -1,5 +1,5 @@
--- CegarPlay ground-program capture and refinement certificates (docs/spec-soundness.md
--- sections 2 and 3). Appended after runtime.lua when SETTINGS.certify is set.
+-- CegarPlay ground-program capture and refinement certificates (manual:
+-- Certificates). Appended after runtime.lua when SETTINGS.certify is set.
 --
 --   level 0  a block (G.block): only the candidate is removed, by construction
 --   level 1  an unsat core (G.core): the assumptions in the core suffice
@@ -320,8 +320,8 @@ function LIFT.atom_map(b, fixed)
   return map, m
 end
 
--- Copy the rules of store st into backend b under the atom map o.map (docs/spec-soundness.md
--- section 7). Options:
+-- Copy the rules of store st into backend b under the atom map o.map (the symbolic
+-- audit). Options:
 --   isint     atom -> j for the interface atoms of a check: they are inputs. A choice drops
 --             them from its heads; a normal rule with one as head becomes `:- body, not a`
 --             (with map(a) the input's copy).

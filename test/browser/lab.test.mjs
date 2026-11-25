@@ -1,4 +1,4 @@
-// The Refinery tab (tab 12, docs/lab-design.md): off by default and invisible then; the toggle,
+// The Refinery tab (tab 12): off by default and invisible then; the toggle,
 // ?lab=1 and ?tab=12; its own worker beside the main engine; the inspector, bounds and the run
 // against the bounds; Reset everything clears its keys.
 import { test, before, after } from 'node:test';

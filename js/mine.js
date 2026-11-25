@@ -1,4 +1,4 @@
-// Hard-instance mining (docs/spec-instances.md section 7): search seeds and parameters of a
+// Hard-instance mining: search seeds and parameters of a
 // generator for instances that maximise a cost, then mutate single facts. No DOM, no Node APIs.
 //
 //   mine(project, { source, objective, budget, env, keep }) -> { best: [...], cells, runs }

@@ -1,4 +1,4 @@
-// Phase S1: the audit (docs/directions/soundness.md, reference rows 14-20).
+// Phase S1: the audit.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

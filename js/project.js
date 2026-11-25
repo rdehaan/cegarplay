@@ -4,7 +4,7 @@ import { assemble, DEFAULT_SETTINGS, stripAspComments, modulesFor } from './driv
 
 export const FORMAT = 'cegarplay';
 export const VERSION = 2;
-// Keys of format version 2 (docs/spec-instances.md). A project that uses none saves as version 1.
+// Keys of format version 2. A project that uses none saves as version 1.
 export const V2_KEYS = ['instances', 'generators', 'variants', 'suites', 'views', 'pools', 'spaces'];
 export const INSTANCE_ID = /^[A-Za-z0-9_-]+$/;
 // The fragment a run gets from its instance; no user fragment may have this name.
@@ -320,7 +320,7 @@ function loadGenerators(list) {
   });
 }
 
-// Spaces (docs/spec-instances.md section 8, optional): every instance up to a bound, for the
+// Spaces (optional): every instance up to a bound, for the
 // bounded verification of a strategy. { name, text, params: { name: "int" }, bound, defaults,
 // description, expected: { verdict, k } }.
 export const SPACE_VERDICTS = ['sound', 'unsound', 'budget', 'unsupported'];

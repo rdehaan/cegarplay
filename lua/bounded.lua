@@ -1,4 +1,4 @@
--- CegarPlay symbolic audit and bounded verification (docs/spec-soundness.md sections 7 and 8).
+-- CegarPlay symbolic audit and bounded verification.
 -- Appended after runtime.lua and ground.lua by assemble(..., { mode = 'bounded' }).
 --
 --   rt.bounded{ link = G, clause = true, clauses = false, kinds = { "clause" }, seconds = 60,
@@ -23,7 +23,7 @@ local LIFT = rt.LIFT
 local clock, concat = os.clock, table.concat
 
 -------------------------------------------------------------------------------
--- Spaces (docs/spec-instances.md section 8): rt.link(..., { extra = true })
+-- Spaces: rt.link(..., { extra = true })
 -------------------------------------------------------------------------------
 -- The fragment "instance" is a space: choice rules over the instance predicates. Its non-fact
 -- atoms (grounded alone) become extra interface atoms of the link, marked L.inst[j]: a choice in

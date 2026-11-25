@@ -1,4 +1,4 @@
-// Phase L4: procedures and solver families (docs/directions/generality.md, G7), and the coverage
+// Phase L4: procedures and solver families, and the coverage
 // of the 18 loop families.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -87,7 +87,7 @@ test('static errors of phase L4', () => {
   assert.ok(bad.errors.length);
 });
 
-// The 18 loop families of docs/directions/generality.md, each with a fast example or script.
+// The 18 loop families of the generality study (PLAN2, in the git history), each with a fast example or script.
 const FAMILIES = [
   ['Clause learning for exists-forall problems', 'qbf', 5],
   ['Expansion and CEGIS', 'qbf-expansion', 5],

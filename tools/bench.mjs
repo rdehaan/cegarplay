@@ -1,4 +1,4 @@
-// Run a campaign suite headless (docs/spec-instances.md section 5), the twin of the Campaign tab.
+// Run a campaign suite headless, the twin of the Campaign tab.
 //
 //   node tools/bench.mjs <project.json | library id> --suite NAME [--jobs N] [--shard i/n]
 //                        [--out file.jsonl] [--resume] [--seconds N] [--quiet]

@@ -1,4 +1,4 @@
-// Generators (docs/spec-instances.md section 4): an ASP program grounded with seeded draw
+// Generators: an ASP program grounded with seeded draw
 // functions; its shown atoms are an instance. No DOM, no Node APIs.
 //
 //   generator: { name, text, params: { n: 'int', p: 'permille' }, defaults: { n: 7, p: 300 } }

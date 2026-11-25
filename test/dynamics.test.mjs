@@ -1,4 +1,4 @@
-// Phase L3: growing programs, externals, guarded clauses (docs/directions/generality.md, G6).
+// Phase L3: growing programs, externals, guarded clauses.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as H from './helpers.mjs';

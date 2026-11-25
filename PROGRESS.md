@@ -1007,9 +1007,15 @@ A clickable mockup was approved first. Phases, one commit each:
   pages, README, UI strings ("run bar" → "top bar"; "Control tab" → Home / Project / Settings); book
   rebuilt. Browser tests use `B.runOptions`, `B.projectMenu`, `B.openDialog`/`inDialog` (harness).
 
-Deviations: `docs/spec-app.md`, `docs/spec-recording.md`, `docs/lab-design.md` and
-`docs/directions/*.md` still describe the old Control tab and run bar (they are the design history);
-the manual is the reference for the page as it is. Ids are unchanged, so `?tab=1` is Home.
+Ids are unchanged, so `?tab=1` is Home.
+
+**Docs removed (on request, 2026-11-25).** The specifications (`docs/spec-*.md`,
+`docs/reference-numbers.md`), the design notes (`docs/directions/`, `docs/lab-design.md`), `spike3/`
+and a stray `git_filter_repo` wheel were deleted; they are in the git history. Code comments that
+pointed at them were shortened or point at the manual. References to them further down in this file
+are history. Kept: `manual.md` (the reference), `FUTURE-DIRECTIONS.md`, `docs/chat-package/` (read by
+`tools/make-chat-package.mjs`), `docs/upstream-trap-report.md` with `docs/trap-repro/` (not filed yet),
+`spike/` (the environment check).
 
 ## Deviations from the plan
 

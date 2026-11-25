@@ -1,4 +1,4 @@
-// Phase S2: ground-program capture, level 2 and level 3 (docs/spec-soundness.md sections 2-3).
+// Phase S2: ground-program capture, level 2 and level 3.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as H from './helpers.mjs';

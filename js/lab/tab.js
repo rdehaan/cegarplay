@@ -1,4 +1,4 @@
-// The Refinery tab (docs/lab-design.md; manual: Refinery tab). The only lab module
+// The Refinery tab (manual: Refinery tab). The only lab module
 // that touches the DOM. It talks only to the lab worker (js/lab/worker.js); it reads the page's
 // project, top bar and latest recording, and changes none of them.
 import { Recording } from '../recording.js';

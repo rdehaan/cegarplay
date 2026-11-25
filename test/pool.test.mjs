@@ -1,4 +1,4 @@
-// Phase I5: pools of counterexamples, mining (docs/spec-instances.md section 7).
+// Phase I5: pools of counterexamples, mining.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as H from './helpers.mjs';

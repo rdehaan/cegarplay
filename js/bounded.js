@@ -1,5 +1,5 @@
-// Bounded verification of a refinement strategy over an instance space (docs/spec-soundness.md
-// section 8, docs/spec-instances.md section 8). No DOM, no Node APIs: used by the page, the CLI
+// Bounded verification of a refinement strategy over an instance space.
+// No DOM, no Node APIs: used by the page, the CLI
 // (tools/audit.mjs --space) and the tests.
 import { deriveSpace, spaceBound, spaceCombos, ProjectError } from './project.js';
 import { validateSpace } from './driver.js';

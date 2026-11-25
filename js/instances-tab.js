@@ -1,4 +1,4 @@
-// Instances tab (tab 9) and the instance picker of the top bar (docs/spec-instances.md).
+// Instances tab (tab 9) and the instance picker of the top bar.
 import { makeEditor } from './editors.js';
 import { IMPORTERS, importerFor, freshId, checkFacts, ImportError, resolveInstance } from './instances.js';
 import { generate, PARAM_TYPES, generatorConstants } from './generate.js';
@@ -577,7 +577,7 @@ export class InstancesTab {
     this.say(`Exercise: ${sum.text}`, !sum.pass);
   }
 
-  // ---- generators (docs/spec-instances.md section 4) ------------------------------------
+  // ---- generators ------------------------------------
   get generators() { return this.app.project.generators || (this.app.project.generators = []); }
   get generator() { return this.generators.find((g) => g.name === this.gen) || null; }
 
@@ -816,7 +816,7 @@ export class InstancesTab {
     this.showGenClear();
   }
 
-  // ---- fuzz (docs/spec-instances.md section 6) ----------------------------------------------
+  // ---- fuzz ----------------------------------------------
   async fuzz() {
     const app = this.app;
     if (this.fuzzing) return;
@@ -903,7 +903,7 @@ export class InstancesTab {
     });
   }
 
-  // ---- spaces (PLAN3 phase S7, docs/spec-instances.md section 8, optional) ------------------
+  // ---- spaces (PLAN3 phase S7, optional) ------------------
   get spaces() { return this.app.project.spaces || (this.app.project.spaces = []); }
   get spaceItem() { return this.spaces.find((x) => x.name === this.space) || null; }
 

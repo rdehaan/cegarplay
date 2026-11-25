@@ -1,4 +1,4 @@
-// PLAN3 phase S6: the symbolic audit (lua/bounded.lua, docs/spec-soundness.md section 7).
+// PLAN3 phase S6: the symbolic audit (lua/bounded.lua).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

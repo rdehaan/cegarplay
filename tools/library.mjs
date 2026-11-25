@@ -371,7 +371,7 @@ export const PROBLEMS = [
 ];
 
 // ---------------------------------------------------------------------------
-// Starter generators (docs/spec-instances.md section 4), attached to the examples they fit by
+// Starter generators, attached to the examples they fit by
 // tools/make-examples.mjs. Each is ASP with seeded draws; its shown atoms are an instance.
 // ---------------------------------------------------------------------------
 const SYM = '% the example\'s check reads edges in both directions\nedge(Y,X) :- edge(X,Y).\n';
@@ -513,7 +513,7 @@ export const VOTE_KIT = { generators: [VOTE_QUESTION], recipes: VOTE_RECIPES };
 // recipe instances added to the library (their facts are generated on demand)
 export const RECIPES = {};
 
-// suites and variants added to library examples (docs/spec-instances.md section 5)
+// suites and variants added to library examples
 export const SUITES = {
   'tutorial-weak-relevant': {
     variants: [{ name: 'reference', loop: { language: 'loop', text: 'REFERENCE' } }],
@@ -522,7 +522,7 @@ export const SUITES = {
 };
 
 // ---------------------------------------------------------------------------
-// Domain views (docs/spec-views.md), attached as a fragment `view` and a views entry.
+// Domain views, attached as a fragment `view` and a views entry.
 // ---------------------------------------------------------------------------
 const CLIQUE_VIEW = `% The graph; deleted nodes filled, the surviving triangle drawn as a clique.
 #program scene.
@@ -869,7 +869,7 @@ loop:
 };
 
 // ---------------------------------------------------------------------------
-// Spaces (PLAN3 phase S7, docs/spec-instances.md section 8): every instance up to a bound, for
+// Spaces (PLAN3 phase S7): every instance up to a bound, for
 // the bounded verification of an example's refinement strategy. Shared texts are written once.
 // Each space's `expected` is the verdict and k measured with `node tools/audit.mjs <id> --space
 // NAME --bound K` (the largest K whose last step finishes within 60 s, capped for the tests).
@@ -940,7 +940,7 @@ export const SPACES = {
 
 // The symbolic audit's verdict per library instance where it is not 'sound' (null: no verdict
 // within 60 s, the field is left out). Every other instance of a clause-based example is sound.
-// Measured with spike3/sweep.mjs (PROGRESS.md, phase S6).
+// Measured with a seed sweep (PROGRESS.md, phase S6; the script is in the git history).
 export const SYMBOLIC = {
   'exercise-sum-free': { n4: 'unsound', n5: 'unsound', n6: 'unsound', n7: 'unsound', n8: 'unsound' },   // broken on purpose
   'slitherlink': { example: null },

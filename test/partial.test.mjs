@@ -1,4 +1,4 @@
-// G5: checks on partial candidates (docs/directions/generality.md, G5; manual, "Checks on
+// G5: checks on partial candidates (manual, "Checks on
 // partial candidates").
 import test from 'node:test';
 import assert from 'node:assert/strict';

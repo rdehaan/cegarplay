@@ -1,4 +1,4 @@
-// The Observatory's cursor bar (docs/spec-views.md section 6): the linked cursor's slider, follow,
+// The Observatory's cursor bar: the linked cursor's slider, follow,
 // a brushed range, exports (SVG of the view, PNG of the map, a storyboard strip), data tables,
 // and lecture mode.
 import { ticksOf } from './cursor.js';

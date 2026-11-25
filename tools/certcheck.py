@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check a CegarPlay proof log with Python clingo (docs/spec-soundness.md section 6).
+"""Check a CegarPlay proof log with Python clingo.
 
     python3 tools/certcheck.py <project.json> <log.jsonl> [--json]
 

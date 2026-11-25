@@ -1,4 +1,4 @@
-// Instances: importers and checks (docs/spec-instances.md). No DOM, no Node APIs.
+// Instances: importers and checks. No DOM, no Node APIs.
 //
 // An importer is (text, names) -> { facts, constants }, where names renames the canonical
 // predicates (for instance { node: 'vertex' }). Facts are one ground fact per line.
@@ -278,7 +278,7 @@ export async function checkSchema(project, id, engineRun) {
 export { INSTANCE_FRAGMENT };
 
 // ---------------------------------------------------------------------------
-// Recipes (docs/spec-instances.md section 4): an instance with a `recipe` and no facts gets its
+// Recipes: an instance with a `recipe` and no facts gets its
 // facts from the generator on demand. Kept in memory by a content hash of the generator text,
 // parameters and seed. (An instance added from the page keeps its facts too, and they win.)
 // ---------------------------------------------------------------------------

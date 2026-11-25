@@ -1,5 +1,5 @@
 """The Python twin of lua/draw.lua: the same draws from the same (seed, attempt, name, key), and
-a generator runner on Python clingo (docs/spec-instances.md section 4).
+a generator runner on Python clingo.
 
     from draw import Draws, generate
     Draws(seed, attempt).flip(300, 1, 2)

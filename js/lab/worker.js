@@ -1,4 +1,4 @@
-// The Refinery's own Web Worker (docs/lab-design.md): its own clingo-wasm instance and its
+// The Refinery's own Web Worker: its own clingo-wasm instance and its
 // own space cache, so the lab never blocks, pauses or resets the main engine. The page side
 // (js/lab/tab.js) terminates this worker for Cancel; the main engine's worker is untouched.
 //

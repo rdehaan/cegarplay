@@ -1,4 +1,4 @@
-// Phase S3: lift links (docs/spec-soundness.md section 4).
+// Phase S3: lift links.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as H from './helpers.mjs';

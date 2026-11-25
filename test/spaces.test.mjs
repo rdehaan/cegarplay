@@ -1,5 +1,4 @@
-// PLAN3 phase S7: instance spaces and bounded verification (docs/spec-instances.md section 8,
-// docs/spec-soundness.md section 8).
+// PLAN3 phase S7: instance spaces and bounded verification (manual: Spaces).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

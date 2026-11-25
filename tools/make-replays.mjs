@@ -1,5 +1,5 @@
 // Write one replay file per library example tagged fast: examples/replays/<id>.cprec
-// (a gzip recording of a run with every step and call, docs/spec-recording.md).
+// (a gzip recording of a run with every step and call).
 //
 //   node tools/make-replays.mjs [id ...]
 import fs from 'node:fs';

@@ -1,4 +1,4 @@
-// The loop language: script in, Lua out. See docs/spec-loop-language.md.
+// The loop language: script in, Lua out (manual: The loop language).
 // No DOM, no Node APIs: used by the page and by the tests.
 
 export const KEYWORDS = new Set(('solver link via options legacy compat lift keep def return if elif else loop while repeat until for in ' +

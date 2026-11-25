@@ -1,5 +1,5 @@
 // Refinery, milestone 1: brute-force cross-checks of removal sets, soundness, forced atoms and
-// minimal sound sets on tiny spaces (synthetic ones and the tutorial's), docs/lab-design.md.
+// minimal sound sets on tiny spaces (synthetic ones and the tutorial's).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomSpace } from './lab-helpers.mjs';

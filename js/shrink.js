@@ -1,4 +1,4 @@
-// Delta debugging (Zeller's ddmin) for instances (docs/spec-instances.md section 6). No DOM.
+// Delta debugging (Zeller's ddmin) for instances. No DOM.
 //
 //   shrink(items, test, { jobs }) -> a 1-minimal sublist for which test is still true
 // test(subset) -> Promise<boolean>; the tests of one round are independent and run `jobs` at a

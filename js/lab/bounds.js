@@ -1,4 +1,4 @@
-// Refinery, Feature B: exact best-case and worst-case idealised runs (docs/lab-design.md).
+// Refinery, Feature B: exact best-case and worst-case idealised runs.
 // No DOM, no Node APIs.
 //
 // An idealised run of a scheme proposes alive candidates; a bad candidate M is refined with one

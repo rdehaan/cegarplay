@@ -1,4 +1,4 @@
--- CegarPlay generator runtime (docs/spec-instances.md section 4). Appended after lua/draw.lua.
+-- CegarPlay generator runtime. Appended after lua/draw.lua.
 --
 --   gen.run{ text = "...", params = { "n=7", "p=300" }, seeds = { 1, 2 }, attempts = 100 }
 --

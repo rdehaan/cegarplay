@@ -1,4 +1,4 @@
-// The candidate space region of the Observatory (docs/spec-views.md section 5): the map of
+// The candidate space region of the Observatory: the map of
 // every candidate coloured by its fate at the cursor's refinement, the alive curve and the blame
 // matrix, from the audit's vectors and the last run's recorded steps.
 import { Space, fates, mapOrder, blameMatrix, redundancy, refinementDetail } from './space.js';

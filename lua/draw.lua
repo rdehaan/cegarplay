@@ -1,4 +1,4 @@
--- CegarPlay generator draws (docs/spec-instances.md section 4): stateless, seeded, integer-only.
+-- CegarPlay generator draws: stateless, seeded, integer-only.
 -- Every draw is a pure function of (seed, attempt, function name, key terms), so an instance does
 -- not depend on the order or the number of times the grounder evaluates a term.
 --

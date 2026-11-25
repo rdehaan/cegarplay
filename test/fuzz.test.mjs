@@ -1,4 +1,4 @@
-// Phase I4: fuzz, shrink and diagnose (docs/spec-instances.md section 6).
+// Phase I4: fuzz, shrink and diagnose.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as H from './helpers.mjs';

@@ -1,4 +1,4 @@
-// Refinery (docs/lab-design.md): the precomputed space of one link. No DOM, no Node APIs.
+// Refinery: the precomputed space of one link. No DOM, no Node APIs.
 //
 //   labPlan(compiled, linkName, { loop, instance })   which link, which schemes, or why not
 //   spaceBody(compiled, plan, { limit })               the Lua body of rt.lab_space
@@ -20,7 +20,7 @@ export const projectText = (p) => JSON.stringify({ fragments: p.fragments, loop:
   pools: p.pools, variants: p.variants, constants: p.settings && p.settings.constants, poolsSetting: p.settings && p.settings.pools });
 export const spaceKey = (projectText, instance, variant, link) => [fnv(projectText), instance || '', variant || '', link || ''].join('|');
 
-// Which link the lab looks at and what it supports (version 1, docs/lab-design.md).
+// Which link the lab looks at and what it supports (version 1).
 // Returns { error } (nothing to look at), or { link, clause, clauses, block, schemes, unsupported?,
 // loopUnsupported? } where schemes.loop/omniscient/block is true or a reason.
 export function labPlan(compiled, linkName, { loop = null, instance = null } = {}) {

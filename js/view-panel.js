@@ -1,4 +1,4 @@
-// The domain view region of the Observatory (docs/spec-views.md): pick a view and a step, draw
+// The domain view region of the Observatory: pick a view and a step, draw
 // the view's marks as SVG. Scene layout once per scene; a frame only changes attributes.
 import { Engine } from './engine.js';
 import { pairSteps, solutionSteps } from './recording.js';

@@ -1,4 +1,4 @@
-// A pool of engines for campaigns (docs/spec-instances.md section 5). Each slot owns one Engine
+// A pool of engines for campaigns. Each slot owns one Engine
 // (one worker); a job { program, seconds } runs through the normal run path, so limits and abort
 // behave as for a single run. The default reducer keeps the last S, the D, the solution count
 // and an order-independent hash of the solutions.
