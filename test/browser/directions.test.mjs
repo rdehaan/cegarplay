@@ -807,9 +807,9 @@ test('generator and space results go when their program is edited; a space is ch
   await B.setEditor(page, 'space-editor', text);
   await page.waitForFunction(() => document.getElementById('space-status').textContent === '', null, { timeout: 10000 });
   // the run bar's seed and the Loop tab's are one setting
-  await page.fill('#run-seed', '7');
+  await B.runOptions(page, () => page.fill('#run-seed', '7'));
   await page.dispatchEvent('#run-seed', 'change');
-  await page.check('#run-randomize');
+  await B.runOptions(page, () => page.check('#run-randomize'));
   assert.equal(await page.$eval('#seed-input', (e) => e.value), '7');
   assert.equal(await page.$eval('#randomize-checkbox', (e) => e.checked), true);
   assert.deepEqual(await page.evaluate(() => [window.cegarplay.project.settings.seed, window.cegarplay.project.settings.randomize]), [7, true]);

@@ -13,7 +13,7 @@ test('domain view: a solution is not a step after a cut trace; Show: solutions s
   // a trace of 3 steps, all solutions
   await page.fill('#trace-input', '3');
   await page.dispatchEvent('#trace-input', 'change');
-  await page.selectOption('#solutions-select', '0');
+  await B.runOptions(page, () => page.selectOption('#solutions-select', '0'));
   await page.click('label[for="tab11"]');
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');

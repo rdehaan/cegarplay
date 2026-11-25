@@ -74,3 +74,11 @@ export const getEditor = (page, id) => page.evaluate((i) => ace.edit(document.ge
 export const openLibrary = (page) => page.evaluate(() => {
   for (const d of document.querySelectorAll('#library-section, .library-group')) d.open = true;
 });
+
+// The top bar keeps solutions, seed, randomized and record steps under Run options: open it.
+// Each use opens it, does one thing and closes it again (an open pop-up covers part of the page).
+export async function runOptions(page, action) {
+  if (await page.isHidden('#run-options')) await page.click('#run-options-button');
+  await action();
+  if (await page.isVisible('#run-options')) await page.keyboard.press('Escape');
+}

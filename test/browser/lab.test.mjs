@@ -108,7 +108,7 @@ test('from a run: gc-shape2 n3 recorded with every step; the run against the bou
   const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3&lab=1', { advanced: false });
   await page.click('label[for="tab4"]');
   await page.selectOption('#record-select', 'all');
-  await page.selectOption('#solutions-select', '0');
+  await B.runOptions(page, () => page.selectOption('#solutions-select', '0'));
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished']), 'finished');
   await page.click('label[for="tab12"]');
@@ -169,7 +169,7 @@ test('review fixes: omniscient bounds and the run share no slot; a recording of 
   const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n4&lab=1', { advanced: false });
   await page.click('label[for="tab4"]');
   await page.selectOption('#record-select', 'all');
-  await page.selectOption('#solutions-select', '0');
+  await B.runOptions(page, () => page.selectOption('#solutions-select', '0'));
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished']), 'finished');
   await page.click('label[for="tab12"]');
@@ -220,9 +220,9 @@ test('Record a run and place it, New seed, the busy line with Stop, and the run 
   const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3&lab=1', { advanced: false });
   // the run bar's toggle is the Loop tab's "every step" / "off"
   assert.equal(await page.isChecked('#run-record'), false);
-  await page.check('#run-record');
+  await B.runOptions(page, () => page.check('#run-record'));
   assert.equal(await page.$eval('#record-select', (s) => s.value), 'all');
-  await page.uncheck('#run-record');
+  await B.runOptions(page, () => page.uncheck('#run-record'));
   assert.equal(await page.$eval('#record-select', (s) => s.value), 'off');
   await page.click('label[for="tab12"]');
   await page.selectOption('#lab-source', 'latest');
@@ -268,8 +268,8 @@ test('a run of the page that ends after the bounds: the run\'s part follows it (
   await page.waitForSelector('#lab-histogram', { timeout: 180000 });
   assert.match(await page.textContent('#lab-run'), /No recorded run of this instance yet/);
   assert.equal(await page.$('#lab-step'), null, 'the inspector is in free mode');
-  await page.check('#run-record');
-  await page.selectOption('#solutions-select', '0');
+  await B.runOptions(page, () => page.check('#run-record'));
+  await B.runOptions(page, () => page.selectOption('#solutions-select', '0'));
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished']), 'finished');
   await page.waitForSelector('#lab-compute-run', { timeout: 30000 });

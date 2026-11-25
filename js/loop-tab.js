@@ -1,6 +1,7 @@
 // Loop tab: templates, constants, limits, Edit as Lua, threads.
 import { TEMPLATES, template } from './project.js';
 import { compile } from './compiler.js';
+import { runOptionsSummary } from './topbar.js';
 
 const $ = (id) => document.getElementById(id);
 const NUMERIC = { 'seconds-input': 'seconds', 'candidates-input': 'candidates', 'trace-input': 'trace', 'seed-input': 'seed' };
@@ -53,6 +54,7 @@ export class LoopTab {
       const n = Math.max(0, Math.floor(Number($('record-n').value) || 0));
       $('record-n').hidden = steps === 'off' || steps === 'all';
       $('run-record').checked = steps !== 'off';
+      runOptionsSummary();
       const ac = $('anatomy-calls');
       if (ac) ac.checked = calls;
       if (steps === 'off' && !calls && !proof) delete this.app.project.settings.record;
@@ -99,6 +101,7 @@ export class LoopTab {
     const st = this.app.project.settings;
     $('seed-input').value = $('run-seed').value = String(st.seed || 0);
     $('randomize-checkbox').checked = $('run-randomize').checked = st.randomize === true;
+    runOptionsSummary();
   }
 
   load(project) {
@@ -125,6 +128,7 @@ export class LoopTab {
     const tb = document.querySelector('#constants-table tbody');
     tb.textContent = '';
     for (const [k, val] of Object.entries(st.constants || {})) this.addConstantRow(k, val);
+    runOptionsSummary();
   }
 
   addConstantRow(name, value) {

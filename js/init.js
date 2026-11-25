@@ -21,10 +21,12 @@ import { ObservatoryBar, lectureMode } from './observatory.js';
 import { renderMarkdown } from './markdown.js';
 import { Workspace, WS_INDEX, WS_NAME } from './workspace.js';
 import { Snapshots, SNAP_INDEX, projectKey } from './snapshots.js';
+import { setupTopbar } from './topbar.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
+setupTopbar();
 const app = { ready: false, project: Project.newProject() };
 window.cegarplay = app;
 

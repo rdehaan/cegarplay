@@ -14,12 +14,6 @@ body {
   background: var(--page);
 }
 
-h1 {
-  padding: 50px 0;
-  font-weight: 400;
-  text-align: center;
-}
-
 h2 {
   padding: 10px 0;
   font-weight: 400;
@@ -50,7 +44,7 @@ p {
 main {
   min-width: 320px;
   max-width: 1400px;
-  padding: 50px;
+  padding: 0 40px 50px;
   margin: 0 auto;
   background: var(--panel);
 }
@@ -340,14 +334,6 @@ a.modal-link:link {
 }
 
 /* ---- CegarPlay ---------------------------------------------------------- */
-h1 {
-  padding: 40px 0 10px;
-}
-.subtitle {
-  text-align: center;
-  margin: 0 0 30px;
-  color: var(--text-soft);
-}
 label[for="tab2"] {
   color: var(--tab-text);
 }
@@ -357,9 +343,6 @@ input[name="tabs"]:checked + label[for="tab2"] {
 label.tab-label.has-problem:after {
   content: ' \25CF';
   color: var(--error);
-}
-.run-bar {
-  padding: 0 0 1.5em;
 }
 .run-buttons {
   display: flex;
@@ -385,15 +368,11 @@ label.tab-label.has-problem:after {
 .audit-mode-label { margin: 0; padding: 0 2px; color: var(--text-muted); font-size: 0.9em; }
 #space-select { max-width: 14em; }
 .space-description { max-width: 18em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* the run bar's two rows: actions (status at the end), then "Run with" */
+/* the top bar's actions; a field whose select is hidden (no instances, no variants) takes no room */
 .run-actions { row-gap: 8px; }
-.run-status-box { margin-left: auto; }
-.run-with { margin-top: 8px; font-size: 0.92em; color: var(--text-muted); gap: 4px 14px; }
-.run-with select { font-size: 1em; }
-.run-with-label { font-weight: 600; }
 .run-field { display: inline-flex; align-items: center; white-space: nowrap; gap: 4px; }
 .run-field .inline-label { padding: 0; }
-.run-with .run-field:not(:has(select:not([hidden]), input)) { display: none; }
+.run-actions > .run-field:not(:has(select:not([hidden]))) { display: none; }
 .run-status-box .status-label { padding-left: 0; }
 @media (max-width: 760px) { .space-description { display: none !important; } }
 .audit-next { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
@@ -940,26 +919,11 @@ tr.mismatch td {
   color: var(--tooltip-text);
 }
 
-/* Theme control (js/theme.js), top right of the page */
+/* Theme control (js/theme.js), in the top bar */
 .theme-toggle {
-  position: absolute;
-  top: 12px;
-  right: 16px;
   font-size: 12px;
   padding: 3px 10px;
   color: var(--text);
-}
-
-/* Links top left: the guide, and the way back to the guide page that opened an example */
-.header-links {
-  position: absolute;
-  top: 14px;
-  left: 16px;
-  font-size: 13px;
-}
-.header-links a {
-  color: var(--link);
-  margin-right: 14px;
 }
 .library-guide-link {
   margin-left: 6px;
@@ -987,7 +951,7 @@ tr.mismatch td {
 /* Narrow screens (after the rules they override): 16 px gutters, no sideways scrolling. */
 @media screen and (max-width: 650px) {
   main {
-    padding: 24px 16px;
+    padding: 0 16px 24px;
   }
 
   .modal {
@@ -1088,7 +1052,7 @@ tr.mismatch td {
 .space-swatch { display: inline-block; box-sizing: border-box; width: 12px; height: 12px; border: 1px solid var(--border); }
 
 /* Lecture mode (?lecture=1): the domain view alone, notes as captions */
-body.lecture header, body.lecture footer, body.lecture .run-bar, body.lecture .tab-label, body.lecture #anatomy,
+body.lecture header, body.lecture footer, body.lecture .run-bar, body.lecture .run-summary, body.lecture .tab-label, body.lecture #anatomy,
 body.lecture #candidate-space, body.lecture #live-line, body.lecture #run-status { display: none !important; }
 body.lecture #section-observatory { display: block !important; }
 body.lecture main > section:not(#section-observatory) { display: none !important; }
@@ -1208,3 +1172,80 @@ main > section:not(#section-tutorial):not(#section-manual) h3:not(summary h3, .v
 .audit-panel .note, .result-card .note, .audit-panel p, .result-card p { color: var(--text); }
 body:not(.no-campaign) .campaign-off-only { display: none; }
 #certify-select { justify-self: start; max-width: 100%; }
+
+/* ---- The top bar (sticky): project menu, run actions and status, run options, settings ---- */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  margin: 0 -40px; padding: 8px 40px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-start, .topbar-end { display: flex; align-items: center; gap: 10px; }
+.topbar-end { margin-left: auto; }
+.topbar .run-actions { flex: 1 1 auto; gap: 8px; }
+.brand { display: inline-flex; align-items: center; gap: 8px; font-size: 18px; text-decoration: none; }
+.brand:link, .brand:visited { color: var(--text); }
+.brand-logo { width: 22px; height: 22px; border-radius: 5px; background: var(--primary); position: relative; flex: none; }
+.brand-logo:after {
+  content: ''; position: absolute; inset: 5px; border-radius: 50%;
+  border: 2.5px solid var(--panel); border-top-color: var(--accent);
+}
+.topbar-project { color: var(--text-muted); max-width: 22em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-link { font-size: 13px; }
+.topbar-link:link, .topbar-link:visited { color: var(--link); }
+.menu-anchor { position: relative; display: inline-flex; }
+.menu-button, .icon-button {
+  font: inherit; color: var(--text); background: var(--button-bg);
+  border: 1px solid var(--border-strong); border-radius: 4px; padding: 5px 10px; cursor: pointer;
+}
+.icon-button { padding: 3px 8px; font-size: 15px; }
+.menu-button:hover, .icon-button:hover { border-color: var(--text-muted); }
+.run-options-summary { color: var(--busy); font-size: 12px; }
+.run-options-summary:empty { display: none; }
+/* Run is the main action */
+.primary-button:not(:disabled) {
+  background: var(--primary); color: var(--primary-text); border-color: var(--primary); font-weight: 600; padding-inline: 16px;
+}
+/* Abort, Pause and Stop only while a run can use them */
+#abort-button:disabled, #pause-button:disabled, #stop-button:disabled { display: none; }
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* the run summary under the bar; before the first run there is nothing to show */
+.run-summary { padding: 8px 0 10px; }
+.run-summary .shown-line { margin: 0; }
+.run-summary .live-line { margin-top: 4px; }
+body:has(#run-status[data-state="idle"]) .run-summary :is(.shown-line, .live-line) { display: none; }
+.result-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+
+/* pop-ups of the top bar: the Project menu and Run options */
+.popover {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 60;
+  min-width: 260px; padding: 8px;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 6px;
+  box-shadow: 0 6px 24px var(--shadow);
+}
+.popover[hidden] { display: none; }
+.popover-title { font-weight: 600; margin: 0; }
+.popover-note { font-size: 12px; color: var(--text-muted); margin: 0; }
+.run-options { left: auto; right: 0; display: grid; gap: 10px; padding: 12px 14px; min-width: 310px; }
+.run-options input#run-seed { width: 6em; }
+.project-menu { display: flex; flex-direction: column; min-width: 300px; }
+.project-menu hr { border: 0; border-top: 1px solid var(--border-light); margin: 6px 0; }
+.menu-item {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  font: inherit; line-height: 1.35; text-align: left; color: var(--text);
+  background: none; border: 0; border-radius: 4px; padding: 7px 10px; cursor: pointer;
+}
+.menu-item small { color: var(--text-muted); font-size: 12px; }
+.menu-item:hover, .menu-item:focus-visible { background: var(--hint-bg); outline: none; }
+
+@media (max-width: 760px) {
+  main { padding: 0 16px 30px; }
+  .topbar { margin: 0 -16px; padding: 6px 16px; gap: 6px 10px; }
+  .topbar-project, .topbar-link { display: none; }
+  .topbar .run-actions { order: 3; flex-basis: 100%; }
+  /* the pop-ups span the screen; js/topbar.js puts them under their button */
+  .project-menu, .run-options { position: fixed; left: 8px; right: 8px; min-width: 0; }
+}

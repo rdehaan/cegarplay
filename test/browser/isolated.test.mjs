@@ -13,14 +13,15 @@ const setN7 = (page) => page.evaluate(() => { window.cegarplay.project.settings.
 test('the service worker shim isolates the page on the plain server; ?nocoi=1 does not', async () => {
   const o = await B.openPage(browser, plain, '', { coi: true });
   assert.equal(await o.page.evaluate(() => self.crossOriginIsolated), true);
-  assert.equal(await o.page.isVisible('#pause-button'), true);
+  // available (not hidden), though not shown until a run can be paused (the top bar hides disabled ones)
+  assert.equal(await o.page.$eval('#pause-button', (b) => b.hidden), false);
   assert.equal(await o.page.isEnabled('#threads-checkbox'), true);
   assert.deepEqual(o.errors, []);
   assert.deepEqual(o.foreign, []);
   await o.context.close();
   const n = await B.openPage(browser, plain);
   assert.equal(await n.page.evaluate(() => self.crossOriginIsolated), false);
-  assert.equal(await n.page.isHidden('#pause-button'), true);
+  assert.equal(await n.page.$eval('#pause-button', (b) => b.hidden), true);
   assert.equal(await n.page.isDisabled('#threads-checkbox'), true);
   await n.context.close();
 });

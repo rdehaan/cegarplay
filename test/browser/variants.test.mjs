@@ -16,7 +16,7 @@ test('the voting example: the picker lists its variants, and a run with one says
   assert.equal(await page.$$eval('#variants .variant-card', (l) => l.length), 7);
   await page.selectOption('#instance-select', 'cancel-posresp-k2');
   await page.selectOption('#variant-select', 's1');
-  await page.selectOption('#solutions-select', '0');
+  await B.runOptions(page, () => page.selectOption('#solutions-select', '0'));
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
   assert.match(await page.textContent('#live-line'), /2 solutions/);

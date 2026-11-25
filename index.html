@@ -30,19 +30,31 @@
 
 <body>
 
-  <nav class="header-links">
-    <a id="back-to-guide" href="guide/" hidden>&larr; Back to the guide</a>
-    <a id="guide-link" href="guide/" title="Designing CEGAR loops: a course with examples">Guide</a>
-  </nav>
-  <button class="control-button theme-toggle" id="theme-button" data-theme-toggle type="button">&#x25D0; Auto</button>
-  <h1>CegarPlay</h1>
-  <p class="subtitle">Play with CEGAR loops in answer set programming</p>
-
   <main>
-    <div class="run-bar">
-      <!-- two rows: the actions (status at the end), then what the next run uses ("Run with") -->
+    <!-- The top bar (sticky): the project menu, the run's actions and status, the options of the next
+         run, and Settings. It keeps the class run-bar: a change in it marks the project edited. -->
+    <header class="topbar run-bar" id="topbar">
+      <div class="topbar-start">
+        <a class="brand" href="./" title="CegarPlay: play with CEGAR loops in answer set programming"><span class="brand-logo" aria-hidden="true"></span>CegarPlay</a>
+        <span class="menu-anchor">
+          <button class="menu-button" id="project-menu-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="project-menu">Project <span aria-hidden="true">&#x25BE;</span></button>
+          <div class="popover project-menu" id="project-menu" role="menu" hidden>
+            <button type="button" class="menu-item" role="menuitem" data-click="new-button"><span>New project</span><small>four small fragments that run as they are</small></button>
+            <button type="button" class="menu-item" role="menuitem" data-click="file-button"><span>Open file&hellip;</span><small>a project (.json) from your computer</small></button>
+            <button type="button" class="menu-item" role="menuitem" data-click="download-button"><span>Download</span><small>this project as a .json file</small></button>
+            <hr>
+            <button type="button" class="menu-item" role="menuitem" data-click="share-button"><span>Copy share link</span><small>the project travels in the link itself</small></button>
+            <button type="button" class="menu-item" role="menuitem" data-click="export-standalone-button"><span>Export for clingo</span><small>one .lp file, for a clingo built with Lua</small></button>
+            <hr>
+            <button type="button" class="menu-item" role="menuitem" data-dialog="dialog-versions"><span>Workspace and snapshots&hellip;</span><small>versions kept in this browser</small></button>
+            <button type="button" class="menu-item" role="menuitem" data-dialog="dialog-versions" data-scroll="recordings"><span>Recordings&hellip;</span><small>download a run, or replay one</small></button>
+          </div>
+        </span>
+        <span class="topbar-project" id="topbar-project"></span>
+      </div>
+      <!-- the actions: Abort, Pause and Stop show only while a run can use them -->
       <div class="run-buttons run-actions">
-        <button class="control-button" id="run-button" title="Run (Ctrl+Enter)" disabled>&#x23F5; Run</button>
+        <button class="control-button primary-button" id="run-button" title="Run (Ctrl+Enter)" disabled>&#x23F5; Run</button>
         <span class="audit-group" id="audit-group" role="group" aria-label="Audit">
           <button class="control-button" id="audit-button" title="Audit: check every candidate and every counterexample of this instance against the solutions" disabled>&#x2713; Audit</button>
           <label class="audit-mode-label" for="audit-mode">by</label>
@@ -59,29 +71,42 @@
         <button class="control-button" id="abort-button" disabled>&#x2717; Abort</button>
         <button class="control-button isolated-only" id="pause-button" title="Pause the run; Resume goes on" disabled hidden>&#x23F8; Pause</button>
         <button class="control-button isolated-only" id="stop-button" title="End the run now, keeping its statistics (Abort ends it without them)" disabled hidden>&#x23F9; Stop</button>
-        <button class="control-button" id="clear-button" title="Remove the results of the last run: output, statistics, trace and recording (the run history stays)" disabled>Clear</button>
-        <span class="run-field run-status-box"><span class="status-label">Status:</span>
-          <span id="run-status" data-state="idle" role="status" aria-live="polite">idle</span></span>
-      </div>
-      <div class="run-buttons run-with" role="group" aria-label="Run with">
-        <span class="run-with-label">Run with</span>
+        <!-- what the next run uses: the instance and the variant stay in the bar, the rest is under Run options -->
         <span class="run-field"><label class="inline-label" for="instance-select" id="instance-select-label" hidden>Instance:</label>
           <select id="instance-select" hidden></select></span>
         <span class="run-field"><label class="inline-label" for="variant-select" id="variant-select-label" hidden>Variant:</label>
           <select id="variant-select" hidden></select></span>
-        <span class="run-field"><label class="inline-label" for="solutions-select">Solutions:</label>
-          <select id="solutions-select">
-            <option value="1">1</option>
-            <option value="10">10</option>
-            <option value="100">100</option>
-            <option value="0">all</option>
-          </select></span>
-        <span class="run-field" title="clingo's --seed (0 = clingo's default). The seed changes the search only with a randomized search (or randomizing solver options); the same seed gives the same run again. Also in the Loop tab."><label class="inline-label" for="run-seed">Seed:</label>
-          <input type="number" min="0" step="1" id="run-seed" class="run-seed">
-          <label class="inline-label"><input type="checkbox" id="run-randomize"> randomized</label></span>
-        <span class="run-field" title="Record every step of the next runs, for the trace, the replay, the Observatory and the Refinery (Download recording in the Control tab). The Loop tab's Recording has more choices: the first, every or last N steps, solver calls, a proof log."><label class="inline-label"><input type="checkbox" id="run-record"> record steps</label></span>
+        <span class="menu-anchor">
+          <button class="menu-button" id="run-options-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="run-options" title="What the next run uses">&#x2699; Run options <span id="run-options-summary" class="run-options-summary"></span> <span aria-hidden="true">&#x25BE;</span></button>
+          <div class="popover run-options" id="run-options" role="group" aria-label="Run options" hidden>
+            <p class="popover-title">Run options</p>
+            <span class="run-field"><label class="inline-label" for="solutions-select">Solutions:</label>
+              <select id="solutions-select">
+                <option value="1">1</option>
+                <option value="10">10</option>
+                <option value="100">100</option>
+                <option value="0">all</option>
+              </select></span>
+            <span class="run-field" title="clingo's --seed (0 = clingo's default). The seed changes the search only with a randomized search (or randomizing solver options); the same seed gives the same run again. Also in the Loop tab."><label class="inline-label" for="run-seed">Seed:</label>
+              <input type="number" min="0" step="1" id="run-seed" class="run-seed">
+              <label class="inline-label"><input type="checkbox" id="run-randomize"> randomized</label></span>
+            <span class="run-field" title="Record every step of the next runs, for the trace, the replay, the Observatory and the Refinery (Project, Recordings). The Loop tab's Recording has more choices: the first, every or last N steps, solver calls, a proof log."><label class="inline-label"><input type="checkbox" id="run-record"> record steps</label></span>
+            <p class="popover-note">The Loop tab has all the settings of a run.</p>
+          </div>
+        </span>
       </div>
-      <!-- what the Output, Statistics and Observatory tabs show now: which run, audit or replay -->
+      <div class="topbar-end">
+        <span class="run-field run-status-box"><span class="status-label visually-hidden">Status:</span>
+          <span id="run-status" data-state="idle" role="status" aria-live="polite">idle</span></span>
+        <a id="back-to-guide" class="topbar-link" href="guide/" hidden>&larr; Back to the guide</a>
+        <a id="guide-link" class="topbar-link" href="guide/" title="Designing CEGAR loops: a course with examples">Guide</a>
+        <button class="control-button theme-toggle" id="theme-button" data-theme-toggle type="button">&#x25D0; Auto</button>
+        <button class="icon-button" id="settings-button" type="button" title="Settings" aria-label="Settings" data-dialog="dialog-settings">&#x2699;</button>
+      </div>
+    </header>
+
+    <!-- what the Output, Statistics and Observatory tabs show now: which run, audit or replay -->
+    <div class="run-summary">
       <div id="shown-line" class="shown-line" aria-live="polite"></div>
       <div id="live-line" class="live-line">&nbsp;</div>
       <div id="run-message" class="run-message" role="status" aria-live="polite" hidden><span id="run-message-text"></span>
@@ -408,7 +433,8 @@
         messages.
         <span class="tab-help">Tutorial: <a href="#tut-reading">Reading the trace and the statistics</a> · <a href="#tut-audit">The audit</a>. Manual: <a href="#manual-output-tab">Output tab</a> · <a href="#manual-audit">Audit</a>.</span>
       </p>
-      <div id="result-line" class="result-line">No run yet.</div>
+      <div class="result-row"><div id="result-line" class="result-line">No run yet.</div>
+        <button class="control-button small-button" id="clear-button" title="Remove the results of the last run: output, statistics, trace and recording (the run history stays)" disabled>Clear</button></div>
       <div id="audit-panel" class="audit-panel" hidden></div>
       <h3>Solutions <span id="solutions-count" class="note"></span>
         <button class="control-button small-button" id="download-solutions-button" hidden>Download</button></h3>

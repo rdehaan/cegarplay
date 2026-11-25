@@ -96,7 +96,7 @@ test('run history: a too weak relevant/1 vs the reference run are marked as a mi
 
 test('rerun with 5 seeds adds five history rows; copy; download with history', async () => {
   const { page, context } = await B.openPage(browser, server, '?tab=6');
-  await page.selectOption('#solutions-select', '1');
+  await B.runOptions(page, () => page.selectOption('#solutions-select', '1'));
   await page.click('#rerun-seeds-button');
   await page.waitForFunction(() => document.querySelectorAll('#history-table tbody tr').length === 5 &&
     document.getElementById('run-status').dataset.state === 'finished', null, { timeout: 60000 });
@@ -185,6 +185,7 @@ test('Clear removes the last run\'s results and keeps the run history', async ()
   assert.equal(await page.$eval('#download-recording-button', (b) => b.disabled), false);
   const before = await historyRows(page);
   assert.ok(before >= 1);
+  await page.click('label[for=tab5]');  // Clear is in the Output tab
   await page.click('#clear-button');
   assert.equal(await page.textContent('#run-status'), 'idle');
   assert.match((await page.textContent('#result-line')).trim(), /^(No run yet\.)?$/, 'as on a fresh load');
@@ -243,6 +244,7 @@ test('what the tabs show: the marked history row, the Summary and notes after an
   assert.match(await page.textContent('#result-line'), /refinements checked\)/);
   assert.match(await page.textContent('#audit-panel'), /refined with G\.(clause|clauses|block)/);
   // Clear: nothing is shown, no row is marked
+  await page.click('label[for=tab5]');  // Clear is in the Output tab
   await page.click('#clear-button');
   assert.equal(await page.$$eval('#history-table tr[data-shown="true"]', (l) => l.length), 0);
   await page.waitForFunction(() => /^Shown: no results yet/.test(document.getElementById('shown-line').textContent));

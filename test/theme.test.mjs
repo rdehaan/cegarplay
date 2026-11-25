@@ -74,6 +74,8 @@ const PAIRS = [
   ['syn-comment', 'code-bg'], ['syn-keyword', 'code-bg'], ['syn-string', 'code-bg'], ['syn-number', 'code-bg'],
   ['syn-variable', 'code-bg'], ['syn-special', 'code-bg'], ['text', 'error-bg'], ['text', 'ok-bg'],
   ['syn-keyword', 'error-bg'], ['syn-keyword', 'ok-bg'], ['text', 'hint-bg'], ['text', 'warn-bg'], ['link', 'subtle'],
+  // the primary button (Run)
+  ['primary-text', 'primary'],
 ];
 
 test('dark theme: text tokens have contrast at least 4.5 against their backgrounds', () => {
