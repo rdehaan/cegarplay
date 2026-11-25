@@ -23,6 +23,31 @@
       "name": "check",
       "text": "% A counterexample: another allocation (it need not be envy-free) in which ...\n1 { alt(A,G) : agent(A) } 1 :- good(G).\n% ... nobody is worse off ...\n:- agent(A), #sum { V,G : alt(A,G), value(A,G,V) ; -V,G : gets(A,G), value(A,G,V) } < 0.\n% ... and somebody is better off.\ngains(A) :- agent(A), #sum { V,G : alt(A,G), value(A,G,V) ; -V,G : gets(A,G), value(A,G,V) } > 0.\nbetter :- gains(A).\n:- not better.\n#show alt/2.\n% No relevant/1 rules: the loop passes the allocation alt/2 to the refine part.\n",
       "description": "Looks for an allocation that Pareto-dominates the candidate (solver C)."
+    },
+    {
+      "name": "welfare",
+      "text": "% A Pareto-optimal counterexample: of the allocations that dominate the candidate, the check\n% returns one of maximum total value. It is Pareto-optimal (an allocation that dominated it would\n% dominate the candidate too, with a larger total), so its rule \"not dominated by this one\" removes\n% as much as a dominance rule can (variant optimal-counterexample).\n#maximize { V,A,G : alt(A,G), value(A,G,V) }.\n",
+      "description": "Part of the library example fair-division."
+    },
+    {
+      "name": "allocation",
+      "text": "% A candidate without envy-freeness: every good goes to one agent. Envy is found by a check of\n% its own (fragment envy) and refined lazily, one envious pair at a time.\n1 { gets(A,G) : agent(A) } 1 :- good(G).\n#show gets/2.\n",
+      "description": "Part of the library example fair-division."
+    },
+    {
+      "name": "envy",
+      "text": "% A counterexample to envy-freeness: agent X values the bundle of Y more than its own.\n1 { envy(X,Y) : agent(X), agent(Y), X != Y } 1.\n:- envy(X,Y), #sum { V,G : gets(Y,G), value(X,G,V) ; -V,G : gets(X,G), value(X,G,V) } <= 0.\n% Envy depends only on the bundles of X and Y: every allocation that gives them the same bundles\n% has the same envy. So the clause says that one of their goods must move.\nrelevant(gets(Z,G)) :- envy(X,Y), good(G), Z = (X;Y).\n#show envy/2.\n",
+      "description": "Part of the library example fair-division."
+    },
+    {
+      "name": "welfare_a",
+      "text": "% Envy-free allocations of the largest total value first: they are the most likely to be\n% Pareto-optimal, so the first checks fail and the counterexamples come later.\n#maximize { V,A,G : gets(A,G), value(A,G,V) }.\n",
+      "description": "Part of the library example fair-division."
+    },
+    {
+      "name": "algorithm1",
+      "text": "% Algorithm 1 of Conati, Niskanen, de Haan and Jarvisalo (AAMAS 2025), for additive values.\n#program climb(k).\n% cand(k,T): the k-th candidate of a climb (cand_false(k,T): T is false in it). up(k), assumed by\n% the loop for one solve, asks for an envy-free allocation that dominates it: nobody is worse\n% off, somebody better off (lines 7-10 of Algorithm 1; there: happy agents stay happy, one more).\n{ up(k) }.\nworse(k,A) :- agent(A),\n    #sum { V,G : gets(A,G), value(A,G,V) ; -V,G : cand(k,gets(A,G)), not cand_false(k,gets(A,G)), value(A,G,V) } < 0.\nbetter(k,A) :- agent(A),\n    #sum { V,G : gets(A,G), value(A,G,V) ; -V,G : cand(k,gets(A,G)), not cand_false(k,gets(A,G)), value(A,G,V) } > 0.\n:- up(k), worse(k,A).\n:- up(k), not better(k,A) : agent(A).\n\n#program beat(k).\n% cex(k,alt(A,G)): the k-th counterexample, an allocation that dominates a climbed candidate.\n% Line 14 of Algorithm 1: some agent who is unhappy there must be happy; for additive values,\n% some agent must get strictly more than there. Sound because of the climb: an envy-free\n% Pareto-efficient allocation that gave nobody more would have the counterexample's values,\n% so it would dominate the candidate, and the climb had found no such allocation.\nbeats(k,A) :- agent(A),\n    #sum { V,G : gets(A,G), value(A,G,V) ; -V,G : cex(k,alt(A,G)), value(A,G,V) } > 0.\n:- not beats(k,A) : agent(A).\n",
+      "description": "Part of the library example fair-division."
     }
   ],
   "loop": {

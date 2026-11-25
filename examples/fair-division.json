@@ -28,6 +28,26 @@
       "name": "check",
       "description": "Looks for an allocation that Pareto-dominates the candidate (solver C).",
       "text": "% A counterexample: another allocation (it need not be envy-free) in which ...\n1 { alt(A,G) : agent(A) } 1 :- good(G).\n% ... nobody is worse off ...\n:- agent(A), #sum { V,G : alt(A,G), value(A,G,V) ; -V,G : gets(A,G), value(A,G,V) } < 0.\n% ... and somebody is better off.\ngains(A) :- agent(A), #sum { V,G : alt(A,G), value(A,G,V) ; -V,G : gets(A,G), value(A,G,V) } > 0.\nbetter :- gains(A).\n:- not better.\n#show alt/2.\n% No relevant/1 rules: the loop passes the allocation alt/2 to the refine part.\n"
+    },
+    {
+      "name": "welfare",
+      "text": "% A Pareto-optimal counterexample: of the allocations that dominate the candidate, the check\n% returns one of maximum total value. It is Pareto-optimal (an allocation that dominated it would\n% dominate the candidate too, with a larger total), so its rule \"not dominated by this one\" removes\n% as much as a dominance rule can (variant optimal-counterexample).\n#maximize { V,A,G : alt(A,G), value(A,G,V) }.\n"
+    },
+    {
+      "name": "allocation",
+      "text": "% A candidate without envy-freeness: every good goes to one agent. Envy is found by a check of\n% its own (fragment envy) and refined lazily, one envious pair at a time.\n1 { gets(A,G) : agent(A) } 1 :- good(G).\n#show gets/2.\n"
+    },
+    {
+      "name": "envy",
+      "text": "% A counterexample to envy-freeness: agent X values the bundle of Y more than its own.\n1 { envy(X,Y) : agent(X), agent(Y), X != Y } 1.\n:- envy(X,Y), #sum { V,G : gets(Y,G), value(X,G,V) ; -V,G : gets(X,G), value(X,G,V) } <= 0.\n% Envy depends only on the bundles of X and Y: every allocation that gives them the same bundles\n% has the same envy. So the clause says that one of their goods must move.\nrelevant(gets(Z,G)) :- envy(X,Y), good(G), Z = (X;Y).\n#show envy/2.\n"
+    },
+    {
+      "name": "welfare_a",
+      "text": "% Envy-free allocations of the largest total value first: they are the most likely to be\n% Pareto-optimal, so the first checks fail and the counterexamples come later.\n#maximize { V,A,G : gets(A,G), value(A,G,V) }.\n"
+    },
+    {
+      "name": "algorithm1",
+      "text": "% Algorithm 1 of Conati, Niskanen, de Haan and Jarvisalo (AAMAS 2025), for additive values.\n#program climb(k).\n% cand(k,T): the k-th candidate of a climb (cand_false(k,T): T is false in it). up(k), assumed by\n% the loop for one solve, asks for an envy-free allocation that dominates it: nobody is worse\n% off, somebody better off (lines 7-10 of Algorithm 1; there: happy agents stay happy, one more).\n{ up(k) }.\nworse(k,A) :- agent(A),\n    #sum { V,G : gets(A,G), value(A,G,V) ; -V,G : cand(k,gets(A,G)), not cand_false(k,gets(A,G)), value(A,G,V) } < 0.\nbetter(k,A) :- agent(A),\n    #sum { V,G : gets(A,G), value(A,G,V) ; -V,G : cand(k,gets(A,G)), not cand_false(k,gets(A,G)), value(A,G,V) } > 0.\n:- up(k), worse(k,A).\n:- up(k), not better(k,A) : agent(A).\n\n#program beat(k).\n% cex(k,alt(A,G)): the k-th counterexample, an allocation that dominates a climbed candidate.\n% Line 14 of Algorithm 1: some agent who is unhappy there must be happy; for additive values,\n% some agent must get strictly more than there. Sound because of the climb: an envy-free\n% Pareto-efficient allocation that gave nobody more would have the counterexample's values,\n% so it would dominate the candidate, and the climb had found no such allocation.\nbeats(k,A) :- agent(A),\n    #sum { V,G : gets(A,G), value(A,G,V) ; -V,G : cex(k,alt(A,G)), value(A,G,V) } > 0.\n:- not beats(k,A) : agent(A).\n"
     }
   ],
   "loop": {
@@ -147,6 +167,56 @@
         "language": "loop",
         "text": "solver A = shared + abstraction\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# No relevant/1: the clause is lifted from the ground programs of both ends.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.lift(M, X))\n    else:\n        accept M\n        A.add(G.block(M))\n"
       }
+    },
+    {
+      "name": "algorithm-1",
+      "swap": {},
+      "constants": {},
+      "note": "Algorithm 1 of Conati, Niskanen, de Haan and Jarvisalo (AAMAS 2025), for additive values: climb to an envy-free allocation no envy-free allocation dominates, then find any dominating allocation; the refinement: somebody gets more than there.",
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + algorithm1\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# Algorithm 1 of Conati, Niskanen, de Haan and Jarvisalo (AAMAS 2025), for additive values, and\n# enumerating every solution. A proposes an envy-free allocation (line 4). The climb (lines 7-10)\n# replaces it by an envy-free allocation that dominates it, as long as there is one (each candidate\n# it leaves is dominated, so it is blocked: the paper finds one solution, this loop all). C looks for\n# any allocation that dominates the result (lines 11-12): none, it is a solution (line 13);\n# otherwise some agent must get more than in that counterexample (line 14).\nloop:\n    M = A.solve()\n    if not M: stop\n    loop:\n        A.expand(climb, cand = G(M))\n        U = A.solve(assume A.atom(\"up\", A.step))\n        if not U: break\n        A.add(G.block(M))      # M is dominated by U, so it is not Pareto-efficient\n        M = U\n        count climbs\n    X = C.solve(assume G(M))\n    if X:\n        A.expand(beat, cex = X.atoms(alt/2))     # somebody gets more than in X\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "optimal-counterexample",
+      "swap": {},
+      "constants": {},
+      "note": "The default loop with a Pareto-optimal counterexample: of the dominating allocations, C returns one of maximum total value, so its rule removes the most.",
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine\nsolver C = shared + check + welfare      options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The default loop with a Pareto-optimal counterexample: C finds an allocation that dominates the\n# candidate, of maximum total value, hence Pareto-optimal (one that dominated it would dominate the\n# candidate too, with a larger total); the rule forbids every allocation it dominates.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M), optimal)\n    if X:\n        A.expand(refine, cex = X.atoms(alt/2))     # no later candidate is dominated by X\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "lazy-envy",
+      "swap": {},
+      "constants": {},
+      "note": "Envy-freeness as a second check: an envious pair gives a clause over the goods of the two agents; Pareto dominance as in the default loop.",
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + allocation + refine\nsolver D = shared + envy\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   E = A -> D via shared + glue\nlink   G = A -> C via shared + glue\n\n# Envy-freeness lazily: A proposes any allocation; D finds an agent who envies another, and the\n# clause from relevant/1 says that one of their goods must move (envy depends only on the two\n# bundles). An envy-free candidate goes to the Pareto check as in the default loop.\nloop:\n    M = A.solve()\n    if not M: stop\n    Y = D.solve(assume E(M))\n    if Y:\n        A.add(E.clause(M, Y))                    # the envious pair: one of its goods must move\n        continue\n    X = C.solve(assume G(M))\n    if X:\n        A.expand(refine, cex = X.atoms(alt/2))     # no later candidate is dominated by X\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "lazy-envy-optimal-counterexample",
+      "swap": {},
+      "constants": {},
+      "note": "lazy-envy with the Pareto-optimal counterexample of optimal-counterexample.",
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + allocation + refine\nsolver D = shared + envy\nsolver C = shared + check + welfare      options \"--heuristic=Domain\"\nlink   E = A -> D via shared + glue\nlink   G = A -> C via shared + glue\n\n# Both: envy-freeness lazily (clauses from an envious pair), and a Pareto-optimal counterexample\n# for dominance (variant optimal-counterexample).\nloop:\n    M = A.solve()\n    if not M: stop\n    Y = D.solve(assume E(M))\n    if Y:\n        A.add(E.clause(M, Y))\n        continue\n    X = C.solve(assume G(M), optimal)\n    if X:\n        A.expand(refine, cex = X.atoms(alt/2))     # no later candidate is dominated by X\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
+    },
+    {
+      "name": "welfare-first",
+      "swap": {},
+      "constants": {},
+      "note": "The default loop, with candidates of the largest total value first (A.solve(optimal)).",
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + refine + welfare_a\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# The default loop with A's candidates in order of total value (an optimal solve each time): an\n# envy-free allocation of maximum total value among those left is often Pareto-optimal, so its\n# check fails at once.\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.expand(refine, cex = X.atoms(alt/2))     # no later candidate is dominated by X\n    else:\n        accept M\n        A.add(G.block(M))\n"
+      }
     }
   ],
   "generators": [
@@ -176,12 +246,18 @@
         "default",
         "reference",
         "several",
-        "lift"
+        "lift",
+        "algorithm-1",
+        "optimal-counterexample",
+        "lazy-envy",
+        "lazy-envy-optimal-counterexample",
+        "welfare-first"
       ],
       "limits": {
         "seconds": 30
       }
     }
   ],
+  "readme": "# Project: Fair and efficient division\n\n## Research question\n\nAn allocation of indivisible goods with additive values is envy-free (nobody values another\nagent's bundle more than their own) and Pareto-efficient (no other allocation is at least as good\nfor everybody and better for somebody). Whether one exists is Sigma-2-complete (de Keijzer,\nBouveret, Klos and Zhang 2009), and Conati, Niskanen, de Haan and Järvisalo (2025) solve the\ndichotomous case with a counterexample-guided loop of SAT calls. Which loop finds every such\nallocation with the fewest refinements, and what does adapting their Algorithm 1 to additive\nvalues buy?\n\n## The loops\n\n- **default**: A proposes an envy-free allocation; C finds an allocation that dominates it. Being\n  dominated depends on sums, which a clause cannot say, so the refinement is a rule (Shape 3): no\n  later candidate may be dominated by this counterexample (`A.expand(refine, ...)`).\n- **algorithm-1**: Algorithm 1 of Conati et al. (2025), adapted from dichotomous to additive\n  values. A proposes an envy-free allocation; the *climb* (lines 7–10) replaces it by an envy-free\n  allocation that dominates it, as long as there is one (`A.expand(climb, ...)`, then a solve under\n  the assumption `up(k)`); C looks for any allocation that dominates the result (lines 11–12). With\n  none, it is a solution. Otherwise the refinement is line 14: an agent who is unhappy in the\n  counterexample must be happy, which for additive values reads \"some agent gets strictly more\n  than in the counterexample\" (`A.expand(beat, ...)`). That is stronger than \"not dominated by\n  it\", and sound only because of the climb: an envy-free Pareto-efficient allocation that gave\n  nobody more would have the counterexample's values, so it would dominate the climbed candidate.\n  The paper stops at the first solution; to list them all, each candidate the climb leaves is\n  blocked (it is dominated, so not Pareto-efficient).\n- **optimal-counterexample**: the default loop with a Pareto-optimal counterexample: C returns a\n  dominating allocation of maximum total value (`#maximize`, `C.solve(..., optimal)`). It is\n  Pareto-optimal (one that dominated it would dominate the candidate too, with a larger total), so\n  its rule removes the most candidates.\n- **lazy-envy**: envy-freeness leaves A and becomes a second check D. An envious pair gives a\n  clause from relevant/1 over the goods of the two agents (envy depends only on their two\n  bundles); Pareto dominance is checked as in the default loop.\n- **lazy-envy-optimal-counterexample**: lazy-envy with the counterexample of optimal-counterexample.\n- **welfare-first**: the default loop with A's candidates of the largest total value first\n  (`A.solve(optimal)`): such an allocation is often Pareto-optimal, so its check fails at once.\n- **several**: up to three dominating allocations per candidate, one rule each.\n- **lift**: no relevant/1 and no rule: the clause is lifted from the ground programs (`G.lift`).\n- **reference**: the blocking loop, each refuted candidate blocked on its own.\n\n## Baseline\n\nCandidates / counterexamples of a run with all solutions (`node tools/bench.mjs fair-division --suite loops`;\na counterexample is a model that refuted a candidate). All loops finish each instance within 10 s;\n`two-alike` has no envy-free allocation.\n\n| instance | default | reference | several | lift | algorithm-1 | optimal-counterexample | lazy-envy | lazy-envy-optimal-counterexample | welfare-first |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| example | 6 / 3 | 11 / 0 | 5 / 4 | 8 / 5 | 10 / 2 | 5 / 2 | 1238 / 1235 | 1151 / 1148 | 5 / 2 |\n| opposite-tastes | 9 / 5 | 38 / 0 | 9 / 10 | 20 / 16 | 13 / 2 | 8 / 4 | 72 / 68 | 66 / 62 | 8 / 4 |\n| four-agents | 32 / 16 | 62 / 0 | 28 / 25 | 53 / 37 | 41 / 13 | 31 / 15 | 5296 / 5280 | 4975 / 4959 | 30 / 14 |\n| random-1 | 22 / 10 | 95 / 0 | 17 / 9 | 46 / 34 | 30 / 4 | 18 / 6 | 9864 / 9852 | 9080 / 9068 | 18 / 6 |\n| random-2 | 16 / 8 | 115 / 0 | 15 / 18 | 65 / 57 | 36 / 5 | 14 / 6 | 329 / 321 | 186 / 178 | 13 / 5 |\n\nThe rule does most of the work: the blocking loop looks at up to seven times as many candidates.\nThe climb of algorithm-1 needs the fewest counterexamples on the larger instances (4 on random-1\nagainst 10 for the default loop; tied with welfare-first on random-2): most dominated candidates are left by a\ncheap envy-free step instead of a check, at the price of the climb's solves (counted as\ncandidates) and one program part per climb step. A Pareto-optimal counterexample saves a little on\nevery instance. Envy-freeness is cheap to state in A and expensive to learn: the lazy loops need\nhundreds to thousands of clauses, as an envy clause only rules out one pair of bundles.\n\n## Things to try\n\n- Combine the climb of algorithm-1 with the Pareto-optimal counterexample.\n- Minimum-envy Pareto-optimal allocations when no envy-free one exists (as Conati et al. 2025 do),\n  with A minimising an aggregate of the envy.\n- Larger instances from the generator `additive` (suite `loops`, Campaign tab).\n\n## References\n\n- B. de Keijzer, S. Bouveret, T. Klos and Y. Zhang. On the complexity of efficiency and envy-freeness in fair division of indivisible goods with additive preferences. *ADT 2009*, LNCS 5783, 98–110.\n- S. Bouveret and J. Lang. Efficiency and envy-freeness in fair division of indivisible goods: logical representation and complexity. *Journal of Artificial Intelligence Research* 32:525–564, 2008.\n- A. Conati, A. Niskanen, R. de Haan and M. Järvisalo. Computing efficient and envy-free allocations under dichotomous preferences using SAT. *AAMAS 2025*. https://dl.acm.org/doi/10.5555/3709347.3743566\n",
   "runs": []
 }
