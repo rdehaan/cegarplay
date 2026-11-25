@@ -41,7 +41,8 @@
           <div class="popover project-menu" id="project-menu" role="menu" hidden>
             <button type="button" class="menu-item" role="menuitem" data-click="new-button"><span>New project</span><small>four small fragments that run as they are</small></button>
             <button type="button" class="menu-item" role="menuitem" data-click="file-button"><span>Open file&hellip;</span><small>a project (.json) from your computer</small></button>
-            <button type="button" class="menu-item" role="menuitem" data-click="download-button"><span>Download</span><small>this project as a .json file</small></button>
+            <button type="button" class="menu-item" role="menuitem" data-click="download-button" data-history="0"><span>Download</span><small>this project as a .json file</small></button>
+            <button type="button" class="menu-item" role="menuitem" data-click="download-button" data-history="1"><span>Download with run history</span><small>the runs of this session too</small></button>
             <hr>
             <button type="button" class="menu-item" role="menuitem" data-click="share-button"><span>Copy share link</span><small>the project travels in the link itself</small></button>
             <button type="button" class="menu-item" role="menuitem" data-click="export-standalone-button"><span>Export for clingo</span><small>one .lp file, for a clingo built with Lua</small></button>
@@ -149,16 +150,16 @@
     <input id="tab7" aria-controls="section-internals" type="radio" name="tabs">
     <label for="tab7" class="tab-label" title="Internals"><span class="tab-text">Internals</span></label>
 
-    <!-- 1. Control -->
+    <!-- 1. Home: the project, and the example library. The file actions are in the Project menu,
+         the tabs, theme and reset in Settings (the dialogs after </main>). -->
     <section id="section-control">
-      <p>
+      <p class="home-intro">
         CegarPlay runs CEGAR loops (counterexample-guided abstraction refinement) written in answer
-        set programming, with clingo running in your browser. Load an example or a project file
-        here. A project is written in the <b>Programs</b>, <b>Loop</b> and <b>Instances</b> tabs;
-        press <b>Run</b> (or <b>Audit</b>) and look at the run in <b>Output</b> and <b>Statistics</b>.
-        The <b>Advanced</b> tabs (under Tabs, below) are the <b>Observatory</b>, which shows a run as
-        pictures, the <b>Campaign</b> tab, which compares many runs, and the <b>Refinery</b>. New here? Start with the
-        <b>Tutorial</b> tab.
+        set programming, with clingo running in your browser. Pick an example below, or start one from
+        <b>Project</b>. A project is written in the <b>Write</b> tabs; press <b>Run</b> (or <b>Audit</b>)
+        and read the run in the <b>Results</b> tabs. New here? Start with the <a href="#" data-open-tab="tab2">Tutorial</a>.
+        <span class="home-more">More tabs (the Observatory, the Campaign tab and the Refinery) can be switched on
+          in <a href="#" data-dialog="dialog-settings">Settings</a>.</span>
       </p>
       <div class="project-box">
         <div id="project-info">
@@ -184,9 +185,9 @@
         </div>
       </div>
 
-      <details id="library-section" class="library-section">
-        <summary><h3>Example library</h3></summary>
-        <p class="note">Load an example to look at it and run it. Each has a link of its own:
+      <details id="library-section" class="library-section" open>
+        <summary><h3>Example library <button type="button" class="help-q" id="library-help-button" aria-expanded="false" aria-controls="library-help" title="About the library">?</button></h3></summary>
+        <p class="note help-box" id="library-help" hidden>Load an example to look at it and run it. Each has a link of its own:
           <code>?example=&lt;id&gt;</code>. The <b>Tutorial</b> tab loads them lesson by lesson; the tags say which have instances, generators, suites or a domain view.
           Algorithms from the literature have tags of their own: try <code>ihs</code>, <code>marco</code>,
           <code>oll</code>, <code>benders</code>, <code>cegis</code>, <code>rareqs</code>, <code>caqe</code>,
@@ -210,88 +211,20 @@
       <p id="load-status" class="status-line"></p>
       <p id="storage-status" class="status-line error" hidden></p>
 
-      <h3>Start a new project</h3>
-      <button class="control-button" id="new-button">New project</button>
-      <span class="note">four small fragments that run as they are, with comments on what goes where</span>
-      <p id="new-status" class="status-line"></p>
-
-      <h3>Upload project from file</h3>
-      <button type="button" class="control-button" id="file-button">Select file</button>
-      <input type="file" id="file-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
-      <p id="upload-status" class="status-line"></p>
-
-      <h3>Download current project</h3>
-      <button class="control-button" id="download-button">Download</button>
-      &nbsp;
-      <label class="inline-label"><input type="checkbox" id="include-history"> include run history</label>
-
-      <h3>Workspace</h3>
-      <p class="note">Several projects kept in this browser by name, for instance a baseline next to an
-        experiment. They stay in this browser only: download a project to keep it for good.</p>
-      <div class="inline-controls">
-        <input type="text" id="workspace-name" placeholder="name" size="20" aria-label="Name in the workspace">
-        <button class="control-button" id="workspace-save-button">Save in workspace</button>
+      <!-- the buttons the Project menu presses; their status lines show as a toast -->
+      <div class="file-actions" hidden>
+        <button class="control-button" id="new-button">New project</button>
+        <p id="new-status" class="status-line toast-source"></p>
+        <button type="button" class="control-button" id="file-button">Select file</button>
+        <input type="file" id="file-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
+        <p id="upload-status" class="status-line toast-source"></p>
+        <button class="control-button" id="download-button">Download</button>
+        <input type="checkbox" id="include-history" aria-label="Include the run history">
+        <button class="control-button" id="share-button">Copy share link</button>
+        <p id="share-status" class="status-line toast-source"></p>
+        <button class="control-button" id="export-standalone-button">Export for clingo</button>
+        <p id="export-status" class="status-line toast-source"></p>
       </div>
-      <ul id="workspace-list" class="workspace-list"></ul>
-      <p id="workspace-status" class="status-line"></p>
-
-      <h3>Snapshots</h3>
-      <p class="note">A snapshot is a copy of the project as it is now, kept in this browser (at most 20 per
-        project). <b>Restore</b> puts a copy back in place of the project you are editing; that project is first
-        kept as an automatic snapshot, so nothing is lost, and <b>Undo</b> brings it straight back.</p>
-      <p id="snapshot-current" class="snapshot-current"></p>
-      <p id="snapshot-status" class="status-line" role="status" aria-live="polite"></p>
-      <div class="inline-controls">
-        <input type="text" id="snapshot-name" placeholder="name (optional)" size="24" aria-label="Snapshot name">
-        <button class="control-button" id="snapshot-save-button">Take snapshot</button>
-      </div>
-      <p id="snapshot-undo" class="snapshot-undo" hidden><span id="snapshot-undo-text"></span>
-        <button class="control-button" id="snapshot-undo-button">Undo</button></p>
-      <p id="snapshot-list-title" class="note"></p>
-      <ul id="snapshot-list" class="workspace-list snapshot-list"></ul>
-      <div id="snapshot-others"></div>
-
-      <h3>Recordings</h3>
-      <button class="control-button" id="download-recording-button" disabled>Download recording</button>
-      <button type="button" class="control-button" id="open-recording-button">Open recording</button>
-      <input type="file" id="recording-input" accept=".cprec,application/gzip" tabindex="-1" aria-hidden="true" hidden>
-      <span class="note">the events of the last run; opening one replays it without the engine</span>
-      <p id="recording-status" class="status-line"></p>
-
-      <h3>Share</h3>
-      <button class="control-button" id="share-button">Copy share link</button>
-      <span class="note">the project travels in the link itself (without the run history); nothing is uploaded</span>
-      <p id="share-status" class="status-line"></p>
-
-      <h3>Export</h3>
-      <button class="control-button" id="export-standalone-button">Export for clingo</button>
-      <span class="note">one <code>.lp</code> file with the fragments, the runtime and the loop; run it with
-        <code>clingo file.lp --outf=3</code>, using a clingo built with Lua</span>
-      <p id="export-status" class="status-line"></p>
-
-      <h3>Tabs</h3>
-      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="tutorial-checkbox" checked>
-        Tutorial</label> <span class="note">lessons with an example each; hide it once you know your way around</span></p>
-      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="manual-checkbox">
-        Technical manual</label> <span class="note">the complete reference, for lookup and for AI agents</span></p>
-      <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="advanced-checkbox">
-        Advanced</label> <span class="note">all three tabs below, on or off</span></p>
-      <div class="advanced-toggles">
-        <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="campaign-checkbox">
-          Campaign</label> <span class="note">grids of runs on several engines, instances and variants</span></p>
-        <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="observatory-checkbox">
-          Observatory</label> <span class="note">a run as pictures: anatomy, call timeline, domain view, candidate space</span></p>
-        <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="lab-checkbox">
-          Refinery</label> <span class="note">a tab of its own: every refinement a loop could have made
-          at a step, and the shortest and longest runs its refinements allow (small instances)</span></p>
-      </div>
-      <p class="note">These choices are kept in this browser.</p>
-
-      <h3>Reset</h3>
-      <p class="note">Start from a clean slate: forget everything CegarPlay keeps in this browser (the
-        project being edited and its run history, the workspace, all snapshots, the campaign rows, the
-        choices of tabs and theme) and start again as on a first visit. Download what you want to keep first.</p>
-      <button class="control-button danger-button" id="factory-reset-button">Reset everything</button>
     </section>
 
     <!-- 2. Tutorial -->
@@ -300,8 +233,8 @@
         <label class="inline-label" title="The complete reference, for lookup and for AI agents, in its own tab"><input type="checkbox" class="manual-checkbox"> Technical manual</label>
         <label class="inline-label" title="The Observatory tab (lessons 5 and 6)"><input type="checkbox" class="observatory-checkbox"> Observatory</label>
         <label class="inline-label" title="The Campaign tab (lesson 8)"><input type="checkbox" class="campaign-checkbox"> Campaign</label>
-        <label class="inline-label" title="Tabs in the Control tab brings it back"><input type="checkbox" class="tutorial-checkbox" checked> Show this tab</label>
-        <span class="note">Kept in this browser; also under Tabs in the Control tab.</span></p>
+        <label class="inline-label" title="Settings (the gear in the top bar) brings it back"><input type="checkbox" class="tutorial-checkbox" checked> Show this tab</label>
+        <span class="note">Kept in this browser; also in Settings.</span></p>
       <div id="tutorial"></div>
     </section>
 
@@ -498,6 +431,87 @@
       <pre id="raw-events" class="raw-events"></pre>
     </section>
   </main>
+
+  <!-- Project > Workspace and snapshots, Recordings -->
+  <dialog class="dialog" id="dialog-versions" aria-labelledby="dialog-versions-title">
+    <div class="dialog-box">
+      <header class="dialog-header"><h2 id="dialog-versions-title">Workspace, snapshots and recordings</h2>
+        <button class="icon-button" type="button" data-close-dialog aria-label="Close">&#x2715;</button></header>
+      <div class="dialog-body">
+        <h3>Workspace</h3>
+        <p class="note">Several projects kept in this browser by name, for instance a baseline next to an
+          experiment. They stay in this browser only: download a project to keep it for good.</p>
+        <div class="inline-controls">
+          <input type="text" id="workspace-name" placeholder="name" size="20" aria-label="Name in the workspace">
+          <button class="control-button" id="workspace-save-button">Save in workspace</button>
+        </div>
+        <ul id="workspace-list" class="workspace-list"></ul>
+        <p id="workspace-status" class="status-line"></p>
+
+        <h3>Snapshots</h3>
+        <p class="note">A snapshot is a copy of the project as it is now, kept in this browser (at most 20 per
+          project). <b>Restore</b> puts a copy back in place of the project you are editing; that project is first
+          kept as an automatic snapshot, so nothing is lost, and <b>Undo</b> brings it straight back.</p>
+        <p id="snapshot-current" class="snapshot-current"></p>
+        <p id="snapshot-status" class="status-line" role="status" aria-live="polite"></p>
+        <div class="inline-controls">
+          <input type="text" id="snapshot-name" placeholder="name (optional)" size="24" aria-label="Snapshot name">
+          <button class="control-button" id="snapshot-save-button">Take snapshot</button>
+        </div>
+        <p id="snapshot-undo" class="snapshot-undo" hidden><span id="snapshot-undo-text"></span>
+          <button class="control-button" id="snapshot-undo-button">Undo</button></p>
+        <p id="snapshot-list-title" class="note"></p>
+        <ul id="snapshot-list" class="workspace-list snapshot-list"></ul>
+        <div id="snapshot-others"></div>
+
+        <h3 id="recordings">Recordings</h3>
+        <button class="control-button" id="download-recording-button" disabled>Download recording</button>
+        <button type="button" class="control-button" id="open-recording-button">Open recording</button>
+        <input type="file" id="recording-input" accept=".cprec,application/gzip" tabindex="-1" aria-hidden="true" hidden>
+        <span class="note">the events of the last run; opening one replays it without the engine</span>
+        <p id="recording-status" class="status-line"></p>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Settings (the gear in the top bar) -->
+  <dialog class="dialog" id="dialog-settings" aria-labelledby="dialog-settings-title">
+    <div class="dialog-box">
+      <header class="dialog-header"><h2 id="dialog-settings-title">Settings</h2>
+        <button class="icon-button" type="button" data-close-dialog aria-label="Close">&#x2715;</button></header>
+      <div class="dialog-body">
+        <h3>Tabs</h3>
+        <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="tutorial-checkbox" checked>
+          Tutorial</label> <span class="note">lessons with an example each; hide it once you know your way around</span></p>
+        <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="manual-checkbox">
+          Technical manual</label> <span class="note">the complete reference, for lookup and for AI agents</span></p>
+        <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="advanced-checkbox">
+          Advanced</label> <span class="note">all three tabs below, on or off</span></p>
+        <div class="advanced-toggles">
+          <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="campaign-checkbox">
+            Campaign</label> <span class="note">grids of runs on several engines, instances and variants</span></p>
+          <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="observatory-checkbox">
+            Observatory</label> <span class="note">a run as pictures: anatomy, call timeline, domain view, candidate space</span></p>
+          <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="lab-checkbox">
+            Refinery</label> <span class="note">a tab of its own: every refinement a loop could have made
+            at a step, and the shortest and longest runs its refinements allow (small instances)</span></p>
+        </div>
+        <p class="note">These choices are kept in this browser.</p>
+
+        <h3>Theme</h3>
+        <p><button class="control-button theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
+          <span class="note">Auto follows the system; the button cycles through Auto, Light and Dark (also in the top bar).</span></p>
+
+        <h3>Reset</h3>
+        <p class="note">Start from a clean slate: forget everything CegarPlay keeps in this browser (the
+          project being edited and its run history, the workspace, all snapshots, the campaign rows, the
+          choices of tabs and theme) and start again as on a first visit. Download what you want to keep first.</p>
+        <button class="control-button danger-button" id="factory-reset-button">Reset everything</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <footer class="page-footer">
     <a href="https://github.com/rdehaan/cegarplay">Source on GitHub</a> ·

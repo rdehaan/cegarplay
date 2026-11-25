@@ -17,10 +17,10 @@ test('the Advanced tabs are off by default; each has a toggle, the Advanced togg
   assert.equal(await shown(page, 'tab10'), false);
   assert.equal(await shown(page, 'tab12'), false);
   assert.equal(await shown(page, 'tab2'), true);
-  const box = () => page.$eval('#section-control .advanced-checkbox', (c) => ({ checked: c.checked, mixed: c.indeterminate }));
+  const box = () => page.$eval('#dialog-settings .advanced-checkbox', (c) => ({ checked: c.checked, mixed: c.indeterminate }));
   assert.deepEqual(await box(), { checked: false, mixed: false });
   // one of them: the Advanced toggle shows "some"
-  await page.check('#section-control .observatory-checkbox');
+  await B.inDialog(page, 'settings', () => page.check('#dialog-settings .observatory-checkbox'));
   assert.equal(await shown(page, 'tab11'), true);
   assert.equal(await shown(page, 'tab10'), false);
   assert.equal(await stored(page, 'cegarplay.observatory'), '1');
@@ -29,7 +29,7 @@ test('the Advanced tabs are off by default; each has a toggle, the Advanced togg
   // the Tutorial tab's copy of the Observatory checkbox follows
   assert.equal(await page.$eval('#section-tutorial .observatory-checkbox', (c) => c.checked), true);
   // the Advanced toggle: all three
-  await page.check('#section-control .advanced-checkbox');
+  await B.inDialog(page, 'settings', () => page.check('#dialog-settings .advanced-checkbox'));
   for (const id of ['tab10', 'tab11', 'tab12']) assert.equal(await shown(page, id), true, id);
   assert.deepEqual(await box(), { checked: true, mixed: false });
   for (const k of ['campaign', 'observatory', 'lab']) assert.equal(await stored(page, `cegarplay.${k}`), '1', k);
@@ -41,13 +41,13 @@ test('the Advanced tabs are off by default; each has a toggle, the Advanced togg
   await page.click('label[for="tab11"]');
   await page.click('label[for="tab1"]');
   await page.click('label[for="tab11"]');
-  await page.evaluate(() => { const c = document.querySelector('#section-control .observatory-checkbox'); c.checked = false; c.dispatchEvent(new Event('change')); });
+  await page.evaluate(() => { const c = document.querySelector('#dialog-settings .observatory-checkbox'); c.checked = false; c.dispatchEvent(new Event('change')); });
   assert.equal(await shown(page, 'tab11'), false);
   assert.equal(await shown(page, 'tab10'), true);
   assert.equal(await page.$eval('#tab1', (r) => r.checked), true);
   assert.equal(await stored(page, 'cegarplay.observatory'), null);
   // the Advanced toggle off: all three
-  await page.evaluate(() => { const c = document.querySelector('#section-control .advanced-checkbox'); c.checked = false; c.dispatchEvent(new Event('change')); });
+  await page.evaluate(() => { const c = document.querySelector('#dialog-settings .advanced-checkbox'); c.checked = false; c.dispatchEvent(new Event('change')); });
   for (const id of ['tab10', 'tab11', 'tab12']) assert.equal(await shown(page, id), false, id);
   assert.deepEqual(await page.evaluate(() => Object.keys(localStorage).filter((k) => /^cegarplay\.(advanced|campaign|observatory|lab)$/.test(k))), []);
   assert.deepEqual(errors, []);
@@ -62,7 +62,7 @@ test('an older stored Advanced mode shows Campaign and Observatory, and moves to
   assert.equal(await shown(page, 'tab11'), true);
   assert.equal(await shown(page, 'tab10'), true);
   assert.equal(await shown(page, 'tab12'), false);
-  await page.uncheck('#section-control .campaign-checkbox');
+  await B.inDialog(page, 'settings', () => page.uncheck('#dialog-settings .campaign-checkbox'));
   assert.equal(await stored(page, 'cegarplay.advanced'), null);
   assert.equal(await stored(page, 'cegarplay.observatory'), '1');
   assert.equal(await stored(page, 'cegarplay.campaign'), null);
@@ -83,7 +83,7 @@ test('a link to the Observatory shows it for the visit only', async () => {
 
 test('the Tutorial can be hidden and comes back; a lesson link shows it for the visit', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?fresh=1', { advanced: false });
-  await page.uncheck('#section-control .tutorial-checkbox');
+  await B.inDialog(page, 'settings', () => page.uncheck('#dialog-settings .tutorial-checkbox'));
   assert.equal(await shown(page, 'tab2'), false);
   assert.equal(await stored(page, 'cegarplay.tutorial'), '0');
   await page.reload();
@@ -97,9 +97,9 @@ test('the Tutorial can be hidden and comes back; a lesson link shows it for the 
   assert.equal(await stored(page, 'cegarplay.tutorial'), '0');
   // the checkboxes show what is visible; ticking again stores "shown"
   await page.click('label[for="tab1"]');
-  assert.equal(await page.$eval('#section-control .tutorial-checkbox', (c) => c.checked), true);
-  await page.uncheck('#section-control .tutorial-checkbox');
-  await page.check('#section-control .tutorial-checkbox');
+  assert.equal(await page.$eval('#dialog-settings .tutorial-checkbox', (c) => c.checked), true);
+  await B.inDialog(page, 'settings', () => page.uncheck('#dialog-settings .tutorial-checkbox'));
+  await B.inDialog(page, 'settings', () => page.check('#dialog-settings .tutorial-checkbox'));
   assert.equal(await stored(page, 'cegarplay.tutorial'), null);
   assert.deepEqual(errors, []);
   await context.close();

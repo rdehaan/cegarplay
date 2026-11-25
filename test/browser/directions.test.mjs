@@ -139,12 +139,13 @@ test('V1: the recording setting, a recorded run, Download and Open recording', a
   await page.click('#run-button');
   await settled(page);
   assert.equal(await page.evaluate(() => window.cegarplay.recording.steps.length), 107);
-  await page.click('label[for="tab1"]');
+  await B.openDialog(page, 'versions');   // Project > Recordings
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#download-recording-button')]);
   const file = await dl.path();
   await page.setInputFiles('#recording-input', file);
   await page.waitForFunction(() => document.getElementById('run-status').dataset.state === 'replayed');
   assert.match(await page.textContent('#recording-status'), /107 steps/);
+  await B.closeDialog(page, 'versions');
   assert.equal(await solutionsOf(page), 61);
   // off again: the setting disappears
   await page.click('label[for="tab4"]');
@@ -632,6 +633,7 @@ test('D8: Mine hard instances in the generator panel, and add one', { timeout: 1
 test('D9: the workspace keeps several projects by name and asks before overwriting', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run');
   page.on('dialog', (d) => d.accept());
+  await B.openDialog(page, 'versions');   // Project > Workspace and snapshots
   await page.fill('#workspace-name', 'baseline');
   await page.click('#workspace-save-button');
   await page.evaluate(() => window.cegarplay.loadExample('qbf'));

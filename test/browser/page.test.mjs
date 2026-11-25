@@ -101,7 +101,7 @@ test('5. download JSON, reload (autosave restores), upload: all editors equal', 
   const ids = await page.$$eval('#fragments .editor, #loop-editor', (l) => l.map((e) => e.id));
   const before = {};
   for (const id of ids) before[id] = await B.getEditor(page, id);
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#download-button')]);
+  const [dl] = await Promise.all([page.waitForEvent('download'), B.projectMenu(page, 'download-button', { history: false })]);
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'cegarplay-')), dl.suggestedFilename());
   await dl.saveAs(file);
   assert.equal(path.basename(file), 'sum-free-sets.json');
@@ -139,7 +139,12 @@ test('the library: groups from library.json, filter, ?example=, copy link, unkno
   const { page, context, errors } = await B.openPage(browser, server, '?example=lang-basics&tab=4');
   assert.match(await B.getEditor(page, 'loop-editor'), /count refinements/);
   await page.click('label[for="tab1"]');
-  assert.deepEqual(await page.$$eval('#library-section, .library-group', (l) => l.filter((d) => d.open).length), 0, 'folded by default');
+  // Home shows the library open, its groups folded, and its intro behind the "?"
+  assert.deepEqual(await page.$$eval('#library-section, .library-group', (l) => l.filter((d) => d.open).map((d) => d.id)), ['library-section']);
+  assert.equal(await page.isVisible('#library-help'), false);
+  await page.click('#library-help-button');
+  assert.equal(await page.isVisible('#library-help'), true);
+  assert.equal(await page.$eval('#library-section', (d) => d.open), true, 'the "?" does not fold the library');
   await B.openLibrary(page);
   assert.equal(await page.$$eval('#library .library-group:not([data-group="projects"]) .library-entry', (l) => l.length), lib.examples.length);
   // the Projects group lists the examples with a readme again (FUTURE-DIRECTIONS E3)
@@ -248,7 +253,7 @@ test('the loop script is checked while it is edited; New project runs', async ()
   // New project (the project was edited: accept the question)
   page.once('dialog', (d) => d.accept());
   await page.click('label[for="tab1"]');
-  await page.click('#new-button');
+  await B.projectMenu(page, 'new-button');
   assert.match(await B.getEditor(page, 'editor-check'), /relevant\(pick/);
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
@@ -307,7 +312,7 @@ test('the Manual tab: hidden by default, shown by the toggle (remembered) and by
   await page.waitForSelector('body[data-ready="true"]');
   assert.equal(await page.isVisible('label[for="tab8"]'), true);
   await page.click('label[for="tab1"]');
-  await page.uncheck('#section-control .manual-checkbox');
+  await B.inDialog(page, 'settings', () => page.uncheck('#dialog-settings .manual-checkbox'));
   assert.equal(await page.isHidden('label[for="tab8"]'), true);
   // a link from the tutorial into the manual opens it at that section
   await page.click('label[for="tab2"]');

@@ -21,7 +21,9 @@ const CONTROL_IDS_BEFORE = ['project-info', 'edit-project-button', 'project-head
   'storage-status', 'new-button', 'new-status', 'file-button', 'file-input', 'upload-status', 'download-button', 'include-history', 'workspace-name', 'workspace-save-button', 'workspace-list',
   'workspace-status', 'snapshot-current', 'snapshot-status', 'snapshot-name', 'snapshot-save-button', 'snapshot-undo', 'snapshot-undo-text', 'snapshot-undo-button', 'snapshot-list-title',
   'snapshot-list', 'snapshot-others', 'download-recording-button', 'open-recording-button', 'recording-input', 'recording-status', 'share-button', 'share-status', 'export-standalone-button',
-  'export-status', 'factory-reset-button'];
+  'export-status', 'factory-reset-button',
+  // the reorganised page: the library's "?", the dialogs' titles, Recordings as a target
+  'library-help-button', 'library-help', 'dialog-versions-title', 'recordings', 'dialog-settings-title'].sort();
 
 test('lab off (the default): the same tabs and Control tab as before, no lab code or worker loaded', async () => {
   const { page, context, errors, foreign } = await B.openPage(browser, server, '?fresh=1', { advanced: false });
@@ -29,10 +31,11 @@ test('lab off (the default): the same tabs and Control tab as before, no lab cod
   page.on('request', (r) => requests.push(r.url()));
   const tabs = await page.$$eval('label.tab-label', (ls) => ls.filter((l) => !l.hidden && getComputedStyle(l).display !== 'none').map((l) => l.getAttribute('for')));
   assert.deepEqual(tabs, TABS_BEFORE);
-  assert.deepEqual(await page.$$eval('#section-control [id]', (es) => es.map((e) => e.id)), CONTROL_IDS_BEFORE);
+  // Home, and the dialogs that took over the rest of the old Control tab
+  assert.deepEqual(await page.$$eval('#section-control [id], #dialog-versions [id], #dialog-settings [id]', (es) => es.map((e) => e.id).sort()), CONTROL_IDS_BEFORE);
   // the one visible change: the toggle, unticked
-  assert.equal(await page.$eval('#section-control .lab-checkbox', (c) => c.checked), false);
-  assert.equal(await page.$$eval('.lab-checkbox', (l) => l.length), 1, 'only in the Control tab\'s Tabs block');
+  assert.equal(await page.$eval('#dialog-settings .lab-checkbox', (c) => c.checked), false);
+  assert.equal(await page.$$eval('.lab-checkbox', (l) => l.length), 1, 'only in Settings');
   assert.equal(await stored(page, 'cegarplay.lab'), null);
   await page.click('label[for="tab3"]');
   await page.waitForTimeout(300);
@@ -46,7 +49,7 @@ test('lab off (the default): the same tabs and Control tab as before, no lab cod
 test('the toggle shows the Refinery tab and is remembered; ?lab=1 and ?tab=12 show it for the visit only', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?fresh=1', { advanced: false });
   assert.equal(await shown(page, 'tab12'), false);
-  await page.check('#section-control .lab-checkbox');
+  await B.inDialog(page, 'settings', () => page.check('#dialog-settings .lab-checkbox'));
   assert.equal(await shown(page, 'tab12'), true);
   assert.equal(await stored(page, 'cegarplay.lab'), '1');
   await page.reload();
@@ -55,7 +58,7 @@ test('the toggle shows the Refinery tab and is remembered; ?lab=1 and ?tab=12 sh
   await page.click('label[for="tab12"]');
   await page.waitForSelector('#lab-compute');
   assert.match(new URL(page.url()).search, /tab=12/);
-  await page.evaluate(() => { const c = document.querySelector('#section-control .lab-checkbox'); c.checked = false; c.dispatchEvent(new Event('change')); });
+  await page.evaluate(() => { const c = document.querySelector('#dialog-settings .lab-checkbox'); c.checked = false; c.dispatchEvent(new Event('change')); });
   assert.equal(await shown(page, 'tab12'), false);
   assert.equal(await page.$eval('#tab1', (r) => r.checked), true);
   assert.equal(await stored(page, 'cegarplay.lab'), null, 'absent when off');
@@ -152,12 +155,12 @@ test('from a run: gc-shape2 n3 recorded with every step; the run against the bou
 
 test('Reset everything also removes the Refinery\'s keys', async () => {
   const { page, context } = await B.openPage(browser, server, '?fresh=1&tab=12', { advanced: false });
-  await page.check('#section-control .lab-checkbox');
+  await B.inDialog(page, 'settings', () => page.check('#dialog-settings .lab-checkbox'));
   await page.waitForSelector('#lab-compute');
   await page.selectOption('#lab-source', 'free');
   assert.equal(await stored(page, 'cegarplay.lab.source'), '"free"');
   page.once('dialog', (d) => d.accept());
-  await page.click('label[for="tab1"]');
+  await B.openDialog(page, 'settings');
   await Promise.all([page.waitForNavigation(), page.click('#factory-reset-button')]);
   await page.waitForSelector('body[data-ready="true"]');
   assert.deepEqual(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('cegarplay.lab'))), []);

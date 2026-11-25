@@ -53,11 +53,26 @@ export function setupTopbar() {
   }
 
   // ---- menu items and links: data-click presses a button, data-dialog opens a dialog
+  // (data-history sets "include run history" first); data-open-tab opens a tab
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-click], [data-dialog]');
+    const t = e.target.closest('[data-click], [data-dialog], [data-open-tab]');
     if (!t) return;
     e.preventDefault();
-    if (t.dataset.click) { closeAll(); $(t.dataset.click).click(); } else openDialog(t.dataset.dialog, t.dataset.scroll);
+    if (t.dataset.click) {
+      closeAll();
+      if (t.dataset.history !== undefined) $('include-history').checked = t.dataset.history === '1';
+      $(t.dataset.click).click();
+    } else if (t.dataset.dialog) openDialog(t.dataset.dialog, t.dataset.scroll);
+    else { const r = $(t.dataset.openTab); r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); }
+  }, true);   // capture: a pop-up stops the bubbling of its clicks (so that it stays open)
+
+  // the library's intro behind its "?" (inside the summary: the click must not fold the library)
+  const libHelp = $('library-help-button');
+  libHelp.addEventListener('click', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const box = $('library-help');
+    box.hidden = !box.hidden;
+    libHelp.setAttribute('aria-expanded', String(!box.hidden));
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && pops.some(([, p]) => !p.hidden)) {
@@ -67,20 +82,47 @@ export function setupTopbar() {
     }
   });
 
-  // ---- the toast: what the hidden status lines of the file actions say
+  // ---- the toast: what the hidden status lines of the file actions say. A short note goes by
+  // itself; a long one (a share link to copy by hand) or an error stays until it is closed.
   const toast = $('toast');
+  const text = document.createElement('span');
+  text.className = 'toast-text';
+  const close = document.createElement('button');
+  close.className = 'toast-close'; close.type = 'button'; close.setAttribute('aria-label', 'Close'); close.textContent = '\u2715';
+  close.addEventListener('click', () => { toast.hidden = true; });
+  toast.append(text, close);
   let timer = 0;
   for (const s of document.querySelectorAll('.toast-source')) {
     new MutationObserver(() => {
-      const text = s.textContent.trim();
-      if (!text || !toast) return;
-      toast.textContent = text;
-      toast.classList.toggle('error', s.classList.contains('error'));
+      const t = s.textContent.trim();
+      if (!t) return;
+      text.textContent = t;
+      const error = s.classList.contains('error');
+      toast.classList.toggle('error', error);
       toast.hidden = false;
       clearTimeout(timer);
-      timer = setTimeout(() => { toast.hidden = true; }, 5000);
-    }).observe(s, { childList: true, characterData: true, subtree: true });
+      if (!error && t.length <= 160 && undo.hidden) timer = setTimeout(() => { toast.hidden = true; }, 5000);
+    }).observe(s, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class'] });
   }
+
+  // ---- Undo: when a project replaced an edited one (New project, Open file, a restore), the
+  // toast offers the snapshots' Undo as well, where it can be seen without opening the dialog
+  const undo = document.createElement('button');
+  undo.className = 'control-button small-button toast-undo'; undo.type = 'button'; undo.hidden = true;
+  undo.addEventListener('click', () => { $('snapshot-undo-button').click(); toast.hidden = true; });
+  close.before(undo);
+  const syncUndo = () => {
+    const on = !$('snapshot-undo').hidden;
+    undo.hidden = !on;
+    undo.textContent = $('snapshot-undo-button').textContent || 'Undo';
+    // not when the Undo is in view already: the dialog, or next to the library's load line
+    const inView = $('dialog-versions').open || !!$('load-undo-button')?.offsetParent;
+    if (on && !inView) {
+      if (toast.hidden) { text.textContent = $('snapshot-undo-text').textContent.trim(); toast.classList.remove('error'); toast.hidden = false; }
+      clearTimeout(timer);   // stays while Undo is possible
+    }
+  };
+  new MutationObserver(() => setTimeout(syncUndo)).observe($('snapshot-undo'), { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true, characterData: true });
 
   // ---- the project's title next to the menu
   const heading = $('project-heading');

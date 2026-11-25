@@ -13,7 +13,7 @@ for (const id of ['graph-coloring', 'lang-raw-lua']) {
   test(`C1: a share link opens the same project in a fresh context (${id})`, { skip: process.env.BROWSER === 'firefox' && 'Firefox: Playwright cannot grant clipboard-read' }, async () => {
     const ctx = { contextOptions: { permissions: ['clipboard-read', 'clipboard-write'] } };
     const { page, context } = await B.openPage(browser, server, `?example=${id}`, ctx);
-    await page.click('#share-button');
+    await B.projectMenu(page, 'share-button');
     await page.waitForFunction(() => /share link/i.test(document.getElementById('share-status').textContent));
     const link = await page.evaluate(() => navigator.clipboard.readText());
     assert.match(link, /#p=z[A-Za-z0-9_-]+$/);

@@ -51,17 +51,22 @@ test('B1: ?tab=N still opens that tab', async () => {
   await context.close();
 });
 
-test('B2: the file control is in the Tab order and Enter opens the file dialog', async () => {
+test('B2: the Project menu is in the Tab order; Enter, the arrow keys and Enter open the file dialog', async () => {
   const { page, context } = await B.openPage(browser, server);
   await page.waitForSelector('#library .library-group');
   await page.evaluate(() => document.activeElement && document.activeElement.blur());
-  const a = await tabUntil(page, (x) => x.id === 'file-button', 100);
-  assert.ok(a, 'Select file is reachable with Tab');
-  // Enter on the button clicks the hidden file input (which opens the dialog). Waiting for the
+  const a = await tabUntil(page, (x) => x.id === 'project-menu-button', 100);
+  assert.ok(a, 'the Project menu is reachable with Tab');
+  // Enter on "Open file…" clicks the hidden file input (which opens the dialog). Waiting for the
   // 'filechooser' event itself timed out only in the full parallel test run (PLAN2 S1/I1).
   await page.evaluate(() => { window.__fileClicks = 0; document.getElementById('file-input').addEventListener('click', (e) => { window.__fileClicks++; e.preventDefault(); }); });
+  await page.keyboard.press('Enter');                       // opens the menu, focus on its first item
+  assert.equal(await page.isVisible('#project-menu'), true);
+  await page.keyboard.press('ArrowDown');                   // Open file…
+  assert.match(await page.evaluate(() => document.activeElement.textContent), /Open file/);
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => window.__fileClicks === 1, null, { timeout: 15000 });
+  assert.equal(await page.isHidden('#project-menu'), true, 'the menu closes');
   await context.close();
 });
 

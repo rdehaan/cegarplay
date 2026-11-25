@@ -108,8 +108,7 @@ test('rerun with 5 seeds adds five history rows; copy; download with history', a
   const tsv = await page.evaluate(() => window.cegarplay.stats.lastCopied);
   assert.match(tsv, /^outcome\t/);
   await page.click('label[for="tab1"]');
-  await page.check('#include-history');
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#download-button')]);
+  const [dl] = await Promise.all([page.waitForEvent('download'), B.projectMenu(page, 'download-button', { history: true })]);
   const text = await (await dl.createReadStream()).toArray().then((c) => Buffer.concat(c).toString());
   assert.equal(JSON.parse(text).runs.length, 5);
   await context.close();

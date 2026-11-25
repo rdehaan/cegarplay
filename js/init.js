@@ -1107,8 +1107,7 @@ async function start() {
   if (wantStep !== null && /^\d+$/.test(wantStep)) app.cursor.setByStep(Number(wantStep));
   if (wantView || wantStep !== null) { $('tab11').checked = true; requestAnimationFrame(() => app.views.show()); }
   app.restoredOrLoaded = true;
-  // nothing kept in this browser: show the library open
-  if (!stored && !named && shared === null) $('library-section').open = true;
+  // (the library is open on Home from the start: index.html)
   buildLibrary();
   await app.engine.ready;
   // the clingo version, for the footer (the engine is idle here: nothing else runs yet)

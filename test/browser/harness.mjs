@@ -82,3 +82,30 @@ export async function runOptions(page, action) {
   await action();
   if (await page.isVisible('#run-options')) await page.keyboard.press('Escape');
 }
+
+// The Project menu presses the hidden file buttons: choose the item that presses button `id`
+// (history: the Download item with or without the run history).
+export async function projectMenu(page, id, { history } = {}) {
+  if (await page.isHidden('#project-menu')) await page.click('#project-menu-button');
+  const h = history === undefined ? '' : `[data-history="${history ? 1 : 0}"]`;
+  await page.click(`#project-menu .menu-item[data-click="${id}"]${h}`);
+}
+
+// The dialogs: Settings ('settings') and Workspace, snapshots and recordings ('versions').
+export async function openDialog(page, name) {
+  const sel = `#dialog-${name}`;
+  if (!(await page.$eval(sel, (d) => d.open))) {
+    if (name === 'settings') await page.click('#settings-button');
+    else { await page.click('#project-menu-button'); await page.click('#project-menu .menu-item[data-dialog="dialog-versions"]:not([data-scroll])'); }
+  }
+}
+export async function closeDialog(page, name) {
+  await page.evaluate((id) => { const d = document.getElementById(id); if (d.open) d.close(); }, `dialog-${name}`);
+}
+// Open a dialog, do one thing, close it again.
+export async function inDialog(page, name, action) {
+  await openDialog(page, name);
+  const r = await action();
+  await closeDialog(page, name);
+  return r;
+}

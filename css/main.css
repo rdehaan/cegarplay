@@ -1249,3 +1249,43 @@ body:has(#run-status[data-state="idle"]) .run-summary :is(.shown-line, .live-lin
   /* the pop-ups span the screen; js/topbar.js puts them under their button */
   .project-menu, .run-options { position: fixed; left: 8px; right: 8px; min-width: 0; }
 }
+
+/* ---- Home ---- */
+.home-intro { max-width: 62em; }
+.home-more { display: block; margin-top: 4px; font-size: 0.92em; color: var(--text-muted); }
+/* a "?" that shows a short explanation (the library; the tabs' help) */
+.help-q {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; padding: 0; vertical-align: middle;
+  border-radius: 50%; border: 1px solid var(--border-strong); background: var(--button-bg);
+  font: 600 12px/1 'Open Sans', sans-serif; color: var(--text-muted); cursor: pointer;
+}
+.help-q[aria-expanded="true"], .help-fold[open] > summary .help-q { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
+.help-box { margin: 6px 0 10px; padding: 10px 14px; background: var(--hint-bg); border-radius: 6px; max-width: 70em; }
+#library-section summary h3 .help-q { margin-left: 6px; }
+
+/* ---- dialogs: Settings; Workspace, snapshots and recordings ---- */
+dialog.dialog {
+  width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 48px); margin: 6vh auto auto;
+  padding: 0; border: 0; border-radius: 8px; background: var(--panel); color: var(--text);
+  box-shadow: 0 10px 40px var(--shadow);
+}
+dialog.dialog::backdrop { background: var(--backdrop); }
+.dialog-header {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--border-light);
+}
+.dialog-header h2 { padding: 0; font-size: 18px; }
+.dialog-body { padding: 4px 20px 20px; }
+.dialog-body h3 { scroll-margin-top: 60px; }
+
+/* ---- the toast: the status of a Project menu action ---- */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 120;
+  max-width: min(90vw, 700px); padding: 8px 16px; border-radius: 6px;
+  background: var(--text); color: var(--panel); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere;
+  max-height: 40vh; overflow: auto; display: flex; gap: 12px; align-items: flex-start;
+}
+.toast-text { flex: 1; user-select: text; }
+.toast-close { flex: none; font: inherit; background: none; border: 0; color: inherit; cursor: pointer; padding: 0 2px; }
+.toast.error { background: var(--error-bg); color: var(--error); border: 1px solid var(--error); }
+.toast[hidden] { display: none; }

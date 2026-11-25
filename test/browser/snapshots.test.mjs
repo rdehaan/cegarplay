@@ -1,4 +1,4 @@
-// Project snapshots in the page (js/snapshots.js, the Control tab's Snapshots): take, restore,
+// Project snapshots in the page (js/snapshots.js, Project > Workspace and snapshots): take, restore,
 // the automatic snapshot and Undo before another project replaces an edited one, and a page
 // without browser storage.
 import { test, before, after } from 'node:test';
@@ -17,24 +17,29 @@ test('snapshots: take one, load an example over the edit and Undo, restore, dele
   const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=1');
   page.on('dialog', (d) => d.accept());
   const original = await checkText(page);
+  await B.openDialog(page, 'versions');
   await page.fill('#snapshot-name', 'as loaded');
   await page.click('#snapshot-save-button');
   assert.deepEqual(await names(page), ['as loaded']);
   assert.match(await page.textContent('#snapshot-status'), /Took the snapshot as loaded\./);
   // an edit, then another example from the library: an automatic snapshot and an Undo
+  await B.closeDialog(page, 'versions');
   await B.setEditor(page, 'editor-check', original + '% my edit\n');
   await page.waitForFunction(() => window.cegarplay.edited === true);
   await B.openLibrary(page);
   await page.click('[data-load-example="tutorial-first-run"]');
   await page.waitForFunction(() => window.cegarplay.project.title !== 'Sum-free sets (too weak relevant/1)' && document.body.dataset.ready === 'true');
+  await page.waitForSelector('#load-undo-button', { state: 'visible' });
+  await B.openDialog(page, 'versions');
   assert.equal(await page.isVisible('#snapshot-undo-button'), true);
   assert.equal(await page.textContent('#snapshot-undo-button'), 'Undo loading example tutorial-first-run');
-  assert.equal(await page.isVisible('#load-undo-button'), true);
   // the automatic snapshot belongs to the earlier project: listed under Other projects
   assert.match(await page.textContent('#snapshot-others'), /Other projects \(2\)/);
   assert.match(await page.textContent('#snapshot-others'), /before loading example tutorial-first-run \(automatic\)/);
+  await B.closeDialog(page, 'versions');
   await page.click('#load-undo-button');
   assert.match(await checkText(page), /% my edit/);
+  await B.openDialog(page, 'versions');
   assert.equal(await page.isVisible('#snapshot-undo-button'), false);
   assert.match(await page.textContent('#snapshot-status'), /Undone: back to the project before loading example tutorial-first-run\./);
   assert.deepEqual(await names(page), ['before loading example tutorial-first-run', 'as loaded']);
@@ -49,6 +54,7 @@ test('snapshots: take one, load an example over the edit and Undo, restore, dele
   assert.equal((await names(page)).includes('as loaded'), false);
   await page.reload();
   await page.waitForSelector('body[data-ready="true"]');
+  await B.openDialog(page, 'versions');
   assert.deepEqual(await names(page), ['before restoring as loaded', 'before loading example tutorial-first-run']);
   assert.deepEqual(errors, []);
   await context.close();
@@ -70,6 +76,7 @@ test('snapshots: without browser storage the page works and Undo still brings th
   await page.click('[data-load-example="tutorial-first-run"]');
   await page.waitForFunction(() => window.cegarplay.project.title !== 'Sum-free sets (too weak relevant/1)' && document.body.dataset.ready === 'true');
   assert.match(await page.textContent('#snapshot-status'), /could not be kept in browser storage; Undo still brings it back/);
+  await B.openDialog(page, 'versions');
   await page.click('#snapshot-undo-button');
   assert.match(await checkText(page), /% kept in memory/);
   assert.deepEqual(errors, []);
@@ -78,15 +85,18 @@ test('snapshots: without browser storage the page works and Undo still brings th
 
 test('Reset everything forgets the project, workspace, snapshots and choices; Cancel keeps them', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=1', { advanced: false });
+  await B.openDialog(page, 'versions');
   await page.click('#snapshot-save-button');
   await page.fill('#workspace-name', 'mine');
   await page.click('#workspace-save-button');
-  await page.check('#section-control .observatory-checkbox');
+  await B.closeDialog(page, 'versions');
+  await B.inDialog(page, 'settings', () => page.check('#dialog-settings .observatory-checkbox'));
   await B.setEditor(page, 'editor-check', '% my edit\n');
   await page.waitForFunction(() => localStorage.getItem('cegarplay.project') && /my edit/.test(localStorage.getItem('cegarplay.project')));
   const ours = () => page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('cegarplay')).sort());
   assert.ok((await ours()).length >= 4);
   // Cancel: nothing changes
+  await B.openDialog(page, 'settings');
   page.once('dialog', (d) => d.dismiss());
   await page.click('#factory-reset-button');
   assert.ok((await ours()).length >= 4);
@@ -108,6 +118,7 @@ test('snapshots say where the project stands: none yet, the same as one, edited 
   page.on('dialog', (d) => d.accept());
   const state = () => page.$eval('#snapshot-current', (e) => e.dataset.state);
   assert.equal(await state(), 'none');
+  await B.openDialog(page, 'versions');
   assert.match(await page.textContent('#snapshot-current'), /No snapshot of this project yet/);
   await page.fill('#snapshot-name', 'first');
   await page.click('#snapshot-save-button');
