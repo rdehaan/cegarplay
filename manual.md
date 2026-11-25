@@ -1474,7 +1474,7 @@ counterexamples or at random, with every candidate alive. For the candidate M:
    each node sound or unsound with its pruning; only up to 10 atoms.
 5. **The verdict line** (a polite live region), for example "The loop's clause has 6 atoms and
    removes 14 candidates. The smallest sound clause has 3 atoms and removes 41. edge(2,4) is forced
-   by solution 7."
+   by the solution {edge(1,2) edge(2,3)}."
 
 Minimal sound sets come from clingo (`--heuristic=Domain --enum-mode=domRec` with a false sign
 heuristic on the chosen atoms; under the cap, one cardinality-minimal set by `#minimize`).

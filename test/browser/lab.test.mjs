@@ -164,3 +164,54 @@ test('Reset everything also removes the lab\'s keys', async () => {
   assert.equal(await shown(page, 'tab12'), false);
   await context.close();
 });
+
+test('review fixes: omniscient bounds and the run share no slot; a recording of another instance gives free mode; a request while busy keeps Cancel', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n4&lab=1', { advanced: false });
+  await page.click('label[for="tab4"]');
+  await page.selectOption('#record-select', 'all');
+  await page.selectOption('#solutions-select', '0');
+  await page.click('#run-button');
+  assert.equal(await B.waitState(page, ['finished']), 'finished');
+  await page.click('label[for="tab12"]');
+  await page.waitForSelector('#lab-compute');
+  // the latest run is of n4; the lab's space of n3: no step lands on it, so free mode, without an error
+  await page.selectOption('#lab-instance', 'n3');
+  await page.selectOption('#lab-source', 'latest');
+  await page.click('#lab-compute');
+  await waitStatus(page, /^space: 19 candidates/);
+  await page.waitForSelector('#lab-candidate');
+  assert.match(await page.textContent('#lab-inspect'), /no refinement of a bad candidate on this space/);
+  // a second request while the lab computes: refused, and Cancel stays available
+  await page.click('#lab-limits summary');
+  await page.fill('#lab-limit-runs', '100000000');
+  await page.dispatchEvent('#lab-limit-runs', 'change');
+  await page.click('#lab-compute-bounds');
+  await page.waitForFunction(() => /simulat/i.test(document.getElementById('lab-status').textContent), null, { timeout: 120000 });
+  await page.evaluate(() => window.cegarplay.lab.inspectCandidate(0));
+  assert.match(await status(page), /the lab is still computing/);
+  assert.equal(await page.$eval('#lab-cancel', (b) => b.disabled), false);
+  await page.click('#lab-cancel');
+  await waitStatus(page, /cancelled/);
+  // omniscient bounds from Run bounds, then the scheme select: no error; the run's ladder uses them
+  await page.fill('#lab-limit-runs', '200');
+  await page.dispatchEvent('#lab-limit-runs', 'change');
+  await page.selectOption('#lab-instance', 'n4');
+  await page.click('#lab-compute');
+  await waitStatus(page, /^space: 154 candidates/);
+  await page.fill('#lab-limit-seconds', '5');
+  await page.dispatchEvent('#lab-limit-seconds', 'change');
+  await page.selectOption('#lab-scheme', 'loop');
+  await page.click('#lab-compute-bounds');
+  await page.waitForSelector('#lab-histogram', { timeout: 180000 });
+  await page.click('#lab-compute-run');
+  await page.waitForSelector('#lab-ladder', { timeout: 180000 });
+  await page.selectOption('#lab-scheme', 'omniscient');
+  assert.match(await page.textContent('#lab-bounds-body'), /No bounds for the omniscient scheme yet/);
+  await page.click('#lab-compute-bounds');
+  await page.waitForSelector('#lab-bounds-table', { timeout: 180000 });
+  await page.click('#lab-compute-run');
+  await page.waitForFunction(() => /refinements/.test((document.getElementById('lab-ladder-sentence') || {}).textContent || ''), null, { timeout: 180000 });
+  assert.doesNotMatch(await page.textContent('#lab-decomposition'), /not known/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

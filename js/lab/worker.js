@@ -61,7 +61,8 @@ const handlers = {
     const sp = await Lab.computeSpace(ctx, { limit: m.limit, onProgress: (p) => progress({ phase: p.phase, done: p.done, of: p.candidates }) });
     contexts.clear();                       // one space at a time in memory
     contexts.set(ctx.key, { ctx, sp, limit: m.limit });
-    return { key: ctx.key, summary: Lab.spaceSummary(sp), ...view(sp) };
+    const sound = Lab.loopSoundness(sp, { onProgress: progress });
+    return { key: ctx.key, summary: Lab.spaceSummary(sp, sound), ...view(sp) };
   },
   async inspect(m) {
     const { sp } = entry(m.key);

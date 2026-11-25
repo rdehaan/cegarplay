@@ -12,7 +12,7 @@
 import { derive, pickedVariant, selectedInstance } from '../project.js';
 import { resolveProject } from '../instances.js';
 import { validate, assemble, modulesFor, parseEvent } from '../driver.js';
-import { labPlan, spaceBody, detailBody, parseSpace, spaceKey, LAB_LIMITS, wordsHex, hexWords, yData } from './space.js';
+import { labPlan, spaceBody, detailBody, parseSpace, spaceKey, projectText, LAB_LIMITS, wordsHex, hexWords, yData } from './space.js';
 import { differFamily, minimalFamily, forcedAtoms, maskList, maskOf, valuesOf, removalBits, popcount, andCount, soundness,
   neighbourhood, lattice, LATTICE_MAX, bitList, maskKey, agrees } from './sets.js';
 import { minimalSets } from './minimal.js';
@@ -36,7 +36,7 @@ export async function prepare(project, { instance, variant, link } = {}, exec, l
   const original = project;
   try { project = await resolveProject(project, instance, engineRun, { draw: lua.draw, generate: lua.generate }); }
   catch (e) { throw new LabError(e.message, 2); }
-  if (variant === undefined) variant = pickedVariant(project);
+  if (variant === undefined) variant = pickedVariant(project);   // '' = as written, no variant
   let inst = null;
   try { inst = selectedInstance(project, instance); } catch (e) { throw new LabError(e.message, 2); }
   let d;
@@ -49,7 +49,7 @@ export async function prepare(project, { instance, variant, link } = {}, exec, l
   const run = { ...d, settings: { ...d.settings, solutions: 0, candidates: 0, trace: 0, seconds: 0 } };
   delete run.settings.record;
   delete run.settings.certify;
-  const key = spaceKey(JSON.stringify({ fragments: original.fragments, loop: original.loop, instances: original.instances, variants: original.variants, constants: original.settings && original.settings.constants }),
+  const key = spaceKey(projectText(original),
     inst ? inst.id : '', variant, plan.link);
   return { project: run, compiled: problems.compiled, plan, instance: inst ? inst.id : null, variant: variant || null, key, exec, lua };
 }
@@ -139,7 +139,7 @@ export function inspect(sp, M, { alive = null, minimal = null, chosen = null, se
   if (M < 0 || M >= sp.count) throw new LabError('no such candidate', 2);
   const al = alive || sp.allBits;
   const fam = differFamily(sp, M);
-  const forced = forcedAtoms(sp, M, fam);
+  const forced = forcedAtoms(sp, M, fam).map((f) => ({ ...f, solution: sp.atomsOf(sp.candWords(f.witness)) }));
   const options = loopOptions(sp, M).map((s) => describe(sp, M, s, al));
   const mins = minimal && minimal.sets ? minimal.sets.map((a) => describe(sp, M, setOf(sp, maskOf(a, sp.W), valuesOf(sp, M, maskOf(a, sp.W)), { kind: 'minimal' }), al)) : [];
   const cardMin = minimal && minimal.min ? describe(sp, M, setOf(sp, maskOf(minimal.min, sp.W), valuesOf(sp, M, maskOf(minimal.min, sp.W)), { kind: 'cardinality' }), al) : null;
@@ -183,7 +183,7 @@ export function verdictLine(sp, { run, sel, smallest, forced, options }) {
   if (smallest) t += ` The smallest sound clause has ${plural(smallest.size, 'atom')} and removes ${smallest.prune}.`;
   if (forced.length) {
     const f = forced[0];
-    t += ` ${sp.atoms[f.atom - 1]} is forced by solution ${f.witness + 1}`;
+    t += ` ${sp.atoms[f.atom - 1]} is forced by the solution {${f.solution.join(' ')}}`;
     if (forced.length > 1) t += ` (and ${plural(forced.length - 1, 'more forced atom')})`;
     t += '.';
   }
@@ -217,7 +217,7 @@ export async function detail(ctx, sp, M, sets = [], { limit = LAB_LIMITS.cex, ca
       groups: (y.groups || []).map(([gr, gv]) => maskList(hexWords(gr, sp.n, sp.W), sp.n)) };
   });
   const just = ys.filter((y) => y.t === 'j').sort((a, b) => a.i - b.i).map((y) => ({ verdict: y.verdict, by: y.by, how: y.how, fails: y.fails, failsIndex: y.fails ? sp.indexOf(y.fails) : -1 }));
-  ss.forEach((s, i) => { if (s.over && just[i]) just[i].verdict = 'unchecked'; });
+  ss.forEach((s, i) => { if (s.over && just[i] && just[i].verdict !== 'yes') just[i].verdict = 'unchecked'; });
   const lf = ys.find((y) => y.t === 'lift');
   let lifted = null;
   if (lf && !lf.error) {
@@ -230,29 +230,56 @@ export async function detail(ctx, sp, M, sets = [], { limit = LAB_LIMITS.cex, ca
 
 // Is the loop scheme sound on this instance (the audit's question, from the space)? Every option of
 // every bad candidate against every solution; the witness with the fewest differing atoms.
-export function loopSoundness(sp) {
+export function loopSoundness(sp, { onProgress = null } = {}) {
   if (sp.meta.plan && sp.meta.plan.schemes && sp.meta.plan.schemes.loop !== true) return { sound: null, reason: sp.meta.plan.schemes.loop };
-  let unsound = 0, best = null, removesNothing = 0;
-  const atRisk = new Set();
+  const c = cacheOf(sp);
+  if (c.sound) return c.sound;
+  const W = sp.W, words = sp.words, n = sp.n;
+  // the solutions by the value of each atom: an option is checked only against the solutions that
+  // agree with it on its rarest atom (the same answer as a scan of every solution)
+  const byAtom = [];
+  for (let j = 0; j < n; j++) {
+    const t = [], f = [];
+    for (const s of sp.sols) (((words[s * W + (j >> 5)] >>> (j & 31)) & 1) ? t : f).push(s);
+    byAtom.push([Int32Array.from(f), Int32Array.from(t)]);
+  }
+  let unsound = 0, best = null, removesNothing = 0, done = 0, last = Date.now();
+  const atRisk = new Uint8Array(sp.count);
+  const total = sp.optStart[sp.count];
   for (const M of sp.bad) {
     for (let o = sp.optStart[M]; o < sp.optStart[M + 1]; o++) {
-      const r = sp.optRw(o), v = sp.optVw(o);
+      const r = sp.optR.subarray(o * W, o * W + W), v = sp.optV.subarray(o * W, o * W + W);
       if (!agrees(sp, M, r, v)) removesNothing++;
+      let bucket = sp.sols;
+      for (let j = 0; j < n && bucket.length; j++) {
+        if (!((r[j >> 5] >>> (j & 31)) & 1)) continue;
+        const b = byAtom[j][(v[j >> 5] >>> (j & 31)) & 1];
+        if (b.length < bucket.length) bucket = b;
+      }
       let bad = false;
-      for (const s of sp.sols) {
-        if (!agrees(sp, s, r, v)) continue;
-        bad = true; atRisk.add(s);
+      for (let k = 0; k < bucket.length; k++) {
+        const s0 = bucket[k] * W;
+        let hit = true;
+        for (let w = 0; w < W; w++) if (((words[s0 + w] ^ v[w]) & r[w]) !== 0) { hit = false; break; }
+        if (!hit) continue;
+        const sIdx = bucket[k];
+        bad = true; atRisk[sIdx] = 1;
         let d = 0;
-        for (let k = 0; k < sp.W; k++) { let x = sp.words[M * sp.W + k] ^ sp.words[s * sp.W + k]; while (x) { x &= x - 1; d++; } }
-        if (!best || d < best.diff) best = { M, o, s, diff: d };
+        for (let w = 0; w < W; w++) { let x = words[M * W + w] ^ words[s0 + w]; while (x) { x &= x - 1; d++; } }
+        if (!best || d < best.diff || (d === best.diff && (M < best.M || (M === best.M && (o < best.o || (o === best.o && sIdx < best.s)))))) best = { M, o, s: sIdx, diff: d };
       }
       if (bad) unsound++;
+      done++;
+      if (onProgress && (done & 1023) === 0 && Date.now() - last >= 250) { last = Date.now(); onProgress({ phase: 'checking every option against every solution', done, of: total }); }
     }
   }
+  let risk = 0;
+  for (let i = 0; i < sp.count; i++) risk += atRisk[i];
   const witness = best ? { candidate: best.M, option: best.o, solution: best.s,
     candidateAtoms: sp.atomsOf(sp.candWords(best.M)), relevant: maskList(sp.optRw(best.o), sp.n).map((j) => sp.atoms[j - 1]),
     solutionAtoms: sp.atomsOf(sp.candWords(best.s)), differ: sp.atomsOf(Uint32Array.from(sp.candWords(best.M), (x, k) => x ^ sp.words[best.s * sp.W + k])) } : null;
-  return { sound: unsound === 0, unsound, atRisk: atRisk.size, witness, removesNothing };
+  c.sound = { sound: unsound === 0, unsound, atRisk: risk, witness, removesNothing };
+  return c.sound;
 }
 
 export function spaceSummary(sp, sound = loopSoundness(sp)) {
@@ -381,9 +408,10 @@ export async function bounds(exec, sp, scheme, { seconds = LAB_LIMITS.seconds, e
 export async function simulation(exec, sp, scheme, { runs = LAB_LIMITS.runs, seed = 1, seconds = LAB_LIMITS.seconds, minimalCap = LAB_LIMITS.minimal, onProgress = null } = {}) {
   const d = await schemeData(exec, sp, scheme, { minimalCap, seconds, onProgress });
   if (d.unsupported) return { scheme, skipped: `unsupported: ${d.unsupported}` };
-  const budgetMs = seconds * 1000;
-  const random = simulate(sp, d.so, { runs, seed, policy: 'uniform', budgetMs, onProgress });
-  const first = d.so.scheme === 'loop' ? simulate(sp, d.so, { runs, seed, policy: 'first', budgetMs, onProgress }) : null;
+  // one budget for the simulation: two thirds for the random options, a third for the first ones
+  const budgetMs = seconds * 1000, two = d.so.scheme === 'loop';
+  const random = simulate(sp, d.so, { runs, seed, policy: 'uniform', budgetMs: two ? (budgetMs * 2) / 3 : budgetMs, onProgress });
+  const first = two ? simulate(sp, d.so, { runs, seed, policy: 'first', budgetMs: budgetMs / 3, onProgress }) : null;
   let greedyBest = null, greedyWorst = null, greedySkipped = null;
   if (d.inc.tooLarge) greedySkipped = 'the removal sets are too large to index';
   else { greedyBest = greedy(sp, d.inc, 'best'); greedyWorst = greedy(sp, d.inc, 'worst'); }

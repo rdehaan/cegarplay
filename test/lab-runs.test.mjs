@@ -137,3 +137,30 @@ test('the tutorial\'s figures for the Refinement lab (lesson 6, #tut-lab) hold',
   const R2 = await runReport(nodeExec, sp, Recording.fromText(recordingOf(p2, r2.events).text()), { minimalCap: 20, seconds: 10 });
   assert.equal(R2.length, 14);
 });
+
+test('review fixes: "(as written)" overrides the run bar\'s variant; a set over the cap that level 2 certifies stays justified; forced atoms name their solution', async () => {
+  const p = loadTarget('gc-shape2');
+  const named = (p.variants || [])[0];
+  assert.ok(named, 'gc-shape2 has variants');
+  const withBar = { ...p, settings: { ...p.settings, variant: named.name } };
+  assert.equal((await Lab.prepare(withBar, { instance: 'n3' }, nodeExec, LUA)).variant, named.name, 'undefined: the run bar\'s variant');
+  assert.equal((await Lab.prepare(withBar, { instance: 'n3', variant: '' }, nodeExec, LUA)).variant, null, '\'\': as written');
+  // tutorial-first-run, candidate a ({pick(2) pick(4)}): its minimal set removes 64; with a cap of 10 members it is
+  // "over", and level 2 certifies it with the first counterexample
+  const ctx = await Lab.prepare(loadTarget('tutorial-first-run'), {}, nodeExec, LUA);
+  const sp = await Lab.computeSpace(ctx);
+  const M = sp.indexOf('a');
+  const I = Lab.inspect(sp, M, { minimal: (await Lab.minimalFor(nodeExec, sp, [M])).get(M) });
+  const D = await Lab.detail(ctx, sp, M, [I.minimal[0]], { cap: 10 });
+  assert.deepEqual([D.justification[0].verdict, D.justification[0].how], ['yes', 'level 2']);
+  assert.deepEqual(I.forced.map((f) => f.solution), [['pick(4)'], ['pick(2)']]);
+  assert.match(I.verdict, /pick\(2\) is forced by the solution \{pick\(4\)\}/);
+});
+
+test('review fixes: tools/lab.mjs prints skipped bounds and simulations instead of failing', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const r = spawnSync(process.execPath, [H.path('tools/lab.mjs').pathname, 'gc-shape2', '--instance', 'n4', '--bounds', 'loop', '--exact', '10', '--simulate', '5'], { encoding: 'utf8', timeout: 120000 });
+  assert.match(r.stdout, /Bounds \(loop\): skipped: 153 bad candidates, above the exact-bounds threshold of 10/);
+  assert.match(r.stdout, /Simulation: 5 runs/);
+  assert.equal(r.stderr, '');
+});

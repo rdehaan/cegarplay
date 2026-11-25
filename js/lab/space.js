@@ -15,6 +15,9 @@ export function fnv(text) {
   for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, '0');
 }
+// The parts of a project that decide a space: the program, its instances (also generated ones), pools
+export const projectText = (p) => JSON.stringify({ fragments: p.fragments, loop: p.loop, instances: p.instances, generators: p.generators,
+  pools: p.pools, variants: p.variants, constants: p.settings && p.settings.constants, poolsSetting: p.settings && p.settings.pools });
 export const spaceKey = (projectText, instance, variant, link) => [fnv(projectText), instance || '', variant || '', link || ''].join('|');
 
 // Which link the lab looks at and what it supports (version 1, docs/lab-design.md).

@@ -149,14 +149,17 @@ local hit = false
 local over, t0, lastp = false, 0, 0
 local P = { lit = nil }
 function P:init(init)
-  init.check_mode = clingo.PropagatorCheckMode.Fixpoint
-  for a in init.symbolic_atoms:iter() do
-    local l = init:solver_literal(a.literal)
-    if l ~= 1 and l ~= -1 then self.lit = l; break end
-  end
+  local ok = xpcall(function()
+    init.check_mode = clingo.PropagatorCheckMode.Fixpoint
+    for a in init.symbolic_atoms:iter() do
+      local l = init:solver_literal(a.literal)
+      if l ~= 1 and l ~= -1 then self.lit = l; break end
+    end
+  end, debug.traceback)
+  if not ok then self.lit = nil end
 end
 function P:check(control)
-  local ok, err = pcall(function()
+  local ok, err = xpcall(function()
     local now = os.clock()
     if now - lastp > 0.25 then lastp = now; print('@@B {"t":"p","s":' .. string.format("%.2f", now - t0) .. '}') end
     if not over and now - t0 > BUDGET then over = true end
@@ -165,7 +168,7 @@ function P:check(control)
       local first = control.assignment:is_true(a) and -a or a
       if control:add_clause{ { first }, lock = true } then control:add_clause{ { -first }, lock = true } end
     end
-  end)
+  end, debug.traceback)
   if not ok then over = true end
 end
 function main(prg)

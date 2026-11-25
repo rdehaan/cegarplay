@@ -2,7 +2,7 @@
 // that touches the DOM. It talks only to the lab worker (js/lab/worker.js); it reads the page's
 // project, run bar and latest recording, and changes none of them.
 import { Recording } from '../recording.js';
-import { fnv, LAB_LIMITS } from './space.js';
+import { fnv, projectText, LAB_LIMITS } from './space.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const h = (tag, attrs = {}, ...kids) => {
@@ -27,7 +27,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(STORE + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem(STORE + k, JSON.stringify(v)); } catch { /* no storage */ } },
 };
-const projectHash = (p) => fnv(JSON.stringify({ fragments: p.fragments, loop: p.loop, instances: p.instances, variants: p.variants, constants: p.settings && p.settings.constants }));
+const projectHash = (p) => fnv(projectText(p));
 const download = (name, text, type = 'text/plain') => {
   const a = h('a', { href: URL.createObjectURL(new Blob([text], { type })), download: name });
   document.body.append(a); a.click(); a.remove();
@@ -103,7 +103,7 @@ export class LabTab {
     this.source = h('select', { id: 'lab-source', 'aria-label': 'Source of steps' },
       h('option', { value: 'latest' }, 'the latest run of the page'), h('option', { value: 'file' }, 'an opened recording'), h('option', { value: 'free' }, 'free (no run)'));
     this.source.value = store.get('source', 'latest');
-    this.source.addEventListener('change', () => { store.set('source', this.source.value); this.loadSteps(); });
+    this.source.addEventListener('change', () => { store.set('source', this.source.value); if (!this.client.busy) this.loadSteps(); });
     this.file = h('input', { type: 'file', id: 'lab-file', accept: '.cprec,.jsonl,.txt', hidden: true, onchange: () => this.openFile(this.file, 'file') });
     this.computeBtn = h('button', { class: 'control-button', id: 'lab-compute', type: 'button', onclick: () => this.computeSpace() }, 'Compute space');
     this.cancelBtn = h('button', { class: 'control-button', id: 'lab-cancel', type: 'button', disabled: true, onclick: () => this.cancel(), title: 'Stop the lab\'s computation (only the lab\'s engine; runs and audits are not affected)' }, 'Cancel');
@@ -183,7 +183,7 @@ export class LabTab {
     fill(this.variant, (p.variants || []).map((x) => x.name), '(as written)', rb('variant-select') || '');
   }
 
-  shown() { this.syncPickers(); this.checkStale(); if (this.source.value === 'latest' && this.space) this.loadSteps(); }
+  shown() { this.syncPickers(); this.checkStale(); if (this.source.value === 'latest' && this.space && !this.client.busy) this.loadSteps(); }
 
   setBusy(text) {
     this.computeBtn.disabled = !!text;
@@ -193,6 +193,10 @@ export class LabTab {
   }
 
   async call(type, payload, what) {
+    if (this.client.busy) {
+      this.status.textContent = `${what}: the lab is still computing; wait for it or press Cancel.`;
+      throw Object.assign(new Error('the lab is busy'), { code: 'busy' });
+    }
     this.setBusy(`${what}…`);
     const t0 = Date.now();
     try {
@@ -206,6 +210,7 @@ export class LabTab {
   }
 
   failed(e, what) {
+    if (e.code === 'busy') return;
     if (e.code === 'cancel') { this.status.textContent = `${what}: cancelled. The lab's engine stopped; results shown before stay (the space is computed again on the next request).`; return; }
     this.status.textContent = `${what}: ${e.code === 4 ? '' : 'stopped: '}${e.message}`;
   }
@@ -215,7 +220,8 @@ export class LabTab {
   // ---- the space --------------------------------------------------------------------------
   params() {
     const p = structuredClone(this.app.collect());
-    return { project: p, instance: this.inst.closest('label').hidden ? undefined : this.inst.value, variant: this.variant.closest('label').hidden ? undefined : (this.variant.value || undefined),
+    // '' is "(as written)": no variant, also when the run bar has one (undefined would mean the run bar's)
+    return { project: p, instance: this.inst.closest('label').hidden ? undefined : this.inst.value, variant: this.variant.closest('label').hidden ? undefined : this.variant.value,
       link: this.link.value.trim() || undefined, limit: this.limits.candidates || LAB_LIMITS.candidates };
   }
 
@@ -335,7 +341,7 @@ export class LabTab {
     const B = this.inspectBox;
     if (!this.space) return this.needs(B, 'Disabled until the space is computed (Compute space, above).');
     B.textContent = '';
-    const free = this.source.value === 'free' || !this.runSteps || !this.runSteps.steps.length;
+    const free = this.source.value === 'free' || !this.runSteps || !this.runSteps.steps.some((x) => x.kind === 'refinement');
     const ctl = h('div', { class: 'lab-row', id: 'lab-inspect-controls' });
     if (!free) {
       const refs = this.runSteps.steps.filter((x) => x.kind === 'refinement');
@@ -374,7 +380,8 @@ export class LabTab {
       ctl.append(h('label', { class: 'inline-label' }, 'Candidates ', sort), h('label', { class: 'inline-label' }, 'Bad candidate ', pick),
         h('button', { class: 'control-button small-button lab-needs-idle', type: 'button', id: 'lab-inspect-go', onclick: () => this.inspectCandidate(Number(pick.value)) }, 'Inspect'));
       B.append(h('p', { class: 'note' }, this.source.value === 'free' ? 'Free mode: any bad candidate, with every candidate alive.'
-        : 'No recorded run to step through (record a run with every step: Loop tab, Recording; or open a recording): free mode.'));
+        : this.runSteps && this.runSteps.steps.length ? 'The recording has no refinement of a bad candidate on this space (another instance, or a run that only accepted solutions): free mode.'
+          : 'No recorded run to step through (record a run with every step: Loop tab, Recording; or open a recording): free mode.'));
     }
     B.prepend(ctl);
     this.verdict = h('p', { id: 'lab-verdict', class: 'lab-verdict', role: 'status', 'aria-live': 'polite' });
@@ -489,13 +496,19 @@ export class LabTab {
     else { const lat = this.hasse(I.lattice, names); B.append(h('div', { class: 'lab-chart' }, lat), this.svgButton('lab-lattice-svg', 'lattice.svg', () => lat)); }
   }
 
+  solutionAtoms(i) {
+    const S = this.space, out = [], hex = S.hex[i] || '';
+    for (let j = 1; j <= S.atoms.length; j++) { const d = parseInt(hex[hex.length - 1 - ((j - 1) >> 2)] || '0', 16); if ((d >> ((j - 1) & 3)) & 1) out.push(S.atoms[j - 1]); }
+    return out;
+  }
+
   showWitness(a) {
     const S = this.space;
     const i = a.witness;
     const atoms = [];
     const hex = S.hex[i], n = S.atoms.length;
     for (let j = 1; j <= n; j++) { const d = parseInt(hex[hex.length - 1 - ((j - 1) >> 2)] || '0', 16); if ((d >> ((j - 1) & 3)) & 1) atoms.push(S.atoms[j - 1]); }
-    this.witnessLine.textContent = `${a.name} must be in the clause: solution ${i + 1} {${atoms.join(' ')}} differs from M only there.`;
+    this.witnessLine.textContent = `${a.name} must be in the clause: the solution {${atoms.join(' ')}} differs from M only there.`;
   }
 
   legend(items) {
@@ -530,7 +543,7 @@ export class LabTab {
       const status = !p.sound ? 'unsound' : p.justified === 'yes' ? 'justified' : 'sound';
       const names = this.inspected.atomNames;
       const tip = `${p.cls === 'option' ? 'loop option' : p.cls}: {${p.atoms.map((j) => names[j - 1]).join(' ')}}; ${p.size} atoms; removes ${p.prune} alive (${p.total} in all)` +
-        (!p.sound ? `; unsound: loses ${p.lost} solutions (e.g. solution ${p.witness + 1})` : p.justified === 'yes' ? '; justified' : p.justified === 'no' ? '; sound, not justified by a listed counterexample' : p.justified === 'unchecked' ? '; justification not checked (too many candidates)' : '');
+        (!p.sound ? `; unsound: loses ${p.lost} solutions (e.g. {${this.solutionAtoms(p.witness).join(' ')}})` : p.justified === 'yes' ? '; justified' : p.justified === 'no' ? '; sound, not justified by a listed counterexample' : p.justified === 'unchecked' ? '; justification not checked (too many candidates)' : '');
       const g = s('g', { class: `lab-point lab-${status}`, tabindex: '-1' }, s('title', {}, tip), this.mark(p.cls, X(p.size), Y(p.prune), 4.5));
       g.addEventListener('click', () => onPick(p));
       svg.append(g);
@@ -679,11 +692,14 @@ export class LabTab {
       const run = await this.call('run', { key: this.space.key, recording: rec.text(), minimalCap: L.minimal, seconds: L.seconds }, 'Reading the run onto the space');
       let cmp = null;
       if (this.compareRec) cmp = await this.call('run', { key: this.space.key, recording: this.compareRec.text(), minimalCap: L.minimal, seconds: L.seconds }, 'Reading the second recording');
-      if (!this.results.omniscient) {
-        try { this.results.omniscient = await this.call('bounds', { key: this.space.key, scheme: 'omniscient', seconds: L.seconds, exact: L.exact, minimalCap: L.minimal }, 'Exact bounds (omniscient)'); }
-        catch (e) { if (e.code === 'cancel') throw e; this.results.omniscient = { skipped: e.message }; }
+      // the omniscient bounds: those of Run bounds when computed there ({ bounds, sim }), else computed here
+      let omni = this.results.omniscient ? this.results.omniscient.bounds : this.results.omniBounds;
+      if (!omni) {
+        try { omni = await this.call('bounds', { key: this.space.key, scheme: 'omniscient', seconds: L.seconds, exact: L.exact, minimalCap: L.minimal }, 'Exact bounds (omniscient)'); }
+        catch (e) { if (e.code === 'cancel') throw e; omni = { skipped: e.message }; }
+        this.results.omniBounds = omni;
       }
-      const lad = await this.call('ladder', { key: this.space.key, run, compare: cmp, loop: this.results.loop.bounds, omni: this.results.omniscient, sim: this.results.loop.sim }, 'The ladder');
+      const lad = await this.call('ladder', { key: this.space.key, run, compare: cmp, loop: this.results.loop.bounds, omni, sim: this.results.loop.sim }, 'The ladder');
       this.results.run = { run, cmp, ...lad };
       this.status.textContent = lad.sentence || 'Placed the run.';
     } catch (e) { this.failed(e, 'This run'); }

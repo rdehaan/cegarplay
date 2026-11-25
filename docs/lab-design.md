@@ -267,3 +267,69 @@ packing and matching bounds, the early stop at a bound, the clamped refinement s
 "not certainly outside" reason. Docs now name the program's facts as the code writes them (`o/2`,
 `r/2`).
 
+### Review and large-space check (2026-11-25)
+
+An independent code review of the branch found seven bugs and three nits. All were fixed except
+the commit names, which were changed afterwards (below); browser and headless regression tests
+cover the fixes.
+- The omniscient bounds of **Run bounds** (`{ bounds, sim }`) and those the run computes shared one
+  slot: the scheme select threw, or the ladder said "not computed". The run's are now
+  `results.omniBounds`, and it reuses those of Run bounds when there are any.
+- A recording with steps but no refinement on this space (another instance, a run that only
+  accepted solutions) crashed the inspector. It now falls back to free mode and says why.
+- A request while the lab was busy turned the busy state off, so Cancel was disabled while the
+  first computation ran on. The request is now refused with a message; tab switches and source
+  changes do not start one while busy.
+- `tools/lab.mjs` crashed when the bounds or the simulation were skipped. It now prints the
+  reason.
+- "(as written)" in the lab's variant picker fell back to the run bar's variant. `''` now means
+  no variant (`undefined` still means the run bar's).
+- A set over the member cap that certificate level 2 justified was shown as "unchecked". It now
+  stays justified.
+- The space's cache key and the stale-project check left out `generators`, `pools` and
+  `settings.pools` (`projectText` in `space.js` now includes them).
+- Nits: forced atoms named their witness by a candidate index ("solution 72"). They now name the
+  solution's atoms. The bounds propagator's `init` and `check` now run inside `xpcall` (CLAUDE.md
+  rule 1).
+- Commit names: the checkpoint commits were first named `Lab M0` to `Lab M5`. They are now
+  `Phase R0` to `Phase R8` (milestones 0 to 5, then the note, the consolidation and these
+  fixes), following CLAUDE.md and the letter of earlier strands (`Phase L4`, `Phase S8`).
+
+Large space, in the browser and headless: gc-shape2 at n = 6 (an instance added to a copy of the
+project): 102,508 candidates, 10,698 solutions, 606,030 options, 54 interface atoms.
+- Space: 51 s in the browser (46 s headless, almost all of it the enumeration), with steady
+  progress. The page's main thread never paused more than 19 ms while it ran.
+- The loop-scheme soundness check took 33 s and reported no progress. It now checks each option
+  only against the solutions that agree with it on its rarest atom, and reports progress: 5 s, the
+  same answers (the library agreement tests pass). The witness keeps the audit's order for ties.
+- Inspector 0.5 s; counterexamples and justification 3.4 s; JSON export 17 MB in 1.7 s.
+- The simulation is the limit: about 2 s per run, so 10 runs within the budget. The two policies
+  now share one budget (two thirds and one third) instead of taking 30 s each. The greedy
+  policies are skipped there (the removal-set index is over its limit), with that reason.
+- One main-thread pause of about 0.5 s on the page, most likely the JSON export (built on the page).
+- The full cap of 200,000 candidates was not run in the browser; by these figures it would take
+  about twice as long and use about twice the memory.
+
+## To do later (checks not yet done)
+
+1. **Paths without a test:**
+   - `G.clauses` loops (guide-06-clauses, lang-clauses): the inspector, the bounds, and groups that
+     do not remove their own candidate.
+   - A `lift` link: the loop scheme reported unsupported; the lifted clause in the inspector.
+   - Justification's per-candidate fallback (when level 2 does not certify), its "not justified"
+     verdict and its cap.
+   - Generated instances in the lab bar, and the **Link** field.
+2. **Browsers and isolation:** the lab's browser tests have run only in Chromium on pages without
+   cross-origin isolation (`?nocoi=1`). To do: `BROWSER=firefox` (needs Playwright's Firefox), and
+   an isolated page (`coi`), where the module worker loads under COEP.
+3. **Accessibility:** `test/browser/a11y.test.mjs` does not visit tab 12 (keyboard path, live
+   regions, contrast in both themes). The amber "edited since" line has no test.
+4. **Exact bounds near the threshold:** the largest exact program run had 195 bad candidates.
+   Measure grounding time and memory near the default threshold of 3,000 in the browser, and
+   lower the default if needed.
+5. **Simulation speed at large sizes:** about 2 s per run at 100,000 candidates, so the
+   distribution rests on a handful of runs. Possible fixes: a per-option cache of removal lists,
+   or bitset removal on the alive set. Also the greedy policies above the index limit.
+6. **The JSON export on the page's thread** (about 0.5 s at 100,000 candidates): build it in the
+   worker.
+

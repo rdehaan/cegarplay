@@ -134,13 +134,14 @@ export function printReport(res) {
     console.log(`Candidate ${I.hex}${I.step ? ` (step ${I.step})` : ''}: ${I.solution ? 'a solution' : `${I.ncex} counterexamples`}; ${I.aliveCount} alive`);
     if (!I.solution) {
       console.log(`  minimal sound sets: ${I.minimal.length}${I.minimalCapped ? ` (capped at ${I.minimalCap})` : ''}; smallest ${I.smallest ? I.smallest.size : '-'}`);
-      console.log(`  forced: ${I.forced.length ? I.forced.map((f) => `${I.atomNames[f.atom - 1]} (solution ${f.witness + 1})`).join(', ') : 'none'}`);
+      console.log(`  forced: ${I.forced.length ? I.forced.map((f) => `${I.atomNames[f.atom - 1]} (the solution {${f.solution.join(' ')}})`).join(', ') : 'none'}`);
       for (const op of I.options) console.log(`  option ${op.atoms.length} atoms, removes ${op.total} (${op.prune} alive)${op.sound ? '' : `, UNSOUND (${op.lost} solutions)`}`);
       console.log(`  ${I.verdict}`);
     }
   }
-  if (res.bounds) for (const b of [].concat(res.bounds)) console.log(`Bounds (${b.scheme}): best ${b.best.text}; worst ${b.worst.text}${b.note ? `; ${b.note}` : ''}`);
-  if (res.simulation) {
+  if (res.bounds) for (const b of [].concat(res.bounds)) console.log(b.skipped ? `Bounds (${b.scheme}): skipped: ${b.skipped}` : `Bounds (${b.scheme}): best ${b.best.text}; worst ${b.worst.text}${b.note ? `; ${b.note}` : ''}`);
+  if (res.simulation && res.simulation.skipped) console.log(`Simulation (${res.simulation.scheme}): skipped: ${res.simulation.skipped}`);
+  else if (res.simulation) {
     const m = res.simulation;
     console.log(`Simulation: ${m.random.runs} runs; length min ${m.random.min}, median ${m.random.median}, max ${m.random.max}${m.random.lost ? `; lost solutions in ${m.random.lostRuns} runs` : ''}; greedy best ${m.greedyBest ? m.greedyBest.length : '-'}, greedy worst ${m.greedyWorst ? m.greedyWorst.length : '-'}`);
   }

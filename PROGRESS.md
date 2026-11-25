@@ -1976,3 +1976,13 @@ proves the tutorial examples' best runs at once. Refinement strength is never ne
 loop. A run longer than every idealised run found is flagged even when the worst is not proven.
 `test/lab-runs.test.mjs` checks the tutorial's lab figures. README, llms.txt and CLAUDE.md list the
 lab and `tools/lab.mjs`.
+
+Review and large-space check (2026-11-25): an independent code review found seven bugs in the lab
+(the omniscient result slot, a recording without refinements, requests while busy, skipped results
+in `tools/lab.mjs`, "(as written)", justification over the cap, the cache key). All are fixed with
+regression tests. A space of 102,508 candidates runs in the browser in 51 s with progress; the
+soundness check went from 33 s to 5 s. The lab's commits are `Phase R0` to `Phase R8` (R for the
+Refinement lab, as L and S name earlier strands). Next: the to-do list at the end of
+`docs/lab-design.md` (untested paths, Firefox and isolated pages, accessibility of tab 12, exact
+bounds near 3,000, simulation speed at large sizes, the export on the page's thread).
+
