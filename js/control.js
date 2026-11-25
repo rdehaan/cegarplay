@@ -409,6 +409,8 @@ export class Control {
     if (app.views) app.views.updateSteps();
     if (app.observatory) app.observatory.update();
     if (app.views) app.views.show();
+    // the Refinement lab reads the latest run: it may have drawn its parts while this run was going on
+    if (app.lab) app.lab.runDone();
     if (state === 'error') {
       const line = this.E && this.assembled ? mapLine(this.assembled, this.E.line) : null;
       this.runMessage(this.E ? `Error: ${this.E.message}${line ? ` (loop script, line ${line})` : ''}` : app.output.resultEl.textContent);

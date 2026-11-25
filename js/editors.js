@@ -145,6 +145,9 @@ export class Editors {
     return project;
   }
 
+  // an editor elsewhere on the page (a variant's loop script) with the same theme and options
+  make(el, mode, opts) { return makeEditor(el, mode, opts); }
+
   allEditors() { return [...[...this.fragments.values()].map((f) => f.editor), this.loop]; }
 
   setReadOnly(b) {

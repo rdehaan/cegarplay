@@ -5,6 +5,7 @@
 // campaign suite names variants explicitly.
 import { INSTANCE_ID } from './project.js';
 import { compareVariants, hunks } from './compare.js';
+import { compile } from './compiler.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, attrs = {}, ...kids) => {
@@ -74,6 +75,43 @@ export class Variants {
     this.select.disabled = b;
     // comparing changes nothing: it stays usable in a read-only project
     for (const e of this.root.querySelectorAll('input, textarea, button')) if (!e.closest('.variant-compare')) e.disabled = b;
+    for (const ed of this.loopEditors || []) { ed.setReadOnly(b); ed.container.classList.toggle('locked', b); }
+  }
+
+  // A variant's own loop script: an ACE editor as the project's (highlighting, the loop language's
+  // live check with marks in the gutter), made when the variant gets its own script.
+  loopEditor(v, host) {
+    const lua = v.loop.language === 'lua';
+    // through app.editors: this module is also imported by Node tests, where ACE does not exist
+    const ed = this.app.editors.make(host, lua ? 'ace/mode/lua' : 'ace/mode/loop', { readOnly: !!this.readOnly });
+    ed.container.classList.toggle('locked', !!this.readOnly);
+    ed.setValue(v.loop.text, -1);
+    ed.session.getUndoManager().reset();
+    host.setAttribute('aria-label', `Loop script of variant ${v.name}`);
+    const check = () => {
+      if (lua) return;
+      let r;
+      try { r = compile(ed.getValue(), { fragments: this.app.project.fragments.map((f) => f.name) }); } catch { return; }
+      ed.session.setAnnotations(r.ok ? [] : r.errors.map((e) => ({ row: Math.max(0, (e.line || 1) - 1), column: Math.max(0, (e.col || 1) - 1), text: e.message, type: e.severity || 'error' })));
+    };
+    let timer = null;
+    ed.session.on('change', () => {
+      if (!v.loop) return;
+      v.loop = { ...v.loop, text: ed.getValue() };
+      ed.session.clearAnnotations();
+      clearTimeout(timer);
+      timer = setTimeout(() => { check(); this.changed(); }, 400);
+    });
+    check();
+    (this.loopEditors || (this.loopEditors = new Set())).add(ed);
+    return ed;
+  }
+
+  dropLoopEditor(ed) {
+    if (!ed) return;
+    this.loopEditors.delete(ed);
+    ed.destroy();
+    ed.container.textContent = '';
   }
 
   changed() {
@@ -136,6 +174,8 @@ export class Variants {
 
   render() {
     this.renderPicker();
+    for (const ed of this.loopEditors || []) ed.destroy();
+    if (this.loopEditors) this.loopEditors.clear();
     this.root.textContent = '';
     const fragments = this.app.project.fragments.map((f) => f.name);
     if (!this.list.length) {
@@ -278,18 +318,23 @@ export class Variants {
     let hint = null;
     const own = el('input', { type: 'checkbox', class: 'variant-own-loop', 'aria-label': `Variant ${v.name} has its own loop script` });
     own.checked = !!v.loop;
-    const text = el('textarea', { class: 'variant-loop', rows: 8, spellcheck: 'false', 'aria-label': `Loop script of variant ${v.name}` });
-    text.value = v.loop ? v.loop.text : '';
+    const text = el('div', { class: 'variant-loop editor' });
     text.hidden = !v.loop;
+    let editor = null;
+    // the editor is made once the card is in the page (ACE measures its container)
+    if (v.loop) requestAnimationFrame(() => { if (text.isConnected && v.loop && !editor) editor = this.loopEditor(v, text); });
     own.addEventListener('change', () => {
-      if (own.checked) v.loop = { language: this.app.project.loop.language, text: this.app.project.loop.text };
-      else delete v.loop;
-      text.value = v.loop ? v.loop.text : '';
+      if (own.checked) {
+        const L = this.app.collect ? this.app.collect().loop : this.app.project.loop;
+        v.loop = { language: L.language, text: L.text };
+      } else delete v.loop;
+      this.dropLoopEditor(editor);
+      editor = null;
       text.hidden = !v.loop;
       hint.hidden = !!v.loop;
+      if (v.loop) editor = this.loopEditor(v, text);
       this.changed();
     });
-    text.addEventListener('change', () => { if (v.loop) { v.loop = { ...v.loop, text: text.value }; this.changed(); } });
     const del = el('button', { class: 'control-button small-button', onclick: () => this.remove(v.name) }, 'Delete');
     // the lab notebook (FUTURE-DIRECTIONS D10): why this variant exists, kept in the project
     const note = el('input', { type: 'text', value: v.note || '', class: 'variant-note', placeholder: 'why I tried this', 'aria-label': `Note on variant ${v.name}` });

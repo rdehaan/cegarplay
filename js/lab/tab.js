@@ -235,7 +235,22 @@ export class LabTab {
     this.cancelBtn.disabled = !text;
     this.root.classList.toggle('lab-busy-now', !!text);
     for (const b of this.root.querySelectorAll('.lab-needs-idle')) b.disabled = !!text;
-    if (text) { this.status.textContent = text; this.showBusy(text, stop, stopTitle); } else this.hideBusy();
+    if (text) { this.status.textContent = text; this.showBusy(text, stop, stopTitle); } else {
+      this.hideBusy();
+      // a run of the page ended while the lab computed: read its steps once the lab is free (a
+      // chain of requests starts its next one before this timer fires, and this waits for it)
+      if (this.stepsStale) setTimeout(() => { if (this.stepsStale && !this.client.busy && !this.ownRun) { this.stepsStale = false; this.loadSteps(); } }, 0);
+    }
+  }
+
+  // A run of the page ended (js/control.js). With "the latest run of the page" as the source, the
+  // steps and the run's part depend on it: read them again now, or when the lab is free. A run
+  // started by Record a run and place it is read by that chain itself.
+  runDone() {
+    if (this.ownRun || this.source.value !== 'latest' || !this.space) return;
+    if (this.client.busy) { this.stepsStale = true; return; }
+    this.stepsStale = false;
+    this.loadSteps();
   }
 
   showBusy(text, stop, stopTitle) {
@@ -765,8 +780,9 @@ export class LabTab {
     const what = `Running the loop (${seedText}; every step recorded, all solutions)`;
     this.setBusy(`${what}…`, { stop: () => c.abort(), stopTitle: 'Abort the run (as Abort in the run bar)' });
     let r;
+    this.ownRun = true;
     try { r = await c.run({ instance: prm.instance, variant: prm.variant, recordSteps: true, allSolutions: true }); }
-    finally { this.setBusy(null); }
+    finally { this.ownRun = false; this.setBusy(null); }
     const rec = this.app.recording;
     if (!r || r.state === 'error' || r.state === 'aborted' || !rec || !rec.steps || !rec.steps.length) {
       this.status.textContent = !r ? 'The run did not start (another run is going on).'

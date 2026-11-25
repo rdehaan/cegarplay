@@ -255,3 +255,28 @@ test('Record a run and place it, New seed, the busy line with Stop, and the run 
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+// CI failure 2026-11-25: the bounds were ready before the page's run ended, the run's part was drawn
+// without a recording and never again, so Place this run did not appear. Here in that order on purpose.
+test('a run of the page that ends after the bounds: the run\'s part follows it (Place this run appears)', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3&lab=1', { advanced: false });
+  await page.click('label[for="tab12"]');
+  await page.selectOption('#lab-source', 'latest');
+  await page.click('#lab-compute');
+  await waitStatus(page, /^space: 19 candidates/);
+  await page.click('#lab-compute-bounds');
+  await page.waitForSelector('#lab-histogram', { timeout: 180000 });
+  assert.match(await page.textContent('#lab-run'), /No recorded run of this instance yet/);
+  assert.equal(await page.$('#lab-step'), null, 'the inspector is in free mode');
+  await page.check('#run-record');
+  await page.selectOption('#solutions-select', '0');
+  await page.click('#run-button');
+  assert.equal(await B.waitState(page, ['finished']), 'finished');
+  await page.waitForSelector('#lab-compute-run', { timeout: 30000 });
+  await page.waitForSelector('#lab-step', { timeout: 30000 });
+  await page.click('#lab-compute-run');
+  await page.waitForSelector('#lab-ladder', { timeout: 180000 });
+  assert.match(await page.textContent('#lab-ladder-sentence'), /This run made 19 refinements/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

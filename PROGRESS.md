@@ -909,6 +909,14 @@ Test in `test/browser/stats.test.mjs`; row in docs/spec-app.md §5.1.
   (`control.run({ recordSteps: true, allSolutions: true })`; the new seed and randomized go to the run bar).
 - Tests: tabs.test.mjs rewritten for the toggles and the migration; one new lab test. 1233 tests: all pass, 32 skipped.
 
+- Variants: a variant's own loop script is an ACE editor (`makeEditor`, loop or Lua mode, the
+  loop language's live check as gutter marks, read-only during a run) instead of a textarea.
+- CI failure (lab.test.mjs, `#lab-compute-run` never appeared): when the lab's bounds were ready
+  before the page's run ended, the run's part was drawn without a recording and never redrawn.
+  Fix: `control` calls `app.lab.runDone()` at the end of every run; the lab reads the steps again
+  (at once, or when its current computation ends). A test runs the two in that order on purpose
+  (it timed out without the fix).
+
 ## Deviations from the plan
 
 - The cegar.py export (`exportLp`, "Export as .lp") was removed at the user's request (2026-11-21): it dropped the loop and settings and could not express `glue(T)` glue. The standalone export, now "Export for clingo", has a run hint below its button. The "Import a file written for cegar.py" UI was removed too; `importLp` stays for `tools/make-examples.mjs` and the tests.

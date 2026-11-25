@@ -47,6 +47,14 @@ test('the editor adds, checks, renames and deletes a variant', async () => {
   // its own loop starts as a copy of the project's
   await page.check(`${card} .variant-own-loop`);
   assert.equal(await page.evaluate(() => window.cegarplay.project.variants[0].loop.text === window.cegarplay.project.loop.text), true);
+  // in an editor like the project's: highlighting, edits reach the variant, the live check marks errors
+  await page.waitForSelector(`${card} .variant-loop .ace_keyword`);
+  await page.click(`${card} .variant-loop .ace_content`);
+  await page.keyboard.press('Control+End');
+  await page.keyboard.type('\nbogus ((\n');
+  await page.waitForSelector(`${card} .variant-loop .ace_gutter-cell.ace_error`);
+  assert.match(await page.evaluate(() => window.cegarplay.project.variants[0].loop.text), /bogus \(\(/);
+  assert.doesNotMatch(await page.evaluate(() => window.cegarplay.project.loop.text), /bogus/);
   await page.fill(`${card} .variant-name`, 'mine');
   await page.press(`${card} .variant-name`, 'Tab');
   assert.deepEqual(await options(page), ['', 'mine']);

@@ -1113,7 +1113,7 @@ body[data-last-mode="audit"] .audit-only { display: block; }
 .variant-card { border: 1px solid var(--border); border-radius: 4px; margin: 8px 0; padding: 6px 10px; }
 .variant-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 4px 0; }
 .variant-swap { min-width: 22em; }
-.variant-loop { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 13px; }
+.variant-loop { margin-top: 4px; }
 .campaign-matrix th.sortable { cursor: pointer; user-select: none; }
 .campaign-matrix td.best { font-weight: 700; background: var(--border-faint); }
 .campaign-matrix td.unsolved { color: var(--text-faint); font-style: italic; }

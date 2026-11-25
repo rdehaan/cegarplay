@@ -198,8 +198,9 @@ A variant runs the same project with other fragments swapped in, its own loop sc
 constants (the table above). The **Variants** block at the foot of the Loop tab edits them: a name,
 **Swap** as `fragment=other fragment, ...` (the first fragment gets the text of the second; names
 are checked: a swap that names a fragment that does not exist yet is kept as typed, with a note, and
-applied as soon as that fragment is made), **Constants** as `name=value, ...`, a **Note** (`note`: why the variant exists, a lab notebook), and **its own loop script** (a text box that
-starts as a copy of the project's loop). A renamed or deleted fragment is renamed in, or dropped
+applied as soon as that fragment is made), **Constants** as `name=value, ...`, a **Note** (`note`: why the variant exists, a lab notebook), and **its own loop script** (an editor like the
+project's loop editor, with highlighting and the live check's marks, that starts as a copy of the
+project's loop). A renamed or deleted fragment is renamed in, or dropped
 from, every swap; a renamed or deleted variant also in the suites and in **Compare variants**
 (a comparison on screen is made again after each change of a variant). The run bar's **Variant** picker
 (shown only for a project with variants) chooses the variant of a run, an audit and Run all, and
