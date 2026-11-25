@@ -2215,3 +2215,24 @@ Deviations and findings:
   there only for a single query L).
 - The `.jagg` importer reads its own `[variables]`/`[clauses]` sections, not jaggpy's real file
   format, and gives no profile; not changed.
+
+## User-friendliness (2026-11-25, on request; ideas from logic-game)
+
+- Keyboard (`js/keys.js`, page only): when not typing, ←/→ step through the trace (Output) and the
+  Refinery's refinements, Shift ten, Home/End the ends (the Observatory keeps `js/cursor.js`, now
+  also silent while a dialog is open); Space pauses/resumes a run; 1-9 open the tabs shown; `?`
+  opens the Keyboard shortcuts dialog (`#dialog-keys`, also in the footer and Settings). Editors,
+  fields, lists, sliders, the tab row's radios and open dialogs/menus keep their keys.
+- Toast: always goes by itself after 5 s (errors and Undo too), held while hovered or focused.
+- Tab help (`details.help-fold`): folded by default; an opened one stays open
+  (`cegarplay.help-open`, replaces `cegarplay.help-seen`).
+- The fragments' and the loop script's info links are a **?** in the style of the tabs' `.help-q`.
+- Guided tour (`js/tour.js`, after logic-game's js/tutorial.js): 13 cards on Sum-free sets (project,
+  Programs, fragments, Loop, script, Run, Output, trace, Statistics, Audit, help, where next);
+  waiting steps with "Do it for me"; offered on a plain first visit (`cegarplay.tour` absent, no
+  restored project, no query but nocoi, no hash); Home, Settings and `?tour=1` start it. An edited
+  project is kept as the snapshot "before the guided tour". `Control.ends`/`lastEnd` count ended
+  runs for it. The test harness marks the tour seen unless `openPage(..., { tour: true })`.
+- Named "Guided tour", not "tutorial": the Tutorial tab (lessons) already has that name.
+- Tests: `test/browser/keys.test.mjs`, `test/browser/tour.test.mjs`, a Space test in
+  `isolated.test.mjs`; the help-fold test in `tabs.test.mjs` follows the new default.

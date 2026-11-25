@@ -155,7 +155,7 @@
         CegarPlay runs CEGAR loops (counterexample-guided abstraction refinement) written in answer
         set programming, with clingo running in your browser. Pick an example below, or start one from
         <b>Project</b>. A project is written in the <b>Write</b> tabs; press <b>Run</b> (or <b>Audit</b>)
-        and read the run in the <b>Results</b> tabs. New here? Start with the <a href="#" data-open-tab="tab2">Tutorial</a>.
+        and read the run in the <b>Results</b> tabs. New here? Take the <a href="#" data-tour>guided tour</a> (five minutes), or start with the <a href="#" data-open-tab="tab2">Tutorial</a>.
         <span class="home-more">More tabs (the Observatory, the Campaign tab and the Refinery) can be switched on
           in <a href="#" data-dialog="dialog-settings">Settings</a>.</span>
       </p>
@@ -281,7 +281,7 @@
         &nbsp;
         <button class="control-button" id="edit-as-lua-button">Edit as Lua</button>
       </div>
-      <h3>Loop script <a href="#" class="modal-link" data-open="modal-loop" title="About the loop script" aria-label="About the loop script">&#xf05a;</a>
+      <h3>Loop script <a href="#" class="modal-link" data-open="modal-loop" title="About the loop script" aria-label="About the loop script">?</a>
         <span id="loop-language" class="loop-language"></span></h3>
       <div id="loop-editor" class="editor"></div>
 
@@ -520,6 +520,13 @@
         </div>
         <p class="note">These choices are kept in this browser.</p>
 
+        <h3>Guided tour</h3>
+        <p><button class="control-button" type="button" data-tour>Start the guided tour</button>
+          <span class="note">a first run, step by step (about five minutes); it loads the example Sum-free sets</span></p>
+
+        <h3>Keyboard</h3>
+        <p><a href="#" data-shortcuts>Keyboard shortcuts</a> <span class="note">(or press <kbd>?</kbd> when not typing)</span></p>
+
         <h3>Theme</h3>
         <p><button class="control-button theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
           <span class="note">Auto follows the system; the button cycles through Auto, Light and Dark (also in the top bar).</span></p>
@@ -533,11 +540,39 @@
     </div>
   </dialog>
 
+  <!-- Keyboard shortcuts (? when not typing; js/keys.js) -->
+  <dialog class="dialog" id="dialog-keys" aria-labelledby="dialog-keys-title">
+    <div class="dialog-box">
+      <header class="dialog-header"><h2 id="dialog-keys-title">Keyboard shortcuts</h2>
+        <button class="icon-button" type="button" data-close-dialog aria-label="Close">&#x2715;</button></header>
+      <div class="dialog-body keys-body">
+        <h3>Everywhere</h3>
+        <dl class="keys-list">
+          <dt><kbd>Ctrl</kbd>+<kbd>Enter</kbd></dt><dd>Run (<kbd>&#x2318;</kbd>+<kbd>Enter</kbd> on a Mac), also while you type in an editor</dd>
+          <dt><kbd>Esc</kbd></dt><dd>close a dialog or a menu</dd>
+        </dl>
+        <h3>When not typing</h3>
+        <dl class="keys-list">
+          <dt><kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd></dt><dd>the previous / next step: of the trace (Output), of the cursor (Observatory), of the refinements (Refinery)</dd>
+          <dt><kbd>Shift</kbd>+<kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd></dt><dd>ten steps back / on (trace and Observatory)</dd>
+          <dt><kbd>Home</kbd> <kbd>End</kbd></dt><dd>the first / last step (trace and Observatory)</dd>
+          <dt><kbd>Space</kbd></dt><dd>pause or resume a run (when the page can pause runs)</dd>
+          <dt><kbd>?</kbd></dt><dd>this list</dd>
+        </dl>
+        <h3>Tabs</h3>
+        <ol class="keys-tabs" id="keys-tabs"></ol>
+        <p class="note">On the tab row, the arrow keys move from tab to tab. In the editors, <kbd>Ctrl</kbd>+<kbd>/</kbd>
+          (<kbd>&#x2318;</kbd>+<kbd>/</kbd>) comments the selected lines out, or back in.</p>
+      </div>
+    </div>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <footer class="page-footer">
     <a href="https://github.com/rdehaan/cegarplay">Source on GitHub</a> ·
     <a href="LICENSE">MIT licence</a> ·
+    <a href="#" data-shortcuts>Keyboard shortcuts (?)</a> ·
     <span id="footer-engine">clingo via clingo-wasm</span>
   </footer>
 

@@ -91,6 +91,7 @@ test('the Tutorial can be hidden and comes back; a lesson link shows it for the 
   assert.equal(await shown(page, 'tab2'), false, 'remembered after a reload');
   // the Programs tab's opening line links to a lesson: the Tutorial opens at it, nothing stored
   await page.click('label[for="tab3"]');
+  await page.click('#section-programs .help-fold > summary');      // (folded by default)
   await page.click('#section-programs .tab-help a[href="#tut-fragments"]');
   await page.waitForFunction(() => document.getElementById('tab2').checked);
   assert.equal(await shown(page, 'tab2'), true);
@@ -127,21 +128,22 @@ test('the tab bar: grouped, sticky under the top bar on a large screen; a tab ch
   await context.close();
 });
 
-test('each tab\'s help: open on the first visit, and closed once it is closed (remembered)', async () => {
+test('each tab\'s help: folded by default, and open once it is opened (remembered)', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?fresh=1&tab=4', { advanced: false });
-  assert.equal(await page.isVisible('#section-loop .tab-intro'), true, 'open on the first visit');
+  assert.equal(await page.isVisible('#section-loop .tab-intro'), false, 'folded on the first visit');
   await page.click('#section-loop .help-fold > summary');
-  assert.equal(await page.isVisible('#section-loop .tab-intro'), false);
+  assert.equal(await page.isVisible('#section-loop .tab-intro'), true);
   // stored in the toggle event, which comes just after the click
-  await page.waitForFunction(() => /section-loop/.test(localStorage.getItem('cegarplay.help-seen') || ''));
+  await page.waitForFunction(() => /section-loop/.test(localStorage.getItem('cegarplay.help-open') || ''));
   await page.reload();
   await page.waitForSelector('body[data-ready="true"]');
-  assert.equal(await page.isVisible('#section-loop .tab-intro'), false, 'stays closed');
+  assert.equal(await page.isVisible('#section-loop .tab-intro'), true, 'stays open');
   await page.click('label[for="tab3"]');
-  assert.equal(await page.isVisible('#section-programs .tab-intro'), true, 'another tab: still open');
+  assert.equal(await page.isVisible('#section-programs .tab-intro'), false, 'another tab: still folded');
   await page.click('label[for="tab4"]');
   await page.click('#section-loop .help-fold > summary');
-  assert.equal(await page.isVisible('#section-loop .tab-intro'), true, 'the "?" opens it again');
+  assert.equal(await page.isVisible('#section-loop .tab-intro'), false, 'the "?" folds it again');
+  await page.waitForFunction(() => !/section-loop/.test(localStorage.getItem('cegarplay.help-open') || ''));
   assert.deepEqual(errors, []);
   await context.close();
 });

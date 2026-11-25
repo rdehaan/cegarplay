@@ -26,7 +26,9 @@ project with instances or variants); **Run options**, a pop-up with Solutions, *
 runs (the Loop tab's Recording set to "every step"; unticked, "off"); the button names the choices
 that differ from the defaults (e.g. "· seed 7, recording"). At the right end: the status, **Guide**, the
 colour theme and **Settings** (⚙). The status lines of the Project menu's actions show as a short
-note at the bottom of the page (a long one, an error, or one with **Undo** stays until it is closed).
+note at the bottom of the page. It goes by itself after 5 seconds (errors and an offered **Undo**
+too); while the pointer or the keyboard focus is on it, it stays, and the 5 seconds start again when
+they leave; its ✕ closes it at once.
 
 Under the top bar, **Shown:** says what the Output, Statistics and Observatory tabs hold now: the
 run, audit or replay (with its instance, variant and start time), how it ended, how much of it was
@@ -42,13 +44,15 @@ limits, recording and certificates) and **Instances** (inputs, generators, Run a
 **Tutorial** and **Manual**, at the right end. On a screen of at least 1000 × 640 px the tab row
 stays under the top bar while the page scrolls, and a tab chosen there opens at its top. Each tab
 starts with its name and a **?**: the tab's explanation, with links to the tutorial and the manual,
-is open on the first visit to that tab and stays closed once closed (kept in this browser).
+is folded by default; one that is opened stays open until it is folded again (kept in this browser).
+The **?** next to a fragment's name (Programs) and next to the loop script (Loop) has the same style;
+it opens a short explanation of that fragment or of the loop script.
 **Manual** and **Internals** appear when asked for. **Settings** has toggles kept in this browser:
 **Tutorial** (shown by default), **Technical manual**, and **Advanced** with three indented toggles
 under it, **Campaign**, **Observatory** and **Refinery**, all off by default. **Advanced** turns all
 three on or off; it is ticked when all three are on and shows a dash when some are. The Tutorial
-tab repeats the Observatory and Campaign toggles. Settings also has the colour theme and **Reset
-everything**. A link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`, `?tab=12`,
+tab repeats the Observatory and Campaign toggles. Settings also has the colour theme, the **Guided tour**, the
+**Keyboard shortcuts** and **Reset everything**. A link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`, `?tab=12`,
 `?lecture=1`, `?view=`, `?step=`, `?advanced=1`, `?lab=1`, a link to a tutorial lesson) shows it for
 that visit without changing the stored choice.
 
@@ -1112,7 +1116,7 @@ in the worker. While a run is active all editors are read-only.
 
 Keyboard: the tab row is in the Tab order (arrow keys switch tabs, as in any group of radio
 buttons, in the order of the tab row); the **Project** menu opens with Enter, its items take the arrow
-keys, and Escape closes it; an info dialog (the ⓘ links) takes the focus, keeps Tab
+keys, and Escape closes it; an info dialog (the **?** of a fragment or of the loop script) takes the focus, keeps Tab
 inside, closes with Escape and returns the focus to its link. Run status and run messages are
 announced to screen readers (`role="status"`). Below 650 px the tabs show their icon with a short
 name under it; below 760 px the top bar puts the run's actions on a row of their own and the
@@ -1659,6 +1663,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?replay=examples/replays/<id>.cprec` | Replay a library recording without the engine (it loads its example first). Only paths of that form are accepted. |
 | `&step=N`, `&view=<name>` | Open the Observatory with the linked cursor on step N and that domain view. |
 | `?lecture=1` | Lecture mode: the domain view alone, its notes as captions, the arrow keys move the cursor. |
+| `?tour=1` | Starts the guided tour (it loads the example Sum-free sets; an edited project is kept as a snapshot first). |
 | `?nocoi=1` | Do not use the isolation service worker (and remove it). Pause, Stop and threads are then unavailable. |
 
 The address bar follows the page (without new history entries): loading an example from the library
@@ -1705,12 +1710,39 @@ the page); Undo brings that project
 - `cegarplay.lab`: `"1"` when the Refinery is on (absent when off); `cegarplay.lab.*`: the
   Refinery's settings (its Limits, the source of steps, the candidate order, the scheme), as JSON.
 - `cegarplay.theme`: `"light"` or `"dark"` when the colour theme was chosen by hand (absent for Auto).
-- `cegarplay.help-seen`: the tabs whose explanation (the **?**) was closed, as JSON.
+- `cegarplay.help-open`: the tabs whose explanation (the **?**) was opened, as JSON.
+- `cegarplay.tour`: `{ state, at }` once the guided tour was started, closed or finished; while it is
+  absent, a first visit offers the tour.
 - **Reset everything** (Settings, last block) removes every `cegarplay*` key above and the
   Campaign tab's rows (IndexedDB `cegarplay`), after a question, and loads the page afresh (no
   query, no hash): a first visit.
 
 Keyboard: Ctrl+Enter or Cmd+Enter runs from anywhere, also inside an editor. Ctrl+S or Cmd+S does nothing (no browser save dialog: the project is kept in this browser as you edit).
+
+Guided tour (`js/tour.js`): a card in the lower right corner (on a phone, across the bottom) that
+takes a new user through a first run, one step at a time, and outlines the part of the page each
+step is about. It loads the example **Sum-free sets** (an edited project is first kept as the
+automatic snapshot "before the guided tour", with **Undo**), then: the project on Home, the Programs
+tab and its fragments, the Loop tab and its script, **Run**, the Output tab and stepping through the
+trace, the Statistics tab, **Audit**, the help (the **?** and the shortcuts), and where to go next.
+Steps that ask for something (open a tab, run, step, audit) wait until it is done; **Do it for me**
+does it. **Back** goes back a step; ✕ ends the tour. It is offered on a first visit: a plain link
+(no query except `?nocoi=1`, no hash), no project kept in this browser, and `cegarplay.tour` absent.
+It starts from **Home** ("guided tour" in the opening lines), from **Settings** and with `?tour=1`.
+
+Keyboard shortcuts when not typing (`js/keys.js`; none applies in an editor, a text field, a list
+or while a dialog or menu is open; a slider and the tab row keep their own arrow keys):
+
+| Key | Does |
+|---|---|
+| ← / → | the previous / next step: of the trace (Output tab), of the cursor (Observatory, `js/cursor.js`), of the refinements (Refinery: its Previous and Next) |
+| Shift+← / → | ten steps back / on (trace and Observatory) |
+| Home / End | the first / last step (trace and Observatory) |
+| Space | Pause or Resume a run (isolated page only; on a focused button Space presses that button) |
+| 1 … 9 | the first nine tabs shown in the tab row, in its order (which tabs are shown depends on Settings) |
+| ? | the **Keyboard shortcuts** dialog (also in the footer and in Settings), with the tabs as the digits number them |
+
+The trace's Previous and Next and the Pause button name their keys in their tooltips.
 
 Every control shows a ring in the link colour when it has keyboard focus. Verdicts (the audit
 panel, the Fuzz card, the exercise box) and the status lines of Spaces, Snapshots and Compare

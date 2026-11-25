@@ -48,6 +48,8 @@ export class Control {
   constructor(app) {
     this.app = app;
     this.state = 'idle';
+    this.ends = 0;             // runs, audits, ... that ended (js/tour.js waits for them)
+    this.lastEnd = null;       // { mode, state } of the last one
     this.runButton = $('run-button');
     this.abortButton = $('abort-button');
     this.pauseButton = $('pause-button');
@@ -110,6 +112,7 @@ export class Control {
       state = 'running';
       this.state = 'running';
     }
+    if (['finished', 'error', 'aborted'].includes(state) && !this.batch) { this.ends++; this.lastEnd = { mode: this.mode, state }; }
     const label = state === 'running' && this.batch ? `running ${this.batch.name}${this.batch.progress ? ` (${this.batch.progress})` : ''}`
       : state === 'running' && this.mode === 'audit' ? 'running audit'
         : state === 'paused' && this.mode === 'audit' ? 'paused audit' : state;

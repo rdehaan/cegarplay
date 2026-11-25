@@ -71,6 +71,27 @@ test('threads: a solver with -t 2 gives 10,698 on graph-coloring', async () => {
   await context.close();
 });
 
+test('Space pauses and resumes a run (when no button has the focus)', async () => {
+  const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&example=graph-coloring&tab=6', { coi: true });
+  await setN7(page);
+  await page.click('#run-button');
+  await B.waitState(page, ['running']);
+  await page.waitForTimeout(300);
+  await page.click('#live-line');                    // the focus off the buttons
+  await page.keyboard.press(' ');
+  assert.equal(await B.runState(page), 'paused');
+  await page.keyboard.press(' ');
+  assert.equal(await B.runState(page), 'running');
+  await page.click('#stop-button');
+  assert.equal(await B.waitState(page, ['finished', 'error', 'aborted']), 'finished');
+  // no run: Space does nothing (and does not start one)
+  await page.click('#live-line');
+  await page.keyboard.press(' ');
+  assert.equal(await B.runState(page), 'finished');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
 test('abort works on the isolated page too', async () => {
   const { page, context } = await B.openPage(browser, coiServer, '?nocoi=1&example=graph-coloring', { coi: true });
   await setN7(page);

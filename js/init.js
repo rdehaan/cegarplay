@@ -22,6 +22,8 @@ import { renderMarkdown } from './markdown.js';
 import { Workspace, WS_INDEX, WS_NAME } from './workspace.js';
 import { Snapshots, SNAP_INDEX, projectKey } from './snapshots.js';
 import { setupTopbar } from './topbar.js';
+import { bindPageKeys, openShortcuts } from './keys.js';
+import { Tour } from './tour.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
 
 const $ = (id) => document.getElementById(id);
@@ -244,7 +246,11 @@ app.sweepAndShow = async ({ instance, target }) => {
 };
 app.variants = new Variants(app);
 app.cursor = new Cursor();
-bindKeys(app.cursor, () => $('tab11').checked || document.body.classList.contains('lecture'));
+bindKeys(app.cursor, () => ($('tab11').checked || document.body.classList.contains('lecture')) && !document.querySelector('dialog[open], .modal.is-visible'));
+bindPageKeys(app);
+app.tour = new Tour(app);
+for (const a of document.querySelectorAll('[data-tour]')) a.addEventListener('click', (e) => { e.preventDefault(); for (const d of document.querySelectorAll('dialog[open]')) d.close(); app.tour.start(); });
+for (const a of document.querySelectorAll('[data-shortcuts]')) a.addEventListener('click', (e) => { e.preventDefault(); for (const d of document.querySelectorAll('dialog[open]')) d.close(); openShortcuts(); });
 app.anatomy = new Anatomy(app, $('anatomy'));
 app.campaign = new CampaignTab(app);
 app.views = new ViewPanel(app, $('domain-view'));
@@ -1122,6 +1128,11 @@ async function start() {
   app.control.setState(app.control.state === 'replayed' ? 'replayed' : 'idle');
   if ($('tab12').checked) showLab();
   document.body.dataset.ready = 'true';
+  // the guided tour: with ?tour=1, or offered on a first visit (a plain link, nothing kept in this
+  // browser, the tour not seen before)
+  const plain = [...params.keys()].every((k) => k === 'nocoi') && !location.hash;
+  if (params.get('tour') === '1') app.tour.start();
+  else if (plain && !restored && !app.tour.seen) app.tour.offer();
 }
 // ?fragment=<name>: open the Programs tab on that fragment's editor; "loop" opens the Loop tab.
 function openFragment(name) {

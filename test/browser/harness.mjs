@@ -35,10 +35,12 @@ export async function launch() {
 // contextOptions go to browser.newContext (for instance { colorScheme: 'dark' }); path is the page to open.
 // advanced: open the page with the Observatory and Campaign tabs shown, as most tests need;
 // the stored choice is set before the page's scripts run. advanced: false leaves storage alone.
-export async function openPage(browser, server, query = '', { acceptDownloads = true, coi = false, contextOptions = {}, path = 'index.html', context: given, advanced = true } = {}) {
+export async function openPage(browser, server, query = '', { acceptDownloads = true, coi = false, contextOptions = {}, path = 'index.html', context: given, advanced = true, tour = false } = {}) {
   if (!coi) query = query ? query + '&nocoi=1' : '?nocoi=1';
   const context = given || await browser.newContext({ acceptDownloads, ...contextOptions });
   const page = await context.newPage();
+  // the guided tour is offered on a first visit; tests that do not ask for it have seen it
+  if (!tour) await page.addInitScript(() => { try { if (localStorage.getItem('cegarplay.tour') === null) localStorage.setItem('cegarplay.tour', '"seen"'); } catch { /* no storage */ } });
   if (advanced) {
     await page.addInitScript(() => {
       try {

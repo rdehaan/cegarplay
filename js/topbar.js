@@ -3,6 +3,7 @@
 // the folded tab help. Only the page uses it; it drives the existing buttons by their ids.
 
 const $ = (id) => document.getElementById(id);
+export const TOAST_MS = 5000;
 const narrow = () => matchMedia('(max-width: 760px)').matches;
 
 export function setupTopbar() {
@@ -82,8 +83,9 @@ export function setupTopbar() {
     }
   });
 
-  // ---- the toast: what the hidden status lines of the file actions say. A short note goes by
-  // itself; a long one (a share link to copy by hand) or an error stays until it is closed.
+  // ---- the toast: what the hidden status lines of the file actions say. It goes by itself after
+  // 5 s (TOAST_MS), errors and an offered Undo too; the time starts again when the pointer or the
+  // focus leaves it, so that a link can be copied or Undo pressed; the cross closes it at once.
   const toast = $('toast');
   const text = document.createElement('span');
   text.className = 'toast-text';
@@ -91,7 +93,12 @@ export function setupTopbar() {
   close.className = 'toast-close'; close.type = 'button'; close.setAttribute('aria-label', 'Close'); close.textContent = '\u2715';
   close.addEventListener('click', () => { toast.hidden = true; });
   toast.append(text, close);
-  let timer = 0;
+  let timer = 0, held = false;
+  const later = () => { clearTimeout(timer); if (!held && !toast.hidden) timer = setTimeout(() => { toast.hidden = true; }, TOAST_MS); };
+  toast.addEventListener('mouseenter', () => { held = true; clearTimeout(timer); });
+  toast.addEventListener('mouseleave', () => { held = toast.contains(document.activeElement); later(); });
+  toast.addEventListener('focusin', () => { held = true; clearTimeout(timer); });
+  toast.addEventListener('focusout', (e) => { if (!toast.contains(e.relatedTarget)) { held = toast.matches(':hover'); later(); } });
   for (const s of document.querySelectorAll('.toast-source')) {
     new MutationObserver(() => {
       const t = s.textContent.trim();
@@ -100,8 +107,7 @@ export function setupTopbar() {
       const error = s.classList.contains('error');
       toast.classList.toggle('error', error);
       toast.hidden = false;
-      clearTimeout(timer);
-      if (!error && t.length <= 160 && undo.hidden) timer = setTimeout(() => { toast.hidden = true; }, 5000);
+      later();
     }).observe(s, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class'] });
   }
 
@@ -119,7 +125,7 @@ export function setupTopbar() {
     const inView = $('dialog-versions').open || !!$('load-undo-button')?.offsetParent;
     if (on && !inView) {
       if (toast.hidden) { text.textContent = $('snapshot-undo-text').textContent.trim(); toast.classList.remove('error'); toast.hidden = false; }
-      clearTimeout(timer);   // stays while Undo is possible
+      later();
     }
   };
   new MutationObserver(() => setTimeout(syncUndo)).observe($('snapshot-undo'), { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true, characterData: true });
@@ -130,16 +136,16 @@ export function setupTopbar() {
   new MutationObserver(showTitle).observe(heading, { childList: true, characterData: true, subtree: true });
   showTitle();
 
-  // ---- each tab's help: open on the first visit to that tab; once closed, it stays closed
-  const HELP_KEY = 'cegarplay.help-seen';
-  let seen = {};
-  try { seen = JSON.parse(localStorage.getItem(HELP_KEY) || '{}') || {}; } catch { /* no storage */ }
+  // ---- each tab's help: folded by default (the "?" opens it); one that is opened stays open
+  const HELP_KEY = 'cegarplay.help-open';
+  let shown = {};
+  try { shown = JSON.parse(localStorage.getItem(HELP_KEY) || '{}') || {}; } catch { /* no storage */ }
   for (const d of document.querySelectorAll('details.help-fold[data-help]')) {
-    d.open = !seen[d.dataset.help];
+    d.open = !!shown[d.dataset.help];
     d.addEventListener('toggle', () => {
-      if (d.open === !seen[d.dataset.help]) return;
-      if (d.open) delete seen[d.dataset.help]; else seen[d.dataset.help] = 1;
-      try { localStorage.setItem(HELP_KEY, JSON.stringify(seen)); } catch { /* no storage */ }
+      if (d.open === !!shown[d.dataset.help]) return;
+      if (d.open) shown[d.dataset.help] = 1; else delete shown[d.dataset.help];
+      try { localStorage.setItem(HELP_KEY, JSON.stringify(shown)); } catch { /* no storage */ }
     });
   }
 
