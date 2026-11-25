@@ -1986,3 +1986,50 @@ Refinement lab, as L and S name earlier strands). Next: the to-do list at the en
 `docs/lab-design.md` (untested paths, Firefox and isolated pages, accessibility of tab 12, exact
 bounds near 3,000, simulation speed at large sizes, the export on the page's thread).
 
+
+## Voting group: Theta-2-complete winners (2026-11-25, on request)
+
+A new library category **Voting** (`voting` in `tools/library.mjs` GROUPS and
+`tools/make-examples.mjs` CATEGORIES); the old "Games and social choice" is now "Games and other
+social choice". `kemeny-control` and `voting-justification` moved to Voting. Four new contrib
+examples, one per Theta-2-complete rule, each with a different loop as its default:
+
+- `kemeny-winners`: implicit hitting sets; majority cycles are the minimal unsat cores (MUSes) of a
+  ranking check; the winners come from bounds (the first ranking found has the best score; a winner
+  whose lower bound exceeds it is ruled out). Variants `plain-cores`, `disjoint-cores`,
+  `lazy-transitivity` (Conitzer, Davenport and Kalagnanam: 3-cycles as clauses from relevant/1),
+  `reference`.
+- `slater-winners`: OLL (core-guided, totalisers by `C.expand(relax, core = K)`), then one query per
+  candidate under the final assumptions, whose models are exactly the Slater rankings. Variants
+  `plain-cores`, `ihs`, `lazy-transitivity`, `reference`. Same fragments as kemeny-winners; only
+  `w/3` in `shared` differs.
+- `dodgson-winners`: Theta-2 as P^NP[log]: binary search over the score, one NP query per step
+  (`C.ground(bound, k)` grounds each bound), then one query per candidate. Variants `linear-up`,
+  `linear-down`, `exists-forall` (the Sigma-2 template with one-literal clauses `atmost(S)`). No
+  blocking variant: its last unsatisfiable call blows up even on 5 candidates.
+- `young-winners`: row generation: each opponent that still beats the winner grounds its majority
+  constraint for every winner (`refine(k)`). Variants `cores` (cores that name the winner),
+  `plain-cores`, `all-opponents` (no refinement), `exists-forall`.
+
+Shared encoding: `ballot(V,(A,B,...))` of 3 to 12 candidates (the PrefLib importer's format) or
+`rank(V,P,X)`, with optional `count(V,N)`; voters with the same ballot are interchangeable units
+with symmetry breaking (Dodgson's `pass/3`, Young's `del/2`). Instances: four small ones (`example`
+is one election of 8 voters on which the four rules pick four different winner sets), the F1
+seasons 1956, 1964, 1970, 1978, 1991 and 1993 from PrefLib (dataset 00052, tagged `slow` and
+`audit: false` from 9 drivers on; `f1-1991`, 31 drivers, has no expected count in kemeny-winners
+and is tagged `open`: no Kemeny loop finishes it in two minutes, while Slater's OLL takes 1.7 s), a Latin-square election (`cyclic`, Dodgson score 17), and two
+recipes of the new generators `election-mallows` and `election-latin`. Every expected count was
+checked by brute force (small) or by independent clingo encodings with clingo's own optimisation
+(F1; Slater 1991 and 1993 with `--opt-strategy=usc`). Each readme has a table measured with
+`tools/bench.mjs` (suite `loops`). The Slater winner is Theta-2-complete by Lampis (STACS 2022), not
+by Hudry's earlier paper. Audits: sound on every small instance for kemeny
+(default, lazy-transitivity), slater (ihs, lazy-transitivity), young (default, cores; `--link G`,
+since two links leave A); the exists-forall clauses are sound by the symbolic audit.
+
+Loop language: `//` (integer division, Lua's floor division) so that a binary search can halve
+an interval and name an atom with the result (`S.atom` needs a whole number). Manual (grammar,
+expressions, the literature table, the library table), spec and a compiler test updated.
+
+Deviation: the runtime cannot stop a single long clingo call at the time limit (`run.mjs` ends such
+a run 2 s later with "did not stop at the time limit"); several variants hit this on the large F1
+seasons, which is why those instances are tagged `slow`.

@@ -77,7 +77,8 @@
         </ul>
 
         <h2 id="ihs">Implicit hitting sets</h2>
-        <p>Examples: <code>maxsat-ihs</code>, <code>smallest-mus</code>, <code>abduction-ihs</code> (AbHS); chapter
+        <p>Examples: <code>maxsat-ihs</code>, <code>smallest-mus</code>, <code>abduction-ihs</code> (AbHS),
+          <code>kemeny-winners</code> (majority cycles as cores); chapter
           <a href="14-hitting-sets.html">14</a>.</p>
         <ul class="bib">
           <li id="davies2011">J. Davies and F. Bacchus. Solving MAXSAT by solving a sequence of simpler
@@ -89,6 +90,9 @@
             <i>Operations Research</i> 61(2) (2013).</li>
           <li id="saikko2016">P. Saikko, J. P. Wallner and M. Järvisalo. Implicit hitting set
             algorithms for reasoning beyond NP. <i>KR 2016</i>.</li>
+          <li id="baharev2021">A. Baharev, H. Schichl, A. Neumaier and T. Achterberg. An exact method
+            for the minimum feedback arc set problem. <i>ACM Journal of Experimental Algorithmics</i> 26
+            (2021). Cycles generated lazily, as in <code>kemeny-winners</code>.</li>
         </ul>
 
         <h2 id="marco">MUS and MSS enumeration</h2>
@@ -104,7 +108,7 @@
         </ul>
 
         <h2 id="core-guided">Core-guided optimisation</h2>
-        <p>Examples: <code>maxsat-oll</code>, <code>maxsat-oll-weighted</code>.</p>
+        <p>Examples: <code>maxsat-oll</code>, <code>maxsat-oll-weighted</code>, <code>slater-winners</code>.</p>
         <ul class="bib">
           <li id="fu2006">Z. Fu and S. Malik. On solving the partial MAX-SAT problem. <i>SAT 2006</i>.</li>
           <li id="andres2012">B. Andres, B. Kaufmann, O. Matheis and T. Schaub. Unsatisfiability-based
@@ -115,12 +119,17 @@
 
         <h2 id="benders">Benders decomposition and branch-and-check</h2>
         <p>Examples: <code>benders-tardiness</code>, <code>knapsack-bounds</code>,
-          <code>colourable-partial</code>, <code>triangle-free-lazy</code>.</p>
+          <code>colourable-partial</code>, <code>triangle-free-lazy</code>; lazy constraints:
+          <code>young-winners</code>, the variant <code>lazy-transitivity</code> of
+          <code>kemeny-winners</code>.</p>
         <ul class="bib">
           <li id="hooker2003">J. N. Hooker and G. Ottosson. Logic-based Benders decomposition.
             <i>Mathematical Programming</i> 96(1) (2003).</li>
           <li id="thorsteinsson2001">E. S. Thorsteinsson. Branch-and-check: a hybrid framework
             integrating mixed integer programming and constraint logic programming. <i>CP 2001</i>.</li>
+          <li id="conitzer2006">V. Conitzer, A. Davenport and J. Kalagnanam. Improved bounds for
+            computing Kemeny rankings. <i>AAAI 2006</i>. The ordering formulation whose 3-cycle
+            constraints <code>lazy-transitivity</code> adds lazily.</li>
         </ul>
 
         <h2 id="omission">Omission-based abstraction</h2>
@@ -129,6 +138,34 @@
           <li id="saribatur2018">Z. G. Saribatur and T. Eiter. Omission-based abstraction for answer set
             programs. <i>KR 2018</i>; journal version in <i>Theory and Practice of Logic
             Programming</i> 21(2) (2021).</li>
+        </ul>
+
+        <h2 id="winners">Voting rules and the complexity of their winners</h2>
+        <p>Examples: <code>kemeny-winners</code>, <code>slater-winners</code>, <code>dodgson-winners</code>,
+          <code>young-winners</code>, with data from PrefLib.</p>
+        <ul class="bib">
+          <li id="dodgson1876">C. L. Dodgson. <i>A method of taking votes on more than two issues</i>.
+            Pamphlet, Oxford, 1876.</li>
+          <li id="kemeny1959">J. G. Kemeny. Mathematics without numbers. <i>Daedalus</i> 88(4) (1959).</li>
+          <li id="slater1961">P. Slater. Inconsistencies in a schedule of paired comparisons.
+            <i>Biometrika</i> 48(3/4) (1961).</li>
+          <li id="young1977">H. P. Young. Extending Condorcet's rule. <i>Journal of Economic Theory</i>
+            16(2) (1977).</li>
+          <li id="bartholdi1989">J. Bartholdi III, C. A. Tovey and M. A. Trick. Voting schemes for which
+            it can be difficult to tell who won the election. <i>Social Choice and Welfare</i> 6(2)
+            (1989).</li>
+          <li id="wagner1990">K. W. Wagner. Bounded query classes. <i>SIAM Journal on Computing</i> 19(5)
+            (1990). Theta-2: polynomial time with logarithmically many NP queries.</li>
+          <li id="hemaspaandra1997">E. Hemaspaandra, L. A. Hemaspaandra and J. Rothe. Exact analysis of
+            Dodgson elections: Lewis Carroll's 1876 voting system is complete for parallel access to NP.
+            <i>Journal of the ACM</i> 44(6) (1997).</li>
+          <li id="rothe2003">J. Rothe, H. Spakowski and J. Vogel. Exact complexity of the winner problem
+            for Young elections. <i>Theory of Computing Systems</i> 36(4) (2003).</li>
+          <li id="hemaspaandra2005">E. Hemaspaandra, H. Spakowski and J. Vogel. The complexity of Kemeny
+            elections. <i>Theoretical Computer Science</i> 349(3) (2005).</li>
+          <li id="lampis2022">M. Lampis. Determining a Slater winner is complete for parallel access to
+            NP. <i>STACS 2022</i>.</li>
+          <li id="mattei2013">N. Mattei and T. Walsh. PrefLib: a library for preferences. <i>ADT 2013</i>.</li>
         </ul>
 
         <h2 id="voting">Justifying collective decisions</h2>

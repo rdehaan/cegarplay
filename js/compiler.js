@@ -20,7 +20,7 @@ class CompileError extends Error {
 // ---------------------------------------------------------------------------
 // Lexer
 // ---------------------------------------------------------------------------
-const OPS = ['->', '==', '!=', '<=', '>=', '=', '<', '>', '+', '-', '*', '/', '(', ')', '[', ']', ',', '..', '.', ':'];
+const OPS = ['->', '==', '!=', '<=', '>=', '=', '<', '>', '+', '-', '*', '//', '/', '(', ')', '[', ']', ',', '..', '.', ':'];
 
 export function lex(source) {
   const toks = [], errors = [];
@@ -382,7 +382,7 @@ class Parser {
   }
   term() {
     let a = this.unary();
-    while (this.isOp('*') || this.isOp('/')) { const o = this.next(); a = { t: 'bin', op: o.value, a, b: this.unary(), line: o.line, col: o.col }; }
+    while (this.isOp('*') || this.isOp('/') || this.isOp('//')) { const o = this.next(); a = { t: 'bin', op: o.value, a, b: this.unary(), line: o.line, col: o.col }; }
     return a;
   }
   unary() {
@@ -465,7 +465,7 @@ export function luaString(s) {
   }) + '"';
 }
 
-const PREC = { or: 1, and: 2, '==': 3, '!=': 3, '<': 3, '<=': 3, '>': 3, '>=': 3, '+': 4, '-': 4, '*': 5, '/': 5 };
+const PREC = { or: 1, and: 2, '==': 3, '!=': 3, '<': 3, '<=': 3, '>': 3, '>=': 3, '+': 4, '-': 4, '*': 5, '/': 5, '//': 5 };
 const LUA_OP = { '!=': '~=' };
 
 function collectAssigned(stmts, out, { intoCandidates }) {
@@ -510,7 +510,7 @@ export function compile(source, { fragments = [] } = {}) {
       case 'name': return e.name === v ? v : `rt.const(${luaString(e.name)})`;
       case 'paren': return `(${rangeEx(e.e, v)})`;
       case 'neg': return `(-${rangeEx(e.e, v)})`;
-      case 'bin': if (['+', '-', '*', '/'].includes(e.op)) return `(${rangeEx(e.a, v)} ${e.op === '/' ? '//' : e.op} ${rangeEx(e.b, v)})`; break;
+      case 'bin': if (['+', '-', '*', '/', '//'].includes(e.op)) return `(${rangeEx(e.a, v)} ${e.op === '/' ? '//' : e.op} ${rangeEx(e.b, v)})`; break;
       default: break;
     }
     err(e, 'the range of a family must be made of numbers and project constants');

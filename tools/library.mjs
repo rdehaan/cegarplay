@@ -237,7 +237,8 @@ export const GROUPS = [
   { id: 'logic', title: 'Logic and QBF', description: 'Quantified Boolean formulas (also with more quantifier blocks), minimal formulas and unsatisfiable cores, stable models.' },
   { id: 'reasoning', title: 'Knowledge representation and explanation', description: 'Abduction, defaults, belief update, diagnosis, causality, argumentation, reasons for a classifier.' },
   { id: 'graphs', title: 'Graphs', description: 'Colourings, list colourings, cliques and Ramsey-type arrowing.' },
-  { id: 'games', title: 'Games and social choice', description: 'Equilibria, stable coalitions, fair division and voting.' },
+  { id: 'games', title: 'Games and other social choice', description: 'Equilibria, stable coalitions, fair division, games on graphs and numbers.' },
+  { id: 'voting', title: 'Voting', description: 'Winners under the Theta-2-complete rules of Kemeny, Slater, Dodgson and Young (with Formula 1 seasons from PrefLib), control of a Kemeny election, and justifications of voting outcomes by axioms.' },
   { id: 'planning', title: 'Planning and optimisation', description: 'Conformant planning, bilevel and trilevel knapsack problems.' },
   { id: 'puzzles', title: 'Puzzles', description: 'Generating puzzles with a unique solution: Sudoku, Binairo, Futoshiki, Akari, Slitherlink.' },
   { id: 'other', title: 'Other problems', description: 'Contributed problems without a category.' },
@@ -365,7 +366,7 @@ const TEMPLATE_TITLE = { shape1: 'Shape 1', shape2: 'Shape 2', shape3: 'Shape 3'
 export const PROBLEMS = [
   { id: 'graph-coloring', group: 'graphs', summary: 'Graphs with a leaf colouring that no 3-colouring extends (n = 6, all 10,698 solutions).', shape: 'shape1', tags: [], expected: 10698 },
   { id: 'nash', group: 'games', summary: 'Weighted graphs whose colouring game has a Nash equilibrium (four size instances).', shape: 'shape1', tags: [], expected: null },
-  { id: 'voting-justification', group: 'games', summary: 'Explaining a voting outcome by axioms: 14 questions as instances (7 generated), five refinement strategies and two loops as variants, a suite that compares them.', shape: 'shape1', tags: [], expected: null },
+  { id: 'voting-justification', group: 'voting', summary: 'Explaining a voting outcome by axioms: 14 questions as instances (7 generated), five refinement strategies and two loops as variants, a suite that compares them.', shape: 'shape1', tags: [], expected: null },
 ];
 
 // ---------------------------------------------------------------------------

@@ -548,7 +548,7 @@ relevant(plays(P,C)) :- player_differs(P), color(C).
 // 'library' block { id, group, summary, shape, tags, expected }. Returns library entries.
 // The group is a category (CATEGORIES). The older names exists-forall, problems and
 // several-solvers still load, into the group other.
-export const CATEGORIES = ['logic', 'reasoning', 'graphs', 'games', 'planning', 'puzzles'];
+export const CATEGORIES = ['logic', 'reasoning', 'graphs', 'games', 'voting', 'planning', 'puzzles'];
 export const CONTRIB_GROUPS = [...CATEGORIES, 'other', 'exists-forall', 'problems', 'several-solvers'];
 function contribGroup(group) {
   return CATEGORIES.includes(group) ? group : 'other';

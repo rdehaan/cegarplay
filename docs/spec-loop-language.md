@@ -52,7 +52,7 @@ conj    := neg { "and" neg }
 neg     := [ "not" ] cmp
 cmp     := sum [ ("==" | "!=" | "<" | "<=" | ">" | ">=") sum ]
 sum     := term { ("+" | "-") term }
-term    := unary { ("*" | "/") unary }
+term    := unary { ("*" | "/" | "//") unary }
 unary   := [ "-" ] post
 post    := atom { "." NAME [ "(" [ args ] ")" ] | "(" [ args ] ")" }
 atom    := NAME | NUMBER | STRING | "true" | "false" | "none" | "[" "]" | "(" expr ")"

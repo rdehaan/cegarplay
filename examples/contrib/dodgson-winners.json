@@ -1,0 +1,346 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Dodgson winners",
+  "description": "The Dodgson winners: the candidates that need the fewest swaps of neighbours in the ballots to become Condorcet winners (Theta-2-complete, Hemaspaandra, Hemaspaandra and Rothe 1997). Theta-2 is P with logarithmically many NP queries (Wagner 1990), and the loop is exactly that: a binary search for the best score, one NP query per step (C.ground grounds each bound), then one query per candidate. Compare with the linear searches up and down, and with the Sigma-2 template on the large Latin-square election.",
+  "readme": "# Project: Dodgson winners\n\n## Research question\n\nTheta-2 is the class of problems decided in polynomial time with logarithmically many queries to\nan NP oracle (Wagner 1990), and Dodgson's rule (Dodgson 1876) is complete for it (Hemaspaandra,\nHemaspaandra and Rothe 1997). Dodgson's rule fits the definition: a binary search for the best score, then one\nquery per candidate. Is the binary search worth it in practice? An unsatisfiable query just below\nthe optimum is the hard one, and every search makes at least one.\n\n## The loops\n\n- **default**: binary search on k (P^NP[log], Wagner 1990) with the query \"is some candidate within k swaps of being a\n  Condorcet winner?\". Each query grounds its own bound (`C.ground(bound, k)`, `#program\n  bound(b)`) and assumes it (`C.atom(\"within\", k)`); `//` halves the interval. Every satisfiable\n  query lowers the upper bound to the swaps of its witness.\n- **linear-up**: k = 0, 1, 2, ...: every query but the last is unsatisfiable.\n- **linear-down**: every witness is an upper bound; ask for one swap fewer until no candidate makes\n  it.\n- **exists-forall**: the Sigma-2 template. A proposes a winner with its swaps, C a candidate that\n  needs fewer; the clause from relevant/1 is one literal, `atmost(S)`.\n\n## Baseline\n\nTime of a run with all solutions on clingo-wasm (`tools/bench.mjs`, suite `loops`, limit 60 s, two runs at a time) and, in brackets, the refinements added, counting the blocks that rule out a winner. The small instances take under 0.2 s with every loop.\n\n| instance | default | linear-up | linear-down | exists-forall |\n| --- | --- | --- | --- | --- |\n| 1964: 9 drivers | 0.0 s (9) | 0.0 s (9) | 0.1 s (9) | 0.1 s (13) |\n| 1970: 9 drivers | 0.0 s (9) | 0.0 s (9) | 0.1 s (9) | 0.1 s (20) |\n| 1978: 20 drivers | 0.2 s (20) | 0.1 s (20) | 0.7 s (20) | 1.2 s (37) |\n| 1993: 23 drivers | 0.2 s (23) | 0.1 s (23) | 0.7 s (23) | 0.5 s (2) |\n| 1991: 31 drivers | 0.3 s (31) | 0.2 s (31) | 1.0 s (31) | 0.6 s (2) |\n| Latin square: 5, 65 voters | 0.4 s (5) | 1.0 s (5) | 0.7 s (5) | 2.6 s (15) |\n\nIn the F1 seasons the best score is at most 3 (1991 and 1993 have a Condorcet winner), so the search from below needs the fewest queries. On the Latin square (score 17) the binary search asks 11 queries in all against 23 for either linear search, and is fastest. The hard queries are the unsatisfiable ones just below the optimum: every search asks at least one.\n\n## Things to try\n\n- Elections with large scores: the generator `election-latin` with larger counts (`lo`, `hi`).\n- A galloping search (k = 1, 2, 4, 8, ... then binary) from below.\n- Share learnt clauses between queries: they are, since C is one solver; compare with a fresh\n  solver per query (a solver family).\n\n## How to measure\n\nEach suite runs its variants on the instances (Campaign tab, Advanced mode); headless:\n`node tools/bench.mjs dodgson-winners --suite loops --out rows.jsonl` and `node tools/report.mjs rows.jsonl`.\nThe instances tagged `slow` (the larger F1 seasons and the Latin square) are where the loops differ;\nthe small ones are for the audit (`node tools/audit.mjs dodgson-winners --instance all --variant exists-forall --link G --symbolic`) and the tests.\nThe suite `mallows` draws elections of 6 to 10 candidates. Every expected count was checked\nagainst an independent encoding with clingo's own optimisation, or by brute force on the small ones.\n\n## References\n\n- C. L. Dodgson. *A method of taking votes on more than two issues*. Pamphlet, Clarendon Press, Oxford, 1876.\n- J. Bartholdi III, C. A. Tovey and M. A. Trick. Voting schemes for which it can be difficult to tell who won the election. *Social Choice and Welfare* 6(2):157–165, 1989.\n- E. Hemaspaandra, L. A. Hemaspaandra and J. Rothe. Exact analysis of Dodgson elections: Lewis Carroll's 1876 voting system is complete for parallel access to NP. *Journal of the ACM* 44(6):806–825, 1997.\n- K. W. Wagner. Bounded query classes. *SIAM Journal on Computing* 19(5):833–846, 1990.\n- N. Mattei and T. Walsh. PrefLib: a library for preferences. *ADT 2013*, LNCS 8176, 259–270. Data: dataset 00052 (Formula 1 seasons), https://www.preflib.org.\n",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The election is the instance (Instances tab). ballot(V,(A,B,...)): voter V ranks A first,\n% B second, and so on; count(V,N) (optional): N voters cast this ballot, as in PrefLib's\n% \"N: a,b,...\". Ballots of 3 to 12 candidates are read below; for more, give rank(V,P,X).\nrank(V,1,A;V,2,B;V,3,C) :- ballot(V,(A,B,C)).\nrank(V,1,A;V,2,B;V,3,C;V,4,D) :- ballot(V,(A,B,C,D)).\nrank(V,1,A;V,2,B;V,3,C;V,4,D;V,5,E) :- ballot(V,(A,B,C,D,E)).\nrank(V,1,A;V,2,B;V,3,C;V,4,D;V,5,E;V,6,F) :- ballot(V,(A,B,C,D,E,F)).\nrank(V,1,A;V,2,B;V,3,C;V,4,D;V,5,E;V,6,F;V,7,G) :- ballot(V,(A,B,C,D,E,F,G)).\nrank(V,1,A;V,2,B;V,3,C;V,4,D;V,5,E;V,6,F;V,7,G;V,8,H) :- ballot(V,(A,B,C,D,E,F,G,H)).\nrank(V,1,A;V,2,B;V,3,C;V,4,D;V,5,E;V,6,F;V,7,G;V,8,H;V,9,I) :- ballot(V,(A,B,C,D,E,F,G,H,I)).\nrank(V,1,A;V,2,B;V,3,C;V,4,D;V,5,E;V,6,F;V,7,G;V,8,H;V,9,I;V,10,J) :- ballot(V,(A,B,C,D,E,F,G,H,I,J)).\nrank(V,1,A;V,2,B;V,3,C;V,4,D;V,5,E;V,6,F;V,7,G;V,8,H;V,9,I;V,10,J;V,11,K) :- ballot(V,(A,B,C,D,E,F,G,H,I,J,K)).\nrank(V,1,A;V,2,B;V,3,C;V,4,D;V,5,E;V,6,F;V,7,G;V,8,H;V,9,I;V,10,J;V,11,K;V,12,L) :- ballot(V,(A,B,C,D,E,F,G,H,I,J,K,L)).\n% rank(V,P,X): voter V puts candidate X in place P.\ncand(X) :- rank(_,_,X).\n#defined count/2.\nvotes(V,N) :- rank(V,1,_), N = #max { 1; M : count(V,M) }.\n% n(X,Y,N): N voters prefer X to Y.\nn(X,Y,N) :- cand(X), cand(Y), X != Y, N = #sum { W,V : rank(V,I,X), rank(V,J,Y), I < J, votes(V,W) }.\n% edge(X,Y,M): a majority prefers X to Y, by a margin of M votes.\nedge(X,Y,N-K) :- n(X,Y,N), n(Y,X,K), N > K.\n% unit(V,K): the K-th of the voters who cast ballot V. prefers(V,X,Y): ballot V ranks X above Y.\nunit(V,K) :- votes(V,N), K = 1..N.\nprefers(V,X,Y) :- rank(V,I,X), rank(V,J,Y), I < J.\n",
+      "description": "The election: pairwise counts, the voters one by one. Added to every solver."
+    },
+    {
+      "name": "winner",
+      "text": "% A candidate: one winner. The loop asks the oracle C about it.\n1 { top(X) : cand(X) } 1.\n#show top/1.\n",
+      "description": "Solver A: proposes a winner."
+    },
+    {
+      "name": "glue_top",
+      "text": "% The winner: W(M) assumes it in C, W.block(M) rules it out in A.\nglue(top(X)) :- cand(X).\n",
+      "description": "Link W: the winner."
+    },
+    {
+      "name": "dodgson",
+      "text": "% The NP oracle: a target candidate and swaps that make it a Condorcet winner.\n1 { target(X) : cand(X) } 1.\n:- top(X), not target(X).                 % the winner the loop asks about (link W)\n% pass(V,K,D): the K-th voter with ballot V moves the target up past D, one swap of\n% neighbours each. It passes only candidates above the target, and all of those between.\n{ pass(V,K,D) : unit(V,K), cand(D) }.\n:- pass(V,K,D), target(X), not prefers(V,D,X).\n:- pass(V,K,D), target(X), prefers(V,D,E), prefers(V,E,X), not pass(V,K,E).\n% Voters with the same ballot are interchangeable: voter K passes D only if voter K-1 does.\n:- pass(V,K,D), K > 1, not pass(V,K-1,D).\n% The target beats every other candidate: each pass turns a vote against it into one for it.\n:- target(X), n(X,D,A), n(D,X,B), #sum { 2,V,K : pass(V,K,D) } <= B - A.\n#show target/1.\n#show pass/3.\n\n#program bound(b).\n% A query \"within b swaps\": the assumption within(b) bounds the number of swaps.\n{ within(b) }.\n:- within(b), #count { V,K,D : pass(V,K,D) } > b.\n",
+      "description": "Solver C, the NP oracle: swaps that make a candidate a Condorcet winner; bound(b) bounds their number."
+    },
+    {
+      "name": "score",
+      "text": "% The candidate's number of swaps in order encoding: atmost(S) holds for S at least that number.\nmaxswaps(U) :- U = #count { V,K,D : unit(V,K), cand(D) }.\natmost(S) :- maxswaps(U), S = 0..U, #count { V,K,D : pass(V,K,D) } <= S.\n",
+      "description": "Solver A of the variant exists-forall: the number of swaps, in order encoding."
+    },
+    {
+      "name": "fewer",
+      "text": "% A counterexample: some candidate (any target) made a Condorcet winner with fewer swaps\n% than the candidate's winner needs.\n:- atmost(S), #count { V,K,D : pass(V,K,D) } >= S.\n% It refutes every candidate that needs more swaps than it does: the clause says atmost(S),\n% with S its number of swaps.\nrelevant(atmost(S)) :- S = #count { V,K,D : pass(V,K,D) }.\n",
+      "description": "Solver C of the variant exists-forall: a candidate that needs fewer swaps."
+    },
+    {
+      "name": "glue_score",
+      "text": "% The check reads the candidate's number of swaps.\nmaxswaps(U) :- U = #count { V,K,D : unit(V,K), cand(D) }.\nglue(atmost(S)) :- maxswaps(U), S = 0..U.\n",
+      "description": "Link G of the variant exists-forall: the score."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + winner\nsolver C = shared + dodgson\nlink   W = A -> C via shared + glue_top\n\n# Theta-2 is P^NP[log]: polynomial time with logarithmically many NP queries, or equally with\n# one round of parallel queries (Wagner 1990); Dodgson winners are complete for it\n# (Hemaspaandra, Hemaspaandra and Rothe 1997). Here a binary\n# search for the best Dodgson score asks \"is some candidate within k swaps of being a\n# Condorcet winner?\", one NP query per step; each query grounds its bound (C.ground).\nX = C.solve()                      # some candidate and some swaps: an upper bound\nhi = X.count(pass/3)\nlo = -1                            # no candidate is within lo swaps\ngrounded = none                    # set to hi when a query has grounded the bound hi\nwhile hi - lo > 1:\n    k = (lo + hi) // 2\n    C.ground(bound, k)\n    count queries\n    Y = C.solve(assume C.atom(\"within\", k))\n    if Y:\n        hi = Y.count(pass/3)       # a witness within k swaps, perhaps fewer\n        if hi == k: grounded = k\n    else:\n        lo = k\n    track lower = lo + 1\n    track upper = hi\nbest = hi\nif grounded != best: C.ground(bound, best)\n# Then one NP query per candidate at the best score: A proposes each candidate once.\nlog \"best Dodgson score\", best\nM = A.solve()\nwhile M:\n    count queries\n    if C.solve(assume W(M), C.atom(\"within\", best)):\n        accept M\n    A.add(W.block(M))\n    M = A.solve()\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0,
+    "instance": "example"
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Eight voters, five candidates, no Condorcet winner: the majority prefers b to e, e to d and\n% d to b. The four rules of the Voting group pick four different sets of winners here.\nballot(1,(e,d,b,a,c)).  count(1,3).\nballot(2,(b,e,d,c,a)).\nballot(3,(a,d,b,e,c)).\nballot(4,(d,b,c,a,e)).\nballot(5,(a,b,e,c,d)).  count(5,2).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "paradox",
+      "facts": "% The Condorcet paradox: each candidate loses to another one two votes to one, so every\n% rule ties all three.\nballot(1,(a,b,c)).\nballot(2,(b,c,a)).\nballot(3,(c,a,b)).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": []
+    },
+    {
+      "id": "condorcet",
+      "facts": "% A Condorcet winner, b, which beats every other candidate head to head although a and c have\n% more first places. All four rules pick it alone.\nballot(1,(a,b,c,d)).  count(1,2).\nballot(2,(c,b,d,a)).  count(2,2).\nballot(3,(b,d,a,c)).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "eleven",
+      "facts": "% Eleven voters, five candidates. Kemeny picks e, Slater a, Dodgson c and e, Young d and e.\nballot(1,(a,c,b,d,e)).  count(1,2).\nballot(2,(e,d,a,b,c)).  count(2,2).\nballot(3,(c,a,b,d,e)).\nballot(4,(c,e,a,d,b)).  count(4,3).\nballot(5,(d,e,a,c,b)).  count(5,3).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "f1-1956",
+      "facts": "% PrefLib 00052-00000007, Formula 1 seasons: the 1956 season. The 7 races are the voters,\n% each ranking the 5 drivers of PrefLib's complete orders (induced from the race results).\nballot(1,(moss,collins,fangio,behra,castellotti)).  count(1,2).\nballot(2,(fangio,behra,moss,collins,castellotti)).\nballot(3,(collins,moss,behra,fangio,castellotti)).\nballot(4,(collins,castellotti,behra,fangio,moss)).\nballot(5,(fangio,behra,castellotti,moss,collins)).\nballot(6,(fangio,moss,behra,collins,castellotti)).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": []
+    },
+    {
+      "id": "f1-1964",
+      "facts": "% PrefLib 00052-00000015, Formula 1 seasons: the 1964 season. The 10 races are the voters,\n% each ranking the 9 drivers of PrefLib's complete orders (induced from the race results).\nballot(1,(hill,ginther,clark,siffert,bandini,gurney,jack_brabham,mclaren,surtees)).\nballot(2,(clark,surtees,hill,mclaren,ginther,siffert,jack_brabham,gurney,bandini)).\nballot(3,(clark,mclaren,jack_brabham,ginther,hill,gurney,siffert,bandini,surtees)).\nballot(4,(gurney,hill,jack_brabham,ginther,mclaren,bandini,clark,surtees,siffert)).\nballot(5,(clark,hill,surtees,jack_brabham,bandini,ginther,siffert,gurney,mclaren)).\nballot(6,(surtees,hill,bandini,siffert,ginther,gurney,jack_brabham,clark,mclaren)).\nballot(7,(bandini,ginther,jack_brabham,gurney,mclaren,clark,siffert,surtees,hill)).\nballot(8,(surtees,mclaren,bandini,ginther,siffert,gurney,jack_brabham,clark,hill)).\nballot(9,(hill,surtees,siffert,ginther,clark,gurney,bandini,mclaren,jack_brabham)).\nballot(10,(gurney,surtees,bandini,clark,mclaren,ginther,hill,jack_brabham,siffert)).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "slow",
+        "preflib"
+      ],
+      "audit": false
+    },
+    {
+      "id": "f1-1970",
+      "facts": "% PrefLib 00052-00000021, Formula 1 seasons: the 1970 season. The 13 races are the voters,\n% each ranking the 9 drivers of PrefLib's complete orders (induced from the race results).\nballot(1,(jack_brabham,stewart,beltoise,pescarolo,rodriguez,siffert,ickx,oliver,amon)).\nballot(2,(stewart,jack_brabham,pescarolo,beltoise,amon,rodriguez,ickx,oliver,siffert)).\nballot(3,(jack_brabham,pescarolo,rodriguez,siffert,amon,stewart,oliver,beltoise,ickx)).\nballot(4,(rodriguez,amon,beltoise,pescarolo,siffert,ickx,jack_brabham,stewart,oliver)).\nballot(5,(stewart,ickx,beltoise,pescarolo,rodriguez,jack_brabham,oliver,siffert,amon)).\nballot(6,(amon,jack_brabham,pescarolo,stewart,beltoise,siffert,ickx,rodriguez,oliver)).\nballot(7,(jack_brabham,amon,rodriguez,oliver,stewart,pescarolo,beltoise,siffert,ickx)).\nballot(8,(ickx,pescarolo,siffert,amon,stewart,rodriguez,oliver,jack_brabham,beltoise)).\nballot(9,(ickx,rodriguez,oliver,beltoise,amon,siffert,jack_brabham,pescarolo,stewart)).\nballot(10,(stewart,beltoise,amon,oliver,jack_brabham,ickx,pescarolo,rodriguez,siffert)).\nballot(11,(ickx,amon,rodriguez,pescarolo,beltoise,jack_brabham,oliver,stewart,siffert)).\nballot(12,(rodriguez,ickx,amon,pescarolo,siffert,jack_brabham,stewart,beltoise,oliver)).\nballot(13,(ickx,amon,beltoise,rodriguez,oliver,pescarolo,jack_brabham,stewart,siffert)).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "slow",
+        "preflib"
+      ],
+      "audit": false
+    },
+    {
+      "id": "f1-1978",
+      "facts": "% PrefLib 00052-00000029, Formula 1 seasons: the 1978 season. The 13 races are the voters,\n% each ranking the 20 drivers of PrefLib's complete orders (induced from the race results).\nrank(1,1,reutemann). rank(1,2,emerson_fittipaldi). rank(1,3,lauda). rank(1,4,mario_andretti). rank(1,5,regazzoni). rank(1,6,pironi). rank(1,7,watson). rank(1,8,laffite). rank(1,9,patrese). rank(1,10,jones). rank(1,11,rebaque). rank(1,12,gilles_villeneuve). rank(1,13,hunt). rank(1,14,stuck). rank(1,15,scheckter). rank(1,16,peterson). rank(1,17,lunger). rank(1,18,depailler). rank(1,19,merzario). rank(1,20,brambilla).\nrank(2,1,peterson). rank(2,2,depailler). rank(2,3,watson). rank(2,4,jones). rank(2,5,laffite). rank(2,6,pironi). rank(2,7,mario_andretti). rank(2,8,rebaque). rank(2,9,lunger). rank(2,10,brambilla). rank(2,11,patrese). rank(2,12,scheckter). rank(2,13,gilles_villeneuve). rank(2,14,reutemann). rank(2,15,lauda). rank(2,16,merzario). rank(2,17,emerson_fittipaldi). rank(2,18,hunt). rank(2,19,regazzoni). rank(2,20,stuck).\nrank(3,1,reutemann). rank(3,2,mario_andretti). rank(3,3,depailler). rank(3,4,peterson). rank(3,5,laffite). rank(3,6,patrese). rank(3,7,jones). rank(3,8,emerson_fittipaldi). rank(3,9,regazzoni). rank(3,10,scheckter). rank(3,11,brambilla). rank(3,12,gilles_villeneuve). rank(3,13,lauda). rank(3,14,pironi). rank(3,15,merzario). rank(3,16,watson). rank(3,17,hunt). rank(3,18,stuck). rank(3,19,lunger). rank(3,20,rebaque).\nrank(4,1,depailler). rank(4,2,lauda). rank(4,3,scheckter). rank(4,4,watson). rank(4,5,pironi). rank(4,6,patrese). rank(4,7,reutemann). rank(4,8,emerson_fittipaldi). rank(4,9,mario_andretti). rank(4,10,gilles_villeneuve). rank(4,11,peterson). rank(4,12,hunt). rank(4,13,jones). rank(4,14,stuck). rank(4,15,laffite). rank(4,16,regazzoni). rank(4,17,brambilla). rank(4,18,rebaque). rank(4,19,lunger). rank(4,20,merzario).\nrank(5,1,mario_andretti). rank(5,2,peterson). rank(5,3,reutemann). rank(5,4,gilles_villeneuve). rank(5,5,laffite). rank(5,6,pironi). rank(5,7,lunger). rank(5,8,jones). rank(5,9,brambilla). rank(5,10,stuck). rank(5,11,scheckter). rank(5,12,depailler). rank(5,13,regazzoni). rank(5,14,patrese). rank(5,15,watson). rank(5,16,lauda). rank(5,17,hunt). rank(5,18,emerson_fittipaldi). rank(5,19,rebaque). rank(5,20,merzario).\nrank(6,1,mario_andretti). rank(6,2,peterson). rank(6,3,laffite). rank(6,4,scheckter). rank(6,5,watson). rank(6,6,hunt). rank(6,7,brambilla). rank(6,8,jones). rank(6,9,gilles_villeneuve). rank(6,10,pironi). rank(6,11,regazzoni). rank(6,12,emerson_fittipaldi). rank(6,13,reutemann). rank(6,14,lauda). rank(6,15,depailler). rank(6,16,stuck). rank(6,17,patrese). rank(6,18,rebaque). rank(6,19,merzario). rank(6,20,lunger).\nrank(7,1,lauda). rank(7,2,patrese). rank(7,3,peterson). rank(7,4,regazzoni). rank(7,5,emerson_fittipaldi). rank(7,6,laffite). rank(7,7,hunt). rank(7,8,gilles_villeneuve). rank(7,9,reutemann). rank(7,10,stuck). rank(7,11,rebaque). rank(7,12,merzario). rank(7,13,mario_andretti). rank(7,14,jones). rank(7,15,depailler). rank(7,16,watson). rank(7,17,scheckter). rank(7,18,pironi). rank(7,19,brambilla). rank(7,20,lunger).\nrank(8,1,mario_andretti). rank(8,2,peterson). rank(8,3,hunt). rank(8,4,watson). rank(8,5,jones). rank(8,6,scheckter). rank(8,7,laffite). rank(8,8,patrese). rank(8,9,pironi). rank(8,10,stuck). rank(8,11,gilles_villeneuve). rank(8,12,brambilla). rank(8,13,reutemann). rank(8,14,lunger). rank(8,15,emerson_fittipaldi). rank(8,16,lauda). rank(8,17,depailler). rank(8,18,regazzoni). rank(8,19,merzario). rank(8,20,rebaque).\nrank(9,1,reutemann). rank(9,2,lauda). rank(9,3,watson). rank(9,4,depailler). rank(9,5,stuck). rank(9,6,lunger). rank(9,7,brambilla). rank(9,8,laffite). rank(9,9,regazzoni). rank(9,10,patrese). rank(9,11,pironi). rank(9,12,scheckter). rank(9,13,emerson_fittipaldi). rank(9,14,merzario). rank(9,15,mario_andretti). rank(9,16,jones). rank(9,17,gilles_villeneuve). rank(9,18,rebaque). rank(9,19,hunt). rank(9,20,peterson).\nrank(10,1,mario_andretti). rank(10,2,scheckter). rank(10,3,laffite). rank(10,4,emerson_fittipaldi). rank(10,5,pironi). rank(10,6,rebaque). rank(10,7,watson). rank(10,8,gilles_villeneuve). rank(10,9,patrese). rank(10,10,peterson). rank(10,11,hunt). rank(10,12,jones). rank(10,13,brambilla). rank(10,14,reutemann). rank(10,15,lauda). rank(10,16,stuck). rank(10,17,depailler). rank(10,18,regazzoni). rank(10,19,merzario). rank(10,20,lunger).\nrank(11,1,peterson). rank(11,2,depailler). rank(11,3,gilles_villeneuve). rank(11,4,emerson_fittipaldi). rank(11,5,laffite). rank(11,6,brambilla). rank(11,7,watson). rank(11,8,lunger). rank(11,9,regazzoni). rank(11,10,stuck). rank(11,11,reutemann). rank(11,12,lauda). rank(11,13,pironi). rank(11,14,hunt). rank(11,15,jones). rank(11,16,patrese). rank(11,17,rebaque). rank(11,18,scheckter). rank(11,19,mario_andretti). rank(11,20,merzario).\nrank(12,1,mario_andretti). rank(12,2,peterson). rank(12,3,lauda). rank(12,4,watson). rank(12,5,emerson_fittipaldi). rank(12,6,gilles_villeneuve). rank(12,7,reutemann). rank(12,8,laffite). rank(12,9,hunt). rank(12,10,rebaque). rank(12,11,scheckter). rank(12,12,stuck). rank(12,13,merzario). rank(12,14,brambilla). rank(12,15,lunger). rank(12,16,jones). rank(12,17,depailler). rank(12,18,patrese). rank(12,19,pironi). rank(12,20,regazzoni).\nrank(13,1,lauda). rank(13,2,watson). rank(13,3,reutemann). rank(13,4,laffite). rank(13,5,mario_andretti). rank(13,6,gilles_villeneuve). rank(13,7,emerson_fittipaldi). rank(13,8,depailler). rank(13,9,scheckter). rank(13,10,jones). rank(13,11,regazzoni). rank(13,12,patrese). rank(13,13,hunt). rank(13,14,merzario). rank(13,15,peterson). rank(13,16,pironi). rank(13,17,stuck). rank(13,18,lunger). rank(13,19,brambilla). rank(13,20,rebaque).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "slow",
+        "preflib"
+      ],
+      "audit": false
+    },
+    {
+      "id": "f1-1993",
+      "facts": "% PrefLib 00052-00000044, Formula 1 seasons: the 1993 season. The 13 races are the voters,\n% each ranking the 23 drivers of PrefLib's complete orders (induced from the race results).\nrank(1,1,prost). rank(1,2,senna). rank(1,3,blundell). rank(1,4,fittipaldi). rank(1,5,lehto). rank(1,6,berger). rank(1,7,warwick). rank(1,8,brundle). rank(1,9,alboreto). rank(1,10,comas). rank(1,11,patrese). rank(1,12,michael_schumacher). rank(1,13,herbert). rank(1,14,wendlinger). rank(1,15,barrichello). rank(1,16,alesi). rank(1,17,alliot). rank(1,18,suzuki). rank(1,19,badoer). rank(1,20,damon_hill). rank(1,21,andretti). rank(1,22,katayama). rank(1,23,cesaris).\nrank(2,1,senna). rank(2,2,damon_hill). rank(2,3,michael_schumacher). rank(2,4,herbert). rank(2,5,blundell). rank(2,6,alliot). rank(2,7,alesi). rank(2,8,warwick). rank(2,9,comas). rank(2,10,alboreto). rank(2,11,badoer). rank(2,12,wendlinger). rank(2,13,lehto). rank(2,14,cesaris). rank(2,15,prost). rank(2,16,fittipaldi). rank(2,17,suzuki). rank(2,18,katayama). rank(2,19,barrichello). rank(2,20,patrese). rank(2,21,andretti). rank(2,22,berger). rank(2,23,brundle).\nrank(3,1,senna). rank(3,2,damon_hill). rank(3,3,prost). rank(3,4,herbert). rank(3,5,patrese). rank(3,6,fittipaldi). rank(3,7,comas). rank(3,8,barrichello). rank(3,9,alboreto). rank(3,10,warwick). rank(3,11,cesaris). rank(3,12,alesi). rank(3,13,suzuki). rank(3,14,alliot). rank(3,15,michael_schumacher). rank(3,16,blundell). rank(3,17,berger). rank(3,18,lehto). rank(3,19,katayama). rank(3,20,brundle). rank(3,21,wendlinger). rank(3,22,andretti). rank(3,23,badoer).\nrank(4,1,prost). rank(4,2,michael_schumacher). rank(4,3,brundle). rank(4,4,lehto). rank(4,5,alliot). rank(4,6,badoer). rank(4,7,herbert). rank(4,8,suzuki). rank(4,9,wendlinger). rank(4,10,senna). rank(4,11,alesi). rank(4,12,fittipaldi). rank(4,13,andretti). rank(4,14,warwick). rank(4,15,katayama). rank(4,16,damon_hill). rank(4,17,comas). rank(4,18,cesaris). rank(4,19,barrichello). rank(4,20,berger). rank(4,21,blundell). rank(4,22,patrese). rank(4,23,alboreto).\nrank(5,1,prost). rank(5,2,senna). rank(5,3,michael_schumacher). rank(5,4,patrese). rank(5,5,andretti). rank(5,6,berger). rank(5,7,blundell). rank(5,8,fittipaldi). rank(5,9,comas). rank(5,10,suzuki). rank(5,11,barrichello). rank(5,12,warwick). rank(5,13,lehto). rank(5,14,badoer). rank(5,15,wendlinger). rank(5,16,cesaris). rank(5,17,damon_hill). rank(5,18,alesi). rank(5,19,alliot). rank(5,20,brundle). rank(5,21,katayama). rank(5,22,herbert). rank(5,23,alboreto).\nrank(6,1,senna). rank(6,2,damon_hill). rank(6,3,alesi). rank(6,4,prost). rank(6,5,fittipaldi). rank(6,6,brundle). rank(6,7,andretti). rank(6,8,barrichello). rank(6,9,cesaris). rank(6,10,alliot). rank(6,11,wendlinger). rank(6,12,berger). rank(6,13,herbert). rank(6,14,patrese). rank(6,15,comas). rank(6,16,suzuki). rank(6,17,warwick). rank(6,18,michael_schumacher). rank(6,19,katayama). rank(6,20,alboreto). rank(6,21,lehto). rank(6,22,blundell). rank(6,23,badoer).\nrank(7,1,prost). rank(7,2,michael_schumacher). rank(7,3,damon_hill). rank(7,4,berger). rank(7,5,brundle). rank(7,6,wendlinger). rank(7,7,lehto). rank(7,8,comas). rank(7,9,fittipaldi). rank(7,10,herbert). rank(7,11,suzuki). rank(7,12,andretti). rank(7,13,badoer). rank(7,14,warwick). rank(7,15,katayama). rank(7,16,senna). rank(7,17,patrese). rank(7,18,cesaris). rank(7,19,alesi). rank(7,20,blundell). rank(7,21,barrichello). rank(7,22,alliot). rank(7,23,alboreto).\nrank(8,1,prost). rank(8,2,damon_hill). rank(8,3,michael_schumacher). rank(8,4,senna). rank(8,5,brundle). rank(8,6,andretti). rank(8,7,barrichello). rank(8,8,fittipaldi). rank(8,9,alliot). rank(8,10,patrese). rank(8,11,suzuki). rank(8,12,warwick). rank(8,13,berger). rank(8,14,cesaris). rank(8,15,comas). rank(8,16,alesi). rank(8,17,badoer). rank(8,18,wendlinger). rank(8,19,lehto). rank(8,20,blundell). rank(8,21,herbert). rank(8,22,katayama). rank(8,23,alboreto).\nrank(9,1,prost). rank(9,2,michael_schumacher). rank(9,3,patrese). rank(9,4,herbert). rank(9,5,senna). rank(9,6,warwick). rank(9,7,blundell). rank(9,8,lehto). rank(9,9,alesi). rank(9,10,barrichello). rank(9,11,alliot). rank(9,12,fittipaldi). rank(9,13,katayama). rank(9,14,brundle). rank(9,15,cesaris). rank(9,16,damon_hill). rank(9,17,badoer). rank(9,18,wendlinger). rank(9,19,berger). rank(9,20,suzuki). rank(9,21,andretti). rank(9,22,comas). rank(9,23,alboreto).\nrank(10,1,prost). rank(10,2,michael_schumacher). rank(10,3,blundell). rank(10,4,senna). rank(10,5,patrese). rank(10,6,berger). rank(10,7,alesi). rank(10,8,brundle). rank(10,9,wendlinger). rank(10,10,herbert). rank(10,11,fittipaldi). rank(10,12,alliot). rank(10,13,damon_hill). rank(10,14,alboreto). rank(10,15,warwick). rank(10,16,barrichello). rank(10,17,katayama). rank(10,18,lehto). rank(10,19,suzuki). rank(10,20,andretti). rank(10,21,badoer). rank(10,22,cesaris). rank(10,23,comas).\nrank(11,1,damon_hill). rank(11,2,patrese). rank(11,3,berger). rank(11,4,warwick). rank(11,5,brundle). rank(11,6,wendlinger). rank(11,7,blundell). rank(11,8,alliot). rank(11,9,katayama). rank(11,10,cesaris). rank(11,11,prost). rank(11,12,comas). rank(11,13,suzuki). rank(11,14,alboreto). rank(11,15,herbert). rank(11,16,badoer). rank(11,17,michael_schumacher). rank(11,18,fittipaldi). rank(11,19,alesi). rank(11,20,lehto). rank(11,21,senna). rank(11,22,andretti). rank(11,23,barrichello).\nrank(12,1,damon_hill). rank(12,2,michael_schumacher). rank(12,3,prost). rank(12,4,senna). rank(12,5,herbert). rank(12,6,patrese). rank(12,7,brundle). rank(12,8,andretti). rank(12,9,lehto). rank(12,10,berger). rank(12,11,blundell). rank(12,12,alliot). rank(12,13,badoer). rank(12,14,alboreto). rank(12,15,katayama). rank(12,16,comas). rank(12,17,warwick). rank(12,18,wendlinger). rank(12,19,cesaris). rank(12,20,fittipaldi). rank(12,21,suzuki). rank(12,22,barrichello). rank(12,23,alesi).\nrank(13,1,damon_hill). rank(13,2,alesi). rank(13,3,andretti). rank(13,4,wendlinger). rank(13,5,patrese). rank(13,6,comas). rank(13,7,fittipaldi). rank(13,8,alliot). rank(13,9,badoer). rank(13,10,prost). rank(13,11,cesaris). rank(13,12,katayama). rank(13,13,alboreto). rank(13,14,michael_schumacher). rank(13,15,blundell). rank(13,16,berger). rank(13,17,herbert). rank(13,18,brundle). rank(13,19,senna). rank(13,20,suzuki). rank(13,21,warwick). rank(13,22,lehto). rank(13,23,barrichello).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "slow",
+        "preflib"
+      ],
+      "audit": false
+    },
+    {
+      "id": "f1-1991",
+      "facts": "% PrefLib 00052-00000042, Formula 1 seasons: the 1991 season. The 11 races are the voters,\n% each ranking the 31 drivers of PrefLib's complete orders (induced from the race results).\nrank(1,1,senna). rank(1,2,berger). rank(1,3,lehto). rank(1,4,martini). rank(1,5,hakkinen). rank(1,6,boutsen). rank(1,7,blundell). rank(1,8,poele). rank(1,9,comas). rank(1,10,brundle). rank(1,11,gugelmin). rank(1,12,moreno). rank(1,13,modena). rank(1,14,cesaris). rank(1,15,capelli). rank(1,16,bernard). rank(1,17,patrese). rank(1,18,satoru_nakajima). rank(1,19,morbidelli). rank(1,20,alesi). rank(1,21,suzuki). rank(1,22,piquet). rank(1,23,mansell). rank(1,24,prost). rank(1,25,tarquini). rank(1,26,barbazza). rank(1,27,alboreto). rank(1,28,pirro). rank(1,29,grouillard). rank(1,30,larini). rank(1,31,chaves).\nrank(2,1,senna). rank(2,2,mansell). rank(2,3,alesi). rank(2,4,moreno). rank(2,5,prost). rank(2,6,pirro). rank(2,7,boutsen). rank(2,8,bernard). rank(2,9,comas). rank(2,10,lehto). rank(2,11,martini). rank(2,12,hakkinen). rank(2,13,morbidelli). rank(2,14,gugelmin). rank(2,15,modena). rank(2,16,patrese). rank(2,17,blundell). rank(2,18,alboreto). rank(2,19,satoru_nakajima). rank(2,20,suzuki). rank(2,21,cesaris). rank(2,22,capelli). rank(2,23,tarquini). rank(2,24,berger). rank(2,25,piquet). rank(2,26,barbazza). rank(2,27,brundle). rank(2,28,larini). rank(2,29,poele). rank(2,30,chaves). rank(2,31,grouillard).\nrank(3,1,piquet). rank(3,2,modena). rank(3,3,patrese). rank(3,4,cesaris). rank(3,5,mansell). rank(3,6,martini). rank(3,7,comas). rank(3,8,pirro). rank(3,9,satoru_nakajima). rank(3,10,gugelmin). rank(3,11,lehto). rank(3,12,capelli). rank(3,13,alesi). rank(3,14,bernard). rank(3,15,prost). rank(3,16,boutsen). rank(3,17,senna). rank(3,18,hakkinen). rank(3,19,brundle). rank(3,20,morbidelli). rank(3,21,moreno). rank(3,22,berger). rank(3,23,suzuki). rank(3,24,alboreto). rank(3,25,barbazza). rank(3,26,tarquini). rank(3,27,blundell). rank(3,28,grouillard). rank(3,29,larini). rank(3,30,poele). rank(3,31,chaves).\nrank(4,1,patrese). rank(4,2,mansell). rank(4,3,senna). rank(4,4,cesaris). rank(4,5,moreno). rank(4,6,bernard). rank(4,7,morbidelli). rank(4,8,boutsen). rank(4,9,hakkinen). rank(4,10,modena). rank(4,11,satoru_nakajima). rank(4,12,blundell). rank(4,13,suzuki). rank(4,14,piquet). rank(4,15,alesi). rank(4,16,lehto). rank(4,17,alboreto). rank(4,18,brundle). rank(4,19,capelli). rank(4,20,prost). rank(4,21,gugelmin). rank(4,22,grouillard). rank(4,23,berger). rank(4,24,martini). rank(4,25,comas). rank(4,26,tarquini). rank(4,27,barbazza). rank(4,28,larini). rank(4,29,poele). rank(4,30,chaves). rank(4,31,pirro).\nrank(5,1,mansell). rank(5,2,prost). rank(5,3,senna). rank(5,4,alesi). rank(5,5,patrese). rank(5,6,cesaris). rank(5,7,gugelmin). rank(5,8,piquet). rank(5,9,martini). rank(5,10,comas). rank(5,11,boutsen). rank(5,12,moreno). rank(5,13,modena). rank(5,14,grouillard). rank(5,15,bernard). rank(5,16,lehto). rank(5,17,blundell). rank(5,18,suzuki). rank(5,19,alboreto). rank(5,20,brundle). rank(5,21,satoru_nakajima). rank(5,22,morbidelli). rank(5,23,capelli). rank(5,24,berger). rank(5,25,hakkinen). rank(5,26,barbazza). rank(5,27,tarquini). rank(5,28,pirro). rank(5,29,larini). rank(5,30,poele). rank(5,31,chaves).\nrank(6,1,mansell). rank(6,2,berger). rank(6,3,prost). rank(6,4,senna). rank(6,5,piquet). rank(6,6,modena). rank(6,7,satoru_nakajima). rank(6,8,martini). rank(6,9,pirro). rank(6,10,morbidelli). rank(6,11,hakkinen). rank(6,12,lehto). rank(6,13,blundell). rank(6,14,cesaris). rank(6,15,alesi). rank(6,16,suzuki). rank(6,17,boutsen). rank(6,18,brundle). rank(6,19,alboreto). rank(6,20,gugelmin). rank(6,21,moreno). rank(6,22,bernard). rank(6,23,capelli). rank(6,24,patrese). rank(6,25,comas). rank(6,26,barbazza). rank(6,27,tarquini). rank(6,28,grouillard). rank(6,29,larini). rank(6,30,poele). rank(6,31,chaves).\nrank(7,1,mansell). rank(7,2,patrese). rank(7,3,alesi). rank(7,4,berger). rank(7,5,cesaris). rank(7,6,senna). rank(7,7,moreno). rank(7,8,boutsen). rank(7,9,pirro). rank(7,10,brundle). rank(7,11,blundell). rank(7,12,modena). rank(7,13,prost). rank(7,14,capelli). rank(7,15,lehto). rank(7,16,piquet). rank(7,17,satoru_nakajima). rank(7,18,comas). rank(7,19,gugelmin). rank(7,20,hakkinen). rank(7,21,suzuki). rank(7,22,morbidelli). rank(7,23,martini). rank(7,24,bernard). rank(7,25,larini). rank(7,26,alboreto). rank(7,27,tarquini). rank(7,28,poele). rank(7,29,grouillard). rank(7,30,barbazza). rank(7,31,chaves).\nrank(8,1,senna). rank(8,2,mansell). rank(8,3,patrese). rank(8,4,berger). rank(8,5,alesi). rank(8,6,capelli). rank(8,7,cesaris). rank(8,8,moreno). rank(8,9,comas). rank(8,10,gugelmin). rank(8,11,modena). rank(8,12,morbidelli). rank(8,13,hakkinen). rank(8,14,satoru_nakajima). rank(8,15,larini). rank(8,16,boutsen). rank(8,17,martini). rank(8,18,blundell). rank(8,19,brundle). rank(8,20,lehto). rank(8,21,piquet). rank(8,22,bernard). rank(8,23,suzuki). rank(8,24,pirro). rank(8,25,prost). rank(8,26,grouillard). rank(8,27,alboreto). rank(8,28,poele). rank(8,29,tarquini). rank(8,30,barbazza). rank(8,31,chaves).\nrank(9,1,senna). rank(9,2,berger). rank(9,3,piquet). rank(9,4,moreno). rank(9,5,patrese). rank(9,6,blundell). rank(9,7,pirro). rank(9,8,brundle). rank(9,9,grouillard). rank(9,10,boutsen). rank(9,11,martini). rank(9,12,cesaris). rank(9,13,modena). rank(9,14,lehto). rank(9,15,alesi). rank(9,16,morbidelli). rank(9,17,hakkinen). rank(9,18,comas). rank(9,19,mansell). rank(9,20,bernard). rank(9,21,capelli). rank(9,22,satoru_nakajima). rank(9,23,prost). rank(9,24,gugelmin). rank(9,25,suzuki). rank(9,26,larini). rank(9,27,poele). rank(9,28,alboreto). rank(9,29,tarquini). rank(9,30,chaves). rank(9,31,barbazza).\nrank(10,1,mansell). rank(10,2,senna). rank(10,3,prost). rank(10,4,berger). rank(10,5,piquet). rank(10,6,cesaris). rank(10,7,capelli). rank(10,8,morbidelli). rank(10,9,pirro). rank(10,10,comas). rank(10,11,blundell). rank(10,12,brundle). rank(10,13,hakkinen). rank(10,14,gugelmin). rank(10,15,larini). rank(10,16,grouillard). rank(10,17,lehto). rank(10,18,modena). rank(10,19,alesi). rank(10,20,patrese). rank(10,21,satoru_nakajima). rank(10,22,bernard). rank(10,23,martini). rank(10,24,moreno). rank(10,25,boutsen). rank(10,26,alboreto). rank(10,27,poele). rank(10,28,suzuki). rank(10,29,barbazza). rank(10,30,tarquini). rank(10,31,chaves).\nrank(11,1,patrese). rank(11,2,senna). rank(11,3,alesi). rank(11,4,martini). rank(11,5,piquet). rank(11,6,gugelmin). rank(11,7,cesaris). rank(11,8,morbidelli). rank(11,9,moreno). rank(11,10,comas). rank(11,11,brundle). rank(11,12,satoru_nakajima). rank(11,13,hakkinen). rank(11,14,alboreto). rank(11,15,boutsen). rank(11,16,capelli). rank(11,17,modena). rank(11,18,mansell). rank(11,19,suzuki). rank(11,20,prost). rank(11,21,berger). rank(11,22,pirro). rank(11,23,lehto). rank(11,24,blundell). rank(11,25,bernard). rank(11,26,tarquini). rank(11,27,larini). rank(11,28,poele). rank(11,29,barbazza). rank(11,30,grouillard). rank(11,31,chaves).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "slow",
+        "preflib"
+      ],
+      "audit": false
+    },
+    {
+      "id": "cyclic",
+      "facts": "% A Latin square of rankings: the five cyclic shifts of a, b, c, d, e, cast by 9 to 15 voters\n% each, and four more voters. 65 voters and no Condorcet winner; a large Dodgson score.\nballot(1,(a,b,c,d,e)).  count(1,11).\nballot(2,(b,c,d,e,a)).  count(2,12).\nballot(3,(c,d,e,a,b)).  count(3,9).\nballot(4,(d,e,a,b,c)).  count(4,14).\nballot(5,(e,a,b,c,d)).  count(5,15).\nballot(6,(a,e,d,b,c)).\nballot(7,(b,c,e,a,d)).\nballot(8,(b,a,c,e,d)).  count(8,2).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "slow"
+      ],
+      "audit": false
+    },
+    {
+      "id": "random-1",
+      "constants": {},
+      "recipe": {
+        "generator": "election-mallows",
+        "params": {
+          "m": 6,
+          "v": 9,
+          "phi": 900
+        },
+        "seed": 1
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "generated"
+      ]
+    },
+    {
+      "id": "random-2",
+      "constants": {},
+      "recipe": {
+        "generator": "election-latin",
+        "params": {
+          "m": 5,
+          "lo": 2,
+          "hi": 6
+        },
+        "seed": 1
+      },
+      "expected": {
+        "solutions": 1
+      },
+      "tags": [
+        "generated"
+      ]
+    }
+  ],
+  "generators": [
+    {
+      "name": "election-mallows",
+      "description": "v voters over the first m of the candidates a..j, each ranking them by a Mallows model around a, b, c, ... with dispersion phi/1000 (1000 = impartial culture).",
+      "params": {
+        "m": "int",
+        "v": "int",
+        "phi": "permille"
+      },
+      "defaults": {
+        "m": 6,
+        "v": 9,
+        "phi": 800
+      },
+      "text": "% election-mallows: v voters over the candidates a, b, c, ... (the first m, at most 10); voter V\n% puts candidate I in place @mallows(m, phi, I, V) of a Mallows ranking around a, b, c, ...\n% (dispersion phi/1000: 0 = everyone agrees, 1000 = impartial culture).\nname(1,a;2,b;3,c;4,d;5,e;6,f;7,g;8,h;9,i;10,j).\nvoter(1..v).\nrank(V,@mallows(m,phi,I,V),X) :- voter(V), name(I,X), I <= m.\n#show rank/3.\n"
+    },
+    {
+      "name": "election-latin",
+      "description": "A Latin square: the m cyclic shifts of the ranking a, b, c, ..., each cast by lo to hi voters. No Condorcet winner unless the counts are lopsided; large Dodgson and Young scores.",
+      "params": {
+        "m": "int",
+        "lo": "int",
+        "hi": "int"
+      },
+      "defaults": {
+        "m": 5,
+        "lo": 3,
+        "hi": 9
+      },
+      "text": "% election-latin: the m cyclic shifts of the ranking a, b, c, ... (m at most 10), shift S cast\n% by @int(lo, hi, S) voters. Every candidate is in every place once, so the counts decide.\nname(1,a;2,b;3,c;4,d;5,e;6,f;7,g;8,h;9,i;10,j).\nshift(0..m-1).\nrank(S+1,P,X) :- shift(S), P = 1..m, name(I,X), I = (P - 1 + S) \\ m + 1.\ncount(S+1,@int(lo,hi,S)) :- shift(S).\n#show rank/3.\n#show count/2.\n"
+    }
+  ],
+  "variants": [
+    {
+      "name": "linear-up",
+      "swap": {},
+      "constants": {},
+      "note": "UNSAT-SAT: k = 0, 1, 2, ... until a query is satisfiable: as many queries as the score.",
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + winner\nsolver C = shared + dodgson\nlink   W = A -> C via shared + glue_top\n\n# UNSAT-SAT: ask for k = 0, 1, 2, ... swaps until some candidate makes it. Every query but\n# the last is unsatisfiable: a lower bound that climbs one swap at a time.\nk = 0\nloop:\n    C.ground(bound, k)\n    count queries\n    track lower = k\n    if C.solve(assume C.atom(\"within\", k)): break\n    k = k + 1\nbest = k\n# Then one NP query per candidate at the best score: A proposes each candidate once.\nlog \"best Dodgson score\", best\nM = A.solve()\nwhile M:\n    count queries\n    if C.solve(assume W(M), C.atom(\"within\", best)):\n        accept M\n    A.add(W.block(M))\n    M = A.solve()\n"
+      }
+    },
+    {
+      "name": "linear-down",
+      "swap": {},
+      "constants": {},
+      "note": "SAT-UNSAT: each witness is an upper bound; ask for one swap fewer until no candidate makes it.",
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + winner\nsolver C = shared + dodgson\nlink   W = A -> C via shared + glue_top\n\n# SAT-UNSAT: each witness gives an upper bound; ask for one swap fewer until no candidate\n# makes it. Every query but the last is satisfiable.\nX = C.solve()\nbest = X.count(pass/3)\ngrounded = none\nloop:\n    track upper = best\n    if best == 0: break\n    k = best - 1\n    C.ground(bound, k)\n    count queries\n    Y = C.solve(assume C.atom(\"within\", k))\n    if not Y: break\n    best = Y.count(pass/3)\n    if best == k: grounded = k\nif grounded != best: C.ground(bound, best)\n# Then one NP query per candidate at the best score: A proposes each candidate once.\nlog \"best Dodgson score\", best\nM = A.solve()\nwhile M:\n    count queries\n    if C.solve(assume W(M), C.atom(\"within\", best)):\n        accept M\n    A.add(W.block(M))\n    M = A.solve()\n"
+      }
+    },
+    {
+      "name": "exists-forall",
+      "swap": {},
+      "constants": {},
+      "note": "The Sigma-2 template: a winner with its swaps against a candidate with fewer; one-literal clauses atmost(S) from relevant/1.",
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + winner + dodgson + score\nsolver C = shared + dodgson + fewer\nlink   G = A -> C via shared + glue_score\nlink   W = A -> C via shared + glue_top\n\n# The Sigma-2 template on a Theta-2 problem: A proposes a winner with swaps that make it a\n# Condorcet winner; C looks for any candidate that needs fewer swaps. The clause from\n# relevant/1 is one literal, atmost(S): a bound on the score, valid for every winner.\nloop:\n    M = A.solve()\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))        # from now on: at most S swaps\n    else:\n        accept M\n        A.add(W.block(M))            # a winner: look for the next one\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "loops",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "linear-up",
+        "linear-down",
+        "exists-forall"
+      ],
+      "limits": {
+        "seconds": 60
+      }
+    },
+    {
+      "name": "mallows",
+      "instances": {
+        "generator": "election-mallows",
+        "grid": {
+          "m": [
+            6,
+            8,
+            10
+          ],
+          "v": [
+            9,
+            15
+          ],
+          "phi": [
+            900
+          ]
+        },
+        "seeds": 3
+      },
+      "variants": [
+        "default",
+        "linear-up",
+        "linear-down",
+        "exists-forall"
+      ],
+      "limits": {
+        "seconds": 60
+      }
+    }
+  ],
+  "library": {
+    "id": "dodgson-winners",
+    "group": "voting",
+    "summary": "Dodgson winners the Theta-2 way: a binary search over the score with one NP query per step, then one query per candidate (8 voters, 1 winner); variants with linear search and the exists-forall template.",
+    "shape": "custom",
+    "tags": [
+      "fast",
+      "bounds",
+      "preflib"
+    ],
+    "expected": 1,
+    "level": 4,
+    "after": 11
+  }
+}

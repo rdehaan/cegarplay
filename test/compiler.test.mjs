@@ -159,12 +159,12 @@ while n < 10:
     total = total + n
 count steps by total - 1
 count calls
-log "list", l.size, l, -n, (1 + 2) * 3, 7 / 2, n != 4, none == none
+log "list", l.size, l, -n, (1 + 2) * 3, 7 / 2, 7 // 2, -7 // 2, 2 * 9 // 4 + 1, n != 4, none == none
 stop "done"
 `;
   const r = await H.runProject(proj(H.GC6(), src));
   assert.equal(H.last(r, 'E'), undefined, JSON.stringify(H.last(r, 'E')));
-  assert.equal(H.last(r, 'L').text, 'list 6 [2, 4, 8, 10, 12, 14] -8 9 3.5 true true');
+  assert.equal(H.last(r, 'L').text, 'list 6 [2, 4, 8, 10, 12, 14] -8 9 3.5 3 -4 5 true true');
   assert.deepEqual(H.finalStats(r).counters, { steps: 24, calls: 1 });
   assert.deepEqual(H.done(r), { outcome: 'stopped', exhausted: false, detail: 'done' });
 });

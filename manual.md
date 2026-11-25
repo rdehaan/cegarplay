@@ -168,7 +168,7 @@ The **Instances** tab (tab 9) lists the instances with their tags, expected coun
 their last run; it edits facts, constants, expected count and tags; **Import file** reads facts
 (`.lp`), DIMACS graphs (`.col`: `node/1`, `edge/2`), QDIMACS (`qblock/2`, `qvar/2`, `clause/1`,
 `qlit/3`), ASPARTIX (`.apx`: `arg/1`, `att/2`), Trivial Graph Format (`.tgf`: `arg/1`, `att/2`),
-PrefLib strict orders (`.soc`, `.soi`: `ballot/2` as `kemeny-control` writes them) and jaggpy
+PrefLib strict orders (`.soc`, `.soi`: `ballot/2` as `kemeny-control` and the `*-winners` examples of the Voting group read them) and jaggpy
 scenarios (`.jagg`: `var/1`, `cl/1`, `pos/2`, `neg/2`) and CSV (`.csv`, `.tsv`: a header line, then
 `row(I, V1, ..., Vn)` per record, or the facts of a **column map** such as `edge(from,to); w(from,to,cost)`
 over the header's names or column numbers). Several files can be chosen at once (one instance each; a
@@ -384,7 +384,8 @@ anything else is used as it is; the instance's own constants win. An instance st
 fixed instance. Mined instances are added as fixed instances too. `tools/draw.py` is the Python twin used by `tools/cegarcheck.py --instance`; both
 give byte-identical facts. Library generators: `gnp`, `gnm` (`clique-colouring`, `arrowing`,
 `choosability`), `af-gnp` (`af-preferred`, `af-semi-stable`), `qbf-dnf` (`qbf`), `ballots-ic` and
-`ballots-mallows` (`kemeny-control`).
+`ballots-mallows` (`kemeny-control`), `election-mallows` and `election-latin` (`kemeny-winners`,
+`slater-winners`, `dodgson-winners`, `young-winners`).
 
 `Project.load` errors (exact texts): `not a JSON file: ...`, `not a CegarPlay project: expected a
 JSON object`, `this is a logic-game file, not a CegarPlay project`, `not a CegarPlay project (format
@@ -540,7 +541,7 @@ conj    := neg { "and" neg }
 neg     := [ "not" ] cmp
 cmp     := sum [ ("==" | "!=" | "<" | "<=" | ">" | ">=") sum ]
 sum     := term { ("+" | "-") term }
-term    := unary { ("*" | "/") unary }
+term    := unary { ("*" | "/" | "//") unary }
 unary   := [ "-" ] post
 post    := atom { "." NAME [ "(" [ args ] ")" ] | "(" [ args ] ")" }
 atom    := NAME | NUMBER | STRING | "true" | "false" | "none" | "[" "]" | "(" expr ")"
@@ -612,6 +613,7 @@ A block may follow the colon on the same line if it is one simple statement: `if
 | `[]`, `l.push(e)`, `l.size`, `l.clear()` | A new empty list; append; its length; empty it. |
 | `none`, `true`, `false` | The values. `none` is what `solve` returns when unsatisfiable. |
 | `==`, `!=`, `<`, `<=`, `>`, `>=`, `+`, `-`, `*`, `/`, `and`, `or`, `not` | As usual (Lua semantics). |
+| `a // b` | Integer division, rounded down (Lua's floor division): `7 // 2` is 3, while `7 / 2` is 3.5. A number that names an atom (`S.atom("bound", k)`) must be whole, so halve with `//` (`dodgson-winners`). |
 
 Models and lists can be stored in variables and lists. A candidate `M` inside `on candidate` is
 valid only during that call; store `G(M)`, `M.atoms(p/n)` or a counterexample `X` instead. Using a
@@ -974,13 +976,15 @@ of these loops step by step (2QBF, implicit hitting sets, MARCO, ...).
 | Expansion: AReQS for 2QBF (Janota and Marques-Silva) | Shape 3: each counterexample grounds a copy of the matrix | [qbf-expansion](?example=qbf-expansion) | `expansion` |
 | CEGIS, counterexample-guided inductive synthesis (Solar-Lezama et al.) | Shape 3: each counterexample input is simulated in the synthesiser; the specification stays in the check | [cegis-circuit](?example=cegis-circuit), [min-dnf](?example=min-dnf) | `cegis` |
 | Several oracles (equilibria: one deviation check per player) | One candidate, several checks or several `reject`s | [nash](?example=nash), [boolean-game](?example=boolean-game), [abduction-two-checks](?example=abduction-two-checks) | `several-solvers` |
-| Implicit hitting sets: MaxHS (Davies and Bacchus), IHS beyond NP (Saikko, Wallner and Järvisalo) | `A.solve(optimal)` for a minimum-cost hitting set; a witness check refined by minimised cores (`C.core.minimal`); disjoint cores by `for a in K: E = E.without(a)`; `track` for the bounds | [maxsat-ihs](?example=maxsat-ihs); the dual form (correction sets from models): [smallest-mus](?example=smallest-mus); abduction (AbHS): [abduction-ihs](?example=abduction-ihs) | `ihs` |
+| Implicit hitting sets: MaxHS (Davies and Bacchus), IHS beyond NP (Saikko, Wallner and Järvisalo) | `A.solve(optimal)` for a minimum-cost hitting set; a witness check refined by minimised cores (`C.core.minimal`); disjoint cores by `for a in K: E = E.without(a)`; `track` for the bounds | [maxsat-ihs](?example=maxsat-ihs); the dual form (correction sets from models): [smallest-mus](?example=smallest-mus); abduction (AbHS): [abduction-ihs](?example=abduction-ihs); majority cycles as cores, winners by bounds: [kemeny-winners](?example=kemeny-winners) | `ihs` |
 | MARCO, MUS and MSS enumeration (Liffiton, Previti, Malik and Marques-Silva) | A map solver with maximal seeds; grow or shrink by walking `G(M)` (`a.true`, `E.flip(a)`); `G.below` and `G.above` block both ways | [marco](?example=marco), [reasons-by-shrinking](?example=reasons-by-shrinking) | `marco` |
-| Core-guided optimisation: OLL (Morgado, Dodaro and Marques-Silva), Fu-Malik | One solver under assumptions; each core is relaxed (`E.without`) and grounded as a totaliser (`C.expand(relax, core = K)`); new soft constraints from `C.atom` | [maxsat-oll](?example=maxsat-oll); weighted, weights split into unit copies: [maxsat-oll-weighted](?example=maxsat-oll-weighted) | `oll` |
+| Core-guided optimisation: OLL (Morgado, Dodaro and Marques-Silva), Fu-Malik | One solver under assumptions; each core is relaxed (`E.without`) and grounded as a totaliser (`C.expand(relax, core = K)`); new soft constraints from `C.atom` | [maxsat-oll](?example=maxsat-oll); weighted, weights split into unit copies: [maxsat-oll-weighted](?example=maxsat-oll-weighted); the final assumptions as the set of optimal solutions, one query per candidate: [slater-winners](?example=slater-winners) | `oll` |
 | Logic-based Benders decomposition (Hooker and Ottosson) | An optimal master and an optimal subproblem; optimality cuts as rules from `refine(k)`; bounds read with `M.cost`, `X.cost`, `a.arg(i)` | [benders-tardiness](?example=benders-tardiness), [knapsack-bounds](?example=knapsack-bounds) | `benders` |
 | Optimisation over a Σ2 check, 2-ASP(Q) with weak constraints | An optimal abstraction whose first surviving candidate is optimal (`A.solve(optimal)` or `search A optimal`) | [knapsack-optimum](?example=knapsack-optimum), [reasons-by-size](?example=reasons-by-size); a weak constraint on the outer level: [robust-facilities](?example=robust-facilities) | `bounds`, `aspq` |
 | Recursive CEGAR for any number of quantifier blocks: RAReQS (Janota, Klieber, Marques-Silva and Clarke) | Solver and link families and a recursive `def` | [qbf-deep](?example=qbf-deep) | `rareqs` |
 | Clausal abstraction, multi-level QBF: CAQE (Rabe and Tentrup), QESTO | A chain of solvers; cores along the chain with `core.on(G)`; an inner `search ... keep` | [qbf-three-blocks](?example=qbf-three-blocks), [qbf-caqe](?example=qbf-caqe) (clause-satisfaction atoms on the links), [knapsack-fortification](?example=knapsack-fortification) | `caqe` |
+| Theta-2 as P^NP[log] (Wagner): a binary search over a bound with one NP query per step, then one query per candidate | `C.ground(bound, k)` grounds the bound of a query; `S.atom("within", k)` assumes it; `//` halves the interval | [dodgson-winners](?example=dodgson-winners) | `bounds` |
+| Row generation (lazy constraints); for Kemeny, the ordering formulation of Conitzer, Davenport and Kalagnanam with its 3-cycle constraints added lazily | An optimal abstraction without most constraints; each counterexample grounds one (`refine(k)`) or adds a clause from `relevant/1` | [young-winners](?example=young-winners); lazy transitivity: variant `lazy-transitivity` of [kemeny-winners](?example=kemeny-winners) | `lazy-constraints` |
 | Branch-and-check (Thorsteinsson), lazy clause generation | `on partial P:` in the search: the check also runs at partial assignments; cores or `G.clause(X)` with `G(P, false)` cut whole subtrees | [colourable-partial](?example=colourable-partial), [triangle-free-lazy](?example=triangle-free-lazy) | `branch-and-check`, `lazy-constraints` |
 | Omission-based abstraction (Saribatur and Eiter) | Constraints guarded by `#external` atoms, switched on with `A.set` when a candidate breaks them | [queens-omission](?example=queens-omission), [conformant-growing](?example=conformant-growing) (a growing horizon) | `omission` |
 
@@ -1679,7 +1683,8 @@ may set `library.level` and `library.after`).
 | `logic` | `cegis-circuit`, `integer-expressions`, `marco`, `maxsat-ihs`, `maxsat-oll`, `min-dnf`, `qbf-blame-solver`, `qbf-deep`, `qbf-expansion`, `qbf-optimal`, `qbf-three-blocks`, `qbf`, `smallest-mus`, `stable-models`, `strategic-companies`, `maxsat-oll-weighted`, `qbf-caqe` |
 | `reasoning` | `abduction-two-checks`, `abduction`, `actual-cause`, `af-preferred`, `af-semi-stable`, `belief-update`, `default-extensions`, `diagnosis`, `minimal-reasons`, `reasons-by-shrinking`, `reasons-by-size`, `sufficient-reason`, `abduction-ihs` |
 | `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction`, `colourable-partial`, `triangle-free-lazy` |
-| `games` | `nash`, `voting-justification`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `kemeny-control`, `strong-nash`, `subset-sum-game` |
+| `games` | `nash`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `strong-nash`, `subset-sum-game` |
+| `voting` | `kemeny-winners`, `slater-winners`, `dodgson-winners`, `young-winners`, `kemeny-control`, `voting-justification` |
 | `planning` | `benders-tardiness`, `conformant-growing`, `conformant-planning`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-interdiction`, `knapsack-optimum`, `robust-facilities` |
 | `exercises` | `exercise-sum-free`, `exercise-triangles` |
 | `puzzles` | `akari`, `binairo`, `fewest-clues`, `futoshiki`, `queens-omission`, `slitherlink`, `sudoku-graded`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `sudoku-unique` |
@@ -1723,7 +1728,7 @@ count in `expected`.
 
 Without editing the tools: put a project file with a top-level `library` block
 (`{ "id", "group", "summary", "shape", "tags", "expected" }`, where `group` is a category
-(`logic`, `reasoning`, `graphs`, `games`, `planning`, `puzzles`), a tag `several-solvers` for a
+(`logic`, `reasoning`, `graphs`, `games`, `voting`, `planning`, `puzzles`), a tag `several-solvers` for a
 loop with more than one check, staged searches or raw Lua, and `expected` is the solution count or `null`), with its input in instances, in
 `examples/contrib/`; `node tools/make-examples.mjs` adds it to the
 library (the block is dropped from `examples/<id>.json`). See `examples/contrib/README.md`.

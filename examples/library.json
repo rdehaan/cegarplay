@@ -39,8 +39,13 @@
     },
     {
       "id": "games",
-      "title": "Games and social choice",
-      "description": "Equilibria, stable coalitions, fair division and voting."
+      "title": "Games and other social choice",
+      "description": "Equilibria, stable coalitions, fair division, games on graphs and numbers."
+    },
+    {
+      "id": "voting",
+      "title": "Voting",
+      "description": "Winners under the Theta-2-complete rules of Kemeny, Slater, Dodgson and Young (with Formula 1 seasons from PrefLib), control of a Kemeny election, and justifications of voting outcomes by axioms."
     },
     {
       "id": "planning",
@@ -2374,26 +2379,6 @@
       "after": 3
     },
     {
-      "id": "voting-justification",
-      "title": "Voting: justifications",
-      "group": "games",
-      "summary": "Explaining a voting outcome by axioms: 14 questions as instances (7 generated), five refinement strategies and two loops as variants, a suite that compares them.",
-      "shape": "shape1",
-      "tags": [
-        "project"
-      ],
-      "expected": null,
-      "has": {
-        "instances": 14,
-        "generators": 1,
-        "suites": 3,
-        "views": 1,
-        "readme": 1
-      },
-      "level": 3,
-      "after": 12
-    },
-    {
       "id": "agenda-safety",
       "title": "Agenda safety",
       "group": "games",
@@ -2477,26 +2462,6 @@
       "after": 7
     },
     {
-      "id": "kemeny-control",
-      "title": "Kemeny control",
-      "group": "games",
-      "summary": "Deleting a few voters so that the favourite becomes a Kemeny winner; better rankings are collected and grounded in batches (Shape 4; 7 voters, budget = 2, 3 solutions).",
-      "shape": "shape4",
-      "tags": [
-        "fast"
-      ],
-      "expected": {
-        "solutions": 3
-      },
-      "has": {
-        "instances": 6,
-        "generators": 2,
-        "suites": 1
-      },
-      "level": 3,
-      "after": 7
-    },
-    {
       "id": "strong-nash",
       "title": "Strong Nash equilibria",
       "group": "games",
@@ -2538,6 +2503,146 @@
       },
       "level": 2,
       "after": 3
+    },
+    {
+      "id": "voting-justification",
+      "title": "Voting: justifications",
+      "group": "voting",
+      "summary": "Explaining a voting outcome by axioms: 14 questions as instances (7 generated), five refinement strategies and two loops as variants, a suite that compares them.",
+      "shape": "shape1",
+      "tags": [
+        "project"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 14,
+        "generators": 1,
+        "suites": 3,
+        "views": 1,
+        "readme": 1
+      },
+      "level": 3,
+      "after": 12
+    },
+    {
+      "id": "dodgson-winners",
+      "title": "Dodgson winners",
+      "group": "voting",
+      "summary": "Dodgson winners the Theta-2 way: a binary search over the score with one NP query per step, then one query per candidate (8 voters, 1 winner); variants with linear search and the exists-forall template.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "bounds",
+        "preflib",
+        "project"
+      ],
+      "expected": {
+        "solutions": 1
+      },
+      "has": {
+        "instances": 13,
+        "generators": 2,
+        "suites": 2,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 11
+    },
+    {
+      "id": "kemeny-control",
+      "title": "Kemeny control",
+      "group": "voting",
+      "summary": "Deleting a few voters so that the favourite becomes a Kemeny winner; better rankings are collected and grounded in batches (Shape 4; 7 voters, budget = 2, 3 solutions).",
+      "shape": "shape4",
+      "tags": [
+        "fast"
+      ],
+      "expected": {
+        "solutions": 3
+      },
+      "has": {
+        "instances": 6,
+        "generators": 2,
+        "suites": 1
+      },
+      "level": 3,
+      "after": 7
+    },
+    {
+      "id": "kemeny-winners",
+      "title": "Kemeny winners",
+      "group": "voting",
+      "summary": "Kemeny winners by implicit hitting sets: majority cycles are the minimal unsat cores, and bounds decide the winners (8 voters, 2 winners); F1 seasons from PrefLib; variants with plain or disjoint cores and lazy transitivity.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "ihs",
+        "cores",
+        "core-minimisation",
+        "preflib",
+        "project"
+      ],
+      "expected": {
+        "solutions": 2
+      },
+      "has": {
+        "instances": 13,
+        "generators": 2,
+        "suites": 2,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 14
+    },
+    {
+      "id": "slater-winners",
+      "title": "Slater winners",
+      "group": "voting",
+      "summary": "Slater winners by core-guided optimisation (OLL), then one query per candidate on the reformulated problem (8 voters, 3 winners); F1 seasons from PrefLib; variants with implicit hitting sets and lazy transitivity.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "oll",
+        "cores",
+        "core-guided",
+        "preflib",
+        "project"
+      ],
+      "expected": {
+        "solutions": 3
+      },
+      "has": {
+        "instances": 13,
+        "generators": 2,
+        "suites": 2,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 17
+    },
+    {
+      "id": "young-winners",
+      "title": "Young winners",
+      "group": "voting",
+      "summary": "Young winners by row generation: each opponent that still beats the winner becomes a majority constraint for every winner (refine(k)) (8 voters, 3 winners); variants with cores that name the winner, all constraints at once, and exists-forall.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "lazy-constraints",
+        "preflib",
+        "project"
+      ],
+      "expected": {
+        "solutions": 3
+      },
+      "has": {
+        "instances": 13,
+        "generators": 2,
+        "suites": 2,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 20
     },
     {
       "id": "benders-tardiness",
