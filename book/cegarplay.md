@@ -767,7 +767,7 @@ Try the argument of the previous chapter on the clause "delete 3": does every so
 You cannot see a missing solution in the output. You can only compare. The blocking loop of chapter 2 is the ground truth: it is sound for any check that is right. So run both on the same instance and compare the counts:
 
 - the same fragments and constants;
-- all solutions (Solutions: all, in the run bar);
+- all solutions (Solutions: all, under Run options in the top bar);
 - both runs exhausted;
 - the same number of solutions, or the faster loop is wrong.
 
@@ -855,7 +855,7 @@ Write `lift` after a link's fragments (`link G = A -> C via shared + glue lift`)
 
 The audit names one witness. To see every candidate at once, the Observatory's **Candidate space** draws one square per candidate of the unrefined abstraction and marks the solutions a refinement removed; its blame matrix shows which atoms each clause relies on. The map shows one run; when its search avoids the bad refinement, **Find a run that loses one** tries seeds until a run does not. When the instance is large, **Fuzz** (Instances tab) audits instances from small to large and shrinks the first unsound one to a handful of facts. The how-to hunting an unsound refinement walks through both on this chapter's example.
 
-To see what the right clause would have been, the **Refinery** (a switch under Tabs in the Control tab) takes the witness candidate and lists every clause the loop could make there: which are sound, how much each removes, and the smallest sound one. It also names the **forced** atoms, those every sound clause must contain, each with the solution that differs from the candidate only there. A forced atom that `relevant/1` did not mark is the atom this chapter's test looks for.
+To see what the right clause would have been, the **Refinery** (a switch in Settings, the gear in the top bar) takes the witness candidate and lists every clause the loop could make there: which are sound, how much each removes, and the smallest sound one. It also names the **forced** atoms, those every sound clause must contain, each with the solution that differs from the candidate only there. A forced atom that `relevant/1` did not mark is the atom this chapter's test looks for.
 :::
 
 ::: exercise
@@ -970,7 +970,7 @@ The Statistics tab summarises the whole run:
 - **Charts**: candidates and refinements over time, and the time split between the solvers and grounding.
 - **Run history**: one row per finished run; the row marked ▶ is the run whose results the tabs show.
 
-All of this belongs to one run: the line **Shown:** under the run bar names it (a run or an audit, its instance and variant, how much was recorded), and turns amber once the project is edited, since the results on screen are then of the earlier version. After an audit the Summary holds the audit's own figures, not the loop's.
+All of this belongs to one run: the line **Shown:** under the top bar names it (a run or an audit, its instance and variant, how much was recorded), and turns amber once the project is edited, since the results on screen are then of the earlier version. After an audit the Summary holds the audit's own figures, not the loop's.
 
 ### What a good run looks like {#c05-good-run}
 
@@ -1532,7 +1532,7 @@ Shape 2: its clauses are never violated by a later candidate. Shape 4 has a hand
 ::: {.answer #c08-exercise-1-solution}
 [Back to Exercise 1](#c08-exercise-1)
 
-Stop after accepting: replace the block by `stop`. No block is needed, because no further solve follows. (Setting Solutions to 1 in the run bar does the same for any shape.)
+Stop after accepting: replace the block by `stop`. No block is needed, because no further solve follows. (Setting Solutions to 1 under Run options does the same for any shape.)
 
 ```text
     else:
@@ -2214,7 +2214,7 @@ Every rule from the recaps of chapters 1 to 11, grouped by what it is about.
 ### Where next {#c12-where-next}
 
 - The manual: the loop language in full, every option, the troubleshooting table.
-- The library's problem groups (Control tab, Library): more than forty problems from the literature, each a working loop with a short description, most with several instances and their expected counts.
+- The library's problem groups (Home, Library): more than forty problems from the literature, each a working loop with a short description, most with several instances and their expected counts.
 - The playground's Tutorial: the tools around a loop, from the Observatory and the audit to instances and campaigns.
 - docs/chat-package/START-HERE.md: how to write a new example together with an AI assistant in a chat, with a soundness checklist.
 - tools/cegarcheck.py: checks a project with the Python clingo, outside the browser.
@@ -3326,7 +3326,7 @@ Two findings. First, strategy 1 is the only one that beats blocking clearly (als
 
 ### Open questions {#c21-open}
 
-The project's readme (Control tab, under the description) lists them: which strategy wins on which kind of question and why; whether a refinement can be lifted over symmetric profiles; whether Shape 2 or a rule refinement pays on the hard questions; what change to the abstraction makes them finish. Each is a student project of a few weeks.
+The project's readme (Home, under the description) lists them: which strategy wins on which kind of question and why; whether a refinement can be lifted over symmetric profiles; whether Shape 2 or a rule refinement pays on the hard questions; what change to the abstraction makes them finish. Each is a student project of a few weeks.
 
 ::: exercise
 ### Exercise 1 {#c21-exercise-1}
@@ -3685,7 +3685,7 @@ With Solutions set to `all`, a run takes a few seconds: 31,776 candidates, 21,07
 
 ## Reading the trace and the statistics {#t04}
 
-The line **Shown:** under the run bar says which run the Output, Statistics and Observatory tabs show: a run or an audit, on which instance, how it ended and how much of it was recorded. It turns amber when you edit the project afterwards: the results on screen are then of the earlier version.
+The line **Shown:** under the top bar says which run the Output, Statistics and Observatory tabs show: a run or an audit, on which instance, how it ended and how much of it was recorded. It turns amber when you edit the project afterwards: the results on screen are then of the earlier version.
 
 The trace (Output tab) records the first steps of a run (Trace steps in the Loop tab, default 200); its label counts them: "traced step 3 of 46". Each step shows the candidate, the counterexample and the refinement; candidate atoms that occur in the refinement are highlighted. If a run stops with an error about a candidate, the trace jumps to that step. An audit does not run the loop, so after an audit the trace and the list of solutions are empty, and say so.
 
@@ -3764,8 +3764,8 @@ An **instance** is a set of facts and constant values that a run puts on top of 
 
 [Playground: graph-coloring]{.play}
 
-- The **Instance** picker in the run bar chooses the instance of the next run; the run history names it.
-- The **Instances** tab lists them with their tags, the expected solution count and the count of the last run, and edits their facts and constants. **Run all instances** runs each one (with the run bar's variant) and marks a count other than the expected one with ✗. (The instance `n6` is tagged `slow`.)
+- The **Instance** picker in the top bar chooses the instance of the next run; the run history names it.
+- The **Instances** tab lists them with their tags, the expected solution count and the count of the last run, and edits their facts and constants. **Run all instances** runs each one (with the top bar's variant) and marks a count other than the expected one with ✗. (The instance `n6` is tagged `slow`.)
 - **Import file** turns a file into an instance: facts, DIMACS graphs, QDIMACS formulas, argumentation frameworks, PrefLib elections.
 
 Most examples of the library keep their input in instances. The voting example has fourteen: each is one question, a set of axioms with a target profile and its outcome, from two axioms up to five. One of them has no justification at all; its run ends with 0 solutions.
@@ -3798,7 +3798,7 @@ The results are kept in this browser: a second start runs nothing; change a frag
 
 ### Comparing encodings: variants {#t08-tut-variants}
 
-The voting example has five refinement strategies for its check: which axiom instances a counterexample marks as relevant. The fragment `relevant` holds strategy 2; `relevant_s1` … `relevant_s5` hold the others. Each is a **variant**, listed under **Variants** at the foot of the Loop tab: `s3` swaps `relevant_s3` in for `relevant`; `shape2` and `reference` have a loop script of their own. The **Variant** picker in the run bar runs one of them; the suite `strategies` runs all seven on the questions that finish, so the Campaign tab compares them side by side (strategy 1 needs the fewest candidates). To try a strategy of your own: add a fragment, then a variant that swaps it in.
+The voting example has five refinement strategies for its check: which axiom instances a counterexample marks as relevant. The fragment `relevant` holds strategy 2; `relevant_s1` … `relevant_s5` hold the others. Each is a **variant**, listed under **Variants** at the foot of the Loop tab: `s3` swaps `relevant_s3` in for `relevant`; `shape2` and `reference` have a loop script of their own. The **Variant** picker in the top bar runs one of them; the suite `strategies` runs all seven on the questions that finish, so the Campaign tab compares them side by side (strategy 1 needs the fewest candidates). To try a strategy of your own: add a fragment, then a variant that swaps it in.
 
 [Playground: voting-justification]{.play}
 
@@ -4051,11 +4051,11 @@ The audit of lesson 6 checks one instance completely. Three more tools say how f
 - **Lifted refinements**: write `lift` after a link (`link G = A -> C via shared + glue lift`) and `G.clause(M, X)` computes its own relevant set from the ground programs, keeping only atoms it can prove necessary. Slower, never unsound, and a good check of hand-written `relevant/1` rules (see Refinement variants).
 - **Proofs**: with **proof** on next to Recording, the run writes a proof log. `tools/certcheck.py`, which shares no code with the playground, confirms the solution count from it.
 
-A **recording** keeps the steps of a run (Recording in the Loop tab). **Download recording** in the Control tab saves it; **Open recording** replays it in the Output tab and the Observatory without running anything. Every fast library example comes with one in `examples/replays/`; a link such as `?replay=examples/replays/gc-shape1.cprec&tab=11` opens it in the Observatory.
+A **recording** keeps the steps of a run (Recording in the Loop tab). **Download recording** (**Project**, **Recordings**) saves it; **Open recording** replays it in the Output tab and the Observatory without running anything. Every fast library example comes with one in `examples/replays/`; a link such as `?replay=examples/replays/gc-shape1.cprec&tab=11` opens it in the Observatory.
 
 ## Your own problem {#t12}
 
-Start from the starter project (also **New project** in the Control tab). Its four fragments run as they are: the abstraction guesses a non-empty set of items, and the check looks for an item that is picked while a smaller one is not. With `n = 4` it finds 4 solutions.
+Start from the starter project (also **New project** in the **Project** menu). Its four fragments run as they are: the abstraction guesses a non-empty set of items, and the check looks for an item that is picked while a smaller one is not. With `n = 4` it finds 4 solutions.
 
 [Playground: starter]{.play}
 
@@ -4068,7 +4068,7 @@ Replace the fragments step by step, running after each change:
 5. Add a few instances with their expected counts and check them with **Run all instances**; let **Fuzz** look for an instance that breaks the loop; write a suite to see how the run time grows (lessons 7 and 8).
 6. Let **Suggest a view** (Observatory) write a first picture of your problem, and adapt it.
 
-If a counterexample has no relevant atom, its clause is empty: the run ends there, with the solutions found so far. That is right only when no solution is left; the **Audit** tells you, and names a solution it would cut. Your project is kept in this browser and comes back after a reload; download it (Control tab) to keep it for good, or **Copy share link** to send it.
+If a counterexample has no relevant atom, its clause is empty: the run ends there, with the solutions found so far. That is right only when no solution is left; the **Audit** tells you, and names a solution it would cut. Your project is kept in this browser and comes back after a reload; download it (**Project**, **Download**) to keep it for good, or **Copy share link** to send it.
 
 ### Exercises that check themselves {#t12-tut-exercises}
 
@@ -4086,4 +4086,4 @@ The tutorial shows how the tool works. How to **design** a loop (what goes in th
 
 Algorithms you may know from the literature (implicit hitting sets, MARCO, core-guided MaxSAT, Benders decomposition, CEGIS, RAReQS, clausal abstraction, omission-based abstraction) are mapped to loop patterns and examples in Loops from the literature; the Library filter finds them by tag (`ihs`, `marco`, `oll`, `benders`, ...).
 
-The Library in the Control tab has the larger problems: games, argumentation, knapsacks, QBFs, planning, voting. Every example can be linked to directly: **Copy link** in the Library gives a link such as `?example=gc-shape3`.
+The Library on the Home tab has the larger problems: games, argumentation, knapsacks, QBFs, planning, voting. Every example can be linked to directly: **Copy link** in the Library gives a link such as `?example=gc-shape3`.

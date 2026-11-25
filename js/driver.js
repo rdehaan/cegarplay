@@ -274,7 +274,7 @@ export function cleanClingoMessage(msg) {
     .replace(/;\[#inc_[^\]]*\]/g, '');
 }
 
-// One line for a (possibly multi-line) problem message, for the run bar:
+// One line for a (possibly multi-line) problem message, for the top bar:
 // 'unsafe variables in:\nbar(Y).\n'Y' is unsafe' -> 'unsafe variable 'Y' in bar(Y).'
 export function oneLineMessage(msg) {
   const lines = String(msg).split('\n').map((l) => l.trim()).filter(Boolean);

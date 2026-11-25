@@ -69,13 +69,13 @@ export class Control {
     this.setState('idle');
   }
 
-  // A short message under the run bar for runs that end in an error (visible from every tab).
+  // A short message under the top bar for runs that end in an error (visible from every tab).
   runMessage(text) {
     $('run-message').hidden = !text;
     $('run-message-text').textContent = text || '';
   }
 
-  // A batch (Run all, Fuzz, Check exercise, Rerun with 5 seeds) keeps the run bar in 'running'
+  // A batch (Run all, Fuzz, Check exercise, Rerun with 5 seeds) keeps the top bar in 'running'
   // between its runs, names itself there ("running fuzz"), and ends at the first Stop or Abort.
   //   const b = control.beginBatch('fuzz'); ... if (b.cancelled) ...; control.endBatch(b)
   beginBatch(name) {
@@ -206,7 +206,7 @@ export class Control {
   //   mode 'audit': the audit of lua/audit.lua instead of the loop (docs/spec-soundness.md).
   //   allSolutions: look for all solutions, whatever settings.solutions says.
   //   instance, variant: the run uses the derived project (js/project.js derive); without
-  //   instance, the one picked in the run bar.
+  //   instance, the one picked in the top bar.
   async run(opts = {}) {
     if (!this.canStart || !this.app.ready) return null;
     this.inRun = true;
@@ -242,7 +242,7 @@ export class Control {
       } else {
         // an instance stored as a recipe gets its facts from its generator first
         project = await resolveProject(project, instance, (p, o) => app.engine.exec(p, o), app.genLua());
-        // without an explicit variant: the one picked in the run bar (a stale name is ignored)
+        // without an explicit variant: the one picked in the top bar (a stale name is ignored)
         project = derive(project, { instance, variant: variant !== undefined ? variant : pickedVariant(project) });
       }
       instanceId = project.instance || null;
@@ -310,7 +310,7 @@ export class Control {
     app.recording = new Recording({ title: project.title || '', instance: instanceId, variant: project.variant || null, mode, engine: app.engineVersion || '',
       example: app.exampleId || null, fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])) });
     // the project as it was at the start (in memory only, not in the recording's header): the
-    // run bar's "Shown" line says when the project was edited since
+    // top bar's "Shown" line says when the project was edited since
     app.recording.sourceHash = app.sourceHash ? app.sourceHash() : null;
     app.recording.started = new Date().toTimeString().slice(0, 8);
     // the candidate space shows one recorded run: a map of the previous one no longer matches
@@ -506,7 +506,7 @@ export class Control {
     else if (this.state === 'paused') { this.app.engine.resume(); this.setState('running'); }
   }
 
-  // Audit: the instance picked in the run bar, unless it is marked audit: false (too large to
+  // Audit: the instance picked in the top bar, unless it is marked audit: false (too large to
   // enumerate); then every auditable instance, one after the other.
   auditPicked() {
     const app = this.app, it = app.instancesTab;

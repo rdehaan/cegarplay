@@ -1330,9 +1330,9 @@ dialog.dialog::backdrop { background: var(--backdrop); }
 .tab-bar:not(:has(label[for="tab2"]:not([hidden]), label[for="tab8"]:not([hidden]))) .tab-group:last-of-type { display: none; }
 /* sticky under the top bar on screens that can spare the room */
 @media (min-width: 1000px) and (min-height: 640px) {
-  .tab-bar { position: sticky; top: var(--topbar-height, 50px); z-index: 40; margin: 0 -40px; padding: 4px 40px 0; }
+  /* top: the top bar's height, set by js/topbar.js (which also sets the page's scroll-padding-top) */
+  .tab-bar { position: sticky; top: 50px; z-index: 40; margin: 0 -40px; padding: 4px 40px 0; }
   .tab-bar.stuck { box-shadow: 0 4px 8px -6px var(--shadow); }
-  html { scroll-padding-top: calc(var(--topbar-height, 50px) + 60px); }   /* anchors land below both bars */
 }
 @media (max-width: 760px) {
   .tab-group { font-size: 0; margin: 0 4px; padding: 0; height: 28px; }

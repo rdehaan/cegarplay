@@ -720,9 +720,9 @@ test('Instances: move up and down; the instance a run uses stays; Run all says w
   await page.click(`#instances-table tr[data-instance="${before[0]}"] .instance-up`);
   assert.deepEqual(await ids(), before);
   // Run all instances and Fuzz: the run bar's variant, named
-  assert.match(await page.textContent('#instances-context'), /Both use no variant, as picked in the run bar/);
+  assert.match(await page.textContent('#instances-context'), /Both use no variant, as picked in the top bar/);
   await page.selectOption('#variant-select', 's1');
-  assert.match(await page.textContent('#instances-context'), /use the variant s1, as picked in the run bar/);
+  assert.match(await page.textContent('#instances-context'), /use the variant s1, as picked in the top bar/);
   assert.equal(await page.textContent('#run-all-instances-button'), 'Run all instances');
   assert.deepEqual(errors, []);
   await context.close();

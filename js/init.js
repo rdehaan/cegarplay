@@ -186,7 +186,7 @@ app.output.trace.stepNote = (t) => {
 // the verdict panel's next steps (js/output.js nextSteps)
 app.output.auditContext = () => ({ spaces: (app.project.spaces || []).length > 0, observatory: !$('tab11').hidden });
 const showTab = (n) => { $('tab' + n).checked = true; $('tab' + n).dispatchEvent(new Event('change', { bubbles: true })); };
-// a next step that changes the run bar's mode keeps it with the project, as a choice in the bar does
+// a next step that changes the top bar's mode keeps it with the project, as a choice in the bar does
 const auditMode = (m) => { $('audit-mode').value = m; app.instancesTab.renderSpaceBar(); app.instancesTab.storeAuditSetting(); app.dirty(); };
 app.output.onAuditAction = async (name, a) => {
   if (name === 'symbolic') { auditMode('symbolic'); return app.control.auditPicked(); }
@@ -205,7 +205,7 @@ app.output.onAuditAction = async (name, a) => {
     return;
   }
   if (name === 'candidate-space') { showTab(11); return app.space.recordAndRun(); }
-  // the instance the audit was of (the recording's header names it; else the run bar's)
+  // the instance the audit was of (the recording's header names it; else the top bar's)
   if (name === 'seed-sweep') return app.sweepAndShow({ instance: (app.recording && app.recording.header && app.recording.header.instance) || undefined, target: Number.isInteger(a.solutions) ? a.solutions : null });
   if (name === 'space-seed-sweep') return app.sweepAndShow({ instance: app.instancesTab.saveWitness(a), target: null });
   if (name === 'space-candidate-space') {
@@ -234,11 +234,11 @@ app.sweepAndShow = async ({ instance, target }) => {
   app.dirty();
   const lost = r.target - r.solutions;
   const what = `Seed sweep: seed ${r.seed} loses ${lost} solution${lost === 1 ? '' : 's'} (${r.solutions} of ${r.target} found)`;
-  app.control.runMessage(`${what}. The run bar's seed is now ${r.seed}, randomized, so Run repeats this run.`);
+  app.control.runMessage(`${what}. The seed (Run options) is now ${r.seed}, randomized, so Run repeats this run.`);
   if ($('tab11').hidden) showTabs('observatory', true, { store: false });
   showTab(11);
   await app.space.recordAndRun();
-  app.control.runMessage(`${what}; the candidate space (Observatory) shows the refinement that removes it. The run bar's seed is now ${r.seed}, randomized: Run repeats this run.`);
+  app.control.runMessage(`${what}; the candidate space (Observatory) shows the refinement that removes it. The seed (Run options) is now ${r.seed}, randomized: Run repeats this run.`);
   requestAnimationFrame(() => { const c = $('candidate-space'); if (c) c.scrollIntoView({ block: 'start' }); });
   return r;
 };
@@ -395,7 +395,7 @@ app.dirty = (edit = true) => {
 let shownTimer = null;
 app.projectChanged = () => app.dirty();
 
-// ---- "Shown:" in the run bar: what the result tabs hold now --------------------------------
+// ---- "Shown:" in the top bar: what the result tabs hold now --------------------------------
 // One line: the run, audit or replay whose results the Output, Statistics and Observatory tabs
 // show; its instance and variant; how it ended; how much of it was recorded; whether the
 // candidate space is of it; and whether the project was edited since (the results are then of the
@@ -591,7 +591,7 @@ document.addEventListener('click', async (ev) => {
     if (btn.closest('#section-tutorial, #section-manual')) flash(btn, String(e.message || e), true);
   }
 });
-// A short note next to a button outside the Control tab.
+// A short note next to a button outside Home.
 function flash(btn, text, error = false) {
   let n = btn.nextElementSibling;
   if (!n || !n.classList.contains('load-note')) { n = make('span', { class: 'load-note note' }); btn.after(n); }
@@ -617,7 +617,7 @@ const guard = () => {
 // snapshot with an Undo (what: "loading example X", for the snapshot's name and the Undo button).
 const replaceOk = (what = 'replacing the project') => {
   if (!app.edited) return true;
-  if (!window.confirm('Replace the current project? It is kept as an automatic snapshot (Control tab, Snapshots), and Undo brings it back.')) return false;
+  if (!window.confirm('Replace the current project? It is kept as an automatic snapshot (Project, Workspace and snapshots), and Undo brings it back.')) return false;
   snapshotBefore(what);
   return true;
 };
@@ -823,7 +823,7 @@ $('snapshot-undo-button').addEventListener('click', () => {
 });
 renderSnapshots();
 
-// ---- Control tab ----------------------------------------------------------------
+// ---- Home ----------------------------------------------------------------------
 $('new-button').addEventListener('click', () => {
   if (!guard() || !replaceOk('starting a new project')) return;
   app.setProject(Project.starterProject());
@@ -1089,7 +1089,7 @@ async function start() {
     if (shareError) status('load-status', `${shareError}. Opened the example "${app.project.title}" instead.`, true);
   }
   if (named && !restored && app.exampleId === named && params.get('fragment')) openFragment(params.get('fragment'));
-  // ?instance=<id>: the instance the run bar picks (not saved until an edit)
+  // ?instance=<id>: the instance the top bar picks (not saved until an edit)
   const wantInstance = params.get('instance');
   if (wantInstance !== null) {
     if ((app.project.instances || []).some((x) => x.id === wantInstance)) {

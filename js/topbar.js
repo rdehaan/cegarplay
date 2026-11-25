@@ -146,7 +146,14 @@ export function setupTopbar() {
   // ---- the sticky tab bar (large screens): it sits under the top bar, whose height can change
   // (a wrapped row); a shadow once it sticks; a tab chosen while it sticks opens at its top
   const bar = $('topbar'), tabbar = $('tab-bar'), main = document.querySelector('main');
-  const setTop = () => document.documentElement.style.setProperty('--topbar-height', `${bar.offsetHeight}px`);
+  // (set here, not as a CSS variable: css/theme.css defines every variable the stylesheets use)
+  const large = matchMedia('(min-width: 1000px) and (min-height: 640px)');
+  const setTop = () => {
+    tabbar.style.top = `${bar.offsetHeight}px`;
+    // anchors land below both bars while the tab bar sticks
+    document.documentElement.style.scrollPaddingTop = large.matches ? `${bar.offsetHeight + tabbar.offsetHeight + 10}px` : '';
+  };
+  large.addEventListener('change', setTop);
   new ResizeObserver(setTop).observe(bar);
   setTop();
   const stuck = () => getComputedStyle(tabbar).position === 'sticky' && tabbar.getBoundingClientRect().top <= bar.offsetHeight + 1;

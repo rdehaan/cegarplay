@@ -89,7 +89,7 @@ export class SpaceView {
       this.msg.textContent = (m === 'audit' || m === 'bounded'
         ? 'The last action was an audit, which records no steps of the loop. The map shows one run of the loop, recorded with every step: '
         : 'The map needs a run recorded with every step. ') + (m === 'bounded'
-        ? 'for the instance a space audit broke on, use its "See it in the candidate space" (or Save as regression instance, then pick it in the run bar). '
+        ? 'for the instance a space audit broke on, use its "See it in the candidate space" (or Save as regression instance, then pick it in the top bar). '
         : '');
       this.msg.append(h('button', { class: 'control-button small-button', id: 'space-record-run', onclick: () => this.recordAndRun() }, 'Record every step, run, compute'));
       return;
@@ -104,7 +104,7 @@ export class SpaceView {
     try { inst = selectedInstance(p, hd.instance ? hd.instance : undefined); } catch { inst = null; }
     if (inst && inst.audit === false && !force) {
       this.noMap(`No map: the instance ${inst.id} is marked "audit: false", too large to list every candidate. ` +
-        'Record a run on a small instance (the run bar\'s Instance) and compute again. The blame matrix below needs only the recorded steps.');
+        'Record a run on a small instance (the top bar\'s Instance) and compute again. The blame matrix below needs only the recorded steps.');
       this.msg.append(' ', h('button', { class: 'control-button small-button', id: 'space-compute-anyway', type: 'button', onclick: () => this.compute({ force: true }) }, 'Try anyway'));
       return;
     }
@@ -167,7 +167,7 @@ export class SpaceView {
 
   // Which refinements of the run the map shows: only those of its link (the one the audit
   // enumerates). Refinements of other links (a winner link W, the links of a chain) are counted
-  // and named, so that "6 refinements" in the run bar and 1 on the map are not a mystery.
+  // and named, so that "6 refinements" in the top bar and 1 on the map are not a mystery.
   coverage(rec, li) {
     const links = rec && rec.I ? rec.I.links : [];
     const link = links[li] ? links[li].link : '?';

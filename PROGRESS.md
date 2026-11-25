@@ -19,6 +19,7 @@ only memory of what happened.
 - [x] PLAN3 S7: instance spaces
 - [x] PLAN3 S8: app, Fuzz, docs
 - [x] Refinement lab (tab 12): milestones 0-5, docs/lab-design.md
+- [x] UI reorganisation U1-U5 (top bar, Home, Project menu, Settings, grouped sticky tabs, folded help)
 
 ## Hand-over (final review, 2026-11-20)
 
@@ -973,6 +974,42 @@ Test in `test/browser/stats.test.mjs`; row in docs/spec-app.md §5.1.
 - "Refinement lab" / "Lab" is now "Refinery" in the page, the docs and the tests' names; file
   paths, ids, classes and the storage keys `cegarplay.lab.*` keep "lab"; `?refinery=1` works
   like `?lab=1`.
+
+## UI reorganisation (2026-11-25, on request; branch claude/ui-reorganise)
+
+Goal (interview with the user): a calmer page for beginners and experts alike, with nothing removed.
+A clickable mockup was approved first. Phases, one commit each:
+
+- **U1 top bar** (`#topbar`, class `run-bar` kept so that a change in it marks the project edited):
+  brand, **Project** menu and the project's title, Run (`.primary-button`, tokens `--primary`,
+  `--primary-text`, `--shadow`), Audit with its mode, Instance and Variant, **Run options** pop-up
+  (solutions, seed, randomized, record steps; the button names non-default choices,
+  `runOptionsSummary()` in `js/topbar.js`, called from `LoopTab.load/syncSeed`), status, Guide, theme,
+  Settings. Abort/Pause/Stop are hidden while disabled; Clear moved to the Output tab's result row.
+  The title banner and subtitle are gone; `.run-summary` (Shown, live line, run message) sits under
+  the bar and is empty until the first run.
+- **U2 Home** (still `#section-control`, `tab1`): intro, project card, library (open by default; its
+  intro behind a "?", `#library-help`). The file buttons stay in the DOM, hidden (`.file-actions`),
+  pressed by the menu items (`data-click`; `data-history` sets `include-history`). Workspace,
+  snapshots and recordings are in `<dialog id="dialog-versions">`; tabs, theme and reset in
+  `<dialog id="dialog-settings">`. The menu actions' status lines (`.toast-source`) show as a toast
+  (`#toast`): short ones go after 5 s, long ones (a share link to copy by hand), errors and Undo stay.
+  The snapshots' Undo is offered in the toast when not in view elsewhere.
+- **U3 tabs**: the labels are in `<nav id="tab-bar">` with group labels Write, Results, Learn (Learn at
+  the right end: Tutorial, Manual). The radios stay siblings of the sections, reordered to the row's
+  order (arrow keys follow it), `position: fixed` so that focusing one never scrolls. The chosen and
+  focused tab use `main:has(#tabN:checked) label[for=tabN]`. Sticky under the top bar at
+  ≥ 1000 × 640 px (its `top` set from the top bar's height by a ResizeObserver; not a CSS variable, as theme.test.mjs wants every variable defined in theme.css); a tab chosen while stuck opens at its top
+  (the page height is held during the switch, since a tab re-renders and the page shrinks for a moment).
+- **U4 help**: each tab's `.tab-intro` is in `<details class="help-fold" data-help=...>` with the
+  tab's name and a "?"; open on the first visit, closed for good once closed (`cegarplay.help-seen`).
+- **U5 docs**: manual (layout overview, storage keys, import/export table, Clear), tutorial, guide
+  pages, README, UI strings ("run bar" → "top bar"; "Control tab" → Home / Project / Settings); book
+  rebuilt. Browser tests use `B.runOptions`, `B.projectMenu`, `B.openDialog`/`inDialog` (harness).
+
+Deviations: `docs/spec-app.md`, `docs/spec-recording.md`, `docs/lab-design.md` and
+`docs/directions/*.md` still describe the old Control tab and run bar (they are the design history);
+the manual is the reference for the page as it is. Ids are unchanged, so `?tab=1` is Home.
 
 ## Deviations from the plan
 

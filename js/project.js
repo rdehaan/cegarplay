@@ -155,7 +155,7 @@ export function load(json) {
   out.version = VERSION;
   out.title = typeof p.title === 'string' ? p.title : 'Untitled';
   out.description = typeof p.description === 'string' ? p.description : '';
-  // readme (FUTURE-DIRECTIONS E1): Markdown for a project kit, shown in the Control tab
+  // readme (FUTURE-DIRECTIONS E1): Markdown for a project kit, shown on Home
   if ('readme' in p) {
     if (typeof p.readme !== 'string') throw new ProjectError('readme must be a string (Markdown)');
     if (!p.readme.trim()) delete out.readme;
@@ -237,7 +237,7 @@ export function load(json) {
   if ('exercise' in p) out.exercise = loadExercise(p.exercise, out.instances || []);
   if ('instance' in st && st.instance !== null && st.instance !== '' && typeof st.instance !== 'string') throw new ProjectError('settings.instance must be an instance id or ""');
   if ('variant' in st && st.variant !== null && typeof st.variant !== 'string') throw new ProjectError('settings.variant must be a variant name or ""');
-  // settings.audit (optional): the run bar's audit mode, kept with the project
+  // settings.audit (optional): the top bar's audit mode, kept with the project
   if ('audit' in st) {
     const a = st.audit;
     if (!isObj(a) || !AUDIT_MODES.includes(a.mode) || (a.space !== undefined && typeof a.space !== 'string') ||
@@ -524,7 +524,7 @@ export function applyInstance(project, id) {
   return p;
 }
 
-// The variant the run bar picked (settings.variant), if it names a variant; else undefined.
+// The variant the top bar picked (settings.variant), if it names a variant; else undefined.
 export function pickedVariant(project) {
   const v = project.settings && project.settings.variant;
   return v && (project.variants || []).some((x) => x.name === v) ? v : undefined;
@@ -616,7 +616,7 @@ export function importLp(text, title = 'Imported') {
 
 // modules: { ground, ... } the Lua module texts (lua/<name>.lua) a project may need (lift, certify).
 export function exportStandalone(project, runtimeLua, modules = {}) {
-  project = derive(project, { variant: pickedVariant(project) });   // the run bar's instance and variant
+  project = derive(project, { variant: pickedVariant(project) });   // the top bar's instance and variant
   let compiled = null;
   if (project.loop.language === 'loop') {
     const c = compile(project.loop.text, { fragments: project.fragments.map((f) => f.name) });

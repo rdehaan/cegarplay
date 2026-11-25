@@ -16,28 +16,41 @@ programming. The solver is clingo 5.8.1 with Lua 5.4, compiled to WebAssembly
 (`clingo-wasm` 0.6.0), running in a Web Worker. The site is static: no server code, no build step,
 no request to another origin.
 
-The page's tabs follow the work: **Control** (the library, files, recordings, share and export) and
-**Tutorial**; then the project: **Programs** (the ASP fragments), **Loop** (the loop script,
-constants, limits, recording and certificates) and **Instances** (inputs, generators, Run all instances,
-Fuzz); then a run: **Output**, **Statistics** and **Observatory**; and many runs: **Campaign**. The
-[**Refinery**](#manual-refinery-tab) (off by default) shows what a loop could have done. The
-run bar above the tabs has two rows: the actions (**Run**, **Audit** with its mode, Abort, Pause
-and Stop on an isolated page, Clear, and the status), then **Run with**: the Instance and
-Variant pickers (for a project with instances or variants), Solutions, and **Seed** with
-**randomized** (the Loop tab's settings), and **record steps**, which records every step of the next
-runs (the Loop tab's Recording set to "every step"; unticked, "off"). Below them, **Shown:** says
-what the Output, Statistics and Observatory tabs hold now: the run, audit or replay (with its
-instance, variant and start time), how it ended, how much of it was recorded, whether the
-candidate space was computed for it, and, in amber, when the project was edited since (or another
-project was loaded): the results are then of the earlier version. Then the live counts. **Manual** and **Internals** appear when
-asked for. The Control tab's **Tabs** block has toggles kept in this browser: **Tutorial**
-(shown by default), **Technical manual**, and **Advanced** with three indented toggles under it,
-**Campaign**, **Observatory** and **Refinery**, all off by default. **Advanced**
-turns all three on or off; it is ticked when all three are on and shows a dash when some are. The
-Tutorial tab repeats the Observatory and Campaign toggles. A
-link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`, `?tab=12`, `?lecture=1`, `?view=`,
-`?step=`, `?advanced=1`, `?lab=1`, a link to a tutorial lesson) shows it for that visit without
-changing the stored choice.
+The **top bar** stays at the top of the page while it scrolls. From left to right: the
+**Project** menu with the project's title next to it (New project, Open file, Download, Download with
+run history, Copy share link, Export for clingo, and Workspace and snapshots and Recordings, which
+open a dialog); the actions (**Run**, **Audit** with its mode; **Abort**, and **Pause** and **Stop** on
+an isolated page, appear only while a run can use them); the Instance and Variant pickers (for a
+project with instances or variants); **Run options**, a pop-up with Solutions, **Seed** with
+**randomized** (the Loop tab's settings) and **record steps**, which records every step of the next
+runs (the Loop tab's Recording set to "every step"; unticked, "off"); the button names the choices
+that differ from the defaults (e.g. "· seed 7, recording"). At the right end: the status, **Guide**, the
+colour theme and **Settings** (⚙). The status lines of the Project menu's actions show as a short
+note at the bottom of the page (a long one, an error, or one with **Undo** stays until it is closed).
+
+Under the top bar, **Shown:** says what the Output, Statistics and Observatory tabs hold now: the
+run, audit or replay (with its instance, variant and start time), how it ended, how much of it was
+recorded, whether the candidate space was computed for it, and, in amber, when the project was
+edited since (or another project was loaded): the results are then of the earlier version. Then
+the live counts. Both lines are empty until the first run.
+
+The tabs follow the work, in groups: **Home** (the project's title, description and readme, and the
+example library); **Write**: **Programs** (the ASP fragments), **Loop** (the loop script, constants,
+limits, recording and certificates) and **Instances** (inputs, generators, Run all instances, Fuzz);
+**Results**: **Output**, **Statistics**, **Observatory** and **Campaign** (many runs), and the
+[**Refinery**](#manual-refinery-tab), which shows what a loop could have done; **Learn**:
+**Tutorial** and **Manual**, at the right end. On a screen of at least 1000 × 640 px the tab row
+stays under the top bar while the page scrolls, and a tab chosen there opens at its top. Each tab
+starts with its name and a **?**: the tab's explanation, with links to the tutorial and the manual,
+is open on the first visit to that tab and stays closed once closed (kept in this browser).
+**Manual** and **Internals** appear when asked for. **Settings** has toggles kept in this browser:
+**Tutorial** (shown by default), **Technical manual**, and **Advanced** with three indented toggles
+under it, **Campaign**, **Observatory** and **Refinery**, all off by default. **Advanced** turns all
+three on or off; it is ticked when all three are on and shows a dash when some are. The Tutorial
+tab repeats the Observatory and Campaign toggles. Settings also has the colour theme and **Reset
+everything**. A link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`, `?tab=12`,
+`?lecture=1`, `?view=`, `?step=`, `?advanced=1`, `?lab=1`, a link to a tutorial lesson) shows it for
+that visit without changing the stored choice.
 
 ## Model and terms
 
@@ -102,7 +115,7 @@ two-space indentation.
 | --- | --- | --- | --- |
 | `format` | string | (required) | Must be `"cegarplay"`. A file with logic-game keys is rejected as a logic-game file. |
 | `version` | number | 1 | 1, or 2 when a key of format version 2 is used (see [Instances](#manual-instances)). A version above 2 is rejected (newer than this CegarPlay). |
-| `title` | string | `"Untitled"` | Shown in the Control tab and the page title. |
+| `title` | string | `"Untitled"` | Shown on Home, next to the Project menu and in the page title. |
 | `description` | string | `""` | Shown under the title; one paragraph, also the library's text. |
 | `exercise` | object | absent | A self-checking exercise: `text` (the task), `instances` (ids or `"all"`: their expected count or optimum must match), `audit` (`true` or ids: the audit must be sound), `budgets` (`[{ instance, candidates, refinements }]`: at most this many). **Check exercise** (Instances tab) and `node tools/grade.mjs <files or folder> [--exercise reference.json] [--json]` check every item; an item that could not be checked fails. |
 | `readme` | string (Markdown) | absent | A project kit: background, what the abstraction and the check model, the baseline and the variants, what "better" means, open questions. Shown folded under the description (**Readme**), edited with **Edit**; the library tags such examples `project` and lists them under **Projects**. |
@@ -118,14 +131,14 @@ two-space indentation.
 | `settings.candidates` | number | 0 | Candidate limit; 0 = none. |
 | `settings.trace` | number | 200 | Number of trace steps recorded; 0 = off. |
 | `settings.seed` | number | 0 | Passed as `--seed=N` unless 0. |
-| `settings.randomize` | boolean | absent | **Randomized search** (Loop tab; **randomized** next to **Seed** in the run bar, the same setting as the Loop tab's seed): every solver gets `--rand-freq=0.2 --sign-def=rnd`, so that the seed changes the order of the candidates and which counterexample a check returns. Absent when off. |
+| `settings.randomize` | boolean | absent | **Randomized search** (Loop tab; **randomized** next to **Seed** under Run options, the same setting as the Loop tab's seed): every solver gets `--rand-freq=0.2 --sign-def=rnd`, so that the seed changes the order of the candidates and which counterexample a check returns. Absent when off. |
 | `runs` | list | `[]` | Final statistics of earlier runs (Statistics tab, run history). Written only when "include run history" is ticked on download. |
 | `instances` | list | none | Format version 2. See [Instances](#manual-instances). |
 | `variants` | list | none | Format version 2. See [Instances](#manual-instances). |
 | `spaces` | list | none | Optional, format version 2: every instance up to a bound, for the Audit's mode Space. See [Spaces](#manual-spaces). |
-| `settings.instance` | string | the first instance | The instance a run uses; `""` = no instance (the run bar's **(no instance)**: the fragments alone, with the project's own constants). |
-| `settings.variant` | string | none | The variant a run uses (the run bar's Variant picker); absent or `""` = the project as it is; a name that is no variant is ignored. Dropped on save when the project has no variants. |
-| `settings.audit` | object | none | The run bar's audit mode: `{ mode, space, bound }`, `mode` one of `"enumerate"`, `"symbolic"`, `"space"`; `space` and `bound` only for `"space"`. Written when the mode is changed; not written for enumeration (the default), nor for `"space"` when the project has no spaces. See [Audit modes](#manual-audit-modes). |
+| `settings.instance` | string | the first instance | The instance a run uses; `""` = no instance (the top bar's **(no instance)**: the fragments alone, with the project's own constants). |
+| `settings.variant` | string | none | The variant a run uses (the top bar's Variant picker); absent or `""` = the project as it is; a name that is no variant is ignored. Dropped on save when the project has no variants. |
+| `settings.audit` | object | none | The top bar's audit mode: `{ mode, space, bound }`, `mode` one of `"enumerate"`, `"symbolic"`, `"space"`; `space` and `bound` only for `"space"`. Written when the mode is changed; not written for enumeration (the default), nor for `"space"` when the project has no spaces. See [Audit modes](#manual-audit-modes). |
 
 ### Instances
 
@@ -176,20 +189,20 @@ scenarios (`.jagg`: `var/1`, `cl/1`, `pos/2`, `neg/2`) and CSV (`.csv`, `.tsv`: 
 `row(I, V1, ..., Vn)` per record, or the facts of a **column map** such as `edge(from,to); w(from,to,cost)`
 over the header's names or column numbers). Several files can be chosen at once (one instance each; a
 file that fails is named and the others are added); each importer is checked with clingo before
-the instance is added. **Run all**, **Fuzz** and **Check exercise** (like **Rerun with 5 seeds**) are batches: the run bar
+the instance is added. **Run all**, **Fuzz** and **Check exercise** (like **Rerun with 5 seeds**) are batches: the top bar
 says what runs (**running all instances (3 of 17: n5)**, **running fuzz**), Run and Audit wait, and one
-click on **Abort** (or **Stop**) ends the whole batch. **Run all instances** runs every instance (whatever instance the run bar picks) with the run bar's
+click on **Abort** (or **Stop**) ends the whole batch. **Run all instances** runs every instance (whatever instance the top bar picks) with the top bar's
 variant, which a line under the buttons names; Fuzz uses that variant too. Under the table a line
 says which run the **Last count** column is of (Run all instances, its time and variant; hover a
 count for its own run), and after an edit that changes what a counted run ran (a fragment it used,
 the loop script, a constant, the instance or the variant) the count is marked **(stale)** and the
 line says that the project changed since. **↑** and **↓** in the table
-move an instance (the run bar, Run all, the Campaign tab and the file follow the order; the instance
+move an instance (the top bar, Run all, the Campaign tab and the file follow the order; the instance
 a run uses stays the same). **Run all instances** marks a count other than the expected one
 with ✗ in red. An instance with an expected count is run to all solutions, whatever the project's
 solution limit. The status line says how many instances were checked and why the others were not
 (no expectation, a run that did not finish, a run that stopped before all solutions); it never says
-"all match" when nothing was compared. The run bar's **Instance** picker (shown only for a project with instances) chooses
+"all match" when nothing was compared. The top bar's **Instance** picker (shown only for a project with instances) chooses
 the instance of the next run; the run history names it in brackets.
 
 ### Variants
@@ -202,7 +215,7 @@ applied as soon as that fragment is made), **Constants** as `name=value, ...`, a
 project's loop editor, with highlighting and the live check's marks, that starts as a copy of the
 project's loop). A renamed or deleted fragment is renamed in, or dropped
 from, every swap; a renamed or deleted variant also in the suites and in **Compare variants**
-(a comparison on screen is made again after each change of a variant). The run bar's **Variant** picker
+(a comparison on screen is made again after each change of a variant). The top bar's **Variant** picker
 (shown only for a project with variants) chooses the variant of a run, an audit and Run all, and
 is stored as `settings.variant`; the run history adds `(variant NAME)`. Alternative fragments
 that only a variant uses are not grounded by the project as it is. `tools/run.mjs` and
@@ -259,7 +272,7 @@ plot as SVG.
 
 ### Fuzz
 
-**Fuzz** (Instances tab) audits instances from small to large (constants 1..v, or a suite's grid; with the variant picked in the run bar),
+**Fuzz** (Instances tab) audits instances from small to large (constants 1..v, or a suite's grid; with the variant picked in the top bar),
 stops at the first unsound one, shrinks its facts and constants (delta debugging, keeping the
 `schema` fragment satisfied and the audit unsound) and diagnoses it: the lost solution, the
 audit's witness, and the step of the loop's own run whose refinement removes the solution (for
@@ -299,7 +312,7 @@ Optional. `spaces[]` describes every instance up to a bound, for the Audit's mod
 **What a space audit does.** An audit checks one instance; a space describes many at once, one
 family per value of the bound k (graphs on k nodes, the numbers 1..k, frameworks of k arguments).
 Audit with the mode **space** runs the symbolic audit on every instance of the space at k = 1 (or
-the space's first k), then k = 2, and so on up to the bound you give in the run bar, and stops at the
+the space's first k), then k = 2, and so on up to the bound you give in the top bar, and stops at the
 first k where some instance is unsound. "Sound up to k = K" then holds for every instance of the
 space with k at most K; it says nothing about larger instances, nor about instances outside the
 space. An unsound verdict shows the instance it broke on, with **Save as regression instance**,
@@ -310,7 +323,7 @@ every step recorded; the map shows the refinements that run makes, which may avo
 **Writing a space** (Instances tab, **Spaces**, **New space**): a name; the text, which replaces the
 instance: choice rules and constraints over the instance's predicates, written with the bound
 parameter (`node(1..k). { edge(X,Y) : node(X), node(Y), X < Y }.`); the parameters, in one table:
-**Bound** (which one runs up to the run bar's value; its row has the first value, the field `from`),
+**Bound** (which one runs up to the top bar's value; its row has the first value, the field `from`),
 **Values** for the others (a number, or a range `1..3`), and **In a regression instance** (whether a
 saved witness instance gets that constant); and a description. A range is how a space covers a
 constant of the encoding: add a parameter with the constant's name and give it a range. The run
@@ -321,8 +334,8 @@ preview** removes them, and so does any edit of the space), which is the quickes
 empty and whose one parameter is a constant of the project is the constants family n = 1, 2, …
 (the tutorial's space `n`).
 
-**Instances that only make sense from some size on.** Set the first value in the **Bound** row of the parameter table ("from … up to the run bar's
-value"; the field `from`, default 1): the audit then starts there, the run bar shows "every instance with k = 3 up to", and the verdict says "sound for k
+**Instances that only make sense from some size on.** Set the first value in the **Bound** row of the parameter table ("from … up to the top bar's
+value"; the field `from`, default 1): the audit then starts there, the top bar shows "every instance with k = 3 up to", and the verdict says "sound for k
 from 3 up to 10". (Without it, a constraint such as `:- k < 3.` in the text also works: the space is
 empty below 3, and an empty space is trivially sound; but the verdict then counts those k as
 checked.)
@@ -1074,12 +1087,12 @@ only once`.
 
 | Setting | Where | Meaning |
 | --- | --- | --- |
-| Solutions | run bar | 1, 10, 100 or all (`settings.solutions`, 0 = all). The run ends with outcome `solutions` when reached. |
+| Solutions | Run options (top bar) | 1, 10, 100 or all (`settings.solutions`, 0 = all). The run ends with outcome `solutions` when reached. |
 | Time limit | Loop tab | Seconds of CPU time in the engine (`os.clock`); 0 = none. Outcome `limit`. The page also aborts the worker 2 s after the limit in case one solve call never returns. |
 | Candidate limit | Loop tab | 0 = none. Outcome `limit`. |
 | Trace steps | Loop tab | Number of refinement steps recorded for the trace view; 0 = off. Recording costs a little time. |
-| Seed | Loop tab | `--seed=N` for every solver; 0 = clingo's default. It changes the search only with **Randomized search** (Loop tab, or **randomized** in the run bar) or randomising solver options such as `options "--rand-freq=0.05"`. Also in the run bar (**Seed**). |
-| Randomized search | Loop tab, run bar | `settings.randomize`: `--rand-freq=0.2 --sign-def=rnd` in every solver, so that the seed changes the search. |
+| Seed | Loop tab | `--seed=N` for every solver; 0 = clingo's default. It changes the search only with **Randomized search** (Loop tab, or **randomized** under Run options) or randomising solver options such as `options "--rand-freq=0.05"`. Also under Run options (**Seed**). |
+| Randomized search | Loop tab, Run options | `settings.randomize`: `--rand-freq=0.2 --sign-def=rnd` in every solver, so that the seed changes the search. |
 | Threads | Loop tab | Loads the threaded engine (`clingo-mt`); then `options "-t 2"` works. Needs a cross-origin isolated page. Not stored in the project. |
 | Constants | Loop tab | `settings.constants`, see [Constants](#manual-constants). |
 | Solver options | loop script | `options "..."` on a `solver` line: any clingo option, such as `--heuristic=Domain`, `--enum-mode=record`, `--opt-strategy=usc`. |
@@ -1088,7 +1101,7 @@ Shape 1 note: clasp's default enumeration keeps refinement clauses added during 
 weakly; later candidates may violate them. The result stays sound (every candidate is checked),
 but refinements prune less. `options "--enum-mode=record"` on the abstraction solver keeps them.
 
-Colour theme: the button at the top right of the page cycles through Auto (follow the system's
+Colour theme: the theme button in the top bar (and in Settings) cycles through Auto (follow the system's
 light or dark setting), Light and Dark. The choice is kept in this browser and also applies to the
 pages of the guide. The editors and the charts follow it.
 
@@ -1098,10 +1111,12 @@ pages of the guide. The editors and the charts follow it.
 in the worker. While a run is active all editors are read-only.
 
 Keyboard: the tab row is in the Tab order (arrow keys switch tabs, as in any group of radio
-buttons); **Select file** is a button; an info dialog (the ⓘ links) takes the focus, keeps Tab
+buttons, in the order of the tab row); the **Project** menu opens with Enter, its items take the arrow
+keys, and Escape closes it; an info dialog (the ⓘ links) takes the focus, keeps Tab
 inside, closes with Escape and returns the focus to its link. Run status and run messages are
 announced to screen readers (`role="status"`). Below 650 px the tabs show their icon with a short
-name under it.
+name under it; below 760 px the top bar puts the run's actions on a row of their own and the
+theme button is only in Settings.
 
 Validation, in order: compile the loop script (errors marked in the Loop tab); for each solver and
 link, parse its fragments with `clingo --mode=gringo` and the constants (syntax errors and unsafe
@@ -1145,8 +1160,8 @@ the Output tab then shows the last lines received.
 ### Audit
 
 **Audit** (next to Run) checks the refinements of a loop script against every candidate and every
-counterexample of the instance, instead of the pairs one run happens to visit. The run bar says **running audit** meanwhile. When the
-instance picked in the run bar is marked `audit: false`, Audit audits every instance that is not, one
+counterexample of the instance, instead of the pairs one run happens to visit. The top bar says **running audit** meanwhile. When the
+instance picked in the top bar is marked `audit: false`, Audit audits every instance that is not, one
 after the other (**running audit (3 of 18: …)**), and the Instances tab sums up their verdicts.
 
 1. Every candidate: the models of the abstraction without refinements, one per assignment of the
@@ -1216,7 +1231,7 @@ each) · 12 unsound`).
 candidate space when the run shown lost nothing): a **seed sweep**. An unsound audit means that the
 loop *can* lose a solution; a run loses it only if its search proposes the bad candidate before the
 solution is found and the check answers with the bad counterexample. The sweep runs the instance
-(for a space, its saved witness instance; the run bar's variant) to all solutions with a randomized
+(for a space, its saved witness instance; the top bar's variant) to all solutions with a randomized
 search for seeds 1 to 50, and stops at the first run that finds fewer solutions than the true count
 (the audit's count; for a symbolic or space audit, from an enumeration audit of the instance first).
 It then sets that seed and Randomized search in the Loop tab (so **Run** repeats the run), records
@@ -1252,16 +1267,16 @@ verify, solutions have no counterexample (for a witness check: every solution ha
 nothing else is left). Its `--json` verdict can be
 imported in the Statistics tab ("Import certcheck verdict").
 
-**Recording** (Loop tab, limits block; **record steps** in the run bar sets it to every step or off) records the steps of a run as compact `R` events: every
+**Recording** (Loop tab, limits block; **record steps** under Run options sets it to every step or off) records the steps of a run as compact `R` events: every
 step, the first N, every N-th, the last N, or a sample of N; **solver calls** adds a `C` event per
 call. The setting is `settings.record` (absent when off). Every run's events are kept:
-**Download recording** (Control tab) saves them as a `.cprec` file (gzip; header line, then the event
+**Download recording** (Project, Recordings) saves them as a `.cprec` file (gzip; header line, then the event
 lines), **Open recording** replays one without the engine (run status `replayed`). Each `fast`
 library example has a replay in `examples/replays/`.
 
 ## Output and statistics
 
-Every result tab shows one run, audit or replay at a time: the one the run bar's **Shown** line
+Every result tab shows one run, audit or replay at a time: the one the top bar's **Shown** line
 names, and the run history marks with ▶. After an **Audit**, the Output tab shows its verdict (its
 Solutions and Trace say that an audit does not run the loop), the Statistics tab's Summary shows the
 audit's own figures (verdict, candidates, counterexamples, refinements checked, solutions; for a
@@ -1275,7 +1290,8 @@ abstraction), with a note saying so; the next Run replaces them. The run history
   no more": that these are all the solutions holds only for a sound loop). When the instance's true
   count is known (its expected count, or an enumeration audit of the same program in the run
   history) and an exhausted run found fewer, the line says so in red: "But the instance has 61 (the
-  audit of the same program): this run lost 50."
+  audit of the same program): this run lost 50." **Clear**, next to it, removes the results of the
+  last run: output, statistics, trace and recording (the run history stays).
 - **Solutions**: numbered, shown atoms and cost. At most 1,000 are shown; **Download** saves all
   kept solutions (up to 200,000) as text, one per line (`n: atoms`).
 - **Trace**: one recorded step at a time (slider, Previous, Next). Its label counts the trace's own
@@ -1294,7 +1310,7 @@ abstraction), with a note saying so; the next Run replaces them. The run history
 
 | Part | Content |
 | --- | --- |
-| Summary | Outcome, elapsed time, candidates, counterexamples (models that refuted a candidate), refinements and their split (from counterexamples, from cores, blocks, and other when there are any), solutions; the headers' tooltips give the counting rules (below). **Per link**: the same counts per link. After an audit: the audit's verdict and its own figures instead. The run bar's live counts use the same time format and show the split in brackets. |
+| Summary | Outcome, elapsed time, candidates, counterexamples (models that refuted a candidate), refinements and their split (from counterexamples, from cores, blocks, and other when there are any), solutions; the headers' tooltips give the counting rules (below). **Per link**: the same counts per link. After an audit: the audit's verdict and its own figures instead. The top bar's live counts use the same time format and show the split in brackets. |
 | Solvers | Per solver: fragments, options, calls, sat, unsat, solving time (exclusive of nested solves), time per call, grounding time, choices, conflicts, restarts, atoms, rules, expansions. |
 | Refinements | Clauses, mean and largest length, expansions, restarts, automatic blocks (solutions blocked so that a later search does not report them again). |
 | Cores | After a run that refines by cores: how many cores and their lengths (the clause-length buckets), as clasp returns them and minimised (`core.minimal`), with an approximate mean. The `S` event's `cores` (`plain`, `minimal`). |
@@ -1328,7 +1344,7 @@ Counting rules:
   `sat`, `unsat`).
 
 The Statistics tab's **Summary** shows the counterexamples and the refinements with their split,
-and **Per link** the same per link; the run bar's live line shows the split in brackets, the run
+and **Per link** the same per link; the top bar's live line shows the split in brackets, the run
 history in brackets after the refinements (from counterexamples · from cores · blocks), campaign
 rows have the fields `counterexamples`, `from_models`, `from_cores` and `blocks` (also as
 metrics), and `tools/run.mjs` prints them. A recording made before this rule counts every
@@ -1362,12 +1378,12 @@ once, one square each, from the audit's enumeration (so the same limit of 200,00
 is of **one recorded run** and of **one link**: the link the audit enumerates (the candidates are
 the assignments of its interface atoms), so it draws only that link's refinements. When the run
 also refines other links (a winner link, the links of a chain), the summary says how many and on
-which link (**Other links**), so that the run bar's refinement count and the map's can differ
+which link (**Other links**), so that the top bar's refinement count and the map's can differ
 without a mystery. A block that follows a reported solution of another solver (a loop that lists a
 candidate's outcomes with `C.models` and then blocks it, as `kemeny-rankings`) counts as an
 acceptance, not as a lost solution. The line above the map names the run (instance, variant, recorded steps),
 and the map is cleared, with a note, as soon as another run, an audit or a replay replaces it, or
-another project is loaded (the run bar's **Shown** line says which run the tabs hold). An instance
+another project is loaded (the top bar's **Shown** line says which run the tabs hold). An instance
 marked `audit: false`, or one whose candidates do not fit in memory, gets no map, with the reason;
 the blame matrix is still drawn from the recorded steps.
 **Compute** audits the instance and variant the recorded run used, and needs a run recorded with every step (Recording "every step", Loop tab); without one it
@@ -1457,7 +1473,7 @@ facts: draw what the instance fixes in the scene part.
 
 ### Refinery tab
 
-Tab 12 (`?tab=12`), shown with the toggle **Refinery** in the Control tab's **Tabs** block
+Tab 12 (`?tab=12`), shown with the toggle **Refinery** in **Settings**
 (`cegarplay.lab`), or for one visit with `?lab=1`. It shows what a loop *could* have done, not
 just what it did: at one step, every refinement clause that was possible there, and over a whole run,
 how its length compares with the best and worst runs that the same refinements allow. Everything is
@@ -1489,8 +1505,8 @@ The idealised run ignores clasp's weak retention of clauses in Shape 1 (`--enum-
 real Shape 1 run can propose a removed candidate again and be longer than the worst idealised run.
 The tab says so wherever it compares a real run with idealised ones.
 
-**Refinery bar.** The instance and variant (at first those of the run bar; changing them here does not
-change the run bar), the link (empty: as the audit chooses it), **Steps from** (the latest run of the
+**Refinery bar.** The instance and variant (at first those of the top bar; changing them here does not
+change the top bar), the link (empty: as the audit chooses it), **Steps from** (the latest run of the
 page, an opened recording, or free), **Compute space**, **Cancel**, the status line ("space: 412
 candidates, 37 solutions, 375 bad, 12 interface atoms"), and **Limits**: candidate cap (200,000, the
 audit's), counterexamples per candidate (20), minimal sets per candidate (200), exact-bounds
@@ -1510,7 +1526,7 @@ spinner, what is being computed, the elapsed time and **Stop** appears under the
 started it (Stop is Cancel for the Refinery's computations and Abort for a run). The Refinery bar's status line
 and Cancel say the same.
 
-**Step inspector.** From a run (a run recorded with every step: Loop tab, Recording, or the run bar's **record steps**) with a step
+**Step inspector.** From a run (a run recorded with every step: Loop tab, Recording, or **record steps** under Run options) with a step
 slider, **Previous** and **Next**; the alive set before the step comes from replaying the run's
 earlier clauses over the space. Or free: any bad candidate from a list ordered by true atoms, by
 counterexamples or at random, with every candidate alive. For the candidate M:
@@ -1557,7 +1573,7 @@ scheme's bounds. **Record a run and place it** does all of it: the page's Run on
 variant, to all solutions (as the idealised runs), recording every step whatever the Recording
 setting says (the setting is not changed), then the steps, the loop scheme's bounds when missing, and
 the placement. **New seed: run again** does the same after setting a random seed and a randomized
-search in the run bar (**Seed**, **randomized**), where Run repeats that run. A line names the placed
+search under Run options (**Seed**, **randomized**), where Run repeats that run. A line names the placed
 run: the latest run of the page (with its start time, instance, variant and, for a run started here,
 its seed) or the opened recording. When only the bounds are missing, **Compute them and place the
 run** does that. **The ladder** puts on one axis of refinements: best (omniscient), best (loop
@@ -1631,22 +1647,22 @@ prints them as `{"kind": ..., "data": ...}`.
 | --- | --- |
 | `?example=<id>` | Load the library example `<id>` (also `?file=<id>`). It does not replace the project kept in the browser until you edit it. |
 | `&fragment=<name>` | With `?example`: open the Programs tab on that fragment's editor (`loop` opens the Loop tab; a view fragment opens its view's editor in the Observatory, **Edit this view**). Overrides `?tab`. An unknown name is ignored with a note in the status line. |
-| `&from=guide/<page>.html#<anchor>` | Show a link "← Back to the guide" at the top left, to that guide page. Only a page of the guide is accepted. |
-| `?tab=N` | Open tab N: 1 Control, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory, 12 Refinery. The numbers are fixed; they are not the order on screen. |
-| `&instance=<id>` | Pick that instance of the project in the run bar. An unknown id is ignored with a note. |
+| `&from=guide/<page>.html#<anchor>` | Show a link "← Back to the guide" in the top bar, to that guide page. Only a page of the guide is accepted. |
+| `?tab=N` | Open tab N: 1 Home, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory, 12 Refinery. The numbers are fixed; they are not the order on screen. |
+| `&instance=<id>` | Pick that instance of the project in the top bar. An unknown id is ignored with a note. |
 | `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
 | `?advanced=1` | The Observatory and Campaign tabs for this visit (without changing the remembered toggles). `?tab=10` shows the Campaign tab; `?tab=11`, `?lecture=1`, `?view=` and `?step=` show the Observatory. |
 | `?lab=1`, `?refinery=1` | Show the [Refinery](#manual-refinery-tab) tab for this visit, without changing the remembered toggle. `?tab=12` implies it. |
 | `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
 | `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
-| `#p=<data>` | A share link (**Copy share link** in the Control tab): the whole project without its run history, in the URL fragment, which never reaches the server. `<data>` is `z` + base64url of the deflate-raw compressed project JSON (`u` + base64url of the plain JSON in a browser without `CompressionStream`). Takes precedence over the kept project and, like `?example`, does not replace it until you edit. A damaged link opens the default example with an error in the status line. Links over 8,000 characters get a warning. |
+| `#p=<data>` | A share link (**Copy share link** in the Project menu): the whole project without its run history, in the URL fragment, which never reaches the server. `<data>` is `z` + base64url of the deflate-raw compressed project JSON (`u` + base64url of the plain JSON in a browser without `CompressionStream`). Takes precedence over the kept project and, like `?example`, does not replace it until you edit. A damaged link opens the default example with an error in the status line. Links over 8,000 characters get a warning. |
 | `?replay=examples/replays/<id>.cprec` | Replay a library recording without the engine (it loads its example first). Only paths of that form are accepted. |
 | `&step=N`, `&view=<name>` | Open the Observatory with the linked cursor on step N and that domain view. |
 | `?lecture=1` | Lecture mode: the domain view alone, its notes as captions, the arrow keys move the cursor. |
 | `?nocoi=1` | Do not use the isolation service worker (and remove it). Pause, Stop and threads are then unavailable. |
 
 The address bar follows the page (without new history entries): loading an example from the library
-or the tutorial sets `?example=<id>`, switching tabs sets `?tab=N` (none for the Control tab), and
+or the tutorial sets `?example=<id>`, switching tabs sets `?tab=N` (none for Home), and
 the first edit, a new project or an uploaded file removes `?example`, `?fragment` and `#p=`. A reload
 therefore shows the same example on the same tab. `nocoi`, `manual`, `internals` and `from` are kept.
 
@@ -1661,11 +1677,11 @@ Browser storage (`localStorage`, per browser and site):
 - `cegarplay.project`: the project being edited, with its run history, saved 0.8 s after each
   change and restored at start-up (unless `?example`, `?file`, `#p=` or `?fresh=1`). When the
   browser refuses (storage full or blocked), the project is kept without its run history, and if
-  that fails too, the Control tab says "Not kept in this browser"; download the project then.
-- `cegarplay.ws` and `cegarplay.ws.<name>`: the **Workspace** (Control tab): projects saved by name
+  that fails too, Home says "Not kept in this browser"; download the project then.
+- `cegarplay.ws` and `cegarplay.ws.<name>`: the **Workspace** (Project, Workspace and snapshots): projects saved by name
   (**Save in workspace** asks before it overwrites a name; **Open** asks before it replaces an edited
   project; **Delete**). Only in this browser: download a project to keep it.
-- `cegarplay.snap` and `cegarplay.snap.<id>`: **Snapshots** (Control tab, below the workspace):
+- `cegarplay.snap` and `cegarplay.snap.<id>`: **Snapshots** (Project, Workspace and snapshots, below the workspace):
   copies of the project being edited, with its run history, to go back to. **Take snapshot** (a
   name is optional; without one, the date and time), **Restore**, **Delete**. Snapshots belong to
   the project's title: the list shows this project's, newest first; those of other projects are under
@@ -1673,7 +1689,8 @@ Browser storage (`localStorage`, per browser and site):
   the oldest. Before a restore, and before another project replaces an edited one (an example from
   the library, a file, **New project**, **Open** in the workspace, after the question), an
   automatic snapshot "before …" is taken and **Undo** appears on a line of its own that says what
-  replaced the project (also beside the library's "Loaded example" line); Undo brings that project
+  replaced the project (also beside the library's "Loaded example" line, or in the note at the bottom of
+the page); Undo brings that project
   back. Undo keeps its copy in memory, so it works for this visit also when browser storage is full
   or blocked; the snapshot list then says that storage is not available. A line above the list says
   where the project being edited stands: the same as a snapshot (named; that snapshot is marked
@@ -1688,7 +1705,8 @@ Browser storage (`localStorage`, per browser and site):
 - `cegarplay.lab`: `"1"` when the Refinery is on (absent when off); `cegarplay.lab.*`: the
   Refinery's settings (its Limits, the source of steps, the candidate order, the scheme), as JSON.
 - `cegarplay.theme`: `"light"` or `"dark"` when the colour theme was chosen by hand (absent for Auto).
-- **Reset everything** (Control tab, last block) removes every `cegarplay*` key above and the
+- `cegarplay.help-seen`: the tabs whose explanation (the **?**) was closed, as JSON.
+- **Reset everything** (Settings, last block) removes every `cegarplay*` key above and the
   Campaign tab's rows (IndexedDB `cegarplay`), after a question, and loads the page afresh (no
   query, no hash): a first visit.
 
@@ -1697,7 +1715,7 @@ Keyboard: Ctrl+Enter or Cmd+Enter runs from anywhere, also inside an editor. Ctr
 Every control shows a ring in the link colour when it has keyboard focus. Verdicts (the audit
 panel, the Fuzz card, the exercise box) and the status lines of Spaces, Snapshots and Compare
 variants are polite live regions, so a screen reader announces them. The page has no sideways
-scroll from 1400 px down to 400 px wide (the run bar wraps whole groups; tables and diffs scroll
+scroll from 1400 px down to 400 px wide (the top bar wraps whole groups; tables and diffs scroll
 in their own box).
 
 Cross-origin isolation: `coi-serviceworker.js` adds the isolation headers through a service worker
@@ -1706,11 +1724,13 @@ Pause, Stop and threads works.
 
 ## Import and export
 
-| Action (Control tab) | Result |
+| Action (Project menu) | Result |
 | --- | --- |
-| Upload project from file | Loads a project JSON (`Project.load`). |
-| Download current project | The project JSON; "include run history" adds `runs`. |
-| Export for clingo | One `.lp` file with the fragments, the runtime and the loop (with the instance and variant picked in the run bar applied): `clingo file.lp --outf=3` prints `Answer: n` lines and a summary. Needs a clingo built with Lua (conda-forge, Ubuntu's `gringo`; not the PyPI package). |
+| New project | Four small fragments that run as they are, with comments on what goes where. |
+| Open file… | Loads a project JSON (`Project.load`). |
+| Download | The project JSON. **Download with run history** adds `runs`. |
+| Copy share link | A link with the whole project in it (`#p=`, below). |
+| Export for clingo | One `.lp` file with the fragments, the runtime and the loop (with the instance and variant picked in the top bar applied): `clingo file.lp --outf=3` prints `Answer: n` lines and a summary. Needs a clingo built with Lua (conda-forge, Ubuntu's `gringo`; not the PyPI package). |
 
 ## Example library
 
@@ -1800,7 +1820,7 @@ without the repository.
 ### Voting examples
 
 The library group **Voting** (`voting`) holds six examples about elections. Each loads with
-`?example=<id>`; its readme (Control tab, **Readme**) has the research question, the loops, measured
+`?example=<id>`; its readme (Home, **Readme**) has the research question, the loops, measured
 times and references.
 
 | Example | Question | Outcome (one solution each) | Default loop |
@@ -1998,7 +2018,7 @@ ground truth for an exhausted run. Chains, searches of a check and optimisation 
 - `window.cegarplay` is the app object: `project` (the loaded project), `collect()` (the project
   with the editors' current text), `setProject(p)`, `control.run()`, `control.state`
   (also `#run-status[data-state]`), `stats.S` (last `S` event).
-- Load a project file in the Control tab, or open `?example=<id>`.
+- Open a project file (Project, Open file), or open `?example=<id>`.
 
 ## Troubleshooting
 
@@ -2019,5 +2039,5 @@ ground truth for an exhausted run. Chains, searches of a check and optimisation 
 | `G.block needs a total candidate; ...` (also `G.clause`, `G.above`, `G.below`, `G.lift`) | Inside `on partial`, a clause about the candidate's own values would cut completions that are solutions. Use a core or `G.clause(X)`; see [Checks on partial candidates](#manual-checks-on-partial-candidates). |
 | `for: expected a list, got ...` | `for` walks lists only: write `X.atoms(p/n)` for the atoms of a model, `C.core` for a core. |
 | `flip: the atom is not in the list` | `E.flip(a)` and `E.without(a)` need an element of `E`. The atoms of a clause (`G.core(C)`, `G.block(M)`) are literals of the solver it refines, not assumptions of `C`; walk `C.core` or `E` itself. |
-| Seeds give the same statistics | Tick **Randomized search** (Loop tab, or **randomized** in the run bar), or give randomising solver options (`--rand-freq=0.05`, `--sign-def=rnd`). |
+| Seeds give the same statistics | Tick **Randomized search** (Loop tab, or **randomized** under Run options), or give randomising solver options (`--rand-freq=0.05`, `--sign-def=rnd`). |
 | `-t` rejected | Threads need a cross-origin isolated page and the Threads box in the Loop tab. |

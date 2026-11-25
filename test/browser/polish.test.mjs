@@ -35,7 +35,7 @@ test('D1, D2: metadata, footer, no brands font, and the icons render', async () 
   await context.close();
 });
 
-test('D3: when the browser cannot keep the project, the Control tab says so', async () => {
+test('D3: when the browser cannot keep the project, Home says so', async () => {
   const { page, context } = await B.openPage(browser, server, '?fresh=1');
   assert.equal(await page.isHidden('#storage-status'), true);
   await page.evaluate(() => { Storage.prototype.setItem = function () { throw new DOMException('full', 'QuotaExceededError'); }; });

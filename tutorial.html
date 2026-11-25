@@ -23,13 +23,13 @@
   mode; the Refinery tab (the Refinery, lesson 6) has a switch of its own.</p>
 <p class="web-only">Every lesson has a <b>Load</b> button. It replaces the project you are editing (the page asks first
   if you changed it), and you stay in this tab. Press <b>Run</b> or <b>Ctrl+Enter</b> (<b>Cmd+Enter</b> on a
-  Mac): the run bar at the top shows the counts while you read on. All examples are also in the
-  Library in the Control tab.</p>
+  Mac): the line under the top bar shows the counts while you read on. All examples are also in the
+  Library on the Home tab.</p>
 <p class="web-only">The tabs follow the work: you <b>write</b> a project (Programs, Loop, Instances), <b>run</b> it and
   <b>look</b> at the run (Output, Statistics, Observatory), and <b>compare</b> many runs (Campaign).
   Lessons 2 to 6 use one small problem throughout; lessons 7 to 11 add the tools for larger ones.</p>
-<p class="web-only">The Observatory and the Campaign tab are Advanced tabs: tick them at the top of this tab or under
-  <b>Tabs</b> in the Control tab (lessons 5, 6 and 8 use them). There you can also hide this tab once you no longer
+<p class="web-only">The Observatory and the Campaign tab are Advanced tabs: tick them at the top of this tab or in
+  <b>Settings</b> (the gear at the right of the top bar; lessons 5, 6 and 8 use them). There you can also hide this tab once you no longer
   need it, and turn on the <b>Refinery</b>, which adds the <b>Refinery</b> tab (the end of lesson 6); the page
   remembers these choices.</p>
 <p class="web-only">This tutorial shows where each tool is. The <a href="guide/index.html#howto" target="cegarplay-guide">how-to
@@ -57,7 +57,7 @@
   <code>C</code> looks for a sum inside it. On a first visit the page opens with it already loaded.
 </p>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="tutorial-first-run">Load: Sum-free sets</button></p>
-<p><span class="web-only">Run it. It takes a fraction of a second, and the run bar shows</span><span class="book-only">A run takes a fraction of a second and counts</span>
+<p><span class="web-only">Run it. It takes a fraction of a second, and the line under the top bar shows</span><span class="book-only">A run takes a fraction of a second and counts</span>
   <b>107 candidates, 46 counterexamples, 46 refinements, 61 solutions</b>. <span class="web-only">Then open the <b>Output</b> tab:</span><span class="book-only">The <b>Output</b> tab then has:</span></p>
 <ul>
   <li><b>Solutions</b> lists the 61 sets (the first one is the empty set).</li>
@@ -132,7 +132,7 @@ search A:
   refinements, 10,698 solutions.</p>
 
 <h2 id="tut-reading">4. Reading the trace and the statistics</h2>
-<p>The line <b>Shown:</b> under the run bar says which run the Output, Statistics and Observatory tabs show: a run or
+<p>The line <b>Shown:</b> under the top bar says which run the Output, Statistics and Observatory tabs show: a run or
   an audit, on which instance, how it ended and how much of it was recorded. It turns amber when you edit the
   project afterwards: the results on screen are then of the earlier version.</p>
 <p>The trace (Output tab) records the first steps of a run (Trace steps in the Loop tab, default 200); its label
@@ -249,8 +249,8 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
   which atoms the refinements relied on.</p>
 <h3 id="tut-lab">What the loop could have done: the Refinery</h3>
 <p>The candidate space shows what one run did. The <b>Refinery</b> tab shows what the loop
-  <em>could</em> have done, from the same enumeration as the audit. <span class="web-only">Turn on <b>Refinery</b> under
-  <b>Tabs</b> in the Control tab and open the Refinery tab. With this project loaded, set <b>Steps from</b> to free and
+  <em>could</em> have done, from the same enumeration as the audit. <span class="web-only">Turn on <b>Refinery</b> in
+  <b>Settings</b> and open the Refinery tab. With this project loaded, set <b>Steps from</b> to free and
   press <b>Compute space</b>; under <b>Space</b>, <b>Inspect this candidate</b> opens the audit's witness in the
   <b>Step inspector</b>.</span><span class="book-only">Its <b>step inspector</b>, on the audit's witness, shows the
   following.</span> The candidate <code>{pick(2) pick(4)}</code> has one counterexample, <code>sum(2,2)</code>. Its clause
@@ -277,9 +277,9 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
   the problem, kept apart from its encoding. The graph colouring example has three, for <code>n</code> = 4, 5 and 6.</p>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="graph-coloring">Load: Graph colouring</button></p>
 <ul>
-  <li>The <b>Instance</b> picker in the run bar chooses the instance of the next run; the run history names it.</li>
+  <li>The <b>Instance</b> picker in the top bar chooses the instance of the next run; the run history names it.</li>
   <li>The <b>Instances</b> tab lists them with their tags, the expected solution count and the count of the last run,
-    and edits their facts and constants. <b>Run all instances</b> runs each one (with the run bar's variant) and marks a count other than the expected
+    and edits their facts and constants. <b>Run all instances</b> runs each one (with the top bar's variant) and marks a count other than the expected
     one with ✗. (The instance <code>n6</code> is tagged <code>slow</code>.)</li>
   <li><b>Import file</b> turns a file into an instance: facts, DIMACS graphs, QDIMACS formulas, argumentation
     frameworks, PrefLib elections.</li>
@@ -322,7 +322,7 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
   as relevant. The fragment <code>relevant</code> holds strategy 2; <code>relevant_s1</code> … <code>relevant_s5</code>
   hold the others. Each is a <b>variant</b>, listed under <b>Variants</b> at the foot of the Loop tab: <code>s3</code>
   swaps <code>relevant_s3</code> in for <code>relevant</code>; <code>shape2</code> and <code>reference</code> have a loop
-  script of their own. The <b>Variant</b> picker in the run bar runs one of them; the suite <code>strategies</code> runs
+  script of their own. The <b>Variant</b> picker in the top bar runs one of them; the suite <code>strategies</code> runs
   all seven on the questions that finish, so the Campaign tab compares them side by side (strategy 1 needs the fewest
   candidates). To try a strategy of your own: add a fragment, then a variant that swaps it in.</p>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="voting-justification">Load: Voting justifications</button></p>
@@ -571,13 +571,13 @@ if Y: reject M with GXC.core(C)</div>
   <li><b>Proofs</b>: with <b>proof</b> on next to Recording, the run writes a proof log. <code>tools/certcheck.py</code>,
     which shares no code with the playground, confirms the solution count from it.</li>
 </ul>
-<p>A <b>recording</b> keeps the steps of a run (Recording in the Loop tab). <b>Download recording</b> in the Control
-  tab saves it; <b>Open recording</b> replays it in the Output tab and the Observatory without running anything. Every
+<p>A <b>recording</b> keeps the steps of a run (Recording in the Loop tab). <b>Download recording</b> (<b>Project</b>, <b>Recordings</b>)
+  saves it; <b>Open recording</b> replays it in the Output tab and the Observatory without running anything. Every
   fast library example comes with one in <code>examples/replays/</code>; a link such as
   <code>?replay=examples/replays/gc-shape1.cprec&amp;tab=11</code> opens it in the Observatory.</p>
 
 <h2 id="tut-own">12. Your own problem</h2>
-<p>Start from the starter project (also <b>New project</b> in the Control tab). Its four fragments run as they are:
+<p>Start from the starter project (also <b>New project</b> in the <b>Project</b> menu). Its four fragments run as they are:
   the abstraction guesses a non-empty set of items, and the check looks for an item that is picked while a smaller
   one is not. With <code>n = 4</code> it finds 4 solutions.</p>
 <p class="lesson-load"><button class="control-button small-button" data-load-example="starter">Load: the starter</button></p>
@@ -599,7 +599,7 @@ if Y: reject M with GXC.core(C)</div>
 </ol>
 <p>If a counterexample has no relevant atom, its clause is empty: the run ends there, with the solutions found so far.
   That is right only when no solution is left; the <b>Audit</b> tells you, and names a solution it would cut. Your project is kept in this browser and comes back after a
-  reload; download it (Control tab) to keep it for good, or <b>Copy share link</b> to send it.</p>
+  reload; download it (<b>Project</b>, <b>Download</b>) to keep it for good, or <b>Copy share link</b> to send it.</p>
 <h3 id="tut-exercises">Exercises that check themselves</h3>
 <p>An exercise is a project with a task and its own checks. <b>Check exercise</b> (Instances tab) runs every
   instance with all solutions and compares the counts, audits where the task asks for it, and compares the number
@@ -628,6 +628,6 @@ if Y: reject M with GXC.core(C)</div>
   decomposition, CEGIS, RAReQS, clausal abstraction, omission-based abstraction) are mapped to loop patterns and
   examples in <a href="#manual-loops-from-the-literature">Loops from the literature</a>; the Library filter finds them
   by tag (<code>ihs</code>, <code>marco</code>, <code>oll</code>, <code>benders</code>, ...).</p>
-<p>The Library in the Control tab has the larger problems: games, argumentation, knapsacks, QBFs, planning, voting.
+<p>The Library on the Home tab has the larger problems: games, argumentation, knapsacks, QBFs, planning, voting.
   Every example can be linked to directly: <b>Copy link</b> in the Library gives a link such as
   <code>?example=gc-shape3</code>.</p>

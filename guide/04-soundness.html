@@ -80,7 +80,7 @@ relevant(del(V)) :- q(V), not busier(V).</pre>
           right. So run both on the same instance and compare the counts:</p>
         <ul>
           <li>the same fragments and constants;</li>
-          <li>all solutions (Solutions: all, in the run bar);</li>
+          <li>all solutions (Solutions: all, under Run options in the top bar);</li>
           <li>both runs exhausted;</li>
           <li>the same number of solutions, or the faster loop is wrong.</li>
         </ul>
@@ -207,7 +207,7 @@ relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
             first unsound one to a handful of facts. The how-to <a href="howto-unsound.html">hunting an unsound
             refinement</a> walks through both on this chapter's example.</p>
           <p id="lab">To see what the right clause would have been, the <b>Refinery</b> (a
-            switch under Tabs in the Control tab) takes the witness candidate and lists every clause the loop
+            switch in Settings, the gear in the top bar) takes the witness candidate and lists every clause the loop
             could make there: which are sound, how much each removes, and the smallest sound one. It also
             names the <b>forced</b> atoms, those every sound clause must contain, each with the solution
             that differs from the candidate only there. A forced atom that <code>relevant/1</code> did not

@@ -1,6 +1,6 @@
 // The Refinery tab (docs/lab-design.md; manual: Refinery tab). The only lab module
 // that touches the DOM. It talks only to the lab worker (js/lab/worker.js); it reads the page's
-// project, run bar and latest recording, and changes none of them.
+// project, top bar and latest recording, and changes none of them.
 import { Recording } from '../recording.js';
 import { fnv, projectText, LAB_LIMITS } from './space.js';
 
@@ -109,7 +109,7 @@ const HELP = {
   ],
   run: [
     ['What it does', 'places one recorded run of the loop (every step recorded) among the idealised runs of the loop scheme: shorter or longer than random orders, and how far from the best.'],
-    ['Record a run and place it', 'runs the loop on the instance and variant above, to all solutions (as the idealised runs), records every step, and places the run. New seed does the same with a random seed and a randomized search, so the order of candidates changes; the seed is shown in the run bar (Seed) and a run there repeats it.'],
+    ['Record a run and place it', 'runs the loop on the instance and variant above, to all solutions (as the idealised runs), records every step, and places the run. New seed does the same with a random seed and a randomized search, so the order of candidates changes; the seed is shown under Run options (Seed), and Run repeats it.'],
   ],
 };
 
@@ -211,7 +211,7 @@ export class LabTab {
     return h('a', { href: '#', class: 'modal-link', 'data-open': id, title: `About: ${title}`, 'aria-label': `About: ${title}` }, '');
   }
 
-  // the run bar's instance and variant are the starting point; changing them here does not change the run bar
+  // the top bar's instance and variant are the starting point; changing them here does not change the top bar
   syncPickers() {
     const p = this.app.project;
     const fill = (sel, items, none, current) => {
@@ -309,7 +309,7 @@ export class LabTab {
   // ---- the space --------------------------------------------------------------------------
   params() {
     const p = structuredClone(this.app.collect());
-    // '' is "(as written)": no variant, also when the run bar has one (undefined would mean the run bar's)
+    // '' is "(as written)": no variant, also when the top bar has one (undefined would mean the top bar's)
     return { project: p, instance: this.inst.closest('label').hidden ? undefined : this.inst.value, variant: this.variant.closest('label').hidden ? undefined : this.variant.value,
       link: this.link.value.trim() || undefined, limit: this.limits.candidates || LAB_LIMITS.candidates };
   }
@@ -470,7 +470,7 @@ export class LabTab {
         h('button', { class: 'control-button small-button lab-needs-idle', type: 'button', id: 'lab-inspect-go', onclick: () => this.inspectCandidate(Number(pick.value)) }, 'Inspect'));
       B.append(h('p', { class: 'note' }, this.source.value === 'free' ? 'Free mode: any bad candidate, with every candidate alive.'
         : this.runSteps && this.runSteps.steps.length ? 'The recording has no refinement of a bad candidate on this space (another instance, or a run that only accepted solutions): free mode.'
-          : 'No recorded run to step through (Record a run and place it, under This run against the bounds; or tick "record steps" in the run bar and Run; or open a recording): free mode.'));
+          : 'No recorded run to step through (Record a run and place it, under This run against the bounds; or tick "record steps" under Run options and Run; or open a recording): free mode.'));
     }
     B.prepend(ctl);
     this.verdict = h('p', { id: 'lab-verdict', class: 'lab-verdict', role: 'status', 'aria-live': 'polite' });
@@ -761,11 +761,11 @@ export class LabTab {
   // ---- Feature C --------------------------------------------------------------------------
   // Record a run and place it: the page's Run (instance and variant as here, all solutions, every
   // step recorded), then the steps, the loop scheme's bounds when missing, and the placement.
-  // newSeed: a random seed and a randomized search first; the run bar shows the seed.
+  // newSeed: a random seed and a randomized search first; the top bar shows the seed.
   async recordAndPlace({ newSeed = false } = {}) {
     const c = this.app.control;
     if (this.client.busy) { this.status.textContent = 'The Refinery is still computing: wait for it or press Stop.'; return; }
-    if (!c || !this.app.ready || !c.canStart) { this.status.textContent = 'A run, audit or batch is going on (run bar): wait for it, or Abort it there.'; return; }
+    if (!c || !this.app.ready || !c.canStart) { this.status.textContent = 'A run, audit or batch is going on (top bar): wait for it, or Abort it there.'; return; }
     const st = this.app.project.settings;
     if (newSeed) {
       let seed;
@@ -778,7 +778,7 @@ export class LabTab {
     const seedText = `seed ${S.seed || 0}${S.randomize ? ', randomized' : ''}`;
     const prm = this.params();
     const what = `Running the loop (${seedText}; every step recorded, all solutions)`;
-    this.setBusy(`${what}…`, { stop: () => c.abort(), stopTitle: 'Abort the run (as Abort in the run bar)' });
+    this.setBusy(`${what}…`, { stop: () => c.abort(), stopTitle: 'Abort the run (as Abort in the top bar)' });
     let r;
     this.ownRun = true;
     try { r = await c.run({ instance: prm.instance, variant: prm.variant, recordSteps: true, allSolutions: true }); }
@@ -808,10 +808,10 @@ export class LabTab {
       h('button', { class: 'control-button lab-needs-idle', type: 'button', id: 'lab-record-run', onclick: () => this.recordAndPlace(),
         title: 'Run the loop on the instance and variant above, to all solutions, recording every step; then place the run (the loop scheme\'s bounds are computed first when missing)' }, 'Record a run and place it'),
       h('button', { class: 'control-button lab-needs-idle', type: 'button', id: 'lab-new-seed', onclick: () => this.recordAndPlace({ newSeed: true }),
-        title: 'The same with a random seed and a randomized search (random decisions and signs), so the candidates come in another order. The seed is set in the run bar (Seed), where Run repeats this run.' }, 'New seed: run again'),
-      h('span', { class: 'note', id: 'lab-seed-note' }, `run bar: seed ${S.seed || 0}${S.randomize ? ', randomized' : ''}`)));
+        title: 'The same with a random seed and a randomized search (random decisions and signs), so the candidates come in another order. The seed is set under Run options (Seed), and Run repeats this run.' }, 'New seed: run again'),
+      h('span', { class: 'note', id: 'lab-seed-note' }, `Run options: seed ${S.seed || 0}${S.randomize ? ', randomized' : ''}`)));
     const rec = this.recording();
-    if (!rec) { B.append(h('p', { class: 'note lab-disabled' }, 'No recorded run of this instance yet: press Record a run and place it, or record one with the run bar\'s "record steps" and Run, or open a recording (Steps from).')); return; }
+    if (!rec) { B.append(h('p', { class: 'note lab-disabled' }, 'No recorded run of this instance yet: press Record a run and place it, or record one with "record steps" under Run options and Run, or open a recording (Steps from).')); return; }
     if (!this.results.loop || !this.results.loop.bounds) {
       B.append(h('p', { class: 'note lab-disabled' }, 'To place the run, the loop scheme\'s bounds are needed. ',
         h('button', { class: 'control-button small-button lab-needs-idle', type: 'button', id: 'lab-loop-bounds', onclick: async () => { await this.computeBounds('loop'); if (this.results.loop) await this.computeRun(); } }, 'Compute them and place the run')));

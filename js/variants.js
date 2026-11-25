@@ -1,4 +1,4 @@
-// Variants: the run bar's Variant picker and the editor in the Loop tab.
+// Variants: the top bar's Variant picker and the editor in the Loop tab.
 // A variant (project.variants, docs/spec-instances.md section 1) changes the project for a run:
 // swap (fragment -> the fragment whose text it gets), its own loop script, constants. The picker
 // sets settings.variant ('' = the project as it is); a run, an audit and "Run all" use it, and a
@@ -180,7 +180,7 @@ export class Variants {
     const fragments = this.app.project.fragments.map((f) => f.name);
     if (!this.list.length) {
       this.root.append(el('p', { class: 'note' }, 'No variants. A variant runs the same project with other fragments, another loop script or other constants; ',
-        'the run bar then gets a Variant picker, and a campaign suite can compare variants on the same instances.'));
+        'the top bar then gets a Variant picker, and a campaign suite can compare variants on the same instances.'));
     }
     if (this.list.length) {
       // the Campaign tab compares variants on many instances; it is shown only when ticked (Tabs, Advanced)

@@ -27,7 +27,7 @@ export class LoopTab {
         if (key === 'seed') { this.syncSeed(); this.app.dirty(); }
       });
     }
-    // the run bar's Seed and randomized: the same settings as the Loop tab's, kept in step
+    // the top bar's Seed and randomized: the same settings as the Loop tab's, kept in step
     $('run-seed').addEventListener('change', (e) => {
       const v = Math.max(0, Math.floor(Number(e.target.value) || 0));
       this.app.project.settings.seed = v;
@@ -62,7 +62,7 @@ export class LoopTab {
       this.app.dirty && this.app.dirty();
     };
     for (const id of ['record-select', 'record-n', 'record-calls', 'record-proof']) $(id).addEventListener('change', rec);
-    // the run bar's "record steps": every step, or off (the Loop tab's Recording has the other choices)
+    // the top bar's "record steps": every step, or off (the Loop tab's Recording has the other choices)
     $('run-record').addEventListener('change', (e) => {
       $('record-select').value = e.target.checked ? 'all' : 'off';
       if (!e.target.checked) $('record-proof').checked = false;

@@ -21,7 +21,7 @@ export function liveText(s) {
     `${fmt(r.total)} refinements${split && split !== 'none' ? ` (${split})` : ''} · ${fmt(s.solutions)} solutions`;
 }
 
-// The run bar after an audit: its own counts (the S events of an audit count raw models).
+// The top bar after an audit: its own counts (the S events of an audit count raw models).
 export function auditLiveText(a) {
   if (!a || !a.verdict) return ' ';
   if (a.mode === 'space' && a.space) return `space ${a.space} · ${a.verdict === 'sound' ? `sound up to ${a.bound || 'k'} = ${a.k}` : `${a.verdict} at ${spaceAt(a)}`}`;
@@ -112,7 +112,7 @@ export class Stats {
           <button class="control-button" id="import-verdict-button" title="The --json output of tools/certcheck.py for a proof log of one of these runs">Import certcheck verdict</button>
           <input type="file" id="verdict-file" accept=".json,.txt" hidden>
         </p>
-        <p class="note" id="history-shown-note" hidden>&#x25B6; marks the run whose results the tabs show now (the run bar's <b>Shown</b> line);
+        <p class="note" id="history-shown-note" hidden>&#x25B6; marks the run whose results the tabs show now (the <b>Shown</b> line under the top bar);
           the other rows are earlier runs, kept as numbers only.</p>
         <div class="table-wrapper"><table class="internals-table" id="history-table"></table></div>
         <div id="history-compare-box" hidden><h3>Two runs side by side</h3>

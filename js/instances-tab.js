@@ -1,4 +1,4 @@
-// Instances tab (tab 9) and the instance picker of the run bar (docs/spec-instances.md).
+// Instances tab (tab 9) and the instance picker of the top bar (docs/spec-instances.md).
 import { makeEditor } from './editors.js';
 import { IMPORTERS, importerFor, freshId, checkFacts, ImportError, resolveInstance } from './instances.js';
 import { generate, PARAM_TYPES, generatorConstants } from './generate.js';
@@ -43,7 +43,7 @@ function parseConsts(text) {
   return out;
 }
 
-const RUN_ALL_TITLE = 'Run every instance in the table in turn (the instance picked in the run bar does not matter), with the variant picked in the run bar';
+const RUN_ALL_TITLE = 'Run every instance in the table in turn (the instance picked in the top bar does not matter), with the variant picked in the top bar';
 
 // What Fuzz does, said at the top of its result card.
 const FUZZ_WHAT = 'Fuzz looks for a small instance on which the loop is unsound. It audits instances from small to large (every refinement the loop could make; ' +
@@ -140,9 +140,9 @@ export class InstancesTab {
     }
     this.exerciseBox = el('div', { id: 'exercise-box', class: 'audit-panel exercise-box', hidden: true });
     this.noneNote = el('p', { class: 'note audit-note', id: 'instance-none-note', hidden: true },
-      'The run bar says (no instance): a run uses none of these instances. The solvers get the fragments alone, with the project\'s own constants (Loop tab); ',
-      'no instance facts and no instance constants. Pick an instance in the run bar, or press Use in the table, to run on one.');
-    // which choice of the run bar the actions of this bar use
+      'The top bar says (no instance): a run uses none of these instances. The solvers get the fragments alone, with the project\'s own constants (Loop tab); ',
+      'no instance facts and no instance constants. Pick an instance in the top bar, or press Use in the table, to run on one.');
+    // which choice of the top bar the actions of this bar use
     this.contextNote = el('p', { class: 'note', id: 'instances-context' });
     this.root.append(
       bar, this.contextNote, this.status, this.noneNote, this.exerciseBox, this.fuzzCard = el('div', { id: 'fuzz-card', class: 'audit-panel', hidden: true }), el('div', { class: 'table-wrapper' }, this.table),
@@ -181,7 +181,7 @@ export class InstancesTab {
 
   render() {
     const list = this.list;
-    // the run bar picker
+    // the top bar picker
     const sel = this.selectedId();
     this.select.textContent = '';
     this.select.hidden = list.length === 0;
@@ -213,7 +213,7 @@ export class InstancesTab {
       const nfacts = (x.facts || '').split('\n').filter((l) => l.trim() && !l.trim().startsWith('%')).length;
       const tr = el('tr', { 'data-instance': x.id, class: [x.id === this.current ? 'selected' : '', bad ? 'mismatch' : good ? 'match' : ''].filter(Boolean).join(' '),
         ...(bad ? { 'data-mismatch': 'true' } : {}) },
-        el('td', {}, el('a', { href: '#', onclick: (e) => { e.preventDefault(); this.show(x.id); } }, x.id), x.id === sel ? el('span', { class: 'note', title: 'The instance picked in the run bar: Run and Audit use it' }, ' (picked in the run bar)') : ''),
+        el('td', {}, el('a', { href: '#', onclick: (e) => { e.preventDefault(); this.show(x.id); } }, x.id), x.id === sel ? el('span', { class: 'note', title: 'The instance picked in the top bar: Run and Audit use it' }, ' (picked in the top bar)') : ''),
         el('td', {}, x.recipe && !x.facts ? 'recipe' : `${nfacts} lines`),
         el('td', {}, constText(x.constants) || '–'),
         el('td', {}, [...(x.tags || []), ...(x.audit === false ? ['no audit'] : []), ...(x.symbolic === 'unsound' ? ['symbolic audit: unsound'] : [])].join(', ') || '–'),
@@ -222,7 +222,7 @@ export class InstancesTab {
           r ? `${fmt(r.solutions)}${r.cost ? `, cost ${costText(r.cost)}${r.same ? '' : ' (differ)'}` : ''}${r.exhausted ? '' : ' (not exhausted)'}${bad ? ' ✗' : good ? ' ✓' : ''}${stale ? ' (stale)' : ''}` : '–'),
         el('td', { class: 'instance-actions' },
           el('button', { class: 'control-button small-button', onclick: () => this.pick(x.id), disabled: x.id === sel,
-            title: 'Pick this instance in the run bar: Run and Audit use it' }, 'Use'), ' ',
+            title: 'Pick this instance in the top bar: Run and Audit use it' }, 'Use'), ' ',
           el('button', { class: 'control-button small-button instance-up', onclick: () => this.move(x.id, -1), disabled: i === 0,
             title: 'Move up', 'aria-label': `Move instance ${x.id} up` }, '↑'),
           el('button', { class: 'control-button small-button instance-down', onclick: () => this.move(x.id, 1), disabled: i === list.length - 1,
@@ -316,8 +316,8 @@ export class InstancesTab {
     this.app.dirty();
   }
 
-  // Which choice of the run bar the buttons above use: Run all instances and Fuzz go over the
-  // instances themselves, with the variant picked in the run bar.
+  // Which choice of the top bar the buttons above use: Run all instances and Fuzz go over the
+  // instances themselves, with the variant picked in the top bar.
   renderContext() {
     const p = this.app.project, vs = p.variants || [];
     const v = this.app.variants ? this.app.variants.selected() : '';
@@ -331,10 +331,10 @@ export class InstancesTab {
       fz = fuzzSourceText(def.constants ? def : suite ? suite.instances : def, p, suite).replace(/ \(every numeric constant.*$/, ', from the Loop tab\'s constants');
     } catch { fz = 'instances from small to large'; }
     this.contextNote.append('Run all instances runs the instances in the table; Fuzz tries ', fz, '.',
-      ...(vs.length ? [' Both use ', el('b', {}, v ? `the variant ${v}` : 'no variant'), ', as picked in the run bar\'s Variant.'] : []));
+      ...(vs.length ? [' Both use ', el('b', {}, v ? `the variant ${v}` : 'no variant'), ', as picked in the top bar\'s Variant.'] : []));
   }
 
-  // the order of the instances (the run bar, Run all, the Campaign tab and the file follow it)
+  // the order of the instances (the top bar, Run all, the Campaign tab and the file follow it)
   move(id, d) {
     const list = this.list, i = list.findIndex((x) => x.id === id), j = i + d;
     if (i < 0 || j < 0 || j >= list.length || this.app.editors.readOnly) return;
@@ -504,7 +504,7 @@ export class InstancesTab {
     const s = runAllSummary(rows);
     this.lastRunAll = { variant: this.app.variants ? this.app.variants.selected() || null : null, time: new Date().toLocaleTimeString() };
     this.render();
-    // the Output and Statistics tabs show the last run of the batch, not the run bar's instance
+    // the Output and Statistics tabs show the last run of the batch, not the top bar's instance
     const last = list.at(-1);
     this.say(`${s.text} The Output and Statistics tabs show the last of these runs (${last.id}).`, s.bad > 0);
   }
@@ -825,7 +825,7 @@ export class InstancesTab {
     this.fuzzing = true;
     // every engine call of Fuzz goes through the batch: Stop or Abort ends it at the next call
     const env = { engineRun: app.control.batchExec(b), runtime: app.runtime, modules: app.modules, luaTexts: app.genLua() };
-    // the variant picked in the run bar (its 'reference' variant, if any, stays available)
+    // the variant picked in the top bar (its 'reference' variant, if any, stays available)
     const project = applyVariant(structuredClone(app.collect()), app.variants ? app.variants.selected() || undefined : undefined);
     const suite = (project.suites || []).find((s) => s.instances && (s.instances.generator || s.instances.constants));
     // smallest first: a grid 1..v over the numeric constants, else a suite's grid, else the instances
@@ -834,7 +834,7 @@ export class InstancesTab {
     this.fuzzCard.hidden = true;
     // what Fuzz goes over, said in the card whatever comes out
     const variant = app.variants ? app.variants.selected() : '';
-    this.fuzzWhat = `${fuzzSourceText(source, project, suite)}, ${variant ? `with the variant ${variant}` : 'with no variant'} (the run bar's)`;
+    this.fuzzWhat = `${fuzzSourceText(source, project, suite)}, ${variant ? `with the variant ${variant}` : 'with no variant'} (the top bar's)`;
     const seen = [];
     try {
       this.say('Fuzz: auditing instances from small to large…');
@@ -912,7 +912,7 @@ export class InstancesTab {
     this.spSelect.addEventListener('change', () => { this.space = this.spSelect.value; this.clearSpacePreview(); this.renderSpaces(); });
     this.spName = el('input', { id: 'space-name', size: 14, 'aria-label': 'Space name' });
     this.spName.addEventListener('change', () => this.renameSpace(this.spName.value));
-    // not 'space-description': that id is the run bar's description of the chosen space (index.html)
+    // not 'space-description': that id is the top bar's description of the chosen space (index.html)
     this.spDesc = el('input', { id: 'space-description-input', size: 48, 'aria-label': 'Space description' });
     this.spDesc.addEventListener('change', () => { const x = this.spaceItem; if (x) { x.description = this.spDesc.value; this.app.dirty(); } });
     this.spParams = el('table', { class: 'internals-table', id: 'space-params' });
@@ -939,12 +939,12 @@ export class InstancesTab {
         el('button', { class: 'control-button small-button', id: 'delete-space-button', onclick: () => this.removeSpace() }, 'Delete')),
       el('div', { class: 'instance-fields' }, el('label', { class: 'wide-field' }, 'Description ', this.spDesc)),
       el('p', { class: 'note' }, 'Every instance up to a bound: choice rules and constraints over the instance predicates (with the fragment "schema", if there is one). ' +
-        'Audit by space (run bar) verifies the loop on all of them; it does not use the run bar\'s instance.'),
+        'Audit by space (top bar) verifies the loop on all of them; it does not use the top bar\'s instance.'),
       box,
       this.spHint = el('p', { class: 'note', id: 'space-empty-hint', hidden: true }),
       el('div', { class: 'table-wrapper' }, this.spParams),
       el('p', { class: 'note' }, 'Parameters are constants of every solver: one named like a constant of your encoding (#const m = 2.) sets it. ' +
-        'The bound runs from its first value up to the value given in the run bar. Every other parameter has a value, or a range lo..hi: the audit checks each value of the range at each value of the bound. ' +
+        'The bound runs from its first value up to the value given in the top bar. Every other parameter has a value, or a range lo..hi: the audit checks each value of the range at each value of the bound. ' +
         '"In a regression instance": whether the constant goes into the instance saved from an unsound witness.'),
       el('div', { class: 'instances-bar' },
         el('button', { class: 'control-button small-button', id: 'add-space-param-button', onclick: () => this.addSpaceParam() }, 'Add parameter'),
@@ -1001,7 +1001,7 @@ export class InstancesTab {
         this.renderSpaces(); this.renderSpaceBar(); this.spaceEdited();
       });
       let values;
-      if (isBound) values = el('span', {}, 'from ', this.spFrom, ' up to the run bar\'s value');
+      if (isBound) values = el('span', {}, 'from ', this.spFrom, ' up to the top bar\'s value');
       else {
         const r = x.ranges && x.ranges[k];
         const val = el('input', { size: 8, class: 'space-param-value', 'data-param': k, placeholder: '3 or 1..3',
@@ -1026,7 +1026,7 @@ export class InstancesTab {
     requestAnimationFrame(() => this.spEditor.resize());
   }
 
-  // settings.audit (optional): the run bar's audit mode, space and bound, kept with the project.
+  // settings.audit (optional): the top bar's audit mode, space and bound, kept with the project.
   // A project without it audits by enumeration. The space and bound are applied by renderSpaceBar
   // (called by renderSpaces right after this), once the space select has its options.
   applyAuditSetting() {
@@ -1039,7 +1039,7 @@ export class InstancesTab {
     if (bound) { bound.value = ''; delete bound.dataset.space; }
   }
 
-  // The run bar changed (mode, space or bound): keep it in settings.audit; enumeration (the
+  // The top bar changed (mode, space or bound): keep it in settings.audit; enumeration (the
   // default) is not kept, nor are a space and bound outside the Space mode.
   storeAuditSetting() {
     const mode = document.getElementById('audit-mode');
@@ -1054,7 +1054,7 @@ export class InstancesTab {
     st.audit = a;
   }
 
-  // The run bar: the Space mode of Audit appears only for a project with spaces.
+  // The top bar: the Space mode of Audit appears only for a project with spaces.
   renderSpaceBar() {
     const list = this.spaces;
     const mode = document.getElementById('audit-mode'), opt = document.getElementById('audit-mode-space');
@@ -1077,7 +1077,7 @@ export class InstancesTab {
     const y = list.find((z) => z.name === sel.value);
     if (y && (!bound.value || bound.dataset.space !== y.name)) { bound.value = String(y.expected ? y.expected.k : Math.max(3, y.from ?? 1)); bound.dataset.space = y.name; }
     // a space that starts later than k = 1 says so in the bar
-    // the bound by its own name; the run bar says that the audit does not use an instance
+    // the bound by its own name; the top bar says that the audit does not use an instance
     const B = y ? spaceBound(y) : 'k';
     document.getElementById('space-bound-label').textContent = y && (y.from ?? 1) !== 1 ? `every instance with ${B} = ${y.from} up to` : `every instance with ${B} up to`;
     bound.setAttribute('aria-label', `Largest value of ${B} for the space audit`);
