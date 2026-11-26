@@ -1412,3 +1412,7 @@ body .ace_tooltip.ace_doc-tooltip { max-width: min(380px, 90vw); white-space: no
 /* a header or an atom with a tooltip (js/glossary.js) */
 th.has-tip { text-decoration: underline dotted var(--text-faint); text-underline-offset: 3px; cursor: help; }
 .run-story { margin: 4px 0 10px; padding: 6px 12px; max-width: 62em; background: var(--hint-bg); border-left: 3px solid var(--primary); font-size: 13.5px; line-height: 1.5; }
+/* the "?" of a fragment or of the loop script, opened inline (js/modal.js) */
+.inline-help > :first-child { margin-top: 0; }
+.inline-help > :last-child { margin-bottom: 0; }
+a.modal-link[aria-expanded="true"] { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }

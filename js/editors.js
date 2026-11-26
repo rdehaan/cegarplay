@@ -113,7 +113,7 @@ export class Editors {
     const name = f.name;
     const inView = this.isViewFragment(name);
     const info = DEFAULT_FRAGMENTS.includes(name)
-      ? el('a', { href: '#', class: 'modal-link', 'data-open': `modal-${name}`, title: 'About this fragment', 'aria-label': `About the ${name} fragment` }, '?') : '';
+      ? el('a', { href: '#', class: 'modal-link', 'data-open': `modal-${name}`, title: 'About this fragment', 'aria-label': `About the ${name} fragment`, 'aria-expanded': 'false' }, '?') : '';
     const btn = (label, title, fn) => el('button', { class: 'control-button frag-tool', title, onclick: () => fn(name) }, label);
     const tools = inView ? '' : el('span', { class: 'fragment-tools' },
       btn('↑', 'Move up', (n) => this.move(n, -1)),

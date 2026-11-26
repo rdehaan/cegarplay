@@ -45,8 +45,9 @@ limits, recording and certificates) and **Instances** (inputs, generators, Run a
 stays under the top bar while the page scrolls, and a tab chosen there opens at its top. Each tab
 starts with its name and a **?**: the tab's explanation, with links to the tutorial and the manual,
 is folded by default; one that is opened stays open until it is folded again (kept in this browser).
-The **?** next to a fragment's name (Programs) and next to the loop script (Loop) has the same style;
-it opens a short explanation of that fragment or of the loop script.
+The **?** next to a fragment's name (Programs) and next to the loop script (Loop) has the same style
+and works the same way: it unfolds a short explanation of that fragment or of the loop script in a
+blue box under the heading.
 **Manual** and **Internals** appear when asked for. **Settings** has toggles kept in this browser:
 **Tutorial** (shown by default), **Technical manual**, and **Advanced** with three indented toggles
 under it, **Campaign**, **Observatory** and **Refinery**, all off by default. **Advanced** turns all
@@ -1171,8 +1172,9 @@ in the worker. While a run is active all editors are read-only.
 
 Keyboard: the tab row is in the Tab order (arrow keys switch tabs, as in any group of radio
 buttons, in the order of the tab row); the **Project** menu opens with Enter, its items take the arrow
-keys, and Escape closes it; an info dialog (the **?** of a fragment or of the loop script) takes the focus, keeps Tab
-inside, closes with Escape and returns the focus to its link. Run status and run messages are
+keys, and Escape closes it; the **?** of a fragment or of the loop script opens its explanation in a blue
+box under the heading, as a tab's **?** does (Enter or a click; again to fold it; `aria-expanded` says
+which). Run status and run messages are
 announced to screen readers (`role="status"`). Below 650 px the tabs show their icon with a short
 name under it; below 760 px the top bar puts the run's actions on a row of their own and the
 theme button is only in Settings.

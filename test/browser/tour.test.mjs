@@ -48,6 +48,9 @@ test('the tour is offered on a first visit, runs through the basics, and is not 
   assert.equal(await title(page), 'Is the loop right? The audit');
   await doIt(page);
   await page.waitForSelector('#tour-card .tour-after', { timeout: 60000 });
+  // the verdict whole, as the result line says it (no cut-off text)
+  assert.equal(await page.textContent('#tour-card .tour-after b'), await page.textContent('#result-line'));
+  assert.match(await page.textContent('#tour-card .tour-after b'), /^Audit: sound .*\.\)?\.?$/);
   await next(page);
   await next(page);
   assert.equal(await title(page), 'Where next');

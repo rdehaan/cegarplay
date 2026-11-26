@@ -2268,3 +2268,7 @@ Deviations and findings:
   The test harness marks all tours seen.
 - Tests: `test/editor-help.test.mjs`, `test/browser/editor-help.test.mjs`. Ace 1.2.5's completer
   misplaces its prefix when keys arrive within a millisecond: the browser test types at 60 ms/key.
+- (2026-11-26) The "?" of a fragment and of the loop script open their text inline, in a blue
+  `.help-box` under the heading (`toggleInline` in `js/modal.js`, `aria-expanded`), not as a modal
+  dialog; the modal markup stays as the source of the texts. The guided tour's audit card quotes the
+  whole result line (it cut the audit panel's text at 160 characters).

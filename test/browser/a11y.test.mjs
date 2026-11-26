@@ -71,25 +71,31 @@ test('B2: the Project menu is in the Tab order; Enter, the arrow keys and Enter 
   await context.close();
 });
 
-test('B6: an info modal opens with the keyboard, closes with Escape, focus returns', async () => {
-  const { page, context } = await B.openPage(browser, server, '?tab=3');
+test('B6: a fragment\'s "?" opens its explanation inline with the keyboard, and folds it again', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?tab=3');
   const link = 'a.modal-link[data-open="modal-abstraction"]';
   assert.match(await page.$eval(link, (e) => e.getAttribute('aria-label')), /abstraction/);
+  assert.equal(await page.getAttribute(link, 'aria-expanded'), 'false');
   await page.focus(link);
   await page.keyboard.press('Enter');
-  assert.equal(await page.isVisible('#modal-abstraction .modal-dialog'), true);
-  const dlg = await page.$eval('#modal-abstraction .modal-dialog', (d) => [d.getAttribute('role'), d.getAttribute('aria-modal'), document.getElementById(d.getAttribute('aria-labelledby'))?.textContent]);
-  assert.deepEqual(dlg.slice(0, 2), ['dialog', 'true']);
-  assert.match(dlg[2], /abstraction/);
-  assert.equal(await page.evaluate(() => !!document.activeElement.closest('#modal-abstraction')), true);
-  // Tab stays inside
-  for (let i = 0; i < 3; i++) await page.keyboard.press('Tab');
-  assert.equal(await page.evaluate(() => !!document.activeElement.closest('#modal-abstraction')), true);
-  await page.keyboard.press('Escape');
+  // a blue box under the heading, no dialog
+  assert.equal(await page.isVisible('#modal-abstraction-inline'), true);
   assert.equal(await page.isVisible('#modal-abstraction .modal-dialog'), false);
-  assert.equal(await page.evaluate(() => document.activeElement.dataset.open), 'modal-abstraction');
+  assert.equal(await page.$eval('#modal-abstraction-inline', (b) => b.previousElementSibling.tagName + ' ' + b.classList.contains('help-box')), 'H3 true');
+  assert.match(await page.textContent('#modal-abstraction-inline'), /Proposes candidates/);
+  assert.equal(await page.getAttribute(link, 'aria-expanded'), 'true');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.open), 'modal-abstraction', 'the focus stays on the "?"');
+  await page.keyboard.press('Enter');
+  assert.equal(await page.$('#modal-abstraction-inline'), null);
+  assert.equal(await page.getAttribute(link, 'aria-expanded'), 'false');
+  // the loop script's "?": its manual link still works
+  await page.click('label[for="tab4"]');
+  await page.click('a.modal-link[data-open="modal-loop"]');
+  await page.click('#modal-loop-inline a[href="#manual-the-loop-language"]');
+  await page.waitForFunction(() => document.getElementById('tab8').checked);
   assert.equal(await page.$eval('#run-status', (e) => e.getAttribute('role')), 'status');
   assert.equal(await page.$eval('#run-message', (e) => e.getAttribute('aria-live')), 'polite');
+  assert.deepEqual(errors, []);
   await context.close();
 });
 

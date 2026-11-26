@@ -144,7 +144,9 @@ function makeSteps(app) {
         solutions. Press it.</p>`,
       done: () => ended('audit'),
       doIt: () => { if (!c.busy) c.auditPicked(); },
-      after: () => `<p>The verdict is in the Output tab: <b>${esc(($('audit-panel').textContent || $('result-line').textContent).trim().split('\n')[0].slice(0, 160))}</b></p>`,
+      // (the result line: one whole sentence; the audit panel has more, in the Output tab)
+      after: () => `<p><b>${esc($('result-line').textContent.trim())}</b></p>
+        <p>The details (which refinements were checked, and any that would remove a solution) are in the Output tab.</p>`,
     },
     {
       title: 'Help on the way',
