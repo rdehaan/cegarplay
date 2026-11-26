@@ -1,5 +1,5 @@
 // Loop tab: templates, constants, limits, Edit as Lua, threads.
-import { TEMPLATES, template } from './project.js';
+import { TEMPLATES, templateFor } from './project.js';
 import { compile } from './compiler.js';
 import { runOptionsSummary } from './topbar.js';
 import { explainError } from './error-help.js';
@@ -174,8 +174,8 @@ export class LoopTab {
     const ed = this.app.editors;
     if (ed.readOnly) return;
     const cur = ed.loop.getValue();
-    const legacy = /^\s*link\b.*\blegacy\b/m.test(cur);
-    const text = template(key, { legacy });
+    // (a raw Lua loop has no declarations of the loop language: the whole template)
+    const text = templateFor(key, ed.loopLanguage === 'lua' ? '' : cur);
     if (ed.loopLanguage === 'lua') {
       if (!window.confirm('Replace the raw Lua loop by this template?')) return;
       ed.setLoop({ language: 'loop', text });

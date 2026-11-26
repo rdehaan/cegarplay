@@ -151,19 +151,30 @@ export function setupTopbar() {
 
   // ---- the sticky tab bar (large screens): it sits under the top bar, whose height can change
   // (a wrapped row); a shadow once it sticks; a tab chosen while it sticks opens at its top
+  // The run summary ("Shown: ...", the live counts, a run's error) sticks under the top bar on every
+  // screen; on large screens the tab bar sticks under the summary.
   const bar = $('topbar'), tabbar = $('tab-bar'), main = document.querySelector('main');
+  const summary = document.querySelector('.run-summary');
   // (set here, not as a CSS variable: css/theme.css defines every variable the stylesheets use)
   const large = matchMedia('(min-width: 1000px) and (min-height: 640px)');
+  const above = () => bar.offsetHeight + summary.offsetHeight;    // what sticks above the tab bar
   const setTop = () => {
-    tabbar.style.top = `${bar.offsetHeight}px`;
-    // anchors land below both bars while the tab bar sticks
-    document.documentElement.style.scrollPaddingTop = large.matches ? `${bar.offsetHeight + tabbar.offsetHeight + 10}px` : '';
+    summary.style.top = `${bar.offsetHeight}px`;
+    tabbar.style.top = `${above()}px`;
+    // anchors land below what sticks
+    document.documentElement.style.scrollPaddingTop = `${above() + (large.matches ? tabbar.offsetHeight : 0) + 10}px`;
   };
   large.addEventListener('change', setTop);
   new ResizeObserver(setTop).observe(bar);
+  new ResizeObserver(setTop).observe(summary);
   setTop();
-  const stuck = () => getComputedStyle(tabbar).position === 'sticky' && tabbar.getBoundingClientRect().top <= bar.offsetHeight + 1;
-  addEventListener('scroll', () => tabbar.classList.toggle('stuck', stuck()), { passive: true });
+  const stuck = () => getComputedStyle(tabbar).position === 'sticky' && tabbar.getBoundingClientRect().top <= above() + 1;
+  // the shadow goes under the lowest bar that sticks: the tab bar (large screens), else the summary
+  addEventListener('scroll', () => {
+    const t = stuck();
+    tabbar.classList.toggle('stuck', t);
+    summary.classList.toggle('stuck', !t && scrollY > 0 && summary.getBoundingClientRect().top <= bar.offsetHeight + 1);
+  }, { passive: true });
   // A tab that opens can re-render and shrink the page for a moment, and the browser then
   // scrolls up; so hold the page's height while it switches, then put the bar at its place.
   let fromStuck = false;
@@ -178,7 +189,8 @@ export function setupTopbar() {
       if (!fromStuck || !r.checked) return;
       fromStuck = false;
       setTimeout(() => {
-        const y = document.querySelector('.run-summary').getBoundingClientRect().bottom + scrollY - bar.offsetHeight;
+        // the tab bar at its place: its position in the page, less what sticks above it
+        const y = $('tab-bar-anchor').getBoundingClientRect().top + scrollY - above();
         scrollTo({ top: Math.max(0, y) });
         main.style.minHeight = '';
       }, 60);

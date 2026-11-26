@@ -45,8 +45,10 @@ example library); **Write**: **Programs** (the ASP fragments), **Loop** (the loo
 limits, recording and certificates) and **Instances** (inputs, generators, Run all instances, Fuzz);
 **Results**: **Output**, **Statistics**, **Observatory** and **Campaign** (many runs), and the
 [**Refinery**](#manual-refinery-tab), which shows what a loop could have done; **Learn**:
-**Tutorial** and **Manual**, at the right end. On a screen of at least 1000 × 640 px the tab row
-stays under the top bar while the page scrolls, and a tab chosen there opens at its top. Each tab
+**Tutorial** and **Manual**, at the right end. The run summary under the top bar (**Shown:** which run, audit
+or replay the Output, Statistics and Observatory tabs show; the live counts; a run's error) stays
+under the top bar while the page scrolls, on every screen. On a screen of at least 1000 × 640 px the
+tab row stays under it too, and a tab chosen there opens at its top. Each tab
 starts with its name and a **?**: the tab's explanation, with links to the tutorial and the manual,
 is folded by default; one that is opened stays open until it is folded again (kept in this browser).
 The **?** next to a fragment's name (Programs) and next to the loop script (Loop) has the same style
@@ -223,7 +225,7 @@ constants (the table above). The **Variants** block at the foot of the Loop tab 
 are checked: a swap that names a fragment that does not exist yet is kept as typed, with a note, and
 applied as soon as that fragment is made), **Constants** as `name=value, ...`, a **Note** (`note`: why the variant exists, a lab notebook), and **its own loop script** (an editor like the
 project's loop editor, with highlighting and the live check's marks, that starts as a copy of the
-project's loop). A renamed or deleted fragment is renamed in, or dropped
+project's loop, with **Template** and **Insert** as in the Loop tab). A renamed or deleted fragment is renamed in, or dropped
 from, every swap; a renamed or deleted variant also in the suites and in **Compare variants**
 (a comparison on screen is made again after each change of a variant). The top bar's **Variant** picker
 (shown only for a project with variants) chooses the variant of a run, an audit and Run all, and
@@ -771,7 +773,13 @@ replaces the script by this Lua and switches the project to raw Lua; it is one-w
 
 ## Templates
 
-The Loop tab inserts these scripts (Template, Insert). Each begins with the same declarations:
+The Loop tab inserts these scripts (Template, Insert), and so does a variant with its own loop script
+(its card in the Loop tab). When the script declares what the templates use (solvers `A` and `C` and
+a link `G = A -> C`), its own declarations stay (other fragments, options, `legacy`, more solvers)
+and only the statements are replaced (`templateFor` in `js/project.js`); otherwise the whole
+template replaces it. Ctrl+Z in the editor undoes an insert. The run history names a run after the
+template whose statements it has, whatever its declarations. Each template begins with the same
+declarations:
 
 ```loop
 solver A = shared + abstraction
@@ -1833,6 +1841,8 @@ or while a dialog or menu is open; a slider and the tab row keep their own arrow
 | Space | Pause or Resume a run (isolated page only; on a focused button Space presses that button). While a run is paused, the Output tab says so above the trace, and ← / → step through the steps recorded so far |
 | 1 … 9 | the first nine tabs shown in the tab row, in its order (which tabs are shown depends on Settings) |
 | ? | the **Keyboard shortcuts** dialog (also in the footer and in Settings), with the tabs as the digits number them |
+| Shift+C / O / R / T / M | the Campaign, Observatory, Refinery, Tutorial or Manual tab on or off, as its checkbox in Settings (kept in this browser); a note at the bottom says which |
+| Shift+A | the three advanced tabs (Campaign, Observatory, Refinery) on or off, as Settings' Advanced |
 
 The trace's Previous and Next and the Pause button name their keys in their tooltips.
 

@@ -55,6 +55,29 @@ test('the editor adds, checks, renames and deletes a variant', async () => {
   await page.waitForSelector(`${card} .variant-loop .ace_gutter-cell.ace_error`);
   assert.match(await page.evaluate(() => window.cegarplay.project.variants[0].loop.text), /bogus \(\(/);
   assert.doesNotMatch(await page.evaluate(() => window.cegarplay.project.loop.text), /bogus/);
+  // a template for the variant's own script: Shape 2 replaces it (the project's script stays)
+  assert.equal(await page.isVisible(`${card} .variant-template`), true);
+  await page.selectOption(`${card} .variant-template`, 'shape2');
+  await page.click(`${card} .variant-insert-template`);
+  await page.waitForFunction(() => /^loop:$/m.test(window.cegarplay.project.variants[0].loop.text));
+  // the statements are the template's; the declarations stay the variant's own (a copy of the project's)
+  const [vt, decl, body] = await page.evaluate(async () => {
+    const t = (await import('./js/project.js')).template('shape2');
+    const d = (x) => x.split('\n').filter((l) => /^\s*(solver|link)\b/.test(l)).join('\n');
+    const b = (x) => x.split('\n').filter((l) => l.trim() && !/^\s*(solver|link)\b/.test(l)).join('\n');
+    const v = window.cegarplay.project.variants[0].loop.text;
+    return [v, d(v) === d(window.cegarplay.project.loop.text), b(v) === b(t)];
+  });
+  assert.ok(decl && body, vt);
+  await page.waitForFunction((c) => !document.querySelector(`${c} .variant-loop .ace_gutter-cell.ace_error`), card);
+  assert.doesNotMatch(await page.evaluate(() => window.cegarplay.project.loop.text), /^loop:$/m);
+  // Ctrl+Z in the editor undoes it
+  await page.click(`${card} .variant-loop .ace_content`);
+  await page.keyboard.press('Control+z');
+  await page.waitForFunction(() => /bogus \(\(/.test(window.cegarplay.project.variants[0].loop.text));
+  // without its own script: no template controls
+  await page.uncheck(`${card} .variant-own-loop`);
+  assert.equal(await page.isVisible(`${card} .variant-template`), false);
   await page.fill(`${card} .variant-name`, 'mine');
   await page.press(`${card} .variant-name`, 'Tab');
   assert.deepEqual(await options(page), ['', 'mine']);

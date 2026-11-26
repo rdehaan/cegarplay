@@ -1240,8 +1240,14 @@ body:not(.no-campaign) .campaign-off-only { display: none; }
 #abort-button:disabled, #pause-button:disabled, #stop-button:disabled { display: none; }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* the run summary under the bar; before the first run there is nothing to show */
-.run-summary { padding: 8px 0 10px; }
+/* the run summary under the bar; before the first run there is nothing to show. It stays under the
+   top bar while the page scrolls (top: the top bar's height, set by js/topbar.js), so the line
+   "Shown: ..." always says which run the tab's figures are of */
+.run-summary {
+  position: sticky; top: 50px; z-index: 45;
+  margin: 0 -40px; padding: 8px 40px 10px; background: var(--panel);
+}
+.run-summary.stuck { box-shadow: 0 4px 8px -6px var(--shadow); }
 .run-summary .shown-line { margin: 0; }
 .run-summary .live-line { margin-top: 4px; }
 body:has(#run-status[data-state="idle"]) .run-summary :is(.shown-line, .live-line) { display: none; }
@@ -1273,6 +1279,7 @@ body:has(#run-status[data-state="idle"]) .run-summary :is(.shown-line, .live-lin
 @media (max-width: 760px) {
   main { padding: 0 16px 30px; }
   .topbar { margin: 0 -16px; padding: 6px 16px; gap: 6px 10px; }
+  .run-summary { margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
   .topbar-project, .topbar-link, .topbar .theme-toggle { display: none; }   /* the theme: in Settings */
   .topbar .run-actions { order: 3; flex-basis: 100%; }
   /* the pop-ups span the screen; js/topbar.js puts them under their button */
@@ -1362,7 +1369,7 @@ kbd {
 .help-fold > summary::-webkit-details-marker { display: none; }
 .help-title { font-size: 18px; color: var(--text); }
 .help-fold > .tab-intro { margin: 8px 0 0; }
-body:has(#run-status[data-state="idle"]) .run-summary:not(:has(#run-message:not([hidden]))) { padding: 4px 0 0; }
+body:has(#run-status[data-state="idle"]) .run-summary:not(:has(#run-message:not([hidden]))) { padding-top: 4px; padding-bottom: 0; }
 
 /* ---- the guided tour (js/tour.js): a card in a corner, and the part of the page it is about ---- */
 .tour-card {

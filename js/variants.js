@@ -3,7 +3,7 @@
 // swap (fragment -> the fragment whose text it gets), its own loop script, constants. The picker
 // sets settings.variant ('' = the project as it is); a run, an audit and "Run all" use it, and a
 // campaign suite names variants explicitly.
-import { INSTANCE_ID } from './project.js';
+import { INSTANCE_ID, TEMPLATES, templateFor } from './project.js';
 import { compareVariants, hunks } from './compare.js';
 import { compile } from './compiler.js';
 
@@ -323,6 +323,29 @@ export class Variants {
     let editor = null;
     // the editor is made once the card is in the page (ACE measures its container)
     if (v.loop) requestAnimationFrame(() => { if (text.isConnected && v.loop && !editor) editor = this.loopEditor(v, text); });
+    // the templates of the Loop tab, for this variant's own script (shown while it has one)
+    const tplSel = el('select', { class: 'variant-template', 'aria-label': `Template for the loop script of variant ${v.name}` },
+      ...Object.entries(TEMPLATES).map(([k, t]) => el('option', { value: k }, t.label)));
+    const tplBtn = el('button', { class: 'control-button small-button variant-insert-template', type: 'button',
+      title: 'Replace this variant\'s loop statements by the template; its declarations stay when they declare solvers A and C and the link G (Ctrl+Z in the editor undoes it)' }, 'Insert');
+    const tplRow = el('span', { class: 'variant-template-row' }, el('label', {}, 'Template ', tplSel), ' ', tplBtn);
+    tplRow.hidden = !v.loop;
+    tplBtn.addEventListener('click', () => {
+      if (!v.loop || this.readOnly) return;
+      const t = templateFor(tplSel.value, v.loop.language === 'lua' ? '' : v.loop.text || '');
+      if (v.loop.language === 'lua') {
+        if (!window.confirm(`Replace the raw Lua loop of variant ${v.name} by this template?`)) return;
+        v.loop = { language: 'loop', text: t };
+        this.dropLoopEditor(editor);
+        editor = this.loopEditor(v, text);
+        this.changed();
+        return;
+      }
+      if (!editor) editor = this.loopEditor(v, text);
+      // (as an edit of the editor: its change handler stores it, and Ctrl+Z undoes it)
+      editor.session.doc.setValue(t);
+      editor.focus();
+    });
     own.addEventListener('change', () => {
       if (own.checked) {
         const L = this.app.collect ? this.app.collect().loop : this.app.project.loop;
@@ -332,6 +355,7 @@ export class Variants {
       editor = null;
       text.hidden = !v.loop;
       hint.hidden = !!v.loop;
+      tplRow.hidden = !v.loop;
       if (v.loop) editor = this.loopEditor(v, text);
       this.changed();
     });
@@ -345,7 +369,7 @@ export class Variants {
         el('label', { title: 'name=value, ...' }, 'Constants ', consts)),
       el('div', { class: 'variant-row' }, el('label', { class: 'variant-note-label' }, 'Note ', note)),
       el('div', { class: 'variant-row' }, el('label', {}, own, ' its own loop script'),
-        hint = el('span', { class: 'note', hidden: !!v.loop }, 'starts as a copy of the project\'s loop script')),
+        hint = el('span', { class: 'note', hidden: !!v.loop }, 'starts as a copy of the project\'s loop script'), tplRow),
       text);
   }
 

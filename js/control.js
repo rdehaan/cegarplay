@@ -19,11 +19,10 @@ const $ = (id) => document.getElementById(id);
 
 export function loopLabel(loop) {
   if (loop.language === 'lua') return 'raw Lua';
-  const norm = (s) => s.replace(/\s+$/gm, '').trim();
-  const text = norm(loop.text).replace(/ compat\b/g, '');
-  for (const [k, t] of Object.entries(TEMPLATES)) {
-    for (const legacy of [false, true]) if (norm(template(k, { legacy })) === text) return t.label.replace(/:.*$/, '');
-  }
+  // a template's statements, whatever the declarations (Insert keeps a script's own declarations)
+  const body = (s) => s.split('\n').filter((l) => !/^\s*(solver|link)\b/.test(l)).join('\n').replace(/\s+$/gm, '').trim();
+  const text = body(loop.text);
+  for (const [k, t] of Object.entries(TEMPLATES)) if (body(template(k)) === text) return t.label.replace(/:.*$/, '');
   const first = loop.text.split('\n').map((l) => l.trim()).find((l) => l && !l.startsWith('#') && !/^(solver|link)\b/.test(l));
   return first || 'custom';
 }

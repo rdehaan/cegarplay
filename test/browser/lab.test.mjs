@@ -19,7 +19,7 @@ const waitStatus = (page, re, timeout = 120000) => page.waitForFunction((r) => n
 const TABS_BEFORE = ['tab1', 'tab3', 'tab4', 'tab9', 'tab5', 'tab6', 'tab2'];
 const CONTROL_IDS_BEFORE = ['project-info', 'edit-project-button', 'project-heading', 'project-description', 'project-readme', 'project-readme-body', 'project-form', 'project-title-input',
   'project-description-input', 'project-readme-input', 'save-project-info', 'cancel-project-info', 'library-section', 'library-filter', 'library-level', 'library-read', 'library', 'load-status',
-  'storage-status', 'new-button', 'new-status', 'file-button', 'file-input', 'upload-status', 'download-button', 'include-history', 'workspace-name', 'workspace-save-button', 'workspace-list',
+  'storage-status', 'new-button', 'new-status', 'file-button', 'file-input', 'upload-status', 'download-button', 'include-history', 'keys-status', 'workspace-name', 'workspace-save-button', 'workspace-list',
   'workspace-status', 'snapshot-current', 'snapshot-status', 'snapshot-name', 'snapshot-save-button', 'snapshot-undo', 'snapshot-undo-text', 'snapshot-undo-button', 'snapshot-list-title',
   'snapshot-list', 'snapshot-others', 'download-recording-button', 'open-recording-button', 'recording-input', 'recording-status', 'share-button', 'share-status', 'export-standalone-button',
   'export-status', 'factory-reset-button',

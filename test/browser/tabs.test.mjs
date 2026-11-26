@@ -113,17 +113,26 @@ test('the tab bar: grouped, sticky under the top bar on a large screen; a tab ch
   await page.waitForFunction(() => document.getElementById('run-status').dataset.state === 'finished');
   await page.mouse.wheel(0, 600);
   await page.waitForFunction(() => document.getElementById('tab-bar').classList.contains('stuck'));
-  const top = await page.evaluate(() => [document.getElementById('tab-bar').getBoundingClientRect().top, document.getElementById('topbar').offsetHeight]);
-  assert.ok(Math.abs(top[0] - top[1]) <= 1, `the tab bar sits under the top bar: ${top}`);
+  const top = await page.evaluate(() => [document.getElementById('tab-bar').getBoundingClientRect().top,
+    document.getElementById('topbar').offsetHeight + document.querySelector('.run-summary').offsetHeight]);
+  assert.ok(Math.abs(top[0] - top[1]) <= 1, `the tab bar sits under the top bar and the run summary: ${top}`);
+  // the run summary ("Shown: ...") sticks under the top bar
+  const sum = await page.evaluate(() => [document.querySelector('.run-summary').getBoundingClientRect().top, document.getElementById('topbar').offsetHeight]);
+  assert.ok(Math.abs(sum[0] - sum[1]) <= 1, `the run summary sits under the top bar: ${sum}`);
   // a click on Statistics (by position: a locator click would scroll first)
   const bb = await (await page.$('label[for="tab6"]')).boundingBox();
   await page.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2);
   await page.waitForFunction(() => document.getElementById('tab6').checked && document.querySelector('main').style.minHeight === '');
-  const rest = await page.evaluate(() => document.querySelector('.run-summary').getBoundingClientRect().bottom - document.getElementById('topbar').offsetHeight);
+  const rest = await page.evaluate(() => document.getElementById('tab-bar-anchor').getBoundingClientRect().top - document.querySelector('.run-summary').getBoundingClientRect().bottom);
   assert.ok(Math.abs(rest) <= 2, `Statistics opens at its top, the tab bar at its place (${rest})`);
   // a narrow screen: the tab bar scrolls with the page
   await page.setViewportSize({ width: 900, height: 900 });
   assert.equal(await page.$eval('#tab-bar', (t) => getComputedStyle(t).position), 'static');
+  // ... while the run summary still sticks under the top bar, and says which run is shown
+  await page.mouse.wheel(0, 800);
+  await page.waitForFunction(() => Math.abs(document.querySelector('.run-summary').getBoundingClientRect().top - document.getElementById('topbar').offsetHeight) <= 1);
+  assert.match(await page.textContent('#shown-line'), /^Shown: the run/);
+  assert.equal(await page.isVisible('#shown-line'), true);
   assert.deepEqual(errors, []);
   await context.close();
 });

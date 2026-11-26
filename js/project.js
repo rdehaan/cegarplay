@@ -88,6 +88,23 @@ search A:
 };
 export const template = (key, { legacy = false } = {}) => TEMPLATES[key].text(legacy ? ' legacy' : '');
 
+// A template for a script that has one already: when the script declares what the templates use
+// (solvers A and C, a link G = A -> C), its own declarations stay (other fragments, options,
+// legacy, more solvers) and only the statements are the template's; otherwise the whole template.
+export function templateFor(key, current = '') {
+  const lines = String(current).split('\n');
+  const isDecl = (l) => /^\s*(solver|link)\b/.test(l) || /^\s*(#.*)?$/.test(l);
+  let end = 0;
+  while (end < lines.length && isDecl(lines[end])) end++;
+  const decl = lines.slice(0, end).join('\n');
+  const has = /^\s*solver\s+A\b/m.test(decl) && /^\s*solver\s+C\b/m.test(decl) && /^\s*link\s+G\s*=\s*A\s*->\s*C\b/m.test(decl);
+  const legacy = /^\s*link\b.*\blegacy\b/m.test(current);
+  const full = template(key, { legacy });
+  if (!has) return full;
+  const body = full.split('\n').slice(DECL().split('\n').length - 1).join('\n').replace(/^\n+/, '');
+  return `${decl.replace(/\s+$/, '')}\n\n${body}`;
+}
+
 export function newProject(title = 'Untitled') {
   return {
     format: FORMAT,

@@ -72,3 +72,34 @@ test('digits open the tabs shown; ? opens the shortcuts; editors and fields keep
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('Shift+letter switches a tab on and off, as its Settings checkbox (kept); not while typing', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?tab=1', { advanced: false });
+  const shown = (id) => page.$eval(`label[for="${id}"]`, (l) => !l.hidden);
+  assert.equal(await shown('tab11'), false);
+  await page.click('.home-intro');
+  await page.keyboard.press('Shift+O');
+  assert.equal(await shown('tab11'), true);
+  assert.equal(await page.evaluate(() => localStorage.getItem('cegarplay.observatory')), '1', 'kept, as the checkbox does');
+  await page.waitForSelector('#toast:not([hidden])');
+  assert.match(await page.textContent('#toast'), /Observatory tab: on \(Shift\+O switches it off again/);
+  await page.keyboard.press('Shift+O');
+  assert.equal(await shown('tab11'), false);
+  // the three advanced tabs at once, and the manual
+  await page.keyboard.press('Shift+A');
+  assert.deepEqual([await shown('tab10'), await shown('tab11'), await shown('tab12')], [true, true, true]);
+  await page.keyboard.press('Shift+A');
+  assert.deepEqual([await shown('tab10'), await shown('tab11'), await shown('tab12')], [false, false, false]);
+  await page.keyboard.press('Shift+M');
+  assert.equal(await shown('tab8'), true);
+  await page.keyboard.press('Shift+T');
+  assert.equal(await shown('tab2'), false);
+  // while typing in an editor: a capital letter
+  await page.click('label[for="tab3"]');
+  await page.click('#editor-abstraction');
+  await page.keyboard.press('Shift+C');
+  assert.equal(await shown('tab10'), false);
+  assert.match(await B.getEditor(page, 'editor-abstraction'), /C/);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

@@ -131,3 +131,15 @@ test('the run in words', () => {
   assert.match(runStory({ D: { outcome: 'solutions' }, S: { ...S, solutions: 1 }, loopText: BASE.loop.text, wanted: 1 }), /stopped at the 1 solution asked for/);
   assert.equal(runStory({ D: { outcome: 'error' }, S, loopText: '' }), '');
 });
+
+test('templateFor: a script\'s own declarations stay when they declare A, C and G; otherwise the whole template', async () => {
+  const { templateFor, template } = await import('../js/project.js');
+  const own = 'solver A = shared + abstraction\nsolver C = shared + check + relevant   options "-t 2"\nlink   G = A -> C via shared + glue legacy\n\nsearch A:\n    on candidate M:\n        log M\n';
+  const t = templateFor('reference', own);
+  assert.ok(t.startsWith('solver A = shared + abstraction\nsolver C = shared + check + relevant   options "-t 2"\nlink   G = A -> C via shared + glue legacy\n\nsearch A:\n'), t);
+  assert.match(t, /reject M with G\.block\(M\)\n$/);
+  assert.doesNotMatch(t, /log M/);
+  assert.equal(templateFor('shape2', 'solver X = shared\n'), template('shape2'), 'other names: the whole template');
+  assert.equal(templateFor('shape1', ''), template('shape1'));
+  assert.equal(templateFor('shape1', 'solver A = a\nsolver C = c\nlink G = A -> C via g legacy\n'), 'solver A = a\nsolver C = c\nlink G = A -> C via g legacy\n\n' + template('shape1').split('\n').slice(4).join('\n'));
+});

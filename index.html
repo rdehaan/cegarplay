@@ -130,6 +130,8 @@
     <input id="tab2" aria-controls="section-tutorial" type="radio" name="tabs">
     <input id="tab8" aria-controls="section-manual" type="radio" name="tabs" hidden>
 
+    <!-- where the tab bar is in the page while it sticks (js/topbar.js measures it) -->
+    <div id="tab-bar-anchor" aria-hidden="true"></div>
     <nav class="tab-bar" id="tab-bar" aria-label="Tabs">
       <label for="tab1" class="tab-label" title="Home"><span class="tab-text">Home</span></label>
       <span class="tab-group" aria-hidden="true">Write</span>
@@ -222,6 +224,7 @@
         <p id="share-status" class="status-line toast-source"></p>
         <button class="control-button" id="export-standalone-button">Export for clingo</button>
         <p id="export-status" class="status-line toast-source"></p>
+        <p id="keys-status" class="status-line toast-source"></p>
       </div>
     </section>
 
@@ -523,7 +526,9 @@
             Refinery</label> <span class="note">a tab of its own: every refinement a loop could have made
             at a step, and the shortest and longest runs its refinements allow (small instances)</span></p>
         </div>
-        <p class="note">These choices are kept in this browser.</p>
+        <p class="note">These choices are kept in this browser. Keyboard (when not typing): <kbd>Shift</kbd>+<kbd>T</kbd> Tutorial,
+          <kbd>Shift</kbd>+<kbd>M</kbd> Manual, <kbd>Shift</kbd>+<kbd>A</kbd> Advanced, <kbd>Shift</kbd>+<kbd>C</kbd> Campaign,
+          <kbd>Shift</kbd>+<kbd>O</kbd> Observatory, <kbd>Shift</kbd>+<kbd>R</kbd> Refinery.</p>
 
         <h3>Guided tour</h3>
         <p><button class="control-button" type="button" data-tour>Start the guided tour</button>
@@ -568,6 +573,16 @@
           <dt><kbd>Home</kbd> <kbd>End</kbd></dt><dd>the first / last step (trace and Observatory)</dd>
           <dt><kbd>Space</kbd></dt><dd>pause or resume a run (when the page can pause runs); while it is paused, <kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd> step through the steps recorded so far</dd>
           <dt><kbd>?</kbd></dt><dd>this list</dd>
+        </dl>
+        <h3>Tabs on and off</h3>
+        <p class="note">As the checkboxes in Settings: the choice is kept in this browser.</p>
+        <dl class="keys-list">
+          <dt><kbd>Shift</kbd>+<kbd>C</kbd></dt><dd>Campaign</dd>
+          <dt><kbd>Shift</kbd>+<kbd>O</kbd></dt><dd>Observatory</dd>
+          <dt><kbd>Shift</kbd>+<kbd>R</kbd></dt><dd>Refinery</dd>
+          <dt><kbd>Shift</kbd>+<kbd>A</kbd></dt><dd>all three advanced tabs (Campaign, Observatory, Refinery)</dd>
+          <dt><kbd>Shift</kbd>+<kbd>T</kbd></dt><dd>Tutorial</dd>
+          <dt><kbd>Shift</kbd>+<kbd>M</kbd></dt><dd>Manual</dd>
         </dl>
         <h3>Tabs</h3>
         <ol class="keys-tabs" id="keys-tabs"></ol>

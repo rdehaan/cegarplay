@@ -2302,3 +2302,15 @@ Deviations and findings:
   rules); the G.block card explains the 0 counterexamples (counted only when a refinement is built
   from a counterexample: runtime `refuting`); the Shape 2 cards use `template('shape2')` word for word
   and set the Template list to it (Shape 1 cards: to Shape 1).
+- (2026-11-26) A variant with its own loop script has **Template** and **Insert** (its card). Insert
+  (here and in the Loop tab) keeps the script's own declarations when they declare A, C and
+  `G = A -> C` and replaces only the statements (`templateFor`, js/project.js); `loopLabel` names a
+  run after the template whose statements it has (declarations aside).
+- (2026-11-26) The run summary (`.run-summary`: "Shown: ...", the live line, the run message) sticks
+  under the top bar on every screen; on large screens the tab bar sticks under it (js/topbar.js sets
+  both tops and the scroll padding; `#tab-bar-anchor` marks the tab bar's place for the scroll after a
+  tab switch).
+- (2026-11-26) Shift+C/O/R/T/M switch the Campaign, Observatory, Refinery, Tutorial, Manual tab on or
+  off, Shift+A the three advanced tabs (`TAB_TOGGLES` in js/keys.js: they click the Settings
+  checkbox, so the choice is stored as there; a toast via `#keys-status` says what changed). Listed in
+  the shortcuts dialog and in Settings.
