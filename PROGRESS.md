@@ -2317,6 +2317,9 @@ Deviations and findings:
 
 ## Voting justification: paper questions and loops of strategy 6 (2026-11-26, on request)
 
+(Superseded in part by the next entry: s1/s6 are now `falsified`/`profile-free`, and deepen,
+profiles-first, record, shape2 and s3-s5 were dropped.)
+
 Asked: questions from Nardi, Boixel and Endriss (AAMAS 2022) of reasonable size (drop the k = 8
 one), and loop variants that might be faster, to learn which loops suit the problem.
 
@@ -2346,7 +2349,7 @@ one), and loop variants that might be faster, to learn which loops suit the prob
 - Chapter 21 of the guide: a paragraph on strategy 6 (two new measured numbers), the ground-truth
   and open-question items updated; book regenerated.
 
-## Voting justification: a student kit, an IHS example and a new view (2026-11-26, on request)
+## Voting justification: a student kit, an IHS example, a new view, fewer variants (2026-11-26, on request)
 
 - **Readme of `voting-justification`**: only describes what is there (background, loop, fragments,
   variants, instances, suites, how to compare); the measured tables and their interpretation are
@@ -2375,20 +2378,18 @@ one), and loop variants that might be faster, to learn which loops suit the prob
   Replays and stored view frames rebuilt.
 - Manual (voting table, Justifications paragraph, weight 0), guide chapter 21 (no claim that the
   readme compares loops), book regenerated.
-
-## Voting justification: fewer variants (2026-11-26, on request)
-
-- Dropped from `voting-justification`: the variants s3, s4, s5 (and their fragments
-  `relevant_s3` … `relevant_s5`), shape2, record (a clasp enumeration option, not a loop idea),
-  deepen and profiles-first (and the fragments `level`, `abstraction_profiles`, `glue_profiles`,
-  `profiles_given`). Kept: default (s2), s1, reference, s6, fewest, multi, partial; the IHS example
-  keeps all its variants (ascending included). Suites `paper` and `generated` follow.
-- Readme: the fragments and variants lists; open question 1 (multi with partial), 3 (now also
-  two-level and fewest-profiles-first search), 6 (soundness of the strategies, mentioning the
-  file's dropped ones). Manual, guide chapter 21 (exercise 1's solution no longer cites record),
-  FUTURE-DIRECTIONS, library summary, tests (test/variants.test.mjs,
-  test/browser/variants.test.mjs) updated; book and replays rebuilt; guide numbers unchanged.
-- Renamed (same day, on request): variant `s1` -> `falsified` (fragment `relevant_falsified`),
-  `s6` -> `profile-free` (fragment `relevant_profile_free`); "strategy 1/6" stays as the concept
-  name in prose. guide/numbers.json keys, guide.mjs, chapter 21, howto-campaign, the tutorial's
-  variants lesson (which still described s1-s5, shape2) and the tests follow.
+- **Fewer variants** (later the same day):
+  - Dropped from `voting-justification`: the variants s3, s4, s5 (and their fragments
+    `relevant_s3` … `relevant_s5`), shape2, record (a clasp enumeration option, not a loop idea),
+    deepen and profiles-first (and the fragments `level`, `abstraction_profiles`, `glue_profiles`,
+    `profiles_given`). Kept: default (s2), s1, reference, s6, fewest, multi, partial; the IHS example
+    keeps all its variants (ascending included). Suites `paper` and `generated` follow.
+  - Readme: the fragments and variants lists; open question 1 (multi with partial), 3 (now also
+    two-level and fewest-profiles-first search), 6 (soundness of the strategies, mentioning the
+    file's dropped ones). Manual, guide chapter 21 (exercise 1's solution no longer cites record),
+    FUTURE-DIRECTIONS, library summary, tests (test/variants.test.mjs,
+    test/browser/variants.test.mjs) updated; book and replays rebuilt; guide numbers unchanged.
+  - Renamed (same day, on request): variant `s1` -> `falsified` (fragment `relevant_falsified`),
+    `s6` -> `profile-free` (fragment `relevant_profile_free`); "strategy 1/6" stays as the concept
+    name in prose. guide/numbers.json keys, guide.mjs, chapter 21, howto-campaign, the tutorial's
+    variants lesson (which still described s1-s5, shape2) and the tests follow.

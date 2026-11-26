@@ -162,7 +162,7 @@ export const VOTE_INFO = {
   'faith-cancel-reinf-pareto-k3': { expected: 1, audit: false }, 'faith-pareto-neutral-reinf-k4': { expected: 1 },
   'pareto-neutral-reinf-k5': { expected: 1 },
   // the question the original file has switched on: the first solution in a second; all 16 with
-  // strategy s1 in about 15 minutes (exhausted, Nov 2026), so it is tagged slow. Both hard
+  // strategy 1 (variant falsified) in about 15 minutes (exhausted, Nov 2026), so it is tagged slow. Both hard
   // questions are too large for the audit (audit: false).
   'cancel-reinf-posresp-k4': { expected: 16, tags: ['original', 'slow'], audit: false },
 };
@@ -176,8 +176,8 @@ export const VOTE_DROPPED = ['pareto-neutral-cancel-reinf-k8'];
 // of axiom instances, the number of profiles. Profiles have at most as many voters as the target
 // (the paper's weak reinforcement). k is the smallest with a justification, so every solution is
 // a smallest justification; a larger k also counts padded ones (two identical voters: 2 at k = 2,
-// 82 at k = 3, 2,429 at k = 4). Counts agree between s1, s6-multi, deepen and profiles-first (and
-// the reference run where it finishes), Nov 2026.
+// 82 at k = 3, 2,429 at k = 4). Counts agree between strategy 1, strategy 6 with multi, and the
+// since dropped loops deepen and profiles-first (and the reference run where it finishes), Nov 2026.
 const VOTE_CORPUS = ['faithfulness', 'pareto', 'cancellation', 'neutrality2', 'pos_responsiveness', 'reinforcement'];
 const VOTE_TWO = 'Two voters, as in the exhaustive rows of the paper\'s Table 1; the target is the Borda outcome.';
 const VOTE_FOUR = 'Four alternatives, as in the lower half of the paper\'s Table 1; the target is the Borda outcome.';
@@ -262,9 +262,9 @@ function voteInstances(blocks) {
 
 // voting-justification: the check of explain1.lp ends with five refinement strategies (one
 // active, four commented out). The fragment `relevant` (in the check solver) holds the active one,
-// strategy 2; strategy 1 becomes relevant_falsified (variant falsified; it was s1 until Nov 2026). Strategies 3, 4 and 5 were dropped on
-// request (Nov 2026; s5 is close to blocking), as were the variants shape2 and record. The
-// variant reference is the blocking loop.
+// strategy 2; strategy 1 becomes relevant_falsified (variant falsified; s1 until Nov 2026).
+// Strategies 3, 4 and 5 were dropped on request (Nov 2026; 5 is close to blocking), as were the
+// variants shape2 and record. The variant reference is the blocking loop.
 const VOTE_STRATEGY = {
   1: 'the axiom instances the outcomes falsify',
   2: 'the axiom instances the outcomes do not falsify',
@@ -440,19 +440,19 @@ function voteLoops(p) {
 % axiom instances as possible, so the clause of strategy 6 is as short as possible.
 #minimize { 1,Profiles,Axiom : falsified(pos_axiom_instance(Profiles,Axiom)) }.
 `, description: 'A #minimize for the check: the counterexample that falsifies the fewest instances (variant fewest, with an optimal solve).' });
-  const s6 = { relevant: 'relevant_profile_free' };
+  const pf = { relevant: 'relevant_profile_free' };
   p.variants.push(
-    { name: 'profile-free', swap: s6, constants: {} },
-    { name: 'fewest', swap: s6, constants: {}, loop: vloop(VOTE_SHAPE1('shared + check + relevant + fewest', `        X = C.solve(assume G(M), optimal)
+    { name: 'profile-free', swap: pf, constants: {} },
+    { name: 'fewest', swap: pf, constants: {}, loop: vloop(VOTE_SHAPE1('shared + check + relevant + fewest', `        X = C.solve(assume G(M), optimal)
         if X:
             reject M with G.clause(M, X)
 `)) },
-    { name: 'multi', swap: s6, constants: {}, loop: vloop(VOTE_SHAPE1('shared + check + relevant', `        for X in C.models(assume G(M), limit 5):
+    { name: 'multi', swap: pf, constants: {}, loop: vloop(VOTE_SHAPE1('shared + check + relevant', `        for X in C.models(assume G(M), limit 5):
             reject M with G.clause(M, X)
 `)) },
     // a clause of strategy 6 holds for every candidate, so a check at a partial assignment (the
     // open atoms taken as false) may reject the whole subtree
-    { name: 'partial', swap: s6, constants: {}, loop: vloop(VOTE_SHAPE1('shared + check + relevant', `        X = C.solve(assume G(M))
+    { name: 'partial', swap: pf, constants: {}, loop: vloop(VOTE_SHAPE1('shared + check + relevant', `        X = C.solve(assume G(M))
         if X: reject M with G.clause(M, X)
 `).replace('search A:\n', `search A:
     on partial P every 8:
