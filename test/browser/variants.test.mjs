@@ -12,8 +12,8 @@ const options = (page) => page.$$eval('#variant-select option', (l) => l.map((o)
 test('the voting example: the picker lists its variants, and a run with one says so in the run history', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=voting-justification&tab=4');
   assert.equal(await page.isVisible('#variant-select'), true);
-  assert.deepEqual(await options(page), ['', 's1', 's3', 's4', 's5', 'shape2', 'record', 'reference']);
-  assert.equal(await page.$$eval('#variants .variant-card', (l) => l.length), 7);
+  assert.deepEqual(await options(page), ['', 's1', 's3', 's4', 's5', 'shape2', 'record', 'reference', 's6', 'fewest', 'multi', 'partial', 'deepen', 'profiles-first']);
+  assert.equal(await page.$$eval('#variants .variant-card', (l) => l.length), 13);
   await page.selectOption('#instance-select', 'cancel-posresp-k2');
   await page.selectOption('#variant-select', 's1');
   await B.runOptions(page, () => page.selectOption('#solutions-select', '0'));

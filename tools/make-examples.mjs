@@ -165,8 +165,65 @@ export const VOTE_INFO = {
   // strategy s1 in about 15 minutes (exhausted, Nov 2026), so it is tagged slow. Both hard
   // questions are too large for the audit (audit: false).
   'cancel-reinf-posresp-k4': { expected: 16, tags: ['original', 'slow'], audit: false },
-  'pareto-neutral-cancel-reinf-k8': { tags: ['hard'], audit: false },
 };
+// Left out on request: the file's hardest question (k = 8, profiles of up to 5 voters) has no
+// ground truth (no loop finished it in 40 minutes), so it tests nothing.
+export const VOTE_DROPPED = ['pareto-neutral-cancel-reinf-k8'];
+
+// voting-justification: questions from Nardi, Boixel and Endriss (AAMAS 2022), over the paper's
+// corpus of six axioms. Each is [id, ballots, outcome, k, profiles, expected, tags, note]: the
+// target profile as ballots ('abc' ranks a over b over c), the target outcome, the exact number
+// of axiom instances, the number of profiles. Profiles have at most as many voters as the target
+// (the paper's weak reinforcement). k is the smallest with a justification, so every solution is
+// a smallest justification; a larger k also counts padded ones (two identical voters: 2 at k = 2,
+// 82 at k = 3, 2,429 at k = 4). Counts agree between s1, s6-multi, deepen and profiles-first (and
+// the reference run where it finishes), Nov 2026.
+const VOTE_CORPUS = ['faithfulness', 'pareto', 'cancellation', 'neutrality2', 'pos_responsiveness', 'reinforcement'];
+const VOTE_TWO = 'Two voters, as in the exhaustive rows of the paper\'s Table 1; the target is the Borda outcome.';
+const VOTE_FOUR = 'Four alternatives, as in the lower half of the paper\'s Table 1; the target is the Borda outcome.';
+export const VOTE_PAPER = [
+  ['paper-ex1-k2-p3', ['abc', 'bac'], 'ab', 2, 3, 1, [], 'Example 1 of the paper: Pareto rules c out, neutrality between a and b gives {a, b}.'],
+  ['paper-v2-same-k2-p3', ['abc', 'abc'], 'a', 2, 3, 2, [], VOTE_TWO],
+  ['paper-v2-acb-k2-p3', ['abc', 'acb'], 'a', 2, 3, 5, [], VOTE_TWO],
+  ['paper-v2-bca-k2-p4', ['abc', 'bca'], 'b', 2, 4, 2, [], VOTE_TWO],
+  ['paper-v2-cab-k2-p4', ['abc', 'cab'], 'a', 2, 4, 2, [], VOTE_TWO],
+  ['paper-v2-cba-k1-p3', ['abc', 'cba'], 'abc', 1, 3, 1, [], VOTE_TWO + ' Cancellation alone.'],
+  ['paper-ex4-k3-p3', ['abc', 'abc', 'cba'], 'a', 3, 3, 1, [], 'Example 4 of the paper: a one-voter profile (faithfulness) and a cancelling pair (cancellation), joined by reinforcement.'],
+  ['paper-ex4-k3-p4', ['abc', 'abc', 'cba'], 'a', 3, 4, 1, ['bench'], 'Example 4 of the paper with room for one more profile.'],
+  ['paper-borda3-k3-p3', ['abc', 'cab', 'cab'], 'ac', 3, 3, 0, ['slow'], 'Section 4.2 of the paper: the Borda outcome {a, c} has no justification with profiles of at most three voters.'],
+  ['paper-borda3-k3-p4', ['abc', 'cab', 'cab'], 'ac', 3, 4, 0, ['bench'], 'Section 4.2 of the paper: no justification, with room for one more profile.'],
+  ['paper-borda4-k3-p3', ['abc', 'cab', 'cab', 'cab'], 'c', 3, 3, 0, ['slow'], 'Section 4.2 of the paper: the Borda winner c has no justification with profiles of at most four voters.'],
+  ['paper-borda4-k3-p4', ['abc', 'cab', 'cab', 'cab'], 'c', 3, 4, 0, ['bench'], 'Section 4.2 of the paper: no justification, with room for one more profile.'],
+  ['paper-cycle-k2-p3', ['abc', 'bca', 'cab'], 'abc', 2, 3, 3, [], 'A Condorcet cycle: every candidate wins.'],
+  ['paper-v4-k4-p3', ['abc', 'acb', 'bca', 'cab'], 'a', 4, 3, 10, ['slow'], 'Four voters; the target is the Borda winner.'],
+  ['paper-c4-v2-k3-p3', ['abcd', 'badc'], 'ab', 3, 3, 4, ['bench'], VOTE_FOUR],
+  ['paper-c4-v2b-k3-p3', ['abcd', 'bcda'], 'b', 3, 3, 0, ['slow'], VOTE_FOUR],
+  ['paper-c4-v3-k3-p3', ['abcd', 'abcd', 'dcba'], 'a', 3, 3, 1, ['slow'], VOTE_FOUR],
+];
+// Tags: bench where the default loop (strategy 2) does not finish within a minute (suites only,
+// never the tests), slow where it needs more than 5 s (tests with SLOW=1 only).
+// Too large for the explicit audit and Fuzz (the symbolic audit needs 20 s to over a minute)
+const VOTE_PAPER_HEAVY = ['paper-ex4-k3-p3', 'paper-ex4-k3-p4', 'paper-borda3-k3-p3', 'paper-borda3-k3-p4', 'paper-borda4-k3-p3',
+  'paper-borda4-k3-p4', 'paper-v4-k4-p3', 'paper-c4-v2-k3-p3', 'paper-c4-v2b-k3-p3', 'paper-c4-v3-k3-p3'];
+function votePaperInstance([id, ballots, outcome, k, np, expected, tags, note]) {
+  const m = ballots[0].length;
+  const num = (c) => c.charCodeAt(0) - 96;
+  const lex = (x, y) => { for (let i = 0; i < m; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
+  const sorted = ballots.map((b) => [...b].map(num)).sort(lex);
+  const facts = VOTE_CORPUS.map((a) => `use_axiom(${a}).`);
+  sorted.forEach((b, v) => b.forEach((c, pos) => facts.push(`target_profile(${v + 1},${c},${pos + 1}).`)));
+  for (const o of outcome) facts.push(`target_outcome(${num(o)}).`);
+  // every justification of an outcome other than all candidates uses a polarity axiom
+  if (outcome.length < m) facts.push('requires_polarity_axiom.');
+  const s = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  const head = `% ${note}\n% Profile: ${ballots.join(', ')} (letters a, b, ... are candidates 1, 2, ...); outcome {${[...outcome].join(', ')}}.\n` +
+    `% Axioms: the paper's corpus. Up to ${s(ballots.length, 'voter')} per profile, ${s(np, 'profile')}, ` +
+    `exactly ${s(k, 'axiom instance')}.\n`;
+  return { id, facts: head + facts.join('\n') + '\n',
+    constants: { num_candidates: String(m), num_voters: String(ballots.length), num_profiles: String(np), num_axiom_instances: String(k) },
+    ...(expected !== null ? { expected: { solutions: expected } } : {}), tags: ['paper', ...(expected === 0 ? ['no-solution'] : []), ...tags],
+    ...(VOTE_PAPER_HEAVY.includes(id) ? { audit: false } : {}) };
+}
 function voteInstances(blocks) {
   const out = [];
   for (const block of blocks) {
@@ -193,7 +250,7 @@ function voteInstances(blocks) {
       `{${outcome.join(', ')}}. Up to ${s(constants.num_voters, 'voter')} per profile, ` +
       `${s(constants.num_profiles, 'profile')}, exactly ${s(constants.num_axiom_instances, 'axiom instance')}.\n` +
       (note ? `% ${note}\n` : '');
-    if (VOTE_TRIVIAL.includes(id)) continue;
+    if (VOTE_TRIVIAL.includes(id) || VOTE_DROPPED.includes(id)) continue;
     const info = VOTE_INFO[id] || {};
     out.push({ id, facts: head + facts.join('\n') + '\n', constants,
       ...(info.expected !== undefined ? { expected: { solutions: info.expected } } : {}), tags: info.tags || [],
@@ -240,49 +297,80 @@ that *every* outcome assignment that satisfies them gives the target outcome. Th
 - **Check (C)**: looks for outcomes of all profiles that satisfy every chosen axiom instance but
   differ from the target outcome on profile 1. Such outcomes are the counterexample.
 - **Refinement**: a clause over the interface atoms that are \`relevant/1\` for the counterexample.
-  The five strategies differ in which axiom-instance atoms they call relevant (fragments
-  \`relevant\`, \`relevant_s1\` … \`relevant_s5\`). Strategy 2 is the default.
+  The original five strategies differ in which axiom-instance atoms they call relevant (fragments
+  \`relevant\`, \`relevant_s1\` … \`relevant_s5\`); all five call every profile atom relevant.
+  Strategy 2 is the default.
 
-## Baseline and variants
+## Strategy 6: the counterexample does not depend on the profiles
+
+A counterexample is an outcome for every profile *number*. Whether it falsifies an axiom instance
+depends on those outcomes alone: Pareto(c) on profile 2 is falsified when c wins in profile 2,
+reinforcement on (1, 2, 3) when the outcomes of 1 and 2 intersect and 3 is not that
+intersection, whatever the profiles are. Only faithfulness and unanimity also read a profile (the
+top choice of voter 1). Which instances are *applicable* depends on the profiles, but that is the
+abstraction's business. So strategy 6 (\`relevant_s6\`) drops the profile atoms (except voter 1's
+top choices) and keeps the instances the counterexample falsifies: the clause says "use one of the
+instances this outcome falsifies". It holds for **every** candidate, whatever its profiles; the
+symbolic audit proves it sound on the questions it finishes. The abstraction becomes a hitting-set
+search: pick exactly k applicable instances that hit the falsified set of every counterexample
+seen so far. Since the clause is candidate-independent, it combines with loops that need such
+clauses:
 
 | Variant | What changes |
 |---|---|
 | default | Shape 1 (\`search A\`), strategy 2 |
-| s1, s3, s4, s5 | another refinement strategy |
+| s1, s3, s4, s5 | another of the original strategies |
 | record | Shape 1 with \`--enum-mode=record\` on A: blocked candidates stay as nogoods |
 | shape2 | a Shape 2 loop (solve A again after each refinement) |
 | reference | the blocking loop: the ground truth on small questions |
+| s6 | Shape 1 with strategy 6 |
+| fewest | s6 with an optimal check (\`#minimize\` the falsified instances): the shortest clause per counterexample |
+| multi | s6 with up to 5 counterexamples per candidate (\`C.models(..., limit 5)\`), one clause each |
+| partial | s6 with checks at partial assignments (\`on partial P every 8\`, open atoms false) |
+| deepen | the paper's breadth-first idea: a solver family \`A[i]\` that uses exactly i profiles, i = 1, 2, ...; the counterexamples of lower levels refine the higher ones before they start |
+| profiles-first | two levels (the "two-step procedure" of the original file): P guesses profiles and uses *every* applicable instance (a relaxation); if a counterexample survives even that, no subset works and P is refined; else an inner search of A picks exactly k instances on these profiles |
 
 ## Instances and ground truth
 
-- 7 questions from \`explain1.lp\` (tags: \`original\`, \`hard\`, \`no-solution\`); the file's ten
-  questions with one or two candidates (no refinement at all) are left out. The 5 with an expected
-  count finish in seconds; the counts agree with the reference variant and with
-  \`tools/cegarcheck.py\`. The runs look for all solutions; the default instance is
-  \`faith-pareto-neutral-reinf-k4\` (146 candidates, 1 justification).
+- 6 questions from \`explain1.lp\` (tags: \`original\`, \`no-solution\`); the file's ten questions
+  with one or two candidates (no refinement at all) are left out, and so is its hardest one
+  (k = 8, profiles of up to 5 voters), which no loop finished in 40 minutes. The runs look for all
+  solutions; the default instance is \`faith-pareto-neutral-reinf-k4\` (146 candidates, 1
+  justification). \`cancel-reinf-posresp-k4\` (the question the original file has switched on)
+  has **16 justifications**: about 95,000 candidates and 15 minutes with s1 (tag \`slow\`), 600
+  candidates and 15 s with s6, about 40 candidates with multi.
 - Seven generated questions (\`random-1\` … \`random-7\`, generator \`vote-question\`: \`a\` random
-  axioms, a sorted random target profile of \`v\` voters, a random outcome). Most random questions
-  have no justification within small bounds, which is itself a useful test of soundness;
-  \`random-4\` … \`random-7\` were picked for having justifications (4 to 27) and 30 to 80 candidates.
-- The audit finishes on \`cancel-posresp-k2\`, \`faith-pareto-neutral-reinf-k4\`,
-  \`pareto-neutral-reinf-k5\` and \`random-3\` … \`random-7\` within a second each. The others are
-  marked \`audit: false\`: their candidate spaces are too large for the audit's memory or time,
-  so the audit (and Fuzz) skip them; runs still use them. \`cancel-reinf-posresp-k4\` (the
-  question the original file has switched on) finds its first justification in about a second;
-  with strategy s1 the loop finishes after about 95,000 candidates and 15 minutes with
-  **16 justifications**, its expected count (tag \`slow\`). \`pareto-neutral-cancel-reinf-k8\` has
-  no ground truth yet: neither the default strategy, s1 nor Python clingo's \`tools/cegarcheck.py\`
-  finished it within 40 minutes.
+  axioms, a sorted random target profile of \`v\` voters, a random outcome).
+- 17 questions from Nardi, Boixel and Endriss (tag \`paper\`), over the paper's corpus
+  (faithfulness, Pareto, cancellation, neutrality, positive responsiveness, reinforcement), with
+  profiles of at most as many voters as the target (the paper's weak reinforcement):
+  Example 1 (\`paper-ex1-k2-p3\`), Example 4 (\`paper-ex4-*\`), the six two-voter profiles of
+  Table 1 with their Borda outcomes (\`paper-v2-*\`), the two profiles of Section 4.2 that have no
+  justification (\`paper-borda3-*\`, \`paper-borda4-*\`: 0 solutions), a Condorcet cycle, a
+  four-voter profile and three profiles over **four** alternatives (\`paper-c4-*\`). The id says
+  k (\`-k3\`) and the number of profiles (\`-p4\`); k is the smallest with a justification, so every
+  solution is a smallest justification. The encoding asks for *exactly* k instances and has no
+  minimality check, so a larger k also counts padded justifications (two identical voters: 2 at
+  k = 2, 82 at k = 3, 2,429 at k = 4).
+- Every count agrees between s1, multi, deepen and profiles-first, and with the reference run
+  where it finishes (14 of the 17 paper questions within 5 minutes).
+- The audit finishes on the small questions; the larger ones are marked \`audit: false\` (their
+  candidate spaces are too large for the audit's memory or time), so the audit and Fuzz skip
+  them; runs still use them.
 
 ## Suites
 
 - \`questions\`: every question, the default loop (20 s each).
-- \`strategies\`: the questions with a count (except the slow one) × every variant (30 s each). Read the
-  instance × variant matrix in the Campaign tab, or run
-  \`node tools/bench.mjs voting-justification --suite strategies --out rows.jsonl\` and
-  \`node tools/report.mjs rows.jsonl\`.
+- \`strategies\`: the file's and the generated questions with a count (except the slow one) ×
+  every variant (30 s each).
+- \`paper\`: the 17 paper questions × default, s1, reference, s6, fewest, multi, partial, deepen,
+  profiles-first (60 s each).
 - \`generated\`: 12 generated questions (v = 2, 3; a = 2, 3; three seeds) × default, s1, record,
   reference.
+
+Read the instance × variant matrix in the Campaign tab, or run
+\`node tools/bench.mjs voting-justification --suite paper --out rows.jsonl\` and
+\`node tools/report.mjs rows.jsonl\` (add \`--metric candidates\`).
 
 ## What "better" means
 
@@ -290,38 +378,196 @@ Fewer candidates (each costs a check), less time, and more questions solved with
 A variant that finds a *different* number of justifications than the reference is unsound
 (or the reference has not finished): the Campaign tab marks those cells ✗.
 
-## Measured (tools/bench.mjs, one machine, Nov 2026)
+## Measured (tools/bench.mjs, one machine, two jobs, Nov 2026)
 
-Suite \`strategies\` (15 questions × 8 variants, 30 s limit): every cell finishes and every variant
-agrees with the reference. Eleven questions need at most 9 candidates in every variant; the four
-others separate the strategies (candidates):
+Suite \`paper\` (17 questions, 60 s limit; every finished cell agrees):
 
-| question | default | s1 | s3 | s4 | s5 | shape2 | record | reference |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| faith-cancel-reinf-pareto-condorcet-k3 | 2,132 | **770** | 2,117 | 2,134 | 2,123 | 2,093 | 2,132 | 2,123 |
-| faith-cancel-reinf-pareto-k3 | 1,364 | **405** | 1,415 | 1,341 | 1,407 | 1,329 | 1,329 | 1,407 |
-| faith-pareto-neutral-reinf-k4 | 146 | **44** | 146 | 146 | 146 | 146 | 146 | 146 |
-| pareto-neutral-reinf-k5 | 48 | **38** | 48 | 48 | 48 | 48 | 48 | 48 |
+| variant | solved | total time of the solved (s) |
+|---|---:|---:|
+| default (s2) | 13 | 148 |
+| reference | 14 | 212 |
+| s1 | 14 | 55 |
+| s6 | 17 | 101 |
+| fewest | 17 | 101 |
+| **multi** | **17** | **59** |
+| partial | 17 | 92 |
+| deepen | 16 | 61 |
+| profiles-first | 16 | 83 |
 
-Total time: s1 4.2 s, default 6.1 s, reference 6.0 s, shape2 19.9 s. Strategy 1 (the axiom
-instances the outcomes falsify) is the only one that beats blocking; the default strategy 2 is
-no better than the reference run here. Suite \`generated\` (12 questions): s1 9.8 s in total,
-reference 36.9 s, record 43.0 s, default 49.6 s. Why strategy 2 gains nothing over blocking is a
-good first question.
+Candidates on some of them (*limit*: not finished in 60 s):
+
+| question | default | s1 | reference | s6 | fewest | multi | partial | deepen | profiles-first |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| paper-ex4-k3-p3 | 2,514 | 389 | 2,450 | 80 | 63 | **22** | 25 | 63 | 90 |
+| paper-ex4-k3-p4 | limit | limit | limit | 2,059 | 1,777 | **198** | 369 | 1,951 | 2,491 |
+| paper-borda3-k3-p4 | limit | limit | limit | 2,063 | 1,686 | **189** | 600 | 2,695 | 1,979 |
+| paper-borda4-k3-p4 | limit | limit | limit | 3,606 | 2,496 | **260** | 718 | limit | limit |
+| paper-v2-bca-k2-p4 | 907 | 379 | 907 | 155 | 98 | 58 | **52** | 118 | 4,672 |
+| paper-v4-k4-p3 | 8,015 | 938 | 6,657 | 151 | 145 | **47** | 57 | 141 | 197 |
+| paper-c4-v2-k3-p3 | limit | 4,294 | 26,035 | 478 | 320 | **106** | 351 | 614 | 506 |
+
+Suite \`strategies\` (12 questions, 30 s): every cell finishes; total time multi 1.7 s, s6 1.8 s,
+fewest 2.4 s, partial 2.9 s, deepen 3.4 s, s1 3.7 s, profiles-first 8.1 s, the original
+strategies 8.6 to 12.3 s, shape2 26.2 s.
+
+## What the measurements say about loops for this problem
+
+1. **The refinement matters most, and it is about what the counterexample really depends on.**
+   The original strategies keep every profile atom in the clause, so each clause is nearly a
+   block of the candidate (mean clause 250 to 470 literals for strategy 2 and the reference
+   run). Dropping the profiles (s6) makes clauses of 50 to 100 literals that hold for every
+   candidate: 3 to 11 times fewer candidates than s1 on the paper questions (160 times on
+   \`cancel-reinf-posresp-k4\`), and the 4-profile questions finish.
+2. **More counterexamples per candidate pay; shorter ones barely.** Since a clause of s6 holds
+   everywhere, every extra counterexample is a free lemma: multi needs 3 to 14 times fewer
+   candidates than s6 and is the fastest loop. The optimal check (fewest) shortens clauses by
+   7 to 25% and saves 10 to 30% of the candidates, but the optimisation costs that back.
+3. **Partial checks cut candidates but not time.** With s6 they are valid (the clause does not
+   depend on the candidate) and give the fewest candidates on small questions, but every
+   partial check is a solve of the check.
+4. **Once the refinement is strong, the abstraction is the bottleneck.** With multi most of the
+   time is spent in A (on \`paper-borda3-k3-p4\`: 5.7 s in A, 1.1 s in C): A must find profiles
+   and exactly k applicable instances that hit every collected falsified set. Without a check A
+   enumerates about 1,400 candidates a second, so the cost is the hitting-set search itself.
+5. **Deepening and two levels do not pay here.** deepen (the paper's breadth-first order) grounds
+   one abstraction per level and redoes the search at each level; profiles-first enumerates many
+   profile tuples because its relaxed solver P does not know k (4,700 candidates on the two-voter
+   4-profile questions). Both are sound and close to s6 on most questions. They would pay for
+   *one* justification (smallest number of profiles first), which is what the paper computes;
+   the suites ask for all of them.
 
 ## Open questions
 
-1. Which strategy wins on which kind of question, and why? Relate the matrix to the axioms each
-   question uses (instances whose axioms link two or three profiles behave differently).
-2. Can a refinement be *lifted* over symmetric profiles (permuting voters or candidates), so that
-   one counterexample rules out many candidates? Measure the clause lengths (Statistics tab).
-3. Does Shape 2, or a rule refinement (\`G.rule\`), pay on the hard questions?
-4. The hard questions (\`cancel-reinf-posresp-k4\`, \`pareto-neutral-cancel-reinf-k8\`): what
-   change to the abstraction (symmetry breaking, a bound on the profiles, a two-step search that
-   first fixes the profiles, as the original file suggests) makes them finish?
-5. Is every strategy sound? Run the audit (Audit button, or \`node tools/audit.mjs
-   voting-justification --instance ID\`) on small questions and grow them with Fuzz.
+1. Combine the winners: multi with partial checks, or multi with deepen for the first solution.
+2. Can a refinement be *lifted* over permutations of the profile numbers (a counterexample
+   permuted is a counterexample), so that one counterexample rules out many candidates?
+3. The abstraction is now the bottleneck: would an encoding that builds profiles from instances
+   (a neutrality instance determines its second profile) instead of guessing them first help?
+4. The paper's derived axioms and implied instances (Section 3) as variants of the abstraction:
+   they change the solution set, so compare first-solution times rather than counts.
+5. Explanatoriness: the encoding has no minimality check (exactly k instances). A second check
+   (no proper subset suffices) would make larger k meaningful.
 `;
+
+// voting-justification, strategy 6 and the loops built on it (Nov 2026). A counterexample is an
+// outcome for every profile number; whether it falsifies an axiom instance depends on those
+// outcomes alone (faithfulness and unanimity also read voter 1's top choice). So the profile atoms
+// need not be relevant, and the clause says: use one of the instances this outcome falsifies. It
+// holds for every candidate, whatever its profiles (the symbolic audit proves it sound).
+const VOTE_S6 = `% Refinement strategy 6: the axiom instances the outcomes falsify, and of the profile atoms
+% only the top choice of voter 1 (read by faithfulness and unanimity). Whether an outcome
+% falsifies an instance depends on the outcomes alone, so the clause holds for every candidate,
+% whatever its profiles: some instance this counterexample falsifies must be used.
+relevant(profile(Prof,1,C,1)) :- profile_num(Prof), candidate(C), use_axiom(faithfulness).
+relevant(profile(Prof,1,C,1)) :- profile_num(Prof), candidate(C), use_axiom(unanimity).
+relevant(use_axiom_instance(Profiles,Axiom)) :-
+    falsified(pos_axiom_instance(Profiles,Axiom)),
+    pos_axiom_instance(Profiles,Axiom).
+`;
+const VOTE_CHOICE = `num_axiom_instances { use_axiom_instance(Profiles,Axiom) :
+    axiom_applicable(Profiles,Axiom) } num_axiom_instances.`;
+const vloop = (text) => ({ language: 'loop', text });
+const VOTE_SHAPE1 = (cheader, body) => `solver A = shared + abstraction
+solver C = ${cheader}   options "--heuristic=Domain"
+link   G = A -> C via shared + glue
+
+search A:
+    on candidate M:
+${body}`;
+// deepening, as the paper's breadth-first generation: member i of the family A looks only for
+// justifications with exactly i profiles; the counterexamples of the lower levels refine the
+// higher ones before they start
+const VOTE_DEEPEN = `solver A[i in 1..num_profiles] = shared + abstraction + level
+solver C = shared + check + relevant   options "--heuristic=Domain"
+link   G[i in 1..num_profiles] = A[i] -> C via shared + glue
+
+found = []
+i = 1
+while i <= A.size:
+    for X in found:
+        A[i].add(G[i].clause(X))
+    search A[i]:
+        on candidate M:
+            X = C.solve(assume G[i](M))
+            if X:
+                found.push(X)
+                reject M with G[i].clause(M, X)
+    i = i + 1
+`;
+// two levels: P guesses the profiles and uses every applicable instance (a relaxation); if even
+// those leave a counterexample, no subset of them can work. Otherwise an inner search of A over
+// these profiles picks exactly k instances. Clauses learnt in A hold for every profile tuple.
+const VOTE_TWO_LEVEL = `solver P = shared + abstraction_profiles
+solver A = shared + abstraction + profiles_given
+solver C = shared + check + relevant   options "--heuristic=Domain"
+link   GP = P -> C via shared + glue
+link   GA = P -> A via shared + glue_profiles
+link   G = A -> C via shared + glue
+
+search P:
+    on candidate N:
+        X = C.solve(assume GP(N))
+        if X:
+            reject N with GP.clause(N, X)
+        else:
+            search A assume GA(N):
+                on candidate M:
+                    Y = C.solve(assume G(M))
+                    if Y:
+                        reject M with G.clause(M, Y)
+            reject N with GA.block(N)
+`;
+function voteLoops(p) {
+  const ab = frag(p, 'abstraction');
+  if (!ab.text.includes(VOTE_CHOICE)) throw new Error('make-examples: the choice of axiom instances not found');
+  const at = p.fragments.indexOf(frag(p, 'relevant_s5')) + 1;
+  p.fragments.splice(at, 0,
+    { name: 'relevant_s6', text: VOTE_S6, description: 'Refinement strategy 6 for the check (relevant/1): the falsified instances and voter 1\'s top choices only. Swapped in by the variants s6, fewest, multi, partial, deepen and profiles-first.' },
+    { name: 'fewest', text: `% The smallest refinement (variant fewest): an outcome assignment that falsifies as few
+% axiom instances as possible, so the clause of strategy 6 is as short as possible.
+#minimize { 1,Profiles,Axiom : falsified(pos_axiom_instance(Profiles,Axiom)) }.
+`, description: 'A #minimize for the check: the counterexample that falsifies the fewest instances (variant fewest, with an optimal solve).' },
+    { name: 'level', text: `% Deepening (variant deepen): member i of the solver family A looks only for justifications
+% that use exactly i profiles (the constant level is i).
+:- profile_used(P), P > level.
+:- not profile_used(level).
+:- active_voter(P,V), P > level.
+`, description: 'For the variant deepen: member i of the family A uses exactly i profiles.' },
+    { name: 'abstraction_profiles', text: ab.text.replace(VOTE_CHOICE, `% Profiles first (variant profiles-first): every applicable instance counts as used. This is
+% a relaxation of the abstraction (no exact number): if a counterexample satisfies all of
+% them, it satisfies every subset, and no justification uses these profiles.
+use_axiom_instance(Profiles,Axiom) :- axiom_applicable(Profiles,Axiom).`),
+    description: 'For the variant profiles-first: the abstraction with every applicable axiom instance used (it guesses the profiles only).' },
+    { name: 'glue_profiles', text: `% The profiles, passed from P to A (variant profiles-first).
+glue(profile(Prof,V,Cand,Pos)) :-
+    profile_num(Prof), voter(V), candidate(Cand), position(Pos).
+`, description: 'For the variant profiles-first: the interface from P to A, the profiles only.' },
+    { name: 'profiles_given', text: `% The profiles come from P over a link, which makes them free choices in A: a profile atom
+% needs its voter (else A could show profiles nobody votes in).
+:- profile(Prof,V,C,Pos), not active_voter(Prof,V).
+`, description: 'For the variant profiles-first: profile atoms that A receives over a link need an active voter.' });
+  const s6 = { relevant: 'relevant_s6' };
+  p.variants.push(
+    { name: 's6', swap: s6, constants: {} },
+    { name: 'fewest', swap: s6, constants: {}, loop: vloop(VOTE_SHAPE1('shared + check + relevant + fewest', `        X = C.solve(assume G(M), optimal)
+        if X:
+            reject M with G.clause(M, X)
+`)) },
+    { name: 'multi', swap: s6, constants: {}, loop: vloop(VOTE_SHAPE1('shared + check + relevant', `        for X in C.models(assume G(M), limit 5):
+            reject M with G.clause(M, X)
+`)) },
+    // a clause of strategy 6 holds for every candidate, so a check at a partial assignment (the
+    // open atoms taken as false) may reject the whole subtree
+    { name: 'partial', swap: s6, constants: {}, loop: vloop(VOTE_SHAPE1('shared + check + relevant', `        X = C.solve(assume G(M))
+        if X: reject M with G.clause(M, X)
+`).replace('search A:\n', `search A:
+    on partial P every 8:
+        X = C.solve(assume G(P, false))
+        if X: reject P with G.clause(X)
+`)) },
+    { name: 'deepen', swap: s6, constants: {}, loop: vloop(VOTE_DEEPEN) },
+    { name: 'profiles-first', swap: s6, constants: {}, loop: vloop(VOTE_TWO_LEVEL) });
+}
 
 function voteStrategies(p) {
   const c = frag(p, 'check');
@@ -497,18 +743,24 @@ export function buildExamples() {
       gl.text = cut(gl.text, `
 % glue(axiom_applicable(Profiles,Axiom) :- pos_axiom_instance(Profiles,Axiom).
 `);
+      voteLoops(p);
     }, { solutions: 0 });
   vote.settings.constants = { ...vote.instances.find((i) => i.id === VOTE_DEFAULT).constants };
   vote.readme = VOTE_README;
   vote.generators = structuredClone(VOTE_KIT.generators);
   vote.instances.push(...structuredClone(VOTE_KIT.recipes).map((x) => ({ constants: {}, ...x })));
+  vote.instances.push(...VOTE_PAPER.map(votePaperInstance));
   vote.fragments.push({ name: 'view', text: VIEWS['voting-justification'], description: 'A domain view (Observatory tab): the scene part draws what stays, the frame part one step, as draw/1 marks.' });
   vote.views = [{ name: 'view', fragments: ['shared', 'view'] }];
+  const paper = vote.instances.filter((i) => i.tags.includes('paper'));
   vote.suites = [
     { name: 'questions', instances: { ids: 'all' }, limits: { seconds: 20 } },
-    // every refinement strategy and loop on the questions that finish
-    { name: 'strategies', instances: { ids: vote.instances.filter((i) => i.expected && !i.tags.includes('slow')).map((i) => i.id) },
+    // every refinement strategy and loop on the file's and the generated questions that finish
+    { name: 'strategies', instances: { ids: vote.instances.filter((i) => i.expected && !i.tags.includes('slow') && !i.tags.includes('paper')).map((i) => i.id) },
       variants: ['default', ...vote.variants.map((v) => v.name)], limits: { seconds: 30 } },
+    // the paper's questions: the best of the original strategies against the loops of strategy 6
+    { name: 'paper', instances: { ids: paper.map((i) => i.id) },
+      variants: ['default', 's1', 'reference', 's6', 'fewest', 'multi', 'partial', 'deepen', 'profiles-first'], limits: { seconds: 60 } },
     // generated questions (the generator vote-question) with small bounds
     { name: 'generated', instances: { generator: 'vote-question', grid: { v: [2, 3], a: [2, 3] }, seeds: 3,
       constants: { num_candidates: 3, num_voters: 3, num_profiles: 3, num_axiom_instances: 3 } },

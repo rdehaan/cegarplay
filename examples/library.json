@@ -2522,9 +2522,9 @@
       ],
       "expected": null,
       "has": {
-        "instances": 14,
+        "instances": 30,
         "generators": 1,
-        "suites": 3,
+        "suites": 4,
         "views": 1,
         "readme": 1
       },

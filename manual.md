@@ -237,8 +237,13 @@ its variants (`default` = the project as it is) and ignores the picker.
 `voting-justification` is the worked example: its check solver reads the fragment `relevant`
 (refinement strategy 2), the fragments `relevant_s1`, `relevant_s3`, `relevant_s4` and
 `relevant_s5` hold the other strategies of the original file, the variants `s1` … `s5` swap them
-in, `shape2` and `reference` replace the loop, and the suite `strategies` runs all seven on the 15
-questions that finish.
+in, `shape2` and `reference` replace the loop, and the suite `strategies` runs every variant on the
+12 questions of the file and the generator that finish. `relevant_s6` drops the profile atoms (a
+counterexample's falsified instances do not depend on the profiles), and six variants build loops on
+it: `s6`, `fewest` (an optimal check), `multi` (five counterexamples per candidate), `partial`
+(`on partial`), `deepen` (a solver family over the number of profiles) and `profiles-first` (two
+levels: profiles, then instances). The suite `paper` compares them on 17 questions from Nardi,
+Boixel and Endriss (AAMAS 2022); the readme has the measurements.
 
 **Compare variants** (below the variant cards, for a project with variants) puts two sides next to
 each other: two variants, or the project as written and a variant. **Compare** shows the fragments
@@ -1916,7 +1921,7 @@ instances. `test/coverage-*.test.mjs` runs every variant on every instance with 
 (instances tagged `slow`, `hard` or `original` only with `SLOW=1`, those tagged `bench` never), and the audit finishes within
 about a minute on every instance not marked `audit: false`. Parametric problems (`graph-coloring`, `min-dnf`,
 `clique-interdiction`) use constants-only instances and `settings.instance: ""`, so that the
-project as written runs with its own constants. `voting-justification` has fourteen instances,
+project as written runs with its own constants. `voting-justification` has thirty instances,
 one question each. Some examples also have generators (`qbf`, `af-preferred`, `kemeny-control`, the
 graph problems), a campaign suite (`tutorial-weak-relevant`, `qbf`, `voting-justification`) or a
 domain view (fragment `view`). Every `fast` example has a recording in `examples/replays/`

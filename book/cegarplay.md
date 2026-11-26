@@ -3317,16 +3317,18 @@ The Campaign tab (or `tools/bench.mjs` with `tools/report.mjs`) gives one row pe
 
 Two findings. First, strategy 1 is the only one that beats blocking clearly (also on `faith-pareto-neutral-reinf-k4`: 44 candidates against 146). Second, the default strategy is barely better than blocking, and the clause lengths say why: 219 literals against 248. Every strategy marks every profile atom relevant, so every clause is nearly a block. A strategy that marked only the profiles the counterexample's falsified instances touch would be shorter; whether it is sound is the kind of question chapter 4 teaches you to test.
 
+The project answers it with strategy 6 (variant `s6`). A counterexample is an outcome for every profile *number*, and whether it falsifies an axiom instance depends on those outcomes alone (faithfulness and unanimity also read voter 1's top choice). So the profile atoms can go: the clause says “use one of the instances this outcome falsifies”, and it holds for every candidate, whatever its profiles (the symbolic audit proves it sound). On `faith-cancel-reinf-pareto-k3` it needs 139 candidates. Because such a clause holds everywhere, every extra counterexample is a free lemma: the variant `multi` takes up to five per candidate and needs 63. The readme compares these loops with partial checks, an optimal check, deepening over the number of profiles and a two-level search on the questions of Nardi, Boixel and Endriss.
+
 ### Soundness and ground truth {#c21-soundness}
 
 - On the questions with a known answer, every variant agrees with the reference: the campaign marks no cell ✗.
 - **Audit** and **Fuzz** test a strategy on small questions; the generator `vote-question` draws random ones (`random-1`: strategy 1 needs 405 candidates, the default 2,526).
 - `tools/cegarcheck.py` runs the loop with Python clingo, independently of the page's runtime.
-- The two hard questions have no ground truth yet: neither finishes within forty minutes in this setting. Getting it, with native clingo, a stronger strategy or a better abstraction, is part of the project.
+- The question the original file has switched on, `cancel-reinf-posresp-k4`, needs about 95,000 candidates and 15 minutes with strategy 1, and about 600 candidates and 15 s with strategy 6; both find its 16 justifications.
 
 ### Open questions {#c21-open}
 
-The project's readme (Home, under the description) lists them: which strategy wins on which kind of question and why; whether a refinement can be lifted over symmetric profiles; whether Shape 2 or a rule refinement pays on the hard questions; what change to the abstraction makes them finish. Each is a student project of a few weeks.
+The project's readme (Home, under the description) lists them: which strategy wins on which kind of question and why; whether a refinement can be lifted over symmetric profiles; whether the abstraction, now the bottleneck, can build profiles from instances instead of guessing them; how to add the paper's derived axioms and a minimality check. Each is a student project of a few weeks.
 
 ::: exercise
 ### Exercise 1 {#c21-exercise-1}

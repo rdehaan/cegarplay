@@ -196,7 +196,9 @@ test('instances[].audit: false keeps an instance out of the audit and Fuzz, not 
   assert.deepEqual(fuzzInstances(p, { ids: 'all' }).map((x) => x.id), ['small']);
   const v = P.load(H.read('examples/voting-justification.json'));
   assert.deepEqual(v.instances.filter((x) => x.audit === false).map((x) => x.id), ['faith-cancel-reinf-pareto-condorcet-k3',
-    'faith-cancel-reinf-pareto-k3', 'cancel-reinf-posresp-k4', 'pareto-neutral-cancel-reinf-k8', 'random-1', 'random-2']);
+    'faith-cancel-reinf-pareto-k3', 'cancel-reinf-posresp-k4', 'random-1', 'random-2', 'paper-ex4-k3-p3', 'paper-ex4-k3-p4',
+    'paper-borda3-k3-p3', 'paper-borda3-k3-p4', 'paper-borda4-k3-p3', 'paper-borda4-k3-p4', 'paper-v4-k4-p3', 'paper-c4-v2-k3-p3',
+    'paper-c4-v2b-k3-p3', 'paper-c4-v3-k3-p3']);
 });
 
 test('CSV import: row/N facts without a map, named predicates with a column map (D7)', async () => {

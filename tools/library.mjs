@@ -946,5 +946,6 @@ export const SYMBOLIC = {
   'slitherlink': { example: null },
   'sudoku-graded': { example: null },
   'sudoku-unavoidable': { example: null, 'one-clue-missing': null },
-  'voting-justification': { 'pareto-neutral-cancel-reinf-k8': null, 'cancel-reinf-posresp-k4': null, 'random-1': null },
+  'voting-justification': { 'cancel-reinf-posresp-k4': null, 'random-1': null, 'paper-ex4-k3-p4': null, 'paper-borda4-k3-p4': null,
+    'paper-c4-v2-k3-p3': null, 'paper-c4-v3-k3-p3': null },
 };

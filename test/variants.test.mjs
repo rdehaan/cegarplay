@@ -36,16 +36,29 @@ test('the run bar picks (settings.instance, settings.variant) do not change camp
 
 test('the voting example: a relevant fragment per strategy, a variant per other strategy and per loop, a suite over them', () => {
   const p = vote();
-  assert.deepEqual(p.fragments.map((f) => f.name).filter((n) => n.startsWith('relevant')), ['relevant', 'relevant_s1', 'relevant_s3', 'relevant_s4', 'relevant_s5']);
+  assert.deepEqual(p.fragments.map((f) => f.name).filter((n) => n.startsWith('relevant')), ['relevant', 'relevant_s1', 'relevant_s3', 'relevant_s4', 'relevant_s5', 'relevant_s6']);
   assert.match(p.loop.text, /solver C = shared \+ check \+ relevant/);
   assert.ok(!/^relevant\(/m.test(p.fragments.find((f) => f.name === 'check').text), 'the check holds no relevant/1 rules');
-  assert.deepEqual(p.variants.map((v) => v.name), ['s1', 's3', 's4', 's5', 'shape2', 'record', 'reference']);
+  assert.deepEqual(p.variants.map((v) => v.name), ['s1', 's3', 's4', 's5', 'shape2', 'record', 'reference', 's6', 'fewest', 'multi', 'partial', 'deepen', 'profiles-first']);
   assert.match(p.variants.find((v) => v.name === 'record').loop.text, /solver A = shared \+ abstraction +options "--enum-mode=record"/);
   const d = P.derive(p, { variant: 's3' });
   assert.match(d.fragments.find((f) => f.name === 'relevant').text, /strategy 3/);
   const s = p.suites.find((x) => x.name === 'strategies');
   assert.deepEqual(s.variants, ['default', ...p.variants.map((v) => v.name)]);
   assert.ok(s.instances.ids.every((id) => p.instances.find((x) => x.id === id).expected), 'only instances that finish');
+  const paper = p.suites.find((x) => x.name === 'paper');
+  assert.ok(paper.instances.ids.length >= 15 && paper.instances.ids.every((id) => id.startsWith('paper-')));
+  assert.ok(paper.variants.includes('s6') && paper.variants.includes('profiles-first'));
+});
+
+test('the voting example: the paper\'s questions have counts, and the k = 8 question is gone', () => {
+  const p = vote();
+  const paper = p.instances.filter((x) => x.tags.includes('paper'));
+  assert.ok(paper.length >= 15);
+  for (const x of paper) assert.equal(typeof x.expected.solutions, 'number', x.id);
+  assert.ok(!p.instances.some((x) => x.id === 'pareto-neutral-cancel-reinf-k8'));
+  // four alternatives: the target profile ranks candidates 1..4
+  assert.equal(p.instances.find((x) => x.id === 'paper-c4-v3-k3-p3').constants.num_candidates, '4');
 });
 
 test('the voting kit: a readme, a generator with seven recipe questions, a generated suite, a view (E2)', () => {
@@ -61,7 +74,7 @@ test('the voting kit: a readme, a generator with seven recipe questions, a gener
   assert.deepEqual(p.views.map((v) => v.name), ['view']);
 });
 
-for (const [variant, solutions] of [['s1', 2], ['s5', 2], ['record', 2], ['reference', 2]]) {
+for (const [variant, solutions] of [['s1', 2], ['s5', 2], ['record', 2], ['reference', 2], ['s6', 2], ['fewest', 2], ['multi', 2], ['partial', 2], ['deepen', 2], ['profiles-first', 2]]) {
   test(`voting variant ${variant} on cancel-posresp-k2 gives ${solutions} solutions`, async () => {
     const p = vote();
     p.settings = { ...p.settings, solutions: 0, trace: 0, seconds: 0 };

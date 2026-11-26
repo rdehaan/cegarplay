@@ -2314,3 +2314,34 @@ Deviations and findings:
   off, Shift+A the three advanced tabs (`TAB_TOGGLES` in js/keys.js: they click the Settings
   checkbox, so the choice is stored as there; a toast via `#keys-status` says what changed). Listed in
   the shortcuts dialog and in Settings.
+
+## Voting justification: paper questions and loops of strategy 6 (2026-11-26, on request)
+
+Asked: questions from Nardi, Boixel and Endriss (AAMAS 2022) of reasonable size (drop the k = 8
+one), and loop variants that might be faster, to learn which loops suit the problem.
+
+- **Instances.** `pareto-neutral-cancel-reinf-k8` dropped (`VOTE_DROPPED`). 17 `paper-*` questions
+  (`VOTE_PAPER` in tools/make-examples.mjs) over the paper's corpus: Examples 1 and 4, the six
+  two-voter profiles with Borda outcomes, the two no-justification profiles of Section 4.2, a
+  Condorcet cycle, four voters, three profiles over four alternatives. k is the smallest with a
+  justification (the encoding counts *exactly* k instances, with no minimality: a larger k counts
+  padded justifications). Counts agree between s1, multi, deepen, profiles-first and the reference
+  run (14 of 17 finish within 5 min). Tags `bench` (default loop does not finish in 60 s) and
+  `slow` (default > 5 s); the heavy ones `audit: false`; four have no symbolic verdict in 60 s
+  (`SYMBOLIC`).
+- **Strategy 6** (`relevant_s6`): the falsified instances plus voter 1's top choices, no other
+  profile atoms. A counterexample's falsified set depends on the outcomes only, so the clause holds
+  for every candidate; the explicit and the symbolic audit are sound on every question they finish.
+  `cancel-reinf-posresp-k4`: 602 candidates, 15 s (s1: 95,000, 15 min).
+- **Variants** on it: `s6`, `fewest` (#minimize falsified, optimal check), `multi` (5
+  counterexamples per candidate), `partial` (`on partial every 8`), `deepen` (family `A[i]` with
+  exactly i profiles, fragment `level`, earlier counterexamples re-added with `G[i].clause(X)`),
+  `profiles-first` (P with every applicable instance used, fragment `abstraction_profiles`; a nested
+  `search A assume GA(N)`). Deviation found on the way: a link into A makes its interface atoms
+  free choices there, so phantom profile atoms appeared (duplicate solutions) until
+  `profiles_given` required an active voter.
+- **Findings** (readme, suite `paper`): multi solves 17/17 in 59 s total (default 13, s1 14,
+  reference 14 within 60 s); candidates 3 to 14 times fewer than s6. With strong refinements the
+  abstraction dominates the time. deepen and profiles-first do not pay for all solutions.
+- Chapter 21 of the guide: a paragraph on strategy 6 (two new measured numbers), the ground-truth
+  and open-question items updated; book regenerated.

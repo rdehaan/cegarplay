@@ -93,6 +93,18 @@ relevant(use_axiom_instance(Profiles,Axiom)) :-
           nearly a block. A strategy that marked only the profiles the counterexample's falsified
           instances touch would be shorter; whether it is sound is the kind of question chapter 4 teaches
           you to test.</p>
+        <p>The project answers it with strategy 6 (variant <code>s6</code>). A counterexample is an
+          outcome for every profile <em>number</em>, and whether it falsifies an axiom instance depends on
+          those outcomes alone (faithfulness and unanimity also read voter 1's top choice). So the
+          profile atoms can go: the clause says “use one of the instances this outcome falsifies”, and it
+          holds for every candidate, whatever its profiles (the symbolic audit proves it sound). On
+          <code>faith-cancel-reinf-pareto-k3</code> it needs
+          <span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](s6):candidates">139</span>
+          candidates. Because such a clause holds everywhere, every extra counterexample is a free lemma:
+          the variant <code>multi</code> takes up to five per candidate and needs
+          <span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](multi):candidates">63</span>.
+          The readme compares these loops with partial checks, an optimal check, deepening over the
+          number of profiles and a two-level search on the questions of Nardi, Boixel and Endriss.</p>
 
         <h2 id="soundness">Soundness and ground truth</h2>
         <ul>
@@ -104,16 +116,17 @@ relevant(use_axiom_instance(Profiles,Axiom)) :-
             default <span data-stat="voting-justification[random-1]:candidates">2,526</span>).</li>
           <li><code>tools/cegarcheck.py</code> runs the loop with Python clingo, independently of the
             page's runtime.</li>
-          <li>The two hard questions have no ground truth yet: neither finishes within forty minutes
-            in this setting. Getting it, with native clingo, a stronger strategy or a better abstraction,
-            is part of the project.</li>
+          <li>The question the original file has switched on, <code>cancel-reinf-posresp-k4</code>,
+            needs about 95,000 candidates and 15 minutes with strategy 1, and about 600 candidates and
+            15 s with strategy 6; both find its 16 justifications.</li>
         </ul>
 
         <h2 id="open">Open questions</h2>
         <p>The project's readme (Home, under the description) lists them: which strategy wins on
           which kind of question and why; whether a refinement can be lifted over symmetric profiles;
-          whether Shape 2 or a rule refinement pays on the hard questions; what change to the abstraction
-          makes them finish. Each is a student project of a few weeks.</p>
+          whether the abstraction, now the bottleneck, can build profiles from instances instead of
+          guessing them; how to add the paper's derived axioms and a minimality check. Each is a
+          student project of a few weeks.</p>
 
         <section class="exercise" id="exercise-1">
           <h2>Exercise 1</h2>

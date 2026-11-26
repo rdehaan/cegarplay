@@ -2021,5 +2021,39 @@
     "checkCalls": 405,
     "restarts": 0,
     "rulesA": 25940
+  },
+  "voting-justification[faith-cancel-reinf-pareto-k3](s6)": {
+    "solutions": 1,
+    "candidates": 139,
+    "counterexamples": 138,
+    "blocks": 0,
+    "from_models": 138,
+    "from_cores": 0,
+    "refinements": 138,
+    "clauses": 138,
+    "expansions": 0,
+    "literals": 6420,
+    "meanClause": 46.5,
+    "maxClause": 65,
+    "checkCalls": 139,
+    "restarts": 0,
+    "rulesA": 18048
+  },
+  "voting-justification[faith-cancel-reinf-pareto-k3](multi)": {
+    "solutions": 1,
+    "candidates": 63,
+    "counterexamples": 310,
+    "blocks": 0,
+    "from_models": 310,
+    "from_cores": 0,
+    "refinements": 310,
+    "clauses": 310,
+    "expansions": 0,
+    "literals": 15368,
+    "meanClause": 49.6,
+    "maxClause": 74,
+    "checkCalls": 63,
+    "restarts": 0,
+    "rulesA": 18048
   }
 }

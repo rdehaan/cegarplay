@@ -281,6 +281,8 @@ export const QUOTED = [
   { id: 'voting-justification', instance: 'faith-pareto-neutral-reinf-k4', variant: 's1' },
   { id: 'voting-justification', instance: 'random-1' },
   { id: 'voting-justification', instance: 'random-1', variant: 's1' },
+  { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3', variant: 's6' },
+  { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3', variant: 'multi' },
 ]; 
 
 // Every entry: id, summary, shape, tags, expected, page, status, baseline, project; optionally

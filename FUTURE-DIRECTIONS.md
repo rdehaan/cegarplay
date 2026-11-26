@@ -130,9 +130,12 @@ as D9 or F1 in code comments refer to that version (`git show 652e5bb:FUTURE-DIR
 
 ## Voting-justification ground truth
 
-- `cancel-reinf-posresp-k4` has its expected value (16). `pareto-neutral-cancel-reinf-k8` still
-  has none: a 90-minute run of variant `s1` was started for it; when a run is exhausted, put the
-  count in `expected` (and tag the instance `slow`).
+- Done (Nov 2026): every question has an expected count. `pareto-neutral-cancel-reinf-k8` was
+  dropped (no loop finished it); `cancel-reinf-posresp-k4` takes 15 s with strategy 6.
+- Open: a loop that builds profiles from instances (the abstraction is now the bottleneck);
+  lifting a counterexample over permutations of the profile numbers; the paper's derived axioms;
+  a minimality (explanatoriness) check as a second check; `multi` combined with `partial` or
+  `deepen` for the first justification. See the example's readme.
 
 ## The booklet
 
