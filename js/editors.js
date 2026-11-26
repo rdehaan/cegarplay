@@ -51,7 +51,7 @@ export class Editors {
     this.fragments = new Map();   // name -> { editor, block, heading }
     this.readOnly = false;
     this.loop = makeEditor(document.getElementById('loop-editor'), 'ace/mode/loop');
-    this.loop.session.on('change', () => { this.clearFor('loop'); this.app.dirty && this.app.dirty(); this.app.loopTab && this.app.loopTab.liveCheck(); });
+    this.loop.session.on('change', () => { this.clearFor('loop'); this.app.dirty && this.app.dirty(); this.app.loopTab && this.app.loopTab.liveCheck(); this.onEdit && this.onEdit('loop'); });
     this.container = document.getElementById('fragments');
     document.getElementById('add-fragment-button').addEventListener('click', () => this.addFragment());
   }
@@ -62,6 +62,8 @@ export class Editors {
     this.fragments.clear();
     this.marked.clear();
     this.serious.clear();
+    this.base.clear();
+    this.lint.clear();
     this.loop.session.clearAnnotations();
     this.container.textContent = '';
     this.project = project;
@@ -77,6 +79,7 @@ export class Editors {
     this.resizeShown();
     if (this.app.views && this.app.views.editorsBuilt) this.app.views.editorsBuilt();
     if (this.app.variants && this.app.variants.fragmentsChanged) this.app.variants.fragmentsChanged();
+    this.onEdit && this.onEdit(null);
   }
 
   // An editor built while its box has no size (a hidden tab, or before layout) stays a few
@@ -132,8 +135,10 @@ export class Editors {
       this.app.dirty && this.app.dirty();
       if (this.app.control && !this.readOnly) this.app.control.scheduleFragmentCheck(name);
       if (this.app.views && this.app.views.fragmentEdited) this.app.views.fragmentEdited(name);
+      this.onEdit && this.onEdit(name);
     });
     this.fragments.set(name, { editor, block, heading, desc });
+    if (this.onEditorMade) this.onEditorMade(name, editor);
   }
 
   // Copy the editor contents into the project (in place) and return it.
@@ -191,7 +196,8 @@ export class Editors {
     }
     for (const [key, anns] of by) {
       const ed = key === 'loop' ? this.loop : this.fragments.get(key).editor;
-      ed.session.setAnnotations(anns);
+      this.base.set(key, anns);
+      this.render(key);
       const serious = anns.some((a) => a.type !== 'info');
       if (key !== 'loop' && serious) this.fragments.get(key).heading.classList.add('has-problem');
       this.marked.add(key);
@@ -206,7 +212,8 @@ export class Editors {
     const ed = key === 'loop' ? this.loop : this.fragments.get(key) && this.fragments.get(key).editor;
     if (!ed) return;
     const anns = problems.map((p) => ({ row: Math.max(0, (p.line || 1) - 1), column: Math.max(0, (p.col || 1) - 1), text: p.message, type: p.severity || 'error' }));
-    ed.session.setAnnotations(anns);
+    this.base.set(key, anns);
+    this.render(key);
     if (anns.length) { this.marked.add(key); this.serious.add(key); }
     else { this.marked.delete(key); this.serious.delete(key); }
     if (key !== 'loop') this.fragments.get(key).heading.classList.toggle('has-problem', anns.length > 0);
@@ -214,12 +221,33 @@ export class Editors {
   }
 
   get marked() { if (!this._marked) this._marked = new Set(); return this._marked; }
+  get base() { if (!this._base) this._base = new Map(); return this._base; }
+  get lint() { if (!this._lint) this._lint = new Map(); return this._lint; }
+  editorOf(key) { return key === 'loop' ? this.loop : this.fragments.get(key) && this.fragments.get(key).editor; }
+  // what an editor's gutter shows: the marks of clingo and the compiler, then the warnings of
+  // js/asp-scan.js on lines that have no such mark (the warnings never set the red tab marker)
+  render(key) {
+    const ed = this.editorOf(key);
+    if (!ed) return;
+    const base = this.base.get(key) || [];
+    const rows = new Set(base.map((a) => a.row));
+    ed.session.setAnnotations([...base, ...(this.lint.get(key) || []).filter((a) => !rows.has(a.row))]);
+  }
+  // problems: [{ line, col, message, severity }] (lines from 1), for one editor
+  setLint(key, problems) {
+    const anns = problems.map((p) => ({ row: Math.max(0, (p.line || 1) - 1), column: Math.max(0, (p.col || 1) - 1), text: p.message, type: p.severity || 'warning', lint: true }));
+    const before = JSON.stringify(this.lint.get(key) || []);
+    if (anns.length) this.lint.set(key, anns); else this.lint.delete(key);
+    if (JSON.stringify(anns) !== before) this.render(key);
+  }
+  lintAt(key, row) { return (this.lint.get(key) || []).filter((a) => a.row === row); }
+  marksAt(key, row) { return [...(this.base.get(key) || []).filter((a) => a.row === row), ...this.lintAt(key, row)]; }
   get serious() { if (!this._serious) this._serious = new Set(); return this._serious; }
 
   clearFor(key) {
     if (!this.marked.has(key)) return;
-    const ed = key === 'loop' ? this.loop : this.fragments.get(key) && this.fragments.get(key).editor;
-    if (ed) ed.session.clearAnnotations();
+    this.base.delete(key);
+    this.render(key);
     if (key !== 'loop' && this.fragments.get(key)) this.fragments.get(key).heading.classList.remove('has-problem');
     this.marked.delete(key);
     this.serious.delete(key);

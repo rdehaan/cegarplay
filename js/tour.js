@@ -169,11 +169,63 @@ function makeSteps(app) {
 
 const esc = (s) => s.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
+// ---- the short tours of the advanced tabs: offered the first time the tab is opened (js/init.js)
+const tabTarget = (id) => () => { const e = document.getElementById(id); return e && !e.hidden && e.offsetParent !== null ? e : null; };
+export const TAB_TOURS = {
+  tab11: {
+    key: 'cegarplay.tour.observatory',
+    steps: () => [
+      { title: 'The Observatory', text: `<p>The last run (or an opened recording) as pictures. Run something first if the tab is empty;
+        a run recorded with every step (Run options, <b>record steps</b>) shows the most.</p>`, next: 'Show me', skip: true },
+      { title: 'One cursor for all', target: tabTarget('cursor-region'), text: `<p>The cursor bar picks a step of the run, and every picture
+        below follows it. <kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd> move it a step (<kbd>Shift</kbd>: ten), <kbd>Home</kbd> <kbd>End</kbd> to the ends;
+        <b>follow the run</b> keeps it on the last step while a run goes on.</p>` },
+      { title: 'Loop anatomy', target: tabTarget('anatomy'), text: `<p>One box per solver and one arrow per link, with the calls of each;
+        a link flashes at each step through it. With <b>Record calls</b> (Loop tab) a timeline shows every solve call and
+        the time each line of the loop script costs.</p>` },
+      { title: 'The problem\'s own pictures', target: () => tabTarget('domain-view')() || tabTarget('candidate-space')(), text: `<p>The
+        <b>Domain view</b> draws a step in the problem's terms (a small ASP program: <b>New view</b> starts one). The
+        <b>Candidate space</b> shows every candidate of a small instance at once, and which refinement removed it.</p>`, next: 'Finish' },
+    ],
+  },
+  tab10: {
+    key: 'cegarplay.tour.campaign',
+    steps: () => [
+      { title: 'The Campaign', text: `<p>Many runs, compared. A <b>suite</b> is a grid of instances &times; variants &times; solver seeds;
+        each cell is one run with all solutions, and several run at a time.</p>`, next: 'Show me', skip: true },
+      { title: 'A suite', target: tabTarget('suite-select'), text: `<p>Pick a suite of the project (or write one), then <b>Start</b>. The rows are
+        kept in this browser: a later Start runs only the cells that are missing, and an edit reruns only the cells it touches.</p>` },
+      { title: 'Progress', target: tabTarget('campaign-grid'), text: `<p>One square per cell; hover it to see which. An instance whose
+        variants disagree on the solutions turns red: one of the loops is wrong.</p>` },
+      { title: 'The matrix and the plots', target: () => tabTarget('campaign-matrix-box')() || tabTarget('campaign-plots')(), text: `<p>One row per
+        instance, one column per variant (time, solutions, candidates or refinements); click a heading to sort. The plots
+        compare variants as the instances grow.</p>`, next: 'Finish' },
+    ],
+  },
+  tab12: {
+    key: 'cegarplay.tour.refinery',
+    steps: () => [
+      { title: 'The Refinery', text: `<p>What a loop <i>could</i> have done, not only what it did: at one step, every refinement that was
+        possible there; over a run, the shortest and the longest runs that the same refinements allow. For small instances:
+        it enumerates the candidate space, in a worker of its own.</p>`, next: 'Show me', skip: true },
+      { title: 'First: the space', target: tabTarget('lab-compute'), text: `<p><b>Compute space</b> enumerates the candidates of the audited link
+        and their counterexamples. Every other part rests on it, and says so while it is disabled.</p>` },
+      { title: 'One step, every option', target: tabTarget('lab-inspect'), text: `<p>Pick a refinement of the run (<kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd> step
+        through them): the table lists every clause that was possible there, which are sound, and how much each prunes.</p>` },
+      { title: 'Best and worst runs', target: tabTarget('lab-bounds'), text: `<p>The shortest and longest runs that the loop's refinements
+        allow, next to the length of your run: is the loop's choice of refinement good, or lucky?</p>`, next: 'Finish' },
+    ],
+  },
+};
+
 export class Tour {
-  constructor(app, storage = (() => { try { return localStorage; } catch { return null; } })()) {
+  // opts: { steps, key, begin } for a tour of its own (TAB_TOURS); none: the guided tour
+  constructor(app, opts = {}, storage = (() => { try { return localStorage; } catch { return null; } })()) {
     this.app = app;
     this.storage = storage;
-    this.steps = makeSteps(app);
+    this.key = opts.key || TOUR_KEY;
+    this.main = !opts.steps;
+    this.steps = opts.steps ? opts.steps(app) : makeSteps(app);
     this.index = -1;
     this.timer = 0;
     this.target = null;
@@ -182,10 +234,10 @@ export class Tour {
 
   // ---- remembering that the tour was seen (offered once; Reset everything forgets it)
   get seen() {
-    try { return !!(this.storage && this.storage.getItem(TOUR_KEY)); } catch { return false; }
+    try { return !!(this.storage && this.storage.getItem(this.key)); } catch { return false; }
   }
   remember(state) {
-    try { this.storage.setItem(TOUR_KEY, JSON.stringify({ state, at: new Date().toISOString() })); } catch { /* offered again */ }
+    try { this.storage.setItem(this.key, JSON.stringify({ state, at: new Date().toISOString() })); } catch { /* offered again */ }
   }
 
   get running() { return this.index >= 0; }
@@ -199,6 +251,7 @@ export class Tour {
 
   async begin() {
     const app = this.app;
+    if (!this.main) { this.remember('started'); return true; }
     if (app.control.busy) { window.alert('Not possible during a run.'); return false; }
     if (app.edited) app.snapshotBefore('the guided tour');
     await app.loadExample(TOUR_EXAMPLE);
@@ -289,7 +342,7 @@ export class Tour {
       </div>`;
     card.querySelector('.tour-close').addEventListener('click', () => this.stop(this.index === this.steps.length - 1));
     card.querySelector('.tour-skip').addEventListener('click', () => this.stop(false));
-    card.querySelector('.tour-back').addEventListener('click', () => this.go(Math.max(1, this.index - 1)));
+    card.querySelector('.tour-back').addEventListener('click', () => this.go(Math.max(this.main ? 1 : 0, this.index - 1)));
     card.querySelector('.tour-next').addEventListener('click', async () => {
       if (this.index === this.steps.length - 1) { this.stop(true); return; }
       if (this.index === 0) {
@@ -321,9 +374,9 @@ export class Tour {
     const card = this.card;
     const waiting = !!step.done && !step.completed;
     card.querySelector('.tour-title').textContent = step.title;
-    card.querySelector('.tour-count').textContent = this.index ? `${this.index} of ${this.steps.length - 1}` : '';
+    card.querySelector('.tour-count').textContent = !this.main ? `${this.index + 1} of ${this.steps.length}` : this.index ? `${this.index} of ${this.steps.length - 1}` : '';
     card.querySelector('.tour-body').innerHTML = (typeof step.text === 'function' ? step.text() : step.text) + (step.completed && step.after ? `<div class="tour-after">${step.after()}</div>` : '');
-    card.querySelector('.tour-back').hidden = this.index <= 1;
+    card.querySelector('.tour-back').hidden = this.index <= (this.main ? 1 : 0);
     card.querySelector('.tour-skip').hidden = !step.skip;
     card.querySelector('.tour-do-it').hidden = !(step.doIt && waiting);
     const next = card.querySelector('.tour-next');

@@ -419,6 +419,58 @@ digits and _)`, `duplicate fragment name '...'`, `loop.language must be "loop" o
 A negative or non-numeric value of `solutions`, `seconds`, `candidates`, `trace` or `seed` is
 replaced by its default without an error.
 
+## Help in the editors
+
+The editors of the Programs and Loop tabs explain what one writes, while one writes it. Everything
+here reads the texts in the editors; none of it needs a run, and none of it changes the project.
+
+- **Tooltips** (`js/loop-tips.js`). Pointing at a word for a moment shows what it means where it
+  stands. In the loop script (`js/loop-help.js`): keywords (`search`, `reject`, `assume`, ...),
+  members (`solve`, `clause`, `atoms`, ...; `C.core` and `G.core(C)` are told apart by their
+  receiver), the script's solvers and links with their role (it proposes the candidates; it checks
+  another solver's), the fragments of a declaration (their description), the candidate variable,
+  assigned variables (what they hold, such as "a counterexample, or none"), predicates `p/n`, and
+  the labels of `count`, `track`, `accept ... as` and `S.expand(part, name = L)`. In a fragment
+  (`js/asp-scan.js`): `glue(T)` (the link it makes T an interface atom of), `relevant(T)` (what
+  `G.clause` does with it), `clause/3`, the facts of `expand` (`cex(k, T)`), `draw/1` and the frame
+  predicates of a view, any predicate (where the solvers that ground this fragment define it, and
+  whether it is an interface atom), constants, `#program` parts (which `expand` grounds them) and
+  the directives. A tooltip also shows the warnings and errors of its line. Strings and comments
+  have none.
+- **Hint line** (under the loop editor). The statement at the cursor in the script's own names, such
+  as "X = a counterexample from solver C under the values of G's interface atoms in M, or none if
+  there is none (the candidate passes)." On a line with an error: the error, what to do about it
+  and a link to the manual section that explains the rule (`js/error-help.js`); the gutter's
+  marker says the same ("What to do: ..."), and so do the Messages of a run that did not start.
+- **Warnings** (`lintProject` in `js/asp-scan.js`, 400 ms after an edit). A light reading of the
+  fragments (which predicates each defines and uses, in which `#program` part) together with the
+  loop script's declarations. Yellow markers (warnings) and blue ones (infos) in the gutter; they
+  never mark a tab red and never stop a run:
+  - a predicate used where no fragment of the solver (or the link's glue), no instance, no
+    generator, no link and no `expand` defines it: an info, or a warning when it looks like a typo
+    ("did you mean sum/2?": the same name with another arity, or a name one or two letters off);
+  - a link whose glue fragments derive no `glue/1` (the run would stop);
+  - `G.clause` in the script while the link's target derives no `relevant/1` (every clause empty);
+  - `relevant(T)` for a T that is no interface atom of a link into that solver;
+  - `S.expand(part, ...)` while no fragment of S has `#program part(k)`;
+  - a head in a parametrised part without the parameter (clingo ignores the later rules), and a
+    project constant named like a part's parameter;
+  - a fragment that no solver or link uses (an info; not for `schema`, view fragments, or fragments
+    that a variant names).
+
+  A part with a parameter that no `expand` of the loop grounds is not checked. Nothing is checked
+  for a loop in raw Lua.
+- **Autocompletion** (`js/completions.js`, Ace's language tools `js/ace-ext-language_tools.js`, the
+  same Ace 1.2.5 as `js/ace.js`). While one types, and with Ctrl+Space. In the loop script: after a
+  dot the members that fit what stands before it (a solver's, a link's, or a model's and a list's),
+  the fragments after `=` and `+` of a declaration and after `via`, the script's solvers, links,
+  procedures and variables, and the keywords. In a fragment: `glue(` where a link's glue reads the
+  fragment, `relevant(` and `clause(` in a link's target, `draw(` in a view, the predicates the
+  fragment's solvers know (with where they are defined), the constants, and the directives after
+  `#`. Each item has its explanation next to the list.
+
+Neither the tooltips, the hint line nor the completions apply to a loop in raw Lua (**Edit as Lua**).
+
 ## ASP conventions
 
 ### glue/1: the interface
@@ -519,22 +571,8 @@ A loop script declares solvers and links, then says how they call each other. It
 Lua by `js/compiler.js` (each statement becomes one Lua statement) and runs inside clingo's Lua.
 The compiler runs 500 ms after each edit in the Loop tab and marks errors at once.
 
-In the Loop tab, the editor helps to read and write a script (`js/loop-help.js`, `js/loop-tips.js`):
-
-- **Tooltips.** Pointing at a word shows its syntax and meaning: a keyword (`search`, `reject`,
-  `assume`, ...), a member (`solve`, `clause`, `atoms`, ...; `C.core` and `G.core(C)` are told apart
-  by their receiver), a solver or link of the script (its fragments, and its role: it proposes the
-  candidates, or it checks another solver's), a fragment named in a declaration (its description in
-  the Programs tab, or that there is no such fragment), the candidate variable, an assigned variable
-  (what it holds, such as "a counterexample, or none"), a predicate `p/n`, and the labels of
-  `count`, `track`, `accept ... as` and `S.expand(part, name = L)`. Words in strings and comments
-  have none.
-- **Hint line.** The line under the editor explains the statement at the cursor in the script's own
-  names, such as "X = a counterexample from solver C under the values of G's interface atoms in M,
-  or none if there is none (the candidate passes)." Without the focus in the editor it says how to
-  get help.
-
-Neither is shown for a loop in raw Lua (**Edit as Lua**).
+The Loop tab's editor explains each word and statement as one writes (tooltips, a hint line,
+autocompletion, errors with what to do): see [Help in the editors](#manual-help-in-the-editors).
 
 ### Lexical rules
 
@@ -1313,6 +1351,10 @@ abstraction), with a note saying so; the next Run replaces them. The run history
   history) and an exhausted run found fewer, the line says so in red: "But the instance has 61 (the
   audit of the same program): this run lost 50." **Clear**, next to it, removes the results of the
   last run: output, statistics, trace and recording (the run history stays).
+- **The run in words** (`js/run-story.js`), under the result line after a run (not an audit): who
+  proposed how many candidates, how many the check refuted, the refinements (by kind, and the mean
+  clause length: the shorter, the more each rules out), how many passed, and whether these are all
+  the solutions (exhausted) or the run stopped early.
 - **Solutions**: numbered, shown atoms and cost. At most 1,000 are shown; **Download** saves all
   kept solutions (up to 200,000) as text, one per line (`n: atoms`).
 - **Trace**: one recorded step at a time (slider, Previous, Next). Its label counts the trace's own
@@ -1324,10 +1366,15 @@ abstraction), with a note saying so; the next Run replaces them. The run history
   kinds: `reject` (Shape 1 clause), `partial` (a clause from `on partial`), `add` (clause added between solves), `expand` (rules grounded),
   `error` (a step that ended the run with an error; the view jumps to it). A counterexample with no
   relevant atom is a `reject` with no literals: the empty clause, which ends the search.
+  Each atom's tooltip says what it is: a candidate atom in the refinement, a counterexample atom, a
+  literal of the clause (what must change), or a fact of an expansion (`js/glossary.js`).
 - **Messages**: clingo messages grouped with a count, `log` lines, errors (with a collapsed Lua
   traceback) and hints.
 
 ### Statistics tab
+
+Every column header with a dotted underline has a tooltip that says what the number means (`GLOSSARY` in
+`js/glossary.js`): Sat and Unsat of a check, Choices, Conflicts, Mean length, ... .
 
 | Part | Content |
 | --- | --- |
@@ -1730,6 +1777,8 @@ the page); Undo brings that project
 - `cegarplay.help-open`: the tabs whose explanation (the **?**) was opened, as JSON.
 - `cegarplay.tour`: `{ state, at }` once the guided tour was started, closed or finished; while it is
   absent, a first visit offers the tour.
+- `cegarplay.tour.observatory`, `cegarplay.tour.campaign`, `cegarplay.tour.refinery`: the same for the
+  short tours of those tabs.
 - **Reset everything** (Settings, last block) removes every `cegarplay*` key above and the
   Campaign tab's rows (IndexedDB `cegarplay`), after a question, and loads the page afresh (no
   query, no hash): a first visit.
@@ -1747,6 +1796,11 @@ does it. **Back** goes back a step; ✕ ends the tour. It is offered on a first 
 (no query except `?nocoi=1`, no hash), no project kept in this browser, and `cegarplay.tour` absent.
 It starts from **Home** ("guided tour" in the opening lines), from **Settings** and with `?tour=1`.
 
+The Observatory, Campaign and Refinery tabs have short tours of their own (`TAB_TOURS` in
+`js/tour.js`, three or four cards on the tab's parts): each is offered the first time one switches
+to its tab (not when a link opens the page on it), and starts again from **Settings** (Guided tour)
+or the tab's help ("Tour of this tab"); a tab that is off is shown for that visit.
+
 Keyboard shortcuts when not typing (`js/keys.js`; none applies in an editor, a text field, a list
 or while a dialog or menu is open; a slider and the tab row keep their own arrow keys):
 
@@ -1755,7 +1809,7 @@ or while a dialog or menu is open; a slider and the tab row keep their own arrow
 | ← / → | the previous / next step: of the trace (Output tab), of the cursor (Observatory, `js/cursor.js`), of the refinements (Refinery: its Previous and Next) |
 | Shift+← / → | ten steps back / on (trace and Observatory) |
 | Home / End | the first / last step (trace and Observatory) |
-| Space | Pause or Resume a run (isolated page only; on a focused button Space presses that button) |
+| Space | Pause or Resume a run (isolated page only; on a focused button Space presses that button). While a run is paused, the Output tab says so above the trace, and ← / → step through the steps recorded so far |
 | 1 … 9 | the first nine tabs shown in the tab row, in its order (which tabs are shown depends on Settings) |
 | ? | the **Keyboard shortcuts** dialog (also in the footer and in Settings), with the tabs as the digits number them |
 

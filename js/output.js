@@ -1,5 +1,6 @@
 // Output tab: result line, solutions, messages, trace.
 import { TraceView } from './trace.js';
+import { explainError } from './error-help.js';
 import { costTracker } from './project.js';
 import { resultCard } from './result-card.js';
 
@@ -132,6 +133,7 @@ export class Output {
   }
 
   result(text, kind = '') {
+    this.story('');
     this.resultEl.textContent = text || 'No run yet.';
     this.resultEl.className = 'result-line' + (kind ? ' ' + kind : '');
   }
@@ -254,11 +256,21 @@ export class Output {
     d.append(det);
   }
 
+  // the run in words (js/run-story.js), under the result line
+  story(text) {
+    const el = document.getElementById('run-story');
+    if (!el) return;
+    el.textContent = text || '';
+    el.hidden = !text;
+  }
+
   problems(list) {
     for (const p of list) {
       const w = p.where || {};
       const at = w.kind === 'fragment' ? `fragment ${w.name}, line ${w.line}` : w.kind === 'loop' ? `loop script, line ${w.line}` : `settings (${w.name})`;
-      this.message(`${p.severity === 'error' ? 'Error' : 'Warning'} in ${at}: ${p.message}`, p.severity === 'error' ? 'error' : 'warning');
+      // an error of the loop script: what to do about it (js/error-help.js)
+      const x = w.kind === 'loop' || /#program|-t needs/.test(p.message) ? explainError(p.message) : null;
+      this.message(`${p.severity === 'error' ? 'Error' : 'Warning'} in ${at}: ${p.message}${x && x.fix ? ` What to do: ${x.fix}` : ''}`, p.severity === 'error' ? 'error' : 'warning');
     }
   }
 }

@@ -1,4 +1,5 @@
 // Trace and replay view (spec-app.md section 9).
+import { TRACE_TIPS } from './glossary.js';
 
 // Split a space-separated list of atoms; spaces inside parentheses or strings do not split.
 export function splitAtoms(s) {
@@ -117,20 +118,22 @@ export class TraceView {
     const factText = facts.join(' ');
     const cand = splitAtoms(t.candidate).sort();
     // an empty candidate is the empty set (no interface atom true), not "no candidate"
-    this.fill('#trace-candidate', cand, (a) => inRef.has(a) || (facts.length && factText.includes(a)), '{ } (no interface atom is true)');
+    this.fill('#trace-candidate', cand, (a) => inRef.has(a) || (facts.length && factText.includes(a)), '{ } (no interface atom is true)', '',
+      (a, hl) => (hl ? TRACE_TIPS.candidateHl : TRACE_TIPS.candidate));
     this.fill('#trace-counterexample', splitAtoms(t.counterexample).sort(), () => false,
-      t.counterexample === undefined ? (t.kind === 'accept' ? 'none: the check found no counterexample' : 'not recorded') : '(no shown atom)');
+      t.counterexample === undefined ? (t.kind === 'accept' ? 'none: the check found no counterexample' : 'not recorded') : '(no shown atom)', '', () => TRACE_TIPS.counterexample);
     const ref = t.literals ? [...t.literals].sort((a, b) => a.replace(/^-/, '').localeCompare(b.replace(/^-/, ''))) : [...facts].sort();
     const head = t.literals ? 'one of these must hold:' : t.facts ? 'facts grounded with the refine part:' : '';
     this.fill('#trace-refinement', ref, () => false,
       t.kind === 'accept' ? 'none' : t.kind === 'error' ? 'none: relevant/1 marks no interface atom in this counterexample' : '',
-      t.kind === 'error' ? '' : head);
+      t.kind === 'error' ? '' : head,
+      (a) => (t.literals ? (a.startsWith('-') ? TRACE_TIPS.literalNeg(a.slice(1)) : TRACE_TIPS.literalPos(a)) : TRACE_TIPS.fact));
     const capEl = this.root.querySelector('#trace-cap');
     capEl.textContent = this.cap && n >= this.cap
       ? `The trace holds only the first ${n} steps. Raise "Trace steps" in the Loop tab to record more.` : '';
   }
 
-  fill(sel, atoms, hl, empty = '', head = '') {
+  fill(sel, atoms, hl, empty = '', head = '', tip = null) {
     const box = this.root.querySelector(sel);
     box.textContent = '';
     if (head) { const h = document.createElement('div'); h.className = 'atoms-head'; h.textContent = head; box.append(h); }
@@ -156,6 +159,8 @@ export class TraceView {
       const d = document.createElement('span');
       d.className = hl(a) ? 'atom hl' : 'atom';
       d.textContent = a;
+      const t = tip && tip(a, hl(a));
+      if (t) d.title = t;
       line.append(d, ' ');
     }
     box.append(frag);

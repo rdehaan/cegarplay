@@ -1,4 +1,5 @@
 // Run bar and run flow (spec-app.md section 6).
+import { runStory } from './run-story.js';
 import { validate, assemble, mapLine, oneLineMessage, auditPlan, auditBody, boundedPlan, boundedBody, modulesFor } from './driver.js';
 import { verifySpace } from './bounded.js';
 import { compile } from './compiler.js';
@@ -131,6 +132,8 @@ export class Control {
     const dl = document.getElementById('download-recording-button');
     if (dl) dl.disabled = active || state === 'validating' || !this.app.recording;
     document.body.dataset.runState = state;
+    const tp = document.getElementById('trace-paused');
+    if (tp) tp.hidden = state !== 'paused' || this.mode !== 'run';
     // after the run history's row is written (it follows the state)
     if (this.app.updateShown) setTimeout(() => this.app.updateShown(), 0);
   }
@@ -397,6 +400,11 @@ export class Control {
       if (lost && app.stats.S && app.stats.S.solutions < lost.n) {
         app.output.result(`${this.describe(D)} But the instance has ${fmt(lost.n)} (${lost.from}): this run lost ${fmt(lost.n - app.stats.S.solutions)}.`, 'error');
       } else app.output.result(this.describe(D), state === 'error' ? 'error' : '');
+      if (this.mode === 'run') {
+        try {
+          app.output.story(runStory({ D, S: app.stats.S, loopText: app.project.loop.language === 'lua' ? '' : app.project.loop.text, wanted: Number(app.project.settings.solutions) || 0 }));
+        } catch (e) { console.warn('run story:', e); }
+      }
     } else {
       state = 'error';
       app.output.result('clingo stopped unexpectedly', 'error');

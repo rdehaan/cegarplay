@@ -2243,3 +2243,28 @@ Deviations and findings:
   after 350 ms, `#loop-hint` under the editor; off for raw Lua). Library scan: about 95% of words and
   98% of statements get help (strings and comments none). Tests: `test/loop-help.test.mjs`,
   `test/browser/loop-tips.test.mjs`.
+
+## Help in the editors and on results (2026-11-26, on request: "do all of them")
+
+- `js/asp-scan.js` (no DOM): a token-level scan of gringo text (heads, bodies, choice elements,
+  aggregates, `#show`/`#external`/`#program`/`#const`, `[...]` after `#heuristic` and weak
+  constraints) and `projectModel` (which solvers ground a fragment, each link's interface predicates
+  from its glue, `expand` calls with their fact names, what each solver/glue defines incl. instances,
+  generators, links, `legacy` sources). `lintProject`: undefined predicates (info; warning with a
+  typo suggestion), no glue/1, `G.clause` without relevant/1 in the target, relevant(T) off the
+  interface, expand without its part, part heads without the parameter, constant = parameter,
+  unused fragments (info; not `schema`). Library: one warning, in `guide-09-missing-k` (on purpose).
+  `aspWordHelp`: fragment tooltips. Shown via `Editors.setLint` (a channel next to clingo's marks;
+  never a red tab marker) 400 ms after an edit (`app.lintNow`).
+- `js/completions.js` + `js/ace-ext-language_tools.js` (ace-builds 1.2.5, byte-identical `ace.js`):
+  loop members by receiver, fragments in declarations, names, keywords; ASP special predicates where
+  they fit, known predicates, constants, directives. After a dot the list restarts at once.
+- `js/error-help.js`: compiler/validation messages -> a fix + manual section; gutter "What to do",
+  hint line (error first, with a manual link), Output messages.
+- `js/glossary.js`: Statistics headers (`table()` looks labels up), trace atoms' tooltips.
+- `js/run-story.js`: the run in words under the result line (`#run-story`, runs only).
+- Tab tours (`TAB_TOURS` in `js/tour.js`; `Tour(app, { key, steps })`): Observatory, Campaign,
+  Refinery; offered on the first switch to the tab; Settings and the help boxes restart them.
+  The test harness marks all tours seen.
+- Tests: `test/editor-help.test.mjs`, `test/browser/editor-help.test.mjs`. Ace 1.2.5's completer
+  misplaces its prefix when keys arrive within a millisecond: the browser test types at 60 ms/key.

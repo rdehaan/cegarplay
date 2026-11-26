@@ -40,7 +40,9 @@ export async function openPage(browser, server, query = '', { acceptDownloads = 
   const context = given || await browser.newContext({ acceptDownloads, ...contextOptions });
   const page = await context.newPage();
   // the guided tour is offered on a first visit; tests that do not ask for it have seen it
-  if (!tour) await page.addInitScript(() => { try { if (localStorage.getItem('cegarplay.tour') === null) localStorage.setItem('cegarplay.tour', '"seen"'); } catch { /* no storage */ } });
+  if (!tour) await page.addInitScript(() => {
+    try { for (const k of ['cegarplay.tour', 'cegarplay.tour.observatory', 'cegarplay.tour.campaign', 'cegarplay.tour.refinery']) if (localStorage.getItem(k) === null) localStorage.setItem(k, '"seen"'); } catch { /* no storage */ }
+  });
   if (advanced) {
     await page.addInitScript(() => {
       try {

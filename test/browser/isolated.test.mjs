@@ -80,8 +80,16 @@ test('Space pauses and resumes a run (when no button has the focus)', async () =
   await page.click('#live-line');                    // the focus off the buttons
   await page.keyboard.press(' ');
   assert.equal(await B.runState(page), 'paused');
+  // while paused: the steps so far, with the arrow keys (Output tab)
+  await page.click('label[for="tab5"]');
+  assert.equal(await page.isVisible('#trace-paused'), true);
+  await page.click('#result-line');
+  const before = await page.textContent('#trace-label');
+  await page.keyboard.press('ArrowRight');
+  assert.notEqual(await page.textContent('#trace-label'), before);
   await page.keyboard.press(' ');
   assert.equal(await B.runState(page), 'running');
+  assert.equal(await page.isVisible('#trace-paused'), false);
   await page.click('#stop-button');
   assert.equal(await B.waitState(page, ['finished', 'error', 'aborted']), 'finished');
   // no run: Space does nothing (and does not start one)

@@ -365,7 +365,7 @@
         already run. Exhausted variants that disagree on an instance are marked red;
         <code>tools/bench.mjs</code> runs the same suite headless. The run bar's Instance and Variant
         do not apply here: a suite names its own instances and variants.
-        <span class="tab-help">Tutorial: <a href="#tut-campaign">Campaigns</a>. Manual: <a href="#manual-campaigns">Campaigns</a>.</span>
+        <span class="tab-help">Tutorial: <a href="#tut-campaign">Campaigns</a>. Manual: <a href="#manual-campaigns">Campaigns</a>. <a href="#" data-tab-tour="tab10">Tour of this tab</a>.</span>
       </p>
       </details>
       <div id="campaign"></div>
@@ -382,12 +382,15 @@
       </details>
       <div class="result-row"><div id="result-line" class="result-line">No run yet.</div>
         <button class="control-button small-button" id="clear-button" title="Remove the results of the last run: output, statistics, trace and recording (the run history stays)" disabled>Clear</button></div>
+      <p id="run-story" class="run-story" hidden></p>
       <div id="audit-panel" class="audit-panel" hidden></div>
       <h3>Solutions <span id="solutions-count" class="note"></span>
         <button class="control-button small-button" id="download-solutions-button" hidden>Download</button></h3>
       <ol id="solutions" class="solutions"></ol>
       <p id="solutions-note" class="note"></p>
       <h3>Trace</h3>
+      <p id="trace-paused" class="note trace-paused" hidden>The run is paused: step through the steps recorded so far with
+        <kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd> (or Previous and Next); <kbd>Space</kbd> resumes.</p>
       <div id="trace"><p class="note">No steps recorded.</p></div>
       <h3>Messages</h3>
       <div id="messages" class="messages"></div>
@@ -416,7 +419,7 @@
         The last run, or an opened recording, as pictures: the loop's anatomy and its calls, each
         step in the problem's own terms, and every candidate at once. One cursor moves them all. The project's domain views are
         written here too (Domain view: New view, Edit this view).
-        <span class="tab-help">Tutorial: <a href="#tut-observatory">Watching a run</a> · <a href="#tut-space">Which refinement went wrong</a>. Manual: <a href="#manual-observatory-tab">Observatory tab</a> · <a href="#manual-writing-views">Writing views</a> · <a href="#manual-candidate-space">Candidate space</a>.</span>
+        <span class="tab-help">Tutorial: <a href="#tut-observatory">Watching a run</a> · <a href="#tut-space">Which refinement went wrong</a>. Manual: <a href="#manual-observatory-tab">Observatory tab</a> · <a href="#manual-writing-views">Writing views</a> · <a href="#manual-candidate-space">Candidate space</a>. <a href="#" data-tab-tour="tab11">Tour of this tab</a>.</span>
       </p>
       </details>
       <p class="audit-only audit-note">The last action was an <b>audit</b>: the figures below are those of the
@@ -524,6 +527,9 @@
         <h3>Guided tour</h3>
         <p><button class="control-button" type="button" data-tour>Start the guided tour</button>
           <span class="note">a first run, step by step (about five minutes); it loads the example Sum-free sets</span></p>
+        <p>Short tours of the advanced tabs: <a href="#" data-tab-tour="tab11">Observatory</a> ·
+          <a href="#" data-tab-tour="tab10">Campaign</a> · <a href="#" data-tab-tour="tab12">Refinery</a>
+          <span class="note">(each is offered the first time its tab opens; a tab that is off is switched on for the visit)</span></p>
 
         <h3>Keyboard</h3>
         <p><a href="#" data-shortcuts>Keyboard shortcuts</a> <span class="note">(or press <kbd>?</kbd> when not typing)</span></p>
@@ -557,7 +563,7 @@
           <dt><kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd></dt><dd>the previous / next step: of the trace (Output), of the cursor (Observatory), of the refinements (Refinery)</dd>
           <dt><kbd>Shift</kbd>+<kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd></dt><dd>ten steps back / on (trace and Observatory)</dd>
           <dt><kbd>Home</kbd> <kbd>End</kbd></dt><dd>the first / last step (trace and Observatory)</dd>
-          <dt><kbd>Space</kbd></dt><dd>pause or resume a run (when the page can pause runs)</dd>
+          <dt><kbd>Space</kbd></dt><dd>pause or resume a run (when the page can pause runs); while it is paused, <kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd> step through the steps recorded so far</dd>
           <dt><kbd>?</kbd></dt><dd>this list</dd>
         </dl>
         <h3>Tabs</h3>
@@ -645,6 +651,7 @@
   </div>
 
   <script src="js/ace.js" charset="utf-8"></script>
+  <script src="js/ace-ext-language_tools.js" charset="utf-8"></script>
   <script src="js/mode-gringo.js" charset="utf-8"></script>
   <script src="js/mode-loop.js" charset="utf-8"></script>
   <script src="js/theme-cegarplay-dark.js" charset="utf-8"></script>

@@ -2,6 +2,7 @@
 import { TEMPLATES, template } from './project.js';
 import { compile } from './compiler.js';
 import { runOptionsSummary } from './topbar.js';
+import { explainError } from './error-help.js';
 
 const $ = (id) => document.getElementById(id);
 const NUMERIC = { 'seconds-input': 'seconds', 'candidates-input': 'candidates', 'trace-input': 'trace', 'seed-input': 'seed' };
@@ -93,7 +94,11 @@ export class LoopTab {
       if (ed.loopLanguage === 'lua' || ed.readOnly) return;
       let r;
       try { r = compile(ed.loop.getValue(), { fragments: [...ed.fragments.keys()] }); } catch { return; }
-      ed.setMarks('loop', r.ok ? [] : r.errors);
+      ed.setMarks('loop', r.ok ? [] : r.errors.map((e) => {
+        const x = explainError(e.message);
+        return { ...e, message: x.fix ? `${e.message}\nWhat to do: ${x.fix}` : e.message };
+      }));
+      if (this.app.loopTips) this.app.loopTips.update();
     }, 500);
   }
 

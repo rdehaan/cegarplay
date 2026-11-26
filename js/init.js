@@ -23,8 +23,10 @@ import { Workspace, WS_INDEX, WS_NAME } from './workspace.js';
 import { Snapshots, SNAP_INDEX, projectKey } from './snapshots.js';
 import { setupTopbar } from './topbar.js';
 import { bindPageKeys, openShortcuts } from './keys.js';
-import { Tour } from './tour.js';
-import { attachLoopTips } from './loop-tips.js';
+import { Tour, TAB_TOURS } from './tour.js';
+import { attachLoopTips, attachTooltip } from './loop-tips.js';
+import { projectModel, lintProject, aspWordHelp } from './asp-scan.js';
+import { loopCompletions, aspCompletions } from './completions.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
 
 const $ = (id) => document.getElementById(id);
@@ -171,6 +173,71 @@ app.stats = new Stats(app);
 app.loopTab = new LoopTab(app);
 app.loopTips = attachLoopTips(app, app.editors.loop, $('loop-hint'));
 app.editors.onLoopLanguage = () => app.loopTips.update();
+// ---- the editors' warnings and the fragments' tooltips (js/asp-scan.js): from the texts in the
+// editors, 400 ms after an edit
+app.liveProject = () => {
+  const ed = app.editors;
+  return { ...app.project,
+    fragments: app.project.fragments.map((f) => ({ ...f, text: ed.fragments.has(f.name) ? ed.fragments.get(f.name).editor.getValue() : f.text })),
+    loop: { ...app.project.loop, language: ed.loopLanguage || 'loop', text: ed.loop.getValue() } };
+};
+let lintTimer = 0, model = null;
+app.aspModel = () => { if (!model) model = projectModel(app.liveProject()); return model; };
+app.lintNow = () => {
+  clearTimeout(lintTimer);
+  model = null;
+  const ed = app.editors;
+  let problems = [];
+  try { problems = lintProject(app.liveProject(), app.aspModel()); } catch (e) { console.warn('lint:', e); }
+  const by = new Map([['loop', []], ...[...ed.fragments.keys()].map((k) => [k, []])]);
+  for (const p of problems) {
+    const key = p.where.kind === 'loop' ? 'loop' : p.where.name;
+    if (by.has(key)) by.get(key).push({ line: p.where.line, col: p.where.col, message: p.message, severity: p.severity });
+  }
+  for (const [k, list] of by) ed.setLint(k, list);
+};
+app.editors.onEdit = () => { model = null; clearTimeout(lintTimer); lintTimer = setTimeout(app.lintNow, 400); };
+// autocompletion (ACE's language tools): as one types, and with Ctrl+Space
+const escHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function completeWith(editor, list) {
+  if (!ace.require('ace/ext/language_tools')) return;
+  editor.completers = [{
+    identifierRegexps: [/[#a-zA-Z_0-9]/],
+    getCompletions(ed, session, pos, prefix, done) {
+      let items = [];
+      try { items = list(pos.row, pos.column); } catch (e) { console.warn('completion:', e); }
+      done(null, items.map((x) => ({ caption: x.caption, value: x.value, meta: x.meta, score: x.score, docHTML: `<b>${escHtml(x.caption)}</b><br>${escHtml(x.doc || '')}` })));
+    },
+  }];
+  editor.setOptions({ enableBasicAutocompletion: true, enableLiveAutocompletion: true });
+  // after a dot (S. G. X.) start afresh: the members of what stands before it
+  editor.commands.on('afterExec', (e) => {
+    if (e.command.name !== 'insertstring' || e.args !== '.') return;
+    if (editor.completer) editor.completer.detach();
+    const line = editor.session.getLine(editor.getCursorPosition().row).slice(0, editor.getCursorPosition().column);
+    const after = /[A-Za-z_]\w*(\[[^\]]*\])?\.$/;
+    if (!after.test(line) || /\.\.$/.test(line)) return;
+    setTimeout(() => {
+      // only while the cursor is still just after the dot (fast typing: the live completion takes over)
+      const p = editor.getCursorPosition();
+      if (after.test(editor.session.getLine(p.row).slice(0, p.column)) && !(editor.completer && editor.completer.activated)) editor.execCommand('startAutocomplete');
+    }, 0);
+  });
+}
+completeWith(app.editors.loop, (row, col) => ((app.editors.loopLanguage || 'loop') === 'loop'
+  ? loopCompletions(app.editors.loop.getValue(), row, col, app.liveProject().fragments) : []));
+app.editors.onEditorMade = (name, editor) => {
+  completeWith(editor, (row, col) => aspCompletions(app.liveProject(), name, row, col, app.aspModel()));
+  attachFragmentTip(name, editor);
+};
+const attachFragmentTip = (name, editor) => attachTooltip(editor, `frag:${name}`, (row, col) => {
+  const h = aspWordHelp(app.liveProject(), name, row, col - 1, app.aspModel());
+  const warnings = app.editors.lintAt(name, row).map((a) => ({ type: a.type, text: a.text }));
+  // (the warning says it better)
+  if (h && warnings.length) h.text = h.text.replace(/^Used here, but nothing [^.]*\. ?/, '');
+  return h ? { ...h, warnings } : warnings.length ? { title: 'This line', text: '', warnings } : null;
+});
+for (const [name, f] of app.editors.fragments) app.editors.onEditorMade(name, f.editor);
 app.internals = new Internals(app);
 app.control = new Control(app);
 app.instancesTab = new InstancesTab(app);
@@ -252,6 +319,26 @@ app.cursor = new Cursor();
 bindKeys(app.cursor, () => ($('tab11').checked || document.body.classList.contains('lecture')) && !document.querySelector('dialog[open], .modal.is-visible'));
 bindPageKeys(app);
 app.tour = new Tour(app);
+// the short tours of the advanced tabs: offered the first time the tab is opened (not on a page
+// load that opens it), and from Settings and the tabs' help
+app.tabTours = Object.fromEntries(Object.entries(TAB_TOURS).map(([tab, t]) => [tab, new Tour(app, t)]));
+const anyTour = () => app.tour.running || Object.values(app.tabTours).some((t) => t.running);
+const offerTabTour = (tab, force = false) => {
+  const t = app.tabTours[tab];
+  if (!t || (!force && (t.seen || anyTour() || !app.ready))) return;
+  if (force) { app.tour.stop(false, false); for (const x of Object.values(app.tabTours)) x.stop(false, false); }
+  setTimeout(() => { if ($(tab).checked) t.start(); }, 250);      // (the Refinery is built when it opens)
+};
+for (const r of document.querySelectorAll('input[name="tabs"]')) r.addEventListener('change', () => { if (r.checked) offerTabTour(r.id); });
+for (const a of document.querySelectorAll('[data-tab-tour]')) a.addEventListener('click', (e) => {
+  e.preventDefault();
+  for (const d of document.querySelectorAll('dialog[open]')) d.close();
+  const tab = a.dataset.tabTour;
+  const pref = Object.keys(TAB_PREFS).find((n) => TAB_PREFS[n].tabs.includes(tab));
+  if (pref && !tabShown(pref)) showTabs(pref, true, { store: false });      // for this visit
+  if (!$(tab).checked) { $(tab).checked = true; $(tab).dispatchEvent(new Event('change', { bubbles: true })); }
+  offerTabTour(tab, true);
+});
 for (const a of document.querySelectorAll('[data-tour]')) a.addEventListener('click', (e) => { e.preventDefault(); for (const d of document.querySelectorAll('dialog[open]')) d.close(); app.tour.start(); });
 for (const a of document.querySelectorAll('[data-shortcuts]')) a.addEventListener('click', (e) => { e.preventDefault(); for (const d of document.querySelectorAll('dialog[open]')) d.close(); openShortcuts(); });
 app.anatomy = new Anatomy(app, $('anatomy'));

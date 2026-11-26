@@ -62,6 +62,8 @@ pip install clingo                                                  # Python cli
 - In a Claude Code cloud container with a preinstalled Chromium, the browser tests hang unless
   they are run with `CHROMIUM_PATH=/opt/pw-browsers/chromium` (skip `playwright install` there).
 - `vendor/` is committed. Run `tools/vendor.mjs` only after an upgrade of clingo-wasm.
+- `js/ace.js` is ace-builds 1.2.5 `src-min/ace.js`; `js/ace-ext-language_tools.js` is the same
+  package's `src-min/ext-language_tools.js` (autocompletion). Upgrade them together.
 
 ## Commands
 
@@ -109,4 +111,4 @@ cloud session that pushed its work to a branch on origin).
 
 - One phase at a time. Commit at each checkpoint: `Phase N: <title>`.
 - Keep output short: pipe long test output through `tail`; never print
-  `js/ace.js`, `vendor/clingo-wasm/*.js` or the `.wasm` files.
+  `js/ace.js`, `js/ace-ext-language_tools.js`, `vendor/clingo-wasm/*.js` or the `.wasm` files.

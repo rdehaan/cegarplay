@@ -7,7 +7,7 @@
 //   wordHelp(text, row, col, frags)   -> { title, text } | null   (frags: [{ name, description }])
 //   lineHint(text, row, frags)        -> string ('' for a blank or comment line)
 
-const KEYWORDS = {
+export const KEYWORDS = {
   solver: ['solver S = f1 + f2 [options "..."]', 'Declares a solver: a clingo instance that grounds these fragments, in this order. The options are clingo options, such as "--heuristic=Domain".'],
   link: ['link G = A -> C via f1 + f2', 'Declares a link from solver A to solver C. Its interface atoms are the T of the glue(T) atoms derived in these fragments: the atoms both solvers talk about.'],
   via: ['link G = A -> C via f1 + f2', 'The fragments in which the link\'s glue(T) atoms are derived.'],
@@ -51,7 +51,7 @@ const KEYWORDS = {
   none: ['none', 'No value: what solve returns when the solver has no model (unsatisfiable).'],
 };
 
-const SOLVER = {
+export const SOLVER = {
   solve: ['S.solve([assume E, ...] [, optimal])', 'One solve of S: a model, or none if S is unsatisfiable. With a check solver: a counterexample, or none when the candidate is right.'],
   models: ['S.models([assume E] [, limit n])', 'A list of up to n models of S (all without limit; empty if unsatisfiable).'],
   add: ['S.add(c)', 'Adds a clause or a list of clauses to S before its next solve. Not inside on candidate of S (use reject there).'],
@@ -66,7 +66,7 @@ const SOLVER = {
   size: ['S.size', 'The number of members of the solver family S.'],
 };
 
-const LINK = {
+export const LINK = {
   clause: ['G.clause(M, X)', 'The refinement: one interface atom marked relevant(T) in the counterexample X must change its value from the candidate M. Rules out M and every candidate that agrees with it on these atoms.'],
   block: ['G.block(M)', 'A clause that rules out exactly M\'s values of the interface atoms (at least one must change).'],
   core: ['G.core(C)', 'A clause from the unsat core of C\'s last solve (C must have been unsatisfiable): one of the assumed values in the core must change.'],
@@ -77,7 +77,7 @@ const LINK = {
   extend: ['G.extend(part, t)', 'Grounds the same part in G\'s glue; new glue(T) atoms become interface atoms.'],
 };
 
-const VALUE = {
+export const VALUE = {
   atoms: ['X.atoms(p/n)', 'The list of true atoms of predicate p/n in the model X (also of a candidate M).'],
   push: ['l.push(e)', 'Appends e to the list l.'],
   clear: ['l.clear()', 'Empties the list l.'],

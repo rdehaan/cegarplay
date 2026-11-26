@@ -1,4 +1,5 @@
 // Statistics tab, live line, charts, run history (spec-app.md section 10).
+import { GLOSSARY } from './glossary.js';
 import { fmt, spaceAt } from './output.js';
 import { refinementCounts, refinementSplitText, COUNT_TIP } from './driver.js';
 
@@ -192,7 +193,11 @@ export class Stats {
     t.textContent = '';
     const tr = h('tr');
     // a header cell is a text, or [text, tooltip]
-    head.forEach((x, i) => tr.append(h('th', { ...(numeric.includes(i) ? { class: 'num' } : {}), ...(Array.isArray(x) ? { title: x[1] } : {}) }, Array.isArray(x) ? x[0] : x)));
+    // (a text without its own tooltip gets the glossary's, js/glossary.js)
+    head.forEach((x, i) => {
+      const tip = Array.isArray(x) ? x[1] : GLOSSARY[x];
+      tr.append(h('th', { ...(numeric.includes(i) ? { class: 'num' } : {}), ...(tip ? { title: tip, class: `${numeric.includes(i) ? 'num ' : ''}has-tip` } : {}) }, Array.isArray(x) ? x[0] : x));
+    });
     t.append(h('thead', {}, tr));
     const tb = h('tbody');
     for (const r of rows) {
