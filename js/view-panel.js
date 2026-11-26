@@ -462,7 +462,7 @@ export class ViewPanel {
       if (m.emph.has(key)) cls.push('view-emph');
       if (m.ghost.has(key)) cls.push('view-ghost');
       x.shape.setAttribute('class', x.kind === 'edge' ? cls.join(' ').replace('view-shape', 'view-edge') : cls.join(' '));
-      if (a.weight !== undefined) x.shape.style.strokeWidth = String(Math.max(0.5, a.weight)); else x.shape.style.strokeWidth = '';
+      if (a.weight !== undefined) x.shape.style.strokeWidth = a.weight <= 0 ? '0' : String(Math.max(0.5, a.weight)); else x.shape.style.strokeWidth = '';
       if (x.label) x.label.textContent = a.label !== undefined ? a.label : (x.e.label || '');
     }
     this.notes.textContent = '';

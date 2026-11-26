@@ -103,8 +103,10 @@ relevant(use_axiom_instance(Profiles,Axiom)) :-
           candidates. Because such a clause holds everywhere, every extra counterexample is a free lemma:
           the variant <code>multi</code> takes up to five per candidate and needs
           <span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](multi):candidates">63</span>.
-          The readme compares these loops with partial checks, an optimal check, deepening over the
-          number of profiles and a two-level search on the questions of Nardi, Boixel and Endriss.</p>
+          Further variants check partial candidates, use an optimal check, deepen over the number of
+          profiles or search in two levels; the suite <code>paper</code> runs them on the questions of
+          Nardi, Boixel and Endriss. The example <code>voting-justification-ihs</code> asks the same
+          questions for the smallest justifications, by implicit hitting sets.</p>
 
         <h2 id="soundness">Soundness and ground truth</h2>
         <ul>

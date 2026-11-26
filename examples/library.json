@@ -2515,7 +2515,7 @@
       "id": "voting-justification",
       "title": "Voting: justifications",
       "group": "voting",
-      "summary": "Explaining a voting outcome by axioms: 14 questions as instances (7 generated), five refinement strategies and two loops as variants, a suite that compares them.",
+      "summary": "Explaining a voting outcome by axioms: 30 questions as instances (17 from Nardi, Boixel and Endriss, 7 generated), six refinement strategies and seven loops as variants, suites that compare them.",
       "shape": "shape1",
       "tags": [
         "project"
@@ -2530,6 +2530,27 @@
       },
       "level": 3,
       "after": 12
+    },
+    {
+      "id": "voting-justification-ihs",
+      "title": "Voting: smallest justifications (IHS)",
+      "group": "voting",
+      "summary": "The smallest justifications of a voting outcome by implicit hitting sets: the same 30 questions without a fixed number of axiom instances; variants with minimum correction sets, several counterexamples, ascending sizes.",
+      "shape": "custom",
+      "tags": [
+        "ihs",
+        "project"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 30,
+        "generators": 1,
+        "suites": 2,
+        "views": 1,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 14
     },
     {
       "id": "dodgson-winners",

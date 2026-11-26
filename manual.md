@@ -243,7 +243,8 @@ counterexample's falsified instances do not depend on the profiles), and six var
 it: `s6`, `fewest` (an optimal check), `multi` (five counterexamples per candidate), `partial`
 (`on partial`), `deepen` (a solver family over the number of profiles) and `profiles-first` (two
 levels: profiles, then instances). The suite `paper` compares them on 17 questions from Nardi,
-Boixel and Endriss (AAMAS 2022); the readme has the measurements.
+Boixel and Endriss (AAMAS 2022). The readme describes the loops and lists open questions; it
+reports no measurements (the suites are for a student to run).
 
 **Compare variants** (below the variant cards, for a project with variants) puts two sides next to
 each other: two variants, or the project as written and a variant. **Compare** shows the fragments
@@ -1552,7 +1553,7 @@ fragment that a view names and the loop script does not use is such a view fragm
 listed in the Programs tab, which says where the views are edited.
 
 Marks: `node/1`, `edge/2`, `cell/2`, `item/2`, `rank/3`, `attr/3` (keys `fill`, `stroke`,
-`label`, `weight`; a fill or stroke value is a class, coloured by first use), `emph/1`, `ghost/1`,
+`label`, `weight`; a fill or stroke value is a class, coloured by first use; weight 0 draws no outline, for a label without a box), `emph/1`, `ghost/1`,
 `note/1`, `layout/1` (`grid`, `list`, `circle`, `layers`, `graph`), `pos/3`. **Show** switches
 between **steps** and **solutions**. In steps mode the slider (and the Observatory's cursor) picks a
 recorded step: the trace's `T` events, or the `R` events of a run recorded with every step. The
@@ -1903,7 +1904,7 @@ may set `library.level` and `library.after`).
 | `reasoning` | `abduction-two-checks`, `abduction`, `actual-cause`, `af-preferred`, `af-semi-stable`, `belief-update`, `default-extensions`, `diagnosis`, `minimal-reasons`, `reasons-by-shrinking`, `reasons-by-size`, `sufficient-reason`, `abduction-ihs` |
 | `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction`, `colourable-partial`, `triangle-free-lazy` |
 | `games` | `nash`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `strong-nash`, `subset-sum-game` |
-| `voting` | `kemeny-rankings`, `slater-rankings`, `dodgson-winners`, `young-winners`, `kemeny-control`, `voting-justification` |
+| `voting` | `kemeny-rankings`, `slater-rankings`, `dodgson-winners`, `young-winners`, `kemeny-control`, `voting-justification`, `voting-justification-ihs` |
 | `judgment` | `ja-kemeny`, `ja-slater`, `ja-leximax`, `ja-msa`, `ja-young`, `ja-dodgson` |
 | `planning` | `benders-tardiness`, `conformant-growing`, `conformant-planning`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-interdiction`, `knapsack-optimum`, `robust-facilities` |
 | `exercises` | `exercise-sum-free`, `exercise-triangles` |
@@ -1958,7 +1959,7 @@ without the repository.
 
 ### Voting examples
 
-The library group **Voting** (`voting`) holds six examples about elections. Each loads with
+The library group **Voting** (`voting`) holds seven examples about elections. Each loads with
 `?example=<id>`; its readme (Home, **Readme**) has the research question, the loops, measured
 times and references.
 
@@ -1970,6 +1971,7 @@ times and references.
 | `young-winners` | The Young winners: the fewest voters to delete so that a candidate becomes a weak Condorcet winner. | a winner | row generation: an opponent's majority constraint per refinement |
 | `kemeny-control` | Can deleting at most `budget` voters make the favourite top a Kemeny ranking? (Sigma-2) | the deleted voters | Shape 4: counterexamples grounded in batches |
 | `voting-justification` | Why does a profile have this outcome? A set of axiom instances that forces it. | a justification | Shape 1 over axiom instances; one question per instance |
+| `voting-justification-ihs` | The same questions: the smallest justifications, with no fixed number of instances. | a smallest justification | implicit hitting sets: an optimal A over the falsified instances of each counterexample (strategy 6) |
 
 **Input.** The four rule examples share the input format. An instance holds the ballots:
 `ballot(V,(A,B,...))` (voter or ballot V ranks A first, B second, ...) and optionally `count(V,N)`
@@ -2006,6 +2008,19 @@ every pair, 3-cycles added lazily as clauses from `relevant/1`; Conitzer, Davenp
 it wins (both winner problems are Theta-2-complete). Dodgson's variants are the linear searches
 `linear-up` and `linear-down` and the Sigma-2 template `exists-forall`; Young's are `cores`,
 `plain-cores`, `all-opponents` (every constraint from the start) and `exists-forall`.
+
+**Justifications.** `voting-justification` and `voting-justification-ihs` share their encoding,
+their 30 questions and their view. The first asks for exactly `num_axiom_instances` instances; the
+second ignores that constant and finds the smallest justifications (expected counts: the number
+of smallest ones). Its variants are `mcs` (an optimal check: minimum correction sets), `multi`
+(five counterexamples per candidate), `ascending` (sizes 1, 2, ... under an assumption `size(k)`,
+no optimisation) and `reference`. The view draws each profile as a block of ballots (one column
+per voter, first place on top), the target outcome of P1, the outcomes of a counterexample
+(filled letters win), the number of axiom instances its clause names, and one row per axiom
+instance of the candidate with its part in each profile it reads (Pareto `¬c`, faithfulness and
+unanimity `top`, cancellation `all`, Condorcet `c`, neutrality `a↔b`, positive responsiveness
+`a` and `a↑`, reinforcement `+` and `=`). Cells with `attr(X, weight, 0)` have no outline: the
+view uses them for headings.
 
 **Running them.** `node tools/run.mjs kemeny-rankings --instance f1-1978 --solutions all`;
 `node tools/bench.mjs kemeny-rankings --suite loops --out rows.jsonl` and `node tools/report.mjs

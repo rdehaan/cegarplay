@@ -290,6 +290,9 @@ Boixel and Endriss (AAMAS 2020) and Nardi, Boixel and Endriss (AAMAS 2022); the 
 The problem is Σ2P-shaped: *there is* a set of axiom instances (with the profiles they need) such
 that *every* outcome assignment that satisfies them gives the target outcome. That is a CEGAR loop.
 
+The loops in this project are starting points for an investigation: which loop suits this
+problem, and why?
+
 ## The loop
 
 - **Abstraction (A)**: guesses up to \`num_profiles\` profiles (profile 1 is the target) and exactly
@@ -297,24 +300,26 @@ that *every* outcome assignment that satisfies them gives the target outcome. Th
 - **Check (C)**: looks for outcomes of all profiles that satisfy every chosen axiom instance but
   differ from the target outcome on profile 1. Such outcomes are the counterexample.
 - **Refinement**: a clause over the interface atoms that are \`relevant/1\` for the counterexample.
-  The original five strategies differ in which axiom-instance atoms they call relevant (fragments
-  \`relevant\`, \`relevant_s1\` … \`relevant_s5\`); all five call every profile atom relevant.
-  Strategy 2 is the default.
+  The default loop is Shape 1 (\`search A\`) with refinement strategy 2.
 
-## Strategy 6: the counterexample does not depend on the profiles
+## Fragments
 
-A counterexample is an outcome for every profile *number*. Whether it falsifies an axiom instance
-depends on those outcomes alone: Pareto(c) on profile 2 is falsified when c wins in profile 2,
-reinforcement on (1, 2, 3) when the outcomes of 1 and 2 intersect and 3 is not that
-intersection, whatever the profiles are. Only faithfulness and unanimity also read a profile (the
-top choice of voter 1). Which instances are *applicable* depends on the profiles, but that is the
-abstraction's business. So strategy 6 (\`relevant_s6\`) drops the profile atoms (except voter 1's
-top choices) and keeps the instances the counterexample falsifies: the clause says "use one of the
-instances this outcome falsifies". It holds for **every** candidate, whatever its profiles; the
-symbolic audit proves it sound on the questions it finishes. The abstraction becomes a hitting-set
-search: pick exactly k applicable instances that hit the falsified set of every counterexample
-seen so far. Since the clause is candidate-independent, it combines with loops that need such
-clauses:
+- \`shared\`, \`abstraction\`, \`glue\`, \`check\`: the encoding of \`explain1.lp\`, split into the solvers.
+- \`relevant\` (strategy 2) and \`relevant_s1\`, \`relevant_s3\`, \`relevant_s4\`, \`relevant_s5\`: the five
+  refinement strategies of the original file. All five call every profile atom relevant; they
+  differ in which axiom-instance atoms they add: 1 the instances the outcomes falsify, 2 those
+  they do not falsify, 3 those the candidate does not use, 4 those the candidate uses, 5 all.
+- \`relevant_s6\`: strategy 6, added here. It calls relevant the instances the outcomes falsify,
+  and of the profile atoms only the top choice of voter 1 (which faithfulness and unanimity read).
+  The idea: whether an outcome assignment falsifies an instance depends on the outcomes of the
+  profile numbers, not on what the profiles are, so the clause need not mention the candidate's
+  profiles. It reads as "use one of the instances this counterexample falsifies".
+- \`fewest\`: a \`#minimize\` for the check, the counterexample that falsifies the fewest instances.
+- \`level\`: for \`deepen\`, member i of the solver family uses exactly i profiles.
+- \`abstraction_profiles\`, \`glue_profiles\`, \`profiles_given\`: for \`profiles-first\`.
+- \`view\`: a domain view for the Observatory tab.
+
+## Variants
 
 | Variant | What changes |
 |---|---|
@@ -322,41 +327,35 @@ clauses:
 | s1, s3, s4, s5 | another of the original strategies |
 | record | Shape 1 with \`--enum-mode=record\` on A: blocked candidates stay as nogoods |
 | shape2 | a Shape 2 loop (solve A again after each refinement) |
-| reference | the blocking loop: the ground truth on small questions |
+| reference | the blocking loop (\`G.block(M)\`) |
 | s6 | Shape 1 with strategy 6 |
-| fewest | s6 with an optimal check (\`#minimize\` the falsified instances): the shortest clause per counterexample |
+| fewest | s6 with an optimal check (\`#minimize\` the falsified instances) |
 | multi | s6 with up to 5 counterexamples per candidate (\`C.models(..., limit 5)\`), one clause each |
 | partial | s6 with checks at partial assignments (\`on partial P every 8\`, open atoms false) |
 | deepen | the paper's breadth-first idea: a solver family \`A[i]\` that uses exactly i profiles, i = 1, 2, ...; the counterexamples of lower levels refine the higher ones before they start |
-| profiles-first | two levels (the "two-step procedure" of the original file): P guesses profiles and uses *every* applicable instance (a relaxation); if a counterexample survives even that, no subset works and P is refined; else an inner search of A picks exactly k instances on these profiles |
+| profiles-first | two levels (the "two-step procedure" of the original file): P guesses profiles and uses *every* applicable instance; if a counterexample survives that, P is refined; else an inner search of A picks exactly k instances on these profiles |
 
-## Instances and ground truth
+## Instances
 
-- 6 questions from \`explain1.lp\` (tags: \`original\`, \`no-solution\`); the file's ten questions
-  with one or two candidates (no refinement at all) are left out, and so is its hardest one
-  (k = 8, profiles of up to 5 voters), which no loop finished in 40 minutes. The runs look for all
-  solutions; the default instance is \`faith-pareto-neutral-reinf-k4\` (146 candidates, 1
-  justification). \`cancel-reinf-posresp-k4\` (the question the original file has switched on)
-  has **16 justifications**: about 95,000 candidates and 15 minutes with s1 (tag \`slow\`), 600
-  candidates and 15 s with s6, about 40 candidates with multi.
-- Seven generated questions (\`random-1\` … \`random-7\`, generator \`vote-question\`: \`a\` random
+- Questions from \`explain1.lp\` (tags \`original\`, \`no-solution\`). The file's questions with one or
+  two candidates (no refinement at all) are left out, and so is its largest one (k = 8, profiles
+  of up to 5 voters). \`cancel-reinf-posresp-k4\` is the question the original file has switched
+  on. The default instance is \`faith-pareto-neutral-reinf-k4\`.
+- Seven generated questions, \`random-1\` … \`random-7\` (generator \`vote-question\`: \`a\` random
   axioms, a sorted random target profile of \`v\` voters, a random outcome).
 - 17 questions from Nardi, Boixel and Endriss (tag \`paper\`), over the paper's corpus
   (faithfulness, Pareto, cancellation, neutrality, positive responsiveness, reinforcement), with
   profiles of at most as many voters as the target (the paper's weak reinforcement):
   Example 1 (\`paper-ex1-k2-p3\`), Example 4 (\`paper-ex4-*\`), the six two-voter profiles of
-  Table 1 with their Borda outcomes (\`paper-v2-*\`), the two profiles of Section 4.2 that have no
-  justification (\`paper-borda3-*\`, \`paper-borda4-*\`: 0 solutions), a Condorcet cycle, a
-  four-voter profile and three profiles over **four** alternatives (\`paper-c4-*\`). The id says
-  k (\`-k3\`) and the number of profiles (\`-p4\`); k is the smallest with a justification, so every
-  solution is a smallest justification. The encoding asks for *exactly* k instances and has no
-  minimality check, so a larger k also counts padded justifications (two identical voters: 2 at
-  k = 2, 82 at k = 3, 2,429 at k = 4).
-- Every count agrees between s1, multi, deepen and profiles-first, and with the reference run
-  where it finishes (14 of the 17 paper questions within 5 minutes).
-- The audit finishes on the small questions; the larger ones are marked \`audit: false\` (their
-  candidate spaces are too large for the audit's memory or time), so the audit and Fuzz skip
-  them; runs still use them.
+  Table 1 with their Borda outcomes (\`paper-v2-*\`), the two profiles of Section 4.2
+  (\`paper-borda3-*\`, \`paper-borda4-*\`), a Condorcet cycle, a four-voter profile and three profiles
+  over four alternatives (\`paper-c4-*\`). The id gives k (\`-k3\`) and the number of profiles (\`-p4\`).
+- The encoding asks for *exactly* k instances and has no minimality check, so a solution need not
+  be a smallest justification, and padded justifications count.
+- Each instance records its expected number of solutions where one is known. Instances marked
+  \`audit: false\` are skipped by the audit and Fuzz; runs use them.
+
+The runs look for all solutions.
 
 ## Suites
 
@@ -372,81 +371,39 @@ Read the instance × variant matrix in the Campaign tab, or run
 \`node tools/bench.mjs voting-justification --suite paper --out rows.jsonl\` and
 \`node tools/report.mjs rows.jsonl\` (add \`--metric candidates\`).
 
-## What "better" means
+## Comparing loops
 
-Fewer candidates (each costs a check), less time, and more questions solved within the limit.
-A variant that finds a *different* number of justifications than the reference is unsound
-(or the reference has not finished): the Campaign tab marks those cells ✗.
+Count candidates (each costs a check), time, and the questions solved within the limit. A variant
+that finds a *different* number of justifications than the reference is unsound (or the reference
+has not finished): the Campaign tab marks those cells ✗. The audit and the symbolic audit check a
+refinement's soundness.
 
-## Measured (tools/bench.mjs, one machine, two jobs, Nov 2026)
-
-Suite \`paper\` (17 questions, 60 s limit; every finished cell agrees):
-
-| variant | solved | total time of the solved (s) |
-|---|---:|---:|
-| default (s2) | 13 | 148 |
-| reference | 14 | 212 |
-| s1 | 14 | 55 |
-| s6 | 17 | 101 |
-| fewest | 17 | 101 |
-| **multi** | **17** | **59** |
-| partial | 17 | 92 |
-| deepen | 16 | 61 |
-| profiles-first | 16 | 83 |
-
-Candidates on some of them (*limit*: not finished in 60 s):
-
-| question | default | s1 | reference | s6 | fewest | multi | partial | deepen | profiles-first |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| paper-ex4-k3-p3 | 2,514 | 389 | 2,450 | 80 | 63 | **22** | 25 | 63 | 90 |
-| paper-ex4-k3-p4 | limit | limit | limit | 2,059 | 1,777 | **198** | 369 | 1,951 | 2,491 |
-| paper-borda3-k3-p4 | limit | limit | limit | 2,063 | 1,686 | **189** | 600 | 2,695 | 1,979 |
-| paper-borda4-k3-p4 | limit | limit | limit | 3,606 | 2,496 | **260** | 718 | limit | limit |
-| paper-v2-bca-k2-p4 | 907 | 379 | 907 | 155 | 98 | 58 | **52** | 118 | 4,672 |
-| paper-v4-k4-p3 | 8,015 | 938 | 6,657 | 151 | 145 | **47** | 57 | 141 | 197 |
-| paper-c4-v2-k3-p3 | limit | 4,294 | 26,035 | 478 | 320 | **106** | 351 | 614 | 506 |
-
-Suite \`strategies\` (12 questions, 30 s): every cell finishes; total time multi 1.7 s, s6 1.8 s,
-fewest 2.4 s, partial 2.9 s, deepen 3.4 s, s1 3.7 s, profiles-first 8.1 s, the original
-strategies 8.6 to 12.3 s, shape2 26.2 s.
-
-## What the measurements say about loops for this problem
-
-1. **The refinement matters most, and it is about what the counterexample really depends on.**
-   The original strategies keep every profile atom in the clause, so each clause is nearly a
-   block of the candidate (mean clause 250 to 470 literals for strategy 2 and the reference
-   run). Dropping the profiles (s6) makes clauses of 50 to 100 literals that hold for every
-   candidate: 3 to 11 times fewer candidates than s1 on the paper questions (160 times on
-   \`cancel-reinf-posresp-k4\`), and the 4-profile questions finish.
-2. **More counterexamples per candidate pay; shorter ones barely.** Since a clause of s6 holds
-   everywhere, every extra counterexample is a free lemma: multi needs 3 to 14 times fewer
-   candidates than s6 and is the fastest loop. The optimal check (fewest) shortens clauses by
-   7 to 25% and saves 10 to 30% of the candidates, but the optimisation costs that back.
-3. **Partial checks cut candidates but not time.** With s6 they are valid (the clause does not
-   depend on the candidate) and give the fewest candidates on small questions, but every
-   partial check is a solve of the check.
-4. **Once the refinement is strong, the abstraction is the bottleneck.** With multi most of the
-   time is spent in A (on \`paper-borda3-k3-p4\`: 5.7 s in A, 1.1 s in C): A must find profiles
-   and exactly k applicable instances that hit every collected falsified set. Without a check A
-   enumerates about 1,400 candidates a second, so the cost is the hitting-set search itself.
-5. **Deepening and two levels do not pay here.** deepen (the paper's breadth-first order) grounds
-   one abstraction per level and redoes the search at each level; profiles-first enumerates many
-   profile tuples because its relaxed solver P does not know k (4,700 candidates on the two-voter
-   4-profile questions). Both are sound and close to s6 on most questions. They would pay for
-   *one* justification (smallest number of profiles first), which is what the paper computes;
-   the suites ask for all of them.
+The example \`voting-justification-ihs\` asks the same questions with implicit hitting sets: the
+smallest justifications, without a fixed k.
 
 ## Open questions
 
-1. Combine the winners: multi with partial checks, or multi with deepen for the first solution.
+1. Combine loops: multi with partial checks, or multi with deepen for the first solution.
 2. Can a refinement be *lifted* over permutations of the profile numbers (a counterexample
    permuted is a counterexample), so that one counterexample rules out many candidates?
-3. The abstraction is now the bottleneck: would an encoding that builds profiles from instances
-   (a neutrality instance determines its second profile) instead of guessing them first help?
+3. Would an encoding that builds profiles from instances (a neutrality instance determines its
+   second profile) instead of guessing them first help?
 4. The paper's derived axioms and implied instances (Section 3) as variants of the abstraction:
    they change the solution set, so compare first-solution times rather than counts.
 5. Explanatoriness: the encoding has no minimality check (exactly k instances). A second check
    (no proper subset suffices) would make larger k meaningful.
+6. Which of the original strategies are sound? Strategies 3 and 4 depend on what the candidate
+   uses: does the audit (or the symbolic audit) find a question where one of them is unsound?
+7. Is strategy 6 the strongest refinement that holds for every candidate? Could a clause leave
+   out instances that the outcomes falsify only because others are falsified?
+8. Exactly k against at most k: how do the counts and the costs change with "at most k
+   instances", and with the smallest size (from \`voting-justification-ihs\`) as k?
+9. Symmetry breaking: how much of A's work does it save, and is each of its constraints still
+   sound together with a clause that holds for every candidate?
+10. Scaling: where do the loops break down as the candidates, voters and profiles grow, and which
+    solver (A or C) gives out first?
+11. Explanations a person can read: among the smallest justifications, which is the most
+    readable (fewest profiles, fewest kinds of axiom)? Can a loop optimise for that?
 `;
 
 // voting-justification, strategy 6 and the loops built on it (Nov 2026). A counterexample is an
@@ -567,6 +524,245 @@ glue(profile(Prof,V,Cand,Pos)) :-
 `)) },
     { name: 'deepen', swap: s6, constants: {}, loop: vloop(VOTE_DEEPEN) },
     { name: 'profiles-first', swap: s6, constants: {}, loop: vloop(VOTE_TWO_LEVEL) });
+}
+
+// voting-justification-ihs: the same questions as implicit hitting sets. With strategy 6 a
+// counterexample's clause says "use one of the instances these outcomes falsify", whatever the
+// candidate, so a set of instances is a justification exactly when it hits the falsified set of
+// every counterexample. A proposes a smallest set (with its profiles) that hits every set found so
+// far; the first one that survives the check is a smallest justification. No k is given:
+// num_axiom_instances is not read. Expected counts: the number of smallest justifications
+// (measured with every variant, Nov 2026); they agree with the paper questions' counts where k
+// is the smallest, and differ where a smaller justification exists (random-4 ... random-7) or
+// where none exists at k but one does at a larger size (paper-c4-v2b-k3-p3: one, of size 4).
+// paper-borda3-k3-p4 and paper-borda4-k3-p4 have none of any size within 4 profiles (variant
+// ascending: 46 s and 7 min).
+const VOTE_IHS_EXPECTED = { 'random-4': 1, 'random-5': 1, 'random-6': 2, 'random-7': 1, 'paper-c4-v2b-k3-p3': 1 };
+const VOTE_IHS_SLOW = ['faith-cancel-reinf-pareto-condorcet-k3', 'paper-borda4-k3-p3', 'paper-v4-k4-p3', 'paper-c4-v2-k3-p3',
+  'paper-c4-v2b-k3-p3', 'paper-c4-v3-k3-p3'];
+const VOTE_IHS_BENCH = ['cancel-reinf-posresp-k4', 'paper-ex4-k3-p4', 'paper-borda3-k3-p4', 'paper-borda4-k3-p4'];
+const VOTE_IHS_HEAD = (a) => `solver A = shared + ${a}
+solver C = shared + check + relevant   options "--heuristic=Domain"
+link   G = A -> C via shared + glue
+`;
+const VOTE_IHS_LOOP = VOTE_IHS_HEAD('abstraction + smallest') + `
+# Implicit hitting sets: A proposes a smallest set of axiom instances (with the profiles they
+# need) that hits the falsified set of every counterexample so far. The first set that survives
+# the check is a smallest justification; then A keeps to that size and lists the others.
+best = none
+loop:
+    M = A.solve(optimal)
+    if not M: stop
+    track lower = M.cost
+    X = C.solve(assume G(M))
+    if X:
+        A.add(G.clause(M, X))
+    else:
+        if best == none:
+            log "smallest justification: instances", M.cost
+            best = M.cost
+            A.ground(bound, best)
+        accept M
+        A.add(G.block(M))
+`;
+const VOTE_IHS_ASCENDING = VOTE_IHS_HEAD('abstraction + sizes') + `
+# Sizes in ascending order, without optimisation: at size k, A looks for exactly k instances;
+# every clause holds at every size, so it carries over to the next k. The first size with a
+# justification is the smallest; then A is fixed to it and lists the other justifications of it.
+k = 1
+found = false
+while not found:
+    if A.models(limit 1).size == 0: stop    # no hitting set of any size: no justification
+    A.ground(size, k)
+    loop:
+        M = A.solve(assume A.atom("size", k))
+        if not M: break
+        X = C.solve(assume G(M))
+        if X:
+            A.add(G.clause(M, X))
+        else:                          # a justification of size k: the smallest size
+            found = true
+            accept M
+            A.add(G.block(M))
+            break
+    track lower = k
+    if not found: k = k + 1
+log "smallest justification: instances", k
+A.ground(exactly, k)
+loop:
+    M = A.solve()
+    if not M: stop
+    X = C.solve(assume G(M))
+    if X:
+        A.add(G.clause(M, X))
+    else:
+        accept M
+        A.add(G.block(M))
+`;
+const VOTE_IHS_README = `# Smallest justifications by implicit hitting sets
+
+## Background
+
+The questions of \`voting-justification\` (explaining a voting outcome by axiom instances; Boixel
+and Endriss, AAMAS 2020; Nardi, Boixel and Endriss, AAMAS 2022), asked another way: not "is there
+a justification with exactly k instances?" but "what are the smallest justifications?".
+
+A counterexample is an outcome for every profile number that differs from the target outcome on
+profile 1. It falsifies some axiom instances. Whether it falsifies an instance depends on the
+outcomes alone (faithfulness and unanimity also read the top choice of voter 1), not on what the
+profiles are. A set of instances is a justification exactly when it *hits* the falsified set of
+every counterexample: a counterexample that falsifies none of the chosen instances satisfies them
+all. This is the duality behind implicit hitting sets (IHS): the falsified sets play the part of
+correction sets, the justifications that of the sets that hit them all, as in the smallest-MUS
+algorithm of Ignatiev, Previti, Liffiton and Marques-Silva (2015).
+
+Unlike a textbook IHS, the universe of the hitting set is not fixed: which instances are
+applicable depends on the profiles, and A guesses those too.
+
+## The loop
+
+- **Abstraction (A)**: profiles and applicable axiom instances as in \`voting-justification\`,
+  but any number of instances, with \`#minimize\` on their number (fragment \`smallest\`).
+- **Check (C)**: the check of \`voting-justification\`: outcomes that satisfy every chosen instance
+  and differ from the target outcome on profile 1.
+- **Refinement**: strategy 6 (fragment \`relevant\`): the instances the counterexample falsifies,
+  and of the profile atoms only voter 1's top choices.
+- The loop solves A optimally; a candidate that survives the check is a smallest justification.
+  Then \`A.ground(bound, best)\` keeps A at that size, and the loop lists the others.
+
+The constant \`num_axiom_instances\` of the instances is not read; \`num_profiles\` still bounds
+the number of profiles.
+
+## Fragments
+
+- \`shared\`, \`abstraction\`, \`glue\`, \`check\`: from \`voting-justification\`, with the choice of
+  exactly \`num_axiom_instances\` instances replaced by a free choice.
+- \`smallest\`: the \`#minimize\` on the number of instances and \`#program bound(b)\` (exactly b).
+- \`sizes\`: \`#program size(k)\`, an assumable atom \`size(k)\` for exactly k instances, and
+  \`#program exactly(b)\` (variant \`ascending\`).
+- \`relevant\`: refinement strategy 6.
+- \`fewest\`: a \`#minimize\` for the check: the counterexample that falsifies the fewest instances.
+- \`view\`: a domain view for the Observatory tab.
+
+## Variants
+
+| Variant | What changes |
+|---|---|
+| default | IHS: an optimal A, one counterexample per candidate |
+| mcs | an optimal check (\`fewest\`): each counterexample falsifies as few instances as possible, a minimum correction set |
+| multi | up to 5 counterexamples per candidate (\`C.models(..., limit 5)\`), one clause each |
+| ascending | no optimisation: sizes k = 1, 2, ... in turn, each a search under the assumption \`size(k)\` |
+| reference | the counterexample's clause replaced by \`G.block(M)\` |
+
+## Instances
+
+The instances of \`voting-justification\` (see its readme): the questions of \`explain1.lp\`, seven
+generated ones and 17 from Nardi, Boixel and Endriss. The \`-k\` in an id is the k of the original
+question; here it is not used. The expected count of an instance is its number of smallest
+justifications, where it is known.
+
+## Suites
+
+- \`questions\`: every question, the default loop (60 s each).
+- \`loops\`: the questions that are not tagged \`bench\` × every variant (60 s each).
+
+## Open questions
+
+1. Is the first justification found a smallest one only because strategy 6's clause holds for
+   every candidate? What happens with strategy 2 of \`voting-justification\` in this loop?
+2. IHS solvers for MaxSAT find disjoint cores first to raise the lower bound cheaply. What is the
+   analogue here: counterexamples with pairwise disjoint falsified sets?
+3. A correction set is minimal when no falsified instance can be satisfied without falsifying
+   another. \`mcs\` asks for a minimum one, which costs an optimisation per check. Would a cheaper
+   *minimal* one do as well?
+4. When does an optimal A pay, and when do the satisfiability calls of \`ascending\`?
+5. Without a fixed k the loop can prove that a question has no justification at all within
+   \`num_profiles\` profiles. How large must \`num_profiles\` be before that says something about
+   all profiles?
+6. The paper's breadth-first generation (fewest profiles first) against fewest instances first:
+   do they find the same justifications?
+7. Explanations a person can read: among the smallest justifications, which is the most
+   readable (fewest profiles, fewest kinds of axiom)? Add it as a second level of the
+   \`#minimize\` and compare.
+`;
+function voteIhs(vote) {
+  const f = (n) => structuredClone(frag(vote, n));
+  const ab = f('abstraction');
+  if (!ab.text.includes(VOTE_CHOICE)) throw new Error('make-examples: the choice of axiom instances not found');
+  ab.text = ab.text.replace(VOTE_CHOICE, `% Any number of applicable instances; the fragment smallest (or sizes) says how many.
+{ use_axiom_instance(Profiles,Axiom) : axiom_applicable(Profiles,Axiom) }.`);
+  ab.description = 'Proposes candidates (solver A): profiles and any set of applicable axiom instances on them.';
+  const rel = f('relevant_s6');
+  rel.name = 'relevant';
+  rel.description = 'Refinement strategy 6 (relevant/1): the instances the counterexample falsifies, and voter 1\'s top choices.';
+  const fewest = f('fewest');
+  fewest.description = 'A #minimize for the check: the counterexample that falsifies the fewest instances (variant mcs, with an optimal check).';
+  const count = '#count { Profiles,Axiom : use_axiom_instance(Profiles,Axiom) }';
+  const fragments = [f('shared'), ab,
+    { name: 'smallest', description: 'For solver A: as few axiom instances as possible; #program bound(b) fixes the number once the optimum is known.',
+      text: `% As few axiom instances as possible.
+#minimize { 1,Profiles,Axiom : use_axiom_instance(Profiles,Axiom) }.
+
+#program bound(b).
+% Once the smallest size b is known (A.ground(bound, b)): exactly b instances.
+:- ${count} != b.
+` },
+    { name: 'sizes', description: 'For solver A in the variant ascending: the atom size(k), assumed, asks for exactly k instances; #program exactly(b) fixes the number.',
+      text: `#program size(k).
+% Assumed by the loop (A.atom("size", k)): exactly k instances.
+{ size(k) }.
+:- size(k), ${count} != k.
+
+#program exactly(b).
+% Once the smallest size b is known (A.ground(exactly, b)): exactly b instances.
+:- ${count} != b.
+` },
+    f('glue'), f('check'), rel, fewest, f('view')];
+  const V = (name, text, note) => ({ name, swap: {}, constants: {}, note, loop: vloop(text) });
+  const p = {
+    format: vote.format, version: 2, title: 'Voting: smallest justifications (IHS)',
+    description: 'The questions of Voting: justifications by implicit hitting sets: A proposes a smallest set of axiom instances that ' +
+      'hits the falsified instances of every counterexample so far; the first that survives the check is a smallest justification.',
+    readme: VOTE_IHS_README,
+    fragments,
+    loop: vloop(VOTE_IHS_LOOP),
+    settings: { ...structuredClone(vote.settings) },
+    instances: structuredClone(vote.instances).map((x) => {
+      const y = { ...x, tags: (x.tags || []).filter((t) => t !== 'slow' && t !== 'bench' && t !== 'no-solution') };
+      delete y.symbolic;
+      if (x.id in VOTE_IHS_EXPECTED) y.expected = { solutions: VOTE_IHS_EXPECTED[x.id] };
+      if (y.expected && y.expected.solutions === 0) y.tags.push('no-solution');
+      if (VOTE_IHS_SLOW.includes(x.id)) y.tags.push('slow');
+      if (VOTE_IHS_BENCH.includes(x.id)) y.tags.push('bench');
+      return y;
+    }),
+    generators: structuredClone(vote.generators),
+    runs: [],
+    views: structuredClone(vote.views),
+    variants: [
+      V('mcs', VOTE_IHS_LOOP.replace('check + relevant', 'check + relevant + fewest').replace('C.solve(assume G(M))', 'C.solve(assume G(M), optimal)'),
+        'The counterexample that falsifies the fewest instances: a minimum correction set, a shorter clause.'),
+      V('multi', VOTE_IHS_LOOP.replace(`    X = C.solve(assume G(M))
+    if X:
+        A.add(G.clause(M, X))
+    else:`, `    refuted = false
+    for X in C.models(assume G(M), limit 5):
+        A.add(G.clause(M, X))
+        refuted = true
+    if not refuted:`), 'Up to five counterexamples, and clauses, per candidate: more sets to hit per solve of A.'),
+      V('ascending', VOTE_IHS_ASCENDING, 'Satisfiability calls at sizes 1, 2, ... instead of an optimal solve of A.'),
+      V('reference', VOTE_IHS_LOOP.replace('A.add(G.clause(M, X))', 'A.add(G.block(M))'), 'Block each refuted candidate on its own: the ground truth on small questions.'),
+    ],
+  };
+  if (!p.variants.every((v) => v.loop.text !== VOTE_IHS_LOOP)) throw new Error('make-examples: an IHS variant did not change the loop');
+  const ids = p.instances.map((i) => i.id);
+  p.suites = [
+    { name: 'questions', instances: { ids: 'all' }, limits: { seconds: 60 } },
+    { name: 'loops', instances: { ids: p.instances.filter((i) => !i.tags.includes('bench')).map((i) => i.id) },
+      variants: ['default', 'mcs', 'multi', 'ascending', 'reference'], limits: { seconds: 60 } },
+  ];
+  if (!ids.length) throw new Error('make-examples: no voting instances');
+  return p;
 }
 
 function voteStrategies(p) {
@@ -746,6 +942,26 @@ export function buildExamples() {
       voteLoops(p);
     }, { solutions: 0 });
   vote.settings.constants = { ...vote.instances.find((i) => i.id === VOTE_DEFAULT).constants };
+  // one line per variant: its main idea (shown in the Variants block)
+  const VOTE_VARIANT_NOTES = {
+    s1: 'Clause from the instances the outcomes falsify (with every profile atom).',
+    s3: 'Clause from the instances the candidate does not use (with every profile atom).',
+    s4: 'Clause from the instances the candidate uses (with every profile atom).',
+    s5: 'Clause from every possible instance (with every profile atom): close to blocking the candidate.',
+    shape2: 'Solve A from scratch after each refinement instead of one ongoing search.',
+    record: 'Keep blocked candidates as nogoods in A (clasp\'s record enumeration).',
+    reference: 'Block each refuted candidate on its own: the ground truth on small questions.',
+    s6: 'Drop the profile atoms: the clause "use one of the falsified instances" holds for every candidate.',
+    fewest: 'Strategy 6 with the counterexample that falsifies the fewest instances: shorter clauses.',
+    multi: 'Strategy 6 with up to five counterexamples, and clauses, per candidate.',
+    partial: 'Strategy 6 checked on partial candidates, so one clause can cut a whole subtree.',
+    deepen: 'One abstraction per number of profiles, fewest profiles first (the paper\'s breadth-first order).',
+    'profiles-first': 'Guess profiles first, test them with every applicable instance, then pick exactly k instances.',
+  };
+  for (const v of vote.variants) {
+    if (!VOTE_VARIANT_NOTES[v.name]) throw new Error(`make-examples: no note for the voting variant ${v.name}`);
+    v.note = VOTE_VARIANT_NOTES[v.name];
+  }
   vote.readme = VOTE_README;
   vote.generators = structuredClone(VOTE_KIT.generators);
   vote.instances.push(...structuredClone(VOTE_KIT.recipes).map((x) => ({ constants: {}, ...x })));
@@ -793,7 +1009,7 @@ relevant(plays(P,C)) :- player_differs(P), color(C).
   ];
   nash.version = 2;
   nash.readme = PROJECT_CARDS.nash;
-  return { 'graph-coloring': gc, nash, 'voting-justification': vote };
+  return { 'graph-coloring': gc, nash, 'voting-justification': vote, 'voting-justification-ihs': voteIhs(vote) };
 }
 
 // Contributed examples: examples/contrib/*.json, each a project with a top-level

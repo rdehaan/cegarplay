@@ -2345,3 +2345,33 @@ one), and loop variants that might be faster, to learn which loops suit the prob
   abstraction dominates the time. deepen and profiles-first do not pay for all solutions.
 - Chapter 21 of the guide: a paragraph on strategy 6 (two new measured numbers), the ground-truth
   and open-question items updated; book regenerated.
+
+## Voting justification: a student kit, an IHS example and a new view (2026-11-26, on request)
+
+- **Readme of `voting-justification`**: only describes what is there (background, loop, fragments,
+  variants, instances, suites, how to compare); the measured tables and their interpretation are
+  gone (they are in the git history and the previous entry). Open questions 1-5 kept, 6-11 added
+  (soundness of the original strategies, strongest candidate-independent refinement, exactly k
+  against at most k, symmetry breaking, scaling, readable explanations).
+- **Variant notes**: every variant of both voting examples has a one-line `note` with its idea.
+- **New example `voting-justification-ihs`** (built in tools/make-examples.mjs from the voting
+  project, group voting, level 4): implicit hitting sets. With strategy 6 a set of instances is a
+  justification iff it hits the falsified set of every counterexample, so A (free choice of
+  instances, `#minimize` their number, fragment `smallest` with `#program bound(b)`) proposes a
+  smallest hitting set; the first that survives the check is a smallest justification, then A is
+  bound to that size and lists the rest. `num_axiom_instances` is not read. Variants: `mcs`
+  (optimal check), `multi` (5 counterexamples), `ascending` (sizes 1, 2, ... under an assumed
+  `size(k)`, then `#program exactly(b)`), `reference`. Expected counts = number of smallest
+  justifications; they agree with the paper questions where k is the smallest. Found:
+  `paper-c4-v2b-k3-p3` (0 at k = 3) has one justification of size 4; random-4..7 have smaller
+  ones (1, 1, 2, 1); `paper-borda3-k3-p4` and `paper-borda4-k3-p4` have none of any size within 4
+  profiles (ascending: 46 s, 7 min). `--opt-strategy=usc` on A was tried and was slower.
+  Deviation: the progress guard fires on two consecutive solves *without assumptions* that return
+  the same candidate; ascending's "any hitting set left?" probe is therefore `A.models(limit 1)`.
+- **View** (both examples, VIEWS in tools/library.mjs): profiles as blocks of ballot columns
+  (1st on top), the target outcome of P1, the counterexample's outcomes (filled = wins), the
+  clause's number of instance atoms, one row per axiom instance with its part per profile.
+  Renderer: `attr(X, weight, 0)` now draws no outline (was clamped to 0.5), for heading cells.
+  Replays and stored view frames rebuilt.
+- Manual (voting table, Justifications paragraph, weight 0), guide chapter 21 (no claim that the
+  readme compares loops), book regenerated.

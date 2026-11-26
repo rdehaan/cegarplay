@@ -367,7 +367,8 @@ const TEMPLATE_TITLE = { shape1: 'Shape 1', shape2: 'Shape 2', shape3: 'Shape 3'
 export const PROBLEMS = [
   { id: 'graph-coloring', group: 'graphs', summary: 'Graphs with a leaf colouring that no 3-colouring extends (n = 6, all 10,698 solutions).', shape: 'shape1', tags: [], expected: 10698 },
   { id: 'nash', group: 'games', summary: 'Weighted graphs whose colouring game has a Nash equilibrium (four size instances).', shape: 'shape1', tags: [], expected: null },
-  { id: 'voting-justification', group: 'voting', summary: 'Explaining a voting outcome by axioms: 14 questions as instances (7 generated), five refinement strategies and two loops as variants, a suite that compares them.', shape: 'shape1', tags: [], expected: null },
+  { id: 'voting-justification', group: 'voting', summary: 'Explaining a voting outcome by axioms: 30 questions as instances (17 from Nardi, Boixel and Endriss, 7 generated), six refinement strategies and seven loops as variants, suites that compare them.', shape: 'shape1', tags: [], expected: null },
+  { id: 'voting-justification-ihs', group: 'voting', summary: 'The smallest justifications of a voting outcome by implicit hitting sets: the same 30 questions without a fixed number of axiom instances; variants with minimum correction sets, several counterexamples, ascending sizes.', shape: 'custom', tags: ['ihs'], expected: null },
 ];
 
 // ---------------------------------------------------------------------------
@@ -612,24 +613,107 @@ draw(emph(cell(V,C))) :- lit(list(V,C), _).
 draw(note("A proper colouring from the lists (x): one of its ringed colours must leave a list.")) :- kind(reject).
 #show draw/1.
 `,
-  'voting-justification': `% The profiles of the candidate: one row per profile and voter, one column per position
-% (labelled with the candidate there), then one column per candidate for the outcome of the
-% profile in the counterexample. The target profile is profile 1.
+  'voting-justification': `% Each profile is a block of columns: one column per voter, the ballot from top (1st) to bottom.
+% Under the ballots: the target outcome (profile 1 only) and, at a step with a counterexample, the
+% outcome of every profile in it (a filled letter wins) and the number of axiom instances its
+% clause names. Under those: one row per axiom instance of the candidate, with its part in each
+% profile it reads: Pareto "¬c" (c loses), faithfulness and unanimity "top", cancellation "all",
+% Condorcet "c", neutrality "a↔b" in both profiles, positive responsiveness "a" and "a↑" (the
+% profile where a moved up), reinforcement "+" for the two parts and "=" for their union.
 #program scene.
 draw(layout(grid)).
-row(P,V,(P-1)*num_voters+V) :- profile_num(P), voter(V).
-draw(cell(R,Pos)) :- row(_,_,R), position(Pos).
-draw(cell(R,num_candidates+1+C)) :- row(_,1,R), candidate(C).
-draw(attr(cell(R,num_candidates+1+C), label, C)) :- row(_,1,R), candidate(C).
-draw(attr(cell(R,num_candidates+1+C), stroke, target)) :- row(1,1,R), target_outcome(C).
+letter(1,"a"). letter(2,"b"). letter(3,"c"). letter(4,"d"). letter(5,"e"). letter(6,"f").
+place(1,"1st"). place(2,"2nd"). place(3,"3rd"). place(4,"4th"). place(5,"5th"). place(6,"6th").
+pname(1,"P1"). pname(2,"P2"). pname(3,"P3"). pname(4,"P4"). pname(5,"P5"). pname(6,"P6").
+pname(7,"P7"). pname(8,"P8").
+notl(1,"¬a"). notl(2,"¬b"). notl(3,"¬c"). notl(4,"¬d"). notl(5,"¬e"). notl(6,"¬f").
+upl(1,"a↑"). upl(2,"b↑"). upl(3,"c↑"). upl(4,"d↑"). upl(5,"e↑"). upl(6,"f↑").
+swapl(1,2,"a↔b"). swapl(1,3,"a↔c"). swapl(1,4,"a↔d"). swapl(2,3,"b↔c"). swapl(2,4,"b↔d"). swapl(3,4,"c↔d").
+swapl(1,5,"a↔e"). swapl(2,5,"b↔e"). swapl(3,5,"c↔e"). swapl(4,5,"d↔e").
+width(W) :- W = #max { num_voters; num_candidates }.
+start(P,4+(P-1)*(W+1)) :- profile_num(P), width(W).
+% rows: 1 profile names, 2.. the ballots, then the target, the outcomes, the clause, the instances
+ballot_row(Pos,1+Pos) :- position(Pos).
+target_row(num_candidates+3).
+outcome_row(num_candidates+4).
+clause_row(num_candidates+5).
+first_inst_row(num_candidates+7).
+inst_row(I,R+I-1) :- first_inst_row(R), I = 1..num_axiom_instances+2.
+mid(P,S+(W-1)/2) :- start(P,S), width(W).
+
+% the cells
+cellpos(1,M) :- mid(_,M).
+cellpos(R,S+V-1) :- ballot_row(_,R), start(_,S), voter(V).
+cellpos(R,S+C-1) :- target_row(R), start(1,S), candidate(C).
+cellpos(R,S+C-1) :- outcome_row(R), start(_,S), candidate(C).
+cellpos(R,2) :- ballot_row(_,R).
+cellpos(R,2) :- target_row(R).
+cellpos(R,2) :- outcome_row(R).
+cellpos(R,2) :- inst_row(_,R).
+cellpos(R,2) :- clause_row(R).
+cellpos(R,M) :- inst_row(_,R), mid(_,M).
+cellpos(R,M) :- clause_row(R), mid(1,M).
+draw(cell(R,C)) :- cellpos(R,C).
+
+% fixed labels
+draw(attr(cell(1,M), label, N)) :- mid(P,M), pname(P,N).
+draw(attr(cell(R,2), label, L)) :- ballot_row(Pos,R), place(Pos,L).
+draw(attr(cell(R,2), label, "target")) :- target_row(R).
+draw(attr(cell(R,S+C-1), label, L)) :- target_row(R), start(1,S), letter(C,L), candidate(C).
+draw(attr(cell(R,S+C-1), fill, target)) :- target_row(R), start(1,S), target_outcome(C).
 
 #program frame.
-draw(attr(cell(R,Pos), label, C)) :- cand(profile(P,V,C,Pos)), row(P,V,R).
-draw(attr(cell(R,Pos), fill, used)) :- cand(profile(P,V,C,Pos)), row(P,V,R).
-draw(emph(cell(R,Pos))) :- lit(profile(P,V,C,Pos),_), row(P,V,R).
-draw(attr(cell(R,num_candidates+1+C), fill, outcome)) :- cex(outcome(P,C)), row(P,1,R).
-draw(note("Outcomes (right) that satisfy the axiom instances but differ from the target: the clause names the ringed cells.")) :- kind(reject).
-draw(note("A justification: the target profile (top rows) and the profiles its axiom instances use.")) :- kind(solution).
+% the profiles of the candidate
+active(P) :- cand(profile(P,_,_,_)).
+draw(attr(cell(R,S+V-1), label, L)) :- cand(profile(P,V,C,Pos)), ballot_row(Pos,R), start(P,S), letter(C,L).
+draw(emph(cell(R,S+V-1))) :- lit(profile(P,V,C,Pos),_), ballot_row(Pos,R), start(P,S).
+boxed(R,S+V-1) :- cand(profile(P,V,_,Pos)), ballot_row(Pos,R), start(P,S).
+boxed(R,C) :- target_row(R), cellpos(R,C), C > 2.
+draw(ghost(cell(1,M))) :- mid(P,M), not active(P).
+
+% the outcomes of the counterexample
+cex_step :- cex(outcome(_,_)).
+boxed(R,S+C-1) :- cex_step, outcome_row(R), start(_,S), candidate(C).
+draw(attr(cell(R,S+C-1), label, L)) :- cex_step, outcome_row(R), start(_,S), letter(C,L), candidate(C).
+draw(attr(cell(R,S+C-1), fill, wins)) :- cex(outcome(P,C)), outcome_row(R), start(P,S).
+draw(attr(cell(R,2), label, "outcome")) :- outcome_row(R), cex_step.
+
+% the axiom instances of the candidate, one row each
+inst((Pr,A)) :- cand(use_axiom_instance(Pr,A)).
+order((Pr,A),N+1) :- inst((Pr,A)), N = #count { X : inst(X), X < (Pr,A) }.
+name(pareto(C),"Pareto") :- candidate(C). name(faithfulness,"faithful"). name(unanimity,"unanimity").
+name(cancellation,"cancel"). name(reinforcement,"reinforce"). name(condorcet(C),"Condorcet") :- candidate(C).
+name(neutrality2(C1,C2),"neutrality") :- candidate(C1), candidate(C2).
+name(pos_responsiveness(V,C,P),"pos. resp.") :- voter(V), candidate(C), position(P).
+draw(attr(cell(R,2), label, L)) :- order((_,A),N), inst_row(N,R), name(A,L).
+% its part in each profile it reads
+part(single(P),pareto(C),P,L) :- inst((single(P),pareto(C))), notl(C,L).
+part(single(P),faithfulness,P,"top") :- inst((single(P),faithfulness)).
+part(single(P),unanimity,P,"top") :- inst((single(P),unanimity)).
+part(single(P),cancellation,P,"all") :- inst((single(P),cancellation)).
+part(single(P),condorcet(C),P,L) :- inst((single(P),condorcet(C))), letter(C,L).
+part(double(P,Q),neutrality2(C1,C2),X,L) :- inst((double(P,Q),neutrality2(C1,C2))),
+    X = (P;Q), swapl(C1,C2,L).
+part(double(P,Q),pos_responsiveness(V,C,K),P,L) :- inst((double(P,Q),pos_responsiveness(V,C,K))), letter(C,L).
+part(double(P,Q),pos_responsiveness(V,C,K),Q,L) :- inst((double(P,Q),pos_responsiveness(V,C,K))), upl(C,L).
+part(triple(P,Q,T),reinforcement,X,"+") :- inst((triple(P,Q,T),reinforcement)), X = (P;Q), P != Q.
+part(triple(P,P,T),reinforcement,P,"2x") :- inst((triple(P,P,T),reinforcement)).
+part(triple(P,Q,T),reinforcement,T,"=") :- inst((triple(P,Q,T),reinforcement)).
+draw(attr(cell(R,M), label, L)) :- part(Pr,A,P,L), order((Pr,A),N), inst_row(N,R), mid(P,M).
+boxed(R,M) :- part(Pr,A,P,_), order((Pr,A),N), inst_row(N,R), mid(P,M).
+draw(emph(cell(R,M))) :- part(Pr,A,P,_), lit(use_axiom_instance(Pr,A),_), order((Pr,A),N), inst_row(N,R), mid(P,M).
+
+% the clause: how many axiom-instance atoms it names
+clause_size(N) :- N = #count { Pr,A : lit(use_axiom_instance(Pr,A),_) }, cex_step.
+draw(attr(cell(R,2), label, "clause")) :- clause_row(R), cex_step.
+draw(attr(cell(R,M), label, N)) :- clause_size(N), clause_row(R), mid(1,M).
+
+% only boxed cells have an outline
+draw(attr(cell(R,C), weight, 0)) :- cellpos(R,C), not boxed(R,C).
+
+draw(note("A justification: the profiles (P1 is the target) and the axiom instances that force the target outcome.")) :- kind(solution).
+draw(note("Counterexample: outcomes (filled letters win) that satisfy every instance listed but differ from the target in P1.")) :- cex_step.
+draw(note("Clause: the number of axiom instances the refinement names; outlined thick: the profile and instance atoms it names.")) :- cex_step.
 #show draw/1.
 `,
   qbf: `% The x-variables; true ones filled; the variables a clause names ringed.
@@ -766,7 +850,7 @@ export const LEVELS = {
   'graph-coloring': [2, 5], 'clique-interdiction': [2, 5], arrowing: [2, 3], choosability: [2, 3], 'clique-colouring': [2, 3],
   'colourable-partial': [4, 10], 'triangle-free-lazy': [4, 10],
   nash: [2, 3], 'strong-nash': [2, 3], 'subset-sum-game': [2, 3], 'fair-division': [2, 9], 'boolean-game': [3, 6],
-  'agenda-safety': [3, 7], 'hedonic-core': [3, 7], 'kemeny-control': [3, 7], 'voting-justification': [3, 12],
+  'agenda-safety': [3, 7], 'hedonic-core': [3, 7], 'kemeny-control': [3, 7], 'voting-justification': [3, 12], 'voting-justification-ihs': [4, 14],
   'conformant-planning': [3, 9], 'conformant-growing': [3, 9], 'knapsack-interdiction': [3, 11], 'knapsack-optimum': [3, 11],
   'benders-tardiness': [4, 11], 'knapsack-bounds': [4, 11], 'knapsack-fortification': [4, 13],
   'sudoku-unique': [3, 3], 'sudoku-unavoidable': [3, 6], 'fewest-clues': [3, 7], 'sudoku-symmetry': [3, 7], 'sudoku-graded': [3, 7],
