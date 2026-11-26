@@ -24,8 +24,9 @@
   --primary: #2c5f8a;
   --primary-text: #fff;
   --shadow: rgba(0, 0, 0, 0.15);
-  --anchor: LinkText;
-  --anchor-visited: VisitedText;
+  /* links: the blue of the Run button (--primary), visited or not */
+  --anchor: #2c5f8a;
+  --anchor-visited: #2c5f8a;
   --accent: orange;
   --error: #c0392b;
   --error-bg: #fdecea;

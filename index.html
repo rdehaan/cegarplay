@@ -91,7 +91,7 @@
             <span class="run-field" title="clingo's --seed (0 = clingo's default). The seed changes the search only with a randomized search (or randomizing solver options); the same seed gives the same run again. Also in the Loop tab."><label class="inline-label" for="run-seed">Seed:</label>
               <input type="number" min="0" step="1" id="run-seed" class="run-seed">
               <label class="inline-label"><input type="checkbox" id="run-randomize"> randomized</label></span>
-            <span class="run-field" title="Record every step of the next runs, for the trace, the replay, the Observatory and the Refinery (Project, Recordings). The Loop tab's Recording has more choices: the first, every or last N steps, solver calls, a proof log."><label class="inline-label"><input type="checkbox" id="run-record"> record steps</label></span>
+            <span class="run-field" title="Record everything the next runs can show: every step and every solver call, for the trace, the replay, the Observatory (with its timeline and cost per line) and the Refinery (Project, Recordings). The Loop tab's Recording has finer choices: the first, every or last N steps, steps without calls, a proof log; a dash in the box means such a choice."><label class="inline-label"><input type="checkbox" id="run-record"> record steps and calls</label></span>
             <p class="popover-note">The Loop tab has all the settings of a run.</p>
           </div>
         </span>
@@ -270,7 +270,7 @@
       <p class="tab-intro help-box">
         The loop script declares the solvers and the links between them and says how they call
         each other; below it are the constants and the settings of a run.
-        <span class="tab-help">Tutorial: <a href="#tut-language">Writing loop scripts</a> · <a href="#tut-shapes">Choosing a loop shape</a>. Manual: <a href="#manual-the-loop-language">The loop language</a> · <a href="#manual-settings">Settings</a>.</span>
+        <span class="tab-help"><a href="#" data-loop-walkthrough>The loop language, step by step</a> (an interactive walkthrough). Tutorial: <a href="#tut-language">Writing loop scripts</a> · <a href="#tut-shapes">Choosing a loop shape</a>. Manual: <a href="#manual-the-loop-language">The loop language</a> · <a href="#manual-settings">Settings</a>.</span>
       </p>
       </details>
       <div class="inline-controls">
@@ -282,6 +282,7 @@
         <button class="control-button" id="edit-as-lua-button">Edit as Lua</button>
       </div>
       <h3>Loop script <a href="#" class="modal-link" data-open="modal-loop" title="About the loop script" aria-label="About the loop script">?</a>
+        <a href="#" class="loop-walkthrough-link" data-loop-walkthrough>Step-by-step walkthrough</a>
         <span id="loop-language" class="loop-language"></span></h3>
       <div id="loop-editor" class="editor"></div>
       <p id="loop-hint" class="loop-hint" aria-live="polite"></p>
@@ -527,6 +528,8 @@
         <h3>Guided tour</h3>
         <p><button class="control-button" type="button" data-tour>Start the guided tour</button>
           <span class="note">a first run, step by step (about five minutes); it loads the example Sum-free sets</span></p>
+        <p><button class="control-button" type="button" data-loop-walkthrough>The loop language, step by step</button>
+          <span class="note">every line of a loop script, what it does exactly, with experiments that change and run it (about ten minutes)</span></p>
         <p>Short tours of the advanced tabs: <a href="#" data-tab-tour="tab11">Observatory</a> ·
           <a href="#" data-tab-tour="tab10">Campaign</a> · <a href="#" data-tab-tour="tab12">Refinery</a>
           <span class="note">(each is offered the first time its tab opens; a tab that is off is switched on for the visit)</span></p>

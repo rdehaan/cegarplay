@@ -2272,3 +2272,29 @@ Deviations and findings:
   `.help-box` under the heading (`toggleInline` in `js/modal.js`, `aria-expanded`), not as a modal
   dialog; the modal markup stays as the source of the texts. The guided tour's audit card quotes the
   whole result line (it cut the audit panel's text at 160 characters).
+- (2026-11-26) Ordering by dragging (`js/drag-order.js`: `sortable`, `grip`; pointer events, a drop
+  line, autoscroll near the window's edges, Escape cancels, Arrow Up/Down on a focused grip) replaces
+  the ↑/↓ buttons of the fragments (`Editors.moveTo`) and the instances (`InstancesTab.moveTo`).
+- (2026-11-26) Light theme: links (visited too) in the Run button's blue `#2c5f8a` (`--anchor`,
+  `--anchor-visited` in `css/theme.css`; were the browser's LinkText/VisitedText). The dark theme keeps
+  `#8bbce6`: the dark Run blue `#3a6a96` is too dark for text on the dark page.
+- (2026-11-26) Inline code (`code`, `tt`, `kbd`) sized relative to its text (0.86em; was a fixed
+  15 px, larger than the 14 px text), with less padding and `line-height: 1.2`, so its box no
+  longer reaches into the lines above and below; `pre` 13 px.
+- (2026-11-26) The loop language, step by step (`js/loop-walkthrough.js`): an interactive walkthrough
+  (a `Tour` with `begin`, line marks in the loop editor via `step.lines`, `step.leave`). Sixteen
+  cards; the texts follow lua/runtime.lua. Experiments with their measured results on Sum-free sets
+  n = 8: first run 107 candidates (46 refuted), 61 solutions; `G.block(M)` 256 candidates, 195
+  refuted, and the Counterexamples count is 0 (it counts only counterexamples a clause is built
+  from); no reject: 256 solutions; Shape 2: 75 candidates (every clause kept for good; Shape 1's
+  backtracking enumeration keeps clauses added during it only weakly); Shape 2 without the block:
+  the progress guard error; `count refuted` = 14. Started from the Loop tab, lesson 10, Settings,
+  the guided tour's last card and `?tour=loop`.
+- (2026-11-26) Run options' "record" box is now **record steps and calls**: ticked = every step and
+  every solver call (`settings.record = { steps: 'all', n, calls: true }`), unticked = no recording
+  (proof log off too); a finer Loop-tab choice shows as indeterminate ("partial recording" on the
+  Run options button). `LoopTab.syncRecordBox`; the Observatory's Record calls box keeps it in step.
+- (2026-11-26) Test race fixed (directions.test.mjs, "Loaded example goes at the first edit"): a first
+  visit opens with Sum-free sets, so the status line already named it before the library click and
+  the test edited during the second load. It now clears the line first. Slower project builds (the
+  editors' help) made the race lose about one run in three.

@@ -1,4 +1,5 @@
 // Instances tab (tab 9) and the instance picker of the top bar.
+import { sortable, grip } from './drag-order.js';
 import { makeEditor } from './editors.js';
 import { IMPORTERS, importerFor, freshId, checkFacts, ImportError, resolveInstance } from './instances.js';
 import { generate, PARAM_TYPES, generatorConstants } from './generate.js';
@@ -90,6 +91,13 @@ export class InstancesTab {
   build() {
     this.root.textContent = '';
     this.table = el('table', { class: 'internals-table instances-table', id: 'instances-table' });
+    // the instances' order: drag an instance by its grip (js/drag-order.js)
+    sortable(this.table, {
+      items: () => [...this.table.querySelectorAll('tr[data-instance]')],
+      key: (tr) => tr.dataset.instance,
+      onMove: (id, before) => this.moveTo(id, before),
+      disabled: () => !!this.app.editors.readOnly,
+    });
     this.status = el('p', { id: 'instances-status', class: 'note', role: 'status', 'aria-live': 'polite' });
     this.fileInput = el('input', { type: 'file', id: 'instance-file', hidden: true, multiple: true, onchange: () => this.importFile() });
     this.columnMap = el('input', { id: 'instance-column-map', size: 28, placeholder: 'CSV column map: edge(from,to); w(from,to,cost)',
@@ -213,7 +221,7 @@ export class InstancesTab {
       const nfacts = (x.facts || '').split('\n').filter((l) => l.trim() && !l.trim().startsWith('%')).length;
       const tr = el('tr', { 'data-instance': x.id, class: [x.id === this.current ? 'selected' : '', bad ? 'mismatch' : good ? 'match' : ''].filter(Boolean).join(' '),
         ...(bad ? { 'data-mismatch': 'true' } : {}) },
-        el('td', {}, el('a', { href: '#', onclick: (e) => { e.preventDefault(); this.show(x.id); } }, x.id), x.id === sel ? el('span', { class: 'note', title: 'The instance picked in the top bar: Run and Audit use it' }, ' (picked in the top bar)') : ''),
+        el('td', {}, grip(`Move instance ${x.id}: drag, or Arrow Up and Arrow Down`), el('a', { href: '#', onclick: (e) => { e.preventDefault(); this.show(x.id); } }, x.id), x.id === sel ? el('span', { class: 'note', title: 'The instance picked in the top bar: Run and Audit use it' }, ' (picked in the top bar)') : ''),
         el('td', {}, x.recipe && !x.facts ? 'recipe' : `${nfacts} lines`),
         el('td', {}, constText(x.constants) || '–'),
         el('td', {}, [...(x.tags || []), ...(x.audit === false ? ['no audit'] : []), ...(x.symbolic === 'unsound' ? ['symbolic audit: unsound'] : [])].join(', ') || '–'),
@@ -222,11 +230,7 @@ export class InstancesTab {
           r ? `${fmt(r.solutions)}${r.cost ? `, cost ${costText(r.cost)}${r.same ? '' : ' (differ)'}` : ''}${r.exhausted ? '' : ' (not exhausted)'}${bad ? ' ✗' : good ? ' ✓' : ''}${stale ? ' (stale)' : ''}` : '–'),
         el('td', { class: 'instance-actions' },
           el('button', { class: 'control-button small-button', onclick: () => this.pick(x.id), disabled: x.id === sel,
-            title: 'Pick this instance in the top bar: Run and Audit use it' }, 'Use'), ' ',
-          el('button', { class: 'control-button small-button instance-up', onclick: () => this.move(x.id, -1), disabled: i === 0,
-            title: 'Move up', 'aria-label': `Move instance ${x.id} up` }, '↑'),
-          el('button', { class: 'control-button small-button instance-down', onclick: () => this.move(x.id, 1), disabled: i === list.length - 1,
-            title: 'Move down', 'aria-label': `Move instance ${x.id} down` }, '↓')));
+            title: 'Pick this instance in the top bar: Run and Audit use it' }, 'Use')));
       this.table.append(tr);
     }
     // under the table: which run the Last count column is of, and whether it still holds
@@ -337,11 +341,20 @@ export class InstancesTab {
   // the order of the instances (the top bar, Run all, the Campaign tab and the file follow it)
   move(id, d) {
     const list = this.list, i = list.findIndex((x) => x.id === id), j = i + d;
-    if (i < 0 || j < 0 || j >= list.length || this.app.editors.readOnly) return;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    this.moveTo(id, d < 0 ? list[j].id : (list[j + 1] ? list[j + 1].id : null));
+  }
+
+  // put instance `id` before instance `before` (null: at the end); dragged by its grip
+  moveTo(id, before) {
+    const list = this.list, i = list.findIndex((x) => x.id === id);
+    if (i < 0 || id === before || this.app.editors.readOnly) return;
     // the instance a run uses stays the same (without a pick it is the first one)
     const sel = this.selectedId();
     if (sel && this.app.project.settings.instance === undefined) this.app.project.settings = { ...this.app.project.settings, instance: sel };
-    [list[i], list[j]] = [list[j], list[i]];
+    const [x] = list.splice(i, 1);
+    const j = before === null ? list.length : list.findIndex((y) => y.id === before);
+    list.splice(j < 0 ? list.length : j, 0, x);
     this.render();
     this.app.dirty();
   }

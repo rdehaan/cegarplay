@@ -706,19 +706,33 @@ test('I2: generator constants reach the instances it makes; a recipe instance ca
   await context.close();
 });
 
-test('Instances: move up and down; the instance a run uses stays; Run all says which variant it uses', async () => {
+test('Instances: reorder by dragging and with the keyboard; the instance a run uses stays; Run all says which variant it uses', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=voting-justification&tab=9');
   const ids = () => page.evaluate(() => window.cegarplay.project.instances.map((x) => x.id));
   const before = await ids();
   const used = await page.$eval('#instance-select', (s) => s.value);
-  await page.click(`#instances-table tr[data-instance="${before[0]}"] .instance-down`);
+  // drag the first instance's grip below the second row
+  const g = await page.$(`#instances-table tr[data-instance="${before[0]}"] .drag-grip`);
+  const gb = await g.boundingBox();
+  const r2 = await (await page.$(`#instances-table tr[data-instance="${before[1]}"]`)).boundingBox();
+  await page.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(gb.x + gb.width / 2, r2.y + r2.height * 0.6, { steps: 6 });
+  assert.equal(await page.isVisible('.drag-line'), true, 'a line shows where it goes');
+  await page.mouse.move(gb.x + gb.width / 2, r2.y + r2.height * 0.9, { steps: 2 });
+  await page.mouse.up();
   const after = await ids();
   assert.deepEqual(after.slice(0, 2), [before[1], before[0]]);
   assert.equal(await page.$eval('#instance-select', (s) => s.value), used, 'the run bar keeps its instance');
   assert.deepEqual(await page.$$eval('#instance-select option', (l) => l.slice(1, 3).map((o) => o.value)), [before[1], before[0]]);
-  assert.equal(await page.$eval(`#instances-table tr[data-instance="${before[1]}"] .instance-up`, (b) => b.disabled), true);
-  await page.click(`#instances-table tr[data-instance="${before[0]}"] .instance-up`);
+  assert.equal(await page.$('.drag-line'), null);
+  // the keyboard: Arrow Up on the moved instance's grip puts it back (the focus stays on its grip)
+  await page.focus(`#instances-table tr[data-instance="${before[0]}"] .drag-grip`);
+  await page.keyboard.press('ArrowUp');
   assert.deepEqual(await ids(), before);
+  await page.waitForFunction((id) => document.activeElement && document.activeElement.closest(`tr[data-instance="${id}"]`), before[0]);
+  await page.keyboard.press('ArrowUp');
+  assert.deepEqual(await ids(), before, 'the first stays first');
   // Run all instances and Fuzz: the run bar's variant, named
   assert.match(await page.textContent('#instances-context'), /Both use no variant, as picked in the top bar/);
   await page.selectOption('#variant-select', 's1');
@@ -733,6 +747,8 @@ test('Control: "Loaded example" goes at the first edit and when another project 
   page.on('dialog', (d) => d.accept());
   await page.waitForSelector('#library [data-load-example="tutorial-first-run"]', { state: 'attached' });
   await B.openLibrary(page);
+  // (a first visit opens with this example already: the line must come from this load, not that one)
+  await page.evaluate(() => { document.getElementById('load-status').textContent = ''; });
   await page.click('#library [data-load-example="tutorial-first-run"]');
   await page.waitForFunction(() => /Loaded example "Sum-free sets"/.test(document.getElementById('load-status').textContent), null, { timeout: 60000 });
   await B.setEditor(page, 'editor-check', '% edit\n');

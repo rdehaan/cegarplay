@@ -110,3 +110,48 @@ test('the toast goes by itself after 5 s, not while the pointer is on it; the fr
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('the loop language walkthrough: lines marked, experiments run and explained, started from the Loop tab', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?tab=4');
+  await page.click('.loop-walkthrough-link');
+  assert.equal(await page.textContent('#tour-title'), 'The loop language, step by step');
+  await page.click('#tour-card .tour-next');
+  await page.waitForFunction(() => document.getElementById('tour-title').textContent === 'Declarations come first');
+  assert.equal(await page.textContent('#project-heading'), 'Sum-free sets');
+  const marks = () => page.evaluate(() => Object.values(ace.edit('loop-editor').session.getMarkers(false)).filter((m) => m.clazz === 'tour-line').map((m) => [m.range.start.row + 1, m.range.end.row + 1]));
+  assert.deepEqual(await marks(), [[1, 3]]);
+  // on to the first run, then the G.block experiment, done by hand
+  while (await page.textContent('#tour-title') !== 'Try it: run the script') await page.click('#tour-card .tour-next');
+  assert.deepEqual(await marks(), [], 'the marks follow the card');
+  await page.keyboard.press('Control+Enter');
+  await page.waitForSelector('#tour-card .tour-after');
+  assert.match(await page.textContent('#tour-card .tour-after'), /^107 candidates, of which 46 were refuted/);
+  await page.click('#tour-card .tour-next');
+  assert.equal(await page.textContent('#tour-title'), 'Experiment: a weaker refinement');
+  assert.equal(await page.isDisabled('#tour-card .tour-next'), true, 'it waits for the experiment');
+  await page.evaluate(() => { const e = ace.edit('loop-editor'); e.setValue(e.getValue().replace('G.clause(M, X)', 'G.block(M)'), 1); });
+  await page.click('#run-button');
+  await page.waitForSelector('#tour-card .tour-after');
+  assert.match((await page.textContent('#tour-card .tour-after')).replace(/\s+/g, ' '), /Still 61 solutions, but 256 candidates, 195 of them refuted \(with G\.clause: 107 and 46\)/);
+  // the next card starts from the original script again
+  await page.click('#tour-card .tour-next');
+  assert.match(await B.getEditor(page, 'loop-editor'), /reject M with G\.clause\(M, X\)/);
+  // the progress guard, with "Do it for me"
+  while (await page.textContent('#tour-title') !== 'Experiment: why block a solution?') {
+    // a card that waits for its experiment: "Do it for me"
+    if (await page.isDisabled('#tour-card .tour-next')) {
+      await page.click('#tour-card .tour-do-it');
+      await page.waitForSelector('#tour-card .tour-next:not([disabled])', { timeout: 30000 });
+    }
+    await page.click('#tour-card .tour-next');
+  }
+  assert.match(await B.getEditor(page, 'loop-editor'), /^loop:$/m);
+  await page.click('#tour-card .tour-do-it');
+  await page.waitForSelector('#tour-card .tour-after', { timeout: 30000 });
+  assert.match(await page.textContent('#tour-card .tour-after'), /the refinement made no progress: the same candidate came back/);
+  await page.click('#tour-card .tour-close');
+  assert.deepEqual(await marks(), [], 'closing removes the marks');
+  assert.match(await page.evaluate(() => localStorage.getItem('cegarplay.tour.loop')), /closed/);
+  assert.deepEqual(errors.filter((e) => !/the refinement made no progress/.test(e)), []);
+  await context.close();
+});

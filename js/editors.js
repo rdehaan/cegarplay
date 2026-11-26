@@ -1,6 +1,7 @@
 // ACE editors built from the project: one per fragment, plus the loop editor.
 /* global ace */
 import { FRAGMENT_NAME, DEFAULT_FRAGMENTS, INSTANCE_FRAGMENT } from './project.js';
+import { sortable, grip } from './drag-order.js';
 
 // The ACE theme follows the colour theme (js/theme.js); every editor made here switches with it.
 const LIVE = new Set();
@@ -53,6 +54,13 @@ export class Editors {
     this.loop = makeEditor(document.getElementById('loop-editor'), 'ace/mode/loop');
     this.loop.session.on('change', () => { this.clearFor('loop'); this.app.dirty && this.app.dirty(); this.app.loopTab && this.app.loopTab.liveCheck(); this.onEdit && this.onEdit('loop'); });
     this.container = document.getElementById('fragments');
+    // the fragments' order: drag a fragment by its grip (js/drag-order.js)
+    sortable(this.container, {
+      items: () => [...this.container.querySelectorAll(':scope > .fragment')],
+      key: (b) => b.dataset.fragment,
+      onMove: (name, before) => this.moveTo(name, before),
+      disabled: () => this.readOnly,
+    });
     document.getElementById('add-fragment-button').addEventListener('click', () => this.addFragment());
   }
 
@@ -116,11 +124,11 @@ export class Editors {
       ? el('a', { href: '#', class: 'modal-link', 'data-open': `modal-${name}`, title: 'About this fragment', 'aria-label': `About the ${name} fragment`, 'aria-expanded': 'false' }, '?') : '';
     const btn = (label, title, fn) => el('button', { class: 'control-button frag-tool', title, onclick: () => fn(name) }, label);
     const tools = inView ? '' : el('span', { class: 'fragment-tools' },
-      btn('↑', 'Move up', (n) => this.move(n, -1)),
-      btn('↓', 'Move down', (n) => this.move(n, 1)),
       btn('Rename', 'Rename this fragment', (n) => this.rename(n)),
       btn('Delete', 'Delete this fragment', (n) => this.remove(n)));
-    const heading = el('h3', {}, el('span', { class: 'fragment-name' }, name), info, tools);
+    const handle = inView ? '' : grip(`Move fragment ${name}: drag, or Arrow Up and Arrow Down`);
+    if (handle) handle.classList.add('frag-tool');
+    const heading = el('h3', {}, handle, el('span', { class: 'fragment-name' }, name), info, tools);
     const desc = el('p', { class: 'fragment-description' }, f.description || '');
     const box = el('div', { class: 'editor', id: `editor-${name}` });
     const block = el('div', { class: 'fragment', 'data-fragment': name }, heading, desc, box);
@@ -170,15 +178,8 @@ export class Editors {
     if (this.app && this.app.views) this.app.views.setReadOnly(b);
   }
 
-  // ↑ on the first fragment of the Programs tab and ↓ on the last do nothing: disabled
-  syncMoveButtons() {
-    const blocks = [...this.container.querySelectorAll(':scope > .fragment')];
-    blocks.forEach((bl, i) => {
-      const up = bl.querySelector('button[title="Move up"]'), down = bl.querySelector('button[title="Move down"]');
-      if (up) up.disabled = this.readOnly || i === 0;
-      if (down) down.disabled = this.readOnly || i === blocks.length - 1;
-    });
-  }
+  // (the grips are disabled with the other fragment tools while a run is active)
+  syncMoveButtons() {}
 
   // ---- annotations ---------------------------------------------------------
   // problems: [{ where: { kind, name, line, col }, severity, message }]
@@ -301,6 +302,23 @@ export class Editors {
     if (!window.confirm(`Delete fragment ${name}?`)) return;
     this.withProject((p) => { p.fragments = p.fragments.filter((f) => f.name !== name); });
     if (this.app && this.app.variants) this.app.variants.fragmentDeleted(name);
+  }
+
+  // put fragment `name` before fragment `before` (null: after the last fragment of the Programs tab)
+  moveTo(name, before) {
+    if (this.readOnly || name === before) return;
+    this.withProject((p) => {
+      const i = p.fragments.findIndex((f) => f.name === name);
+      if (i < 0) return;
+      const [f] = p.fragments.splice(i, 1);
+      let j = before === null ? -1 : p.fragments.findIndex((x) => x.name === before);
+      if (j < 0) {
+        // after the last fragment shown in the Programs tab (view fragments may follow it)
+        const shown = [...this.container.querySelectorAll(':scope > .fragment')].map((b) => b.dataset.fragment).filter((n) => n !== name);
+        j = shown.length ? p.fragments.findIndex((x) => x.name === shown[shown.length - 1]) + 1 : p.fragments.length;
+      }
+      p.fragments.splice(j, 0, f);
+    });
   }
 
   move(name, d) {

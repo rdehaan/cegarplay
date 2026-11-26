@@ -117,3 +117,33 @@ test('the Observatory\'s short tour: offered the first time the tab opens, then 
   assert.equal(await page.evaluate(() => document.getElementById('tab10').checked), true);
   await context.close();
 });
+
+test('fragments: drag one by its grip to another place; Arrow Down on the grip moves it back', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=3');
+  const order = () => page.$$eval('#fragments > .fragment', (l) => l.map((b) => b.dataset.fragment));
+  const before = await order();
+  assert.deepEqual(before, ['shared', 'abstraction', 'glue', 'check']);
+  assert.equal(await page.$('#fragments button[title="Move up"]'), null, 'no arrow buttons');
+  // drag "check" above "abstraction"
+  const g = await (await page.$('.fragment[data-fragment="check"] .drag-grip')).boundingBox();
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
+  await page.mouse.down();
+  const target = await (await page.$('.fragment[data-fragment="abstraction"]')).boundingBox();
+  await page.mouse.move(g.x + g.width / 2, target.y + 5, { steps: 12 });
+  await page.waitForTimeout(100);
+  const t2 = await (await page.$('.fragment[data-fragment="abstraction"]')).boundingBox();     // (the page may have scrolled)
+  await page.mouse.move(g.x + g.width / 2, t2.y + 5, { steps: 2 });
+  await page.mouse.up();
+  assert.deepEqual(await order(), ['shared', 'check', 'abstraction', 'glue']);
+  assert.deepEqual(await page.evaluate(() => window.cegarplay.project.fragments.filter((f) => f.name !== 'view').map((f) => f.name)), ['shared', 'check', 'abstraction', 'glue']);
+  // the editors keep their texts
+  assert.match(await B.getEditor(page, 'editor-check'), /relevant\(pick\(X\)\)/);
+  await page.focus('.fragment[data-fragment="check"] .drag-grip');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.waitForFunction(() => [...document.querySelectorAll('#fragments > .fragment')].map((b) => b.dataset.fragment).join() === 'shared,abstraction,glue,check');
+  // enabled outside a run (a run disables it with the other fragment tools)
+  assert.equal(await page.$eval('.fragment[data-fragment="check"] .drag-grip', (b) => b.disabled), false);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

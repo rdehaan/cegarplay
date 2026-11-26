@@ -130,6 +130,7 @@ export class Anatomy {
       if (r.steps === 'off' && !r.calls && !r.proof) delete st.record; else st.record = r;
       const lc = document.getElementById('record-calls');
       if (lc) lc.checked = this.callsBox.checked;
+      if (this.app.loopTab && this.app.loopTab.syncRecordBox) this.app.loopTab.syncRecordBox();
       this.app.dirty();
     });
     this.diagram = h('div', { id: 'anatomy-diagram', class: 'anatomy-diagram' });

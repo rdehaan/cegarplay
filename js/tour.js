@@ -161,7 +161,8 @@ function makeSteps(app) {
       text: `<p>That is the basic cycle: <b>write</b> (Programs, Loop, Instances), <b>run</b> or <b>audit</b>, and
         <b>read</b> the results (Output, Statistics).</p>
         <p>The <a href="#" data-open-tab="tab2">Tutorial</a> tab has lessons with an example each, the
-        <a href="guide/" target="cegarplay-guide">Guide</a> is a course on designing CEGAR loops, and
+        <a href="guide/" target="cegarplay-guide">Guide</a> is a course on designing CEGAR loops,
+        <a href="#" data-loop-walkthrough>The loop language, step by step</a> explains every line of a loop script, and
         <a href="#" data-dialog="dialog-settings">Settings</a> switches on more tabs (the Observatory, the Campaign,
         the Refinery). This tour is on Home and in Settings, to take again.</p>`,
       next: 'Finish',
@@ -178,7 +179,7 @@ export const TAB_TOURS = {
     key: 'cegarplay.tour.observatory',
     steps: () => [
       { title: 'The Observatory', text: `<p>The last run (or an opened recording) as pictures. Run something first if the tab is empty;
-        a run recorded with every step (Run options, <b>record steps</b>) shows the most.</p>`, next: 'Show me', skip: true },
+        a run recorded with every step and call (Run options, <b>record steps and calls</b>) shows everything.</p>`, next: 'Show me', skip: true },
       { title: 'One cursor for all', target: tabTarget('cursor-region'), text: `<p>The cursor bar picks a step of the run, and every picture
         below follows it. <kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd> move it a step (<kbd>Shift</kbd>: ten), <kbd>Home</kbd> <kbd>End</kbd> to the ends;
         <b>follow the run</b> keeps it on the last step while a run goes on.</p>` },
@@ -227,7 +228,9 @@ export class Tour {
     this.storage = storage;
     this.key = opts.key || TOUR_KEY;
     this.main = !opts.steps;
+    this.opts = opts;
     this.steps = opts.steps ? opts.steps(app) : makeSteps(app);
+    this.lineMarks = [];
     this.index = -1;
     this.timer = 0;
     this.target = null;
@@ -253,6 +256,7 @@ export class Tour {
 
   async begin() {
     const app = this.app;
+    if (this.opts.begin) { const ok = await this.opts.begin(app); if (ok) this.remember('started'); return ok; }
     if (!this.main) { this.remember('started'); return true; }
     if (app.control.busy) { window.alert('Not possible during a run.'); return false; }
     if (app.edited) app.snapshotBefore('the guided tour');
@@ -267,9 +271,28 @@ export class Tour {
     this.offer();
   }
 
+  // leaving a step: its own clean-up, and the lines it marked in the loop editor
+  leave() {
+    const step = this.steps[this.index];
+    if (step && step.leave) step.leave();
+    const ed = this.app.editors && this.app.editors.loop;
+    for (const id of this.lineMarks) if (ed) ed.session.removeMarker(id);
+    this.lineMarks = [];
+  }
+
+  // mark lines a..b (from 1) of the loop editor, and bring them into view
+  markLines([a, b]) {
+    const ed = this.app.editors && this.app.editors.loop;
+    if (!ed || !window.ace) return;
+    const Range = ace.require('ace/range').Range;
+    this.lineMarks.push(ed.session.addMarker(new Range(a - 1, 0, b - 1, 1), 'tour-line', 'fullLine'));
+    ed.renderer.updateBackMarkers && ed.renderer.updateBackMarkers();
+  }
+
   stop(finished = false, store = true) {
     clearInterval(this.timer);
     this.timer = 0;
+    this.leave();
     this.highlight(null);
     if (this.card) this.card.remove();
     this.card = null;
@@ -280,6 +303,7 @@ export class Tour {
 
   go(index) {
     clearInterval(this.timer);
+    this.leave();
     this.index = index;
     const step = this.steps[index];
     step.completed = false;
@@ -387,5 +411,12 @@ export class Tour {
     next.title = waiting ? 'Do what the card asks first (or "Do it for me")' : '';
     card.classList.toggle('waiting', waiting);
     this.highlight(step.target ? step.target() : null, true);
+    if (step.lines) { this.leaveMarksOnly(); for (const l of (Array.isArray(step.lines[0]) ? step.lines : [step.lines])) this.markLines(l); }
+  }
+
+  leaveMarksOnly() {
+    const ed = this.app.editors && this.app.editors.loop;
+    for (const id of this.lineMarks) if (ed) ed.session.removeMarker(id);
+    this.lineMarks = [];
   }
 }

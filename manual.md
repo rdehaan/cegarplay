@@ -22,9 +22,13 @@ run history, Copy share link, Export for clingo, and Workspace and snapshots and
 open a dialog); the actions (**Run**, **Audit** with its mode; **Abort**, and **Pause** and **Stop** on
 an isolated page, appear only while a run can use them); the Instance and Variant pickers (for a
 project with instances or variants); **Run options**, a pop-up with Solutions, **Seed** with
-**randomized** (the Loop tab's settings) and **record steps**, which records every step of the next
-runs (the Loop tab's Recording set to "every step"; unticked, "off"); the button names the choices
-that differ from the defaults (e.g. "· seed 7, recording"). At the right end: the status, **Guide**, the
+**randomized** (the Loop tab's settings) and **record steps and calls**, which records everything the
+next runs can show: the Loop tab's Recording set to "every step" with **Record calls** (what the trace,
+the replay, the Observatory with its timeline and cost per line, and the Refinery read); unticked, all
+recording is off, the proof log too. A finer choice made in the Loop tab (some steps, steps without
+calls, calls without steps) shows as a dash in the box ("partial recording"); ticking it records
+everything again. The button names the choices that differ from the defaults (e.g. "· seed 7,
+recording"). At the right end: the status, **Guide**, the
 colour theme and **Settings** (⚙). The status lines of the Project menu's actions show as a short
 note at the bottom of the page. It goes by itself after 5 seconds (errors and an offered **Undo**
 too); while the pointer or the keyboard focus is on it, it stays, and the 5 seconds start again when
@@ -124,7 +128,7 @@ two-space indentation.
 | `description` | string | `""` | Shown under the title; one paragraph, also the library's text. |
 | `exercise` | object | absent | A self-checking exercise: `text` (the task), `instances` (ids or `"all"`: their expected count or optimum must match), `audit` (`true` or ids: the audit must be sound), `budgets` (`[{ instance, candidates, refinements }]`: at most this many). **Check exercise** (Instances tab) and `node tools/grade.mjs <files or folder> [--exercise reference.json] [--json]` check every item; an item that could not be checked fails. |
 | `readme` | string (Markdown) | absent | A project kit: background, what the abstraction and the check model, the baseline and the variants, what "better" means, open questions. Shown folded under the description (**Readme**), edited with **Edit**; the library tags such examples `project` and lists them under **Projects**. |
-| `fragments` | list | (required) | Ordered (tab order in the Programs tab). |
+| `fragments` | list | (required) | Ordered (the order of the Programs tab: drag a fragment by the grip **⠿** before its name, or press Arrow Up or Arrow Down on the grip; not during a run). |
 | `fragments[].name` | string | (required) | Matches `[a-z][a-z0-9_]*`; unique. |
 | `fragments[].text` | string | `""` | ASP text. |
 | `fragments[].description` | string | none | Optional; shown above the editor. |
@@ -201,9 +205,10 @@ variant, which a line under the buttons names; Fuzz uses that variant too. Under
 says which run the **Last count** column is of (Run all instances, its time and variant; hover a
 count for its own run), and after an edit that changes what a counted run ran (a fragment it used,
 the loop script, a constant, the instance or the variant) the count is marked **(stale)** and the
-line says that the project changed since. **↑** and **↓** in the table
-move an instance (the top bar, Run all, the Campaign tab and the file follow the order; the instance
-a run uses stays the same). **Run all instances** marks a count other than the expected one
+line says that the project changed since. The grip **⠿** in front of an instance's id reorders the
+table: drag it (a line shows where the instance will go; Escape cancels), or press Arrow Up or Arrow
+Down on it (the top bar, Run all, the Campaign tab and the file follow the order; the instance a run
+uses stays the same). **Run all instances** marks a count other than the expected one
 with ✗ in red. An instance with an expected count is run to all solutions, whatever the project's
 solution limit. The status line says how many instances were checked and why the others were not
 (no expectation, a run that did not finish, a run that stopped before all solutions); it never says
@@ -574,6 +579,19 @@ The compiler runs 500 ms after each edit in the Loop tab and marks errors at onc
 
 The Loop tab's editor explains each word and statement as one writes (tooltips, a hint line,
 autocompletion, errors with what to do): see [Help in the editors](#manual-help-in-the-editors).
+
+**The loop language, step by step** (`js/loop-walkthrough.js`) is an interactive walkthrough in the
+Loop tab, built like the guided tour: sixteen cards on a copy of Sum-free sets (an edited project is
+kept as the snapshot "before the loop walkthrough"). Each card marks the lines it is about in the
+editor and says what they do exactly: declarations and grounding, `solver`, `link` (what the
+target gets for each interface atom), `search` and `on candidate` (when the block runs, what happens
+to an unrejected candidate, when the search ends), `C.solve(assume G(M))`, truth values,
+`G.clause(M, X)` and `reject`. Experiments change the script and run it, and explain the measured
+result: the first run; `G.block(M)` instead of `G.clause(M, X)`; no `reject` at all; Shape 2
+(`loop`, `A.solve()`, `A.add`, `accept`); Shape 2 without `A.add(G.block(M))` (the progress guard);
+`count`. A card that asks for an experiment waits for it; **Do it for me** does it; each experiment
+starts from the script it needs. It starts from the Loop tab (**Step-by-step walkthrough** next to
+the loop script, and its help), the Tutorial's lesson 10, **Settings** and `?tour=loop`.
 
 ### Lexical rules
 
@@ -1328,7 +1346,7 @@ verify, solutions have no counterexample (for a witness check: every solution ha
 nothing else is left). Its `--json` verdict can be
 imported in the Statistics tab ("Import certcheck verdict").
 
-**Recording** (Loop tab, limits block; **record steps** under Run options sets it to every step or off) records the steps of a run as compact `R` events: every
+**Recording** (Loop tab, limits block; **record steps and calls** under Run options sets it to every step with solver calls, or turns all recording off) records the steps of a run as compact `R` events: every
 step, the first N, every N-th, the last N, or a sample of N; **solver calls** adds a `C` event per
 call. The setting is `settings.record` (absent when off). Every run's events are kept:
 **Download recording** (Project, Recordings) saves them as a `.cprec` file (gzip; header line, then the event
@@ -1596,7 +1614,7 @@ spinner, what is being computed, the elapsed time and **Stop** appears under the
 started it (Stop is Cancel for the Refinery's computations and Abort for a run). The Refinery bar's status line
 and Cancel say the same.
 
-**Step inspector.** From a run (a run recorded with every step: Loop tab, Recording, or **record steps** under Run options) with a step
+**Step inspector.** From a run (a run recorded with every step: Loop tab, Recording, or **record steps and calls** under Run options) with a step
 slider, **Previous** and **Next**; the alive set before the step comes from replaying the run's
 earlier clauses over the space. Or free: any bad candidate from a list ordered by true atoms, by
 counterexamples or at random, with every candidate alive. For the candidate M:
@@ -1730,6 +1748,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | `&step=N`, `&view=<name>` | Open the Observatory with the linked cursor on step N and that domain view. |
 | `?lecture=1` | Lecture mode: the domain view alone, its notes as captions, the arrow keys move the cursor. |
 | `?tour=1` | Starts the guided tour (it loads the example Sum-free sets; an edited project is kept as a snapshot first). |
+| `?tour=loop` | Starts the loop language walkthrough (the same example; the same snapshot first). |
 | `?nocoi=1` | Do not use the isolation service worker (and remove it). Pause, Stop and threads are then unavailable. |
 
 The address bar follows the page (without new history entries): loading an example from the library
@@ -1780,7 +1799,7 @@ the page); Undo brings that project
 - `cegarplay.tour`: `{ state, at }` once the guided tour was started, closed or finished; while it is
   absent, a first visit offers the tour.
 - `cegarplay.tour.observatory`, `cegarplay.tour.campaign`, `cegarplay.tour.refinery`: the same for the
-  short tours of those tabs.
+  short tours of those tabs; `cegarplay.tour.loop` for the loop language walkthrough (never offered by itself).
 - **Reset everything** (Settings, last block) removes every `cegarplay*` key above and the
   Campaign tab's rows (IndexedDB `cegarplay`), after a question, and loads the page afresh (no
   query, no hash): a first visit.

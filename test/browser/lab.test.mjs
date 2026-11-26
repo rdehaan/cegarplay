@@ -222,12 +222,25 @@ test('review fixes: omniscient bounds and the run share no slot; a recording of 
 
 test('Record a run and place it, New seed, the busy line with Stop, and the run bar\'s "record steps"', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3&lab=1', { advanced: false });
-  // the run bar's toggle is the Loop tab's "every step" / "off"
+  // the run bar's toggle: every step and every call, or no recording at all
   assert.equal(await page.isChecked('#run-record'), false);
   await B.runOptions(page, () => page.check('#run-record'));
   assert.equal(await page.$eval('#record-select', (s) => s.value), 'all');
+  assert.equal(await page.isChecked('#record-calls'), true);
+  assert.match(await page.textContent('#run-options-summary'), /recording/);
+  // a finer choice in the Loop tab (steps without calls): a dash in the box, "partial recording"
+  await page.click('label[for="tab4"]');
+  await page.uncheck('#record-calls');
+  assert.equal(await page.$eval('#run-record', (b) => [b.checked, b.indeterminate].join()), 'false,true');
+  assert.match(await page.textContent('#run-options-summary'), /partial recording/);
+  // ticked again: everything
+  await B.runOptions(page, () => page.check('#run-record'));
+  assert.equal(await page.isChecked('#record-calls'), true);
+  assert.deepEqual(await page.evaluate(() => window.cegarplay.project.settings.record), { steps: 'all', n: 1000, calls: true });
   await B.runOptions(page, () => page.uncheck('#run-record'));
   assert.equal(await page.$eval('#record-select', (s) => s.value), 'off');
+  assert.equal(await page.isChecked('#record-calls'), false);
+  assert.equal(await page.evaluate(() => window.cegarplay.project.settings.record), undefined);
   await page.click('label[for="tab12"]');
   await page.selectOption('#lab-source', 'latest');
   await page.click('#lab-compute');

@@ -54,8 +54,7 @@ export class LoopTab {
       if (proof && steps !== 'all') { steps = 'all'; $('record-select').value = 'all'; }
       const n = Math.max(0, Math.floor(Number($('record-n').value) || 0));
       $('record-n').hidden = steps === 'off' || steps === 'all';
-      $('run-record').checked = steps !== 'off';
-      runOptionsSummary();
+      syncRecordBox(steps, calls, proof);
       const ac = $('anatomy-calls');
       if (ac) ac.checked = calls;
       if (steps === 'off' && !calls && !proof) delete this.app.project.settings.record;
@@ -63,10 +62,22 @@ export class LoopTab {
       this.app.dirty && this.app.dirty();
     };
     for (const id of ['record-select', 'record-n', 'record-calls', 'record-proof']) $(id).addEventListener('change', rec);
-    // the top bar's "record steps": every step, or off (the Loop tab's Recording has the other choices)
+    // the top bar's "record": everything a run can show (every step and every solver call), or nothing;
+    // the Loop tab's Recording has the finer choices (the first, every or last N steps, calls or not,
+    // a proof log). A finer choice shows as a dash (indeterminate) in the top bar's box.
+    const syncRecordBox = (steps, calls, proof) => {
+      const box = $('run-record');
+      const full = steps === 'all' && calls;
+      box.checked = full;
+      box.indeterminate = !full && (steps !== 'off' || calls || proof);
+      runOptionsSummary();
+    };
+    this.syncRecordBox = () => syncRecordBox($('record-select').value, $('record-calls').checked, $('record-proof').checked);
     $('run-record').addEventListener('change', (e) => {
-      $('record-select').value = e.target.checked ? 'all' : 'off';
-      if (!e.target.checked) $('record-proof').checked = false;
+      const on = e.target.checked;
+      $('record-select').value = on ? 'all' : 'off';
+      $('record-calls').checked = on;
+      if (!on) $('record-proof').checked = false;
       rec();
     });
     this.setRecordSteps = (on) => { if ($('run-record').checked !== on) { $('run-record').checked = on; $('run-record').dispatchEvent(new Event('change')); } };
@@ -121,7 +132,7 @@ export class LoopTab {
     $('record-n').hidden = !r.steps || r.steps === 'off' || r.steps === 'all';
     $('record-calls').checked = !!r.calls;
     $('record-proof').checked = !!r.proof;
-    $('run-record').checked = !!r.steps && r.steps !== 'off';
+    this.syncRecordBox();
     const sel = $('solutions-select');
     const v = String(st.solutions);
     if (![...sel.options].some((o) => o.value === v)) {

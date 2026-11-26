@@ -202,5 +202,6 @@ export function runOptionsSummary() {
   if (seed && seed !== '0') bits.push(`seed ${seed}`);
   if ($('run-randomize').checked) bits.push('randomized');
   if ($('run-record').checked) bits.push('recording');
+  else if ($('run-record').indeterminate) bits.push('partial recording');
   $('run-options-summary').textContent = bits.length ? '· ' + bits.join(', ') : '';
 }

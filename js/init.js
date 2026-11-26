@@ -24,6 +24,7 @@ import { Snapshots, SNAP_INDEX, projectKey } from './snapshots.js';
 import { setupTopbar } from './topbar.js';
 import { bindPageKeys, openShortcuts } from './keys.js';
 import { Tour, TAB_TOURS } from './tour.js';
+import { walkthroughSteps, walkthroughBegin, WALKTHROUGH_KEY } from './loop-walkthrough.js';
 import { attachLoopTips, attachTooltip } from './loop-tips.js';
 import { projectModel, lintProject, aspWordHelp } from './asp-scan.js';
 import { loopCompletions, aspCompletions } from './completions.js';
@@ -322,7 +323,22 @@ app.tour = new Tour(app);
 // the short tours of the advanced tabs: offered the first time the tab is opened (not on a page
 // load that opens it), and from Settings and the tabs' help
 app.tabTours = Object.fromEntries(Object.entries(TAB_TOURS).map(([tab, t]) => [tab, new Tour(app, t)]));
-const anyTour = () => app.tour.running || Object.values(app.tabTours).some((t) => t.running);
+app.loopWalkthrough = new Tour(app, { key: WALKTHROUGH_KEY, steps: walkthroughSteps, begin: walkthroughBegin });
+const anyTour = () => app.tour.running || app.loopWalkthrough.running || Object.values(app.tabTours).some((t) => t.running);
+app.startLoopWalkthrough = () => {
+  app.tour.stop(false, false);
+  for (const x of Object.values(app.tabTours)) x.stop(false, false);
+  for (const d of document.querySelectorAll('dialog[open]')) d.close();
+  app.loopWalkthrough.start();
+};
+// (delegated: the Tutorial's lesson and the tour's last card are built later)
+document.addEventListener('click', (e) => {
+  const a = e.target.closest && e.target.closest('[data-loop-walkthrough]');
+  if (!a) return;
+  e.preventDefault();
+  if (app.tour.running) app.tour.stop(true);
+  app.startLoopWalkthrough();
+});
 const offerTabTour = (tab, force = false) => {
   const t = app.tabTours[tab];
   if (!t || (!force && (t.seen || anyTour() || !app.ready))) return;
@@ -1222,6 +1238,7 @@ async function start() {
   // browser, the tour not seen before)
   const plain = [...params.keys()].every((k) => k === 'nocoi') && !location.hash;
   if (params.get('tour') === '1') app.tour.start();
+  else if (params.get('tour') === 'loop') app.startLoopWalkthrough();
   else if (plain && !restored && !app.tour.seen) app.tour.offer();
 }
 // ?fragment=<name>: open the Programs tab on that fragment's editor; "loop" opens the Loop tab.
