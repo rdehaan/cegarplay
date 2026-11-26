@@ -301,17 +301,17 @@ problem, and why?
 - **Check (C)**: looks for outcomes of all profiles that satisfy every chosen axiom instance but
   differ from the target outcome on profile 1. Such outcomes are the counterexample.
 - **Refinement**: a clause over the interface atoms that are \`relevant/1\` for the counterexample.
-  The default loop is Shape 1 (\`search A\`) with refinement strategy 2.
+  The default loop is Shape 1 (\`search A\`) with the default refinement (fragment \`relevant\`).
 
 ## Fragments
 
 - \`shared\`, \`abstraction\`, \`glue\`, \`check\`: the encoding of \`explain1.lp\`, split into the solvers.
-- \`relevant\` (strategy 2) and \`relevant_falsified\` (strategy 1): two of the five refinement strategies
-  of the original file. Both call every profile atom relevant; of the axiom-instance atoms,
-  strategy 1 adds the instances the outcomes falsify, strategy 2 those they do not falsify. (The
-  file's strategies 3, 4 and 5 add the instances the candidate does not use, those it uses, and
-  all of them; they are left out here.)
-- \`relevant_profile_free\`: strategy 6, added here. It calls relevant the instances the outcomes falsify,
+- \`relevant\` (the default) and \`relevant_falsified\`: two of the five refinements of the
+  original file. Both call every profile atom relevant; of the axiom-instance atoms, the default
+  adds the instances the outcomes do not falsify, \`relevant_falsified\` those they falsify. (The
+  file's other three add the instances the candidate does not use, those it uses, and all of
+  them; they are left out here.)
+- \`relevant_profile_free\`: added here. It calls relevant the instances the outcomes falsify,
   and of the profile atoms only the top choice of voter 1 (which faithfulness and unanimity read).
   The idea: whether an outcome assignment falsifies an instance depends on the outcomes of the
   profile numbers, not on what the profiles are, so the clause need not mention the candidate's
@@ -323,10 +323,10 @@ problem, and why?
 
 | Variant | What changes |
 |---|---|
-| default | Shape 1 (\`search A\`), strategy 2 |
-| falsified | Shape 1 with strategy 1: the falsified instances and every profile atom |
+| default | Shape 1 (\`search A\`), the default refinement |
+| falsified | Shape 1 with \`relevant_falsified\`: the falsified instances and every profile atom |
 | reference | the blocking loop (\`G.block(M)\`) |
-| profile-free | Shape 1 with strategy 6: the falsified instances only |
+| profile-free | Shape 1 with \`relevant_profile_free\`: the falsified instances only |
 | fewest | profile-free with an optimal check (\`#minimize\` the falsified instances) |
 | multi | profile-free with up to 5 counterexamples per candidate (\`C.models(..., limit 5)\`), one clause each |
 | partial | profile-free with checks at partial assignments (\`on partial P every 8\`, open atoms false) |
@@ -391,10 +391,10 @@ smallest justifications, without a fixed k.
    they change the solution set, so compare first-solution times rather than counts.
 5. Explanatoriness: the encoding has no minimality check (exactly k instances). A second check
    (no proper subset suffices) would make larger k meaningful.
-6. Which refinement strategies are sound, and why? Strategies 1 and 2 name every profile atom;
-   strategy 6 names none. The original file has three more (the instances the candidate does not
+6. Which refinements are sound, and why? The default and \`falsified\` name every profile atom;
+   \`profile-free\` names none. The original file has three more (the instances the candidate does not
    use, those it uses, all of them): are they sound, and are they any different from these?
-7. Is strategy 6 the strongest refinement that holds for every candidate? Could a clause leave
+7. Is \`profile-free\` the strongest refinement that holds for every candidate? Could a clause leave
    out instances that the outcomes falsify only because others are falsified?
 8. Exactly k against at most k: how do the counts and the costs change with "at most k
    instances", and with the smallest size (from \`voting-justification-ihs\`) as k?
@@ -560,7 +560,8 @@ applicable depends on the profiles, and A guesses those too.
   but any number of instances, with \`#minimize\` on their number (fragment \`smallest\`).
 - **Check (C)**: the check of \`voting-justification\`: outcomes that satisfy every chosen instance
   and differ from the target outcome on profile 1.
-- **Refinement**: strategy 6 (fragment \`relevant\`): the instances the counterexample falsifies,
+- **Refinement**: the one of the variant \`profile-free\` of \`voting-justification\` (fragment
+  \`relevant\`): the instances the counterexample falsifies,
   and of the profile atoms only voter 1's top choices.
 - The loop solves A optimally; a candidate that survives the check is a smallest justification.
   Then \`A.ground(bound, best)\` keeps A at that size, and the loop lists the others.
@@ -575,7 +576,7 @@ the number of profiles.
 - \`smallest\`: the \`#minimize\` on the number of instances and \`#program bound(b)\` (exactly b).
 - \`sizes\`: \`#program size(k)\`, an assumable atom \`size(k)\` for exactly k instances, and
   \`#program exactly(b)\` (variant \`ascending\`).
-- \`relevant\`: refinement strategy 6.
+- \`relevant\`: the refinement of \`profile-free\` in \`voting-justification\`.
 - \`fewest\`: a \`#minimize\` for the check: the counterexample that falsifies the fewest instances.
 - \`view\`: a domain view for the Observatory tab.
 
@@ -603,8 +604,9 @@ justifications, where it is known.
 
 ## Open questions
 
-1. Is the first justification found a smallest one only because strategy 6's clause holds for
-   every candidate? What happens with strategy 2 of \`voting-justification\` in this loop?
+1. Is the first justification found a smallest one only because the \`profile-free\` clause holds
+   for every candidate? What happens with the default refinement of \`voting-justification\` in
+   this loop?
 2. IHS solvers for MaxSAT find disjoint cores first to raise the lower bound cheaply. What is the
    analogue here: counterexamples with pairwise disjoint falsified sets?
 3. A correction set is minimal when no falsified instance can be satisfied without falsifying

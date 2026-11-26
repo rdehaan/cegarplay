@@ -2393,3 +2393,6 @@ one), and loop variants that might be faster, to learn which loops suit the prob
     `s6` -> `profile-free` (fragment `relevant_profile_free`); "strategy 1/6" stays as the concept
     name in prose. guide/numbers.json keys, guide.mjs, chapter 21, howto-campaign, the tutorial's
     variants lesson (which still described s1-s5, shape2) and the tests follow.
+- Readmes (same day, on request): the refinements are named by their variants (default,
+  `falsified`, `profile-free`) instead of the original file's strategy numbers. The fragment
+  texts and descriptions keep "strategy N" as provenance.
