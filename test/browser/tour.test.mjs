@@ -133,6 +133,7 @@ test('the loop language walkthrough: lines marked, experiments run and explained
   await page.click('#run-button');
   await page.waitForSelector('#tour-card .tour-after');
   assert.match((await page.textContent('#tour-card .tour-after')).replace(/\s+/g, ' '), /Still 61 solutions, but 256 candidates, 195 of them refuted \(with G\.clause: 107 and 46\)/);
+  assert.match((await page.textContent('#tour-card .tour-after')).replace(/\s+/g, ' '), /now says 0 counterexamples\. The check still found 195/);
   // the next card starts from the original script again
   await page.click('#tour-card .tour-next');
   assert.match(await B.getEditor(page, 'loop-editor'), /reject M with G\.clause\(M, X\)/);
@@ -146,6 +147,9 @@ test('the loop language walkthrough: lines marked, experiments run and explained
     await page.click('#tour-card .tour-next');
   }
   assert.match(await B.getEditor(page, 'loop-editor'), /^loop:$/m);
+  // the template Shape 2, word for word, and the Template list says so
+  assert.equal(await B.getEditor(page, 'loop-editor'), await page.evaluate(async () => (await import('./js/project.js')).template('shape2')));
+  assert.equal(await page.$eval('#template-select', (s) => s.value), 'shape2');
   await page.click('#tour-card .tour-do-it');
   await page.waitForSelector('#tour-card .tour-after', { timeout: 30000 });
   assert.match(await page.textContent('#tour-card .tour-after'), /the refinement made no progress: the same candidate came back/);

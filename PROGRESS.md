@@ -2298,3 +2298,7 @@ Deviations and findings:
   visit opens with Sum-free sets, so the status line already named it before the library click and
   the test edited during the second load. It now clears the line first. Slower project builds (the
   editors' help) made the race lose about one run in three.
+- (2026-11-26) Walkthrough: plainer texts on grounding and on a solver's program (no "order" of the
+  rules); the G.block card explains the 0 counterexamples (counted only when a refinement is built
+  from a counterexample: runtime `refuting`); the Shape 2 cards use `template('shape2')` word for word
+  and set the Template list to it (Shape 1 cards: to Shape 1).

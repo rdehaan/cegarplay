@@ -3,6 +3,7 @@
 // editor) and changes it to show, by running it, what each part does. The texts follow what the
 // runtime does (lua/runtime.lua): rt.solver, rt.link, Solver:search, Solver:solve, Link:clause,
 // Model:reject, Solver:add, rt.accept. Only the page uses this module.
+import { template } from './project.js';
 
 export const WALKTHROUGH_KEY = 'cegarplay.tour.loop';
 const EXAMPLE = 'tutorial-first-run';
@@ -17,20 +18,8 @@ search A:
         if X:
             reject M with G.clause(M, X)
 `;
-const SHAPE2 = `solver A = shared + abstraction
-solver C = shared + check
-link   G = A -> C via shared + glue
 
-loop:
-    M = A.solve()
-    if not M: stop
-    X = C.solve(assume G(M))
-    if X:
-        A.add(G.clause(M, X))
-    else:
-        accept M
-        A.add(G.block(M))
-`;
+const SHAPE2 = template('shape2');
 
 const $ = (id) => document.getElementById(id);
 const squeeze = (t) => t.replace(/#.*$/gm, '').replace(/\s+/g, '');
@@ -50,7 +39,9 @@ export function walkthroughSteps(app) {
   const S = () => app.stats.S || {};
   const run = () => { if (!c.busy) c.run(); };
   const result = () => ($('result-line').textContent || '').trim();
-  const base = (t) => () => { openLoop(); setScript(t); mark(); };
+  // the Template list shows the shape the script has
+  const pick = (k) => { const sel = $('template-select'); if (sel && sel.value !== k) sel.value = k; };
+  const base = (t) => () => { openLoop(); setScript(t); pick(t === SHAPE2 ? 'shape2' : 'shape1'); mark(); };
   // the first run's numbers, to compare the experiments with
   const first = { cand: 107, refuted: 46 };
 
@@ -69,18 +60,18 @@ export function walkthroughSteps(app) {
       title: 'Declarations come first',
       target: loopEditor, lines: [1, 3], enter: base(SHAPE1),
       text: `<p>Lines 1 to 3 are the declarations. They come before every statement and are carried out in order;
-        a declaration solves nothing, except that a <tt>link</tt> reads its glue (next cards). After the last one,
-        every solver is <b>grounded</b>: its program becomes a ground program, once (the source of a link already when
-        the link is declared). Then the statements run.</p>
+        a declaration solves nothing, except that a <tt>link</tt> reads its glue (next cards). By the time the
+        statements run, every solver is <b>grounded</b>: clingo has turned its program into a ground program, once, for
+        the whole run. Then the statements run, from line 5 on.</p>
         <p>The rest of the script (from line 5) are statements. Blank lines and comments (<tt>#</tt> to the end of the
         line) do nothing; indentation (spaces) makes the blocks, as in Python.</p>`,
     },
     {
       title: 'solver: a clingo instance',
       target: loopEditor, lines: [1, 2],
-      text: `<p><tt>solver A = shared + abstraction</tt> makes a clingo instance named <tt>A</tt>. Its program is the
-        fragments <tt>shared</tt> and <tt>abstraction</tt> (Programs tab), in this order (and, when the project has
-        instances, the instance's facts in front); the constants of the Loop tab are passed as <tt>-c n=8</tt>.</p>
+      text: `<p><tt>solver A = shared + abstraction</tt> makes a clingo instance named <tt>A</tt>. Its program consists
+        of the rules of the fragments <tt>shared</tt> and <tt>abstraction</tt> (Programs tab), plus the instance's facts
+        when the project has instances; the constants of the Loop tab are passed as <tt>-c n=8</tt>.</p>
         <p>Solvers share nothing: <tt>A</tt> does not see the rules of <tt>check</tt>, and <tt>C</tt> does not see
         those of <tt>abstraction</tt>. The answer sets of <tt>A</tt> are the <b>candidates</b>: here, all 256 subsets of
         1..8. <tt>options "..."</tt> after the fragments would pass clingo options to this solver only.</p>`,
@@ -157,8 +148,11 @@ export function walkthroughSteps(app) {
       after: () => `<p>Still 61 solutions, but ${fmt(S().candidates)} candidates, ${fmt(S().candidates - S().solutions)} of them refuted
         (with <tt>G.clause</tt>: ${fmt(first.cand)} and ${fmt(first.refuted)}): every set that is not sum-free had to be
         proposed and checked on its own. The relevant atoms make the difference: the shorter the clause, the more
-        candidates it removes. (The Counterexamples count of the Statistics tab counts only the counterexamples that a
-        clause was built from: <tt>G.block</tt> reads none.)</p>`,
+        candidates it removes.</p>
+        <p>The line under the top bar now says <b>0 counterexamples</b>. The check still found ${fmt(S().candidates - S().solutions)}, but that
+        number counts a counterexample only when a refinement is built from it (<tt>G.clause(M, X)</tt> reads
+        <tt>X</tt>); <tt>G.block(M)</tt> uses the candidate alone, so they show up as ${fmt(S().candidates - S().solutions)}
+        refinements of the kind <i>blocks</i> instead.</p>`,
     },
     {
       title: 'Experiment: not rejected means accepted',
@@ -172,8 +166,9 @@ export function walkthroughSteps(app) {
     {
       title: 'The same loop without search',
       target: loopEditor, lines: [5, 13], enter: base(SHAPE2),
-      text: `<p>The script now has the second shape (Loop tab, Template). No search here: each candidate is a
-        separate solve.</p>
+      text: `<p>The script is now the template <b>Shape 2</b> (Loop tab, Template: the list shows it), word for word.
+        No search here: each candidate is a separate solve. (The template gives <tt>C</tt> the option
+        <tt>--heuristic=Domain</tt>; it acts only on <tt>#heuristic</tt> statements, and this check has none.)</p>
         <ul><li><tt>loop:</tt> repeats its block until <tt>stop</tt> or <tt>break</tt>.</li>
         <li><tt>M = A.solve()</tt>: one solve call of <tt>A</tt>, without assumptions: a model or <tt>none</tt>.
         When it is <tt>none</tt>, no candidate is left: <tt>stop</tt> ends the run (exhausted).</li>
