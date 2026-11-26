@@ -235,11 +235,11 @@ that only a variant uses are not grounded by the project as it is. `tools/run.mj
 its variants (`default` = the project as it is) and ignores the picker.
 
 `voting-justification` is the worked example: its check solver reads the fragment `relevant`
-(refinement strategy 2), the fragment `relevant_s1` holds strategy 1 of the original file and the
-variant `s1` swaps it in, `reference` replaces the loop, and the suite `strategies` runs every
-variant on the 12 questions of the file and the generator that finish. `relevant_s6` drops the
+(refinement strategy 2), the fragment `relevant_falsified` holds strategy 1 of the original file and
+the variant `falsified` swaps it in, `reference` replaces the loop, and the suite `strategies` runs every
+variant on the 12 questions of the file and the generator that finish. `relevant_profile_free` drops the
 profile atoms (a counterexample's falsified instances do not depend on the profiles), and four
-variants build on it: `s6`, `fewest` (an optimal check), `multi` (five counterexamples per
+variants build on it: `profile-free`, `fewest` (an optimal check), `multi` (five counterexamples per
 candidate) and `partial` (`on partial`). Each variant has a one-line note. The suite `paper` compares them on 17 questions from Nardi,
 Boixel and Endriss (AAMAS 2022). The readme describes the loops and lists open questions; it
 reports no measurements (the suites are for a student to run).

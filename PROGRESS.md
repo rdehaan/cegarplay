@@ -2388,3 +2388,7 @@ one), and loop variants that might be faster, to learn which loops suit the prob
   file's dropped ones). Manual, guide chapter 21 (exercise 1's solution no longer cites record),
   FUTURE-DIRECTIONS, library summary, tests (test/variants.test.mjs,
   test/browser/variants.test.mjs) updated; book and replays rebuilt; guide numbers unchanged.
+- Renamed (same day, on request): variant `s1` -> `falsified` (fragment `relevant_falsified`),
+  `s6` -> `profile-free` (fragment `relevant_profile_free`); "strategy 1/6" stays as the concept
+  name in prose. guide/numbers.json keys, guide.mjs, chapter 21, howto-campaign, the tutorial's
+  variants lesson (which still described s1-s5, shape2) and the tests follow.

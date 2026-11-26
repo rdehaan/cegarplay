@@ -262,7 +262,7 @@ function voteInstances(blocks) {
 
 // voting-justification: the check of explain1.lp ends with five refinement strategies (one
 // active, four commented out). The fragment `relevant` (in the check solver) holds the active one,
-// strategy 2; strategy 1 becomes relevant_s1 (variant s1). Strategies 3, 4 and 5 were dropped on
+// strategy 2; strategy 1 becomes relevant_falsified (variant falsified; it was s1 until Nov 2026). Strategies 3, 4 and 5 were dropped on
 // request (Nov 2026; s5 is close to blocking), as were the variants shape2 and record. The
 // variant reference is the blocking loop.
 const VOTE_STRATEGY = {
@@ -306,12 +306,12 @@ problem, and why?
 ## Fragments
 
 - \`shared\`, \`abstraction\`, \`glue\`, \`check\`: the encoding of \`explain1.lp\`, split into the solvers.
-- \`relevant\` (strategy 2) and \`relevant_s1\` (strategy 1): two of the five refinement strategies
+- \`relevant\` (strategy 2) and \`relevant_falsified\` (strategy 1): two of the five refinement strategies
   of the original file. Both call every profile atom relevant; of the axiom-instance atoms,
   strategy 1 adds the instances the outcomes falsify, strategy 2 those they do not falsify. (The
   file's strategies 3, 4 and 5 add the instances the candidate does not use, those it uses, and
   all of them; they are left out here.)
-- \`relevant_s6\`: strategy 6, added here. It calls relevant the instances the outcomes falsify,
+- \`relevant_profile_free\`: strategy 6, added here. It calls relevant the instances the outcomes falsify,
   and of the profile atoms only the top choice of voter 1 (which faithfulness and unanimity read).
   The idea: whether an outcome assignment falsifies an instance depends on the outcomes of the
   profile numbers, not on what the profiles are, so the clause need not mention the candidate's
@@ -324,12 +324,12 @@ problem, and why?
 | Variant | What changes |
 |---|---|
 | default | Shape 1 (\`search A\`), strategy 2 |
-| s1 | Shape 1 with strategy 1 |
+| falsified | Shape 1 with strategy 1: the falsified instances and every profile atom |
 | reference | the blocking loop (\`G.block(M)\`) |
-| s6 | Shape 1 with strategy 6 |
-| fewest | s6 with an optimal check (\`#minimize\` the falsified instances) |
-| multi | s6 with up to 5 counterexamples per candidate (\`C.models(..., limit 5)\`), one clause each |
-| partial | s6 with checks at partial assignments (\`on partial P every 8\`, open atoms false) |
+| profile-free | Shape 1 with strategy 6: the falsified instances only |
+| fewest | profile-free with an optimal check (\`#minimize\` the falsified instances) |
+| multi | profile-free with up to 5 counterexamples per candidate (\`C.models(..., limit 5)\`), one clause each |
+| partial | profile-free with checks at partial assignments (\`on partial P every 8\`, open atoms false) |
 
 ## Instances
 
@@ -358,9 +358,10 @@ The runs look for all solutions.
 - \`questions\`: every question, the default loop (20 s each).
 - \`strategies\`: the file's and the generated questions with a count (except the slow one) ×
   every variant (30 s each).
-- \`paper\`: the 17 paper questions × default, s1, reference, s6, fewest, multi, partial (60 s
+- \`paper\`: the 17 paper questions × default, falsified, reference, profile-free, fewest, multi,
+  partial (60 s
   each).
-- \`generated\`: 12 generated questions (v = 2, 3; a = 2, 3; three seeds) × default, s1,
+- \`generated\`: 12 generated questions (v = 2, 3; a = 2, 3; three seeds) × default, falsified,
   reference.
 
 Read the instance × variant matrix in the Campaign tab, or run
@@ -432,16 +433,16 @@ search A:
 ${body}`;
 function voteLoops(p) {
   if (!frag(p, 'abstraction').text.includes(VOTE_CHOICE)) throw new Error('make-examples: the choice of axiom instances not found');
-  const at = p.fragments.indexOf(frag(p, 'relevant_s1')) + 1;
+  const at = p.fragments.indexOf(frag(p, 'relevant_falsified')) + 1;
   p.fragments.splice(at, 0,
-    { name: 'relevant_s6', text: VOTE_S6, description: 'Refinement strategy 6 for the check (relevant/1): the falsified instances and voter 1\'s top choices only. Swapped in by the variants s6, fewest, multi and partial.' },
+    { name: 'relevant_profile_free', text: VOTE_S6, description: 'Refinement strategy 6 for the check (relevant/1): the falsified instances and voter 1\'s top choices only. Swapped in by the variants profile-free, fewest, multi and partial.' },
     { name: 'fewest', text: `% The smallest refinement (variant fewest): an outcome assignment that falsifies as few
 % axiom instances as possible, so the clause of strategy 6 is as short as possible.
 #minimize { 1,Profiles,Axiom : falsified(pos_axiom_instance(Profiles,Axiom)) }.
 `, description: 'A #minimize for the check: the counterexample that falsifies the fewest instances (variant fewest, with an optimal solve).' });
-  const s6 = { relevant: 'relevant_s6' };
+  const s6 = { relevant: 'relevant_profile_free' };
   p.variants.push(
-    { name: 's6', swap: s6, constants: {} },
+    { name: 'profile-free', swap: s6, constants: {} },
     { name: 'fewest', swap: s6, constants: {}, loop: vloop(VOTE_SHAPE1('shared + check + relevant + fewest', `        X = C.solve(assume G(M), optimal)
         if X:
             reject M with G.clause(M, X)
@@ -626,7 +627,7 @@ function voteIhs(vote) {
   ab.text = ab.text.replace(VOTE_CHOICE, `% Any number of applicable instances; the fragment smallest (or sizes) says how many.
 { use_axiom_instance(Profiles,Axiom) : axiom_applicable(Profiles,Axiom) }.`);
   ab.description = 'Proposes candidates (solver A): profiles and any set of applicable axiom instances on them.';
-  const rel = f('relevant_s6');
+  const rel = f('relevant_profile_free');
   rel.name = 'relevant';
   rel.description = 'Refinement strategy 6 (relevant/1): the instances the counterexample falsifies, and voter 1\'s top choices.';
   const fewest = f('fewest');
@@ -719,8 +720,8 @@ function voteStrategies(p) {
   const desc = (n) => `Refinement strategy ${n} for the check (relevant/1). ` +
     (n === 2 ? 'Used by the default loop.' : `Swapped in by the variant s${n}.`);
   p.fragments.splice(idx + 1, 0,
-    { name: 'relevant', text: text[2], description: 'The relevant/1 rules of the check: strategy 2 (the variants s1 and s6 swap in another).' },
-    { name: 'relevant_s1', text: text[1], description: desc(1) });
+    { name: 'relevant', text: text[2], description: 'The relevant/1 rules of the check: strategy 2 (the variants falsified and profile-free swap in another).' },
+    { name: 'relevant_falsified', text: text[1], description: 'Refinement strategy 1 for the check (relevant/1): every profile atom and the falsified instances. Swapped in by the variant falsified.' });
   p.loop.text = VOTE_LOOP_HEAD + `
 search A:
     on candidate M:
@@ -729,7 +730,7 @@ search A:
             reject M with G.clause(M, X)
 `;
   p.variants = [
-    { name: 's1', swap: { relevant: 'relevant_s1' }, constants: {} },
+    { name: 'falsified', swap: { relevant: 'relevant_falsified' }, constants: {} },
     { name: 'reference', swap: {}, constants: {}, loop: { language: 'loop', text: VOTE_LOOP_HEAD + `
 search A:
     on candidate M:
@@ -858,9 +859,9 @@ export function buildExamples() {
   vote.settings.constants = { ...vote.instances.find((i) => i.id === VOTE_DEFAULT).constants };
   // one line per variant: its main idea (shown in the Variants block)
   const VOTE_VARIANT_NOTES = {
-    s1: 'Clause from the instances the outcomes falsify (with every profile atom).',
+    falsified: 'Clause from the instances the outcomes falsify (with every profile atom).',
     reference: 'Block each refuted candidate on its own: the ground truth on small questions.',
-    s6: 'Drop the profile atoms: the clause "use one of the falsified instances" holds for every candidate.',
+    'profile-free': 'Drop the profile atoms: the clause "use one of the falsified instances" holds for every candidate.',
     fewest: 'Strategy 6 with the counterexample that falsifies the fewest instances: shorter clauses.',
     multi: 'Strategy 6 with up to five counterexamples, and clauses, per candidate.',
     partial: 'Strategy 6 checked on partial candidates, so one clause can cut a whole subtree.',
@@ -883,11 +884,11 @@ export function buildExamples() {
       variants: ['default', ...vote.variants.map((v) => v.name)], limits: { seconds: 30 } },
     // the paper's questions: the best of the original strategies against the loops of strategy 6
     { name: 'paper', instances: { ids: paper.map((i) => i.id) },
-      variants: ['default', 's1', 'reference', 's6', 'fewest', 'multi', 'partial'], limits: { seconds: 60 } },
+      variants: ['default', 'falsified', 'reference', 'profile-free', 'fewest', 'multi', 'partial'], limits: { seconds: 60 } },
     // generated questions (the generator vote-question) with small bounds
     { name: 'generated', instances: { generator: 'vote-question', grid: { v: [2, 3], a: [2, 3] }, seeds: 3,
       constants: { num_candidates: 3, num_voters: 3, num_profiles: 3, num_axiom_instances: 3 } },
-      variants: ['default', 's1', 'reference'], limits: { seconds: 30 } },
+      variants: ['default', 'falsified', 'reference'], limits: { seconds: 30 } },
   ];
   // Constants-only instances, run with all solutions (the project as written, n = 5 and w = 3,
   // stops at its first candidate, which is a solution at every size). Counts agree with the

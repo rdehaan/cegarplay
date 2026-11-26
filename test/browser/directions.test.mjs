@@ -735,8 +735,8 @@ test('Instances: reorder by dragging and with the keyboard; the instance a run u
   assert.deepEqual(await ids(), before, 'the first stays first');
   // Run all instances and Fuzz: the run bar's variant, named
   assert.match(await page.textContent('#instances-context'), /Both use no variant, as picked in the top bar/);
-  await page.selectOption('#variant-select', 's1');
-  assert.match(await page.textContent('#instances-context'), /use the variant s1, as picked in the top bar/);
+  await page.selectOption('#variant-select', 'falsified');
+  assert.match(await page.textContent('#instances-context'), /use the variant falsified, as picked in the top bar/);
   assert.equal(await page.textContent('#run-all-instances-button'), 'Run all instances');
   assert.deepEqual(errors, []);
   await context.close();

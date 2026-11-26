@@ -35,15 +35,15 @@
           on many instances, and be sure they compute the same thing.</p>
 
         <h2 id="example">The example</h2>
-        <p id="example-link"><code>voting-justification</code> has five refinement strategies, a Shape 2
-          loop, a record-enumeration loop and the blocking reference as <em>variants</em>, and a suite
+        <p id="example-link"><code>voting-justification</code> has three refinement strategies, three loops
+          built on the third, and the blocking reference as <em>variants</em>, and a suite
           <code>strategies</code> that runs them all on fifteen questions.
           <a class="play" href="../?example=voting-justification&amp;fragment=relevant&amp;from=guide/howto-campaign.html%23example-link" target="cegarplay">Open voting-justification</a></p>
 
         <h2 id="steps">Steps</h2>
         <ol>
           <li><b>Write the variants.</b> Loop tab, Variants: <b>+ Add variant</b>. A variant swaps
-            fragments (<code>relevant</code> for <code>relevant_s1</code>), replaces the loop script, or
+            fragments (<code>relevant</code> for <code>relevant_falsified</code>), replaces the loop script, or
             changes constants. Always keep one variant whose loop is the Reference run (template
             "Reference run"): it is the ground truth.</li>
           <li><b>Write a suite.</b> The Campaign tab is shown when ticked (Settings, Tabs, Advanced); the
@@ -70,7 +70,7 @@
             of them is unsound; <a href="howto-unsound.html">hunt it</a> before reading any times.</li>
           <li>Candidates explain time: a variant that needs fewer candidates but more time has a costly
             check or a costly refinement. <a href="howto-time.html">Find where the time goes.</a></li>
-          <li>On the voting suite, strategy <code>s1</code> needs far fewer candidates on the four
+          <li>On the voting suite, strategy <code>falsified</code> needs far fewer candidates on the four
             questions that separate the strategies, and the default strategy is no better than
             blocking: a real finding, and the start of the project kit's first open question.</li>
         </ul>

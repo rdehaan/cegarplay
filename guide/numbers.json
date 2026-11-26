@@ -1920,7 +1920,7 @@
     "restarts": 0,
     "rulesA": 18048
   },
-  "voting-justification[faith-cancel-reinf-pareto-k3](s1)": {
+  "voting-justification[faith-cancel-reinf-pareto-k3](falsified)": {
     "solutions": 1,
     "candidates": 405,
     "counterexamples": 404,
@@ -1971,7 +1971,7 @@
     "restarts": 0,
     "rulesA": 13196
   },
-  "voting-justification[faith-pareto-neutral-reinf-k4](s1)": {
+  "voting-justification[faith-pareto-neutral-reinf-k4](falsified)": {
     "solutions": 1,
     "candidates": 44,
     "counterexamples": 43,
@@ -2005,7 +2005,7 @@
     "restarts": 0,
     "rulesA": 25940
   },
-  "voting-justification[random-1](s1)": {
+  "voting-justification[random-1](falsified)": {
     "solutions": 6,
     "candidates": 405,
     "counterexamples": 399,
@@ -2022,7 +2022,7 @@
     "restarts": 0,
     "rulesA": 25940
   },
-  "voting-justification[faith-cancel-reinf-pareto-k3](s6)": {
+  "voting-justification[faith-cancel-reinf-pareto-k3](profile-free)": {
     "solutions": 1,
     "candidates": 139,
     "counterexamples": 138,

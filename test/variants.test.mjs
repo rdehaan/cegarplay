@@ -15,8 +15,8 @@ const vote = () => P.load(H.read('examples/voting-justification.json'));
 
 test('settings.variant survives load and save; it is dropped when the project has no variants', () => {
   const p = vote();
-  p.settings.variant = 's6';
-  assert.equal(JSON.parse(P.save(P.load(P.save(p)))).settings.variant, 's6');
+  p.settings.variant = 'profile-free';
+  assert.equal(JSON.parse(P.save(P.load(P.save(p)))).settings.variant, 'profile-free');
   const q = H.example('tutorial-first-run');
   q.settings.variant = 'x';
   assert.equal('variant' in JSON.parse(P.save(q)).settings, false);
@@ -25,31 +25,31 @@ test('settings.variant survives load and save; it is dropped when the project ha
 
 test('the run bar picks (settings.instance, settings.variant) do not change campaign cell keys', async () => {
   const p = vote();
-  const cell = { inst: p.instances[0], variant: 's1', seed: 0 };
+  const cell = { inst: p.instances[0], variant: 'falsified', seed: 0 };
   const suite = { name: 's', limits: { seconds: 30 } };
   const k1 = await cellKey(p, cell, suite, 'e');
   p.settings.instance = p.instances[3].id;
   p.settings.variant = 'multi';
   assert.equal(await cellKey(p, cell, suite, 'e'), k1);
-  assert.notEqual(await cellKey(p, { ...cell, variant: 's6' }, suite, 'e'), k1);
+  assert.notEqual(await cellKey(p, { ...cell, variant: 'profile-free' }, suite, 'e'), k1);
 });
 
 test('the voting example: a relevant fragment per strategy, a variant per other strategy and per loop, a suite over them', () => {
   const p = vote();
-  assert.deepEqual(p.fragments.map((f) => f.name).filter((n) => n.startsWith('relevant')), ['relevant', 'relevant_s1', 'relevant_s6']);
+  assert.deepEqual(p.fragments.map((f) => f.name).filter((n) => n.startsWith('relevant')), ['relevant', 'relevant_falsified', 'relevant_profile_free']);
   assert.match(p.loop.text, /solver C = shared \+ check \+ relevant/);
   assert.ok(!/^relevant\(/m.test(p.fragments.find((f) => f.name === 'check').text), 'the check holds no relevant/1 rules');
-  assert.deepEqual(p.variants.map((v) => v.name), ['s1', 'reference', 's6', 'fewest', 'multi', 'partial']);
+  assert.deepEqual(p.variants.map((v) => v.name), ['falsified', 'reference', 'profile-free', 'fewest', 'multi', 'partial']);
   assert.ok(p.variants.every((v) => typeof v.note === 'string' && v.note.length > 0), 'every variant has a note');
   assert.match(p.variants.find((v) => v.name === 'reference').loop.text, /reject M with G\.block\(M\)/);
-  const d = P.derive(p, { variant: 's1' });
+  const d = P.derive(p, { variant: 'falsified' });
   assert.match(d.fragments.find((f) => f.name === 'relevant').text, /strategy 1/);
   const s = p.suites.find((x) => x.name === 'strategies');
   assert.deepEqual(s.variants, ['default', ...p.variants.map((v) => v.name)]);
   assert.ok(s.instances.ids.every((id) => p.instances.find((x) => x.id === id).expected), 'only instances that finish');
   const paper = p.suites.find((x) => x.name === 'paper');
   assert.ok(paper.instances.ids.length >= 15 && paper.instances.ids.every((id) => id.startsWith('paper-')));
-  assert.ok(paper.variants.includes('s6') && paper.variants.includes('partial'));
+  assert.ok(paper.variants.includes('profile-free') && paper.variants.includes('partial'));
 });
 
 test('the voting example: the paper\'s questions have counts, and the k = 8 question is gone', () => {
@@ -75,7 +75,7 @@ test('the voting kit: a readme, a generator with seven recipe questions, a gener
   assert.deepEqual(p.views.map((v) => v.name), ['view']);
 });
 
-for (const [variant, solutions] of [['s1', 2], ['reference', 2], ['s6', 2], ['fewest', 2], ['multi', 2], ['partial', 2]]) {
+for (const [variant, solutions] of [['falsified', 2], ['reference', 2], ['profile-free', 2], ['fewest', 2], ['multi', 2], ['partial', 2]]) {
   test(`voting variant ${variant} on cancel-posresp-k2 gives ${solutions} solutions`, async () => {
     const p = vote();
     p.settings = { ...p.settings, solutions: 0, trace: 0, seconds: 0 };
@@ -88,7 +88,7 @@ for (const [variant, solutions] of [['s1', 2], ['reference', 2], ['s6', 2], ['fe
 test('tools/run.mjs uses the stored variant pick unless --variant is given', () => {
   const run = (args) => spawnSync('node', [H.path('tools/run.mjs').pathname, ...args], { encoding: 'utf8' });
   const p = JSON.parse(H.read('examples/voting-justification.json'));
-  p.settings.variant = 's1';
+  p.settings.variant = 'falsified';
   const file = nodePath.join(fs.mkdtempSync(nodePath.join(os.tmpdir(), 'cegarplay-')), 'vote-picked.json');
   fs.writeFileSync(file, JSON.stringify(p));
   const inst = 'faith-pareto-neutral-reinf-k4';
@@ -119,9 +119,9 @@ const tmp = (name, text) => {
 test('Export for clingo applies the picked variant', () => {
   const p = vote();
   const modules = { ground: '', audit: '', draw: '', generate: '', replay: '' };
-  // every fragment is exported; with s1 picked, `relevant` holds strategy 1 as well as relevant_s1
+  // every fragment is exported; with falsified picked, `relevant` holds strategy 1 as well as relevant_falsified
   const count = () => P.exportStandalone(p, H.RUNTIME, modules).split('Refinement strategy 1').length - 1;
-  p.settings.variant = 's1';
+  p.settings.variant = 'falsified';
   assert.equal(count(), 2);
   delete p.settings.variant;
   assert.equal(count(), 1);
@@ -131,16 +131,16 @@ test('cegarcheck.py --variant and certcheck.py on a proof log of a variant run',
   const inst = 'faith-pareto-neutral-reinf-k4';
   const py = (tool, ...a) => spawnSync('python3', [H.path(`tools/${tool}`).pathname, ...a], { encoding: 'utf8' });
   const file = H.path('examples/voting-justification.json').pathname;
-  const s1 = py('cegarcheck.py', file, '--instance', inst, '--variant', 's1', '--solutions', 'all').stdout;
+  const s1 = py('cegarcheck.py', file, '--instance', inst, '--variant', 'falsified', '--solutions', 'all').stdout;
   const s2 = py('cegarcheck.py', file, '--instance', inst, '--solutions', 'all').stdout;
   const cands = (s) => Number((/candidates: (\d+)/.exec(s) || [])[1]);
   assert.match(s1, /Solutions: 1;/);
   assert.ok(cands(s1) < cands(s2), `${cands(s1)} vs ${cands(s2)}`);
   const log = tmp('proof.jsonl', '');
-  const r = spawnSync('node', [H.path('tools/run.mjs').pathname, 'voting-justification', '--variant', 's1', '--instance', 'pareto-neutral-reinf-k5',
+  const r = spawnSync('node', [H.path('tools/run.mjs').pathname, 'voting-justification', '--variant', 'falsified', '--instance', 'pareto-neutral-reinf-k5',
     '--solutions', 'all', '--proof', log, '--quiet'], { encoding: 'utf8' });
   assert.match(r.stdout, /Solutions: 1;/);
-  assert.equal(JSON.parse(fs.readFileSync(log, 'utf8').split('\n')[0]).variant, 's1');
+  assert.equal(JSON.parse(fs.readFileSync(log, 'utf8').split('\n')[0]).variant, 'falsified');
   const v = JSON.parse(py('certcheck.py', file, log, '--json').stdout);
   assert.equal(v.verdict, 'certified', JSON.stringify(v));
 });

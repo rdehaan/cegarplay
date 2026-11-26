@@ -275,13 +275,13 @@ export const QUOTED = [
   { id: 'abduction' },
   // chapter 21: the voting case study
   { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3' },
-  { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3', variant: 's1' },
+  { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3', variant: 'falsified' },
   { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3', variant: 'reference' },
   { id: 'voting-justification', instance: 'faith-pareto-neutral-reinf-k4' },
-  { id: 'voting-justification', instance: 'faith-pareto-neutral-reinf-k4', variant: 's1' },
+  { id: 'voting-justification', instance: 'faith-pareto-neutral-reinf-k4', variant: 'falsified' },
   { id: 'voting-justification', instance: 'random-1' },
-  { id: 'voting-justification', instance: 'random-1', variant: 's1' },
-  { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3', variant: 's6' },
+  { id: 'voting-justification', instance: 'random-1', variant: 'falsified' },
+  { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3', variant: 'profile-free' },
   { id: 'voting-justification', instance: 'faith-cancel-reinf-pareto-k3', variant: 'multi' },
 ]; 
 

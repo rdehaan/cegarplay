@@ -12,17 +12,17 @@ const options = (page) => page.$$eval('#variant-select option', (l) => l.map((o)
 test('the voting example: the picker lists its variants, and a run with one says so in the run history', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=voting-justification&tab=4');
   assert.equal(await page.isVisible('#variant-select'), true);
-  assert.deepEqual(await options(page), ['', 's1', 'reference', 's6', 'fewest', 'multi', 'partial']);
+  assert.deepEqual(await options(page), ['', 'falsified', 'reference', 'profile-free', 'fewest', 'multi', 'partial']);
   assert.equal(await page.$$eval('#variants .variant-card', (l) => l.length), 6);
   await page.selectOption('#instance-select', 'cancel-posresp-k2');
-  await page.selectOption('#variant-select', 's1');
+  await page.selectOption('#variant-select', 'falsified');
   await B.runOptions(page, () => page.selectOption('#solutions-select', '0'));
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
   assert.match(await page.textContent('#live-line'), /2 solutions/);
   await page.click('label[for="tab6"]');
-  assert.match(await page.textContent('#history-table'), /\[cancel-posresp-k2\] \(variant s1\)/);
-  assert.equal(await page.evaluate(() => window.cegarplay.project.settings.variant), 's1');
+  assert.match(await page.textContent('#history-table'), /\[cancel-posresp-k2\] \(variant falsified\)/);
+  assert.equal(await page.evaluate(() => window.cegarplay.project.settings.variant), 'falsified');
   // a project without variants has no picker
   assert.equal(await page.evaluate(async () => { await window.cegarplay.loadExample('tutorial-first-run'); return document.getElementById('variant-select').hidden; }), true);
   assert.deepEqual(errors, []);

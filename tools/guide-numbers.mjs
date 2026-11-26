@@ -8,7 +8,7 @@
 // guide page is never typed by hand: it is a data-stat span whose text must be format(value).
 // Keys of numbers.json: the example id, or ID@name=value[,name=value] for a run with other
 // constants (the variants of a guide entry, and the existing examples in QUOTED); a QUOTED run of
-// one instance or variant adds [instance] and (variant): voting-justification[faith-k1](s1).
+// one instance or variant adds [instance] and (variant): voting-justification[faith-k1](falsified).
 import fs from 'node:fs';
 import { runProject } from './run.mjs';
 import { QUOTED } from './guide.mjs';

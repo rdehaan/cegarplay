@@ -3303,7 +3303,7 @@ relevant(use_axiom_instance(Profiles,Axiom)) :-
 From the fragment `relevant` of `voting-justification`.
 :::
 
-Another strategy is a variant that swaps in another fragment (`s1`, `s6`); `reference` blocks instead. The project's suite `strategies` runs every variant on the fifteen questions with a known answer. [Playground: voting-justification]{.play}
+Another strategy is a variant that swaps in another fragment (`falsified`, `profile-free`); `reference` blocks instead. The project's suite `strategies` runs every variant on the fifteen questions with a known answer. [Playground: voting-justification]{.play}
 
 ### Reading the matrix {#c21-campaign}
 
@@ -3317,7 +3317,7 @@ The Campaign tab (or `tools/bench.mjs` with `tools/report.mjs`) gives one row pe
 
 Two findings. First, strategy 1 is the only one that beats blocking clearly (also on `faith-pareto-neutral-reinf-k4`: 44 candidates against 146). Second, the default strategy is barely better than blocking, and the clause lengths say why: 219 literals against 248. Every strategy marks every profile atom relevant, so every clause is nearly a block. A strategy that marked only the profiles the counterexample's falsified instances touch would be shorter; whether it is sound is the kind of question chapter 4 teaches you to test.
 
-The project answers it with strategy 6 (variant `s6`). A counterexample is an outcome for every profile *number*, and whether it falsifies an axiom instance depends on those outcomes alone (faithfulness and unanimity also read voter 1's top choice). So the profile atoms can go: the clause says “use one of the instances this outcome falsifies”, and it holds for every candidate, whatever its profiles (the symbolic audit proves it sound). On `faith-cancel-reinf-pareto-k3` it needs 139 candidates. Because such a clause holds everywhere, every extra counterexample is a free lemma: the variant `multi` takes up to five per candidate and needs 63. Further variants check partial candidates or use an optimal check; the suite `paper` runs them on the questions of Nardi, Boixel and Endriss. The example `voting-justification-ihs` asks the same questions for the smallest justifications, by implicit hitting sets.
+The project answers it with strategy 6 (variant `profile-free`). A counterexample is an outcome for every profile *number*, and whether it falsifies an axiom instance depends on those outcomes alone (faithfulness and unanimity also read voter 1's top choice). So the profile atoms can go: the clause says “use one of the instances this outcome falsifies”, and it holds for every candidate, whatever its profiles (the symbolic audit proves it sound). On `faith-cancel-reinf-pareto-k3` it needs 139 candidates. Because such a clause holds everywhere, every extra counterexample is a free lemma: the variant `multi` takes up to five per candidate and needs 63. Further variants check partial candidates or use an optimal check; the suite `paper` runs them on the questions of Nardi, Boixel and Endriss. The example `voting-justification-ihs` asks the same questions for the smallest justifications, by implicit hitting sets.
 
 ### Soundness and ground truth {#c21-soundness}
 
@@ -3800,7 +3800,7 @@ The results are kept in this browser: a second start runs nothing; change a frag
 
 ### Comparing encodings: variants {#t08-tut-variants}
 
-The voting example has five refinement strategies for its check: which axiom instances a counterexample marks as relevant. The fragment `relevant` holds strategy 2; `relevant_s1` … `relevant_s5` hold the others. Each is a **variant**, listed under **Variants** at the foot of the Loop tab: `s3` swaps `relevant_s3` in for `relevant`; `shape2` and `reference` have a loop script of their own. The **Variant** picker in the top bar runs one of them; the suite `strategies` runs all seven on the questions that finish, so the Campaign tab compares them side by side (strategy 1 needs the fewest candidates). To try a strategy of your own: add a fragment, then a variant that swaps it in.
+The voting example has three refinement strategies for its check: which axiom instances a counterexample marks as relevant. The fragment `relevant` holds the default; `relevant_falsified` and `relevant_profile_free` hold the others. Each is a **variant**, listed under **Variants** at the foot of the Loop tab: `falsified` swaps `relevant_falsified` in for `relevant`; `fewest`, `multi`, `partial` and `reference` have a loop script of their own. The **Variant** picker in the top bar runs one of them; the suite `strategies` runs all six on the questions that finish, so the Campaign tab compares them side by side. To try a strategy of your own: add a fragment, then a variant that swaps it in.
 
 [Playground: voting-justification]{.play}
 
