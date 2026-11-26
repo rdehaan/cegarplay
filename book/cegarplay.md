@@ -3285,7 +3285,7 @@ Why does a voting rule give a profile a certain outcome? A *justification* answe
 
 - The abstraction guesses the profiles and the axiom instances.
 - The check guesses outcomes for all profiles that satisfy every chosen instance but differ from the target outcome.
-- The refinement is a clause over the interface atoms that `relevant/1` marks; the original encoding comes with five strategies for it.
+- The refinement is a clause over the interface atoms that `relevant/1` marks; the original encoding comes with five strategies for it; the project keeps two of them (strategies 1 and 2) and adds a sixth.
 
 ### Baseline and variants {#c21-baseline}
 
@@ -3303,7 +3303,7 @@ relevant(use_axiom_instance(Profiles,Axiom)) :-
 From the fragment `relevant` of `voting-justification`.
 :::
 
-Each strategy is a variant that swaps in another fragment (`s1`, `s3`, `s4`, `s5`); `shape2` and `record` change the loop, and `reference` blocks. The project's suite `strategies` runs them all on the fifteen questions with a known answer. [Playground: voting-justification]{.play}
+Another strategy is a variant that swaps in another fragment (`s1`, `s6`); `reference` blocks instead. The project's suite `strategies` runs every variant on the fifteen questions with a known answer. [Playground: voting-justification]{.play}
 
 ### Reading the matrix {#c21-campaign}
 
@@ -3317,7 +3317,7 @@ The Campaign tab (or `tools/bench.mjs` with `tools/report.mjs`) gives one row pe
 
 Two findings. First, strategy 1 is the only one that beats blocking clearly (also on `faith-pareto-neutral-reinf-k4`: 44 candidates against 146). Second, the default strategy is barely better than blocking, and the clause lengths say why: 219 literals against 248. Every strategy marks every profile atom relevant, so every clause is nearly a block. A strategy that marked only the profiles the counterexample's falsified instances touch would be shorter; whether it is sound is the kind of question chapter 4 teaches you to test.
 
-The project answers it with strategy 6 (variant `s6`). A counterexample is an outcome for every profile *number*, and whether it falsifies an axiom instance depends on those outcomes alone (faithfulness and unanimity also read voter 1's top choice). So the profile atoms can go: the clause says “use one of the instances this outcome falsifies”, and it holds for every candidate, whatever its profiles (the symbolic audit proves it sound). On `faith-cancel-reinf-pareto-k3` it needs 139 candidates. Because such a clause holds everywhere, every extra counterexample is a free lemma: the variant `multi` takes up to five per candidate and needs 63. Further variants check partial candidates, use an optimal check, deepen over the number of profiles or search in two levels; the suite `paper` runs them on the questions of Nardi, Boixel and Endriss. The example `voting-justification-ihs` asks the same questions for the smallest justifications, by implicit hitting sets.
+The project answers it with strategy 6 (variant `s6`). A counterexample is an outcome for every profile *number*, and whether it falsifies an axiom instance depends on those outcomes alone (faithfulness and unanimity also read voter 1's top choice). So the profile atoms can go: the clause says “use one of the instances this outcome falsifies”, and it holds for every candidate, whatever its profiles (the symbolic audit proves it sound). On `faith-cancel-reinf-pareto-k3` it needs 139 candidates. Because such a clause holds everywhere, every extra counterexample is a free lemma: the variant `multi` takes up to five per candidate and needs 63. Further variants check partial candidates or use an optimal check; the suite `paper` runs them on the questions of Nardi, Boixel and Endriss. The example `voting-justification-ihs` asks the same questions for the smallest justifications, by implicit hitting sets.
 
 ### Soundness and ground truth {#c21-soundness}
 
@@ -3333,7 +3333,7 @@ The project's readme (Home, under the description) lists them: which strategy wi
 ::: exercise
 ### Exercise 1 {#c21-exercise-1}
 
-The suite `generated` runs twelve random questions with four variants. Read its matrix by candidates. Does the ranking of the strategies on the fixed questions hold on random ones?
+The suite `generated` runs twelve random questions with three variants. Read its matrix by candidates. Does the ranking of the strategies on the fixed questions hold on random ones?
 
 [Solution](#c21-exercise-1-solution)
 :::
@@ -3351,7 +3351,7 @@ The suite `generated` runs twelve random questions with four variants. Read its 
 ::: {.answer #c21-exercise-1-solution}
 [Back to Exercise 1](#c21-exercise-1)
 
-On the machine where this guide was measured, strategy 1 needed 9.8 s in total, the reference 36.9 s, record 43.0 s and the default 49.6 s: the same ranking, with the default strategy now behind blocking. Times vary between machines; compare candidates first. [Playground: voting-justification]{.play}
+On the machine where this guide was measured, strategy 1 needed 9.8 s in total, the reference 36.9 s and the default 49.6 s: the same ranking, with the default strategy now behind blocking. Times vary between machines; compare candidates first. [Playground: voting-justification]{.play}
 :::
 
 ## From a paper to a loop {#c22}

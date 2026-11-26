@@ -367,7 +367,7 @@ const TEMPLATE_TITLE = { shape1: 'Shape 1', shape2: 'Shape 2', shape3: 'Shape 3'
 export const PROBLEMS = [
   { id: 'graph-coloring', group: 'graphs', summary: 'Graphs with a leaf colouring that no 3-colouring extends (n = 6, all 10,698 solutions).', shape: 'shape1', tags: [], expected: 10698 },
   { id: 'nash', group: 'games', summary: 'Weighted graphs whose colouring game has a Nash equilibrium (four size instances).', shape: 'shape1', tags: [], expected: null },
-  { id: 'voting-justification', group: 'voting', summary: 'Explaining a voting outcome by axioms: 30 questions as instances (17 from Nardi, Boixel and Endriss, 7 generated), six refinement strategies and seven loops as variants, suites that compare them.', shape: 'shape1', tags: [], expected: null },
+  { id: 'voting-justification', group: 'voting', summary: 'Explaining a voting outcome by axioms: 30 questions as instances (17 from Nardi, Boixel and Endriss, 7 generated), three refinement strategies and the loops built on them as variants, suites that compare them.', shape: 'shape1', tags: [], expected: null },
   { id: 'voting-justification-ihs', group: 'voting', summary: 'The smallest justifications of a voting outcome by implicit hitting sets: the same 30 questions without a fixed number of axiom instances; variants with minimum correction sets, several counterexamples, ascending sizes.', shape: 'custom', tags: ['ihs'], expected: null },
 ];
 

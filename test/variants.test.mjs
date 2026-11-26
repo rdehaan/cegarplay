@@ -15,8 +15,8 @@ const vote = () => P.load(H.read('examples/voting-justification.json'));
 
 test('settings.variant survives load and save; it is dropped when the project has no variants', () => {
   const p = vote();
-  p.settings.variant = 's3';
-  assert.equal(JSON.parse(P.save(P.load(P.save(p)))).settings.variant, 's3');
+  p.settings.variant = 's6';
+  assert.equal(JSON.parse(P.save(P.load(P.save(p)))).settings.variant, 's6');
   const q = H.example('tutorial-first-run');
   q.settings.variant = 'x';
   assert.equal('variant' in JSON.parse(P.save(q)).settings, false);
@@ -29,26 +29,27 @@ test('the run bar picks (settings.instance, settings.variant) do not change camp
   const suite = { name: 's', limits: { seconds: 30 } };
   const k1 = await cellKey(p, cell, suite, 'e');
   p.settings.instance = p.instances[3].id;
-  p.settings.variant = 's4';
+  p.settings.variant = 'multi';
   assert.equal(await cellKey(p, cell, suite, 'e'), k1);
-  assert.notEqual(await cellKey(p, { ...cell, variant: 's3' }, suite, 'e'), k1);
+  assert.notEqual(await cellKey(p, { ...cell, variant: 's6' }, suite, 'e'), k1);
 });
 
 test('the voting example: a relevant fragment per strategy, a variant per other strategy and per loop, a suite over them', () => {
   const p = vote();
-  assert.deepEqual(p.fragments.map((f) => f.name).filter((n) => n.startsWith('relevant')), ['relevant', 'relevant_s1', 'relevant_s3', 'relevant_s4', 'relevant_s5', 'relevant_s6']);
+  assert.deepEqual(p.fragments.map((f) => f.name).filter((n) => n.startsWith('relevant')), ['relevant', 'relevant_s1', 'relevant_s6']);
   assert.match(p.loop.text, /solver C = shared \+ check \+ relevant/);
   assert.ok(!/^relevant\(/m.test(p.fragments.find((f) => f.name === 'check').text), 'the check holds no relevant/1 rules');
-  assert.deepEqual(p.variants.map((v) => v.name), ['s1', 's3', 's4', 's5', 'shape2', 'record', 'reference', 's6', 'fewest', 'multi', 'partial', 'deepen', 'profiles-first']);
-  assert.match(p.variants.find((v) => v.name === 'record').loop.text, /solver A = shared \+ abstraction +options "--enum-mode=record"/);
-  const d = P.derive(p, { variant: 's3' });
-  assert.match(d.fragments.find((f) => f.name === 'relevant').text, /strategy 3/);
+  assert.deepEqual(p.variants.map((v) => v.name), ['s1', 'reference', 's6', 'fewest', 'multi', 'partial']);
+  assert.ok(p.variants.every((v) => typeof v.note === 'string' && v.note.length > 0), 'every variant has a note');
+  assert.match(p.variants.find((v) => v.name === 'reference').loop.text, /reject M with G\.block\(M\)/);
+  const d = P.derive(p, { variant: 's1' });
+  assert.match(d.fragments.find((f) => f.name === 'relevant').text, /strategy 1/);
   const s = p.suites.find((x) => x.name === 'strategies');
   assert.deepEqual(s.variants, ['default', ...p.variants.map((v) => v.name)]);
   assert.ok(s.instances.ids.every((id) => p.instances.find((x) => x.id === id).expected), 'only instances that finish');
   const paper = p.suites.find((x) => x.name === 'paper');
   assert.ok(paper.instances.ids.length >= 15 && paper.instances.ids.every((id) => id.startsWith('paper-')));
-  assert.ok(paper.variants.includes('s6') && paper.variants.includes('profiles-first'));
+  assert.ok(paper.variants.includes('s6') && paper.variants.includes('partial'));
 });
 
 test('the voting example: the paper\'s questions have counts, and the k = 8 question is gone', () => {
@@ -74,7 +75,7 @@ test('the voting kit: a readme, a generator with seven recipe questions, a gener
   assert.deepEqual(p.views.map((v) => v.name), ['view']);
 });
 
-for (const [variant, solutions] of [['s1', 2], ['s5', 2], ['record', 2], ['reference', 2], ['s6', 2], ['fewest', 2], ['multi', 2], ['partial', 2], ['deepen', 2], ['profiles-first', 2]]) {
+for (const [variant, solutions] of [['s1', 2], ['reference', 2], ['s6', 2], ['fewest', 2], ['multi', 2], ['partial', 2]]) {
   test(`voting variant ${variant} on cancel-posresp-k2 gives ${solutions} solutions`, async () => {
     const p = vote();
     p.settings = { ...p.settings, solutions: 0, trace: 0, seconds: 0 };
@@ -118,9 +119,9 @@ const tmp = (name, text) => {
 test('Export for clingo applies the picked variant', () => {
   const p = vote();
   const modules = { ground: '', audit: '', draw: '', generate: '', replay: '' };
-  // every fragment is exported; with s3 picked, `relevant` holds strategy 3 as well as relevant_s3
-  const count = () => P.exportStandalone(p, H.RUNTIME, modules).split('Refinement strategy 3').length - 1;
-  p.settings.variant = 's3';
+  // every fragment is exported; with s1 picked, `relevant` holds strategy 1 as well as relevant_s1
+  const count = () => P.exportStandalone(p, H.RUNTIME, modules).split('Refinement strategy 1').length - 1;
+  p.settings.variant = 's1';
   assert.equal(count(), 2);
   delete p.settings.variant;
   assert.equal(count(), 1);

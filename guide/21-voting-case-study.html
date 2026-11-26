@@ -47,7 +47,8 @@
           <li>The check guesses outcomes for all profiles that satisfy every chosen instance but differ
             from the target outcome.</li>
           <li>The refinement is a clause over the interface atoms that <code>relevant/1</code> marks; the
-            original encoding comes with five strategies for it.</li>
+            original encoding comes with five strategies for it; the project keeps two of them
+            (strategies 1 and 2) and adds a sixth.</li>
         </ul>
 
         <h2 id="baseline">Baseline and variants</h2>
@@ -59,10 +60,9 @@ relevant(use_axiom_instance(Profiles,Axiom)) :-
     not falsified(pos_axiom_instance(Profiles,Axiom)),
     pos_axiom_instance(Profiles,Axiom).</pre>
         <p class="listing-source">From the fragment <code>relevant</code> of <code>voting-justification</code>.</p>
-        <p id="baseline-run">Each strategy is a variant that swaps in another fragment (<code>s1</code>, <code>s3</code>,
-          <code>s4</code>, <code>s5</code>); <code>shape2</code> and <code>record</code> change the loop,
-          and <code>reference</code> blocks. The project's suite <code>strategies</code> runs them all on
-          the fifteen questions with a known answer.
+        <p id="baseline-run">Another strategy is a variant that swaps in another fragment (<code>s1</code>,
+          <code>s6</code>); <code>reference</code> blocks instead. The project's suite
+          <code>strategies</code> runs every variant on the fifteen questions with a known answer.
           <a class="play" href="../?example=voting-justification&amp;fragment=relevant&amp;from=guide/21-voting-case-study.html%23baseline-run" target="cegarplay">Open voting-justification</a></p>
 
         <h2 id="campaign">Reading the matrix</h2>
@@ -103,8 +103,7 @@ relevant(use_axiom_instance(Profiles,Axiom)) :-
           candidates. Because such a clause holds everywhere, every extra counterexample is a free lemma:
           the variant <code>multi</code> takes up to five per candidate and needs
           <span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](multi):candidates">63</span>.
-          Further variants check partial candidates, use an optimal check, deepen over the number of
-          profiles or search in two levels; the suite <code>paper</code> runs them on the questions of
+          Further variants check partial candidates or use an optimal check; the suite <code>paper</code> runs them on the questions of
           Nardi, Boixel and Endriss. The example <code>voting-justification-ihs</code> asks the same
           questions for the smallest justifications, by implicit hitting sets.</p>
 
@@ -132,12 +131,12 @@ relevant(use_axiom_instance(Profiles,Axiom)) :-
 
         <section class="exercise" id="exercise-1">
           <h2>Exercise 1</h2>
-          <p><span class="web-only">Run the suite <code>generated</code> (twelve random questions, four variants) and read the matrix by candidates.</span><span class="book-only">The suite <code>generated</code> runs twelve random questions with four variants. Read its matrix by candidates.</span> Does the ranking of the strategies on the fixed questions hold on random
+          <p><span class="web-only">Run the suite <code>generated</code> (twelve random questions, three variants) and read the matrix by candidates.</span><span class="book-only">The suite <code>generated</code> runs twelve random questions with three variants. Read its matrix by candidates.</span> Does the ranking of the strategies on the fixed questions hold on random
             ones?</p>
           <details class="solution" id="exercise-1-solution">
             <summary>Solution</summary>
             <p>On the machine where this guide was measured, strategy 1 needed 9.8 s in total, the
-              reference 36.9 s, record 43.0 s and the default 49.6 s: the same ranking, with the default
+              reference 36.9 s and the default 49.6 s: the same ranking, with the default
               strategy now behind blocking. Times vary between machines; compare candidates first.
               <a class="play" href="../?example=voting-justification&amp;fragment=loop&amp;from=guide/21-voting-case-study.html%23exercise-1-solution" target="cegarplay">Open voting-justification</a></p>
           </details>

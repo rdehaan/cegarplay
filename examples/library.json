@@ -2515,7 +2515,7 @@
       "id": "voting-justification",
       "title": "Voting: justifications",
       "group": "voting",
-      "summary": "Explaining a voting outcome by axioms: 30 questions as instances (17 from Nardi, Boixel and Endriss, 7 generated), six refinement strategies and seven loops as variants, suites that compare them.",
+      "summary": "Explaining a voting outcome by axioms: 30 questions as instances (17 from Nardi, Boixel and Endriss, 7 generated), three refinement strategies and the loops built on them as variants, suites that compare them.",
       "shape": "shape1",
       "tags": [
         "project"

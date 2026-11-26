@@ -261,9 +261,10 @@ function voteInstances(blocks) {
 }
 
 // voting-justification: the check of explain1.lp ends with five refinement strategies (one
-// active, four commented out). Each becomes a fragment relevant_sN; the fragment `relevant`
-// (in the check solver) holds the active one, strategy 2, and a variant per other strategy swaps
-// its text in. Two more variants change the loop: Shape 2, and the Reference run.
+// active, four commented out). The fragment `relevant` (in the check solver) holds the active one,
+// strategy 2; strategy 1 becomes relevant_s1 (variant s1). Strategies 3, 4 and 5 were dropped on
+// request (Nov 2026; s5 is close to blocking), as were the variants shape2 and record. The
+// variant reference is the blocking loop.
 const VOTE_STRATEGY = {
   1: 'the axiom instances the outcomes falsify',
   2: 'the axiom instances the outcomes do not falsify',
@@ -305,18 +306,17 @@ problem, and why?
 ## Fragments
 
 - \`shared\`, \`abstraction\`, \`glue\`, \`check\`: the encoding of \`explain1.lp\`, split into the solvers.
-- \`relevant\` (strategy 2) and \`relevant_s1\`, \`relevant_s3\`, \`relevant_s4\`, \`relevant_s5\`: the five
-  refinement strategies of the original file. All five call every profile atom relevant; they
-  differ in which axiom-instance atoms they add: 1 the instances the outcomes falsify, 2 those
-  they do not falsify, 3 those the candidate does not use, 4 those the candidate uses, 5 all.
+- \`relevant\` (strategy 2) and \`relevant_s1\` (strategy 1): two of the five refinement strategies
+  of the original file. Both call every profile atom relevant; of the axiom-instance atoms,
+  strategy 1 adds the instances the outcomes falsify, strategy 2 those they do not falsify. (The
+  file's strategies 3, 4 and 5 add the instances the candidate does not use, those it uses, and
+  all of them; they are left out here.)
 - \`relevant_s6\`: strategy 6, added here. It calls relevant the instances the outcomes falsify,
   and of the profile atoms only the top choice of voter 1 (which faithfulness and unanimity read).
   The idea: whether an outcome assignment falsifies an instance depends on the outcomes of the
   profile numbers, not on what the profiles are, so the clause need not mention the candidate's
   profiles. It reads as "use one of the instances this counterexample falsifies".
 - \`fewest\`: a \`#minimize\` for the check, the counterexample that falsifies the fewest instances.
-- \`level\`: for \`deepen\`, member i of the solver family uses exactly i profiles.
-- \`abstraction_profiles\`, \`glue_profiles\`, \`profiles_given\`: for \`profiles-first\`.
 - \`view\`: a domain view for the Observatory tab.
 
 ## Variants
@@ -324,16 +324,12 @@ problem, and why?
 | Variant | What changes |
 |---|---|
 | default | Shape 1 (\`search A\`), strategy 2 |
-| s1, s3, s4, s5 | another of the original strategies |
-| record | Shape 1 with \`--enum-mode=record\` on A: blocked candidates stay as nogoods |
-| shape2 | a Shape 2 loop (solve A again after each refinement) |
+| s1 | Shape 1 with strategy 1 |
 | reference | the blocking loop (\`G.block(M)\`) |
 | s6 | Shape 1 with strategy 6 |
 | fewest | s6 with an optimal check (\`#minimize\` the falsified instances) |
 | multi | s6 with up to 5 counterexamples per candidate (\`C.models(..., limit 5)\`), one clause each |
 | partial | s6 with checks at partial assignments (\`on partial P every 8\`, open atoms false) |
-| deepen | the paper's breadth-first idea: a solver family \`A[i]\` that uses exactly i profiles, i = 1, 2, ...; the counterexamples of lower levels refine the higher ones before they start |
-| profiles-first | two levels (the "two-step procedure" of the original file): P guesses profiles and uses *every* applicable instance; if a counterexample survives that, P is refined; else an inner search of A picks exactly k instances on these profiles |
 
 ## Instances
 
@@ -362,9 +358,9 @@ The runs look for all solutions.
 - \`questions\`: every question, the default loop (20 s each).
 - \`strategies\`: the file's and the generated questions with a count (except the slow one) ×
   every variant (30 s each).
-- \`paper\`: the 17 paper questions × default, s1, reference, s6, fewest, multi, partial, deepen,
-  profiles-first (60 s each).
-- \`generated\`: 12 generated questions (v = 2, 3; a = 2, 3; three seeds) × default, s1, record,
+- \`paper\`: the 17 paper questions × default, s1, reference, s6, fewest, multi, partial (60 s
+  each).
+- \`generated\`: 12 generated questions (v = 2, 3; a = 2, 3; three seeds) × default, s1,
   reference.
 
 Read the instance × variant matrix in the Campaign tab, or run
@@ -383,17 +379,20 @@ smallest justifications, without a fixed k.
 
 ## Open questions
 
-1. Combine loops: multi with partial checks, or multi with deepen for the first solution.
+1. Combine loops: multi with partial checks.
 2. Can a refinement be *lifted* over permutations of the profile numbers (a counterexample
    permuted is a counterexample), so that one counterexample rules out many candidates?
 3. Would an encoding that builds profiles from instances (a neutrality instance determines its
-   second profile) instead of guessing them first help?
+   second profile) instead of guessing them first help? Or a search in two levels, profiles first
+   (the "two-step procedure" the original file mentions), or fewest profiles first (the paper's
+   breadth-first generation)?
 4. The paper's derived axioms and implied instances (Section 3) as variants of the abstraction:
    they change the solution set, so compare first-solution times rather than counts.
 5. Explanatoriness: the encoding has no minimality check (exactly k instances). A second check
    (no proper subset suffices) would make larger k meaningful.
-6. Which of the original strategies are sound? Strategies 3 and 4 depend on what the candidate
-   uses: does the audit (or the symbolic audit) find a question where one of them is unsound?
+6. Which refinement strategies are sound, and why? Strategies 1 and 2 name every profile atom;
+   strategy 6 names none. The original file has three more (the instances the candidate does not
+   use, those it uses, all of them): are they sound, and are they any different from these?
 7. Is strategy 6 the strongest refinement that holds for every candidate? Could a clause leave
    out instances that the outcomes falsify only because others are falsified?
 8. Exactly k against at most k: how do the counts and the costs change with "at most k
@@ -431,78 +430,15 @@ link   G = A -> C via shared + glue
 search A:
     on candidate M:
 ${body}`;
-// deepening, as the paper's breadth-first generation: member i of the family A looks only for
-// justifications with exactly i profiles; the counterexamples of the lower levels refine the
-// higher ones before they start
-const VOTE_DEEPEN = `solver A[i in 1..num_profiles] = shared + abstraction + level
-solver C = shared + check + relevant   options "--heuristic=Domain"
-link   G[i in 1..num_profiles] = A[i] -> C via shared + glue
-
-found = []
-i = 1
-while i <= A.size:
-    for X in found:
-        A[i].add(G[i].clause(X))
-    search A[i]:
-        on candidate M:
-            X = C.solve(assume G[i](M))
-            if X:
-                found.push(X)
-                reject M with G[i].clause(M, X)
-    i = i + 1
-`;
-// two levels: P guesses the profiles and uses every applicable instance (a relaxation); if even
-// those leave a counterexample, no subset of them can work. Otherwise an inner search of A over
-// these profiles picks exactly k instances. Clauses learnt in A hold for every profile tuple.
-const VOTE_TWO_LEVEL = `solver P = shared + abstraction_profiles
-solver A = shared + abstraction + profiles_given
-solver C = shared + check + relevant   options "--heuristic=Domain"
-link   GP = P -> C via shared + glue
-link   GA = P -> A via shared + glue_profiles
-link   G = A -> C via shared + glue
-
-search P:
-    on candidate N:
-        X = C.solve(assume GP(N))
-        if X:
-            reject N with GP.clause(N, X)
-        else:
-            search A assume GA(N):
-                on candidate M:
-                    Y = C.solve(assume G(M))
-                    if Y:
-                        reject M with G.clause(M, Y)
-            reject N with GA.block(N)
-`;
 function voteLoops(p) {
-  const ab = frag(p, 'abstraction');
-  if (!ab.text.includes(VOTE_CHOICE)) throw new Error('make-examples: the choice of axiom instances not found');
-  const at = p.fragments.indexOf(frag(p, 'relevant_s5')) + 1;
+  if (!frag(p, 'abstraction').text.includes(VOTE_CHOICE)) throw new Error('make-examples: the choice of axiom instances not found');
+  const at = p.fragments.indexOf(frag(p, 'relevant_s1')) + 1;
   p.fragments.splice(at, 0,
-    { name: 'relevant_s6', text: VOTE_S6, description: 'Refinement strategy 6 for the check (relevant/1): the falsified instances and voter 1\'s top choices only. Swapped in by the variants s6, fewest, multi, partial, deepen and profiles-first.' },
+    { name: 'relevant_s6', text: VOTE_S6, description: 'Refinement strategy 6 for the check (relevant/1): the falsified instances and voter 1\'s top choices only. Swapped in by the variants s6, fewest, multi and partial.' },
     { name: 'fewest', text: `% The smallest refinement (variant fewest): an outcome assignment that falsifies as few
 % axiom instances as possible, so the clause of strategy 6 is as short as possible.
 #minimize { 1,Profiles,Axiom : falsified(pos_axiom_instance(Profiles,Axiom)) }.
-`, description: 'A #minimize for the check: the counterexample that falsifies the fewest instances (variant fewest, with an optimal solve).' },
-    { name: 'level', text: `% Deepening (variant deepen): member i of the solver family A looks only for justifications
-% that use exactly i profiles (the constant level is i).
-:- profile_used(P), P > level.
-:- not profile_used(level).
-:- active_voter(P,V), P > level.
-`, description: 'For the variant deepen: member i of the family A uses exactly i profiles.' },
-    { name: 'abstraction_profiles', text: ab.text.replace(VOTE_CHOICE, `% Profiles first (variant profiles-first): every applicable instance counts as used. This is
-% a relaxation of the abstraction (no exact number): if a counterexample satisfies all of
-% them, it satisfies every subset, and no justification uses these profiles.
-use_axiom_instance(Profiles,Axiom) :- axiom_applicable(Profiles,Axiom).`),
-    description: 'For the variant profiles-first: the abstraction with every applicable axiom instance used (it guesses the profiles only).' },
-    { name: 'glue_profiles', text: `% The profiles, passed from P to A (variant profiles-first).
-glue(profile(Prof,V,Cand,Pos)) :-
-    profile_num(Prof), voter(V), candidate(Cand), position(Pos).
-`, description: 'For the variant profiles-first: the interface from P to A, the profiles only.' },
-    { name: 'profiles_given', text: `% The profiles come from P over a link, which makes them free choices in A: a profile atom
-% needs its voter (else A could show profiles nobody votes in).
-:- profile(Prof,V,C,Pos), not active_voter(Prof,V).
-`, description: 'For the variant profiles-first: profile atoms that A receives over a link need an active voter.' });
+`, description: 'A #minimize for the check: the counterexample that falsifies the fewest instances (variant fewest, with an optimal solve).' });
   const s6 = { relevant: 'relevant_s6' };
   p.variants.push(
     { name: 's6', swap: s6, constants: {} },
@@ -521,9 +457,7 @@ glue(profile(Prof,V,Cand,Pos)) :-
     on partial P every 8:
         X = C.solve(assume G(P, false))
         if X: reject P with G.clause(X)
-`)) },
-    { name: 'deepen', swap: s6, constants: {}, loop: vloop(VOTE_DEEPEN) },
-    { name: 'profiles-first', swap: s6, constants: {}, loop: vloop(VOTE_TWO_LEVEL) });
+`)) });
 }
 
 // voting-justification-ihs: the same questions as implicit hitting sets. With strategy 6 a
@@ -785,8 +719,8 @@ function voteStrategies(p) {
   const desc = (n) => `Refinement strategy ${n} for the check (relevant/1). ` +
     (n === 2 ? 'Used by the default loop.' : `Swapped in by the variant s${n}.`);
   p.fragments.splice(idx + 1, 0,
-    { name: 'relevant', text: text[2], description: 'The relevant/1 rules of the check: strategy 2 (the variants s1, s3, s4, s5 swap in another).' },
-    ...[1, 3, 4, 5].map((n) => ({ name: `relevant_s${n}`, text: text[n], description: desc(n) })));
+    { name: 'relevant', text: text[2], description: 'The relevant/1 rules of the check: strategy 2 (the variants s1 and s6 swap in another).' },
+    { name: 'relevant_s1', text: text[1], description: desc(1) });
   p.loop.text = VOTE_LOOP_HEAD + `
 search A:
     on candidate M:
@@ -795,27 +729,7 @@ search A:
             reject M with G.clause(M, X)
 `;
   p.variants = [
-    ...[1, 3, 4, 5].map((n) => ({ name: `s${n}`, swap: { relevant: `relevant_s${n}` }, constants: {} })),
-    { name: 'shape2', swap: {}, constants: {}, loop: { language: 'loop', text: VOTE_LOOP_HEAD + `
-loop:
-    M = A.solve()
-    if not M: stop
-    X = C.solve(assume G(M))
-    if X:
-        A.add(G.clause(M, X))
-    else:
-        accept M
-        A.add(G.block(M))
-` } },
-    // Shape 1 with clasp's record enumeration: blocked candidates are kept as nogoods, so the
-    // abstraction prunes more (manual, "Shape 1")
-    { name: 'record', swap: {}, constants: {}, loop: { language: 'loop', text: VOTE_LOOP_HEAD.replace('solver A = shared + abstraction', 'solver A = shared + abstraction   options "--enum-mode=record"') + `
-search A:
-    on candidate M:
-        X = C.solve(assume G(M))
-        if X:
-            reject M with G.clause(M, X)
-` } },
+    { name: 's1', swap: { relevant: 'relevant_s1' }, constants: {} },
     { name: 'reference', swap: {}, constants: {}, loop: { language: 'loop', text: VOTE_LOOP_HEAD + `
 search A:
     on candidate M:
@@ -945,18 +859,11 @@ export function buildExamples() {
   // one line per variant: its main idea (shown in the Variants block)
   const VOTE_VARIANT_NOTES = {
     s1: 'Clause from the instances the outcomes falsify (with every profile atom).',
-    s3: 'Clause from the instances the candidate does not use (with every profile atom).',
-    s4: 'Clause from the instances the candidate uses (with every profile atom).',
-    s5: 'Clause from every possible instance (with every profile atom): close to blocking the candidate.',
-    shape2: 'Solve A from scratch after each refinement instead of one ongoing search.',
-    record: 'Keep blocked candidates as nogoods in A (clasp\'s record enumeration).',
     reference: 'Block each refuted candidate on its own: the ground truth on small questions.',
     s6: 'Drop the profile atoms: the clause "use one of the falsified instances" holds for every candidate.',
     fewest: 'Strategy 6 with the counterexample that falsifies the fewest instances: shorter clauses.',
     multi: 'Strategy 6 with up to five counterexamples, and clauses, per candidate.',
     partial: 'Strategy 6 checked on partial candidates, so one clause can cut a whole subtree.',
-    deepen: 'One abstraction per number of profiles, fewest profiles first (the paper\'s breadth-first order).',
-    'profiles-first': 'Guess profiles first, test them with every applicable instance, then pick exactly k instances.',
   };
   for (const v of vote.variants) {
     if (!VOTE_VARIANT_NOTES[v.name]) throw new Error(`make-examples: no note for the voting variant ${v.name}`);
@@ -976,11 +883,11 @@ export function buildExamples() {
       variants: ['default', ...vote.variants.map((v) => v.name)], limits: { seconds: 30 } },
     // the paper's questions: the best of the original strategies against the loops of strategy 6
     { name: 'paper', instances: { ids: paper.map((i) => i.id) },
-      variants: ['default', 's1', 'reference', 's6', 'fewest', 'multi', 'partial', 'deepen', 'profiles-first'], limits: { seconds: 60 } },
+      variants: ['default', 's1', 'reference', 's6', 'fewest', 'multi', 'partial'], limits: { seconds: 60 } },
     // generated questions (the generator vote-question) with small bounds
     { name: 'generated', instances: { generator: 'vote-question', grid: { v: [2, 3], a: [2, 3] }, seeds: 3,
       constants: { num_candidates: 3, num_voters: 3, num_profiles: 3, num_axiom_instances: 3 } },
-      variants: ['default', 's1', 'record', 'reference'], limits: { seconds: 30 } },
+      variants: ['default', 's1', 'reference'], limits: { seconds: 30 } },
   ];
   // Constants-only instances, run with all solutions (the project as written, n = 5 and w = 3,
   // stops at its first candidate, which is a solution at every size). Counts agree with the

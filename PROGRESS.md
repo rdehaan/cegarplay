@@ -2375,3 +2375,16 @@ one), and loop variants that might be faster, to learn which loops suit the prob
   Replays and stored view frames rebuilt.
 - Manual (voting table, Justifications paragraph, weight 0), guide chapter 21 (no claim that the
   readme compares loops), book regenerated.
+
+## Voting justification: fewer variants (2026-11-26, on request)
+
+- Dropped from `voting-justification`: the variants s3, s4, s5 (and their fragments
+  `relevant_s3` … `relevant_s5`), shape2, record (a clasp enumeration option, not a loop idea),
+  deepen and profiles-first (and the fragments `level`, `abstraction_profiles`, `glue_profiles`,
+  `profiles_given`). Kept: default (s2), s1, reference, s6, fewest, multi, partial; the IHS example
+  keeps all its variants (ascending included). Suites `paper` and `generated` follow.
+- Readme: the fragments and variants lists; open question 1 (multi with partial), 3 (now also
+  two-level and fewest-profiles-first search), 6 (soundness of the strategies, mentioning the
+  file's dropped ones). Manual, guide chapter 21 (exercise 1's solution no longer cites record),
+  FUTURE-DIRECTIONS, library summary, tests (test/variants.test.mjs,
+  test/browser/variants.test.mjs) updated; book and replays rebuilt; guide numbers unchanged.

@@ -134,8 +134,9 @@ as D9 or F1 in code comments refer to that version (`git show 652e5bb:FUTURE-DIR
   dropped (no loop finished it); `cancel-reinf-posresp-k4` takes 15 s with strategy 6.
 - Open: a loop that builds profiles from instances (the abstraction is now the bottleneck);
   lifting a counterexample over permutations of the profile numbers; the paper's derived axioms;
-  a minimality (explanatoriness) check as a second check; `multi` combined with `partial` or
-  `deepen` for the first justification. See the example's readme.
+  a minimality (explanatoriness) check as a second check; `multi` combined with `partial`. The
+  variants s3-s5, shape2, record, deepen and profiles-first were dropped (Nov 2026); the IHS
+  formulation is the example `voting-justification-ihs`. See the readmes.
 
 ## The booklet
 
