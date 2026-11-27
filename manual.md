@@ -1281,7 +1281,11 @@ solution falsifies every literal of the group.
    (`guide-10-core-misused`): compare with the reference run for that.
 
 The audited link is the one that leaves the top solver; with several, the one the script refines
-(or name it with `--link`). A check solver that passes models on (a chain) is refused. Above
+(or name it with `--link`). A check solver that passes models on (a chain) is refused, and so is a
+link refined by lifted clauses (the keyword `lift` with `G.clause`, or `G.lift(M, X)`): those clauses
+are computed from the ground programs and certified one by one, while the audit builds its clauses
+from `relevant/1` (a lift link's `G.clauses` is still audited; the symbolic audit declines lift
+links as well). Above
 200,000 candidates the audit stops with outcome `limit`. Its run history row shows the verdict in
 the column **Audit**, and runs with the same fragments and constants show it too.
 
@@ -2157,8 +2161,7 @@ What differs from a QBF, and where the instances show it:
 Measured (`tools/run.mjs`, all solutions): on `nine-links` the generic `relevant/1` needs 34
 candidates in 0.04 s, `lift` 36 in 1.2 s, `reference` 384. In `aspq-minmax-clique` on
 `three-per-block` (729 picks) the fewest-rows check needs 38 candidates, the first clique 67, `lift`
-50 (4.5 s) and `reference` 729. The audit checks the `relevant/1` atoms of a check, not the clauses
-of a `lift` link: a check without `relevant/1` audits as unsound.
+50 (4.5 s) and `reference` 729. The audit declines the `lift` variants (see [Audit](#manual-audit)).
 
 `python3 tools/make-aspq.py` writes the three project files from one source (`--check` compares
 them; `--qasp DIR` also writes every instance as a qasp file). `python3 tools/aspq-check.py

@@ -6,6 +6,7 @@ import { read, path, SLOW } from './helpers.mjs';
 import { auditProject, loadTarget } from '../tools/audit.mjs';
 import { auditPlan } from '../js/driver.js';
 import { compile } from '../js/compiler.js';
+import { applyVariant } from '../js/project.js';
 
 const withConst = (id, consts = {}) => {
   const p = loadTarget(id);
@@ -89,6 +90,26 @@ test('auditPlan: picks the link, refuses chains and scripts with nothing to audi
   assert.match(plan('guide-10-core-block').error, /nothing to audit/);   // blocks need no audit
   // an expand from the abstraction's own model (a bound) is not a refinement to audit
   assert.equal(plan('knapsack-optimum').expand.length, 1);
+});
+
+test('auditPlan: declines lifted clauses (the keyword lift with G.clause, or G.lift), which relevant/1 does not describe', async () => {
+  const plan = (p) => auditPlan(compile(p.loop.text, { fragments: p.fragments.map((f) => f.name) }));
+  for (const [id, how] of [['aspq', 'the keyword lift'], ['bsml-entailment', 'the keyword lift'], ['fair-division', 'G.lift']]) {
+    const e = plan(applyVariant(loadTarget(id), 'lift')).error;
+    assert.match(e || '', /lifted clauses/, id);
+    assert.ok(e.includes(how), `${id}: ${e}`);
+  }
+  // the same loops without lift are audited as before
+  assert.deepEqual(plan(loadTarget('aspq')), { link: 'G', clause: true, expand: [] });
+  // aspq's variant lift has no relevant/1: audited from relevant/1, every pair looked unsound
+  const r = await auditProject(applyVariant(loadTarget('aspq'), 'lift'), { seconds: 10 });
+  assert.equal(r.verdict, null);
+  assert.match(r.problems.map((x) => x.message).join(' '), /lifted clauses/);
+  // lift changes G.clause only: a lift link refined by G.clauses (clause/3) is still audited
+  const p = loadTarget('af-preferred');
+  p.loop.text = p.loop.text.replace(/^(link\s+G\s*=.*)$/m, '$1 lift');
+  assert.match(p.loop.text, /lift\n/);
+  assert.deepEqual(plan(p), { link: 'G', clause: false, clauses: true, expand: [] });
 });
 
 test('tools/audit.mjs exit codes', () => {

@@ -2578,3 +2578,21 @@ file); `tools/aspq-check.py` checks them by brute force. Manual: *ASP(Q) example
 - Not done: disjunctive heads (the meta-encoding needs normal programs; saturation would be needed),
   bounds on choices and aggregates in the generic format, C with rules other than constraints,
   ASP(Q) with weak constraints (robust-facilities covers the outer case), and a domain view.
+
+## The audit declines lifted clauses (2026-11-27, on request)
+
+- `auditPlan` (js/driver.js; the page's Audit, `tools/audit.mjs`, `run.mjs`) refuses a link refined
+  by lifted clauses: the keyword `lift` with `G.clause`, or `G.lift(M, X)`. The audit builds each
+  pair's clause from `relevant/1`, which a lift link does not use, so it judged clauses the loop
+  never adds: `aspq --variant lift` (no `relevant/1`) audited as unsound on every pair although
+  every count is right. Now: "link G is refined by lifted clauses (...): they are computed from the
+  ground programs and certified one by one, not read from relevant/1, so the audit does not check
+  them" (exit 2, as for chains). `G.clauses` on a lift link is still audited (lift changes
+  `G.clause` only); the symbolic audit already declined lift links. The Refinery is unchanged (it
+  reads only `expand` and `core` from the plan, and has its own lift scheme).
+- Affected: only the `lift` variants (aspq, aspq-minmax-clique, bsml-entailment, fair-division); no
+  library default uses lift. Test: `audit.test.mjs`, "auditPlan: declines lifted clauses".
+- The ASP(Q) entry's deviation stands: `aspq`'s default stays the generic `relevant/1` (faster;
+  with lift as default the audit would now decline it instead of passing it).
+- Tests: full suite 1,512 tests, 1,413 pass, 0 fail, 99 skipped (75 bench, 23 slow, 1 native clingo
+  with Lua), 17 min.

@@ -150,7 +150,7 @@ export function auditPlan(compiled, linkName) {
       .map((p) => ({ part: p.part, facts: p.facts.map(({ name, pred, arity }) => ({ name, pred, arity })) }));
     const seen = new Set();
     const parts = expand.filter((p) => { const k = JSON.stringify(p); if (seen.has(k)) return false; seen.add(k); return true; });
-    return { link: L.name, clause: uses.includes('clause'), clauses: uses.includes('clauses'), core: uses.includes('core'), expand: parts, L };
+    return { link: L.name, clause: uses.includes('clause'), clauses: uses.includes('clauses'), core: uses.includes('core'), lift: uses.includes('lift'), expand: parts, L };
   };
   let plans = cands.map(what);
   if (plans.length > 1) {
@@ -161,6 +161,12 @@ export function auditPlan(compiled, linkName) {
   const plan = plans[0];
   if (compiled.links.some((x) => x.from === plan.L.to)) {
     return { error: `solver ${plan.L.to} passes models on to another solver (a chain); the audit covers a top solver and a check` };
+  }
+  // lifted clauses (the keyword lift with G.clause, or G.lift) are computed from the ground
+  // programs and certified one by one; the audit builds clauses from relevant/1, so it would
+  // judge clauses the loop never adds (with no relevant/1: every pair unsound). It declines.
+  if ((plan.L.lift && plan.clause) || plan.lift) {
+    return { error: `link ${plan.link} is refined by lifted clauses (${plan.lift ? `${plan.link}.lift` : 'the keyword lift'}): they are computed from the ground programs and certified one by one, not read from relevant/1, so the audit does not check them` };
   }
   // a loop refined only by cores (a witness check): the core audit (lua/audit.lua audit_cores)
   if (plan.core && !plan.clause && !plan.clauses && plan.expand.length === 0) return { link: plan.link, clause: false, expand: [], core: compiled.minimalCore ? 'minimal' : 'plain' };
