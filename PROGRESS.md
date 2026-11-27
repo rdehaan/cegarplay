@@ -20,7 +20,7 @@ code does now.
   `examples/contrib/*.json`); 148 replays in `examples/replays/`.
 - **Guide** (`guide/`): 22 chapters in two parts plus how-to pages; every number on a page is
   measured (`tools/guide-numbers.mjs --check`). **Book**: `book/cegarplay.md`, generated.
-- **Tests**: 81 files. Full suite on 2026-11-27: 1,528 tests, 1,429 pass, 0 fail, 99 skipped
+- **Tests**: 82 files. Full suite on 2026-11-27: 1,534 tests, 1,435 pass, 0 fail, 99 skipped
   (75 benchmark-only, 23 `SLOW=1`, 1 native clingo with Lua), about 18 min on 4 cores; the
   voting-justification coverage tests take about 11 of those minutes.
 

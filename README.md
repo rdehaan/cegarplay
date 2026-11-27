@@ -72,7 +72,7 @@ work: workers and modules need http.) URL parameters: `?example=nash` loads
 `examples/nash.json` from the example library,
 `?tab=4` opens the Loop tab (tab numbers are fixed ids, not positions: the
 manual's URL parameters table lists them), `?manual=true` shows the Manual tab (tab 8),
-`?internals=true` shows the Internals tab, `?fresh=1` ignores the project kept
+`?internals=true` adds the Internals tab to the Project menu, `?fresh=1` ignores the project kept
 in the browser.
 
 ## Tutorial and manual

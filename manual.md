@@ -1776,7 +1776,7 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
 | `?tab=10`, `?tab=11` | Also show the Campaign or the Observatory tab for this visit (without changing the remembered toggles); `?lecture=1`, `?view=` and `?step=` show the Observatory too. |
 | `?refinery=1` | Show the [Refinery](#manual-refinery-tab) tab for this visit, without changing the remembered toggle. `?tab=12` implies it. |
-| `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
+| `?internals=true` | Add **Internals** to the Project menu: a tab with the engine facts, generated Lua, raw event lines. |
 | `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
 | `#p=<data>` | A share link (**Copy share link** in the Project menu): the whole project without its run history, in the URL fragment, which never reaches the server. `<data>` is `z` + base64url of the deflate-raw compressed project JSON (`u` + base64url of the plain JSON in a browser without `CompressionStream`). Takes precedence over the kept project and, like `?example`, does not replace it until you edit. A damaged link opens the default example with an error in the status line. Links over 8,000 characters get a warning. |
 | `?replay=examples/replays/<id>.cprec` | Replay a library recording without the engine (it loads its example first). Only paths of that form are accepted. |
