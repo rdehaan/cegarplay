@@ -143,7 +143,7 @@ Review of UI, security, implementation and docs debt; the owner chose four group
     unchanged: recordings and replays store them).
   - `tools/engine.mjs` (`engineRun`, `lua`): the one Node engine wrapper (run, bench, lab,
     make-replays). The page's two workers and `test/helpers.mjs` (stdin) keep their own.
-  - `js/init.js` 1,275 -> 1,040 lines: `js/library-ui.js` (the library on Home) and
+  - `js/init.js` 1,275 -> 1,089 lines: `js/library-ui.js` (the library on Home) and
     `js/docs-tabs.js` (Manual and Tutorial tabs, code blocks, `#manual-`/`#tut-` links).
     `js/instances-tab.js` 1,277 -> 550: `instances-generators.js`, `instances-fuzz.js`,
     `instances-spaces.js` hold classes whose methods are copied onto `InstancesTab.prototype`
