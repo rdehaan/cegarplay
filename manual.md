@@ -1902,7 +1902,7 @@ may set `library.level` and `library.after`).
 | `reasoning` | `abduction-two-checks`, `abduction`, `actual-cause`, `af-preferred`, `af-semi-stable`, `belief-update`, `default-extensions`, `diagnosis`, `minimal-reasons`, `reasons-by-shrinking`, `reasons-by-size`, `sufficient-reason`, `abduction-ihs` |
 | `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction`, `colourable-partial`, `triangle-free-lazy` |
 | `games` | `nash`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `strong-nash`, `subset-sum-game` |
-| `voting` | `kemeny-rankings`, `slater-rankings`, `dodgson-winners`, `young-winners`, `kemeny-control`, `voting-justification`, `voting-justification-ihs` |
+| `voting` | `kemeny-rankings`, `slater-rankings`, `dodgson-winners`, `young-winners`, `kemeny-control`, `voting-justification`, `voting-justification-ihs`, `voting-justification-values` |
 | `judgment` | `ja-kemeny`, `ja-slater`, `ja-leximax`, `ja-msa`, `ja-young`, `ja-dodgson` |
 | `planning` | `benders-tardiness`, `conformant-growing`, `conformant-planning`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-interdiction`, `knapsack-optimum`, `robust-facilities` |
 | `exercises` | `exercise-sum-free`, `exercise-triangles` |
@@ -1957,7 +1957,7 @@ without the repository.
 
 ### Voting examples
 
-The library group **Voting** (`voting`) holds seven examples about elections. Each loads with
+The library group **Voting** (`voting`) holds eight examples about elections. Each loads with
 `?example=<id>`; its readme (Home, **Readme**) has the research question, the loops, measured
 times and references.
 
@@ -1969,7 +1969,8 @@ times and references.
 | `young-winners` | The Young winners: the fewest voters to delete so that a candidate becomes a weak Condorcet winner. | a winner | row generation: an opponent's majority constraint per refinement |
 | `kemeny-control` | Can deleting at most `budget` voters make the favourite top a Kemeny ranking? (Sigma-2) | the deleted voters | Shape 4: counterexamples grounded in batches |
 | `voting-justification` | Why does a profile have this outcome? A set of axiom instances that forces it. | a justification | Shape 1 over axiom instances; one question per instance |
-| `voting-justification-ihs` | The same questions: the smallest justifications, with no fixed number of instances. | a smallest justification | implicit hitting sets: an optimal A over the falsified instances of each counterexample (strategy 6) |
+| `voting-justification-ihs` | The same questions: the smallest justifications, with no fixed number of instances. | a smallest justification | implicit hitting sets: an optimal A over the falsified instances of each counterexample (`profile-free`) |
+| `voting-justification-values` | The same as `voting-justification-ihs`, with each profile encoded as a value. | a smallest justification | the IHS loops of `voting-justification-ihs`; A chooses each profile from all profiles the grounder enumerates |
 
 **Input.** The four rule examples share the input format. An instance holds the ballots:
 `ballot(V,(A,B,...))` (voter or ballot V ranks A first, B second, ...) and optionally `count(V,N)`
@@ -2007,8 +2008,8 @@ it wins (both winner problems are Theta-2-complete). Dodgson's variants are the 
 `linear-up` and `linear-down` and the Sigma-2 template `exists-forall`; Young's are `cores`,
 `plain-cores`, `all-opponents` (every constraint from the start) and `exists-forall`.
 
-**Justifications.** `voting-justification` and `voting-justification-ihs` share their encoding,
-their 30 questions and their view. The first asks for exactly `num_axiom_instances` instances; the
+**Justifications.** `voting-justification`, `voting-justification-ihs` and `voting-justification-values`
+share their 30 questions, their check and their view. The first asks for exactly `num_axiom_instances` instances; the
 second ignores that constant and finds the smallest justifications (expected counts: the number
 of smallest ones). Its variants are `mcs` (an optimal check: minimum correction sets), `multi`
 (five counterexamples per candidate), `ascending` (sizes 1, 2, ... under an assumption `size(k)`,
@@ -2019,6 +2020,14 @@ instance of the candidate with its part in each profile it reads (Pareto `¬c`, 
 unanimity `top`, cancellation `all`, Condorcet `c`, neutrality `a↔b`, positive responsiveness
 `a` and `a↑`, reinforcement `+` and `=`). Cells with `attr(X, weight, 0)` have no outline: the
 view uses them for headings.
+
+`voting-justification-values` replaces the abstraction of `voting-justification-ihs`: a profile is
+a sorted list of ballot numbers (ballots numbered in lexicographic order), chosen per profile
+number from every profile of at most `num_voters` voters. The grounder computes the relations the
+axioms need (two candidates swapped, a candidate moved up in one ballot, the sum of two profiles)
+and the single-profile conditions once; A derives the same `profile/4` atoms, so the solutions are
+the same. The domain grows with the candidates and voters (about 200 profiles for 3 candidates and
+4 voters, about 2,900 for 4 candidates and 3 voters).
 
 **Running them.** `node tools/run.mjs kemeny-rankings --instance f1-1978 --solutions all`;
 `node tools/bench.mjs kemeny-rankings --suite loops --out rows.jsonl` and `node tools/report.mjs

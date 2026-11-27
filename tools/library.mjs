@@ -369,6 +369,7 @@ export const PROBLEMS = [
   { id: 'nash', group: 'games', summary: 'Weighted graphs whose colouring game has a Nash equilibrium (four size instances).', shape: 'shape1', tags: [], expected: null },
   { id: 'voting-justification', group: 'voting', summary: 'Explaining a voting outcome by axioms: 30 questions as instances (17 from Nardi, Boixel and Endriss, 7 generated), three refinement strategies and the loops built on them as variants, suites that compare them.', shape: 'shape1', tags: [], expected: null },
   { id: 'voting-justification-ihs', group: 'voting', summary: 'The smallest justifications of a voting outcome by implicit hitting sets: the same 30 questions without a fixed number of axiom instances; variants with minimum correction sets, several counterexamples, ascending sizes.', shape: 'custom', tags: ['ihs'], expected: null },
+  { id: 'voting-justification-values', group: 'voting', summary: 'The smallest justifications by implicit hitting sets, with each profile chosen as a value (a sorted list of ballots) from all profiles the grounder enumerates, instead of ballot by ballot.', shape: 'custom', tags: ['ihs'], expected: null },
 ];
 
 // ---------------------------------------------------------------------------
@@ -850,7 +851,7 @@ export const LEVELS = {
   'graph-coloring': [2, 5], 'clique-interdiction': [2, 5], arrowing: [2, 3], choosability: [2, 3], 'clique-colouring': [2, 3],
   'colourable-partial': [4, 10], 'triangle-free-lazy': [4, 10],
   nash: [2, 3], 'strong-nash': [2, 3], 'subset-sum-game': [2, 3], 'fair-division': [2, 9], 'boolean-game': [3, 6],
-  'agenda-safety': [3, 7], 'hedonic-core': [3, 7], 'kemeny-control': [3, 7], 'voting-justification': [3, 12], 'voting-justification-ihs': [4, 14],
+  'agenda-safety': [3, 7], 'hedonic-core': [3, 7], 'kemeny-control': [3, 7], 'voting-justification': [3, 12], 'voting-justification-ihs': [4, 14], 'voting-justification-values': [4, 15],
   'conformant-planning': [3, 9], 'conformant-growing': [3, 9], 'knapsack-interdiction': [3, 11], 'knapsack-optimum': [3, 11],
   'benders-tardiness': [4, 11], 'knapsack-bounds': [4, 11], 'knapsack-fortification': [4, 13],
   'sudoku-unique': [3, 3], 'sudoku-unavoidable': [3, 6], 'fewest-clues': [3, 7], 'sudoku-symmetry': [3, 7], 'sudoku-graded': [3, 7],

@@ -702,6 +702,243 @@ function voteIhs(vote) {
   return p;
 }
 
+// voting-justification-values: the IHS loops with another abstraction. A profile is a value (a
+// sorted list of ballot numbers) chosen from all profiles of at most num_voters voters, which the
+// grounder enumerates; the axioms' relations between profiles (swap, move, sum) and their
+// single-profile conditions are computed once. A derives the same profile/4 atoms, so the check,
+// the refinement, the view and the solutions are those of voting-justification-ihs (counts agree
+// on every instance, Nov 2026). The original sorts same-size profiles by a constraint that never
+// fires (interprof_lex_dom with its arguments swapped); this encoding copies that.
+const VOTE_VALUES = `%%% Profiles as values. A ballot is a permutation of the candidates, numbered in
+%%% lexicographic order; a profile is a sorted list of ballot numbers
+%%% (p(B1,p(B2,...nil)), B1 <= B2 <= ...), so voter V has the V-th ballot. The grounder
+%%% enumerates every profile of at most num_voters voters and computes, once, what each axiom
+%%% needs: the profile with two candidates swapped, with a candidate moved up in one ballot,
+%%% the sum of two profiles, and the single-profile properties. A then only chooses one
+%%% value per profile number.
+
+%%% Ballots: permutations as lists c(First, c(Second, ...)), with a bit mask of the used
+%%% candidates; their rank in the term order is their number.
+perm(nil,0,0).
+perm(c(C,L),K+1,M+2**C) :- perm(L,K,M), K < num_candidates, candidate(C),
+    (M / (2**C)) \\ 2 == 0.
+full(L) :- perm(L,num_candidates,_).
+bid(L,R+1) :- full(L), R = #count { L2 : full(L2), L2 < L }.
+ballot(B) :- bid(_,B).
+bp(L,L,1) :- full(L).
+bp(L,T,I+1) :- bp(L,c(_,T),I), T != nil.
+bpos(B,C,I) :- bid(L,B), bp(L,c(C,_),I).
+lt(X,C1,C2) :- bpos(X,C1,P1), bpos(X,C2,P2), P1 < P2.
+
+%%% Profiles: sorted lists of 1..num_voters ballots.
+plist(p(B,nil),1) :- ballot(B).
+plist(p(B,p(H,T)),N+1) :- plist(p(H,T),N), N < num_voters, ballot(B), B <= H.
+walk(L,L,1) :- plist(L,_).
+walk(L,T,I+1) :- walk(L,p(_,T),I), T != nil.
+mem(L,I,X) :- walk(L,p(X,_),I).
+
+%%% Sorted insertion and deletion, computed where needed (ins_q, del_q ask for them).
+ins(X,nil,p(X,nil)) :- ins_q(X,nil).
+ins(X,p(Y,T),p(X,p(Y,T))) :- ins_q(X,p(Y,T)), X <= Y.
+ins_q(X,T) :- ins_q(X,p(Y,T)), X > Y.
+ins(X,p(Y,T),p(Y,R)) :- ins_q(X,p(Y,T)), X > Y, ins(X,T,R).
+del(X,p(X,T),T) :- del_q(X,p(X,T)).
+del_q(X,T) :- del_q(X,p(Y,T)), X != Y.
+del(X,p(Y,T),p(Y,R)) :- del_q(X,p(Y,T)), X != Y, del(X,T,R).
+
+%%% The target profile as a list.
+tball(V,B) :- target_profile(V,_,_), ballot(B),
+    bpos(B,C,P) : target_profile(V,C,P).
+tlist(0,nil).
+ins_q(B,L) :- tlist(V-1,L), tball(V,B).
+tlist(V,R) :- tlist(V-1,L), tball(V,B), ins(B,L,R).
+target(L) :- tlist(N,L), N = #count { V : tball(V,_) }.
+
+%%% Neutrality: the profile with candidates A and B swapped in every ballot.
+swb(X,A,B,Y) :- use_axiom(neutrality2), ballot(X), ballot(Y),
+    candidate(A), candidate(B), A < B,
+    bpos(Y,D2,I) : bpos(X,D1,I), swap(A,B,D1,D2).
+smq(L,A,B) :- use_axiom(neutrality2), plist(L,_), candidate(A), candidate(B), A < B.
+smq(T,A,B) :- smq(p(_,T),A,B).
+smap(nil,A,B,nil) :- smq(nil,A,B).
+ins_q(Y,R) :- smq(p(X,T),A,B), swb(X,A,B,Y), smap(T,A,B,R).
+smap(p(X,T),A,B,R2) :- smq(p(X,T),A,B), swb(X,A,B,Y), smap(T,A,B,R), ins(Y,R,R2).
+
+%%% Positive responsiveness: voter V's ballot with C moved up K positions.
+mvb(X,C,K,Y) :- pos_response_pair(C,K), ballot(X), ballot(Y),
+    bpos(X,C,P1), P1-K >= 1, bpos(Y,C,P1-K),
+    bpos(Y,D,Q) : bpos(X,D,Q), Q > P1;
+    bpos(Y,D,Q) : bpos(X,D,Q), Q < P1-K;
+    bpos(Y,D,Q+1) : bpos(X,D,Q), Q < P1, Q >= P1-K.
+mvq(L,V,C,K,X,Y) :- axiom(pos_responsiveness(V,C,K)), mem(L,V,X), mvb(X,C,K,Y).
+del_q(X,L) :- mvq(L,_,_,_,X,_).
+ins_q(Y,L1) :- mvq(L,_,_,_,X,Y), del(X,L,L1).
+mvres(L,V,C,K,R) :- mvq(L,V,C,K,X,Y), del(X,L,L1), ins(Y,L1,R).
+
+%%% Reinforcement: the sum of two profiles (L1 <= L2 in the term order).
+sumq(L1,L2) :- use_axiom(reinforcement), plist(L1,N1), plist(L2,N2),
+    N1 + N2 <= num_voters, L1 <= L2.
+mq(L1,L2) :- sumq(L1,L2).
+mq(T,L2) :- mq(p(_,T),L2).
+mrg(nil,L2,L2) :- mq(nil,L2).
+ins_q(X,R) :- mq(p(X,T),L2), mrg(T,L2,R).
+mrg(p(X,T),L2,R2) :- mq(p(X,T),L2), mrg(T,L2,R), ins(X,R,R2).
+sumres(L1,L2,R) :- sumq(L1,L2), mrg(L1,L2,R).
+
+%%% Properties of a single profile.
+pareto_ok(L,C2) :- use_axiom(pareto), plist(L,_), candidate(C1), candidate(C2), C1 != C2,
+    lt(X,C1,C2) : mem(L,_,X).
+unan_ok(L) :- use_axiom(unanimity), plist(L,_), candidate(C),
+    bpos(X,C,1) : mem(L,_,X).
+cnt(L,X,K) :- plist(L,_), ballot(X), K = #count { I : mem(L,I,X) }, K > 0.
+rev(X,Y) :- ballot(X), ballot(Y), bpos(Y,C,num_candidates+1-P) : bpos(X,C,P).
+canc_ok(L) :- use_axiom(cancellation), plist(L,N), N \\ 2 == 0,
+    cnt(L,X,N/2), rev(X,Y), cnt(L,Y,N/2).
+beatsn(L,C1,C2,N) :- use_axiom(condorcet), plist(L,_), candidate(C1), candidate(C2),
+    C1 != C2, N = #count { I : mem(L,I,X), lt(X,C1,C2) }.
+mb(L,C1,C2) :- beatsn(L,C1,C2,N1), beatsn(L,C2,C1,N2), N1 > N2.
+cond_ok(L,C1) :- use_axiom(condorcet), plist(L,_), candidate(C1),
+    mb(L,C1,C2) : candidate(C2), C2 != C1.
+
+%%% The candidate: a value for each used profile; profile 1 is the target.
+val(1,L) :- target(L).
+{ val(P,L) : plist(L,_) } 1 :- profile_num(P), P != 1.
+active_profile(P) :- val(P,_).
+num_active_voters(P,N) :- val(P,L), plist(L,N).
+
+axiom_applicable(single(P),pareto(C)) :- pos_axiom_instance(single(P),pareto(C)),
+    val(P,L), pareto_ok(L,C).
+axiom_applicable(single(P),faithfulness) :- pos_axiom_instance(single(P),faithfulness),
+    val(P,L), plist(L,1).
+axiom_applicable(single(P),unanimity) :- pos_axiom_instance(single(P),unanimity),
+    val(P,L), unan_ok(L).
+axiom_applicable(single(P),cancellation) :- pos_axiom_instance(single(P),cancellation),
+    val(P,L), canc_ok(L).
+axiom_applicable(single(P),condorcet(C)) :- pos_axiom_instance(single(P),condorcet(C)),
+    val(P,L), cond_ok(L,C).
+axiom_applicable(double(P,Q),neutrality2(A,B)) :-
+    pos_axiom_instance(double(P,Q),neutrality2(A,B)),
+    val(P,L), smap(L,A,B,L2), val(Q,L2).
+axiom_applicable(double(P,Q),pos_responsiveness(V,C,K)) :-
+    pos_axiom_instance(double(P,Q),pos_responsiveness(V,C,K)),
+    val(P,L), mvres(L,V,C,K,L2), val(Q,L2).
+axiom_applicable(triple(P,Q,T),reinforcement) :-
+    pos_axiom_instance(triple(P,Q,T),reinforcement),
+    val(P,L1), val(Q,L2), L1 <= L2, sumres(L1,L2,L3), val(T,L3).
+axiom_applicable(triple(P,Q,T),reinforcement) :-
+    pos_axiom_instance(triple(P,Q,T),reinforcement),
+    val(P,L1), val(Q,L2), L2 < L1, sumres(L2,L1,L3), val(T,L3).
+
+{ use_axiom_instance(Profiles,Axiom) : axiom_applicable(Profiles,Axiom) }.
+
+%%% The ballots, for the check (faithfulness and unanimity read voter 1's top choice)
+%%% and for the solutions.
+profile(P,V,C,Pos) :- val(P,L), mem(L,V,X), bpos(X,C,Pos).
+
+INSTANCE_ONLY
+
+%%% As in voting-justification: used profiles are sorted by size (except profile 1).
+:- profile_used(P1), profile_used(P2), P1 < P2, P1 != 1, P2 != 1,
+    num_active_voters(P1,N1), num_active_voters(P2,N2), N2 < N1.
+
+#show profile/4.
+#show use_axiom_instance/2.
+`;
+const VOTE_VALUES_README = `# Smallest justifications, with profiles as values
+
+## Background
+
+The questions and loops of \`voting-justification-ihs\` (the smallest justifications of a voting
+outcome, by implicit hitting sets), with another encoding of the abstraction.
+
+In \`voting-justification\` and \`voting-justification-ihs\`, A guesses each profile ballot by
+ballot: which candidate each voter ranks at each position, with symmetry breaking to sort the
+voters. Whether an axiom instance applies is then computed from these ballots.
+
+Here a profile is a **value**: a sorted list of ballot numbers (a ballot is a ranking of the
+candidates, numbered in lexicographic order). The grounder enumerates every profile of at most
+\`num_voters\` voters, and computes once what each axiom needs:
+
+- **neutrality**: for a profile and two candidates, the profile with them swapped in every ballot;
+- **positive responsiveness**: for a profile, a voter, a candidate and a distance, the profile
+  with that candidate moved up in that voter's ballot;
+- **reinforcement**: for two profiles, their sum;
+- **Pareto, faithfulness, unanimity, cancellation, Condorcet**: whether they apply to a profile.
+
+A then only chooses one value per profile number, and an instance applies when the chosen values
+are related as it requires. The solutions are the same as in \`voting-justification-ihs\`: the
+fragment \`abstraction\` derives the same \`profile/4\` atoms from the values, so the check, the
+refinement and the view are unchanged.
+
+## Fragments
+
+- \`abstraction\`: the values encoding (this example's own).
+- \`shared\`, \`glue\`, \`check\`, \`relevant\`, \`smallest\`, \`sizes\`, \`fewest\`, \`view\`: as in
+  \`voting-justification-ihs\`.
+
+## Variants
+
+| Variant | What changes |
+|---|---|
+| default | IHS: an optimal A, one counterexample per candidate |
+| mcs | an optimal check (\\\`fewest\\\`): each counterexample falsifies as few instances as possible |
+| multi | up to 5 counterexamples per candidate, one clause each |
+| ascending | no optimisation: sizes k = 1, 2, ... in turn, each a search under the assumption \\\`size(k)\\\` |
+| reference | the counterexample's clause replaced by \\\`G.block(M)\\\` |
+
+## Instances
+
+The instances of \`voting-justification-ihs\`, with the same expected counts (the number of
+smallest justifications). Tags \`slow\` and \`bench\` are set from this example's default loop.
+
+## Suites
+
+- \`questions\`: every question, the default loop (60 s each).
+- \`loops\`: the questions that are not tagged \`bench\` × every variant (60 s each).
+
+## Open questions
+
+1. When do values pay, and when do ballots? The number of possible profiles grows quickly with
+   the candidates and voters (about 200 with 3 candidates and 4 voters, about 2,900 with 4
+   candidates and 3 voters). Compare with \`voting-justification-ihs\` on the paper questions.
+2. Could the grounder enumerate only the profiles that can occur: those reachable from the
+   target by swaps, moves, sums and their parts?
+3. The original encoding sorts profiles of the same size, but that constraint never fires (it
+   reads \`interprof_lex_dom\` with its arguments in the wrong order), so solutions that differ
+   only by the order of such profiles all count. With values the sorting is a single comparison
+   of two lists. How much does it save, in both encodings, and how do the counts change?
+4. A value is a multiset of ballots, so the order of the voters is gone. Instances that name a
+   voter (positive responsiveness) still do: should they name a ballot instead?
+5. Would values combine with the other ideas of \`voting-justification-ihs\` (minimum correction
+   sets, several counterexamples, ascending sizes) differently than ballots do?
+`;
+// Tags from this example's default loop: slow above 5 s, bench when it does not finish in 60 s.
+const VOTE_VALUES_SLOW = ['faith-cancel-reinf-pareto-condorcet-k3', 'paper-borda4-k3-p3', 'paper-v4-k4-p3'];
+const VOTE_VALUES_BENCH = ['cancel-reinf-posresp-k4', 'paper-ex4-k3-p4', 'paper-borda3-k3-p4', 'paper-borda4-k3-p4',
+  'paper-c4-v2-k3-p3', 'paper-c4-v2b-k3-p3', 'paper-c4-v3-k3-p3'];
+function voteValues(ihs) {
+  const p = structuredClone(ihs);
+  const ab = frag(p, 'abstraction');
+  const from = ab.text.indexOf('%%% Keep track of which axioms have instances used');
+  const to = ab.text.indexOf('%%% Symmetry breaking: ensure that profiles (except no 1)');
+  if (from < 0 || to < 0) throw new Error('make-examples: the instance-only constraints of the abstraction not found');
+  ab.text = VOTE_VALUES.replace('INSTANCE_ONLY', ab.text.slice(from, to).replace(/\s*$/, ''));
+  ab.description = 'Proposes candidates (solver A): a value (a sorted list of ballots) per used profile and a set of applicable axiom instances; the relations between profiles are computed by the grounder.';
+  p.title = 'Voting: smallest justifications (profiles as values)';
+  p.description = 'The questions and IHS loops of Voting: smallest justifications, with profiles encoded as values: A chooses each ' +
+    'profile from all profiles the grounder enumerates, instead of guessing it ballot by ballot.';
+  p.readme = VOTE_VALUES_README;
+  p.instances = p.instances.map((x) => {
+    const tags = (x.tags || []).filter((t) => t !== 'slow' && t !== 'bench');
+    if (VOTE_VALUES_SLOW.includes(x.id)) tags.push('slow');
+    if (VOTE_VALUES_BENCH.includes(x.id)) tags.push('bench');
+    return { ...x, tags };
+  });
+  const loops = p.suites.find((s) => s.name === 'loops');
+  loops.instances = { ids: p.instances.filter((i) => !i.tags.includes('bench')).map((i) => i.id) };
+  return p;
+}
+
 function voteStrategies(p) {
   const c = frag(p, 'check');
   const at = c.text.indexOf('% %%% REFINEMENT STRATEGY 1');
@@ -919,7 +1156,8 @@ relevant(plays(P,C)) :- player_differs(P), color(C).
   ];
   nash.version = 2;
   nash.readme = PROJECT_CARDS.nash;
-  return { 'graph-coloring': gc, nash, 'voting-justification': vote, 'voting-justification-ihs': voteIhs(vote) };
+  const ihs = voteIhs(vote);
+  return { 'graph-coloring': gc, nash, 'voting-justification': vote, 'voting-justification-ihs': ihs, 'voting-justification-values': voteValues(ihs) };
 }
 
 // Contributed examples: examples/contrib/*.json, each a project with a top-level

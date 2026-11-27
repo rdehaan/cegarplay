@@ -2553,6 +2553,27 @@
       "after": 14
     },
     {
+      "id": "voting-justification-values",
+      "title": "Voting: smallest justifications (profiles as values)",
+      "group": "voting",
+      "summary": "The smallest justifications by implicit hitting sets, with each profile chosen as a value (a sorted list of ballots) from all profiles the grounder enumerates, instead of ballot by ballot.",
+      "shape": "custom",
+      "tags": [
+        "ihs",
+        "project"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 30,
+        "generators": 1,
+        "suites": 2,
+        "views": 1,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 15
+    },
+    {
       "id": "dodgson-winners",
       "title": "Dodgson winners",
       "group": "voting",

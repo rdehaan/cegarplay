@@ -2396,3 +2396,27 @@ one), and loop variants that might be faster, to learn which loops suit the prob
 - Readmes (same day, on request): the refinements are named by their variants (default,
   `falsified`, `profile-free`) instead of the original file's strategy numbers. The fragment
   texts and descriptions keep "strategy N" as provenance.
+
+## Voting justification: profiles as values (2026-11-27, on request)
+
+- Tried first, not kept (prototypes only): (1) the profile encoding moved from A to a third
+  solver R (A a pure hitting set over instance names, R checks realisability, minimal cores
+  back to A), also with A knowing applicability on P1 and the voter counts: far slower, as most
+  logically sufficient sets are unrealisable (799 of 867 candidates on borda3-k3-p3). (2) A
+  hybrid with reinforcement's vote-by-vote check done lazily (a clause, then a switched-off rule
+  per triple): correct, no faster than ascending. Grounding the same #program part twice with
+  different parameters after a solve raises "redefinition of atom <'_',N>" in clingo 5.8, which
+  traps the WASM engine; an #external switch per triple avoids it.
+- **New example `voting-justification-values`**: the IHS example with the abstraction replaced.
+  A profile is a sorted list of ballot numbers; the grounder enumerates all profiles of at most
+  num_voters voters and computes swaps, moves, sums and single-profile conditions; A chooses one
+  value per profile number and derives profile/4, so check, refinement, view and solutions are
+  unchanged (solution sets identical on the samples compared; counts agree everywhere).
+  Measured (ascending, two runs at a time): with 3 candidates 1.3 to 3 times faster than the
+  ballots encoding (borda3-k3-p4 15.8 s vs 46.8 s, cancel-reinf-posresp-k4 32 s vs 72 s,
+  borda4-k3-p4 199 s vs 433 s); with 4 candidates about 3 times slower, and c4-v3-k3-p3
+  (about 2,900 profiles, 238,000 atoms in A) does not finish in 120 s.
+- Found on the way: the original's last symmetry-breaking constraint (same-size profiles sorted)
+  never fires: it reads interprof_lex_dom(Prof2,Prof1) with Prof1 < Prof2, but the predicate
+  is only defined for a smaller first argument. Both encodings keep this behaviour, so their
+  counts agree; it is open question 3 of the new readme.
