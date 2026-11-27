@@ -276,6 +276,46 @@ test('I3: a 1,000-cell suite finishes; after a reload, Start runs zero cells', {
   await context.close();
 });
 
+test('campaign seeds: random seeds written into the suite, randomized search, the matrix per seed and as a mean', { timeout: 120000 }, async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&tab=10');
+  await page.evaluate(() => {
+    const app = window.cegarplay;
+    app.project.suites = [{ name: 'seeds', instances: { constants: { n: [4, 5] } }, variants: ['default', 'reference'], solver_seeds: 1, limits: { seconds: 60 } }];
+    app.campaign.load();
+    app.dirty();
+  });
+  await page.evaluate(() => window.cegarplay.campaign.clearRows());
+  assert.match(await page.textContent('#campaign-seed-note'), /^seed 0\.$/);
+  await page.fill('#campaign-seed-count', '3');
+  await page.selectOption('#campaign-seed-kind', 'random');
+  await page.check('#campaign-seed-randomize');
+  await page.click('#campaign-seed-set');
+  const suite = JSON.parse(await page.$eval('#suite-text', (t) => t.value));
+  assert.equal(suite.solver_seeds.length, 3);
+  assert.equal(suite.randomize, true);
+  assert.match(await page.textContent('#campaign-status'), new RegExp(`Drew the seeds ${suite.solver_seeds.join(', ')}`));
+  await page.click('#campaign-start');
+  await campaignDone(page);
+  assert.match(await page.textContent('#campaign-status'), /12 cells: 12 run/);
+  const sorted = suite.solver_seeds.slice().sort((a, b) => a - b);
+  assert.match(await page.textContent('#campaign-seeds-used'), new RegExp(sorted.join(', ')));
+  // median (default), then the mean with its standard deviation, one seed, every table
+  assert.deepEqual(await page.$$eval('#campaign-seed-view option', (o) => o.map((x) => x.value)), ['median', 'mean', 'each', ...sorted.map((x) => `seed:${x}`)]);
+  assert.equal(await page.$eval('#campaign-matrix', (t) => t.dataset.stat), 'median');
+  await page.selectOption('#campaign-metric', 'candidates');
+  await page.selectOption('#campaign-seed-view', 'mean');
+  assert.equal(await page.$eval('#campaign-matrix', (t) => t.dataset.stat), 'mean');
+  assert.match(await page.textContent('#campaign-matrix tr[data-instance="n5"] td[data-variant="default"]'), /±/);
+  assert.match(await page.getAttribute('#campaign-matrix tr[data-instance="n5"] td[data-variant="default"]', 'title'), /mean of 3 seeds \(seed \d+: /);
+  await page.selectOption('#campaign-seed-view', `seed:${sorted[1]}`);
+  assert.equal(await page.$eval('#campaign-matrix', (t) => t.dataset.seed), String(sorted[1]));
+  await page.selectOption('#campaign-seed-view', 'each');
+  assert.equal(await page.$$eval('table.campaign-matrix', (t) => t.length), 4);
+  assert.deepEqual(await page.$$eval('h4.campaign-matrix-title', (t) => t.map((x) => x.textContent)), ['mean over the seeds', ...sorted.map((x) => `seed ${x}`)]);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
 test('I3: tutorial-weak-relevant with a reference variant marks n = 8 red; imported rows draw the plots', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=10');
   await page.evaluate(() => window.cegarplay.campaign.clearRows());

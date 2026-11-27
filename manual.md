@@ -274,11 +274,26 @@ cell against its time); a growth factor per variant with a 90% interval. A row h
 solutions, candidates, refinements and time, plus the cost of the solutions (`cost`, `sameCost`),
 the mean clause length (`meanClause`) and per solver the calls, time and conflicts (`solvers`).
 `node tools/bench.mjs <project> --suite NAME [--jobs N] [--shard i/n] [--out rows.jsonl]
-[--resume] [--seconds N]` runs the same suite headless (`--seconds` replaces the suite's time
+[--resume] [--seconds N] [--seeds N | --seeds a,b,c | --random-seeds N] [--randomize]` runs the same suite headless (`--seconds` replaces the suite's time
 limit); **Import rows** reads its file. `node tools/report.mjs rows.jsonl [--metric
-time|candidates|refinements] [--limit S] [--out PREFIX]` turns rows into a report: per-variant
+time|candidates|refinements] [--limit S] [--per-seed] [--out PREFIX]` turns rows into a report: per-variant
 totals (solved, total time, PAR2), the matrix as Markdown and CSV, the disagreements, and a cactus
-plot as SVG.
+plot as SVG; `--per-seed` adds the mean table and one table per seed.
+
+**Several seeds.** `solver_seeds` is a number N (seeds 0 to N−1) or a list of seeds
+(`[4711, 82, 5039]`); `random_seeds: N` draws N random seeds (1 to 99999) when the suite starts and
+replaces itself by `solver_seeds` with the seeds drawn, so the suite records them (`tools/bench.mjs`
+prints them instead, and refuses to draw with `--shard` or `--resume`). Every row carries its seed.
+`randomize: true` gives every cell a randomized search (`--rand-freq=0.2 --sign-def=rnd`, as **Run
+options**); without it clingo searches the same way for every seed, and only the times differ (the
+tab says so). The bar **Solver seeds** above the suite's JSON writes these keys: a number, **seeds 0,
+1, 2, …** or **random seeds** (drawn at once and shown), **randomized search**, **Set seeds**. With
+rows of more than one seed the matrix gets a **Seeds** picker: the median over the seeds (the
+default), the mean with its standard deviation (`2.000 ± 0.140`; a cell where some seeds did not
+finish shows `timeout (2 of 3 finished)`), one seed on its own, or the mean followed by a table
+per seed. The tooltip of a cell lists its value per seed. **Export matrix (CSV)** exports what is
+shown; for the mean and every seed, one CSV with a first column `table` and a standard deviation
+column per variant.
 
 ```json
 "suites": [ { "name": "scaling", "instances": { "constants": { "n": [4, 5, 6, 7, 8] } },

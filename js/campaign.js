@@ -7,7 +7,11 @@
 //              | { generator, grid: { param: [values] }, seeds: N, attempts, constants: { name: value } }
 //              | { constants: { name: [values] }, base: instance id }
 //     variants: ["default", "reference", ...]   (default: ["default"])
-//     solver_seeds: N (seeds 0..N-1; default 1)
+//     solver_seeds: N (seeds 0..N-1; default 1) | [seed, ...] (these seeds)
+//     random_seeds: N (draw N random seeds; the page's Start and tools/bench.mjs replace it by
+//                   solver_seeds: [the seeds drawn], so the seeds used are written down)
+//     randomize: true | false (randomized search for every cell; absent: the project's setting).
+//                   Without it, clingo searches the same way for every seed.
 //     limits: { seconds, candidates }   (default { seconds: 30 })
 //     where: ["solutions(reference) >= 1", ...]   (instance filters)
 import { derive, ProjectError, costTracker } from './project.js';
@@ -79,19 +83,56 @@ export function suiteVariants(project, suite) {
   return v;
 }
 
+// The solver seeds of a suite, in order: solver_seeds N gives 0..N-1, a list gives its seeds.
+// random_seeds must have been drawn first (drawSuiteSeeds).
+export function suiteSeeds(suite) {
+  if (suite.random_seeds !== undefined) throw new SuiteError(`suite ${suite.name}: random_seeds are drawn when the suite starts (Start, or tools/bench.mjs)`);
+  if (suite.randomize !== undefined && typeof suite.randomize !== 'boolean') throw new SuiteError(`suite ${suite.name}: randomize must be true or false`);
+  const s = suite.solver_seeds;
+  if (Array.isArray(s)) {
+    if (!s.length) throw new SuiteError(`suite ${suite.name}: solver_seeds is an empty list`);
+    for (const x of s) if (!(Number.isInteger(x) && x >= 0 && x < 2 ** 31)) throw new SuiteError(`suite ${suite.name}: solver_seeds: ${JSON.stringify(x)} is not a whole number from 0 to 2^31 - 1`);
+    if (new Set(s).size !== s.length) throw new SuiteError(`suite ${suite.name}: solver_seeds lists a seed twice`);
+    return s.slice();
+  }
+  const n = Math.max(1, Number(s) || 1);
+  return Array.from({ length: n }, (_, i) => i);
+}
+
+// n distinct random seeds from 1 to 99999 (0 means "clingo's default", so it is not drawn).
+export function drawSeeds(n, random = Math.random) {
+  const k = Math.floor(Number(n));
+  if (!(k >= 1 && k <= 1000)) throw new SuiteError('random_seeds: a number from 1 to 1000');
+  const out = new Set();
+  while (out.size < k) out.add(1 + Math.floor(random() * 99999));
+  return [...out];
+}
+
+// A suite with random_seeds: N becomes one with solver_seeds: [N seeds drawn now]; any other
+// suite is returned as it is. Returns { suite, seeds } (seeds: the drawn ones, or null).
+export function drawSuiteSeeds(suite, random = Math.random) {
+  if (suite.random_seeds === undefined) return { suite, seeds: null };
+  const seeds = drawSeeds(suite.random_seeds, random);
+  const { random_seeds: _r, ...rest } = suite;
+  return { suite: { ...rest, solver_seeds: seeds }, seeds };
+}
+
 // Cells (without keys): [{ instance, variant, seed, params, inst }].
 export function expandSuite(project, suite) {
   const insts = suiteInstances(project, suite);
   const variants = suiteVariants(project, suite);
-  const seeds = Math.max(1, Number(suite.solver_seeds) || 1);
+  const seeds = suiteSeeds(suite);
   const cells = [];
   for (const x of insts) {
     for (const variant of variants) {
-      for (let seed = 0; seed < seeds; seed++) cells.push({ instance: x.id, variant, seed, params: x.params, inst: x.instance, asWritten: !!x.asWritten });
+      for (const seed of seeds) cells.push({ instance: x.id, variant, seed, params: x.params, inst: x.instance, asWritten: !!x.asWritten });
     }
   }
   return cells;
 }
+
+// The seeds of some rows, sorted (the skipped rows count too: they have a seed).
+export const rowSeeds = (rows) => [...new Set(rows.map((r) => r.seed).filter((x) => x !== undefined && x !== null))].sort((a, b) => a - b);
 
 // The project of one cell: the suite's instance applied (also an instance the project does not
 // store), the variant, the seed and the limits; all solutions, no trace.
@@ -103,7 +144,8 @@ export function cellProject(project, cell, suite) {
     p = { ...project, instances: [cell.inst, ...others] };
   }
   return { project: p, instance: cell.inst ? cell.inst.id : '', variant: cell.variant,
-    settings: { solutions: 0, trace: 0, seed: cell.seed, seconds: Number(limits.seconds) || 0, candidates: Number(limits.candidates) || 0 } };
+    settings: { solutions: 0, trace: 0, seed: cell.seed, seconds: Number(limits.seconds) || 0, candidates: Number(limits.candidates) || 0,
+      ...(typeof suite.randomize === 'boolean' ? { randomize: suite.randomize } : {}) } };
 }
 
 const enc = (s) => new TextEncoder().encode(s);
@@ -333,15 +375,21 @@ export function inconsistencies(rows) {
 }
 
 // ---- the instance x variant matrix (FUTURE-DIRECTIONS D2, D3) ------------------------------
-// metric: 'time' | 'candidates' | 'refinements'. Seeds of one cell are summarised by the median.
-// Returns { metric, variants, rows: [{ instance, cells: { variant: cell }, best }] } where a
-// cell is { value, n, solved, outcome, disagree, solutions, cost }; best names the variant with
-// the smallest value among the solved cells of the row (null when none is solved or on a tie).
+// metric: 'time' | 'candidates' | 'refinements' | ... The seeds of one cell are summarised by
+// opts.stat: 'median' (default) or 'mean' (with the standard deviation sd); opts.seed (a number)
+// keeps only the rows of that seed: the table of one seed.
+// Returns { metric, stat, seed, variants, rows: [{ instance, cells: { variant: cell }, best }] }
+// where a cell is { value, sd, n, solvedN, solved, outcome, disagree, solutions, cost, perSeed }
+// (perSeed: [[seed, value]]); best names the variant with the smallest value among the solved
+// cells of the row (null when none is solved or on a tie).
 export const solvedRow = (r) => !r.skipped && r.outcome === 'finished';
 // order: { variants: [...], instances: [...] } lists the names in the order to show (the project's);
 // names not listed follow in the order of the rows.
-export function resultMatrix(rows, metric = 'time', order = {}) {
+export function resultMatrix(rows, metric = 'time', order = {}, opts = {}) {
+  const stat = opts.stat === 'mean' ? 'mean' : 'median';
+  const seed = typeof opts.seed === 'number' ? opts.seed : null;
   const bad = new Set(inconsistencies(rows).flatMap((b) => b.rows.map((r) => r.key)));
+  if (seed !== null) rows = rows.filter((r) => r.seed === seed);
   const variants = [], instances = [];
   const by = new Map();
   for (const r of rows) {
@@ -365,10 +413,14 @@ export function resultMatrix(rows, metric = 'time', order = {}) {
       const rs = by.get(`${instance}\u0000${v}`);
       if (!rs) continue;
       const vals = rs.map((r) => r[metric]).filter((x) => typeof x === 'number').sort((a, b) => a - b);
-      const solved = rs.every(solvedRow);
+      const solvedN = rs.filter(solvedRow).length;
+      const solved = solvedN === rs.length;
       const outcome = solved ? 'finished' : (rs.find((r) => !solvedRow(r)) || rs[0]).outcome;
-      cells[v] = { value: vals.length ? quantile(vals, 0.5) : null, n: rs.length, solved, outcome,
-        disagree: rs.some((r) => bad.has(r.key)), solutions: rs[0].solutions, cost: rs[0].cost || null };
+      const mean = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+      const sd = vals.length > 1 ? Math.sqrt(vals.reduce((a, b) => a + (b - mean) ** 2, 0) / (vals.length - 1)) : null;
+      cells[v] = { value: !vals.length ? null : stat === 'mean' ? mean : quantile(vals, 0.5), sd: stat === 'mean' ? sd : null, n: rs.length, solvedN, solved, outcome,
+        disagree: rs.some((r) => bad.has(r.key)), solutions: rs[0].solutions, cost: rs[0].cost || null,
+        perSeed: rs.slice().sort((a, b) => a.seed - b.seed).map((r) => [r.seed, typeof r[metric] === 'number' ? r[metric] : null]) };
     }
     // the best cell: the smallest value among the solved cells, when no other cell ties with it
     // compared at the precision the matrix shows (time: 3 decimals), so that equal-looking cells tie
@@ -382,17 +434,41 @@ export function resultMatrix(rows, metric = 'time', order = {}) {
     if (ties || metric === 'solutions') best = null;   // fewer solutions is not better
     return { instance, cells, best };
   });
-  return { metric, variants, rows: out };
+  return { metric, stat, seed, variants, rows: out };
+}
+
+// The tables of a seed study: the mean over the seeds, then one table per seed.
+// Returns [{ label, table, m }] (table: 'mean' or 'seed N').
+export function seedMatrices(rows, metric = 'time', order = {}) {
+  const out = [{ label: 'mean over the seeds', table: 'mean', m: resultMatrix(rows, metric, order, { stat: 'mean' }) }];
+  for (const s of rowSeeds(rows)) out.push({ label: `seed ${s}`, table: `seed ${s}`, m: resultMatrix(rows, metric, order, { seed: s }) });
+  return out;
 }
 
 const csvField = (x) => { const t = x === null || x === undefined ? '' : String(x); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
-const cellText = (c) => !c ? '' : c.solved ? String(c.value) : c.outcome;
+const cellText = (c) => !c ? '' : c.solved ? String(c.value) : c.solvedN ? `${c.outcome} (${c.solvedN} of ${c.n} finished)` : c.outcome;
 
 // CSV: one row per instance, one column per variant (the metric, or the outcome of a cell that
 // did not finish), then the best variant of the row.
 export function matrixCSV(m) {
   const lines = [['instance', ...m.variants, 'best'].map(csvField).join(',')];
   for (const r of m.rows) lines.push([r.instance, ...m.variants.map((v) => cellText(r.cells[v])), r.best || ''].map(csvField).join(','));
+  return lines.join('\n') + '\n';
+}
+
+// Several tables in one CSV (seedMatrices): a first column names the table; a mean table has a
+// standard deviation column per variant.
+export function matricesCSV(list) {
+  const variants = [...new Set(list.flatMap((x) => x.m.variants))];
+  const sdCols = list.some((x) => x.m.stat === 'mean');
+  const head = ['table', 'instance', ...variants.flatMap((v) => (sdCols ? [v, `${v} sd`] : [v])), 'best'];
+  const lines = [head.map(csvField).join(',')];
+  for (const { table, m } of list) {
+    for (const r of m.rows) {
+      const cols = variants.flatMap((v) => { const c = r.cells[v]; const t = cellText(c); return sdCols ? [t, c && c.sd !== null && c.sd !== undefined ? String(c.sd) : ''] : [t]; });
+      lines.push([table, r.instance, ...cols, r.best || ''].map(csvField).join(','));
+    }
+  }
   return lines.join('\n') + '\n';
 }
 
@@ -404,7 +480,7 @@ export function matrixMarkdown(m) {
   const body = m.rows.map((r) => `| ${r.instance || '(project)'} | ${m.variants.map((v) => {
     const c = r.cells[v];
     if (!c) return '';
-    let t = c.solved ? num(c.value, m.metric) : c.outcome;
+    let t = c.solved ? num(c.value, m.metric) + (c.sd !== null && c.sd !== undefined ? ` ± ${num(c.sd, m.metric)}` : '') : c.solvedN ? `${c.outcome} (${c.solvedN}/${c.n})` : c.outcome;
     if (r.best === v) t = `**${t}**`;
     if (c.disagree) t += ' ✗';
     return t;

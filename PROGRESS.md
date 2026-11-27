@@ -2622,3 +2622,24 @@ file); `tools/aspq-check.py` checks them by brute force. Manual: *ASP(Q) example
   yourself" after Exercise 1), the instructors' page and the manual's library table.
 - Tests: `exercise.test.mjs` (each starter fails, each worked solution passes, blocking misses the
   part-1 budgets); `coverage.mjs` lets the four have no variants (a variant would give the loop away).
+
+## Campaigns over several seeds (2026-11-27, on request)
+
+- Suites: `solver_seeds` is a number (0..N-1) or a list of seeds; `random_seeds: N` is drawn at
+  Start (and by `tools/bench.mjs`) and replaced by `solver_seeds: [the seeds]`, so the suite records
+  them; every row carries its seed. `randomize: true|false` sets the randomized search per suite
+  (in the cell's settings and key only when given, so the keys of older suites do not change).
+  Measured: without randomized search, seeds give identical runs (gc-shape2: 1259 candidates on
+  seeds 1-4; randomized 1263-1310), so the tab says "only the times differ" when it is off.
+- Campaign tab: the bar **Solver seeds** (number, 0,1,2,… or random, randomized search, **Set seeds**;
+  random seeds are drawn at once and written into the suite). The matrix gets a **Seeds** picker with
+  rows of two or more seeds: median (default, as before), mean ± sample standard deviation, one seed,
+  or the mean followed by one table per seed (`seedMatrices`); a cell where only some seeds finished
+  shows "timeout (2 of 3 finished)"; the tooltip lists the value per seed; the CSV export follows
+  the view (`matricesCSV`: a `table` column and an sd column per variant).
+- `js/campaign.js`: `suiteSeeds`, `drawSeeds`, `drawSuiteSeeds`, `rowSeeds`, `seedMatrices`,
+  `matricesCSV`; `resultMatrix(rows, metric, order, { stat, seed })`. `tools/bench.mjs`: `--seeds N|a,b,c`,
+  `--random-seeds N` (refused with `--shard`/`--resume`; prints the seeds and how to repeat them),
+  `--randomize`/`--no-randomize`. `tools/report.mjs --per-seed`; the report names the seeds.
+- Docs: manual (Campaigns, "Several seeds"), how-to campaign, tutorial lesson 8.
+  Tests: `campaign-seeds.test.mjs`, a browser test in `directions.test.mjs`.

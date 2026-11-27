@@ -3802,6 +3802,8 @@ The **Campaign** tab runs the suite. The ten runs share several engines and take
 
 The results are kept in this browser: a second start runs nothing; change a fragment and only the runs it affects run again. The suite is JSON in the editor; `tools/bench.mjs` runs the same suite from the command line, and **Import rows** reads its output.
 
+One seed per cell can flatter a variant. The bar **Solver seeds** above the suite sets several (0, 1, 2, … or random ones, written into the suite) with a randomized search; the matrix then shows the median, the mean ± its standard deviation, or one table per seed.
+
 ### Comparing encodings: variants {#t08-tut-variants}
 
 The voting example has three refinement strategies for its check: which axiom instances a counterexample marks as relevant. The fragment `relevant` holds the default; `relevant_falsified` and `relevant_profile_free` hold the others. Each is a **variant**, listed under **Variants** at the foot of the Loop tab: `falsified` swaps `relevant_falsified` in for `relevant`; `fewest`, `multi`, `partial` and `reference` have a loop script of their own. The **Variant** picker in the top bar runs one of them; the suite `strategies` runs all six on the questions that finish, so the Campaign tab compares them side by side. To try a strategy of your own: add a fragment, then a variant that swaps it in.

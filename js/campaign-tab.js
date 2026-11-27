@@ -1,6 +1,6 @@
 // Campaign tab (tab 10): a suite editor, Start / Pause /
 // Resume / Abort, a progress grid, four plots and a growth fit, on rows kept in IndexedDB.
-import { runSuite, expandSuite, cellKey, inconsistencies, scaling, growthFit, solvedCurves, SuiteError, engineTag, resultMatrix, matrixCSV } from './campaign.js';
+import { runSuite, expandSuite, cellKey, inconsistencies, scaling, growthFit, solvedCurves, SuiteError, engineTag, resultMatrix, matrixCSV, matricesCSV, seedMatrices, rowSeeds, drawSeeds, drawSuiteSeeds } from './campaign.js';
 import { Pool, defaultPoolSize } from './pool.js';
 import { IdbStore, MemoryStore, exportRows, importRows } from './store.js';
 import { fmt } from './output.js';
@@ -61,15 +61,25 @@ export class CampaignTab {
     this.summary = h('div', { id: 'campaign-summary' });
     this.matrixBox = h('div', { id: 'campaign-matrix-box' });
     this.metric = 'time';
+    this.seedView = 'median';     // 'median' | 'mean' | 'each' (mean, then every seed) | a seed number
     this.sortBy = null;           // null (suite order) | 'instance' | a variant name
     this.scatterPick = [null, null];
     this.grid.addEventListener('mousemove', (e) => this.gridTip(e));
+    // solver seeds: how many, which (0..N-1 or random, written into the suite), randomized search
+    this.seedCount = h('input', { id: 'campaign-seed-count', size: 3, inputmode: 'numeric', value: '1', 'aria-label': 'Number of solver seeds' });
+    this.seedKind = h('select', { id: 'campaign-seed-kind', 'aria-label': 'Which seeds' },
+      h('option', { value: 'fixed' }, 'seeds 0, 1, 2, …'), h('option', { value: 'random' }, 'random seeds'));
+    this.seedRandomize = h('input', { type: 'checkbox', id: 'campaign-seed-randomize' });
+    this.seedNote = h('span', { class: 'note', id: 'campaign-seed-note' });
+    this.seedsBar = h('div', { class: 'instances-bar', id: 'campaign-seeds-bar' }, h('b', {}, 'Solver seeds '), this.seedCount, this.seedKind,
+      h('label', { title: 'Every solver gets --rand-freq=0.2 --sign-def=rnd, so that the seed changes the search (without it, every seed searches the same way)' }, this.seedRandomize, ' randomized search'),
+      b('campaign-seed-set', 'Set seeds', () => this.setSeeds()), this.seedNote);
     this.root.append(
       h('div', { class: 'instances-bar' }, this.select, b('campaign-new', 'New suite', () => this.addSuite()),
         h('label', { title: 'How many runs go at once, one engine (worker) each' }, 'Parallel runs ', this.jobs), this.startB, this.pauseB, this.abortB,
         b('campaign-export', 'Export rows', () => this.exportFile()), b('campaign-export-csv', 'Export matrix (CSV)', () => this.exportCSV()), b('campaign-import', 'Import rows', () => this.fileInput.click()),
         b('campaign-clear', 'Forget rows', () => this.clearRows()), this.fileInput),
-      this.text, this.status, this.grid, this.summary, this.matrixBox, this.plots);
+      this.seedsBar, this.text, this.status, this.grid, this.summary, this.matrixBox, this.plots);
     this.setRunning(false);
   }
 
@@ -87,7 +97,48 @@ export class CampaignTab {
     const s = this.suite;
     this.text.value = s ? JSON.stringify(s, null, 2) : '';
     this.text.disabled = !s;
+    this.seedsBar.hidden = !s;
+    if (s) {
+      const list = Array.isArray(s.solver_seeds) ? s.solver_seeds : null;
+      this.seedCount.value = String(s.random_seeds !== undefined ? s.random_seeds : list ? list.length : Math.max(1, Number(s.solver_seeds) || 1));
+      this.seedKind.value = s.random_seeds !== undefined || (list && list.some((x, i) => x !== i)) ? 'random' : 'fixed';
+      this.seedRandomize.checked = s.randomize === true;
+      this.seedNote.textContent = this.seedText(s);
+    }
     if (!this.running) this.setRunning(false);
+  }
+
+  // what the seeds of a suite are, in words
+  seedText(s) {
+    const list = Array.isArray(s.solver_seeds) ? s.solver_seeds : null;
+    const n = s.random_seeds !== undefined ? Number(s.random_seeds) : list ? list.length : Math.max(1, Number(s.solver_seeds) || 1);
+    const which = s.random_seeds !== undefined ? `${n} random seeds, drawn at Start` : list ? `seeds ${list.join(', ')}` : n === 1 ? 'seed 0' : `seeds 0 to ${n - 1}`;
+    const rnd = s.randomize === true ? ', randomized search' : s.randomize === false ? ', no randomized search' : this.app.project.settings.randomize === true ? ', randomized search (the project\'s setting)' : '';
+    const warn = n > 1 && s.randomize !== true && !(s.randomize === undefined && this.app.project.settings.randomize === true)
+      ? '. Without randomized search every seed searches the same way: only the times differ.' : '.';
+    return `${which}${rnd}${warn}`;
+  }
+
+  // Set seeds: write the seeds (and randomized search) into the suite; random seeds are drawn now
+  setSeeds() {
+    const s = this.suite;
+    if (!s || this.running) return;
+    const n = Math.floor(Number(this.seedCount.value));
+    if (!(n >= 1 && n <= 1000)) { this.say('Solver seeds: a number from 1 to 1000', true); return; }
+    const next = { ...s };
+    delete next.random_seeds;
+    next.solver_seeds = this.seedKind.value === 'random' ? drawSeeds(n) : n;
+    if (this.seedRandomize.checked) next.randomize = true; else delete next.randomize;
+    this.replaceSuite(next);
+    this.say(this.seedKind.value === 'random' ? `Drew the seeds ${next.solver_seeds.join(', ')}; they are in the suite (solver_seeds) and in every row.` : `Seeds 0 to ${n - 1}.`);
+    this.refresh();
+  }
+
+  replaceSuite(next) {
+    const i = this.suites.findIndex((x) => x.name === this.current);
+    if (i >= 0) this.suites[i] = next;
+    this.showSuite();
+    this.app.dirty();
   }
 
   saveText() {
@@ -146,6 +197,11 @@ export class CampaignTab {
   async start() {
     const s = this.suite;
     if (!s || this.running || !this.app.ready) return;
+    let drawn = null;
+    try {
+      const d = drawSuiteSeeds(s);
+      if (d.seeds) { this.replaceSuite(d.suite); drawn = d.seeds; }
+    } catch (e) { this.say(`Not started: ${e.message}`, true); return; }
     const store = await this.storeP;
     const size = Math.max(1, Math.min(16, Math.floor(Number(this.jobs.value)) || defaultPoolSize()));
     const pool = new Pool(size);
@@ -160,7 +216,7 @@ export class CampaignTab {
     let last = 0;
     this.say('Starting…');
     try {
-      const res = await runSuite(this.app.project, s, {
+      const res = await runSuite(this.app.project, this.suite, {
         runJob: async (job) => { if (this.gate) await this.gate.promise; if (signal.aborted) return { outcome: 'aborted' }; return pool.run(job); },
         store, signal, jobs: size, engineVersion: this.tag(),
         engineRun: (p, o) => this.app.engine.exec(p, o), luaTexts: this.app.genLua(), runtime: this.app.runtime, modules: this.app.modules,
@@ -174,7 +230,7 @@ export class CampaignTab {
       this.rows = res.all;
       const secs = ((performance.now() - t0) / 1000).toFixed(1);
       this.say(signal.aborted ? `Aborted after ${fmt(res.ran)} runs.`
-        : `${fmt(res.cells)} cells: ${fmt(res.ran)} run, ${fmt(res.skipped)} from earlier runs, ${secs} s.${res.problems.length ? ` Problem: ${res.problems[0]}` : ''}`, res.problems.length > 0);
+        : `${fmt(res.cells)} cells: ${fmt(res.ran)} run, ${fmt(res.skipped)} from earlier runs, ${secs} s.${drawn ? ` Random seeds drawn: ${drawn.join(', ')} (now in the suite).` : ''}${res.problems.length ? ` Problem: ${res.problems[0]}` : ''}`, res.problems.length > 0);
     } catch (e) {
       this.say(`Not started: ${e instanceof SuiteError ? e.message : e.message || e}`, true);
     } finally {
@@ -224,8 +280,11 @@ export class CampaignTab {
   }
 
   exportCSV() {
-    const blob = new Blob([matrixCSV(resultMatrix(this.rows, this.metric, this.order()))], { type: 'text/csv' });
-    const a = h('a', { href: URL.createObjectURL(blob), download: `${this.current || 'campaign'}-${this.metric}.csv` });
+    const v = this.currentSeedView();
+    const text = v === 'each' ? matricesCSV(seedMatrices(this.rows, this.metric, this.order())) : matrixCSV(this.matrixFor(v));
+    const tag = v === 'each' ? '-per-seed' : v === 'mean' ? '-mean' : typeof v === 'number' ? `-seed${v}` : '';
+    const blob = new Blob([text], { type: 'text/csv' });
+    const a = h('a', { href: URL.createObjectURL(blob), download: `${this.current || 'campaign'}-${this.metric}${tag}.csv` });
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
@@ -260,14 +319,53 @@ export class CampaignTab {
   }
 
   // the instance x variant matrix (FUTURE-DIRECTIONS D2): one row per instance, one column per
-  // variant; time or candidates; the best solved cell of a row highlighted; sortable.
+  // variant; time or candidates; the best solved cell of a row highlighted; sortable. With several
+  // seeds: the median or the mean (± standard deviation) over the seeds, one seed, or the mean
+  // followed by a table per seed.
+  currentSeedView() {
+    const seeds = rowSeeds(this.rows.filter((r) => !r.skipped));
+    const v = this.seedView;
+    if (seeds.length < 2) return 'median';
+    if (typeof v === 'number' && !seeds.includes(v)) return 'median';
+    return v;
+  }
+
+  matrixFor(view) {
+    return resultMatrix(this.rows, this.metric, this.order(), view === 'mean' ? { stat: 'mean' } : typeof view === 'number' ? { seed: view } : {});
+  }
+
   drawMatrix() {
     this.matrixBox.textContent = '';
     if (!this.rows.length) return;
-    const m = resultMatrix(this.rows, this.metric, this.order());
     const pick = h('select', { id: 'campaign-metric', 'aria-label': 'Matrix metric' },
       ...[['time', 'time (s)'], ['solutions', 'solutions'], ['candidates', 'candidates'], ['refinements', 'refinements'], ['counterexamples', 'counterexamples'], ['from_models', 'refinements from counterexamples'], ['from_cores', 'refinements from cores'], ['blocks', 'blocks']].map(([v, l]) => h('option', { value: v, selected: v === this.metric }, l)));
     pick.addEventListener('change', () => { this.metric = pick.value; this.drawMatrix(); });
+    const seeds = rowSeeds(this.rows.filter((r) => !r.skipped));
+    const view = this.currentSeedView();
+    let seedPick = null;
+    if (seeds.length > 1) {
+      seedPick = h('select', { id: 'campaign-seed-view', 'aria-label': 'Seeds in the matrix' },
+        h('option', { value: 'median', selected: view === 'median' }, `median over ${seeds.length} seeds`),
+        h('option', { value: 'mean', selected: view === 'mean' }, `mean over ${seeds.length} seeds (± sd)`),
+        h('option', { value: 'each', selected: view === 'each' }, 'the mean, then every seed'),
+        ...seeds.map((x) => h('option', { value: `seed:${x}`, selected: view === x }, `seed ${x}`)));
+      seedPick.addEventListener('change', () => { const v = seedPick.value; this.seedView = v.startsWith('seed:') ? Number(v.slice(5)) : v; this.drawMatrix(); });
+    }
+    const note = this.metric === 'solutions' ? ' the number of solutions each run found; click a heading to sort'
+      : ' the best solved cell per row in bold (none on a tie); click a heading to sort';
+    this.matrixBox.append(h('div', { class: 'instances-bar' }, h('b', {}, 'Instance × variant '), h('label', {}, 'Show ', pick),
+      seedPick ? h('label', {}, ' Seeds ', seedPick) : null, h('span', { class: 'note' }, note)));
+    if (seeds.length > 1) this.matrixBox.append(h('p', { class: 'note', id: 'campaign-seeds-used' }, `Solver seeds of these rows: ${seeds.join(', ')}.`));
+    if (view === 'each') {
+      seedMatrices(this.rows, this.metric, this.order()).forEach(({ label, m }, i) => {
+        this.matrixBox.append(h('h4', { class: 'campaign-matrix-title' }, label), this.matrixTable(m, i === 0 ? 'campaign-matrix' : `campaign-matrix-seed-${m.seed}`));
+      });
+    } else {
+      this.matrixBox.append(this.matrixTable(this.matrixFor(view), 'campaign-matrix'));
+    }
+  }
+
+  matrixTable(m, id) {
     const rows = m.rows.slice();
     if (this.sortBy === 'instance') rows.sort((a, b) => String(a.instance).localeCompare(String(b.instance), undefined, { numeric: true }));
     else if (this.sortBy) {
@@ -276,22 +374,24 @@ export class CampaignTab {
     }
     const th = (label, key) => h('th', { 'data-sort': key, class: 'sortable', title: 'Sort by this column', onclick: () => { this.sortBy = this.sortBy === key ? null : key; this.drawMatrix(); } },
       label + (this.sortBy === key ? ' ▲' : ''));
-    const t = h('table', { class: 'internals-table campaign-matrix', id: 'campaign-matrix', 'data-metric': this.metric });
+    const t = h('table', { class: 'internals-table campaign-matrix', id, 'data-metric': this.metric, 'data-stat': m.stat, 'data-seed': m.seed === null ? '' : String(m.seed) });
+    const show = (x) => this.metric === 'time' ? x.toFixed(3) : this.metric === 'solutions' ? fmt(Math.round(x)) : m.stat === 'mean' ? fmt(Math.round(x * 10) / 10) : fmt(Math.round(x));
     t.append(h('tr', {}, th('Instance', 'instance'), ...m.variants.map((v) => th(vname(v), v))));
     for (const r of rows) {
       t.append(h('tr', { 'data-instance': r.instance }, h('td', {}, r.instance || '(no instance)'), ...m.variants.map((v) => {
         const c = r.cells[v];
         if (!c) return h('td', {}, '');
+        const part = c.solvedN && !c.solved ? ` (${c.solvedN} of ${c.n} finished)` : '';
+        const sd = c.sd !== null && c.sd !== undefined && c.solved ? ` ± ${show(c.sd)}` : '';
         const text = this.metric === 'solutions' ? (c.value === null ? '–' : fmt(Math.round(c.value)) + (c.solved ? '' : ` (${c.outcome})`))
-          : !c.solved ? c.outcome : c.value === null ? '–' : this.metric === 'time' ? `${c.value.toFixed(3)}` : fmt(Math.round(c.value));
+          : !c.solved ? c.outcome + part : c.value === null ? '–' : show(c.value) + sd;
         const cls = ['num', r.best === v ? 'best' : '', c.disagree ? 'disagree' : '', c.solved ? '' : 'unsolved'].filter(Boolean).join(' ');
-        const tip = `${r.instance || '(no instance)'} / ${vname(v)}: ${c.outcome}, ${fmt(c.solutions)} solutions${c.cost ? `, cost ${c.cost.join(' ')}` : ''}${c.n > 1 ? `, median of ${c.n} seeds` : ''}${c.disagree ? '; disagrees with another variant' : ''}`;
+        const each = c.n > 1 ? `; ${m.stat === 'mean' ? 'mean' : 'median'} of ${c.n} seeds (${c.perSeed.map(([sd0, x]) => `seed ${sd0}: ${x === null ? '–' : show(x)}`).join(', ')})` : m.seed !== null ? `; seed ${m.seed}` : '';
+        const tip = `${r.instance || '(no instance)'} / ${vname(v)}: ${c.outcome}, ${fmt(c.solutions)} solutions${c.cost ? `, cost ${c.cost.join(' ')}` : ''}${each}${c.disagree ? '; disagrees with another variant' : ''}`;
         return h('td', { class: cls, title: tip, 'data-variant': v }, text + (c.disagree ? ' ✗' : ''));
       })));
     }
-    this.matrixBox.append(h('div', { class: 'instances-bar' }, h('b', {}, 'Instance × variant '), h('label', {}, 'Show ', pick),
-      h('span', { class: 'note' }, this.metric === 'solutions' ? ' the number of solutions each run found (median over seeds); click a heading to sort'
-        : ' the best solved cell per row in bold (none on a tie); click a heading to sort')), t);
+    return t;
   }
 
   // the order of the project file: the suite's variants as listed, then the project's variants;

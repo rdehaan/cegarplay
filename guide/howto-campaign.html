@@ -56,6 +56,12 @@
             time, solutions, candidates and refinements (rows and columns in the project's order). The
             best finished cell of a row is bold (not for solutions); a cell that did
             not finish shows its outcome; click a heading to sort by that variant.</li>
+          <li><b>Spread over seeds.</b> One run per cell can mislead: a variant may be lucky on one
+            seed. In the bar <b>Solver seeds</b>, set a number of seeds (0, 1, 2, … or random ones, which are
+            written into the suite), tick <b>randomized search</b> (without it every seed searches the same
+            way), and press <b>Set seeds</b>, then <b>Start</b>. The matrix's <b>Seeds</b> picker shows the
+            median, the mean with its standard deviation, a single seed, or the mean followed by every
+            seed: a ranking that holds on every seed is one to trust.</li>
           <li><b>Read the plots.</b> The cactus plot (cells solved against time) compares variants over
             the whole suite; the scatter plot compares two variants per instance (pick both); a
             parameter grid adds a scaling plot with a growth factor.</li>
@@ -80,7 +86,8 @@
           <li>A time limit that is too short turns every cell into <code>timeout</code>, and the matrix
             says nothing. Start with a few instances and a generous limit.</li>
           <li>Times measured with several engines at once are noisier than single runs; compare
-            candidates first, and use solver seeds for spread.</li>
+            candidates first, and use solver seeds with randomized search for spread (seeds without it
+            give the same search every time).</li>
           <li>Only exhausted runs (or finished optimisation runs) are compared for consistency: a cell
             that stopped at the limit is never marked ✗, but proves nothing either.</li>
         </ul>

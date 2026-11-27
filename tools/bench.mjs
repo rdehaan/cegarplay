@@ -2,9 +2,15 @@
 //
 //   node tools/bench.mjs <project.json | library id> --suite NAME [--jobs N] [--shard i/n]
 //                        [--out file.jsonl] [--resume] [--seconds N] [--quiet]
+//                        [--seeds N | --seeds a,b,c | --random-seeds N] [--randomize | --no-randomize]
 //
-// --seconds N replaces the suite's time limit per cell (N > 0). Turn the rows into a table and a
-// plot with tools/report.mjs.
+// --seconds N replaces the suite's time limit per cell (N > 0). --seeds and --random-seeds replace
+// the suite's solver seeds (N: seeds 0..N-1; a list: these seeds; random: N seeds drawn now, as
+// does a suite with random_seeds); the seeds drawn are printed, and every row carries its seed.
+// --randomize turns on the randomized search (without it every seed searches the same way).
+// Random seeds cannot be drawn with --shard or --resume (each process would draw others): pass the
+// printed seeds with --seeds. Turn the rows into a table and a plot with tools/report.mjs
+// (--per-seed: the mean and a table per seed).
 //
 // One row per cell as a JSON line (stdout, or --out). --resume skips the cells whose key is
 // already in the --out file and appends. Exit code 0, 1 on a problem, 2 on bad usage.
@@ -13,7 +19,7 @@ import os from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import factory from '../vendor/clingo-wasm/clingo.js';
 import { load } from '../js/project.js';
-import { runSuite, parseShard, inconsistencies, Reducer, engineTag } from '../js/campaign.js';
+import { runSuite, parseShard, inconsistencies, Reducer, engineTag, drawSuiteSeeds } from '../js/campaign.js';
 import { MemoryStore, importRows } from '../js/store.js';
 import { parseEvent } from '../js/driver.js';
 
@@ -75,21 +81,31 @@ export class ThreadPool {
 
 function usage(msg) {
   if (msg) console.error(msg);
-  console.error('usage: node tools/bench.mjs <project.json | library id> --suite NAME [--jobs N] [--shard i/n] [--out file.jsonl] [--resume] [--seconds N] [--quiet]');
+  console.error('usage: node tools/bench.mjs <project.json | library id> --suite NAME [--jobs N] [--shard i/n] [--out file.jsonl] [--resume] [--seconds N] [--quiet]\n' +
+    '                     [--seeds N | --seeds a,b,c | --random-seeds N] [--randomize | --no-randomize]');
   process.exit(2);
 }
 
-export async function bench(project, suiteName, { jobs = 1, shard = null, store = new MemoryStore(), onRow = () => {}, seconds = 0 } = {}) {
+// seeds: a number N or a list (replaces the suite's solver seeds); randomSeeds: N seeds to draw;
+// randomize: true | false (replaces the suite's). The result has drawnSeeds (or null).
+export async function bench(project, suiteName, { jobs = 1, shard = null, store = new MemoryStore(), onRow = () => {}, seconds = 0, seeds = null, randomSeeds = null, randomize = null, random = Math.random } = {}) {
   let suite = (project.suites || []).find((s) => s.name === suiteName);
   if (!suite) throw new Error(`no suite named ${suiteName}`);
   if (seconds > 0) suite = { ...suite, limits: { ...(suite.limits || {}), seconds } };
+  if (seeds !== null || randomSeeds !== null) {
+    const { random_seeds: _r, ...rest } = suite;
+    suite = randomSeeds !== null ? { ...rest, random_seeds: randomSeeds } : { ...rest, solver_seeds: seeds };
+  }
+  if (randomize !== null) suite = { ...suite, randomize };
+  const drawn = drawSuiteSeeds(suite, random);
+  suite = drawn.suite;
   const pool = new ThreadPool(jobs);
   try {
     return await runSuite(project, suite, {
       runJob: (job) => pool.run(job), store, engineRun, luaTexts: { draw: lua('draw.lua'), generate: lua('generate.lua') },
       runtime: lua('runtime.lua'), modules: { ground: lua('ground.lua') }, engineVersion: engineTag(engineVersion(), lua('runtime.lua'), { ground: lua('ground.lua') }), shard, jobs,
       onProgress: (row, done, total, old) => { if (!old) onRow(row, done, total); },
-    });
+    }).then((r) => ({ ...r, drawnSeeds: drawn.seeds }));
   } finally { pool.close(); }
 }
 export const engineVersion = () => {
@@ -99,6 +115,7 @@ export const engineVersion = () => {
 async function main(argv) {
   const args = [...argv];
   let target = null, suite = null, jobs = Math.max(1, Math.min(8, os.cpus().length - 1)), shard = null, out = null, resume = false, quiet = false, seconds = 0;
+  let seeds = null, randomSeeds = null, randomize = null;
   while (args.length) {
     const a = args.shift();
     if (a === '--suite') suite = args.shift() || usage('--suite needs a name');
@@ -108,6 +125,15 @@ async function main(argv) {
     else if (a === '--resume') resume = true;
     else if (a === '--seconds') { seconds = Number(args.shift()); if (!(seconds > 0)) usage('--seconds needs a number > 0'); }
     else if (a === '--quiet') quiet = true;
+    else if (a === '--seeds') {
+      const t = args.shift() || usage('--seeds needs N or a list a,b,c');
+      if (/^\d+$/.test(t) && !t.includes(',')) seeds = Number(t);
+      else if (/^\d+(,\d+)*$/.test(t)) seeds = t.split(',').map(Number);
+      else usage('--seeds needs N or a list a,b,c of whole numbers');
+      if (seeds === 0) usage('--seeds needs N >= 1');
+    } else if (a === '--random-seeds') { randomSeeds = Number(args.shift()); if (!Number.isInteger(randomSeeds) || randomSeeds < 1) usage('--random-seeds needs a whole number >= 1'); }
+    else if (a === '--randomize') randomize = true;
+    else if (a === '--no-randomize') randomize = false;
     else if (a === '-h' || a === '--help') usage();
     else if (a.startsWith('-')) usage(`unknown option ${a}`);
     else if (target) usage('only one project');
@@ -115,16 +141,20 @@ async function main(argv) {
   }
   if (!target || !suite) usage();
   if (resume && !out) usage('--resume needs --out');
+  if (seeds !== null && randomSeeds !== null) usage('give --seeds or --random-seeds, not both');
   const file = fs.existsSync(target) ? target : /^[A-Za-z0-9_-]+$/.test(target) ? new URL(`examples/${target}.json`, root) : target;
   let project;
   try { project = load(fs.readFileSync(file, 'utf8')); } catch (e) { console.error(`cannot load ${target}: ${e.message}`); process.exit(1); }
+  const named = (project.suites || []).find((s) => s.name === suite);
+  const drawing = randomSeeds !== null || (seeds === null && named && named.random_seeds !== undefined);
+  if (drawing && (shard || resume)) usage('random seeds cannot be drawn with --shard or --resume (each process would draw others): draw them once and pass them with --seeds a,b,c');
   const store = new MemoryStore(resume && fs.existsSync(out) ? importRows(fs.readFileSync(out, 'utf8')) : []);
   if (out && !resume) fs.writeFileSync(out, '');
   const t0 = Date.now();
   let r;
   try {
     r = await bench(project, suite, {
-      jobs, shard, store, seconds,
+      jobs, shard, store, seconds, seeds, randomSeeds, randomize,
       onRow: (row, done, total) => {
         const line = JSON.stringify(row) + '\n';
         if (out) fs.appendFileSync(out, line); else process.stdout.write(line);
@@ -132,6 +162,7 @@ async function main(argv) {
       },
     });
   } catch (e) { console.error(e.message); process.exit(1); }
+  if (r.drawnSeeds) console.error(`${out && !quiet ? '\n' : ''}random seeds: ${r.drawnSeeds.join(', ')} (repeat with --seeds ${r.drawnSeeds.join(',')})`);
   if (!quiet) {
     const bad = inconsistencies(r.all);
     console.error(`${out ? '\n' : ''}${r.cells} cells: ${r.ran} run, ${r.skipped} from earlier, ${((Date.now() - t0) / 1000).toFixed(1)} s; ` +

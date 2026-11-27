@@ -317,6 +317,9 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
 <p>The results are kept in this browser: <span class="web-only">press Start again and nothing runs;</span><span class="book-only">a second start runs nothing;</span> change a fragment and only the runs it
   affects run again. The suite is JSON in the editor; <code>tools/bench.mjs</code> runs the same suite from the command
   line, and <b>Import rows</b> reads its output.</p>
+<p>One seed per cell can flatter a variant. The bar <b>Solver seeds</b> above the suite sets several (0, 1, 2, … or random
+  ones, written into the suite) with a randomized search; the matrix then shows the median, the mean ± its standard
+  deviation, or one table per seed.</p>
 <h3 id="tut-variants">Comparing encodings: variants</h3>
 <p>The voting example has three refinement strategies for its check: which axiom instances a counterexample marks
   as relevant. The fragment <code>relevant</code> holds the default; <code>relevant_falsified</code> and
