@@ -2432,3 +2432,63 @@ one), and loop variants that might be faster, to learn which loops suit the prob
   pairs merged (readable explanations only in the IHS readme; same-size sorting only in
   voting-justification; minimality with at most k; smaller and growing domain), new questions on
   robust measurements and on realisability as its own check. 10 + 8 + 5 questions.
+
+## BSML: countermodels and natural deduction proofs (2026-11-27, on request)
+
+Two new library examples (group `logic`), after rdehaan/bsml-sat and Aloni, Anttila and Yang,
+*State-based modal logics for free choice* (2024). Both project files are written by
+`python3 tools/make-bsml.py` (one source, so the shared fragments agree; `--check`);
+`tools/bsml-check.py` checks them by brute force. Manual: *BSML examples*.
+
+- **`bsml-entailment`** (Shape 2, 12 instances): a countermodel to premises |= conclusion is a
+  model with at most n worlds (default 3) and a state s that supports the premises but not the
+  conclusion. Formulas are terms (`bot ne neg and or gor dia box empty plus`); `plus(F)` is the
+  enrichment [F]+, computed in ASP. Each formula becomes an evaluation tree with support and
+  anti-support nodes; a modal node gets one child per world (the successor state that world
+  needs), which replaces bsml-sat's choice of successor copies and needs no bound on copies.
+  A guesses model, state and the substates for the premises; C looks for substates that support the
+  conclusion; `relevant/1`: every in(W), rel(W,V) for V in a chosen successor substate of W (the
+  whole row where all of R[W] is needed), val(W,P) where an atom is evaluated. A has a no-junk
+  rule (unreachable worlds empty and last) and the fragment `smallest` (#minimize worlds, then
+  arrows and true atoms): with `A.solve(optimal)` the first surviving candidate is a smallest
+  countermodel and the loop stops. Such a run is not exhausted, so (as for maxsat-ihs) the
+  instances with a countermodel carry `expected.optimum` (its cost: worlds, then arrows and true
+  atoms) and the example is tagged `stops-at-optimum`; the instances without one end exhausted
+  with 0 solutions. Variants: `reference` (blocking, n = 2: at n = 3 the blocking loop does not
+  finish in 60 s; the smallest countermodels have at most 2 worlds, so the optima agree) and
+  `lift` (clauses lifted from the ground programs: 2 candidates instead of 692 on
+  dual-prohibition, so the hand-written relevant/1 is far from minimal there; 3.5 s instead of
+  0.4 s on the example).
+- **`bsml-proofs`** (8 instances): the countermodel loop first; if none, a proof search that
+  grows by one line per round (`P.ground(line, t)`, external `goal(t)`, up to 10 lines), so the
+  first proof is a shortest one. The system is Definition 4.1 (BSML with global disjunction,
+  sound and complete). Lines are sequents (dep/2: the assumptions a line depends on; a rule
+  discharges assumptions by formula), so there are no Fitch boxes and the side conditions are
+  local. `box` is a connective with the extra rule `def_box` (box A <-> neg dia neg A, the paper's
+  definition); □Mon only with one assumption plus `box_nec` (none). Formulas come from a finite
+  universe (subformulas of premises, conclusion, `lemma/1`). Pruning that loses no proof:
+  assumption lines first and sorted, every line used, no line that repeats an earlier formula
+  with a superset of its assumptions (9 lines unsat: 5.5 s -> 2 s in Python clingo). The one
+  solution is the answer: the countermodel (accepted as a solution) or the proof, whose cost
+  is its number of lines (#minimize over the lines), checked as `expected.optimum`. The search
+  stops growing when no derivation of t lines exists at all (with a small universe the program
+  becomes unsatisfiable and clingo drops the external goal(t): P.atom would fail). Variants:
+  `reference` (blocking countermodel loop, n = 2), `proof-first` (the proof search first: 5.7 s
+  on wide-scope, which has no proof, against 0.03 s). `narrow-scope-enriched` (10 lines, about
+  6 s) is tagged slow; the library instance is the 7-line proof of Section 1's
+  dia((p & NE) or (q & NE)) |- dia p & dia q.
+- **Verification.** `bsml-check.py models N` evaluates Definition 2.3 directly on every model:
+  the counts with the same no-junk restriction equal the loop's countermodel counts without
+  `stop` at n = 2 and n = 3 (wide-scope 28 and 26,248, global-disjunction 4 and 3,256, ...), and
+  the 0/1 answers match on all 12 instances. `bsml-check.py rules` grounds the proof program
+  without a goal and checks every line of random derivations ending in each of the 42 rules
+  against all 2-world models: about 37,000 derivations, no unsound line after two fixes found
+  this way: (1) ¬E's conclusion must be classical (beta ranges over ML), (2) `rule(i, a; b)` in a
+  body is the pool `rule(i,a) ; rule(b)`, so the dependencies of ◇Mon/□Mon were lost (now
+  `rule(i, a; i, b)`). The audit (`tools/audit.mjs bsml-entailment`, also on wide-scope,
+  detachability, global-disjunction) reports sound.
+- Not done: the BSML system of Section 4.3 (the ⊥NE-translation rules need substitution in
+  ∨-distributive positions) and the rules for the emptiness operator (Definition 4.24); the proof
+  search treats empty(F) as non-classical and has no rules for it. bsml-sat's symmetry breaking
+  for directed graphs is not used (the no-junk rule and the minimisation suffice here).
+  `tools/cegarcheck.py` refuses the default loops (they stop at the first accepted candidate).

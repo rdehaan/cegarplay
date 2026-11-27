@@ -1,0 +1,185 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "BSML proofs",
+  "description": "Proofs in the natural deduction system for BSML with global disjunction (Aloni, Anttila and Yang 2024, Definition 4.1), found by ASP, and countermodels when there are none. The loop first runs the countermodel loop of bsml-entailment (a CEGAR loop); if no countermodel with at most n worlds exists, it searches for a shortest proof, one line more per round. The one solution is the answer: a smallest countermodel or a shortest proof (its cost is its number of lines). The proof search needs no refinement: the rules and their side conditions (no NE in the open assumptions, no global disjunction in the conclusion of or-elimination) are checked line by line. The system is sound and complete, so exactly one of the two searches succeeds when the bounds are large enough.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "Worlds, the formulas (with the enrichment [F]+ and the lemmas) and the evaluation tree of a formula. Added to every solver.",
+      "text": "% BSML formulas are terms over the atoms prop/1 (see the Instances tab):\n%   bot (weak contradiction), ne (nonemptiness), neg(F), and(F,G), or(F,G) (tensor\n%   disjunction), gor(F,G) (global disjunction), dia(F), box(F), empty(F) (emptiness\n%   operator), and plus(F): the pragmatic enrichment [F]+ of a classical formula F.\n% A model has the worlds 1..n, a valuation val/2 and a relation rel/2; a state is a set of\n% worlds. Support (pos) and anti-support (neg) follow Aloni, Anttila and Yang (2024), Def. 2.3.\n#const n = 3.\nworld(1..n).\n\n% The enrichment: [p]+ = p & NE, [neg a]+ = neg [a]+ & NE, [a & b]+ = ([a]+ & [b]+) & NE,\n% the same for or, [dia a]+ = dia [a]+ & NE, [box a]+ = box [a]+ & NE.\ngiven(F) :- premise(F).\ngiven(F) :- conclusion(F).\ngiven(F) :- lemma(F).\nenrich(F) :- given(plus(F)).\nenrich(A) :- enrich(neg(A)).\nenrich(A) :- enrich(dia(A)).\nenrich(A) :- enrich(box(A)).\nenrich(A;B) :- enrich(and(A,B)).\nenrich(A;B) :- enrich(or(A,B)).\nplus(P, and(P,ne)) :- enrich(P), prop(P).\nplus(bot, bot) :- enrich(bot).\nplus(neg(A), and(neg(E),ne)) :- enrich(neg(A)), plus(A,E).\nplus(dia(A), and(dia(E),ne)) :- enrich(dia(A)), plus(A,E).\nplus(box(A), and(box(E),ne)) :- enrich(box(A)), plus(A,E).\nplus(and(A,B), and(and(E,D),ne)) :- enrich(and(A,B)), plus(A,E), plus(B,D).\nplus(or(A,B), and(or(E,D),ne)) :- enrich(or(A,B)), plus(A,E), plus(B,D).\nformula(F, F) :- given(F), not enriched(F).\nformula(plus(F), E) :- given(plus(F)), plus(F,E).\nenriched(plus(F)) :- given(plus(F)).\n\n% The evaluation tree of a formula: node(N, F, P) asks for a state of node N that supports\n% (P = pos) or anti-supports (P = neg) F. A modal node gets one child d(N,W) per world W:\n% the successor state that W needs. root/1 says which formulas are evaluated.\nnode(r(F), E, pos) :- root(F), formula(F, E).\nflip(pos,neg). flip(neg,pos).\nnode(c1(N), A, Q) :- node(N, neg(A), P), flip(P,Q).\nnode(c1(N), A, P) :- node(N, empty(A), P).\nnode(c1(N), A, P) :- node(N, and(A,B), P).\nnode(c2(N), B, P) :- node(N, and(A,B), P).\nnode(c1(N), A, P) :- node(N, or(A,B), P).\nnode(c2(N), B, P) :- node(N, or(A,B), P).\nnode(c1(N), A, P) :- node(N, gor(A,B), P).\nnode(c2(N), B, P) :- node(N, gor(A,B), P).\nnode(d(N,W), A, P) :- node(N, dia(A), P), world(W).\nnode(d(N,W), A, P) :- node(N, box(A), P), world(W).\n\n% The kind of each child: the same state as its parent (same), part of a split of the\n% parent's state (part), one of two alternatives (alt), a nonempty substate of R[W]\n% (some), or all of R[W] (all).\nkid(N, c1(N), same) :- node(N, neg(_), _).\nkid(N, c1(N), alt)  :- node(N, empty(_), pos).\nkid(N, c1(N), same) :- node(N, empty(_), neg).\nkid(N, c1(N), same; N, c2(N), same) :- node(N, and(_,_), pos).\nkid(N, c1(N), part; N, c2(N), part) :- node(N, and(_,_), neg).\nkid(N, c1(N), part; N, c2(N), part) :- node(N, or(_,_), pos).\nkid(N, c1(N), same; N, c2(N), same) :- node(N, or(_,_), neg).\nkid(N, c1(N), alt;  N, c2(N), alt)  :- node(N, gor(_,_), pos).\nkid(N, c1(N), same; N, c2(N), same) :- node(N, gor(_,_), neg).\nkid(N, d(N,W), some) :- node(N, dia(_), pos), world(W).\nkid(N, d(N,W), all)  :- node(N, dia(_), neg), world(W).\nkid(N, d(N,W), all)  :- node(N, box(_), pos), world(W).\nkid(N, d(N,W), some) :- node(N, box(_), neg), world(W).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidate countermodels (solver A): a model and a state that supports the premises.",
+      "text": "% A candidate: a model and a state s that supports every premise.\n{ val(W, P) } :- world(W), prop(P).\n{ rel(W, V) } :- world(W), world(V).\n{ in(W) } :- world(W).\nroot(F) :- premise(F).\n\n% The extra conditions on a model that an instance may ask for.\n% indisputable: every world of s sees the same worlds.\n:- condition(indisputable), in(W), in(U), rel(W, V), not rel(U, V).\n% state-based: every world of s sees exactly s.\n:- condition(state_based), in(W), rel(W, V), not in(V).\n:- condition(state_based), in(W), in(V), not rel(W, V).\n\n% No junk: a world that s cannot reach plays no role, so it is empty and comes last.\nreach(W) :- in(W).\nreach(V) :- reach(W), rel(W, V).\n:- world(W), not reach(W), val(W, _).\n:- world(W), not reach(W), rel(W, _).\n:- world(W), W > 1, reach(W), not reach(W-1).\n\n% Which nodes are evaluated (act/1) and their states (st/2): the roots get the state s.\nact(r(F)) :- root(F).\nst(r(F), W) :- root(F), in(W).\nact(K) :- act(N), kid(N, K, same).\nact(K) :- act(N), kid(N, K, part).\nact(K) :- act(N), kid(N, K, some), st(N, W), K = d(N,W).\nact(K) :- act(N), kid(N, K, all), st(N, W), K = d(N,W).\n% gor: one disjunct supports the state; empty(F): F does, or the state is empty.\n1 { act(K) : kid(N, K, alt) } 1 :- act(N), node(N, gor(_,_), pos).\nnonempty(N) :- st(N, _).\nact(c1(N)) :- act(N), node(N, empty(_), pos), nonempty(N).\nst(K, W) :- act(K), kid(N, K, same), st(N, W).\nst(K, W) :- act(K), kid(N, K, alt), st(N, W).\n% A split: s = t u u with t and u inside s.\n{ st(K, W) } :- act(K), kid(N, K, part), st(N, W).\n:- act(N), kid(N, _, part), st(N, W), not st(K, W) : kid(N, K, part).\n% A successor state of W: all of R[W], or a nonempty part of it.\nst(d(N,W), V) :- act(d(N,W)), kid(N, d(N,W), all), rel(W, V).\n{ st(d(N,W), V) } :- act(d(N,W)), kid(N, d(N,W), some), rel(W, V).\n:- act(d(N,W)), kid(N, d(N,W), some), not nonempty(d(N,W)).\n\n% The atoms.\n:- act(N), node(N, P, pos), prop(P), st(N, W), not val(W, P).\n:- act(N), node(N, P, neg), prop(P), st(N, W), val(W, P).\n:- act(N), node(N, bot, pos), nonempty(N).\n:- act(N), node(N, ne, pos), not nonempty(N).\n:- act(N), node(N, ne, neg), nonempty(N).\n\n#show val/2.\n#show rel/2.\n#show in/1.\n"
+    },
+    {
+      "name": "smallest",
+      "description": "Makes A propose small candidates first.",
+      "text": "% Small candidates first: as few worlds as possible (those that s reaches), then as\n% few arrows and true atoms. With 'A.solve(optimal)' the first countermodel is a smallest one.\n#minimize { 1@2,W : reach(W) }.\n#minimize { 1@1,W,V : rel(W, V) ; 1@1,W,P : val(W, P) }.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: valuation, relation and the state s.",
+      "text": "glue(val(W, P)) :- world(W), prop(P).\nglue(rel(W, V)) :- world(W), world(V).\nglue(in(W)) :- world(W).\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for support of the conclusion in the candidate's state (solver C).",
+      "text": "% A counterexample: the candidate's state s supports the conclusion after all. Then the\n% candidate is no countermodel. Only the conclusion is evaluated here.\nroot(F) :- conclusion(F).\n\n% Which nodes are evaluated (act/1) and their states (st/2): the roots get the state s.\nact(r(F)) :- root(F).\nst(r(F), W) :- root(F), in(W).\nact(K) :- act(N), kid(N, K, same).\nact(K) :- act(N), kid(N, K, part).\nact(K) :- act(N), kid(N, K, some), st(N, W), K = d(N,W).\nact(K) :- act(N), kid(N, K, all), st(N, W), K = d(N,W).\n% gor: one disjunct supports the state; empty(F): F does, or the state is empty.\n1 { act(K) : kid(N, K, alt) } 1 :- act(N), node(N, gor(_,_), pos).\nnonempty(N) :- st(N, _).\nact(c1(N)) :- act(N), node(N, empty(_), pos), nonempty(N).\nst(K, W) :- act(K), kid(N, K, same), st(N, W).\nst(K, W) :- act(K), kid(N, K, alt), st(N, W).\n% A split: s = t u u with t and u inside s.\n{ st(K, W) } :- act(K), kid(N, K, part), st(N, W).\n:- act(N), kid(N, _, part), st(N, W), not st(K, W) : kid(N, K, part).\n% A successor state of W: all of R[W], or a nonempty part of it.\nst(d(N,W), V) :- act(d(N,W)), kid(N, d(N,W), all), rel(W, V).\n{ st(d(N,W), V) } :- act(d(N,W)), kid(N, d(N,W), some), rel(W, V).\n:- act(d(N,W)), kid(N, d(N,W), some), not nonempty(d(N,W)).\n\n% The atoms.\n:- act(N), node(N, P, pos), prop(P), st(N, W), not val(W, P).\n:- act(N), node(N, P, neg), prop(P), st(N, W), val(W, P).\n:- act(N), node(N, bot, pos), nonempty(N).\n:- act(N), node(N, ne, pos), not nonempty(N).\n:- act(N), node(N, ne, neg), nonempty(N).\n\n#show st(W) : st(r(F), W), root(F).\n\n% The support found depends on the state s (every world in or out), on the arrows from a\n% world W to the worlds of a successor state chosen for W, on all arrows of W when the\n% successor state must be all of R[W], and on the valuation of an atom at the worlds where\n% it is evaluated. A candidate that agrees on these atoms supports the conclusion too.\nrelevant(in(W)) :- world(W).\nrelevant(rel(W, V)) :- act(d(N,W)), kid(N, d(N,W), some), st(d(N,W), V).\nrelevant(rel(W, V)) :- act(d(N,W)), kid(N, d(N,W), all), world(V).\nrelevant(val(W, P)) :- act(N), node(N, P, _), prop(P), st(N, W).\n"
+    },
+    {
+      "name": "proof",
+      "description": "The proof search (solver P): line t of the proof is grounded in round t.",
+      "text": "% A proof is a list of lines; line I holds a formula f(I,F) and is justified by a rule\n% of the natural deduction system for BSML with global disjunction (Aloni, Anttila and\n% Yang 2024, Definition 4.1) applied to earlier lines ref(I,K,J). Each line records the\n% assumptions it depends on (dep/2), as in a sequent: an assumption depends on itself, a\n% rule collects the assumptions of the lines it uses and discharges the ones it closes.\n% The formulas come from a finite universe: the subformulas of the premises, the\n% conclusion and the lemmas (lemma/1 in the instance) give the formulas a proof may need.\nuf(E) :- formula(_, E).\nuf(A) :- uf(neg(A)).\nuf(A) :- uf(dia(A)).\nuf(A) :- uf(box(A)).\nuf(A) :- uf(empty(A)).\nuf(A;B) :- uf(and(A,B)).\nuf(A;B) :- uf(or(A,B)).\nuf(A;B) :- uf(gor(A,B)).\nprem(E) :- premise(F), formula(F, E).\ngoal_formula(E) :- conclusion(F), formula(F, E).\n\n% Side conditions: formulas with NE, with the global disjunction, and classical formulas\n% (the alphas of the paper: no NE, no global disjunction). This system has no rules for\n% the emptiness operator, so a formula with empty(F) is not classical either.\nsub(F, F) :- uf(F).\nsub(F, A) :- sub(F, neg(A)).\nsub(F, A) :- sub(F, dia(A)).\nsub(F, A) :- sub(F, box(A)).\nsub(F, A) :- sub(F, empty(A)).\nsub(F, A; F, B) :- sub(F, and(A,B)).\nsub(F, A; F, B) :- sub(F, or(A,B)).\nsub(F, A; F, B) :- sub(F, gor(A,B)).\nhas_ne(F) :- sub(F, ne).\nhas_gor(F) :- sub(F, gor(_,_)).\nclassical(F) :- uf(F), not has_ne(F), not has_gor(F), not sub(F, empty(_)).\n\n% The rules and the number of earlier lines each one uses.\nrule_refs(hyp,0; nei,0).\nrule_refs(and_e1,1; and_e2,1; dneg_e,1; dneg_i,1; dm_and,1; dm_and_r,1; dm_or,1; dm_or_r,1;\n          negne_e,1; negne_i,1; or_i,1; or_w,1; or_com,1; or_ass,1; bot_e,1; ctr,1;\n          inter,1; inter_r,1; def_box,1; def_box_r,1; dia_sep,1; box_inst,1; gor_i1,1; gor_i2,1;\n          distr,1; dm_gor,1; dm_gor_r,1; conv_dia,1; conv_box,1; neg_i,1; box_nec,1).\nrule_refs(and_i,2; neg_e,2; dia_join,2; box_dia_join,2; or_mon,2; dia_mon,2; box_mon,2).\nrule_refs(or_e,3; gor_e,3).\n\n#program line(i).\n% Line i: one formula, one rule, and the earlier lines the rule uses.\n1 { f(i, F) : uf(F) } 1.\n1 { rule(i, R) : rule_refs(R, _) } 1.\n1 { ref(i, K, J) : J = 1..i-1 } 1 :- rule(i, R), rule_refs(R, N), K = 1..N.\nr(i, K, F) :- ref(i, K, J), f(J, F).\nok(i) :- rule(i, hyp).\ndep(i, i) :- rule(i, hyp).\n\n% (a) conjunction\nok(i) :- rule(i, and_i), r(i,1,A), r(i,2,B), f(i, and(A,B)).\nok(i) :- rule(i, and_e1), r(i,1,and(A,B)), f(i, A).\nok(i) :- rule(i, and_e2), r(i,1,and(A,B)), f(i, B).\n% (b) negation; neg_i discharges the assumptions alpha of a line with bot\nok(i) :- rule(i, neg_i), r(i,1,bot), f(i, neg(A)), classical(A), not ne_open(i).\nok(i) :- rule(i, neg_e), r(i,1,A), r(i,2,neg(A)), classical(A), f(i, B), classical(B).\nok(i) :- rule(i, dneg_e), r(i,1,neg(neg(A))), f(i, A).\nok(i) :- rule(i, dneg_i), r(i,1,A), f(i, neg(neg(A))).\nok(i) :- rule(i, dm_and), r(i,1,neg(and(A,B))), f(i, or(neg(A),neg(B))).\nok(i) :- rule(i, dm_and_r), r(i,1,or(neg(A),neg(B))), f(i, neg(and(A,B))).\nok(i) :- rule(i, dm_or), r(i,1,neg(or(A,B))), f(i, and(neg(A),neg(B))).\nok(i) :- rule(i, dm_or_r), r(i,1,and(neg(A),neg(B))), f(i, neg(or(A,B))).\nok(i) :- rule(i, negne_e), r(i,1,neg(ne)), f(i, bot).\nok(i) :- rule(i, negne_i), r(i,1,bot), f(i, neg(ne)).\n% (c) tensor disjunction; or_e and or_mon discharge the assumptions of their subproofs\nok(i) :- rule(i, or_i), r(i,1,A), f(i, or(A,B)), not has_ne(B).\nok(i) :- rule(i, or_w), r(i,1,A), f(i, or(A,A)).\nok(i) :- rule(i, or_com), r(i,1,or(A,B)), f(i, or(B,A)).\nok(i) :- rule(i, or_ass), r(i,1,or(A,or(B,C))), f(i, or(or(A,B),C)).\nok(i) :- rule(i, or_e), r(i,1,or(A,B)), r(i,2,C), r(i,3,C), f(i, C), not has_gor(C), not ne_open(i).\nok(i) :- rule(i, or_mon), r(i,1,or(A,B)), r(i,2,C), f(i, or(A,C)), not ne_open(i).\n% (d) bot and NE\nok(i) :- rule(i, bot_e), r(i,1,or(bot,A)), f(i, A).\nok(i) :- rule(i, ctr), r(i,1,or(and(bot,ne),_)), f(i, _).\n% (e) modal rules: the subproof of dia_mon and box_mon uses no assumption but phi\nok(i) :- rule(i, dia_mon), r(i,1,B), r(i,2,dia(A)), f(i, dia(B)), not open_other(i, A).\nok(i) :- rule(i, box_mon), r(i,1,B), r(i,2,box(A)), f(i, box(B)), not open_other(i, A).\nok(i) :- rule(i, box_nec), r(i,1,B), f(i, box(B)), not open(i, 1).\nok(i) :- rule(i, inter), r(i,1,neg(dia(A))), f(i, box(neg(A))).\nok(i) :- rule(i, inter_r), r(i,1,box(neg(A))), f(i, neg(dia(A))).\n% box(A) abbreviates neg dia neg A in the paper; here box is a connective, so the\n% definition is a rule in both directions.\nok(i) :- rule(i, def_box), r(i,1,box(A)), f(i, neg(dia(neg(A)))).\nok(i) :- rule(i, def_box_r), r(i,1,neg(dia(neg(A)))), f(i, box(A)).\n% (f) modalities and connectives\nok(i) :- rule(i, dia_sep), r(i,1,dia(or(_,and(B,ne)))), f(i, dia(B)).\nok(i) :- rule(i, box_inst), r(i,1,box(and(A,ne))), f(i, dia(A)).\nok(i) :- rule(i, dia_join), r(i,1,dia(A)), r(i,2,dia(B)), f(i, dia(or(A,B))).\nok(i) :- rule(i, box_dia_join), r(i,1,box(A)), r(i,2,dia(B)), f(i, box(or(A,B))).\n% (g), (h) global disjunction\nok(i) :- rule(i, gor_i1), r(i,1,A), f(i, gor(A,_)).\nok(i) :- rule(i, gor_i2), r(i,1,B), f(i, gor(_,B)).\nok(i) :- rule(i, gor_e), r(i,1,gor(A,B)), r(i,2,C), r(i,3,C), f(i, C).\nok(i) :- rule(i, distr), r(i,1,or(A,gor(B,C))), f(i, gor(or(A,B),or(A,C))).\nok(i) :- rule(i, dm_gor), r(i,1,neg(gor(A,B))), f(i, and(neg(A),neg(B))).\nok(i) :- rule(i, dm_gor_r), r(i,1,and(neg(A),neg(B))), f(i, neg(gor(A,B))).\nok(i) :- rule(i, nei), f(i, gor(bot,ne)).\nok(i) :- rule(i, conv_dia), r(i,1,dia(gor(A,B))), f(i, or(dia(A),dia(B))).\nok(i) :- rule(i, conv_box), r(i,1,box(gor(A,B))), f(i, or(box(A),box(B))).\n:- not ok(i).\n\n% Dependencies. disch(i, K, F): the rule discharges the assumptions F of the line it\n% uses in place K.\ndisch(i, 1, A) :- rule(i, neg_i), f(i, neg(A)).\ndisch(i, 2, A; i, 3, B) :- rule(i, or_e), r(i,1,or(A,B)).\ndisch(i, 2, A; i, 3, B) :- rule(i, gor_e), r(i,1,gor(A,B)).\ndisch(i, 2, B) :- rule(i, or_mon), r(i,1,or(A,B)).\ndep(i, H) :- ref(i, K, J), dep(J, H), f(H, F), not disch(i, K, F),\n             not rule(i, dia_mon), not rule(i, box_mon), not rule(i, box_nec).\ndep(i, H) :- rule(i, dia_mon; i, box_mon), ref(i, 2, J), dep(J, H).\n% open(i, K): the line used in place K depends on an assumption that rule i does not\n% discharge; open_other(i, A): an assumption other than A; ne_open(i): one with NE.\nopen(i, K) :- ref(i, K, J), dep(J, H), f(H, F), not disch(i, K, F).\nopen_other(i, A) :- rule(i, dia_mon), r(i,2,dia(A)), ref(i, 1, J), dep(J, H), f(H, F), F != A.\nopen_other(i, A) :- rule(i, box_mon), r(i,2,box(A)), ref(i, 1, J), dep(J, H), f(H, F), F != A.\nne_open(i) :- rule(i, neg_i; i, or_e; i, or_mon), ref(i, K, J), K > 1, dep(J, H), f(H, F), has_ne(F), not disch(i, K, F).\nne_open(i) :- rule(i, neg_i), ref(i, 1, J), dep(J, H), f(H, F), has_ne(F), not disch(i, 1, F).\n\n% Fewer proofs to look at, none lost: the lines without references (assumptions and the\n% axiom nei) come first, in the order of their formulas; every line but the last is used.\nzero(i) :- rule(i, R), rule_refs(R, 0).\n:- zero(i), i > 1, not zero(i-1).\n:- zero(i), zero(i-1), f(i, F), f(i-1, G), F <= G.\nused(J, i) :- ref(i, _, J).\n% A line that repeats the formula of an earlier line with all of its assumptions (or\n% more) is never needed.\n:- J = 1..i-1, f(i, F), f(J, F), dep(i, H) : dep(J, H).\n\n% goal(i): the proof ends at line i with the conclusion, depending on premises only.\n#external goal(i).\n:- goal(i), J = 1..i-1, not used(J, K) : K = J+1..i.\n:- goal(i), not f(i, F) : goal_formula(F).\n:- goal(i), dep(i, H), f(H, F), not prem(F).\n\n% The cost of a proof: its number of lines.\n#minimize { 1,i : rule(i, _) }.\n\nline(i, R, F) :- rule(i, R), f(i, F).\n#show line/3.\n#show ref/3.\n#show dep(i, H) : goal(i), dep(i, H).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction + smallest\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\nsolver P = shared + proof\n\n# First the countermodel loop of bsml-entailment: a smallest model with at most n worlds\n# and a state that supports the premises but not the conclusion. If there is one, no proof\n# exists (the system is sound): the countermodel is the answer (its cost: worlds, then\n# arrows and true atoms).\nrefuted = false\nloop:\n    M = A.solve(optimal)\n    if not M: break\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        log \"a countermodel: there is no proof\"\n        refuted = true\n        break\nif refuted: stop\n\n# No countermodel: look for a proof. The system is complete, so one exists if the\n# entailment holds; the search grows the proof by one line at a time (P.ground grounds\n# line t; the external goal(t) asks for the conclusion at line t), so the first proof\n# found is a shortest one (with the formulas of the universe). Its cost is its length.\nt = 0\nproved = false\nwhile not proved and t < 10:\n    t = t + 1\n    P.ground(line, t)\n    if t > 1: P.set(P.atom(\"goal\", t - 1), false)\n    # Without the goal: is there any derivation with t lines? If not, there is none longer\n    # either (a small universe runs out of new lines), and clingo has dropped goal(t).\n    if not P.solve(): break\n    P.set(P.atom(\"goal\", t), true)\n    Q = P.solve()\n    if Q:\n        accept Q\n        log \"a shortest proof:\", t, \"lines\"\n        proved = true\nif not proved: log \"no proof with at most 10 lines (from these formulas)\"\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Narrow-scope free choice (Section 1): dia((p and NE) or (q and NE)) proves dia p and dia q.\n% The lemma adds a formula that the proof passes through.\nprop(p;q).\npremise(dia(or(and(p,ne),and(q,ne)))).\nconclusion(and(dia(p),dia(q))).\nlemma(dia(or(and(q,ne),and(p,ne)))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          7
+        ]
+      },
+      "tags": [
+        "library"
+      ],
+      "symbolic": "sound"
+    },
+    {
+      "id": "narrow-scope-enriched",
+      "facts": "% Narrow-scope free choice with the enrichment: [dia(p or q)]+ proves dia p and dia q.\nprop(p;q).\npremise(plus(dia(or(p,q)))).\nconclusion(and(dia(p),dia(q))).\nlemma(dia(or(and(p,ne),and(q,ne)))).\nlemma(dia(or(and(q,ne),and(p,ne)))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          10
+        ]
+      },
+      "tags": [
+        "slow"
+      ],
+      "symbolic": "sound"
+    },
+    {
+      "id": "wide-scope",
+      "facts": "% Wide-scope free choice: no proof, since there is a countermodel.\nprop(p;q).\npremise(plus(or(dia(p),dia(q)))).\nconclusion(and(dia(p),dia(q))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          2,
+          4
+        ]
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "dia-sep",
+      "facts": "% One rule: dia((p and NE) or (q and NE)) proves dia q.\nprop(p;q).\npremise(dia(or(and(p,ne),and(q,ne)))).\nconclusion(dia(q)).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          2
+        ]
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "conv",
+      "facts": "% dia(p gor q) proves dia p or dia q (Conv).\nprop(p;q).\npremise(dia(gor(p,q))).\nconclusion(or(dia(p),dia(q))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          2
+        ]
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "dual-prohibition",
+      "facts": "% Dual prohibition: neg dia(p or q) proves neg dia p (DM and Inter).\nprop(p;q).\npremise(neg(dia(or(p,q)))).\nconclusion(neg(dia(p))).\nlemma(box(neg(or(p,q)))).\nlemma(and(neg(p),neg(q))).\nlemma(box(neg(p))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          7
+        ]
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "excluded-middle",
+      "facts": "% p or neg p from no premises: neg(p and neg p) by neg-introduction, then De Morgan and\n% double negation inside the disjunction (or-monotonicity).\nprop(p).\nconclusion(or(p,neg(p))).\nlemma(neg(and(p,neg(p)))).\nlemma(or(neg(p),neg(neg(p)))).\nlemma(or(neg(p),p)).\nlemma(bot).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          10
+        ]
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "ne-or",
+      "facts": "% NE does not follow from p or q: the empty state is a countermodel.\nprop(p;q).\npremise(or(p,q)).\nconclusion(ne).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          0,
+          0
+        ]
+      },
+      "tags": [],
+      "symbolic": "sound"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {
+        "n": "2"
+      },
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + smallest\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\nsolver P = shared + proof\n\n# First the countermodel loop of bsml-entailment, as the blocking loop (always sound, but\n# slow: this variant sets n = 2): a smallest model with at most n worlds\n# and a state that supports the premises but not the conclusion. If there is one, no proof\n# exists (the system is sound): the countermodel is the answer (its cost: worlds, then\n# arrows and true atoms).\nrefuted = false\nloop:\n    M = A.solve(optimal)\n    if not M: break\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        log \"a countermodel: there is no proof\"\n        refuted = true\n        break\nif refuted: stop\n\n# No countermodel: look for a proof. The system is complete, so one exists if the\n# entailment holds; the search grows the proof by one line at a time (P.ground grounds\n# line t; the external goal(t) asks for the conclusion at line t), so the first proof\n# found is a shortest one (with the formulas of the universe). Its cost is its length.\nt = 0\nproved = false\nwhile not proved and t < 10:\n    t = t + 1\n    P.ground(line, t)\n    if t > 1: P.set(P.atom(\"goal\", t - 1), false)\n    # Without the goal: is there any derivation with t lines? If not, there is none longer\n    # either (a small universe runs out of new lines), and clingo has dropped goal(t).\n    if not P.solve(): break\n    P.set(P.atom(\"goal\", t), true)\n    Q = P.solve()\n    if Q:\n        accept Q\n        log \"a shortest proof:\", t, \"lines\"\n        proved = true\nif not proved: log \"no proof with at most 10 lines (from these formulas)\"\n"
+      }
+    },
+    {
+      "name": "proof-first",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + smallest\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\nsolver P = shared + proof\n\n# The proof search first, up to 10 lines, then the countermodel loop. The same answers;\n# compare the times: without a proof the search tries every length up to the bound, which\n# takes much longer than finding a countermodel (wide-scope).\nt = 0\nproved = false\nwhile not proved and t < 10:\n    t = t + 1\n    P.ground(line, t)\n    if t > 1: P.set(P.atom(\"goal\", t - 1), false)\n    # Without the goal: is there any derivation with t lines? If not, there is none longer\n    # either (a small universe runs out of new lines), and clingo has dropped goal(t).\n    if not P.solve(): break\n    P.set(P.atom(\"goal\", t), true)\n    Q = P.solve()\n    if Q:\n        accept Q\n        log \"a shortest proof:\", t, \"lines\"\n        proved = true\nif proved: stop\nrefuted = false\nloop:\n    M = A.solve(optimal)\n    if not M: break\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        log \"a countermodel: there is no proof\"\n        refuted = true\n        break\nif not refuted: log \"no proof with at most 10 lines and no countermodel with at most n worlds\"\n"
+      }
+    }
+  ],
+  "runs": []
+}

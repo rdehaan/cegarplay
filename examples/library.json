@@ -1551,6 +1551,48 @@
       "after": 8
     },
     {
+      "id": "bsml-entailment",
+      "title": "BSML entailment",
+      "group": "logic",
+      "summary": "Countermodels to entailments in the state-based modal logic BSML, such as free-choice inferences (narrow-scope free choice: no countermodel with 3 worlds).",
+      "shape": "shape2",
+      "tags": [
+        "fast",
+        "stops-at-optimum"
+      ],
+      "expected": {
+        "solutions": 0
+      },
+      "has": {
+        "instances": 12,
+        "suites": 1
+      },
+      "level": 3,
+      "after": 6
+    },
+    {
+      "id": "bsml-proofs",
+      "title": "BSML proofs",
+      "group": "logic",
+      "summary": "Shortest natural deduction proofs in BSML, after a countermodel loop that rules out non-entailments (narrow-scope free choice: a proof of 7 lines).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "several-solvers",
+        "externals",
+        "stops-at-optimum"
+      ],
+      "expected": {
+        "solutions": null,
+        "optimum": 7
+      },
+      "has": {
+        "instances": 8
+      },
+      "level": 3,
+      "after": 9
+    },
+    {
       "id": "cegis-circuit",
       "title": "Circuit synthesis by CEGIS",
       "group": "logic",

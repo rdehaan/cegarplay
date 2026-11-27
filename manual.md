@@ -1898,7 +1898,7 @@ may set `library.level` and `library.after`).
 | `language` | `lang-basics`, `lang-several-cex`, `lang-optimal`, `lang-two-stage`, `lang-clauses`, `lang-core`, `lang-second-solver`, `lang-legacy`, `lang-raw-lua` |
 | `shapes` | `gc-shape1`, `gc-shape2`, `gc-shape3`, `gc-shape4`, `gc-reference` |
 | `guide` | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
-| `logic` | `cegis-circuit`, `integer-expressions`, `marco`, `maxsat-ihs`, `maxsat-oll`, `min-dnf`, `qbf-blame-solver`, `qbf-deep`, `qbf-expansion`, `qbf-optimal`, `qbf-three-blocks`, `qbf`, `smallest-mus`, `stable-models`, `strategic-companies`, `maxsat-oll-weighted`, `qbf-caqe` |
+| `logic` | `cegis-circuit`, `integer-expressions`, `marco`, `maxsat-ihs`, `maxsat-oll`, `min-dnf`, `qbf-blame-solver`, `qbf-deep`, `qbf-expansion`, `qbf-optimal`, `qbf-three-blocks`, `qbf`, `smallest-mus`, `stable-models`, `strategic-companies`, `maxsat-oll-weighted`, `qbf-caqe`, `bsml-entailment`, `bsml-proofs` |
 | `reasoning` | `abduction-two-checks`, `abduction`, `actual-cause`, `af-preferred`, `af-semi-stable`, `belief-update`, `default-extensions`, `diagnosis`, `minimal-reasons`, `reasons-by-shrinking`, `reasons-by-size`, `sufficient-reason`, `abduction-ihs` |
 | `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction`, `colourable-partial`, `triangle-free-lazy` |
 | `games` | `nash`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `strong-nash`, `subset-sum-game` |
@@ -1929,7 +1929,7 @@ checks that a few projects (the shapes, `lang-second-solver`, `reasons-by-shrink
 `qbf-three-blocks`) still assemble to the same program text (`UPDATE_GOLDEN=1` after a deliberate
 change of one of them).
 
-Examples tagged `stops-at-optimum` (`maxsat-ihs`, `maxsat-oll`, `benders-tardiness`) end their run
+Examples tagged `stops-at-optimum` (`maxsat-ihs`, `maxsat-oll`, `benders-tardiness`, `bsml-entailment`, `bsml-proofs`) end their run
 with `stop` once the optimum is proven, so the run is not exhausted and their solution counts are
 null; their instances carry `expected.optimum` instead (the optima of clingo's own optimisation),
 and the manifest entry `expected: { solutions: null, optimum: 8 }`. `knapsack-optimum` and
@@ -2082,6 +2082,31 @@ ja-young --suite loops --out rows.jsonl` and `node tools/report.mjs rows.jsonl` 
 variants; `node tools/audit.mjs ja-kemeny --instance all` audits (the loops that refine with
 clauses or cores: the Kemeny loops but `maxsat`, the `ihs` variants of Slater and Leximax, MSA's `cores`, and
 Young's).
+
+### BSML examples
+
+Two examples in the group **Logic** reason about bilateral state-based modal logic (BSML; Aloni,
+Anttila and Yang, *State-based modal logics for free choice*, 2024), after the ASP reasoner
+[bsml-sat](https://github.com/rdehaan/bsml-sat). Formulas are terms over the atoms `prop/1`:
+`bot`, `ne`, `neg(F)`, `and(F,G)`, `or(F,G)` (tensor disjunction), `gor(F,G)` (global
+disjunction), `dia(F)`, `box(F)`, `empty(F)` (emptiness operator) and `plus(F)`, the pragmatic
+enrichment [F]+ of a classical formula. An instance gives `premise/1` (none: validity),
+`conclusion/1`, and optionally `condition(indisputable)` or `condition(state_based)` (conditions on
+the relation in the state) and `lemma/1` (formulas a proof may pass through).
+
+| Example | Question | Loop |
+| --- | --- | --- |
+| `bsml-entailment` | Is there a model with at most n worlds and a state that supports the premises but not the conclusion? | Shape 2 with `A.solve(optimal)`: A guesses a model, a state and the substates that support the premises; C looks for substates that support the conclusion; `relevant/1` keeps the state, the arrows into the substates chosen for the diamonds (all arrows of a world where a whole successor set is needed) and the atoms where they are evaluated. The first candidate that survives is a smallest countermodel and the loop stops; none: the entailment holds up to n worlds (an exhausted run). Variant `lift` computes the clauses from the ground programs instead: 2 candidates instead of 692 on `dual-prohibition`, but slower elsewhere. |
+| `bsml-proofs` | A shortest natural deduction proof in the system for BSML with global disjunction (Definition 4.1), or a countermodel | The countermodel loop first; then one solver that grows the proof by a line per round (`P.ground(line, t)`, external `goal(t)`), with no refinement. The one solution is the answer: a smallest countermodel, or a shortest proof (its cost is its number of lines). Variant `proof-first` swaps the order. Lines are sequents: each records the assumptions it depends on, so the side conditions (no NE in the open assumptions of ¬I, ∨E and ∨Mon; none but the discharged one for ◇Mon and □Mon) are local. `box` is a connective here, with the rule `def_box` (□φ ⟺ ¬◇¬φ) for the paper's definition. |
+
+The twelve instances of `bsml-entailment` are the inferences of the bsml-sat demonstration (free
+choice, its cancellation under negation, modal disjunction, detachability) and a few others. The
+proof search draws its formulas from a finite universe (subformulas of the premises, conclusion and
+lemmas), so a missing lemma can hide a proof; it searches up to 10 lines. Both loops stop at their first answer, so they are tagged `stops-at-optimum`: an instance with an answer carries `expected.optimum` (the countermodel's cost, worlds then arrows and true atoms, or the proof's length), one without a countermodel `expected.solutions: 0`. `python3
+tools/make-bsml.py` writes both project files from one source (`--check` compares them);
+`python3 tools/bsml-check.py models 3` counts the countermodels of every instance by brute force
+(the same numbers as the loop without `stop`), and `python3 tools/bsml-check.py rules` checks every
+proof rule on random derivations against all models with two worlds.
 
 ## For agents
 

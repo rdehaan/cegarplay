@@ -1,0 +1,228 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "BSML entailment",
+  "description": "Countermodels to an entailment in bilateral state-based modal logic (BSML, Aloni, Anttila and Yang 2024): a Kripke model with at most n worlds and a state s that supports the premises but not the conclusion. Support of a disjunction or a diamond asks for substates, so 'does s not support the conclusion' is a universal question: the abstraction guesses a model and a state with the substates that support the premises, the check looks for substates that support the conclusion, and the refinement keeps only what that support used. No solution: the entailment holds on models with at most n worlds. After the BSML reasoner of bsml-sat.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "Worlds, the enrichment [F]+ and the evaluation tree of a formula. Added to every solver.",
+      "text": "% BSML formulas are terms over the atoms prop/1 (see the Instances tab):\n%   bot (weak contradiction), ne (nonemptiness), neg(F), and(F,G), or(F,G) (tensor\n%   disjunction), gor(F,G) (global disjunction), dia(F), box(F), empty(F) (emptiness\n%   operator), and plus(F): the pragmatic enrichment [F]+ of a classical formula F.\n% A model has the worlds 1..n, a valuation val/2 and a relation rel/2; a state is a set of\n% worlds. Support (pos) and anti-support (neg) follow Aloni, Anttila and Yang (2024), Def. 2.3.\n#const n = 3.\nworld(1..n).\n\n% The enrichment: [p]+ = p & NE, [neg a]+ = neg [a]+ & NE, [a & b]+ = ([a]+ & [b]+) & NE,\n% the same for or, [dia a]+ = dia [a]+ & NE, [box a]+ = box [a]+ & NE.\ngiven(F) :- premise(F).\ngiven(F) :- conclusion(F).\nenrich(F) :- given(plus(F)).\nenrich(A) :- enrich(neg(A)).\nenrich(A) :- enrich(dia(A)).\nenrich(A) :- enrich(box(A)).\nenrich(A;B) :- enrich(and(A,B)).\nenrich(A;B) :- enrich(or(A,B)).\nplus(P, and(P,ne)) :- enrich(P), prop(P).\nplus(bot, bot) :- enrich(bot).\nplus(neg(A), and(neg(E),ne)) :- enrich(neg(A)), plus(A,E).\nplus(dia(A), and(dia(E),ne)) :- enrich(dia(A)), plus(A,E).\nplus(box(A), and(box(E),ne)) :- enrich(box(A)), plus(A,E).\nplus(and(A,B), and(and(E,D),ne)) :- enrich(and(A,B)), plus(A,E), plus(B,D).\nplus(or(A,B), and(or(E,D),ne)) :- enrich(or(A,B)), plus(A,E), plus(B,D).\nformula(F, F) :- given(F), not enriched(F).\nformula(plus(F), E) :- given(plus(F)), plus(F,E).\nenriched(plus(F)) :- given(plus(F)).\n\n% The evaluation tree of a formula: node(N, F, P) asks for a state of node N that supports\n% (P = pos) or anti-supports (P = neg) F. A modal node gets one child d(N,W) per world W:\n% the successor state that W needs. root/1 says which formulas are evaluated.\nnode(r(F), E, pos) :- root(F), formula(F, E).\nflip(pos,neg). flip(neg,pos).\nnode(c1(N), A, Q) :- node(N, neg(A), P), flip(P,Q).\nnode(c1(N), A, P) :- node(N, empty(A), P).\nnode(c1(N), A, P) :- node(N, and(A,B), P).\nnode(c2(N), B, P) :- node(N, and(A,B), P).\nnode(c1(N), A, P) :- node(N, or(A,B), P).\nnode(c2(N), B, P) :- node(N, or(A,B), P).\nnode(c1(N), A, P) :- node(N, gor(A,B), P).\nnode(c2(N), B, P) :- node(N, gor(A,B), P).\nnode(d(N,W), A, P) :- node(N, dia(A), P), world(W).\nnode(d(N,W), A, P) :- node(N, box(A), P), world(W).\n\n% The kind of each child: the same state as its parent (same), part of a split of the\n% parent's state (part), one of two alternatives (alt), a nonempty substate of R[W]\n% (some), or all of R[W] (all).\nkid(N, c1(N), same) :- node(N, neg(_), _).\nkid(N, c1(N), alt)  :- node(N, empty(_), pos).\nkid(N, c1(N), same) :- node(N, empty(_), neg).\nkid(N, c1(N), same; N, c2(N), same) :- node(N, and(_,_), pos).\nkid(N, c1(N), part; N, c2(N), part) :- node(N, and(_,_), neg).\nkid(N, c1(N), part; N, c2(N), part) :- node(N, or(_,_), pos).\nkid(N, c1(N), same; N, c2(N), same) :- node(N, or(_,_), neg).\nkid(N, c1(N), alt;  N, c2(N), alt)  :- node(N, gor(_,_), pos).\nkid(N, c1(N), same; N, c2(N), same) :- node(N, gor(_,_), neg).\nkid(N, d(N,W), some) :- node(N, dia(_), pos), world(W).\nkid(N, d(N,W), all)  :- node(N, dia(_), neg), world(W).\nkid(N, d(N,W), all)  :- node(N, box(_), pos), world(W).\nkid(N, d(N,W), some) :- node(N, box(_), neg), world(W).\n"
+    },
+    {
+      "name": "abstraction",
+      "description": "Proposes candidates (solver A): a model and a state that supports the premises.",
+      "text": "% A candidate: a model and a state s that supports every premise.\n{ val(W, P) } :- world(W), prop(P).\n{ rel(W, V) } :- world(W), world(V).\n{ in(W) } :- world(W).\nroot(F) :- premise(F).\n\n% The extra conditions on a model that an instance may ask for.\n% indisputable: every world of s sees the same worlds.\n:- condition(indisputable), in(W), in(U), rel(W, V), not rel(U, V).\n% state-based: every world of s sees exactly s.\n:- condition(state_based), in(W), rel(W, V), not in(V).\n:- condition(state_based), in(W), in(V), not rel(W, V).\n\n% No junk: a world that s cannot reach plays no role, so it is empty and comes last.\nreach(W) :- in(W).\nreach(V) :- reach(W), rel(W, V).\n:- world(W), not reach(W), val(W, _).\n:- world(W), not reach(W), rel(W, _).\n:- world(W), W > 1, reach(W), not reach(W-1).\n\n% Which nodes are evaluated (act/1) and their states (st/2): the roots get the state s.\nact(r(F)) :- root(F).\nst(r(F), W) :- root(F), in(W).\nact(K) :- act(N), kid(N, K, same).\nact(K) :- act(N), kid(N, K, part).\nact(K) :- act(N), kid(N, K, some), st(N, W), K = d(N,W).\nact(K) :- act(N), kid(N, K, all), st(N, W), K = d(N,W).\n% gor: one disjunct supports the state; empty(F): F does, or the state is empty.\n1 { act(K) : kid(N, K, alt) } 1 :- act(N), node(N, gor(_,_), pos).\nnonempty(N) :- st(N, _).\nact(c1(N)) :- act(N), node(N, empty(_), pos), nonempty(N).\nst(K, W) :- act(K), kid(N, K, same), st(N, W).\nst(K, W) :- act(K), kid(N, K, alt), st(N, W).\n% A split: s = t u u with t and u inside s.\n{ st(K, W) } :- act(K), kid(N, K, part), st(N, W).\n:- act(N), kid(N, _, part), st(N, W), not st(K, W) : kid(N, K, part).\n% A successor state of W: all of R[W], or a nonempty part of it.\nst(d(N,W), V) :- act(d(N,W)), kid(N, d(N,W), all), rel(W, V).\n{ st(d(N,W), V) } :- act(d(N,W)), kid(N, d(N,W), some), rel(W, V).\n:- act(d(N,W)), kid(N, d(N,W), some), not nonempty(d(N,W)).\n\n% The atoms.\n:- act(N), node(N, P, pos), prop(P), st(N, W), not val(W, P).\n:- act(N), node(N, P, neg), prop(P), st(N, W), val(W, P).\n:- act(N), node(N, bot, pos), nonempty(N).\n:- act(N), node(N, ne, pos), not nonempty(N).\n:- act(N), node(N, ne, neg), nonempty(N).\n\n#show val/2.\n#show rel/2.\n#show in/1.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: valuation, relation and the state s.",
+      "text": "glue(val(W, P)) :- world(W), prop(P).\nglue(rel(W, V)) :- world(W), world(V).\nglue(in(W)) :- world(W).\n"
+    },
+    {
+      "name": "smallest",
+      "description": "Makes A propose small candidates first: few worlds, then few arrows and true atoms.",
+      "text": "% Small candidates first: as few worlds as possible (those that s reaches), then as\n% few arrows and true atoms. With 'A.solve(optimal)' the first countermodel is a smallest one.\n#minimize { 1@2,W : reach(W) }.\n#minimize { 1@1,W,V : rel(W, V) ; 1@1,W,P : val(W, P) }.\n"
+    },
+    {
+      "name": "check",
+      "description": "Looks for support of the conclusion in the candidate's state (solver C); relevant/1 says what the support used.",
+      "text": "% A counterexample: the candidate's state s supports the conclusion after all. Then the\n% candidate is no countermodel. Only the conclusion is evaluated here.\nroot(F) :- conclusion(F).\n\n% Which nodes are evaluated (act/1) and their states (st/2): the roots get the state s.\nact(r(F)) :- root(F).\nst(r(F), W) :- root(F), in(W).\nact(K) :- act(N), kid(N, K, same).\nact(K) :- act(N), kid(N, K, part).\nact(K) :- act(N), kid(N, K, some), st(N, W), K = d(N,W).\nact(K) :- act(N), kid(N, K, all), st(N, W), K = d(N,W).\n% gor: one disjunct supports the state; empty(F): F does, or the state is empty.\n1 { act(K) : kid(N, K, alt) } 1 :- act(N), node(N, gor(_,_), pos).\nnonempty(N) :- st(N, _).\nact(c1(N)) :- act(N), node(N, empty(_), pos), nonempty(N).\nst(K, W) :- act(K), kid(N, K, same), st(N, W).\nst(K, W) :- act(K), kid(N, K, alt), st(N, W).\n% A split: s = t u u with t and u inside s.\n{ st(K, W) } :- act(K), kid(N, K, part), st(N, W).\n:- act(N), kid(N, _, part), st(N, W), not st(K, W) : kid(N, K, part).\n% A successor state of W: all of R[W], or a nonempty part of it.\nst(d(N,W), V) :- act(d(N,W)), kid(N, d(N,W), all), rel(W, V).\n{ st(d(N,W), V) } :- act(d(N,W)), kid(N, d(N,W), some), rel(W, V).\n:- act(d(N,W)), kid(N, d(N,W), some), not nonempty(d(N,W)).\n\n% The atoms.\n:- act(N), node(N, P, pos), prop(P), st(N, W), not val(W, P).\n:- act(N), node(N, P, neg), prop(P), st(N, W), val(W, P).\n:- act(N), node(N, bot, pos), nonempty(N).\n:- act(N), node(N, ne, pos), not nonempty(N).\n:- act(N), node(N, ne, neg), nonempty(N).\n\n#show st(W) : st(r(F), W), root(F).\n\n% The support found depends on the state s (every world in or out), on the arrows from a\n% world W to the worlds of a successor state chosen for W, on all arrows of W when the\n% successor state must be all of R[W], and on the valuation of an atom at the worlds where\n% it is evaluated. A candidate that agrees on these atoms supports the conclusion too.\nrelevant(in(W)) :- world(W).\nrelevant(rel(W, V)) :- act(d(N,W)), kid(N, d(N,W), some), st(d(N,W), V).\nrelevant(rel(W, V)) :- act(d(N,W)), kid(N, d(N,W), all), world(V).\nrelevant(val(W, P)) :- act(N), node(N, P, _), prop(P), st(N, W).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction + smallest\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# A candidate (M, s) supports the premises; A proposes the smallest one left. If s also\n# supports the conclusion, the check shows how, and the clause rules out every candidate\n# that agrees on what that support used. The first candidate that survives is a smallest\n# countermodel: the premises do not entail the conclusion, and the loop stops.\n# No solution: the entailment holds on models with at most n worlds.\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        stop\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Narrow-scope free choice: [dia(p or q)]+ entails dia p and dia q.\n% No countermodel: the entailment holds (on models with at most n worlds).\nprop(p;q).\npremise(plus(dia(or(p,q)))).\nconclusion(and(dia(p),dia(q))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": [
+        "library"
+      ]
+    },
+    {
+      "id": "wide-scope",
+      "facts": "% Wide-scope free choice: [dia p or dia q]+ does not entail dia p and dia q.\nprop(p;q).\npremise(plus(or(dia(p),dia(q)))).\nconclusion(and(dia(p),dia(q))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          2,
+          4
+        ]
+      },
+      "tags": []
+    },
+    {
+      "id": "wide-scope-indisputable",
+      "facts": "% Wide-scope free choice holds when R is indisputable in s.\nprop(p;q).\npremise(plus(or(dia(p),dia(q)))).\nconclusion(and(dia(p),dia(q))).\ncondition(indisputable).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "dual-prohibition",
+      "facts": "% Dual prohibition: [neg dia(p or q)]+ entails neg dia p and neg dia q.\nprop(p;q).\npremise(plus(neg(dia(or(p,q))))).\nconclusion(and(neg(dia(p)),neg(dia(q)))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "double-negation",
+      "facts": "% Double negation: [neg neg dia(p or q)]+ entails dia p and dia q.\nprop(p;q).\npremise(plus(neg(neg(dia(or(p,q)))))).\nconclusion(and(dia(p),dia(q))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "modal-disjunction",
+      "facts": "% Modal disjunction: [p or q]+ does not entail dia p and dia q ...\nprop(p;q).\npremise(plus(or(p,q))).\nconclusion(and(dia(p),dia(q))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          1,
+          2
+        ]
+      },
+      "tags": []
+    },
+    {
+      "id": "modal-disjunction-state-based",
+      "facts": "% ... but it does when R is state-based in s.\nprop(p;q).\npremise(plus(or(p,q))).\nconclusion(and(dia(p),dia(q))).\ncondition(state_based).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "detachability",
+      "facts": "% Detachability fails: [dia neg(p and q)]+ does not entail dia neg p and dia neg q.\nprop(p;q).\npremise(plus(dia(neg(and(p,q))))).\nconclusion(and(dia(neg(p)),dia(neg(q)))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          1,
+          2
+        ]
+      },
+      "tags": []
+    },
+    {
+      "id": "excluded-middle",
+      "facts": "% Validity (no premise): p or neg p is supported by every state.\nprop(p).\nconclusion(or(p,neg(p))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "ne-not-valid",
+      "facts": "% Not valid: NE or neg NE. The empty state does not support it (but every nonempty state does).\nprop(p).\nconclusion(or(ne,neg(ne))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          0,
+          0
+        ]
+      },
+      "tags": []
+    },
+    {
+      "id": "global-disjunction",
+      "facts": "% The global disjunction does not distribute over dia: dia(p gor q) entails dia p or dia q\n% (Conv), but not dia p gor dia q.\nprop(p;q).\npremise(dia(gor(p,q))).\nconclusion(gor(dia(p),dia(q))).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": [
+          2,
+          4
+        ]
+      },
+      "tags": []
+    },
+    {
+      "id": "emptiness",
+      "facts": "% The emptiness operator cancels NE: empty(p and NE) entails p (and the converse holds).\nprop(p).\npremise(empty(and(p,ne))).\nconclusion(p).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": []
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {
+        "n": "2"
+      },
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + smallest\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue\n\n# A candidate (M, s) supports the premises; A proposes the smallest one left. If s also\n# supports the conclusion, the check shows how, and the block rules out every candidate\n# with the same interface values (the blocking loop: always sound, but slow:\n# this variant sets n = 2). The first candidate that survives is a smallest\n# countermodel: the premises do not entail the conclusion, and the loop stops.\n# No solution: the entailment holds on models with at most n worlds.\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.block(M))\n    else:\n        accept M\n        stop\n"
+      }
+    },
+    {
+      "name": "lift",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + abstraction + smallest\nsolver C = shared + check          options \"--heuristic=Domain\"\nlink   G = A -> C via shared + glue lift\n\n# With 'lift', G.clause computes the clause from the ground programs of A and C instead of\n# taking relevant/1 as it is: it drops atoms while the smaller clause stays certified.\n# Compare the candidates (dual-prohibition) and the time with the default loop.\n# A candidate (M, s) supports the premises; A proposes the smallest one left. If s also\n# supports the conclusion, the check shows how, and the clause rules out every candidate\n# that agrees on what that support used. The first candidate that survives is a smallest\n# countermodel: the premises do not entail the conclusion, and the loop stops.\n# No solution: the entailment holds on models with at most n worlds.\nloop:\n    M = A.solve(optimal)\n    if not M: stop\n    X = C.solve(assume G(M))\n    if X:\n        A.add(G.clause(M, X))\n    else:\n        accept M\n        stop\n"
+      }
+    }
+  ],
+  "suites": [
+    {
+      "name": "variants",
+      "instances": {
+        "ids": "all"
+      },
+      "variants": [
+        "default",
+        "reference",
+        "lift"
+      ],
+      "limits": {
+        "seconds": 60
+      }
+    }
+  ],
+  "library": {
+    "id": "bsml-entailment",
+    "group": "logic",
+    "summary": "Countermodels to entailments in the state-based modal logic BSML, such as free-choice inferences (narrow-scope free choice: no countermodel with 3 worlds).",
+    "shape": "shape2",
+    "tags": [
+      "fast",
+      "stops-at-optimum"
+    ],
+    "expected": 0,
+    "level": 3,
+    "after": 6
+  }
+}
