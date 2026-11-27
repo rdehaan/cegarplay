@@ -3,7 +3,7 @@ import { TraceView } from './trace.js';
 import { explainError } from './error-help.js';
 import { costTracker } from './project.js';
 import { resultCard } from './result-card.js';
-import { download } from './dom.js';
+import { download, h } from './dom.js';
 import { fmt, plural } from './util.js';
 
 const SHOW_SOLUTIONS = 1000;
@@ -18,6 +18,7 @@ export class Output {
   constructor(app) {
     this.app = app;
     this.resultEl = document.getElementById('result-line');
+    this.bodyEl = document.getElementById('output-body');
     this.solEl = document.getElementById('solutions');
     this.solCount = document.getElementById('solutions-count');
     this.solNote = document.getElementById('solutions-note');
@@ -135,8 +136,12 @@ export class Output {
 
   result(text, kind = '') {
     this.story('');
+    // no run: one line instead of empty Solutions, Trace and Messages sections
     this.resultEl.textContent = text || 'No run yet.';
-    this.resultEl.className = 'result-line' + (kind ? ' ' + kind : '');
+    this.resultEl.className = 'result-line' + (kind ? ' ' + kind : '') + (text ? '' : ' empty');
+    if (this.bodyEl) this.bodyEl.hidden = !text;
+    if (!text) this.resultEl.append(h('span', { class: 'note' }, ' Press ', h('b', {}, 'Run'), ' (Ctrl+Enter) or ', h('b', {}, 'Audit'),
+      ' in the top bar: the solutions, the trace and the messages appear here.'));
   }
 
   // Batched DOM updates.

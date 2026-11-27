@@ -7,7 +7,7 @@ import { mine } from './mine.js';
 import { BatchStopped } from './control.js';
 import { INSTANCE_ID } from './project.js';
 import { h as el, $ } from './dom.js';
-import { added, factsText, constText, parseConsts } from './instances-common.js';
+import { added, factsText, constText, parseConsts, partFold } from './instances-common.js';
 
 export class GeneratorsPart {
   // ---- generators ------------------------------------
@@ -44,11 +44,13 @@ export class GeneratorsPart {
         this.genClear = el('button', { class: 'control-button small-button', id: 'generator-clear-button', hidden: true, onclick: () => this.clearGenResults(),
           title: 'Remove the previewed or mined instances below (an edit of the generator removes them too)' }, 'Clear results')),
       this.genStatus, this.preview);
-    this.root.append(el('h3', {}, 'Generators'),
+    this.genSummary = el('span', { class: 'note', id: 'generators-summary' });
+    this.root.append(partFold('generators', 'Generators', this.genSummary,
       el('div', { class: 'instances-bar' }, this.genSelect,
         el('button', { class: 'control-button', id: 'add-generator-button', onclick: () => this.addGenerator() }, 'New generator')),
-      this.genBody);
+      this.genBody));
     this.genEditor = makeEditor(box, 'ace/mode/gringo');
+    $('generators-part').addEventListener('toggle', () => { if ($('generators-part').open) this.genEditor.resize(true); });
     this.genEditor.on('change', () => {
       if (this.genLoading) return;
       const g = this.generator;
@@ -63,6 +65,8 @@ export class GeneratorsPart {
     for (const x of list) this.genSelect.append(el('option', { value: x.name }, x.name));
     if (g) this.genSelect.value = g.name;
     this.genBody.hidden = !g;
+    this.genSummary.textContent = list.length ? list.map((x) => x.name).join(', ')
+      : 'none: a generator writes random instances of the problem (preview, mine hard ones)';
     if (!g) return;
     this.genName.value = g.name;
     this.genConsts.value = constText(g.constants);

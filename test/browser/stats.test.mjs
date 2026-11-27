@@ -186,8 +186,8 @@ test('Clear removes the last run\'s results and keeps the run history', async ()
   assert.ok(before >= 1);
   await B.openTab(page, 5);  // Clear is in the Output tab
   await page.click('#clear-button');
-  assert.equal(await page.textContent('#run-status'), 'idle');
-  assert.match((await page.textContent('#result-line')).trim(), /^(No run yet\.)?$/, 'as on a fresh load');
+  assert.equal(await page.textContent('#run-status'), 'ready');
+  assert.match((await page.textContent('#result-line')).trim(), /^(No run yet\..*)?$/, 'as on a fresh load');
   assert.equal(await page.textContent('#solutions'), '');
   assert.equal((await page.textContent('#live-line')).trim(), '');
   assert.equal(await page.$eval('#download-recording-button', (b) => b.disabled), true);

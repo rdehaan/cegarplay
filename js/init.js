@@ -181,6 +181,7 @@ app.output.onAuditAction = async (name, a) => {
   if (name === 'space') { auditMode('space'); $('space-bound').focus(); return; }
   if (name === 'write-space') {
     showTab(9);
+    $('spaces-part').open = true;
     if (!(app.project.spaces || []).length) app.instancesTab.addSpace();
     requestAnimationFrame(() => $('space-body').scrollIntoView({ block: 'start' }));
     return;

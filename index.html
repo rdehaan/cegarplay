@@ -92,7 +92,7 @@
       </div>
       <div class="topbar-end">
         <span class="run-field run-status-box"><span class="status-label visually-hidden">Status:</span>
-          <span id="run-status" data-state="idle" role="status" aria-live="polite">idle</span></span>
+          <span id="run-status" data-state="idle" role="status" aria-live="polite">ready</span></span>
         <a id="back-to-guide" class="topbar-link" href="guide/" hidden>&larr; Back to the guide</a>
         <a id="guide-link" class="topbar-link" href="guide/" title="Designing CEGAR loops: a course with examples">Guide</a>
         <button class="control-button theme-toggle" id="theme-button" data-theme-toggle type="button">&#x25D0; Auto</button>
@@ -242,13 +242,28 @@
 
     <!-- 2. Tutorial -->
     <section id="section-tutorial">
+      <details class="help-fold" data-help="section-tutorial">
+        <summary><span class="help-title">Tutorial</span> <span class="help-q" title="What is this tab?">?</span></summary>
+      <p class="tab-intro help-box">
+        Thirteen lessons, each with a small example: <b>Load</b> puts it in the editor and you stay here; press
+        <b>Run</b> and read on. The <a href="guide/" target="cegarplay-guide">design guide</a> is the longer course
+        on designing loops; the <b>Manual</b> (next to this tab) is the complete reference.
+      </p>
+      </details>
       <div id="tutorial"></div>
     </section>
 
     <!-- 8. Manual (manual.md is fetched when the tab first opens) -->
     <section id="section-manual">
-      <p class="note">The complete reference, also as <a href="manual.md" target="_blank">raw Markdown</a>
-        (for AI agents: start from <a href="llms.txt" target="_blank">llms.txt</a>).</p>
+      <details class="help-fold" data-help="section-manual">
+        <summary><span class="help-title">Manual</span> <span class="help-q" title="What is this tab?">?</span></summary>
+      <p class="tab-intro help-box">
+        The complete reference: every tab, the project file format, the loop language and the tools,
+        for lookup (the contents below) rather than for reading in order; the <b>Tutorial</b> teaches.
+        Also as <a href="manual.md" target="_blank">raw Markdown</a> (for AI agents: start from
+        <a href="llms.txt" target="_blank">llms.txt</a>).
+      </p>
+      </details>
       <nav id="manual-toc" class="manual-toc"></nav>
       <div id="manual"><p class="note">Loading the manual…</p></div>
     </section>
@@ -390,10 +405,12 @@
         <span class="tab-help">Tutorial: <a href="#tut-reading">Reading the trace and the statistics</a> · <a href="#tut-audit">The audit</a>. Manual: <a href="#manual-output-tab">Output tab</a> · <a href="#manual-audit">Audit</a>.</span>
       </p>
       </details>
-      <div class="result-row"><div id="result-line" class="result-line">No run yet.</div>
+      <div class="result-row"><div id="result-line" class="result-line empty">No run yet.</div>
         <button class="control-button small-button" id="clear-button" title="Remove the results of the last run: output, statistics, trace and recording (the run history stays)" disabled>Clear</button></div>
       <p id="run-story" class="run-story" hidden></p>
       <div id="audit-panel" class="audit-panel" hidden></div>
+      <!-- hidden until the first run (js/output.js result) -->
+      <div id="output-body" hidden>
       <h3>Solutions <span id="solutions-count" class="note"></span>
         <button class="control-button small-button" id="download-solutions-button" hidden>Download</button></h3>
       <ol id="solutions" class="solutions"></ol>
@@ -404,6 +421,7 @@
       <div id="trace"><p class="note">No steps recorded.</p></div>
       <h3>Messages</h3>
       <div id="messages" class="messages"></div>
+      </div>
     </section>
 
     <!-- 6. Statistics -->

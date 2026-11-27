@@ -60,7 +60,8 @@ export class ViewPanel {
     this.solSlider = h('input', { type: 'range', id: 'view-solution', min: 1, max: 1, value: 1, 'aria-label': 'Solution' });
     this.solSlider.addEventListener('input', () => this.show());
     this.solLabel = h('span', { id: 'view-solution-label', class: 'note', 'aria-live': 'polite' });
-    this.stepBox = h('label', { id: 'view-step-box' }, 'Step ', this.slider);
+    // the same cursor as the Observatory's bar at the top: moving either moves every picture
+    this.stepBox = h('label', { id: 'view-step-box', title: 'The Observatory\'s cursor, as in the bar at the top of the tab: moving it moves every picture' }, 'Step (the cursor) ', this.slider);
     this.solBox = h('label', { id: 'view-solution-box', hidden: true }, 'Solution ', this.solSlider);
     this.svgBox = h('div', { id: 'view-svg', class: 'view-svg' });
     this.notes = h('ul', { id: 'view-notes', class: 'view-notes' });

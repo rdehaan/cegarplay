@@ -126,3 +126,46 @@ test('each tab\'s help: folded by default, and open once it is opened (remembere
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('empty states and folds: ready, Output before a run, Instances parts, the Observatory exports, Campaign row buttons, Tutorial and Manual help', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run');
+  assert.equal(await page.textContent('#run-status'), 'ready');
+  // Output: one line, no empty sections, no Clear
+  await B.openTab(page, 5);
+  assert.match(await page.textContent('#result-line'), /^No run yet\. Press Run \(Ctrl\+Enter\) or Audit/);
+  assert.equal(await page.isVisible('#output-body'), false);
+  assert.equal(await page.isVisible('#clear-button'), false);
+  // Instances: Generators and Spaces folded, each with a one-line summary; opening is kept
+  await B.openTab(page, 9);
+  assert.equal(await page.$eval('#generators-part', (d) => d.open), false);
+  assert.equal(await page.$eval('#spaces-part', (d) => d.open), false);
+  assert.match(await page.textContent('#generators-summary'), /^none: a generator writes random instances/);
+  assert.match(await page.textContent('#spaces-summary'), /^n \(The numbers 1\.\.n/);
+  await page.click('#spaces-part > summary');
+  assert.equal(await page.isVisible('#space-editor .ace_content'), true);
+  assert.ok(await page.$eval('#space-editor', (e) => e.getBoundingClientRect().height) > 30, 'the editor has its height once opened');
+  assert.equal(await page.evaluate(() => localStorage.getItem('cegarplay.instances-open')), '["spaces"]');
+  // Observatory: the exports are folded under the cursor bar
+  await B.openTab(page, 11);
+  assert.equal(await page.isVisible('#cursor-step'), true);
+  assert.equal(await page.isVisible('#export-view'), false);
+  await page.click('#observatory-export > summary');
+  assert.equal(await page.isVisible('#export-view'), true);
+  // Campaign: nothing to export or forget without rows
+  await B.openTab(page, 10);
+  for (const id of ['campaign-export', 'campaign-export-csv', 'campaign-clear']) assert.equal(await page.$eval(`#${id}`, (b) => b.disabled), true, id);
+  assert.equal(await page.$eval('#campaign-import', (b) => b.disabled), false);
+  // Tutorial and Manual start like the other tabs: a name and a folded help
+  for (const n of [2, 8]) {
+    await B.openTab(page, n);
+    assert.equal(await page.isVisible(`#section-${n === 2 ? 'tutorial' : 'manual'} > details.help-fold > summary`), true);
+  }
+  // after a run: the Output sections show and Clear is offered
+  await page.click('#run-button');
+  await B.waitState(page, ['finished']);
+  await B.openTab(page, 5);
+  assert.equal(await page.isVisible('#output-body'), true);
+  assert.equal(await page.isVisible('#clear-button'), true);
+  assert.deepEqual(errors, []);
+  await context.close();
+});

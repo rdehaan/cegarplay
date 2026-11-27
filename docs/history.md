@@ -2680,3 +2680,26 @@ file); `tools/aspq-check.py` checks them by brute force. Manual: *ASP(Q) example
 - Tests: `tabs.test.mjs` (every tab shown after old "off" choices; the manual fetched lazily; the
   purpose line), `lab.test.mjs`, `keys.test.mjs`, `page.test.mjs` (Manual) rewritten; the harness's
   `advanced` option removed; `a11y.test.mjs` checks all twelve tabs at 390 px.
+
+## Empty states and folds (2026-11-27, on request)
+
+A walk through every tab as a new user (fresh visit, 1300 and 390 px) gave six points; the owner
+asked for all six in one commit.
+
+- Output: before a run (and after Clear) the result line says "No run yet. Press Run (Ctrl+Enter)
+  or Audit …"; Solutions, Trace and Messages (`#output-body`) and Clear are not shown.
+- Refinery: until a space is computed, one line (`#lab-intro`) says what Compute space gives; the
+  four sections (`#lab-body`) are hidden instead of each saying "Disabled until …".
+- Instances: Generators and Spaces fold under their headings (`partFold`, js/instances-common.js),
+  with a one-line summary (the names, or what the part is for); unfolding is kept in this browser
+  (`cegarplay.instances-open`); the editor is resized on unfolding; "Write a space" opens Spaces.
+  The harness's `parts: true` opens both (directions, bounded, a11y tests).
+- Observatory: the exports and Data as table fold under "Export and data tables"; the cursor bar
+  is all the top shows. The domain view's slider is labelled "Step (the cursor)": it is the same
+  cursor (kept: lecture mode and scrolled-down reading use it).
+- Campaign: Export rows and Export matrix are disabled without rows of the suite, Forget rows
+  without any stored row (`storedRows`).
+- Tutorial and Manual start with their name and a folded help like the other tabs; the Manual's
+  raw-Markdown note moved into it. The top bar's status reads "ready" instead of "idle"
+  (`data-state` stays `idle`).
+- Test: `tabs.test.mjs` "empty states and folds".

@@ -28,11 +28,14 @@ export class ObservatoryBar {
         h('label', {}, 'Range ', this.from), '–', this.to,
         b('cursor-range', 'Set range', () => c.setRange(this.toIndex(this.from.value), this.toIndex(this.to.value)), 'Restrict the line table and the alive curve to these steps'),
         b('cursor-clear', 'Clear', () => { this.from.value = ''; this.to.value = ''; c.setRange(null, null); })),
-      h('div', { class: 'instances-bar' },
-        b('export-view', 'Export view (SVG)', () => this.exportView()),
-        b('export-map', 'Export candidate map (PNG)', () => this.exportMap()),
-        h('label', {}, 'Storyboard of steps ', this.stepsIn), b('export-storyboard', 'Storyboard (SVG)', () => this.storyboard()),
-        b('observatory-table', 'Data as table', () => this.toggleData())),
+      // the exports and the data tables: folded, so the cursor is all the bar shows at first
+      h('details', { class: 'observatory-export', id: 'observatory-export' },
+        h('summary', {}, 'Export and data tables'),
+        h('div', { class: 'instances-bar' },
+          b('export-view', 'Export view (SVG)', () => this.exportView()),
+          b('export-map', 'Export candidate map (PNG)', () => this.exportMap()),
+          h('label', {}, 'Storyboard of steps ', this.stepsIn), b('export-storyboard', 'Storyboard (SVG)', () => this.storyboard()),
+          b('observatory-table', 'Data as table', () => this.toggleData()))),
       this.data);
     c.subscribe(() => this.render());
     this.render();

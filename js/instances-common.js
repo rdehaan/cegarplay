@@ -1,6 +1,26 @@
 // Helpers shared by the Instances tab (js/instances-tab.js) and its parts.
 import { costText } from './project.js';
 import { fmt } from './util.js';
+import { h as el } from './dom.js';
+
+// A part of the tab (Generators, Spaces): folded under its heading, with a one-line summary
+// beside it, so a project that does not use it shows one line. Whether it is open is kept in this
+// browser (cegarplay.instances-open, a list of keys).
+const OPEN_KEY = 'cegarplay.instances-open';
+function openParts() { try { return JSON.parse(localStorage.getItem(OPEN_KEY)) || []; } catch { return []; } }
+export function partFold(key, title, summary, ...children) {
+  const d = el('details', { class: 'instances-part', id: `${key}-part` },
+    el('summary', {}, el('h3', {}, title), ' ', summary), ...children);
+  d.open = openParts().includes(key);
+  d.addEventListener('toggle', () => {
+    try {
+      const s = new Set(openParts());
+      if (d.open) s.add(key); else s.delete(key);
+      if (s.size) localStorage.setItem(OPEN_KEY, JSON.stringify([...s])); else localStorage.removeItem(OPEN_KEY);
+    } catch { /* no storage */ }
+  });
+  return d;
+}
 
 // the Expected column: "12", "optimum 8" or both
 export const expectedText = (e) => !e ? '–' : [Number.isInteger(e.solutions) ? fmt(e.solutions) : null, e.optimum != null ? `optimum ${costText(e.optimum)}` : null].filter(Boolean).join(', ') || '–';

@@ -32,8 +32,9 @@ export async function launch() {
 
 // By default the page is opened with ?nocoi=1 (not isolated); pass { coi: true } to let the
 // service worker shim isolate it (the page reloads once).
+// parts: true opens the Instances tab's Generators and Spaces folds.
 // contextOptions go to browser.newContext (for instance { colorScheme: 'dark' }); path is the page to open.
-export async function openPage(browser, server, query = '', { acceptDownloads = true, coi = false, contextOptions = {}, path = 'index.html', context: given, tour = false } = {}) {
+export async function openPage(browser, server, query = '', { acceptDownloads = true, coi = false, contextOptions = {}, path = 'index.html', context: given, tour = false, parts = false } = {}) {
   if (!coi) query = query ? query + '&nocoi=1' : '?nocoi=1';
   const context = given || await browser.newContext({ acceptDownloads, ...contextOptions });
   const page = await context.newPage();
@@ -41,6 +42,8 @@ export async function openPage(browser, server, query = '', { acceptDownloads = 
   if (!tour) await page.addInitScript(() => {
     try { for (const k of ['cegarplay.tour', 'cegarplay.tour.observatory', 'cegarplay.tour.campaign', 'cegarplay.tour.refinery']) if (localStorage.getItem(k) === null) localStorage.setItem(k, '"seen"'); } catch { /* no storage */ }
   });
+  // parts: the Instances tab's Generators and Spaces open (they are folded by default)
+  if (parts) await page.addInitScript(() => { try { if (localStorage.getItem('cegarplay.instances-open') === null) localStorage.setItem('cegarplay.instances-open', '["generators","spaces"]'); } catch { /* no storage */ } });
   const errors = [], foreign = [];
   page.on('console', (m) => { if (m.type() === 'error' && !/chrome:\/\/juggler/.test(m.text())) errors.push(m.text()); });  // juggler: Playwright's Firefox instrumentation
   page.on('pageerror', (e) => errors.push(String(e)));

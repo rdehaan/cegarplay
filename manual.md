@@ -267,7 +267,8 @@ then the project's; the instances as in the Instances tab), showing time, soluti
 refinements (median over seeds); the best finished cell of a row is bold (every one of a tie; never for
 solutions), a cell that did not finish shows its outcome,
 a disagreement is marked ✗, and a click on a heading sorts by that column. **Export matrix (CSV)**
-saves it. Plots: time against a parameter (median and interquartile band), a heat map over two
+saves it (it and **Export rows** are disabled until the suite has rows; **Forget rows** until any are
+stored). Plots: time against a parameter (median and interquartile band), a heat map over two
 parameters, one variant against another (pick both), and a cactus plot (the i-th fastest finished
 cell against its time); a growth factor per variant with a 90% interval. A row holds the outcome,
 solutions, candidates, refinements and time, plus the cost of the solutions (`cost`, `sameCost`),
@@ -350,7 +351,8 @@ space. An unsound verdict shows the instance it broke on, with **Save as regress
 the candidate space** (it opens the Observatory: the instance is saved and picked, and the loop runs on it with
 every step recorded; the map shows the refinements that run makes, which may avoid the unsound one).
 
-**Writing a space** (Instances tab, **Spaces**, **New space**): a name; the text, which replaces the
+**Writing a space** (Instances tab, **Spaces**, **New space**; Generators and Spaces are folded
+under their headings, with a one-line summary of what the project has, until opened): a name; the text, which replaces the
 instance: choice rules and constraints over the instance's predicates, written with the bound
 parameter (`node(1..k). { edge(X,Y) : node(X), node(Y), X < Y }.`); the parameters, in one table:
 **Bound** (which one runs up to the top bar's value; its row has the first value, the field `from`),
@@ -1236,7 +1238,8 @@ script is compiled 0.5 s after each edit.
 
 | Run status | Meaning |
 | --- | --- |
-| `idle`, `validating`, `running`, `paused` | As named. |
+| `ready` | No run yet, or its results were cleared or replaced by another project (`data-state="idle"`). |
+| `validating`, `running`, `paused` | As named. |
 | `finished` | The run ended with outcome `finished`, `solutions`, `limit` or `stopped`. |
 | `error` | Problems before the run, a runtime error (outcome `error`), or the engine stopped unexpectedly. |
 | `aborted` | Abort was pressed; what arrived so far stays on screen. |
@@ -1401,7 +1404,9 @@ abstraction), with a note saying so; the next Run replaces them. The run history
   count is known (its expected count, or an enumeration audit of the same program in the run
   history) and an exhausted run found fewer, the line says so in red: "But the instance has 61 (the
   audit of the same program): this run lost 50." **Clear**, next to it, removes the results of the
-  last run: output, statistics, trace and recording (the run history stays).
+  last run: output, statistics, trace and recording (the run history stays). Before a run (and after
+  Clear) the line says "No run yet" with what to press, and the Solutions, Trace and Messages
+  sections are not shown.
 - **The run in words** (`js/run-story.js`), under the result line after a run (not an audit): who
   proposed how many candidates, how many the check refuted, the refinements (by kind, and the mean
   clause length: the shorter, the more each rules out), how many passed, and whether these are all
@@ -1486,7 +1491,7 @@ line says to tick Record calls. **Cost per line**: one row per loop line with ca
 exclusive time (nested calls subtracted) and time with nested calls, sorted by time; a click
 selects the line and filters the timeline; after a run the loop editor shows the same figures as
 info annotations. The **Domain view** (see [Writing views](#manual-writing-views)) and the **Candidate space** follow.
-Under the cursor bar, **Export view (SVG)** saves the domain view at the cursor's step and **Export
+Under the cursor bar, folded under **Export and data tables**, **Export view (SVG)** saves the domain view at the cursor's step and **Export
 candidate map (PNG)** the candidate space map; each is disabled (its tooltip says why) until there
 is a view or a map to save.
 
@@ -1630,7 +1635,8 @@ candidates, 37 solutions, 375 bad, 12 interface atoms"), and **Limits**: candida
 audit's), counterexamples per candidate (20), minimal sets per candidate (200), exact-bounds
 threshold (3,000 bad candidates), time budget (30 s per clingo computation and for the simulation),
 simulation runs (1,000). The space is computed once per project version, instance, variant and
-link, and kept in the Refinery worker's memory.
+link, and kept in the Refinery worker's memory. Until a space is computed, one line under the bar
+says what Compute space gives, and the sections below are not shown.
 
 **Space.** The counts, the options per scheme, and whether the loop scheme is sound on this instance
 (the same answer as the audit, with the same witness: the fewest differing atoms).
@@ -1817,6 +1823,7 @@ the page); Undo brings that project
 - `cegarplay.lab.*`: the Refinery's settings (its Limits, the source of steps, the candidate order, the scheme), as JSON.
 - `cegarplay.theme`: `"light"` or `"dark"` when the colour theme was chosen by hand (absent for Auto).
 - `cegarplay.help-open`: the tabs whose explanation (the **?**) was opened, as JSON.
+- `cegarplay.instances-open`: the Instances tab's parts (`generators`, `spaces`) that were unfolded, as JSON.
 - `cegarplay.tour`: `{ state, at }` once the guided tour was started, closed or finished; while it is
   absent, a first visit offers the tour.
 - `cegarplay.tour.observatory`, `cegarplay.tour.campaign`, `cegarplay.tour.refinery`: the same for the

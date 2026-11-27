@@ -518,6 +518,11 @@ label.tab-label.has-problem:after {
 .library-section { margin: 0 0 6px; }
 .library-section > summary { cursor: pointer; }
 .library-section > summary h3 { display: inline-block; }
+/* Instances: Generators and Spaces fold under their heading (js/instances-common.js partFold) */
+.instances-part { border-top: 1px solid var(--border); margin-top: 18px; padding-top: 6px; }
+.instances-part > summary { cursor: pointer; }
+.instances-part > summary h3 { display: inline-block; margin: 8px 0; }
+.instances-part > summary .note { overflow-wrap: anywhere; }
 .note {
   color: var(--text-soft);
   font-size: 13px;
@@ -593,6 +598,9 @@ label.tab-label.has-problem:after {
 .result-line.error {
   color: var(--error);
 }
+/* no run yet: the hint is plain text, and Clear (nothing to clear) is not shown */
+.result-line.empty .note { font-weight: 400; font-size: 14px; }
+.result-row:has(.result-line.empty) #clear-button { display: none; }
 .instances-bar {
   display: flex;
   flex-wrap: wrap;
@@ -1468,3 +1476,7 @@ body.drag-active, body.drag-active * { cursor: grabbing !important; user-select:
 .import-options { display: inline-block; vertical-align: middle; }
 .import-options[open] { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .import-options > summary { cursor: pointer; color: var(--text-muted); font-size: 13px; }
+/* the Observatory's exports and data tables, folded under the cursor bar (js/observatory.js) */
+.observatory-export { margin: 2px 0 6px; }
+.observatory-export > summary { cursor: pointer; color: var(--text-muted); font-size: 13px; }
+.observatory-export > .instances-bar { margin-top: 6px; }

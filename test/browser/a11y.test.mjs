@@ -46,7 +46,7 @@ test('B1: Tab reaches the tab row, arrow keys switch tabs, the focus ring is vis
 });
 
 test('B1: ?tab=N still opens that tab', async () => {
-  const { page, context } = await B.openPage(browser, server, '?tab=5');
+  const { page, context } = await B.openPage(browser, server, '?tab=5', { parts: true });
   assert.equal(await page.$eval('#tab5', (e) => e.checked), true);
   assert.equal(await page.isVisible('#section-output'), true);
   await context.close();
@@ -72,7 +72,7 @@ test('B2: the Project menu is in the Tab order; Enter, the arrow keys and Enter 
 });
 
 test('B6: a fragment\'s "?" opens its explanation inline with the keyboard, and folds it again', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?tab=3');
+  const { page, context, errors } = await B.openPage(browser, server, '?tab=3', { parts: true });
   const link = 'a.modal-link[data-open="modal-abstraction"]';
   assert.match(await page.$eval(link, (e) => e.getAttribute('aria-label')), /abstraction/);
   assert.equal(await page.getAttribute(link, 'aria-expanded'), 'false');
@@ -100,7 +100,7 @@ test('B6: a fragment\'s "?" opens its explanation inline with the keyboard, and 
 });
 
 test('B4, B5: at 390 px every tab has a name and a tooltip, and no tab scrolls sideways', async () => {
-  const { page, context } = await B.openPage(browser, server, '?internals=true', { contextOptions: { viewport: { width: 390, height: 800 } } });
+  const { page, context } = await B.openPage(browser, server, '?internals=true', { parts: true, contextOptions: { viewport: { width: 390, height: 800 } } });
   for (const t of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) {
     const sel = `label[for="tab${t}"]`;
     if (await page.$eval(sel, (l) => l.hidden)) continue;
@@ -116,7 +116,7 @@ test('B4, B5: at 390 px every tab has a name and a tooltip, and no tab scrolls s
 });
 
 test('A4: the time limit ends a loop without solver calls in the page', async () => {
-  const { page, context } = await B.openPage(browser, server, '?example=tutorial-first-run');
+  const { page, context } = await B.openPage(browser, server, '?example=tutorial-first-run', { parts: true });
   const text = await B.getEditor(page, 'loop-editor');
   await B.setEditor(page, 'loop-editor', text.split('\n').slice(0, 4).join('\n') + '\nloop:\n    x = 1\n');
   await page.click('label[for="tab4"]');
@@ -137,7 +137,7 @@ const accName = (page, sel) => page.$eval(sel, (e) => {
 });
 
 test('B7: the audit group, the Spaces editor, next steps and result cards are named, focusable and announced', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=af-preferred&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=af-preferred&tab=9', { parts: true });
   for (const sel of ['#audit-button', '#audit-mode', '#space-list-select', '#space-name', '#space-description-input', '#space-preview-k',
     '#preview-space-button', '#add-space-param-button', '#add-space-button', '#delete-space-button',
     '#snapshot-name', '#snapshot-save-button', '#compare-a', '#compare-b', '#compare-button']) {
@@ -177,7 +177,7 @@ test('B7: the audit group, the Spaces editor, next steps and result cards are na
 
 test('B5: at 1400, 700 and 400 px the Control, Instances, Output and Observatory tabs do not scroll sideways', async () => {
   for (const width of [1400, 700, 400]) {
-    const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant', { contextOptions: { viewport: { width, height: 800 } } });
+    const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant', { parts: true, contextOptions: { viewport: { width, height: 800 } } });
     for (const t of [1, 9, 5, 11]) {
       await B.openTab(page, t);
       await page.waitForTimeout(150);

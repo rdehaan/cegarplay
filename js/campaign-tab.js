@@ -174,7 +174,9 @@ export class CampaignTab {
     const keys = new Set();
     for (const c of cells) keys.add(await cellKey(this.app.project, c, s, this.tag()));
     const store = await this.storeP;
-    return (await store.all()).filter((r) => keys.has(r.key));
+    const all = await store.all();
+    this.storedRows = all.length;          // of every suite: whether Forget rows has anything to forget
+    return all.filter((r) => keys.has(r.key));
   }
 
   async refresh() {
@@ -256,6 +258,7 @@ export class CampaignTab {
     const store = await this.storeP;
     await store.clear();
     this.rows = [];
+    this.storedRows = 0;
     this.draw();
     this.say('Forgot every stored row (of every suite).');
   }
@@ -291,6 +294,17 @@ export class CampaignTab {
 
   // ---- drawing --------------------------------------------------------------------------
   draw() {
+    // the row buttons: nothing to export without rows of this suite, nothing to forget without any
+    const none = !this.rows.length;
+    for (const [id, title] of [['campaign-export', 'Save the rows of this suite as JSON lines'], ['campaign-export-csv', 'Save the matrix below as CSV']]) {
+      const x = $(id);
+      if (x) { x.disabled = none; x.title = none ? 'No rows of this suite yet: press Start first' : title; }
+    }
+    const forget = $('campaign-clear');
+    if (forget) {
+      forget.disabled = none && !this.storedRows;
+      forget.title = forget.disabled ? 'No rows are stored' : 'Forget every stored row, of every suite of every project, in this browser';
+    }
     const bad = inconsistencies(this.rows);
     const label = $('label-campaign');
     if (label) label.querySelector('.tab-text').textContent = bad.length ? `Campaign (${bad.length} ✗)` : 'Campaign';

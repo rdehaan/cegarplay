@@ -63,7 +63,8 @@ test('3. abort a long run, then run the default example again', async () => {
   // the results of the aborted run are gone
   assert.equal(await B.waitState(page, ['idle'], 5000), 'idle');
   assert.equal((await page.textContent('#live-line')).trim(), '');
-  assert.equal(await page.textContent('#result-line'), 'No run yet.');
+  assert.match(await page.textContent('#result-line'), /^No run yet\. Press Run/);
+  assert.equal(await page.isVisible('#output-body'), false, 'no empty sections before a run');
   const t0 = Date.now();
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error', 'aborted']), 'finished');

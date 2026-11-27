@@ -10,7 +10,7 @@ after(async () => { await browser.close(); server.close(); });
 const settled = (page) => page.waitForFunction(() => ['finished', 'error', 'aborted'].includes(document.getElementById('run-status').dataset.state));
 
 test('S1: the Audit button shows the verdict, the witness and an audit column in the history', async () => {
-  const { page, context } = await B.openPage(browser, server, '?example=tutorial-weak-relevant');
+  const { page, context } = await B.openPage(browser, server, '?example=tutorial-weak-relevant', { parts: true });
   await page.click('#audit-button');
   await settled(page);
   assert.equal(await page.$eval('#audit-panel', (e) => e.dataset.verdict), 'unsound');
@@ -31,7 +31,7 @@ test('S1: the Audit button shows the verdict, the witness and an audit column in
 });
 
 test('S1: a sound audit, and a script with nothing to audit', async () => {
-  const { page, context } = await B.openPage(browser, server, '?example=tutorial-first-run');
+  const { page, context } = await B.openPage(browser, server, '?example=tutorial-first-run', { parts: true });
   await page.click('#audit-button');
   await settled(page);
   assert.equal(await page.$eval('#audit-panel', (e) => e.dataset.verdict), 'sound');
@@ -46,7 +46,7 @@ test('S1: a sound audit, and a script with nothing to audit', async () => {
 const solutionsOf = (page) => page.evaluate(() => window.cegarplay.stats.S.solutions);
 
 test('I1: the run bar picks an instance; Run uses it; ?instance= selects one', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf', { parts: true });
   assert.equal(await page.isVisible('#instance-select'), true);
   assert.equal(await page.$eval('#instance-select', (s) => s.value), 'example');
   await page.click('#run-button');
@@ -70,7 +70,7 @@ test('I1: the run bar picks an instance; Run uses it; ?instance= selects one', a
 });
 
 test('I1: Run all marks a wrong expected count in red', async () => {
-  const { page, context } = await B.openPage(browser, server, '?example=af-preferred&tab=9');
+  const { page, context } = await B.openPage(browser, server, '?example=af-preferred&tab=9', { parts: true });
   // break one expectation
   await page.click('#instances-table a:text("random-1")');
   await page.fill('#instance-expected', '7');
@@ -85,7 +85,7 @@ test('I1: Run all marks a wrong expected count in red', async () => {
 });
 
 test('I1: Run all checks expected optima; a wrong optimum is marked', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=maxsat-ihs&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=maxsat-ihs&tab=9', { parts: true });
   assert.match(await page.textContent('#instances-table tr[data-instance="example"]'), /optimum 8/);
   await page.click('#instances-table a:text("small-opt")');
   assert.equal(await page.inputValue('#instance-optimum'), '3');
@@ -101,7 +101,7 @@ test('I1: Run all checks expected optima; a wrong optimum is marked', async () =
 });
 
 test('I1: a new instance is edited in the tab and used by the next run', async () => {
-  const { page, context } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=9');
+  const { page, context } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=9', { parts: true });
   await page.click('#add-instance-button');
   await page.fill('#instance-constants', 'n=4');
   await page.dispatchEvent('#instance-constants', 'change');
@@ -116,7 +116,7 @@ test('I1: a new instance is edited in the tab and used by the next run', async (
 });
 
 test('V1: ?replay= replays a library recording without running the engine', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?replay=examples/replays/gc-shape1.cprec');
+  const { page, context, errors } = await B.openPage(browser, server, '?replay=examples/replays/gc-shape1.cprec', { parts: true });
   await page.waitForFunction(() => document.getElementById('run-status').dataset.state === 'replayed');
   assert.equal(await page.evaluate(() => window.cegarplay.exampleId), 'gc-shape1');
   assert.equal(await solutionsOf(page), 101);
@@ -131,7 +131,7 @@ test('V1: ?replay= replays a library recording without running the engine', asyn
 });
 
 test('V1: the recording setting, a recorded run, Download and Open recording', async () => {
-  const { page, context } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=4');
+  const { page, context } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=4', { parts: true });
   assert.equal(await page.isDisabled('#download-recording-button'), true);
   await page.selectOption('#record-select', 'all');
   await page.check('#record-calls');
@@ -156,7 +156,7 @@ test('V1: the recording setting, a recorded run, Download and Open recording', a
 });
 
 test('S2: with certificates on, the Statistics tab counts refinements per level', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=4');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=4', { parts: true });
   assert.equal(await page.isVisible('#certificates-block'), false);
   await page.selectOption('#certify-select', 'report');
   await page.click('#run-button');
@@ -170,7 +170,7 @@ test('S2: with certificates on, the Statistics tab counts refinements per level'
 });
 
 test('I2: Preview 6 shows six instances; Add as instance stores the generated facts, which a run uses', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf&tab=9', { parts: true });
   assert.equal(await page.$eval('#generator-select', (s) => s.value), 'qbf-dnf');
   await page.click('#preview-button');
   await page.waitForSelector('#generator-preview .generator-card:nth-child(6)');
@@ -196,7 +196,7 @@ const SHAPES = ['lang-basics', 'lang-clauses', 'lang-core', 'lang-legacy', 'lang
   'lang-several-cex', 'lang-two-stage', 'gc-shape1', 'gc-shape2', 'gc-shape3', 'gc-shape4', 'gc-reference'];
 
 test('V2: one box per declared solver and one arrow per link, for the lang-* examples and the shapes', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?tab=11');
+  const { page, context, errors } = await B.openPage(browser, server, '?tab=11', { parts: true });
   for (const id of SHAPES) {
     await page.evaluate(async (x) => { await window.cegarplay.loadExample(x); }, id);
     const want = await page.evaluate(() => {
@@ -218,7 +218,7 @@ test('V2: one box per declared solver and one arrow per link, for the lang-* exa
 });
 
 test('V2: the line table sums to the final S calls; 100,000 synthetic calls redraw under 50 ms', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&tab=11');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&tab=11', { parts: true });
   await page.check('#anatomy-calls');
   await page.click('#run-button');
   await settled(page);
@@ -252,7 +252,7 @@ test('V2: the line table sums to the final S calls; 100,000 synthetic calls redr
 const campaignDone = (page) => page.waitForFunction(() => !window.cegarplay.campaign.running && /cells:|Aborted|Not started/.test(document.getElementById('campaign-status').textContent), null, { timeout: 120000 });
 
 test('I3: a 1,000-cell suite finishes; after a reload, Start runs zero cells', { timeout: 240000 }, async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=10');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=10', { parts: true });
   await page.evaluate(() => {
     const app = window.cegarplay;
     app.project.suites = [{ name: 'thousand', instances: { constants: { x: Array.from({ length: 1000 }, (_, i) => i) } }, limits: { seconds: 30 } }];
@@ -277,7 +277,7 @@ test('I3: a 1,000-cell suite finishes; after a reload, Start runs zero cells', {
 });
 
 test('Tab indents in the suite editor and in the readme editor; Esc then Tab leaves', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=10');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=10', { parts: true });
   await page.click('#suite-text');
   await page.$eval('#suite-text', (t) => { t.value = '{\n"a": 1,\n"b": 2\n}'; t.setSelectionRange(2, 2); });
   await page.keyboard.press('Tab');
@@ -304,7 +304,7 @@ test('Tab indents in the suite editor and in the readme editor; Esc then Tab lea
 });
 
 test('campaign seeds: random seeds written into the suite, randomized search, the matrix per seed and as a mean', { timeout: 120000 }, async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&tab=10');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&tab=10', { parts: true });
   await page.evaluate(() => {
     const app = window.cegarplay;
     app.project.suites = [{ name: 'seeds', instances: { constants: { n: [4, 5] } }, variants: ['default', 'reference'], solver_seeds: 1, limits: { seconds: 60 } }];
@@ -344,7 +344,7 @@ test('campaign seeds: random seeds written into the suite, randomized search, th
 });
 
 test('I3: tutorial-weak-relevant with a reference variant marks n = 8 red; imported rows draw the plots', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=10');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=10', { parts: true });
   await page.evaluate(() => window.cegarplay.campaign.clearRows());
   await page.click('#campaign-start');
   await campaignDone(page);
@@ -374,7 +374,7 @@ test('I3: tutorial-weak-relevant with a reference variant marks n = 8 red; impor
 });
 
 test('I3: Abort during a suite leaves no running worker', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring&tab=10');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring&tab=10', { parts: true });
   await page.evaluate(() => {
     const app = window.cegarplay;
     app.project.suites = [{ name: 'slow', instances: { constants: { n: [6], x: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] } }, limits: { seconds: 60 } }];
@@ -393,7 +393,7 @@ test('I3: Abort during a suite leaves no running worker', async () => {
 });
 
 test('V3: the domain view draws a step; another step keeps every position; a cached step makes no call; drag writes positions', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=guide-03-hit-clique&tab=11');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=guide-03-hit-clique&tab=11', { parts: true });
   await page.click('#run-button');
   await settled(page);
   await page.waitForSelector('#view-svg .view-node');
@@ -425,7 +425,7 @@ test('V3: the domain view draws a step; another step keeps every position; a cac
 });
 
 test('I4: Fuzz on tutorial-weak-relevant reports n = 2, the lost solution pick(2), and saves a regression instance', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=9', { parts: true });
   await page.click('#fuzz-button');
   await page.waitForSelector('#fuzz-card:not([hidden])', { timeout: 60000 });
   const text = await page.textContent('#fuzz-card');
@@ -444,7 +444,7 @@ test('I4: Fuzz on tutorial-weak-relevant reports n = 2, the lost solution pick(2
 });
 
 test('V4: the candidate space of gc-shape1: 3,373 cells, alive 101, a cursor move redraws within one frame', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape1&tab=11');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape1&tab=11', { parts: true });
   await page.evaluate(() => { window.cegarplay.project.settings.record = { steps: 'all', n: 0, calls: false }; window.cegarplay.loopTab.load(window.cegarplay.project); });
   await page.click('#run-button');
   await settled(page);
@@ -467,7 +467,7 @@ test('V4: the candidate space of gc-shape1: 3,373 cells, alive 101, a cursor mov
 });
 
 test('V4: Stop ends a Compute of the candidate space; Compute works again afterwards', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape1&tab=11');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape1&tab=11', { parts: true });
   await page.evaluate(() => { window.cegarplay.project.settings.record = { steps: 'all', n: 0, calls: false }; window.cegarplay.loopTab.load(window.cegarplay.project); });
   await page.click('#run-button');
   await settled(page);
@@ -498,7 +498,7 @@ test('V4: Stop ends a Compute of the candidate space; Compute works again afterw
 });
 
 test('the run and audit buttons are always on their own row, under the logo', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant', { parts: true });
   const rows = () => page.evaluate(() => {
     const b = document.querySelector('.topbar .brand').getBoundingClientRect();
     const r = document.getElementById('run-button').getBoundingClientRect();
@@ -522,7 +522,7 @@ test('the run and audit buttons are always on their own row, under the logo', as
 });
 
 test('V4: tutorial-weak-relevant: the first unsound refinement is 6', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=11');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=11', { parts: true });
   await page.evaluate(() => { window.cegarplay.project.settings.record = { steps: 'all', n: 0, calls: false }; });
   await page.click('#run-button');
   await settled(page);
@@ -535,7 +535,7 @@ test('V4: tutorial-weak-relevant: the first unsound refinement is 6', async () =
 });
 
 test('V5: one cursor drives the trace, the domain view, the map and the timeline; the arrow keys move it', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=guide-03-hit-clique&tab=11');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=guide-03-hit-clique&tab=11', { parts: true });
   await page.evaluate(() => { window.cegarplay.project.settings.record = { steps: 'all', n: 0, calls: true }; });
   await page.click('#run-button');
   await settled(page);
@@ -575,7 +575,7 @@ test('V5: one cursor drives the trace, the domain view, the map and the timeline
 });
 
 test('V5: a link with replay, step and view opens on that step and view; lecture mode shows the notes', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?replay=examples/replays/guide-03-hit-clique.cprec&step=3&view=view&lecture=1');
+  const { page, context, errors } = await B.openPage(browser, server, '?replay=examples/replays/guide-03-hit-clique.cprec&step=3&view=view&lecture=1', { parts: true });
   await page.waitForFunction(() => document.querySelectorAll('#view-svg .view-emph').length === 3);
   assert.equal(await page.evaluate(() => window.cegarplay.cursor.step), 3);
   assert.equal(await page.evaluate(() => document.body.classList.contains('lecture')), true);
@@ -608,7 +608,7 @@ test('V5: every library example with a replay and a view opens with a picture be
 });
 
 test('V5: comparing two recordings: two alive curves, the second domain view beside the first', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=11');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=11', { parts: true });
   await page.evaluate(() => { window.cegarplay.project.settings.record = { steps: 'all', n: 0, calls: false }; });
   await page.click('#run-button');
   await settled(page);
@@ -628,7 +628,7 @@ test('V5: comparing two recordings: two alive curves, the second domain view bes
 });
 
 test('F1: Check exercise runs counts, audits and budgets, and never passes what it could not check', { timeout: 120000 }, async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=exercise-triangles&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=exercise-triangles&tab=9', { parts: true });
   assert.equal(await page.isVisible('#check-exercise-button'), true);
   assert.match(await page.textContent('#exercise-text'), /G\.clause\(M, X\)/);
   assert.equal(await page.$$eval('#exercise-items li', (l) => l.length), 7);
@@ -646,7 +646,7 @@ test('F1: Check exercise runs counts, audits and budgets, and never passes what 
 });
 
 test('D5, D10: two runs side by side, a note per run and per variant', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=6');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=6', { parts: true });
   await page.evaluate(() => window.cegarplay.control.run({}));
   await page.evaluate(() => window.cegarplay.control.run({ variant: 'reference' }));
   await page.waitForFunction(() => document.querySelectorAll('#history-table tbody tr').length === 2);
@@ -677,7 +677,7 @@ const watchStatus = (page) => page.evaluate(() => {
 });
 
 test('the run bar says running audit during an audit', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run', { parts: true });
   await watchStatus(page);
   await page.click('#audit-button');
   await settled(page);
@@ -689,7 +689,7 @@ test('the run bar says running audit during an audit', async () => {
 });
 
 test('Run all, Fuzz and the audit of many instances name themselves and stop at one click', { timeout: 120000 }, async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=voting-justification&tab=9&instance=cancel-reinf-posresp-k4');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=voting-justification&tab=9&instance=cancel-reinf-posresp-k4', { parts: true });
   // Run all: one click on Abort ends the whole batch
   await page.click('#run-all-instances-button');
   await page.waitForFunction(() => /^running all instances \(1 of \d+: /.test(document.getElementById('run-status').textContent));
@@ -721,7 +721,7 @@ test('Run all, Fuzz and the audit of many instances name themselves and stop at 
 });
 
 test('D7: several files at once, and a CSV file with a column map', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring&tab=9', { parts: true });
   const n0 = await page.evaluate(() => window.cegarplay.project.instances.length);
   await page.click('#import-options summary');
   await page.fill('#instance-column-map', 'edge(u,v)');
@@ -739,7 +739,7 @@ test('D7: several files at once, and a CSV file with a column map', async () => 
 });
 
 test('D8: Mine hard instances in the generator panel, and add one', { timeout: 180000 }, async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf&tab=9', { parts: true });
   const n0 = await page.evaluate(() => window.cegarplay.project.instances.length);
   await page.click('#mine-button');
   await page.waitForFunction(() => /^running mining/.test(document.getElementById('run-status').textContent));
@@ -754,7 +754,7 @@ test('D8: Mine hard instances in the generator panel, and add one', { timeout: 1
 });
 
 test('D9: the workspace keeps several projects by name and asks before overwriting', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run', { parts: true });
   page.on('dialog', (d) => d.accept());
   await B.openDialog(page, 'versions');   // Project > Workspace and snapshots
   await page.fill('#workspace-name', 'baseline');
@@ -778,7 +778,7 @@ test('D9: the workspace keeps several projects by name and asks before overwriti
 });
 
 test('Statistics: the Cores block shows the lengths of plain and minimised cores', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=maxsat-ihs&tab=6');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=maxsat-ihs&tab=6', { parts: true });
   assert.equal(await page.isVisible('#cores-block'), false);
   await page.click('#run-button');
   await settled(page);
@@ -790,7 +790,7 @@ test('Statistics: the Cores block shows the lengths of plain and minimised cores
 });
 
 test('Observatory: tracked values get lanes on the call timeline', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=maxsat-ihs&tab=11');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=maxsat-ihs&tab=11', { parts: true });
   await page.click('#run-button');
   await settled(page);
   const t = await page.evaluate(() => [...window.cegarplay.anatomy.tracks.entries()].map(([k, v]) => [k, v.length]));
@@ -802,7 +802,7 @@ test('Observatory: tracked values get lanes on the call timeline', async () => {
 });
 
 test('I2: generator constants reach the instances it makes; a recipe instance can be written out; (no instance) is explained', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf&tab=9', { parts: true });
   await page.fill('#generator-constants', 'k=2');
   await page.press('#generator-constants', 'Tab');
   assert.deepEqual(await page.evaluate(() => window.cegarplay.project.generators.find((g) => g.name === 'qbf-dnf').constants), { k: '2' });
@@ -830,7 +830,7 @@ test('I2: generator constants reach the instances it makes; a recipe instance ca
 });
 
 test('Instances: reorder by dragging and with the keyboard; the instance a run uses stays; Run all says which variant it uses', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=voting-justification&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=voting-justification&tab=9', { parts: true });
   const ids = () => page.evaluate(() => window.cegarplay.project.instances.map((x) => x.id));
   const before = await ids();
   const used = await page.$eval('#instance-select', (s) => s.value);
@@ -866,7 +866,7 @@ test('Instances: reorder by dragging and with the keyboard; the instance a run u
 });
 
 test('Control: "Loaded example" goes at the first edit and when another project comes', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?tab=1');
+  const { page, context, errors } = await B.openPage(browser, server, '?tab=1', { parts: true });
   page.on('dialog', (d) => d.accept());
   await page.waitForSelector('#library [data-load-example="tutorial-first-run"]', { state: 'attached' });
   await B.openLibrary(page);
@@ -888,7 +888,7 @@ test('Control: "Loaded example" goes at the first edit and when another project 
 });
 
 test('Instances: the counts say which variant they are of, and are marked stale after an edit', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=af-preferred&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=af-preferred&tab=9', { parts: true });
   await page.selectOption('#variant-select', 'one-clause');
   await page.click('#run-all-instances-button');
   await page.waitForFunction(() => /Last count: Run all instances at .*, with the variant one-clause\./.test(document.getElementById('instances-results-note').textContent), null, { timeout: 120000 });
@@ -912,7 +912,7 @@ test('Instances: the counts say which variant they are of, and are marked stale 
 });
 
 test('Fuzz says what it tried and what came out, also when it finds nothing', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=9', { parts: true });
   await page.click('#fuzz-button');
   await page.waitForFunction(() => !document.getElementById('fuzz-card').hidden, null, { timeout: 120000 });
   const text = await page.textContent('#fuzz-card');
@@ -926,7 +926,7 @@ test('Fuzz says what it tried and what came out, also when it finds nothing', as
 });
 
 test('generator and space results go when their program is edited; a space is checked after an edit; the run bar seed', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=qbf&tab=9', { parts: true });
   await page.click('#preview-button');
   await page.waitForSelector('#generator-preview .generator-card');
   assert.equal(await page.isVisible('#generator-clear-button'), true);

@@ -56,10 +56,14 @@ test('?tab=12 opens the Refinery and loads it; the address bar follows a tab cho
 test('free mode: space, inspector (verdict, atom table, option map, lattice), counterexamples, bounds with the histogram', async () => {
   const { page, context, errors, foreign } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=12');
   await page.waitForSelector('#lab-compute');
-  assert.match(await page.textContent('#lab-inspect'), /Disabled until the space is computed/);
+  // before the space: one line, no empty sections
+  assert.equal(await page.isVisible('#lab-intro'), true);
+  assert.equal(await page.isVisible('#lab-inspect'), false);
   await page.selectOption('#lab-source', 'free');
   await page.click('#lab-compute');
   await waitStatus(page, /^space: 256 candidates, 61 solutions, 195 bad, 8 interface atoms/);
+  assert.equal(await page.isVisible('#lab-intro'), false);
+  assert.equal(await page.isVisible('#lab-inspect'), true);
   assert.match(await page.textContent('#lab-summary'), /sound on this instance/);
   await page.click('#lab-inspect-go');
   await page.waitForFunction(() => (document.getElementById('lab-verdict') || {}).textContent, null, { timeout: 60000 });

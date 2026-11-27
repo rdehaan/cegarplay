@@ -15,7 +15,7 @@ const historyAudit = (page) => page.$$eval('#history-table tr', (rows) => {
 });
 
 test('S8: the symbolic audit of tutorial-weak-relevant shows "unsound" with its witness', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant', { parts: true });
   await page.selectOption('#audit-mode', 'symbolic');
   assert.equal(await page.isVisible('#space-select'), false);
   await page.click('#audit-button');
@@ -33,7 +33,7 @@ test('S8: the symbolic audit of tutorial-weak-relevant shows "unsound" with its 
 });
 
 test('S8: a space audit shows its k; the witness instance can be saved', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run', { parts: true });
   await page.selectOption('#audit-mode', 'space');
   assert.equal(await page.isVisible('#space-select'), true);
   assert.equal(await page.$eval('#space-bound', (e) => e.value), '10');
@@ -59,7 +59,7 @@ test('S8: a space audit shows its k; the witness instance can be saved', async (
 });
 
 test('S8: a project without spaces offers no Space mode', async () => {
-  const { page, context } = await B.openPage(browser, server, '?example=gc-shape3');
+  const { page, context } = await B.openPage(browser, server, '?example=gc-shape3', { parts: true });
   const opt = await page.$eval('#audit-mode-space', (o) => ({ hidden: o.hidden, disabled: o.disabled }));
   assert.deepEqual(opt, { hidden: true, disabled: true });
   // and the Instances tab lists the spaces of a project that has them
@@ -92,7 +92,7 @@ test('S8: Stop ends a long symbolic audit on an isolated page (the verifier poll
 });
 
 test('UI: modes a loop does not support are marked with the reason; next steps; space preview', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape3');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape3', { parts: true });
   await page.hover('#audit-button');
   const sym = await page.$eval('#audit-mode option[value="symbolic"]', (o) => [o.textContent, o.title]);
   assert.match(sym[0], /not for this loop/);
@@ -127,14 +127,14 @@ test('UI: modes a loop does not support are marked with the reason; next steps; 
 });
 
 test('UI: the Instances tab shows an instance\'s expected symbolic verdict', async () => {
-  const { page, context } = await B.openPage(browser, server, '?example=exercise-sum-free&tab=9');
+  const { page, context } = await B.openPage(browser, server, '?example=exercise-sum-free&tab=9', { parts: true });
   assert.match(await page.textContent('#instances-table'), /symbolic audit: unsound/);
   assert.match(await page.textContent('#instance-symbolic'), /Expected verdict of the symbolic audit on this instance: unsound/);
   await context.close();
 });
 
 test('UI: the audit mode, space and bound are kept with the project (settings.audit) across a reload', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant', { parts: true });
   const stored = () => page.evaluate(() => { const t = localStorage.getItem('cegarplay.project'); return t && JSON.parse(t).settings.audit; });
   await page.selectOption('#audit-mode', 'symbolic');
   await page.waitForFunction(() => /"audit"/.test(localStorage.getItem('cegarplay.project') || ''));
@@ -164,7 +164,7 @@ test('UI: the audit mode, space and bound are kept with the project (settings.au
 });
 
 test('UI: a space\'s First k: the audit starts there, the bar and the verdict say so', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=9', { parts: true });
   assert.equal(await page.$eval('#space-from', (e) => e.value), '1');
   await page.fill('#space-from', '3');
   await page.dispatchEvent('#space-from', 'change');
@@ -188,7 +188,7 @@ test('UI: a space\'s First k: the audit starts there, the bar and the verdict sa
 });
 
 test('UI: the space editor picks the bound by name, takes a value or a range, and chooses the regression constants', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=9');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=9', { parts: true });
   page.on('dialog', (d) => d.accept('m'));
   await page.click('#add-space-param-button');
   const sp = () => page.evaluate(() => structuredClone(window.cegarplay.project.spaces[0]));
@@ -222,7 +222,7 @@ test('UI: the space editor picks the bound by name, takes a value or a range, an
 });
 
 test('a seed sweep finds a run that loses the solution an unsound space audit names, and shows it in the candidate space', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=5');
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=5', { parts: true });
   await page.selectOption('#audit-mode', 'space');
   await page.fill('#space-bound', '4');
   await page.click('#audit-button');

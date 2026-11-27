@@ -117,7 +117,8 @@ export class Control {
     if (['finished', 'error', 'aborted'].includes(state) && !this.batch) { this.ends++; this.lastEnd = { mode: this.mode, state }; }
     const label = state === 'running' && this.batch ? `running ${this.batch.name}${this.batch.progress ? ` (${this.batch.progress})` : ''}`
       : state === 'running' && this.mode === 'audit' ? 'running audit'
-        : state === 'paused' && this.mode === 'audit' ? 'paused audit' : state;
+        : state === 'paused' && this.mode === 'audit' ? 'paused audit'
+          : state === 'idle' ? 'ready' : state;      // (data-state stays 'idle')
     this.statusEl.textContent = label;
     this.statusEl.dataset.state = state;
     this.statusEl.dataset.task = this.batch ? this.batch.name : this.mode === 'audit' && (state === 'running' || state === 'paused') ? 'audit' : '';

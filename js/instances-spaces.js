@@ -6,7 +6,7 @@ import { spaceBound, spaceCombos, spaceKeeps, INSTANCE_ID } from './project.js';
 import { spaceAt } from './output.js';
 import { spaceProblems } from './bounded.js';
 import { h as el, $ } from './dom.js';
-import { added, constText } from './instances-common.js';
+import { added, constText, partFold } from './instances-common.js';
 
 export class SpacesPart {
   // ---- spaces (PLAN3 phase S7, optional) ------------------
@@ -60,12 +60,14 @@ export class SpacesPart {
         this.spClear = el('button', { class: 'control-button small-button', id: 'space-preview-clear', hidden: true, onclick: () => this.clearSpacePreview(),
           title: 'Remove the previewed instances (an edit of the space removes them too)' }, 'Clear preview')),
       this.spStatus, this.spPreview);
-    this.root.append(el('h3', {}, 'Spaces'),
+    this.spSummary = el('span', { class: 'note', id: 'spaces-summary' });
+    this.root.append(partFold('spaces', 'Spaces', this.spSummary,
       el('div', { class: 'instances-bar' }, this.spSelect,
         el('button', { class: 'control-button', id: 'add-space-button', onclick: () => this.addSpace() }, 'New space')),
-      this.spBody);
+      this.spBody));
     this.spEditor = makeEditor(box, 'ace/mode/gringo');
     this.spEditor.setOptions({ minLines: 5 });
+    $('spaces-part').addEventListener('toggle', () => { if ($('spaces-part').open) this.spEditor.resize(true); });
     this.spEditor.on('change', () => {
       if (this.spLoading) return;
       const x = this.spaceItem;
@@ -81,6 +83,8 @@ export class SpacesPart {
     if (x) this.spSelect.value = x.name;
     this.renderSpaceBar();
     this.spBody.hidden = !x;
+    this.spSummary.textContent = list.length ? `${list.map((y) => y.description ? `${y.name} (${y.description})` : y.name).join(', ')}`
+      : 'none: a space is every instance up to a bound, for Audit by space';
     if (!x) return;
     this.spName.value = x.name;
     this.spDesc.value = x.description || '';

@@ -157,7 +157,12 @@ export class LabTab {
     this.inspectBox = h('div', { id: 'lab-inspect', class: 'lab-region' });
     this.boundsBox = h('div', { id: 'lab-bounds', class: 'lab-region' });
     this.runBox = h('div', { id: 'lab-run', class: 'lab-region' });
-    R.append(bar,
+    // before a space is computed, one line says what Compute space gives; the sections show after it
+    this.intro = h('p', { id: 'lab-intro', class: 'note' }, 'Compute space enumerates every candidate of the top bar\'s instance with all its counterexamples ',
+      '(small instances: see Limits). Then the space, the step inspector, the run bounds and this run against the bounds appear below.');
+    this.body = h('div', { id: 'lab-body' });
+    R.append(bar, this.intro, this.body);
+    this.body.append(
       h('h3', {}, 'Space ', this.info('lab-info-space', 'The space', [
         'Every candidate of the unrefined abstraction (one per assignment of the link\'s interface atoms, as the audit enumerates them), every counterexample of each, and each distinct relevant set as one option of the loop.',
         'Solutions are candidates without a counterexample; bad candidates are the others. The loop scheme is sound on this instance when no option removes a solution: the same answer as the audit.'])), this.help('space'), this.summaryBox,
@@ -336,7 +341,11 @@ export class LabTab {
     this.stale.textContent = edited ? 'The project was edited (or another project loaded) since the space was computed: the results below are of the earlier version. Compute space again to update them.' : '';
   }
 
-  renderAll() { this.renderSummary(); this.renderInspect(); this.renderBounds(); this.renderRun(); }
+  renderAll() {
+    this.intro.hidden = !!this.space;
+    this.body.hidden = !this.space;
+    this.renderSummary(); this.renderInspect(); this.renderBounds(); this.renderRun();
+  }
 
   needs(box, text) { box.textContent = ''; box.append(h('p', { class: 'note lab-disabled' }, text)); }
 
