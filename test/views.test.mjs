@@ -175,3 +175,40 @@ test('akari: a rejected step shows the two lightings and the black cells', async
   assert.ok(fills.some((x) => x === 'a') && fills.some((x) => x === 'b'));
   assert.ok(f.notes.some((t) => t.startsWith('Two lightings')));
 });
+
+test('the BSML views: a countermodel as a table, a proof line by line, the clause of a refinement ringed', async () => {
+  const solution = async (id, instance) => {
+    const p = ex(id);
+    const d = derive(p, { instance });
+    const r = await H.runProject(p, { instance });
+    const M = H.ofKind(r, 'M')[0];
+    const f = parseMarks((await runView(d, viewProgram(d, d.views[0], frameFacts({ kind: 'solution', i: 0, candidate: M.atoms })))).atoms);
+    assert.deepEqual(f.problems, [], id);
+    return { f, d, r };
+  };
+  // wide-scope free choice: worlds 1 (p) and 2 (q) in s, each seeing itself; world 3 unreached
+  const { f } = await solution('bsml-entailment', 'wide-scope');
+  const label = (k) => (f.attrs.get(k) || {}).label;
+  assert.equal(label('cell(2,2)'), 'p');
+  assert.equal(label('cell(3,3)'), 'q');
+  assert.equal(label('cell(2,4)'), 's');
+  assert.equal(label('cell(2,6)'), '→');      // world 1 sees world 1
+  assert.equal(label('cell(3,7)'), '→');      // world 2 sees world 2
+  assert.ok(f.ghost.has('cell(4,2)'));          // world 3: not reached
+  assert.deepEqual(f.notes.sort(), ['A countermodel: s supports the premises but not the conclusion.', '[◇p∨◇q]⁺ ⊭ ◇p∧◇q']);
+  // the 7-line proof of narrow-scope free choice (n = 3: the proof table starts at row n + 3)
+  const { f: g } = await solution('bsml-proofs', 'example');
+  const row = (i) => [1, 8, 14, 16].map((c) => (g.attrs.get(`cell(${5 + i},${c})`) || {}).label);
+  assert.deepEqual(row(1), ['1', '◇((p∧NE)∨(q∧NE))', 'premise', undefined]);
+  assert.deepEqual(row(2), ['2', '(p∧NE)∨(q∧NE)', 'assume', undefined]);
+  assert.deepEqual(row(7), ['7', '◇p∧◇q', '∧I', '5,6']);
+  assert.equal(row(8)[1], undefined);
+  assert.ok(g.emph.has('cell(12,8)'));
+  assert.ok(g.notes.includes('◇((p∧NE)∨(q∧NE)) ⊢ ◇p∧◇q'));
+  // a refinement step: the atoms of its clause are ringed
+  const d = derive(ex('bsml-entailment'), { instance: 'example' });
+  const step = { kind: 'add', i: 3, candidate: 'val(1,p) in(1) rel(1,1)', literals: ['in(1)', '-val(1,p)', 'rel(1,1)'] };
+  const h = parseMarks((await runView(d, viewProgram(d, d.views[0], frameFacts(step)))).atoms);
+  assert.deepEqual([...h.emph].sort(), ['cell(2,2)', 'cell(2,4)', 'cell(2,6)']);
+  assert.ok(h.notes.some((t) => t.startsWith('The state s supports the conclusion too')));
+});

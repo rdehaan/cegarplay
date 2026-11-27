@@ -1213,6 +1213,9 @@ body:not(.no-campaign) .campaign-off-only { display: none; }
 .topbar-start, .topbar-end { display: flex; align-items: center; gap: 10px; }
 .topbar-end { margin-left: auto; }
 .topbar .run-actions { flex: 1 1 auto; gap: 8px; }
+/* the run and audit actions always on their own row under the logo: in the same row they jumped
+   between the first and the second row as the project name, the selects or the window width changed */
+.topbar .run-actions { order: 3; flex-basis: 100%; }
 .brand { display: inline-flex; align-items: center; gap: 8px; font-size: 18px; text-decoration: none; }
 .brand:link, .brand:visited { color: var(--text); }
 .brand-logo { width: 22px; height: 22px; border-radius: 5px; background: var(--primary); position: relative; flex: none; }
@@ -1281,7 +1284,6 @@ body:has(#run-status[data-state="idle"]) .run-summary :is(.shown-line, .live-lin
   .topbar { margin: 0 -16px; padding: 6px 16px; gap: 6px 10px; }
   .run-summary { margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
   .topbar-project, .topbar-link, .topbar .theme-toggle { display: none; }   /* the theme: in Settings */
-  .topbar .run-actions { order: 3; flex-basis: 100%; }
   /* the pop-ups span the screen; js/topbar.js puts them under their button */
   .project-menu, .run-options { position: fixed; left: 8px; right: 8px; min-width: 0; }
 }

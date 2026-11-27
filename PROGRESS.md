@@ -2492,3 +2492,26 @@ Two new library examples (group `logic`), after rdehaan/bsml-sat and Aloni, Antt
   search treats empty(F) as non-classical and has no rules for it. bsml-sat's symmetry breaking
   for directed graphs is not used (the no-junk rule and the minimisation suffice here).
   `tools/cegarcheck.py` refuses the default loops (they stop at the first accepted candidate).
+
+## Top bar, Stop for Compute, BSML views (2026-11-27, on request)
+
+- **Top bar**: the run and audit actions are always on their own row under the logo (`order: 3;
+  flex-basis: 100%` at every width, no longer only on small screens). In one row with the logo
+  they jumped between the rows as the project name, the Instance/Variant selects, the space-audit
+  fields or the window width changed. Test: `directions.test.mjs`, "always on their own row".
+- **Candidate space Compute** has a **Stop** button while it runs: `engine.abort()` replaces the
+  worker (as Abort does), the pending exec ends with status `aborted`, and the region says
+  "Stopped: no map". Compute works again afterwards. Test: `directions.test.mjs`, "Stop ends a
+  Compute".
+- **Views for bsml-entailment and bsml-proofs** (fragment `view`, written by tools/make-bsml.py):
+  the model as a table (worlds × atoms, "in s", an arrow matrix), unreached worlds faded, the
+  clause of a refinement ringed; in bsml-proofs the proof line by line under it (formula, rule,
+  lines used; "premise" for the assumptions the last line depends on). Formulas are printed by a
+  Lua function in the view (`#script (lua)`, every call in pcall). Found on the way: a fragment
+  containing `#end` ended the program's own `#script (lua)` block (clingo's scanner stops at
+  `#end` inside a Lua long string), so the run trapped; `luaLongString` now cuts `#end` into two
+  long strings joined by `..`. Tests: `views.test.mjs` (the BSML views), `driver.test.mjs`.
+- **record steps and calls stays off by default** (asked for, then withdrawn): measured cost of
+  recording every step with calls, 10 to 35 % run time (gc-shape1 0.35 → 0.38 s, graph-coloring
+  6.9 → 9.2 s, sudoku-unavoidable 12.7 → 13.7 s) plus the memory of every step and call of every
+  run in the session. The manual's Recordings section now gives these numbers.

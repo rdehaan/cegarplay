@@ -6,11 +6,14 @@ import { compile } from './compiler.js';
 export const DEFAULT_SETTINGS = { constants: {}, solutions: 1, seconds: 60, candidates: 0, trace: 200, seed: 0 };
 
 // A Lua long string whose closing bracket does not occur in the text.
+// The program's Lua lives in one #script (lua) ... #end. block, and clingo's scanner ends that block
+// at the first "#end" it meets, also inside a Lua string. So a text with "#end" (a fragment with its
+// own #script part, such as a view's Lua helpers) is cut there into two long strings joined by "..".
 export function luaLongString(text) {
   let n = 2;
   while (text.includes(']' + '='.repeat(n) + ']')) n++;
   const e = '='.repeat(n);
-  return `[${e}[\n${text}]${e}]`;
+  return `[${e}[\n${text.split('#end').join(`#e]${e}] .. [${e}[nd`)}]${e}]`;
 }
 
 const luaStr = (s) => JSON.stringify(String(s));

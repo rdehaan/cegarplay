@@ -1565,7 +1565,8 @@
       },
       "has": {
         "instances": 12,
-        "suites": 1
+        "suites": 1,
+        "views": 1
       },
       "level": 3,
       "after": 6
@@ -1587,7 +1588,8 @@
         "optimum": 7
       },
       "has": {
-        "instances": 8
+        "instances": 8,
+        "views": 1
       },
       "level": 3,
       "after": 9

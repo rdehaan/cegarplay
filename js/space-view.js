@@ -56,7 +56,10 @@ export class SpaceView {
       h('h3', {}, 'Candidate space'),
       h('p', { class: 'note' }, 'Every candidate of the unrefined abstraction (from the audit), coloured by what the run\'s refinements did to it up to the chosen refinement. ',
         'Needs a run recorded with every step (Loop tab).'),
-      h('div', { class: 'instances-bar' }, h('button', { class: 'control-button small-button', id: 'space-compute', onclick: () => this.compute() }, 'Compute'),
+      h('div', { class: 'instances-bar' }, this.computeButton = h('button', { class: 'control-button small-button', id: 'space-compute', onclick: () => this.compute() }, 'Compute'),
+        // Compute can take long (the audit lists every candidate): Stop ends it and frees the engine
+        this.stopButton = h('button', { class: 'control-button small-button', id: 'space-stop', type: 'button', hidden: true,
+          title: 'Stop computing the candidate space (the audit that lists the candidates)', onclick: () => this.stop() }, '\u23F9 Stop'),
         h('button', { class: 'control-button small-button', id: 'space-compare', onclick: () => this.compareFile.click(), title: 'A second recording of the same project and instance' }, 'Compare with a recording'),
         this.compareFile = h('input', { type: 'file', id: 'space-compare-file', hidden: true, accept: '.cprec,.jsonl,.txt', onchange: () => this.openCompare() }),
         this.order, h('label', {}, 'Refinement ', this.slider), this.label),
@@ -80,8 +83,28 @@ export class SpaceView {
     else this.msg.textContent = 'The run did not finish; see the Output tab.';
   }
 
+  // Ends a Compute that is still auditing: the engine's worker is replaced (as by Abort), the
+  // pending solver call ends with status "aborted", and compute() leaves without a map.
+  stop() {
+    if (!this.computing) return;
+    this.stopped = true;
+    if (this.app.engine.active) this.app.engine.abort();
+  }
+
   // Audit vectors of the current project (instance of the last run) and the recorded steps.
-  async compute({ force = false } = {}) {
+  async compute(opts = {}) {
+    if (this.computing) return;
+    this.computing = true; this.stopped = false;
+    this.computeButton.disabled = true; this.stopButton.hidden = false;
+    try { await this.computeVectors(opts); } catch (e) { if (!this.stopped) throw e; } finally {
+      this.computing = false;
+      this.computeButton.disabled = false; this.stopButton.hidden = true;
+      if (this.stopped) this.noMap('Stopped: no map. Compute again, or record a run on a smaller instance first.', this.rec || this.app.recording);
+      this.stopped = false;
+    }
+  }
+
+  async computeVectors({ force = false } = {}) {
     const app = this.app;
     const rec = app.recording;
     if (!rec || !rec.I || !rec.steps.length || (rec.header && rec.header.mode === 'audit')) {
@@ -113,12 +136,14 @@ export class SpaceView {
     try { d = derive(p, { instance: hd.instance ? hd.instance : undefined, variant: hd.variant || undefined }); } catch (e) { this.msg.textContent = e.message; return; }
     const exec = (prog, o) => app.engine.exec(prog, o);
     const pr = await validate(d, exec);
+    if (this.stopped) return;
     const plan = pr.compiled ? auditPlan(pr.compiled) : { error: 'a raw Lua loop has no audit' };
     if (plan.error) { this.msg.textContent = `No candidate vectors: ${plan.error}`; return; }
     const run = { ...d, settings: { ...d.settings, solutions: 0, candidates: 0, trace: 0 } };
     const mods = [...modulesFor(run.settings, { compiled: pr.compiled, loop: run.loop }).map((m) => app.modules[m]), app.modules.audit];
     const a = assemble(run, pr.compiled, app.runtime, { modules: mods, body: auditBody(pr.compiled, plan, { vectors: true, limit: 1048576 }) });
     const r = await exec(a.program, '--outf=3');
+    if (this.stopped || r.status === 'aborted') { this.stopped = true; return; }
     const ev = (r.out || []).filter((l) => l.startsWith('@@P ') || l.startsWith('@@A ')).map((l) => ({ kind: l[2], data: JSON.parse(l.slice(4)) }));
     const verdict = ev.filter((e) => e.kind === 'A' && e.data.verdict).map((e) => e.data).at(-1);
     if (verdict && verdict.verdict === 'limit') { this.noMap('No map: more candidates than the limit of the audit.', rec, plan.link); return; }

@@ -119,3 +119,16 @@ test('A5: unsafe variables: no #inc_ in the message, one-line form names the var
   assert.equal(cleanClingoMessage('a(X):-[#inc_base];b(X).'), 'a(X):-b(X).');
   assert.equal(oneLineMessage('syntax error, unexpected .'), 'syntax error, unexpected .');
 });
+
+test('a fragment with its own #script (lua) ... #end. part does not end the program\'s Lua block', async () => {
+  const lua = '#script (lua)\nfunction twice(x) return clingo.Number(2 * x.number) end\n#end.\n';
+  assert.equal(luaLongString(lua).includes('#end'), false);
+  // the long strings put back together give the text again
+  const parts = [...luaLongString('a #end. b #end').matchAll(/\[(=+)\[\n?([\s\S]*?)\]\1\]/g)].map((m) => m[2]);
+  assert.equal(parts.join(''), 'a #end. b #end');
+  const p = H.projectOf({ shared: 'num(1..3).', abstraction: '{ pick(X) } :- num(X).', glue: 'glue(pick(X)) :- num(X).', check: 'bad :- pick(1).\n:- not bad.\nrelevant(pick(1)).', view: lua + 'draw(note(@twice(2))).' }, { solutions: 0 });
+  p.loop = { language: 'loop', text: 'solver A = shared + abstraction\nsolver C = shared + check\nlink G = A -> C via shared + glue\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clause(M, X)\n' };
+  const r = await H.runProject(p);
+  assert.equal(H.done(r).outcome, 'finished');
+  assert.equal(H.finalStats(r).solutions, 4);
+});

@@ -399,6 +399,61 @@ test('V4: the candidate space of gc-shape1: 3,373 cells, alive 101, a cursor mov
   await context.close();
 });
 
+test('V4: Stop ends a Compute of the candidate space; Compute works again afterwards', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape1&tab=11');
+  await page.evaluate(() => { window.cegarplay.project.settings.record = { steps: 'all', n: 0, calls: false }; window.cegarplay.loopTab.load(window.cegarplay.project); });
+  await page.click('#run-button');
+  await settled(page);
+  assert.equal(await page.isVisible('#space-stop'), false);
+  // stop at once (deterministic: before the audit can finish), as the button does
+  const shown = await page.evaluate(async () => {
+    const v = window.cegarplay.space;
+    const p = v.compute();
+    const during = { stop: !v.stopButton.hidden, compute: v.computeButton.disabled };
+    v.stop();
+    await p;
+    return during;
+  });
+  assert.deepEqual(shown, { stop: true, compute: true });
+  assert.match(await page.textContent('#space-message'), /^Stopped: no map\./);
+  assert.equal(await page.isVisible('#space-stop'), false);
+  assert.equal(await page.isEnabled('#space-compute'), true);
+  assert.equal(await page.$eval('#space-map', (c) => c.dataset.cells || ''), '');
+  // the engine is free again: a click on Stop while the audit runs, then a full Compute
+  await page.click('#space-compute');
+  await page.click('#space-stop');
+  await page.waitForFunction(() => document.getElementById('space-stop').hidden);
+  await page.click('#space-compute');
+  await page.waitForFunction(() => /candidates/.test(document.getElementById('space-summary').textContent), null, { timeout: 60000 });
+  assert.equal(await page.$eval('#space-map', (c) => c.dataset.cells), '3373');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
+test('the run and audit buttons are always on their own row, under the logo', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant');
+  const rows = () => page.evaluate(() => {
+    const b = document.querySelector('.topbar .brand').getBoundingClientRect();
+    const r = document.getElementById('run-button').getBoundingClientRect();
+    const a = document.querySelector('.topbar .run-actions').getBoundingClientRect();
+    return { below: r.top >= b.bottom, left: Math.round(a.left - document.getElementById('topbar').getBoundingClientRect().left) };
+  });
+  const seen = new Set();
+  for (const width of [1800, 1400, 1100, 900]) {
+    await page.setViewportSize({ width, height: 900 });
+    const x = await rows();
+    assert.equal(x.below, true, `width ${width}`);
+    seen.add(x.left);
+  }
+  // a long project name does not move them either
+  await page.evaluate(() => { document.getElementById('topbar-project').textContent = 'a rather long project name '.repeat(3); });
+  await page.setViewportSize({ width: 1800, height: 900 });
+  assert.equal((await rows()).below, true);
+  assert.equal(seen.size, 1, `the actions start at the same place: ${[...seen]}`);
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
 test('V4: tutorial-weak-relevant: the first unsound refinement is 6', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=11');
   await page.evaluate(() => { window.cegarplay.project.settings.record = { steps: 'all', n: 0, calls: false }; });

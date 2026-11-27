@@ -1360,7 +1360,7 @@ imported in the Statistics tab ("Import certcheck verdict").
 
 **Recording** (Loop tab, limits block; **record steps and calls** under Run options sets it to every step with solver calls, or turns all recording off) records the steps of a run as compact `R` events: every
 step, the first N, every N-th, the last N, or a sample of N; **solver calls** adds a `C` event per
-call. The setting is `settings.record` (absent when off). Every run's events are kept:
+call. The setting is `settings.record` (absent when off). Recording costs run time: 10 to 35 % on the library examples measured (graph-coloring 9.2 s instead of 6.9 s). Every run's events are kept:
 **Download recording** (Project, Recordings) saves them as a `.cprec` file (gzip; header line, then the event
 lines), **Open recording** replays one without the engine (run status `replayed`). Each `fast`
 library example has a replay in `examples/replays/`.
@@ -1564,8 +1564,8 @@ the last traced step, in which case when exactly is not known. A solution is nev
 step: the trace has no step for an accepted candidate. The drawing keeps every
 position between steps; dragging a node stores its position in the project. **Suggest a view**
 writes a first view from the predicates of the interface. The view runs as plain clingo with the
-instance and the named fragments, so a mistake shows as a clingo message. Nineteen library examples ship a view (the guide's clique examples, the
-tutorial, `clique-colouring`, `af-preferred`, `arrowing`, `choosability`, `qbf`, and the puzzle
+instance and the named fragments, so a mistake shows as a clingo message. Twenty-one library examples ship a view (the guide's clique examples, the
+tutorial, `clique-colouring`, `af-preferred`, `arrowing`, `choosability`, `qbf`, `bsml-entailment`, `bsml-proofs`, and the puzzle
 generators: the five `sudoku-*`, `binairo`, `futoshiki`, `akari`, `slitherlink`); the puzzle a
 generator found is its solution (Show: solutions). A view program gets the project's constants: a fragment's own
 `#const k = default.` takes the project's value. `cand/1` holds only interface atoms that are not
@@ -2107,6 +2107,13 @@ tools/make-bsml.py` writes both project files from one source (`--check` compare
 `python3 tools/bsml-check.py models 3` counts the countermodels of every instance by brute force
 (the same numbers as the loop without `stop`), and `python3 tools/bsml-check.py rules` checks every
 proof rule on random derivations against all models with two worlds.
+
+Both have a view (Observatory, Domain view): the candidate model as a table, one row per world with
+its true atoms, whether it is in the state s and its arrows (a column per world), worlds that s does
+not reach faded, and at a refinement the atoms of its clause ringed; in `bsml-proofs`, under it, the
+proof line by line (formula, rule, the lines it uses). Formulas are printed with ¬ ◇ □ ∧ ∨ ⩔ NE ⊥
+by a small Lua function in the view fragment (`#script (lua)`; a fragment may contain one: the driver
+cuts `#end` in the long strings of the program's own Lua block).
 
 ## For agents
 

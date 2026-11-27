@@ -178,6 +178,166 @@ SMALLEST = r"""% Small candidates first: as few worlds as possible (those that s
 """
 
 # ---------------------------------------------------------------------------
+# The views (Observatory, Domain view)
+# ---------------------------------------------------------------------------
+PRETTY = r"""#script (lua)
+-- Formulas as text: neg ¬, dia ◇, box □, empty ⊘, and ∧, or ∨, gor ⩔, ne NE, bot ⊥, plus [F]+.
+local U = { neg = "¬", dia = "◇", box = "□", empty = "⊘" }
+local B = { ["and"] = "∧", ["or"] = "∨", gor = "⩔" }
+local function fmt(f, top)
+  if f.type == clingo.SymbolType.Number then return tostring(f.number) end
+  if f.type == clingo.SymbolType.String then return f.string end
+  local n, a = f.name, f.arguments
+  if #a == 0 then
+    if n == "ne" then return "NE" elseif n == "bot" then return "⊥" end
+    return n
+  end
+  if #a == 1 and U[n] then return U[n] .. fmt(a[1], false) end
+  if #a == 1 and n == "plus" then return "[" .. fmt(a[1], true) .. "]⁺" end
+  if #a == 2 and B[n] then
+    local t = fmt(a[1], false) .. B[n] .. fmt(a[2], false)
+    if top then return t end
+    return "(" .. t .. ")"
+  end
+  local parts = {}
+  for i = 1, #a do parts[i] = fmt(a[i], true) end
+  return n .. "(" .. table.concat(parts, ",") .. ")"
+end
+-- a Lua error must not reach clingo: every call is protected
+function bsml_text(f)
+  local ok, t = pcall(fmt, f, true)
+  if ok then return clingo.String(t) end
+  return clingo.String("?")
+end
+-- "P ⊭ C" in one note (notes come out in no fixed order); P = 0: no premise
+function bsml_judgement(p, sym, c)
+  local ok, t = pcall(function()
+    local head = ""
+    if p.type ~= clingo.SymbolType.Number then head = fmt(p, true) .. " " end
+    return head .. sym.string .. " " .. fmt(c, true)
+  end)
+  if ok then return clingo.String(t) end
+  return clingo.String("?")
+end
+function bsml_arrow(v)
+  local ok, t = pcall(function() return "→" .. tostring(v.number) end)
+  if ok then return clingo.String(t) end
+  return clingo.String("?")
+end
+function bsml_refs(...)
+  local ok, t = pcall(function(...)
+    local parts = {}
+    for i, x in ipairs({...}) do parts[i] = tostring(x.number) end
+    return table.concat(parts, ",")
+  end, ...)
+  if ok then return clingo.String(t) end
+  return clingo.String("?")
+end
+#end.
+"""
+
+VIEW_MODEL = r"""% The model as a table: one row per world, its true atoms, whether it is in the state s, and
+% its arrows (the column of world V: an arrow to V). At a refinement the ringed cells are the
+% atoms of its clause: what the support of the conclusion used, one of which must change.
+% Worlds that s does not reach are faded.
+#program scene.
+draw(layout(grid)).
+pcol(P, 1+I) :- prop(P), I = #count { Q : prop(Q), Q <= P }.
+nprops(K) :- K = #count { P : prop(P) }.
+scol(K+2) :- nprops(K).
+rcol(V, K+3+V) :- nprops(K), world(V).
+draw(cell(1,1)). draw(attr(cell(1,1), label, "world")). draw(attr(cell(1,1), weight, 0)).
+draw(cell(1,C)) :- pcol(P,C).
+draw(attr(cell(1,C), label, P)) :- pcol(P,C).
+draw(attr(cell(1,C), weight, 0)) :- pcol(P,C).
+draw(cell(1,C)) :- scol(C).
+draw(attr(cell(1,C), label, "in s")) :- scol(C).
+draw(attr(cell(1,C), weight, 0)) :- scol(C).
+draw(cell(1,C)) :- rcol(V,C).
+draw(attr(cell(1,C), label, @bsml_arrow(V))) :- rcol(V,C).
+draw(attr(cell(1,C), weight, 0)) :- rcol(V,C).
+draw(cell(1+W,1)) :- world(W).
+draw(attr(cell(1+W,1), weight, 0)) :- world(W).
+draw(cell(1+W,C)) :- world(W), pcol(_,C).
+draw(cell(1+W,C)) :- world(W), scol(C).
+draw(cell(1+W,C)) :- world(W), rcol(_,C).
+
+#program frame.
+draw(attr(cell(1+W,1), label, @bsml_refs(W))) :- world(W).
+draw(attr(cell(1+W,C), fill, true)) :- cand(val(W,P)), pcol(P,C).
+draw(attr(cell(1+W,C), label, P)) :- cand(val(W,P)), pcol(P,C).
+draw(attr(cell(1+W,C), fill, state)) :- cand(in(W)), scol(C).
+draw(attr(cell(1+W,C), label, "s")) :- cand(in(W)), scol(C).
+draw(attr(cell(1+W,C), fill, arrow)) :- cand(rel(W,V)), rcol(V,C).
+draw(attr(cell(1+W,C), label, "→")) :- cand(rel(W,V)), rcol(V,C).
+draw(emph(cell(1+W,C))) :- lit(val(W,P),_), pcol(P,C).
+draw(emph(cell(1+W,C))) :- lit(in(W),_), scol(C).
+draw(emph(cell(1+W,C))) :- lit(rel(W,V),_), rcol(V,C).
+reach(W) :- cand(in(W)).
+reach(V) :- reach(W), cand(rel(W,V)).
+% a frame of the model (a candidate of A, or a countermodel), not a proof of bsml-proofs
+proof_frame :- cand(line(_,_,_)).
+model :- not proof_frame.
+draw(ghost(cell(1+W,C))) :- world(W), not reach(W), draw(cell(1+W,C)), reach(_), model.
+% the entailment in one note: one premise, none, or several (then one note per premise)
+npremises(K) :- K = #count { F : premise(F) }.
+draw(note(@bsml_judgement(F, "⊭", G))) :- npremises(1), premise(F), conclusion(G), model.
+draw(note(@bsml_judgement(0, "⊭", G))) :- npremises(0), conclusion(G), model.
+draw(note(@bsml_judgement(0, "⊭", G))) :- npremises(K), K > 1, conclusion(G), model.
+draw(note(@bsml_judgement(0, "premise:", F))) :- npremises(K), K > 1, premise(F), model.
+draw(note("The state s supports the conclusion too; the ringed cells are what that support used.")) :- kind(reject), model.
+draw(note("The state s supports the conclusion too; the ringed cells are what that support used.")) :- kind(add), model.
+draw(note("A countermodel: s supports the premises but not the conclusion.")) :- kind(solution), model.
+#show draw/1.
+"""
+
+VIEW_PROOF = r"""
+% The proof, under the model table: one row per line with its formula, its rule and the lines it
+% uses. Premises are the assumptions the last line depends on; other assumptions are discharged.
+#program scene.
+prow(I, n+2+I) :- I = 1..10.
+draw(cell(R,1)) :- prow(_,R).
+draw(attr(cell(R,1), weight, 0)) :- prow(_,R).
+draw(cell(R,8)) :- prow(_,R).
+draw(attr(cell(R,8), weight, 0)) :- prow(_,R).
+draw(cell(R,14)) :- prow(_,R).
+draw(attr(cell(R,14), weight, 0)) :- prow(_,R).
+draw(cell(R,16)) :- prow(_,R).
+draw(attr(cell(R,16), weight, 0)) :- prow(_,R).
+rname(and_i,"∧I"). rname(and_e1,"∧E"). rname(and_e2,"∧E"). rname(neg_i,"¬I"). rname(neg_e,"¬E").
+rname(dneg_e,"¬¬E"). rname(dneg_i,"¬¬I"). rname(dm_and,"DM∧"). rname(dm_and_r,"DM∧"). rname(dm_or,"DM∨").
+rname(dm_or_r,"DM∨"). rname(negne_e,"¬NE E"). rname(negne_i,"¬NE E"). rname(or_i,"∨I"). rname(or_w,"∨W").
+rname(or_com,"Com∨"). rname(or_ass,"Ass∨"). rname(or_e,"∨E"). rname(or_mon,"∨Mon"). rname(bot_e,"⊥E").
+rname(ctr,"⫫Ctr"). rname(dia_mon,"◇Mon"). rname(box_mon,"□Mon"). rname(box_nec,"□Mon"). rname(inter,"Inter◇□").
+rname(inter_r,"Inter◇□"). rname(def_box,"Def□"). rname(def_box_r,"Def□"). rname(dia_sep,"◇Sep").
+rname(box_inst,"□Inst"). rname(dia_join,"◇Join"). rname(box_dia_join,"□◇Join"). rname(gor_i1,"⩔I").
+rname(gor_i2,"⩔I"). rname(gor_e,"⩔E"). rname(distr,"Distr∨⩔"). rname(dm_gor,"DM⩔"). rname(dm_gor_r,"DM⩔").
+rname(nei,"NEI"). rname(conv_dia,"Conv◇"). rname(conv_box,"Conv□").
+
+#program frame.
+pline(I) :- cand(line(I,_,_)).
+last(I) :- pline(I), not pline(I+1).
+premline(H) :- cand(dep(_,H)).
+draw(attr(cell(R,1), label, @bsml_refs(I))) :- pline(I), prow(I,R).
+draw(attr(cell(R,8), label, @bsml_text(F))) :- cand(line(I,_,F)), prow(I,R).
+draw(attr(cell(R,14), label, N)) :- cand(line(I,Ru,_)), rname(Ru,N), prow(I,R).
+draw(attr(cell(R,14), label, "premise")) :- cand(line(I,hyp,_)), premline(I), prow(I,R).
+draw(attr(cell(R,14), label, "assume")) :- cand(line(I,hyp,_)), not premline(I), prow(I,R).
+nrefs(I,N) :- pline(I), N = #count { K : cand(ref(I,K,_)) }.
+draw(attr(cell(R,16), label, @bsml_refs(J))) :- nrefs(I,1), cand(ref(I,1,J)), prow(I,R).
+draw(attr(cell(R,16), label, @bsml_refs(J,K))) :- nrefs(I,2), cand(ref(I,1,J)), cand(ref(I,2,K)), prow(I,R).
+draw(attr(cell(R,16), label, @bsml_refs(J,K,L))) :- nrefs(I,3), cand(ref(I,1,J)), cand(ref(I,2,K)), cand(ref(I,3,L)), prow(I,R).
+draw(emph(cell(R,8))) :- last(I), prow(I,R).
+draw(note(@bsml_judgement(F, "⊢", G))) :- npremises(1), premise(F), conclusion(G), pline(_).
+draw(note(@bsml_judgement(0, "⊢", G))) :- npremises(0), conclusion(G), pline(_).
+draw(note(@bsml_judgement(0, "⊢", G))) :- npremises(K), K > 1, conclusion(G), pline(_).
+draw(note(@bsml_judgement(0, "premise:", F))) :- npremises(K), K > 1, premise(F), pline(_).
+% a proof has no model: the table above fades
+draw(ghost(cell(R,C))) :- draw(cell(R,C)), R <= n+1, pline(_).
+draw(note("A shortest proof: each line gives its rule and the lines it uses (∨E, ¬I, ◇Mon, □Mon and ∨Mon discharge assumptions of the lines they use).")) :- pline(_).
+"""
+
+# ---------------------------------------------------------------------------
 # bsml-entailment
 # ---------------------------------------------------------------------------
 ENT_LOOP = """solver A = shared + abstraction + smallest
@@ -248,7 +408,9 @@ def entailment():
             {"name": "glue", "description": "The interface atoms: valuation, relation and the state s.", "text": GLUE},
             {"name": "smallest", "description": "Makes A propose small candidates first: few worlds, then few arrows and true atoms.", "text": SMALLEST},
             {"name": "check", "description": "Looks for support of the conclusion in the candidate's state (solver C); relevant/1 says what the support used.", "text": CHECK},
+            {"name": "view", "description": "The domain view: the candidate model as a table, the clause of a refinement ringed.", "text": PRETTY + VIEW_MODEL},
         ],
+        "views": [{"name": "view", "fragments": ["shared", "view"]}],
         "loop": {"language": "loop", "text": ENT_LOOP},
         "settings": {"constants": {}, "solutions": 0, "seconds": 60, "candidates": 0, "trace": 200, "seed": 0},
         "instances": ENT_INSTANCES,
@@ -509,7 +671,9 @@ def proofs():
             {"name": "glue", "description": "The interface atoms: valuation, relation and the state s.", "text": GLUE},
             {"name": "check", "description": "Looks for support of the conclusion in the candidate's state (solver C).", "text": CHECK},
             {"name": "proof", "description": "The proof search (solver P): line t of the proof is grounded in round t.", "text": PROOF},
+            {"name": "view", "description": "The domain view: the candidate model as a table, and a proof line by line.", "text": PRETTY + VIEW_MODEL.replace("#show draw/1.\n", "") + VIEW_PROOF + "#show draw/1.\n"},
         ],
+        "views": [{"name": "view", "fragments": ["shared", "view"]}],
         "loop": {"language": "loop", "text": PROOFS_LOOP},
         "settings": {"constants": {}, "solutions": 0, "seconds": 60, "candidates": 0, "trace": 200, "seed": 0},
         "instances": PROOFS_INSTANCES,
