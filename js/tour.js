@@ -163,8 +163,8 @@ function makeSteps(app) {
         <p>The <a href="#" data-open-tab="tab2">Tutorial</a> tab has lessons with an example each, the
         <a href="guide/" target="cegarplay-guide">Guide</a> is a course on designing CEGAR loops,
         <a href="#" data-loop-walkthrough>The loop language, step by step</a> explains every line of a loop script, and
-        <a href="#" data-dialog="dialog-settings">Settings</a> switches on more tabs (the Observatory, the Campaign,
-        the Refinery). This tour is on Home and in Settings, to take again.</p>`,
+        <a href="#" data-dialog="dialog-settings">Settings</a> switches on the advanced tabs (Observatory, Campaign,
+        Refinery). This tour is on Home and in Settings, to take again.</p>`,
       next: 'Finish',
     },
   ];

@@ -151,7 +151,7 @@
         set programming, with clingo running in your browser. Pick an example below, or start one from
         <b>Project</b>. A project is written in the <b>Write</b> tabs; press <b>Run</b> (or <b>Audit</b>)
         and read the run in the <b>Results</b> tabs. New here? Take the <a href="#" data-tour>guided tour</a> (five minutes), or start with the <a href="#" data-open-tab="tab2">Tutorial</a>.
-        <span class="home-more">More tabs (the Observatory, the Campaign tab and the Refinery) can be switched on
+        <span class="home-more">The advanced tabs (Observatory, Campaign, Refinery) can be switched on
           in <a href="#" data-dialog="dialog-settings">Settings</a>.</span>
       </p>
       <div class="project-box">
@@ -445,6 +445,13 @@
 
     <!-- 7. Internals -->
     <section id="section-internals">
+      <details class="help-fold" data-help="section-internals">
+        <summary><span class="help-title">Internals</span> <span class="help-q" title="What is this tab?">?</span></summary>
+      <p class="tab-intro help-box">
+        For debugging CegarPlay itself: the engine, the Lua generated from the loop script and the program
+        the last run gave clingo. Shown only with <code>?internals=true</code>.
+      </p>
+      </details>
       <h3>Engine</h3>
       <div class="table-wrapper"><table class="internals-table" id="engine-facts"></table></div>
       <h3>Generated Lua</h3>

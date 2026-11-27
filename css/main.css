@@ -132,13 +132,10 @@ main:has(#tab12:focus-visible) label[for="tab12"] {
   outline-offset: -4px;
 }
 
-label {
-  display: inline-block;
-  margin: 0 0 -1px;
-  padding: 5px 15px;
-  text-align: center;
-  border: 1px solid transparent;
-}
+/* form controls take the page's font, not the browser's (Arial 13.3px) */
+button, select, input, textarea { font-family: inherit; font-size: 13px; }
+/* a label that wraps its control: a little room between the words and the box */
+label > :is(input:not([type="checkbox"], [type="radio"]), select, textarea) { margin-left: 4px; }
 
 label.tab-label {
   display: inline-block;
@@ -168,7 +165,7 @@ label[for='tab9']:before { content: '\f03a'; }
 label[for='tab11']:before { content: '\f06e'; }
 label[for='tab10']:before { content: '\f0ce'; }
 
-label:hover {
+label.tab-label:hover {
   color: var(--tab-hover);
   cursor: pointer;
 }
@@ -189,10 +186,6 @@ main:has(#tab12:checked) label[for="tab12"] {
   border: 1px solid var(--border);
   border-top: 2px solid var(--accent);
   border-bottom: 1px solid var(--panel);
-}
-
-label[for="tab2"] {
-  color: var(--accent);
 }
 
 #tab1:checked ~ #section-control,
@@ -473,7 +466,7 @@ label.tab-label.has-problem:after {
 .project-readme-body h1 { font-size: 17px; }
 .project-readme-body h2 { font-size: 15px; }
 .project-readme-body h3 { font-size: 14px; }
-/* the readme sits in the Control tab, outside the manual's section rules: lists and code as there */
+/* the readme sits in the Home tab, outside the manual's section rules: lists and code as there */
 .project-readme-body ul, .project-readme-body ol { margin: 0 0 10px; padding-left: 25px; line-height: 1.5; }
 .project-readme-body li { margin-bottom: 4px; line-height: 1.5; }
 .project-readme-body pre code { font-size: inherit; padding: 0; }
@@ -865,7 +858,7 @@ tr.mismatch td {
   vertical-align: middle;
 }
 
-/* Example library (Control tab) */
+/* Example library (Home tab) */
 .library-filter { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
 .library-filter label { font-size: 14px; white-space: nowrap; }
 .library-filter select { margin-left: 4px; }
@@ -1186,7 +1179,7 @@ main > section:not(#section-tutorial):not(#section-manual) h3:not(summary h3, .v
   padding-top: 14px;
 }
 .control-button.danger-button { color: var(--error); border-color: var(--error); }
-/* Snapshots (Control tab): where the project stands, the snapshot it is the same as, the Undo */
+/* Snapshots (Home tab): where the project stands, the snapshot it is the same as, the Undo */
 .snapshot-current { padding: 6px 10px; border-left: 3px solid var(--border-strong); background: var(--button-bg); }
 .snapshot-current[data-state="same"] { border-left-color: var(--ok); }
 .snapshot-undo { padding: 6px 10px; border-left: 3px solid var(--anchor); }
@@ -1279,11 +1272,13 @@ body:has(#run-status[data-state="idle"]) .run-summary :is(.shown-line, .live-lin
 }
 .menu-item small { color: var(--text-muted); font-size: 12px; }
 .menu-item:hover, .menu-item:focus-visible { background: var(--hint-bg); outline: none; }
+.menu-item:focus-visible { box-shadow: inset 3px 0 0 var(--link); }
 
 @media (max-width: 760px) {
   main { padding: 0 16px 30px; }
   .topbar { margin: 0 -16px; padding: 6px 16px; gap: 6px 10px; }
-  .run-summary { margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+  /* on a phone only the top bar sticks: with the summary they covered a third of the screen */
+  .run-summary { position: static; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
   .topbar-project, .topbar-link, .topbar .theme-toggle { display: none; }   /* the theme: in Settings */
   /* the pop-ups span the screen; js/topbar.js puts them under their button */
   .project-menu, .run-options { position: fixed; left: 8px; right: 8px; min-width: 0; }
@@ -1292,6 +1287,8 @@ body:has(#run-status[data-state="idle"]) .run-summary :is(.shown-line, .live-lin
 /* ---- Home ---- */
 .home-intro { max-width: 62em; }
 .home-more { display: block; margin-top: 4px; font-size: 0.92em; color: var(--text-muted); }
+/* (only while one of those tabs is off) */
+body:not(.no-observatory, .no-campaign, .no-lab) .home-more { display: none; }
 /* a "?" that shows a short explanation (the library; the tabs' help) */
 .help-q {
   display: inline-grid; place-items: center; width: 20px; height: 20px; padding: 0; vertical-align: middle;
@@ -1449,3 +1446,8 @@ body.drag-active, body.drag-active * { cursor: grabbing !important; user-select:
 /* the lines of the loop script a walkthrough card is about (js/loop-walkthrough.js) */
 .ace_marker-layer .tour-line { position: absolute; background: var(--warn-bg); border-left: 3px solid var(--accent); }
 .loop-walkthrough-link { margin-left: 10px; font-size: 13px; font-weight: normal; }
+
+/* Instances: the import's format and CSV column map, folded in the button row */
+.import-options { display: inline-block; vertical-align: middle; }
+.import-options[open] { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.import-options > summary { cursor: pointer; color: var(--text-muted); font-size: 13px; }

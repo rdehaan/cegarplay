@@ -2676,3 +2676,20 @@ Review of UI, security, implementation and docs debt; the owner chose four group
     the anatomy box puts its counts on two lines; the Loop tab fits 390 px (variant cards and
     note labels could not shrink); "Shown:" becomes "Still shown (the new run did not start):"
     after a run that did not start (test 4b in `browser/page.test.mjs`).
+- **Group 2, small UI polish: done.**
+  - The global `label { padding: 5px 15px; text-align: center; ... }` was the tab labels' rule
+    applied to every label (form labels were indented); now only `label.tab-label` has it, and a
+    label that wraps its control leaves 4 px before the box. Form controls take the page font
+    (`font-family: inherit; font-size: 13px`; they were Arial 13.3 px). Dead `label[for=tab2]`
+    accent rule removed; CSS comments say Home, not Control tab.
+  - Home's "advanced tabs can be switched on" sentence hides while all three are on; the name
+    is "advanced tabs" everywhere (Home, Tutorial, tour). The Refinery toggle stays in Settings
+    only (`browser/lab.test.mjs` asserts it).
+  - Campaign: a hint instead of an empty grey text area when the project has no suite.
+    Internals: a folded intro like the other tabs. Instances: the import format and CSV column
+    map are folded under "Import options". Project-menu items show a focus bar.
+  - Below 760 px only the top bar sticks (the run summary scrolls; `topbar.js` leaves it out of
+    the scroll padding there).
+  - Not done (a design question for the owner): graph-coloring's first run is at n = 6 (about
+    20 s) because no instance is picked by default; the restructuring of tabs and help is a
+    separate proposal.

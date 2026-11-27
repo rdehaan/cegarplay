@@ -151,13 +151,14 @@ export function setupTopbar() {
 
   // ---- the sticky tab bar (large screens): it sits under the top bar, whose height can change
   // (a wrapped row); a shadow once it sticks; a tab chosen while it sticks opens at its top
-  // The run summary ("Shown: ...", the live counts, a run's error) sticks under the top bar on every
-  // screen; on large screens the tab bar sticks under the summary.
+  // The run summary ("Shown: ...", the live counts, a run's error) sticks under the top bar except
+  // on a phone; on large screens the tab bar sticks under the summary.
   const bar = $('topbar'), tabbar = $('tab-bar'), main = document.querySelector('main');
   const summary = document.querySelector('.run-summary');
   // (set here, not as a CSS variable: css/theme.css defines every variable the stylesheets use)
   const large = matchMedia('(min-width: 1000px) and (min-height: 640px)');
-  const above = () => bar.offsetHeight + summary.offsetHeight;    // what sticks above the tab bar
+  // what sticks above the tab bar (on a phone the summary scrolls with the page: css/main.css)
+  const above = () => bar.offsetHeight + (getComputedStyle(summary).position === 'sticky' ? summary.offsetHeight : 0);
   const setTop = () => {
     summary.style.top = `${bar.offsetHeight}px`;
     tabbar.style.top = `${above()}px`;

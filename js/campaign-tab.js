@@ -52,6 +52,8 @@ export class CampaignTab {
     this.text.addEventListener('change', () => this.saveText());
     tabIndent(this.text);
     this.status = h('p', { id: 'campaign-status', class: 'note', role: 'status', 'aria-live': 'polite' });
+    this.empty = h('p', { class: 'note', id: 'campaign-empty' }, 'This project has no suite yet. ', h('b', {}, 'New suite'),
+      ' writes one (every instance × every variant); edit it here, then press ', h('b', {}, 'Start'), '.');
     this.jobs = h('input', { id: 'campaign-jobs', size: 3, inputmode: 'numeric', value: String(defaultPoolSize()), 'aria-label': 'Parallel runs (engines)' });
     const b = (id, label, fn) => h('button', { class: 'control-button', id, onclick: fn }, label);
     this.startB = b('campaign-start', 'Start', () => this.start());
@@ -81,7 +83,7 @@ export class CampaignTab {
         h('label', { title: 'How many runs go at once, one engine (worker) each' }, 'Parallel runs ', this.jobs), this.startB, this.pauseB, this.abortB,
         b('campaign-export', 'Export rows', () => this.exportFile()), b('campaign-export-csv', 'Export matrix (CSV)', () => this.exportCSV()), b('campaign-import', 'Import rows', () => this.fileInput.click()),
         b('campaign-clear', 'Forget rows', () => this.clearRows()), this.fileInput),
-      this.seedsBar, this.text, this.status, this.grid, this.summary, this.matrixBox, this.plots);
+      this.seedsBar, this.empty, this.text, this.status, this.grid, this.summary, this.matrixBox, this.plots);
     this.setRunning(false);
   }
 
@@ -99,6 +101,8 @@ export class CampaignTab {
     const s = this.suite;
     this.text.value = s ? JSON.stringify(s, null, 2) : '';
     this.text.disabled = !s;
+    this.text.hidden = !s;
+    this.empty.hidden = !!s;
     this.seedsBar.hidden = !s;
     if (s) {
       const list = Array.isArray(s.solver_seeds) ? s.solver_seeds : null;

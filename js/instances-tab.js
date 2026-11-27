@@ -113,7 +113,8 @@ export class InstancesTab {
     const bar = el('div', { class: 'instances-bar' },
       el('button', { class: 'control-button', id: 'add-instance-button', onclick: () => this.add() }, 'New instance'),
       el('button', { class: 'control-button', id: 'import-instance-button', onclick: () => this.fileInput.click() }, 'Import file'),
-      this.format, this.columnMap,
+      // the format and the CSV column map matter only for an import: folded away until wanted
+      el('details', { class: 'import-options', id: 'import-options' }, el('summary', {}, 'Import options'), this.format, ' ', this.columnMap),
       this.runAllButton = el('button', { class: 'control-button', id: 'run-all-instances-button', onclick: () => this.runAll(), title: RUN_ALL_TITLE }, 'Run all instances'),
       this.checkButton = el('button', { class: 'control-button', id: 'check-exercise-button', hidden: true, onclick: () => this.checkExercise(),
         title: 'Check this exercise: expected counts and optima, the audit, and the budgets' }, 'Check exercise'),

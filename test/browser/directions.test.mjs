@@ -723,6 +723,7 @@ test('Run all, Fuzz and the audit of many instances name themselves and stop at 
 test('D7: several files at once, and a CSV file with a column map', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring&tab=9');
   const n0 = await page.evaluate(() => window.cegarplay.project.instances.length);
+  await page.click('#import-options summary');
   await page.fill('#instance-column-map', 'edge(u,v)');
   await page.setInputFiles('#instance-file', [
     { name: 'tri.csv', mimeType: 'text/csv', buffer: Buffer.from('u,v\n1,2\n2,3\n1,3\n') },
