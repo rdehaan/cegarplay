@@ -2643,3 +2643,6 @@ file); `tools/aspq-check.py` checks them by brute force. Manual: *ASP(Q) example
   `--randomize`/`--no-randomize`. `tools/report.mjs --per-seed`; the report names the seeds.
 - Docs: manual (Campaigns, "Several seeds"), how-to campaign, tutorial lesson 8.
   Tests: `campaign-seeds.test.mjs`, a browser test in `directions.test.mjs`.
+- Ties (later the same day, on request): every tied best cell of a matrix row is bold (`bests` in
+  `resultMatrix`; `best` stays the unique winner or null); the CSV `best` column lists the tied
+  variants separated by spaces; a mean is compared at the precision shown (one decimal).

@@ -352,7 +352,7 @@ export class CampaignTab {
       seedPick.addEventListener('change', () => { const v = seedPick.value; this.seedView = v.startsWith('seed:') ? Number(v.slice(5)) : v; this.drawMatrix(); });
     }
     const note = this.metric === 'solutions' ? ' the number of solutions each run found; click a heading to sort'
-      : ' the best solved cell per row in bold (none on a tie); click a heading to sort';
+      : ' the best solved cell per row in bold (every one of a tie); click a heading to sort';
     this.matrixBox.append(h('div', { class: 'instances-bar' }, h('b', {}, 'Instance × variant '), h('label', {}, 'Show ', pick),
       seedPick ? h('label', {}, ' Seeds ', seedPick) : null, h('span', { class: 'note' }, note)));
     if (seeds.length > 1) this.matrixBox.append(h('p', { class: 'note', id: 'campaign-seeds-used' }, `Solver seeds of these rows: ${seeds.join(', ')}.`));
@@ -385,7 +385,7 @@ export class CampaignTab {
         const sd = c.sd !== null && c.sd !== undefined && c.solved ? ` ± ${show(c.sd)}` : '';
         const text = this.metric === 'solutions' ? (c.value === null ? '–' : fmt(Math.round(c.value)) + (c.solved ? '' : ` (${c.outcome})`))
           : !c.solved ? c.outcome + part : c.value === null ? '–' : show(c.value) + sd;
-        const cls = ['num', r.best === v ? 'best' : '', c.disagree ? 'disagree' : '', c.solved ? '' : 'unsolved'].filter(Boolean).join(' ');
+        const cls = ['num', (r.bests || []).includes(v) ? 'best' : '', c.disagree ? 'disagree' : '', c.solved ? '' : 'unsolved'].filter(Boolean).join(' ');
         const each = c.n > 1 ? `; ${m.stat === 'mean' ? 'mean' : 'median'} of ${c.n} seeds (${c.perSeed.map(([sd0, x]) => `seed ${sd0}: ${x === null ? '–' : show(x)}`).join(', ')})` : m.seed !== null ? `; seed ${m.seed}` : '';
         const tip = `${r.instance || '(no instance)'} / ${vname(v)}: ${c.outcome}, ${fmt(c.solutions)} solutions${c.cost ? `, cost ${c.cost.join(' ')}` : ''}${each}${c.disagree ? '; disagrees with another variant' : ''}`;
         return h('td', { class: cls, title: tip, 'data-variant': v }, text + (c.disagree ? ' ✗' : ''));

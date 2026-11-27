@@ -58,7 +58,8 @@ test('the matrix per seed and as a mean (± standard deviation); CSV and Markdow
   assert.equal(mean.rows[0].cells.x.value, 2);
   assert.ok(Math.abs(mean.rows[0].cells.x.sd - Math.SQRT2) < 1e-9);
   assert.equal(mean.rows[0].cells.y.sd, 0);
-  assert.equal(mean.rows[0].best, null);                       // 2 against 2: a tie
+  assert.equal(mean.rows[0].best, null);                       // 2 against 2: a tie,
+  assert.deepEqual(mean.rows[0].bests, ['x', 'y']);              // both bold
   assert.equal(mean.rows[1].cells.x.solved, false);             // one seed did not finish
   assert.equal(mean.rows[1].cells.x.solvedN, 1);
   assert.equal(mean.rows[1].best, 'y');
@@ -71,10 +72,10 @@ test('the matrix per seed and as a mean (± standard deviation); CSV and Markdow
   const all = seedMatrices(rows, 'time');
   assert.deepEqual(all.map((x) => x.table), ['mean', 'seed 1', 'seed 2']);
   const csv = matricesCSV(all);
-  assert.match(csv, /^table,instance,x,x sd,y,y sd,best\nmean,a,2,1\.414\d*,2,0,\n/);
+  assert.match(csv, /^table,instance,x,x sd,y,y sd,best\nmean,a,2,1\.414\d*,2,0,x y\n/);
   assert.match(csv, /\nmean,b,timeout \(1 of 2 finished\),/);
   assert.match(csv, /\nseed 2,b,timeout,,1,,y\n/);
-  assert.match(matrixMarkdown(mean), /\| a \| 2\.000 ± 1\.414 \| 2\.000 ± 0\.000 \|/);
+  assert.match(matrixMarkdown(mean), /\| a \| \*\*2\.000 ± 1\.414\*\* \| \*\*2\.000 ± 0\.000\*\* \|/);
   const md = report(rows, { perSeed: true }).markdown;
   assert.match(md, /Solver seeds: 1, 2\./);
   assert.match(md, /## Per seed[^]*### Mean over the seeds[^]*### Seed 1[^]*### Seed 2/);

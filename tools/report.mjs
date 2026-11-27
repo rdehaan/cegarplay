@@ -29,7 +29,7 @@ export function report(rows, { metric = 'time', limit = 0, title = 'Campaign', p
   const bad = inconsistencies(rows);
   const lines = [`# ${title}`, '',
     `${m.rows.length} instances × ${m.variants.length} variants, ${rows.filter((r) => !r.skipped).length} cells. ` +
-    `Metric: ${metric} (median over seeds); the best solved cell of a row is in bold (none on a tie); a cell that did not finish shows its outcome.`, '',
+    `Metric: ${metric} (median over seeds); the best solved cell of a row is in bold (every one of a tie); a cell that did not finish shows its outcome.`, '',
     `Solver seeds: ${seeds.length ? seeds.join(', ') : 'none'}.`, '',
     '## Per variant', '',
     '| variant | solved | cells | total time (s) | PAR2 (s) |', '|---|---:|---:|---:|---:|',

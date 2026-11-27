@@ -380,8 +380,9 @@ export function inconsistencies(rows) {
 // keeps only the rows of that seed: the table of one seed.
 // Returns { metric, stat, seed, variants, rows: [{ instance, cells: { variant: cell }, best }] }
 // where a cell is { value, sd, n, solvedN, solved, outcome, disagree, solutions, cost, perSeed }
-// (perSeed: [[seed, value]]); best names the variant with the smallest value among the solved
-// cells of the row (null when none is solved or on a tie).
+// (perSeed: [[seed, value]]); bests lists every variant with the smallest value among the solved
+// cells of the row (all of them on a tie; none when no cell is solved, or for the metric
+// solutions), and best names it when it is the only one (null otherwise).
 export const solvedRow = (r) => !r.skipped && r.outcome === 'finished';
 // order: { variants: [...], instances: [...] } lists the names in the order to show (the project's);
 // names not listed follow in the order of the rows.
@@ -422,17 +423,14 @@ export function resultMatrix(rows, metric = 'time', order = {}, opts = {}) {
         disagree: rs.some((r) => bad.has(r.key)), solutions: rs[0].solutions, cost: rs[0].cost || null,
         perSeed: rs.slice().sort((a, b) => a.seed - b.seed).map((r) => [r.seed, typeof r[metric] === 'number' ? r[metric] : null]) };
     }
-    // the best cell: the smallest value among the solved cells, when no other cell ties with it
-    // compared at the precision the matrix shows (time: 3 decimals), so that equal-looking cells tie
-    const shown = (x) => (metric === 'time' ? Math.round(x * 1000) : Math.round(x));
-    let best = null, ties = 0;
-    for (const v of variants) {
-      const c = cells[v];
-      if (!c || !c.solved || c.value === null) continue;
-      if (best === null || shown(c.value) < shown(cells[best].value)) { best = v; ties = 0; } else if (shown(c.value) === shown(cells[best].value)) ties++;
-    }
-    if (ties || metric === 'solutions') best = null;   // fewer solutions is not better
-    return { instance, cells, best };
+    // the best cells: the smallest value among the solved cells, compared at the precision the
+    // matrix shows (time: 3 decimals; a mean: 1 decimal), so that equal-looking cells tie
+    const shown = (x) => (metric === 'time' ? Math.round(x * 1000) : stat === 'mean' ? Math.round(x * 10) : Math.round(x));
+    const solvedCells = variants.filter((v) => cells[v] && cells[v].solved && cells[v].value !== null);
+    const low = solvedCells.length ? Math.min(...solvedCells.map((v) => shown(cells[v].value))) : null;
+    // fewer solutions is not better
+    const bests = metric === 'solutions' || low === null ? [] : solvedCells.filter((v) => shown(cells[v].value) === low);
+    return { instance, cells, bests, best: bests.length === 1 ? bests[0] : null };
   });
   return { metric, stat, seed, variants, rows: out };
 }
@@ -449,10 +447,10 @@ const csvField = (x) => { const t = x === null || x === undefined ? '' : String(
 const cellText = (c) => !c ? '' : c.solved ? String(c.value) : c.solvedN ? `${c.outcome} (${c.solvedN} of ${c.n} finished)` : c.outcome;
 
 // CSV: one row per instance, one column per variant (the metric, or the outcome of a cell that
-// did not finish), then the best variant of the row.
+// did not finish), then the best variants of the row (several on a tie, separated by spaces).
 export function matrixCSV(m) {
   const lines = [['instance', ...m.variants, 'best'].map(csvField).join(',')];
-  for (const r of m.rows) lines.push([r.instance, ...m.variants.map((v) => cellText(r.cells[v])), r.best || ''].map(csvField).join(','));
+  for (const r of m.rows) lines.push([r.instance, ...m.variants.map((v) => cellText(r.cells[v])), (r.bests || []).join(' ')].map(csvField).join(','));
   return lines.join('\n') + '\n';
 }
 
@@ -466,14 +464,14 @@ export function matricesCSV(list) {
   for (const { table, m } of list) {
     for (const r of m.rows) {
       const cols = variants.flatMap((v) => { const c = r.cells[v]; const t = cellText(c); return sdCols ? [t, c && c.sd !== null && c.sd !== undefined ? String(c.sd) : ''] : [t]; });
-      lines.push([table, r.instance, ...cols, r.best || ''].map(csvField).join(','));
+      lines.push([table, r.instance, ...cols, (r.bests || []).join(' ')].map(csvField).join(','));
     }
   }
   return lines.join('\n') + '\n';
 }
 
 const num = (x, metric) => x === null ? '–' : metric === 'time' ? x.toFixed(3) : String(Math.round(x * 100) / 100);
-// Markdown: the same table; the best cell in bold, a disagreement marked ✗, a cut-off cell named.
+// Markdown: the same table; the best cells in bold (every one of a tie), a disagreement marked ✗, a cut-off cell named.
 export function matrixMarkdown(m) {
   const head = `| instance | ${m.variants.join(' | ')} |`;
   const sep = `|---|${m.variants.map(() => '---:').join('|')}|`;
@@ -481,7 +479,7 @@ export function matrixMarkdown(m) {
     const c = r.cells[v];
     if (!c) return '';
     let t = c.solved ? num(c.value, m.metric) + (c.sd !== null && c.sd !== undefined ? ` ± ${num(c.sd, m.metric)}` : '') : c.solvedN ? `${c.outcome} (${c.solvedN}/${c.n})` : c.outcome;
-    if (r.best === v) t = `**${t}**`;
+    if ((r.bests || []).includes(v)) t = `**${t}**`;
     if (c.disagree) t += ' ✗';
     return t;
   }).join(' | ')} |`);

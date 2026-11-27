@@ -265,7 +265,7 @@ whose finished variants report different optima, are marked red (the run history
 grid); hover a square of the progress grid to see its cell. The **instance × variant matrix** has
 one row per instance and one column per variant, in the order of the project (the suite's variants,
 then the project's; the instances as in the Instances tab), showing time, solutions, candidates or
-refinements (median over seeds); the best finished cell of a row is bold (none on a tie; never for
+refinements (median over seeds); the best finished cell of a row is bold (every one of a tie; never for
 solutions), a cell that did not finish shows its outcome,
 a disagreement is marked ✗, and a click on a heading sorts by that column. **Export matrix (CSV)**
 saves it. Plots: time against a parameter (median and interquartile band), a heat map over two
