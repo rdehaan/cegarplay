@@ -56,7 +56,7 @@ test('pause freezes the counters, resume continues, stop ends with statistics', 
 });
 
 test('threads: a solver with -t 2 gives 10,698 on graph-coloring', async () => {
-  const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&file=graph-coloring&tab=4', { coi: true });
+  const { page, context, errors } = await B.openPage(browser, coiServer, '?nocoi=1&example=graph-coloring&tab=4', { coi: true });
   const loop = await B.getEditor(page, 'loop-editor');
   await B.setEditor(page, 'loop-editor', loop.replace('solver A = shared + abstraction', 'solver A = shared + abstraction options "-t 2"'));
   await page.click('#run-button');

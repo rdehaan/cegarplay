@@ -12,7 +12,6 @@ import { Internals } from './internals.js';
 import { InstancesTab } from './instances-tab.js';
 import { Variants } from './variants.js';
 import { Recording, REPLAY_PATTERN, pairSteps } from './recording.js';
-import { makeEditor } from './editors.js';
 import { Anatomy } from './anatomy.js';
 import { CampaignTab } from './campaign-tab.js';
 import { ViewPanel } from './view-panel.js';
@@ -32,6 +31,8 @@ import { projectModel, lintProject, aspWordHelp } from './asp-scan.js';
 import { loopCompletions, aspCompletions } from './completions.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
 import { h as make, $, download as saveFile } from './dom.js';
+import { buildLibrary, markLoadedExample, wireLibraryFilter, exampleLink } from './library-ui.js';
+import { codeBlocks, loadManual, loadTutorial, wireDocLinks } from './docs-tabs.js';
 
 const params = new URLSearchParams(location.search);
 setupTopbar();
@@ -53,7 +54,7 @@ function setUrl({ example, tab, keepHash = false } = {}) {
 // The project is no longer the one the URL names (edited, or replaced by a file or a new project).
 function urlForgetProject() {
   const now = new URLSearchParams(location.search);
-  if (now.has('example') || now.has('file') || now.has('fragment') || shareData(location.hash) !== null) setUrl({});
+  if (now.has('example') || now.has('fragment') || shareData(location.hash) !== null) setUrl({});
 }
 
 // Internals tab only with ?internals=true
@@ -64,7 +65,6 @@ if (params.get('internals') !== 'true') {
 // ---- the technical manual (tab 8): hidden unless the toggle is on or ?manual=true ---------
 const MANUAL_KEY = 'cegarplay.manual';
 const manualForced = params.get('manual') === 'true';
-let manualLoading = null;     // the promise of the rendered manual
 function manualStored() {
   try { return localStorage.getItem(MANUAL_KEY) === '1'; } catch { return false; }
 }
@@ -86,15 +86,12 @@ for (const c of document.querySelectorAll('.manual-checkbox')) {
 
 // ---- which tabs show: the Advanced tabs (Campaign, Observatory, Refinery) and the Tutorial ----------------
 // Both are kept in this browser. A link that opens one of these tabs (?tab=, ?lecture=, ?view=,
-// ?step=, ?advanced=1, a #tut- link) shows it for this visit without changing the stored choice.
+// ?step=, ?refinery=1, a #tut- link) shows it for this visit without changing the stored choice.
 // The Advanced tabs (Campaign, Observatory, Refinery) each have a toggle; the Advanced
 // toggle above them turns all three on or off (checked: all on; indeterminate: some on).
-// An older browser may still keep cegarplay.advanced (Campaign and Observatory together): it is
-// the fallback of both until one of them is changed.
-const LEGACY_ADVANCED = 'cegarplay.advanced';
 const TAB_PREFS = {
-  campaign: { key: 'cegarplay.campaign', fallback: false, legacy: true, tabs: ['tab10'], box: '.campaign-checkbox' },
-  observatory: { key: 'cegarplay.observatory', fallback: false, legacy: true, tabs: ['tab11'], box: '.observatory-checkbox' },
+  campaign: { key: 'cegarplay.campaign', fallback: false, tabs: ['tab10'], box: '.campaign-checkbox' },
+  observatory: { key: 'cegarplay.observatory', fallback: false, tabs: ['tab11'], box: '.observatory-checkbox' },
   tutorial: { key: 'cegarplay.tutorial', fallback: true, tabs: ['tab2'], box: '.tutorial-checkbox' },
   lab: { key: 'cegarplay.lab', fallback: false, tabs: ['tab12'], box: '.lab-checkbox' },
 };
@@ -104,7 +101,6 @@ function prefStored(name) {
   try {
     const v = localStorage.getItem(p.key);
     if (v !== null) return v === '1';
-    if (p.legacy && localStorage.getItem(LEGACY_ADVANCED) !== null) return localStorage.getItem(LEGACY_ADVANCED) === '1';
     return p.fallback;
   } catch { return p.fallback; }
 }
@@ -119,14 +115,6 @@ function showTabs(name, on, { store = true } = {}) {
   const p = TAB_PREFS[name];
   if (store) {
     try {
-      // the first change of a legacy-backed toggle moves the old choice into the new keys
-      if (p.legacy && localStorage.getItem(LEGACY_ADVANCED) !== null) {
-        for (const [n, q] of Object.entries(TAB_PREFS)) if (q.legacy && n !== name) {
-          const v = prefStored(n);
-          if (v === q.fallback) localStorage.removeItem(q.key); else localStorage.setItem(q.key, v ? '1' : '0');
-        }
-        localStorage.removeItem(LEGACY_ADVANCED);
-      }
       if (on === p.fallback) localStorage.removeItem(p.key); else localStorage.setItem(p.key, on ? '1' : '0');
     } catch { /* no storage */ }
   }
@@ -141,12 +129,11 @@ function showTabs(name, on, { store = true } = {}) {
 }
 app.showTabs = showTabs;
 {
-  const all = params.get('advanced') === '1';
-  showTabs('campaign', prefStored('campaign') || all || params.get('tab') === '10', { store: false });
-  showTabs('observatory', prefStored('observatory') || all || params.get('tab') === '11' ||
+  showTabs('campaign', prefStored('campaign') || params.get('tab') === '10', { store: false });
+  showTabs('observatory', prefStored('observatory') || params.get('tab') === '11' ||
     params.has('lecture') || params.has('view') || params.has('step'), { store: false });
   showTabs('tutorial', prefStored('tutorial') || params.get('tab') === '2', { store: false });
-  showTabs('lab', prefStored('lab') || params.get('lab') === '1' || params.get('refinery') === '1' || params.get('tab') === '12', { store: false });
+  showTabs('lab', prefStored('lab') || params.get('refinery') === '1' || params.get('tab') === '12', { store: false });
 }
 for (const name of Object.keys(TAB_PREFS)) {
   for (const c of document.querySelectorAll(TAB_PREFS[name].box)) c.addEventListener('change', () => showTabs(name, c.checked));
@@ -423,7 +410,7 @@ app.setProject = (p, { save = true } = {}) => {
   clearOriginLines();
   app.project = p;
   app.exampleId = null;         // set by loadExample
-  markLoadedExample();
+  markLoadedExample(app);
   // the results of an earlier run belong to the earlier project
   app.control.clearResults({ keepRecording: true });
   // the candidate space of the earlier project's run no longer applies
@@ -597,7 +584,7 @@ async function loadExample(name, opts, { url = false } = {}) {
   if ((app.project.views || []).length) {
     try { const v = await fetch(`examples/views/${name}.json`); if (v.ok) app.views.prefill(await v.json()); } catch { /* computed on demand */ }
   }
-  markLoadedExample();
+  markLoadedExample(app);
   if (url) setUrl({ example: name });
 }
 
@@ -607,76 +594,7 @@ app.library = fetch('examples/library.json').then((r) => {
   return r.json();
 }).catch(() => null);
 
-const exampleLink = (id) => `${location.origin}${location.pathname}?example=${encodeURIComponent(id)}`;
-
-async function buildLibrary() {
-  const box = $('library');
-  const lib = await app.library;
-  if (!lib) { box.innerHTML = '<p class="error-text">The example library could not be loaded.</p>'; return; }
-  box.textContent = '';
-  // a Projects group first (FUTURE-DIRECTIONS E3): the examples with a readme (tag "project"),
-  // also listed in their own group
-  const projects = { id: 'projects', title: 'Projects', description: 'Examples with a readme: a research question, a baseline and things to try (shown under the project title once loaded).' };
-  for (const g of [projects, ...lib.groups]) {
-    const entries = lib.examples.filter((e) => (g === projects ? (e.tags || []).includes('project') : e.group === g.id));
-    if (!entries.length) continue;
-    const det = make('details', { class: 'library-group', 'data-group': g.id });
-    det.open = false;
-    det.append(make('summary', {}, make('span', { class: 'library-group-title' }, g.title), ' ',
-      make('span', { class: 'note' }, `${entries.length} · ${g.description}`)));
-    const list = make('ul', { class: 'library-list' });
-    for (const e of entries) {
-      const has = e.has || {};
-      const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
-      const tags = [e.shape !== 'custom' ? e.shape : null, ...e.tags,
-        has.instances ? plural(has.instances, 'instance') : null, has.generators ? plural(has.generators, 'generator') : null,
-        has.suites ? plural(has.suites, 'suite') : null, has.views ? 'view' : null, has.readme ? 'readme' : null].filter(Boolean);
-      if (e.level) tags.push(`level ${e.level}`);
-      if (e.after) tags.push(`after chapter ${e.after}`);
-      const li = make('li', { class: 'library-entry', 'data-example': e.id, 'data-level': String(e.level || ''), 'data-after': String(e.after || 0),
-        'data-search': [e.id, e.title, e.summary, ...tags, g.title].join(' ').toLowerCase() });
-      const text = make('div', { class: 'library-text' },
-        make('span', { class: 'library-title' }, e.title), ' ',
-        make('code', { class: 'library-id' }, e.id),
-        ...tags.map((t) => make('span', { class: 'library-tag' }, t)),
-        make('div', { class: 'library-summary' }, e.summary +
-          (e.expected && Number.isInteger(e.expected.solutions) ? ` Solutions: ${e.expected.solutions.toLocaleString('en')}.` : '') +
-          (e.expected && e.expected.optimum != null ? ` Optimum: ${[e.expected.optimum].flat().join(' ')}.` : ''),
-          ...(e.page && FROM_PATTERN.test(e.page)
-            ? [make('a', { class: 'library-guide-link', href: e.page, target: 'cegarplay-guide' }, 'Guide page')] : [])));
-      const load = make('button', { class: 'control-button small-button', 'data-load-example': e.id }, 'Load');
-      const copy = make('button', { class: 'control-button small-button library-copy', 'data-copy-example': e.id, title: exampleLink(e.id) }, 'Copy link');
-      li.append(text, make('div', { class: 'library-buttons' }, load, copy));
-      list.append(li);
-    }
-    det.append(list);
-    box.append(det);
-  }
-  markLoadedExample();
-  filterLibrary();
-}
-function markLoadedExample() {
-  for (const li of document.querySelectorAll('.library-entry')) li.classList.toggle('loaded', li.dataset.example === app.exampleId);
-}
-function filterLibrary() {
-  const words = $('library-filter').value.toLowerCase().split(/\s+/).filter(Boolean);
-  const level = $('library-level').value, read = $('library-read').value;
-  const narrowed = words.length || level || read;
-  for (const det of document.querySelectorAll('.library-group')) {
-    let shown = 0;
-    for (const li of det.querySelectorAll('.library-entry')) {
-      // level: exactly this level; read: the guide chapter to read first is one already read
-      const ok = words.every((w) => li.dataset.search.includes(w)) && (!level || li.dataset.level === level) &&
-        (read === '' || Number(li.dataset.after) <= Number(read));
-      li.hidden = !ok;
-      if (ok) shown++;
-    }
-    det.hidden = shown === 0;
-    if (narrowed && shown) det.open = true;
-  }
-}
-$('library-filter').addEventListener('input', filterLibrary);
-for (const id of ['library-level', 'library-read']) $(id).addEventListener('change', filterLibrary);
+wireLibraryFilter();
 
 // Load an example from any element with data-load-example (library, tutorial, manual);
 // data-tab="N" then opens tab N.
@@ -1002,106 +920,7 @@ $('export-standalone-button').addEventListener('click', () => {
   catch (e) { status('export-status', e.message || String(e), true); }
 });
 
-// Read-only ACE editors for the .example-code blocks of the Tutorial and the Manual.
-function codeBlocks(box) {
-  for (const el of box.querySelectorAll('.example-code')) {
-    const mode = el.dataset.mode === 'loop' ? 'ace/mode/loop' : el.dataset.mode === 'lua' ? 'ace/mode/lua' : 'ace/mode/gringo';
-    el.textContent = el.textContent.replace(/^\n/, '').replace(/\s+$/, '');
-    const ed = makeEditor(el, mode, { readOnly: true });
-    ed.setOptions({ minLines: 1, highlightActiveLine: false, highlightGutterLine: false });
-    ed.renderer.$cursorLayer.element.style.display = 'none';
-  }
-  requestAnimationFrame(resizeVisibleEditors);
-}
-
-// ---- Manual tab -----------------------------------------------------------------------
-function loadManual() {
-  if (!manualLoading) manualLoading = buildManual();
-  return manualLoading;
-}
-async function buildManual() {
-  const box = $('manual');
-  let text;
-  try {
-    const r = await fetch('manual.md');
-    if (!r.ok) throw new Error(r.statusText);
-    text = await r.text();
-  } catch {
-    box.innerHTML = '<p class="error-text">The manual could not be loaded.</p>';
-    return;
-  }
-  const headings = [];
-  box.innerHTML = renderMarkdown(text, { headings });
-  // contents: the second-level headings, with their third-level headings
-  const toc = make('ol');
-  let last = null;
-  for (const h of headings) {
-    if (h.level === 2) {
-      last = make('li');
-      last.innerHTML = `<a href="#${h.id}">${h.html}</a>`;
-      toc.append(last);
-    } else if (h.level === 3 && last) {
-      let sub = last.querySelector('ol');
-      if (!sub) { sub = make('ol'); last.append(sub); }
-      const li = make('li');
-      li.innerHTML = `<a href="#${h.id}">${h.html}</a>`;
-      sub.append(li);
-    }
-  }
-  $('manual-toc').textContent = '';
-  $('manual-toc').append(make('b', {}, 'Contents'), toc);
-  codeBlocks(box);
-}
-// Links to #manual-<slug> (from the Tutorial, the modals or the Manual itself) open the Manual
-// tab, turning it on if needed, and scroll to that section.
-document.addEventListener('click', async (ev) => {
-  const a = ev.target.closest && ev.target.closest('a[href^="#manual-"]');
-  if (!a) return;
-  ev.preventDefault();
-  const modal = a.closest('.modal');
-  if (modal) modal.classList.remove('is-visible');
-  if ($('tab8').hidden) showManual(true);
-  await loadManual();
-  $('tab8').checked = true;
-  requestAnimationFrame(() => {
-    resizeVisibleEditors();
-    const target = document.getElementById(a.getAttribute('href').slice(1));
-    if (target) target.scrollIntoView({ block: 'start' });
-  });
-});
-
-// Links to #tut-<lesson> (from the tabs' opening lines, the manual or the tutorial itself) open
-// the Tutorial tab and scroll to that lesson.
-document.addEventListener('click', async (ev) => {
-  const a = ev.target.closest && ev.target.closest('a[href^="#tut-"]');
-  if (!a) return;
-  ev.preventDefault();
-  const modal = a.closest('.modal');
-  if (modal) modal.classList.remove('is-visible');
-  if ($('tab2').hidden) showTabs('tutorial', true, { store: false });
-  $('tab2').checked = true;
-  $('tab2').dispatchEvent(new Event('change', { bubbles: true }));
-  await tutorialLoaded;
-  requestAnimationFrame(() => {
-    const target = document.getElementById(a.getAttribute('href').slice(1));
-    if (target) target.scrollIntoView({ block: 'start' });
-  });
-});
-
-// ---- Tutorial tab ---------------------------------------------------------------------
-let tutorialLoaded = null;
-async function loadTutorial() {
-  const box = $('tutorial');
-  try {
-    const r = await fetch('tutorial.html');
-    if (!r.ok) throw new Error(r.statusText);
-    box.innerHTML = await r.text();
-  } catch {
-    box.innerHTML = '<p>The tutorial could not be loaded.</p>';
-    return;
-  }
-  codeBlocks(box);
-}
+wireDocLinks({ resizeVisibleEditors: () => resizeVisibleEditors(), showManual: (on) => showManual(on), showTabs: (n, on, o) => showTabs(n, on, o) });
 
 // ---- tabs ---------------------------------------------------------------------------
 // ACE editors built inside a hidden tab measure themselves wrongly; resize them when shown.
@@ -1162,10 +981,10 @@ async function start() {
   ]);
   app.runtime = runtime;
   app.modules = { audit, ground, draw, generate, replay: replayLua, bounded };
-  tutorialLoaded = loadTutorial();
+  loadTutorial();
   app.engineVersion = version.split('\n')[0];
-  // ?example=<id> (or the older ?file=<id>) loads an example of the library
-  const named = params.get('example') || params.get('file');
+  // ?example=<id> loads an example of the library
+  const named = params.get('example');
   const file = named || DEFAULT_EXAMPLE;
   const shared = shareData(location.hash);
   const stored = named || shared !== null || params.get('fresh') === '1' ? null : storedProject();
@@ -1217,7 +1036,7 @@ async function start() {
   if (wantView || wantStep !== null) { $('tab11').checked = true; requestAnimationFrame(() => app.views.show()); }
   app.restoredOrLoaded = true;
   // (the library is open on Home from the start: index.html)
-  buildLibrary();
+  app.library.then((lib) => buildLibrary(lib, app, FROM_PATTERN));
   await app.engine.ready;
   // the clingo version, for the footer (the engine is idle here: nothing else runs yet)
   try {

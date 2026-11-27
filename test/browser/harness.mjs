@@ -46,7 +46,7 @@ export async function openPage(browser, server, query = '', { acceptDownloads = 
   if (advanced) {
     await page.addInitScript(() => {
       try {
-        const keys = ['cegarplay.advanced', 'cegarplay.campaign', 'cegarplay.observatory'];
+        const keys = ['cegarplay.campaign', 'cegarplay.observatory'];
         if (keys.every((k) => localStorage.getItem(k) === null)) { localStorage.setItem('cegarplay.campaign', '1'); localStorage.setItem('cegarplay.observatory', '1'); }
       } catch { /* no storage */ }
     });

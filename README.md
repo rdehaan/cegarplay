@@ -69,7 +69,7 @@ repository root with any static server, for example
 
 and open <http://localhost:8000/>. (Opening `index.html` as a file does not
 work: workers and modules need http.) URL parameters: `?example=nash` loads
-`examples/nash.json` from the example library (`?file=` is the older name),
+`examples/nash.json` from the example library,
 `?tab=4` opens the Loop tab (tab numbers are fixed ids, not positions: the
 manual's URL parameters table lists them), `?manual=true` shows the Manual tab (tab 8),
 `?internals=true` shows the Internals tab, `?fresh=1` ignores the project kept
@@ -116,7 +116,7 @@ runs a project with the same engine and runtime as the page and prints the
 solutions, log lines and a summary (`--json`: every event as a JSON line).
 
 The project being edited is saved in the browser's `localStorage` and restored
-after a reload (unless `?file=` or `?fresh=1` is given). Ctrl+Enter runs.
+after a reload (unless `?example=` or `?fresh=1` is given). Ctrl+Enter runs.
 
 ## Deploying on GitHub Pages
 

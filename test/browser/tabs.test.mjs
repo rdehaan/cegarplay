@@ -49,25 +49,7 @@ test('the Advanced tabs are off by default; each has a toggle, the Advanced togg
   // the Advanced toggle off: all three
   await page.evaluate(() => { const c = document.querySelector('#dialog-settings .advanced-checkbox'); c.checked = false; c.dispatchEvent(new Event('change')); });
   for (const id of ['tab10', 'tab11', 'tab12']) assert.equal(await shown(page, id), false, id);
-  assert.deepEqual(await page.evaluate(() => Object.keys(localStorage).filter((k) => /^cegarplay\.(advanced|campaign|observatory|lab)$/.test(k))), []);
-  assert.deepEqual(errors, []);
-  await context.close();
-});
-
-test('an older stored Advanced mode shows Campaign and Observatory, and moves to the new keys on a change', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?fresh=1', { advanced: false });
-  await page.evaluate(() => localStorage.setItem('cegarplay.advanced', '1'));
-  await page.reload();
-  await page.waitForSelector('body[data-ready="true"]');
-  assert.equal(await shown(page, 'tab11'), true);
-  assert.equal(await shown(page, 'tab10'), true);
-  assert.equal(await shown(page, 'tab12'), false);
-  await B.inDialog(page, 'settings', () => page.uncheck('#dialog-settings .campaign-checkbox'));
-  assert.equal(await stored(page, 'cegarplay.advanced'), null);
-  assert.equal(await stored(page, 'cegarplay.observatory'), '1');
-  assert.equal(await stored(page, 'cegarplay.campaign'), null);
-  assert.equal(await shown(page, 'tab11'), true);
-  assert.equal(await shown(page, 'tab10'), false);
+  assert.deepEqual(await page.evaluate(() => Object.keys(localStorage).filter((k) => /^cegarplay\.(campaign|observatory|lab)$/.test(k))), []);
   assert.deepEqual(errors, []);
   await context.close();
 });

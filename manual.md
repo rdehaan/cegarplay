@@ -60,7 +60,7 @@ under it, **Campaign**, **Observatory** and **Refinery**, all off by default. **
 three on or off; it is ticked when all three are on and shows a dash when some are. The Tutorial
 tab repeats the Observatory and Campaign toggles. Settings also has the colour theme, the **Guided tour**, the
 **Keyboard shortcuts** and **Reset everything**. A link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`, `?tab=12`,
-`?lecture=1`, `?view=`, `?step=`, `?advanced=1`, `?lab=1`, a link to a tutorial lesson) shows it for
+`?lecture=1`, `?view=`, `?step=`, `?refinery=1`, a link to a tutorial lesson) shows it for
 that visit without changing the stored choice.
 
 ## Model and terms
@@ -1594,7 +1594,7 @@ facts: draw what the instance fixes in the scene part.
 ### Refinery tab
 
 Tab 12 (`?tab=12`), shown with the toggle **Refinery** in **Settings**
-(`cegarplay.lab`), or for one visit with `?lab=1`. It shows what a loop *could* have done, not
+(`cegarplay.lab`), or for one visit with `?refinery=1`. It shows what a loop *could* have done, not
 just what it did: at one step, every refinement clause that was possible there, and over a whole run,
 how its length compares with the best and worst runs that the same refinements allow. Everything is
 computed on small instances by enumerating the candidate space, as the [audit](#manual-audit) does,
@@ -1765,14 +1765,14 @@ prints them as `{"kind": ..., "data": ...}`.
 
 | Parameter | Effect |
 | --- | --- |
-| `?example=<id>` | Load the library example `<id>` (also `?file=<id>`). It does not replace the project kept in the browser until you edit it. |
+| `?example=<id>` | Load the library example `<id>`. It does not replace the project kept in the browser until you edit it. |
 | `&fragment=<name>` | With `?example`: open the Programs tab on that fragment's editor (`loop` opens the Loop tab; a view fragment opens its view's editor in the Observatory, **Edit this view**). Overrides `?tab`. An unknown name is ignored with a note in the status line. |
 | `&from=guide/<page>.html#<anchor>` | Show a link "← Back to the guide" in the top bar, to that guide page. Only a page of the guide is accepted. |
 | `?tab=N` | Open tab N: 1 Home, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory, 12 Refinery. The numbers are fixed; they are not the order on screen. |
 | `&instance=<id>` | Pick that instance of the project in the top bar. An unknown id is ignored with a note. |
 | `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
-| `?advanced=1` | The Observatory and Campaign tabs for this visit (without changing the remembered toggles). `?tab=10` shows the Campaign tab; `?tab=11`, `?lecture=1`, `?view=` and `?step=` show the Observatory. |
-| `?lab=1`, `?refinery=1` | Show the [Refinery](#manual-refinery-tab) tab for this visit, without changing the remembered toggle. `?tab=12` implies it. |
+| `?tab=10`, `?tab=11` | Also show the Campaign or the Observatory tab for this visit (without changing the remembered toggles); `?lecture=1`, `?view=` and `?step=` show the Observatory too. |
+| `?refinery=1` | Show the [Refinery](#manual-refinery-tab) tab for this visit, without changing the remembered toggle. `?tab=12` implies it. |
 | `?internals=true` | Show the Internals tab: engine facts, generated Lua, raw event lines. |
 | `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
 | `#p=<data>` | A share link (**Copy share link** in the Project menu): the whole project without its run history, in the URL fragment, which never reaches the server. `<data>` is `z` + base64url of the deflate-raw compressed project JSON (`u` + base64url of the plain JSON in a browser without `CompressionStream`). Takes precedence over the kept project and, like `?example`, does not replace it until you edit. A damaged link opens the default example with an error in the status line. Links over 8,000 characters get a warning. |
@@ -1820,9 +1820,7 @@ the page); Undo brings that project
   snapshots. "The same" ignores the run history and follows each edit. **Last action** names what the
   block did last, with the time.
 - `cegarplay.manual`: `"1"` when "Show the technical manual" is ticked.
-- `cegarplay.campaign`, `cegarplay.observatory`: `"1"` when that tab is on (absent when off). An
-  older `cegarplay.advanced` (`"1"`: both on) is read as the choice for both until one of them is
-  changed, and is then replaced by the two keys.
+- `cegarplay.campaign`, `cegarplay.observatory`: `"1"` when that tab is on (absent when off).
 - `cegarplay.tutorial`: `"0"` when the Tutorial tab is hidden (absent when shown).
 - `cegarplay.lab`: `"1"` when the Refinery is on (absent when off); `cegarplay.lab.*`: the
   Refinery's settings (its Limits, the source of steps, the candidate order, the scheme), as JSON.

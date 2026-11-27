@@ -139,8 +139,8 @@ test('5. download JSON, reload (autosave restores), upload: all editors equal', 
   await context.close();
 });
 
-test('URL parameters: ?file=nash and ?tab=4', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?file=nash&tab=4');
+test('URL parameters: ?example=nash and ?tab=4', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=nash&tab=4');
   assert.equal(await page.isVisible('#section-loop'), true);
   assert.equal(await page.isVisible('#section-control'), false);
   assert.match(await B.getEditor(page, 'editor-abstraction'), /Nash equilibrium/);
@@ -280,16 +280,16 @@ test('the loop script is checked while it is edited; New project runs', async ()
   await context.close();
 });
 
-test('?file= does not overwrite the kept project until it is edited; rename clears marks', async () => {
+test('?example= does not overwrite the kept project until it is edited; rename clears marks', async () => {
   const { page, context } = await B.openPage(browser, server);
   await B.setEditor(page, 'editor-shared', '% kept\n');
   await page.waitForTimeout(1200);
-  await page.goto(page.url() + '&file=nash');
+  await page.goto(page.url() + '&example=nash');
   await page.waitForSelector('body[data-ready="true"]');
   await page.click('#run-button');
   await B.waitState(page, ['finished', 'error']);
   await page.waitForTimeout(1200);
-  await page.goto(page.url().replace(/&file=nash/, ''));
+  await page.goto(page.url().replace(/&example=nash/, ''));
   await page.waitForSelector('body[data-ready="true"]');
   assert.equal(await B.getEditor(page, 'editor-shared'), '% kept\n');
   // marks of a run go away when the fragment is renamed
