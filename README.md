@@ -19,25 +19,28 @@ The page's tabs follow the work:
   facts and constants, generators of random instances, importers for common
   file formats, Run all instances, Fuzz, and optional spaces: every instance up to a bound,
   for verifying a refinement strategy on all of them).
-- **Run and look**: the *Shown* line under the top bar says which run the result tabs
+- **Run and look** (the *Results* tab): the *Shown* line under the top bar says which run the result tabs
   hold, and when the project was edited since; *Output* (solutions, trace, messages, the audit's verdict:
   by enumeration, by a symbolic search, or over a space up to a bound),
-  *Statistics* (counts, solver tables, charts, the run history) and, in
-  Advanced mode, *Observatory* (the loop's anatomy and call timeline, a picture
+  *Statistics* (counts, solver tables, charts, the run history) and, under
+  *Analyse* (advanced tabs), *Observatory* (the loop's anatomy and call timeline, a picture
   of each step in the problem's own terms, every candidate at once in the
   candidate space, all driven by one cursor; exports for slides and a lecture
   mode).
-- **Compare** (Advanced mode): *Campaign* (grids of instances × variants ×
+- **Compare** (*Analyse*, an advanced tab): *Campaign* (grids of instances × variants ×
   seeds on several engines, with plots and the runs whose counts disagree in
   red).
-- **What the loop could have done** (the *Refinery*, its own toggle): for a
+- **What the loop could have done** (the *Refinery*, under *Analyse*, its own toggle): for a
   step of a run, every clause the loop could have added there, which are sound,
   how much each removes and which atoms every sound clause needs; the shortest
   and longest runs the same refinements allow, exact on small instances; and a
   recorded run placed among them. `node tools/lab.mjs` gives the same numbers.
 
-Advanced mode, the Refinery, the Tutorial and the Manual are toggles in
-*Settings* (the gear in the top bar); the browser remembers them. The *Project*
+The tab row is Home, Programs, Loop, Instances and three group tabs whose sub-tabs open in a
+second row: *Results* (Output, Statistics), *Analyse* (Observatory, Campaign, Refinery) and
+*Learn* (Tutorial, Manual, links to the guide and the tours). The advanced tabs (Observatory,
+Campaign, Refinery), the Tutorial and the Manual are toggles in *Settings* (the gear in the top
+bar); the browser remembers them. The *Project*
 menu opens, downloads, shares and exports projects, and keeps named projects
 (the workspace) and snapshots of the project being edited, with an Undo after a
 restore or after loading another project over an edited one. **Reset

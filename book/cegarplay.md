@@ -4043,7 +4043,7 @@ The Python prototype's files list the interface atoms in the glue directly (`pic
 
 ### Raw Lua {#t10-tut-lang-lua}
 
-The loop script is compiled to Lua (the Internals tab shows it, with `?internals=true`). If the language lacks something, **Edit as Lua** in the Loop tab turns the script into Lua that you can change freely. The manual lists the runtime API and the rules raw Lua must follow.
+The loop script is compiled to Lua (the Internals tab shows it: with `?internals=true`, **Internals** is in the Project menu). If the language lacks something, **Edit as Lua** in the Loop tab turns the script into Lua that you can change freely. The manual lists the runtime API and the rules raw Lua must follow.
 
 [Playground: lang-raw-lua]{.play}
 

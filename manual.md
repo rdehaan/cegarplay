@@ -1851,9 +1851,9 @@ does it. **Back** goes back a step; ✕ ends the tour. It is offered on a first 
 It starts from **Home** ("guided tour" in the opening lines), from **Settings** and with `?tour=1`.
 
 The Observatory, Campaign and Refinery tabs have short tours of their own (`TAB_TOURS` in
-`js/tour.js`, three or four cards on the tab's parts): each is offered the first time one switches
-to its tab (not when a link opens the page on it), and starts again from **Settings** (Guided tour)
-or the tab's help ("Tour of this tab"); a tab that is off is shown for that visit.
+`js/tour.js`, three or four cards on the tab's parts): they start from the tab's help ("Tour of
+this tab") or from **Settings** (Guided tour), not on their own; a tab that is off is shown for
+that visit.
 
 Keyboard shortcuts when not typing (`js/keys.js`; none applies in an editor, a text field, a list
 or while a dialog or menu is open; a slider and the tab row keep their own arrow keys):

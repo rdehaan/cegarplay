@@ -178,7 +178,7 @@ function makeSteps(app) {
 }
 
 
-// ---- the short tours of the advanced tabs: offered the first time the tab is opened (js/init.js)
+// ---- the short tours of the advanced tabs: started from the tab's help and from Settings (js/init.js)
 const tabTarget = (id) => () => { const e = document.getElementById(id); return e && !e.hidden && e.offsetParent !== null ? e : null; };
 export const TAB_TOURS = {
   tab11: {
