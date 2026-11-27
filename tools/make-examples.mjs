@@ -380,30 +380,36 @@ smallest justifications, without a fixed k.
 
 ## Open questions
 
-1. Combine loops: multi with partial checks.
-2. Can a refinement be *lifted* over permutations of the profile numbers (a counterexample
-   permuted is a counterexample), so that one counterexample rules out many candidates?
-3. Would an encoding that builds profiles from instances (a neutrality instance determines its
-   second profile) instead of guessing them first help? Or a search in two levels, profiles first
-   (the "two-step procedure" the original file mentions), or fewest profiles first (the paper's
-   breadth-first generation)?
-4. The paper's derived axioms and implied instances (Section 3) as variants of the abstraction:
-   they change the solution set, so compare first-solution times rather than counts.
-5. Explanatoriness: the encoding has no minimality check (exactly k instances). A second check
-   (no proper subset suffices) would make larger k meaningful.
-6. Which refinements are sound, and why? The default and \`falsified\` name every profile atom;
-   \`profile-free\` names none. The original file has three more (the instances the candidate does not
-   use, those it uses, all of them): are they sound, and are they any different from these?
-7. Is \`profile-free\` the strongest refinement that holds for every candidate? Could a clause leave
-   out instances that the outcomes falsify only because others are falsified?
-8. Exactly k against at most k: how do the counts and the costs change with "at most k
-   instances", and with the smallest size (from \`voting-justification-ihs\`) as k?
-9. Symmetry breaking: how much of A's work does it save, and is each of its constraints still
-   sound together with a clause that holds for every candidate?
-10. Scaling: where do the loops break down as the candidates, voters and profiles grow, and which
-    solver (A or C) gives out first?
-11. Explanations a person can read: among the smallest justifications, which is the most
-    readable (fewest profiles, fewest kinds of axiom)? Can a loop optimise for that?
+1. **Combine loops.** \`multi\` with \`partial\` checks.
+2. **Symmetry in the clauses.** Can a refinement be *lifted* over permutations of the profile
+   numbers (a counterexample permuted is a counterexample), so that one counterexample rules out
+   many candidates?
+3. **Building profiles.** Would an encoding that builds profiles from instances (a neutrality
+   instance determines its second profile) instead of guessing them first help? Or a search in
+   two levels, profiles first (the "two-step procedure" the original file mentions), or fewest
+   profiles first (the paper's breadth-first generation)? (\`voting-justification-values\`
+   tries profiles as values.)
+4. **Derived axioms.** The paper's derived axioms and implied instances (Section 3) as variants of
+   the abstraction: they change the solution set, so compare first-solution times rather than
+   counts.
+5. **Minimality and at most k.** The encoding asks for exactly k instances and has no minimality
+   check, so padded justifications count. How do the counts and the costs change with a second
+   check (no proper subset suffices), with "at most k instances", and with the smallest size
+   (from \`voting-justification-ihs\`) as k?
+6. **Soundness.** Which refinements are sound, and why?
+7. **The strongest refinement.** Is \`profile-free\` the strongest refinement that holds for every
+   candidate? Could a clause leave out instances that the outcomes falsify only because others
+   are falsified?
+8. **Symmetry breaking.** How much of A's work does it save, and is each of its constraints still
+   sound together with a clause that holds for every candidate? Profiles of the same size are not
+   sorted (the original file's constraint for that never fired and was removed), so solutions
+   that differ only in their order all count. Would a working sort pay, in both encodings (with
+   profiles as values it is a single comparison of two lists), and how would the counts change?
+9. **Scaling.** Where do the loops break down as the candidates, voters and profiles grow, and
+   which solver (A or C) gives out first?
+10. **Robust measurements.** Removing a constraint that never fires moved candidate counts by up
+    to about 45%. How much of the difference between two loops survives several seeds with
+    randomized search, and how many seeds does a fair comparison need?
 `;
 
 // voting-justification, strategy 6 and the loops built on it (Nov 2026). A counterexample is an
@@ -604,23 +610,29 @@ justifications, where it is known.
 
 ## Open questions
 
-1. Is the first justification found a smallest one only because the \`profile-free\` clause holds
-   for every candidate? What happens with the default refinement of \`voting-justification\` in
-   this loop?
-2. IHS solvers for MaxSAT find disjoint cores first to raise the lower bound cheaply. What is the
-   analogue here: counterexamples with pairwise disjoint falsified sets?
-3. A correction set is minimal when no falsified instance can be satisfied without falsifying
-   another. \`mcs\` asks for a minimum one, which costs an optimisation per check. Would a cheaper
-   *minimal* one do as well?
-4. When does an optimal A pay, and when do the satisfiability calls of \`ascending\`?
-5. Without a fixed k the loop can prove that a question has no justification at all within
-   \`num_profiles\` profiles. How large must \`num_profiles\` be before that says something about
-   all profiles?
-6. The paper's breadth-first generation (fewest profiles first) against fewest instances first:
-   do they find the same justifications?
-7. Explanations a person can read: among the smallest justifications, which is the most
-   readable (fewest profiles, fewest kinds of axiom)? Add it as a second level of the
-   \`#minimize\` and compare.
+1. **Why IHS works here.** Is the first justification found a smallest one only because the
+   \`profile-free\` clause holds for every candidate? What happens with the default refinement of
+   \`voting-justification\` in this loop?
+2. **Disjoint sets.** IHS solvers for MaxSAT find disjoint cores first to raise the lower bound
+   cheaply. What is the analogue here: counterexamples with pairwise disjoint falsified sets?
+3. **Minimal against minimum.** A correction set is minimal when no falsified instance can be
+   satisfied without falsifying another. \`mcs\` asks for a minimum one, which costs an
+   optimisation per check. Would a cheaper *minimal* one do as well?
+4. **Optimisation or satisfiability.** When does an optimal A pay, and when do the satisfiability
+   calls of \`ascending\`?
+5. **The profile bound.** Without a fixed k the loop can prove that a question has no
+   justification at all within \`num_profiles\` profiles. How large must \`num_profiles\` be before
+   that says something about all profiles?
+6. **Fewest profiles or fewest instances.** The paper's breadth-first generation (fewest profiles
+   first) against fewest instances first: do they find the same justifications?
+7. **Readable explanations.** Among the smallest justifications, which is the most readable
+   (fewest profiles, fewest kinds of axiom)? Add it as a second level of the \`#minimize\` and
+   compare.
+8. **Realisability as its own check.** Moving the profile encoding to a third solver (A a pure
+   hitting-set solver over instance names, a solver that checks whether profiles exist for them
+   and returns minimal cores) was tried and is much slower here: most sets of instances that are
+   logically enough cannot be realised. For which axioms or bounds would it pay, for instance
+   with many voters, where most sets of instances can be realised?
 `;
 function voteIhs(vote) {
   const f = (n) => structuredClone(frag(vote, n));
@@ -898,19 +910,23 @@ smallest justifications). Tags \`slow\` and \`bench\` are set from this example'
 
 ## Open questions
 
-1. When do values pay, and when do ballots? The number of possible profiles grows quickly with
-   the candidates and voters (about 200 with 3 candidates and 4 voters, about 2,900 with 4
-   candidates and 3 voters). Compare with \`voting-justification-ihs\` on the paper questions.
-2. Could the grounder enumerate only the profiles that can occur: those reachable from the
-   target by swaps, moves, sums and their parts?
-3. None of the voting examples sorts profiles of the same size (the original file has a
-   constraint for it that never fires, so it was removed), and solutions that differ only by the
-   order of such profiles all count. With values the sorting is a single comparison of two
-   lists. How much would it save, in both encodings, and how do the counts change?
-4. A value is a multiset of ballots, so the order of the voters is gone. Instances that name a
-   voter (positive responsiveness) still do: should they name a ballot instead?
-5. Would values combine with the other ideas of \`voting-justification-ihs\` (minimum correction
-   sets, several counterexamples, ascending sizes) differently than ballots do?
+1. **Values or ballots.** When do values pay, and when do ballots? The number of possible profiles
+   grows quickly with the candidates and voters (about 200 with 3 candidates and 4 voters, about
+   2,900 with 4 candidates and 3 voters). Compare with \`voting-justification-ihs\` on the paper
+   questions.
+2. **A smaller or growing domain.** Could the grounder enumerate only the profiles that can
+   occur: those reachable from the target by swaps, moves, sums and their parts? Or start with
+   the profiles one step away from the target and add more when A runs out, a CEGAR loop on the
+   domain itself? How small can the domain stay, and how is a proof that no justification exists
+   kept valid?
+3. **Voters or ballots.** A value is a multiset of ballots, so the order of the voters is gone.
+   Instances that name a voter (positive responsiveness) still do: should they name a ballot
+   instead?
+4. **Combinations.** Do values combine with the other ideas of \`voting-justification-ihs\`
+   (minimum correction sets, several counterexamples, ascending sizes) differently than ballots
+   do?
+5. **A mixed encoding.** Values where the domain is small (3 candidates, or helper profiles with
+   few voters), ballots elsewhere: can one abstraction get the best of both?
 `;
 // Tags from this example's default loop: slow above 5 s, bench when it does not finish in 60 s.
 const VOTE_VALUES_SLOW = ['faith-cancel-reinf-pareto-condorcet-k3', 'paper-borda4-k3-p3', 'paper-v4-k4-p3'];

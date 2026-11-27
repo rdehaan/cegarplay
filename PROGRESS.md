@@ -2428,3 +2428,7 @@ one), and loop variants that might be faster, to learn which loops suit the prob
   smaller program changes clasp's search order, so ten candidate counts in guide chapter 21
   changed (guide/numbers.json regenerated; the default now needs slightly more candidates than
   blocking on faith-cancel-reinf-pareto-k3, and the text says so).
+- Open questions of the three voting readmes revised (same day, on request): duplicates and close
+  pairs merged (readable explanations only in the IHS readme; same-size sorting only in
+  voting-justification; minimality with at most k; smaller and growing domain), new questions on
+  robust measurements and on realisability as its own check. 10 + 8 + 5 questions.
