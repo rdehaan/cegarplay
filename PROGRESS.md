@@ -132,4 +132,27 @@ Review of UI, security, implementation and docs debt; the owner chose four group
   - `test/generators.test.mjs`: `tools/make-aspq.py --check` and `tools/make-bsml.py --check` (the
     committed contrib files equal what the generators write). `make-ja.py` has no `--check`; it
     rewrote identical files on 2026-11-27.
+- **Group 4, code consolidation: done.**
+  - `js/dom.js` (`$`, `h`, `svg`, `cssVar`, `download`) and `js/util.js` (DOM-free: `hashText`, `fmt`,
+    `plural`, `escapeHtml`, `csvField`, `csvRows`) replace 12 DOM builders (some set `"null"`
+    attributes or appended `null` children: the shared `h` skips null/undefined/false attributes
+    and children and flattens arrays), 7 downloads, 4 FNV hashes and the number, plural, CSV and
+    escape copies. `run-story.js` and `loop-walkthrough.js` keep their own `fmt` (0 for a missing
+    value, not a dash); `anatomy.js` and `stats.js` keep their own `secs` (different formats).
+  - Project hashes in `js/project.js`: `fragmentsHash`, `programHash`, `sourceHash` (JSON shapes
+    unchanged: recordings and replays store them).
+  - `tools/engine.mjs` (`engineRun`, `lua`): the one Node engine wrapper (run, bench, lab,
+    make-replays). The page's two workers and `test/helpers.mjs` (stdin) keep their own.
+  - `js/init.js` 1,275 -> 1,040 lines: `js/library-ui.js` (the library on Home) and
+    `js/docs-tabs.js` (Manual and Tutorial tabs, code blocks, `#manual-`/`#tut-` links).
+    `js/instances-tab.js` 1,277 -> 550: `instances-generators.js`, `instances-fuzz.js`,
+    `instances-spaces.js` hold classes whose methods are copied onto `InstancesTab.prototype`
+    (`this` is the tab); `instances-common.js` the shared helpers.
+  - Removed (owner: no need to keep old links working): `?file=`, `?lab=1`, `?advanced=1` and the
+    migration of `cegarplay.advanced`; `?example=` and `?refinery=1` remain. Dead exports
+    `DRAW_FUNCTIONS`, `markCount`, `trivialBounds`, `isAgree`, `maskCount`, `Recording.solverName`.
+  - Not done: `compile()` in `js/compiler.js` is still one 556-line closure (a Codegen class
+    would be the next step); the loop-header `DECL` of `tools/library.mjs` lacks
+    `options "--heuristic=Domain"` for C, unlike `js/project.js` and `tools/guide.mjs` (changing
+    it would change generated examples, replays and numbers).
 
