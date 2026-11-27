@@ -75,6 +75,9 @@ export class Control {
   runMessage(text) {
     $('run-message').hidden = !text;
     $('run-message-text').textContent = text || '';
+    // a run that did not start leaves the earlier results on show: "Shown:" says so
+    const notStarted = !!text && text.startsWith('Not started');
+    if (notStarted !== !!this.notStarted) { this.notStarted = notStarted; if (this.app.updateShown) this.app.updateShown(); }
   }
 
   // A batch (Run all, Fuzz, Check exercise, Rerun with 5 seeds) keeps the top bar in 'running'

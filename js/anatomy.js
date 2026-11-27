@@ -283,9 +283,10 @@ export class Anatomy {
       g.append(svg('text', { x: 10, y: 20, class: 'anatomy-name' }, s.name));
       const frag = (s.fragments || []).filter((f) => f !== 'instance').join(' + ');
       g.append(svg('text', { x: 10, y: 37, class: 'anatomy-frag' }, frag.length > 28 ? frag.slice(0, 27) + '…' : frag));
-      const c = st ? `${fmt(st.calls)} call${st.calls === 1 ? '' : 's'} · ${fmt(st.sat)} sat · ${fmt(st.unsat)} unsat` : 'no calls yet';
+      // two short lines: one long line ran out of the box at five-digit counts
+      const c = st ? `${fmt(st.calls)} call${st.calls === 1 ? '' : 's'} · ${secs(st.time || 0)} s` : 'no calls yet';
       g.append(svg('text', { x: 10, y: 60, class: 'anatomy-count', 'data-count': 'calls' }, c));
-      g.append(svg('text', { x: 10, y: 78, class: 'anatomy-count', 'data-count': 'time' }, st ? `${secs(st.time || 0)} s` : ''));
+      g.append(svg('text', { x: 10, y: 78, class: 'anatomy-count', 'data-count': 'outcomes' }, st ? `${fmt(st.sat)} sat · ${fmt(st.unsat)} unsat` : ''));
       if (st && st.k > 0) {
         g.append(svg('rect', { x: BOX_W - 44, y: 6, width: 38, height: 18, rx: 9, class: 'anatomy-badge' }));
         g.append(svg('text', { x: BOX_W - 25, y: 19, 'text-anchor': 'middle', class: 'anatomy-badge-text' }, `+${st.k}`));

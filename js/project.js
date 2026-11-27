@@ -10,6 +10,8 @@ export const INSTANCE_ID = /^[A-Za-z0-9_-]+$/;
 // The fragment a run gets from its instance; no user fragment may have this name.
 export const INSTANCE_FRAGMENT = 'instance';
 export const DEFAULT_FRAGMENTS = ['shared', 'abstraction', 'glue', 'check'];
+// The longest readme a project may carry (the library's longest is about 9,000 characters).
+export const MAX_README = 200000;
 export const FRAGMENT_NAME = /^[a-z][a-z0-9_]*$/;
 
 const DECL = (legacy = '') => `solver A = shared + abstraction
@@ -175,6 +177,7 @@ export function load(json) {
   // readme (FUTURE-DIRECTIONS E1): Markdown for a project kit, shown on Home
   if ('readme' in p) {
     if (typeof p.readme !== 'string') throw new ProjectError('readme must be a string (Markdown)');
+    if (p.readme.length > MAX_README) throw new ProjectError(`readme is longer than ${MAX_README.toLocaleString('en')} characters`);
     if (!p.readme.trim()) delete out.readme;
   }
   if (!Array.isArray(p.fragments)) throw new ProjectError('fragments must be a list');

@@ -346,7 +346,16 @@ const offerTabTour = (tab, force = false) => {
   if (force) { app.tour.stop(false, false); for (const x of Object.values(app.tabTours)) x.stop(false, false); }
   setTimeout(() => { if ($(tab).checked) t.start(); }, 250);      // (the Refinery is built when it opens)
 };
-for (const r of document.querySelectorAll('input[name="tabs"]')) r.addEventListener('change', () => { if (r.checked) offerTabTour(r.id); });
+// Leaving a tab ends its tour: an offer that was not taken up (first card) is made again next
+// time, a tour under way counts as closed. Otherwise its card stays on every other tab.
+const endOtherTabTours = (tab) => {
+  for (const [id, t] of Object.entries(app.tabTours)) if (id !== tab && t.running) t.stop(false, t.index > 0);
+};
+for (const r of document.querySelectorAll('input[name="tabs"]')) r.addEventListener('change', () => {
+  if (!r.checked) return;
+  endOtherTabTours(r.id);
+  offerTabTour(r.id);
+});
 for (const a of document.querySelectorAll('[data-tab-tour]')) a.addEventListener('click', (e) => {
   e.preventDefault();
   for (const d of document.querySelectorAll('dialog[open]')) d.close();
@@ -548,8 +557,9 @@ app.updateShown = () => {
   if (!active && rec.sourceHash && !rec.otherProject) { const h = app.sourceHash(); edited = !!h && h !== rec.sourceHash; }
   if (rec.otherProject) { parts.push('of a project loaded before this one'); edited = true; }
   else if (edited) parts.push('the project was edited since: these results are of the earlier version');
-  el.textContent = 'Shown: ' + parts.join(' · ');
-  el.dataset.state = edited ? 'stale' : active ? 'active' : 'current';
+  const notStarted = !active && c && c.notStarted;
+  el.textContent = (notStarted ? 'Still shown (the new run did not start): ' : 'Shown: ') + parts.join(' · ');
+  el.dataset.state = edited || notStarted ? 'stale' : active ? 'active' : 'current';
 };
 for (const ev of ['input', 'change']) {
   document.querySelector('main').addEventListener(ev, (e) => {
@@ -1155,15 +1165,19 @@ addEventListener('keydown', (ev) => {
 // What a first visit opens with: small and fast (graph-coloring stays in the library).
 const DEFAULT_EXAMPLE = 'tutorial-first-run';
 async function start() {
+  const text = (path) => fetch(path).then((r) => {
+    if (!r.ok) throw new Error(`cannot load ${path} (HTTP ${r.status})`);
+    return r.text();
+  });
   const [runtime, audit, ground, draw, generate, replayLua, version, bounded] = await Promise.all([
-    fetch('lua/runtime.lua').then((r) => r.text()),
-    fetch('lua/audit.lua').then((r) => r.text()),
-    fetch('lua/ground.lua').then((r) => r.text()),
-    fetch('lua/draw.lua').then((r) => r.text()),
-    fetch('lua/generate.lua').then((r) => r.text()),
-    fetch('lua/replay.lua').then((r) => r.text()),
-    fetch('vendor/clingo-wasm/VERSION').then((r) => r.text()).catch(() => 'clingo-wasm'),
-    fetch('lua/bounded.lua').then((r) => r.text()),
+    text('lua/runtime.lua'),
+    text('lua/audit.lua'),
+    text('lua/ground.lua'),
+    text('lua/draw.lua'),
+    text('lua/generate.lua'),
+    text('lua/replay.lua'),
+    text('vendor/clingo-wasm/VERSION').catch(() => 'clingo-wasm'),
+    text('lua/bounded.lua'),
   ]);
   app.runtime = runtime;
   app.modules = { audit, ground, draw, generate, replay: replayLua, bounded };

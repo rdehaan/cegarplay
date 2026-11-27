@@ -127,7 +127,8 @@ export class LabTab {
     root.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') this.anchor = e.target.closest('button, input, select') || this.anchor; }, true);
     this.build();
     this.syncPickers();
-    this.timer = setInterval(() => this.checkStale(), 1500);
+    // the staleness check hashes the whole project: only while the Refinery is on screen
+    this.timer = setInterval(() => { if (!document.hidden && this.root.offsetParent !== null) this.checkStale(); }, 1500);
   }
 
   // ---- layout -----------------------------------------------------------------------------
@@ -208,7 +209,7 @@ export class LabTab {
             h('p', {}, h('a', { href: '#manual-refinery-tab' }, 'Manual: Refinery tab')))));
       document.body.append(m);
     }
-    return h('a', { href: '#', class: 'modal-link', 'data-open': id, title: `About: ${title}`, 'aria-label': `About: ${title}` }, '');
+    return h('a', { href: '#', class: 'modal-link', 'data-open': id, title: `About: ${title}`, 'aria-label': `About: ${title}` }, '?');
   }
 
   // the top bar's instance and variant are the starting point; changing them here does not change the top bar

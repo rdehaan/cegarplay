@@ -101,6 +101,12 @@ export class Engine {
     this.ready.then(() => {
       if (!this.active || this.active.id !== id) return;
       this.worker.postMessage({ type: 'run', id, program, options });
+    }, (e) => {
+      // the engine did not start: end the run instead of leaving it busy
+      if (!this.active || this.active.id !== id) return;
+      const a = this.active;
+      this.active = null;
+      a.finish({ status: 'trap', message: 'the engine did not start: ' + ((e && e.message) || e), ms: 0 });
     });
     if (seconds > 0) {
       timer = setTimeout(() => {

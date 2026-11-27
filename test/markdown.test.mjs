@@ -27,7 +27,7 @@ test('links: safe URLs only; ?example= links load an example', () => {
   assert.equal(renderInline('[x](#manual-a)'), '<a href="#manual-a">x</a>');
   assert.equal(renderInline('[x](javascript:alert)'), 'x');
   assert.equal(renderInline('[gc](?example=gc-shape4)'), '<a href="?example=gc-shape4" data-load-example="gc-shape4">gc</a>');
-  assert.match(renderInline('[w](https://example.org/)'), /target="_blank" rel="noopener"/);
+  assert.match(renderInline('[w](https://example.org/)'), /target="_blank" rel="noopener noreferrer"/);
 });
 
 test('fenced code: loop and asp become ACE blocks, others <pre>', () => {
@@ -69,4 +69,22 @@ test('the manual renders: every section, every library id linked, internal links
   assert.ok(!/<script/i.test(html));
   // the tutorial's links into the manual resolve too
   for (const [, id] of H.read('tutorial.html').matchAll(/href="#(manual-[^"]+)"/g)) assert.ok(ids.has(id), `tutorial link #${id}`);
+});
+
+test('links: only http(s), mailto and relative URLs reach an href', () => {
+  for (const bad of ['javascript:alert(1)', '\u0001javascript:alert(1)', 'java\tscript:x', 'JaVaScRiPt:x',
+    'data:text/html,x', 'vbscript:x', '//evil.example/x', '\\\\evil/x', '\u0085javascript:x']) {
+    assert.doesNotMatch(renderInline(`[go](${bad})`), /<a /, JSON.stringify(bad));
+  }
+  for (const good of ['https://a.b/c', 'mailto:x@y.z', '#manual-notes', '?example=gc-shape1', 'guide/01-why-a-loop.html']) {
+    assert.match(renderInline(`[go](${good})`), /<a href=/, good);
+  }
+});
+
+test('links and quotes: hostile input renders quickly and without deep recursion', () => {
+  const t0 = Date.now();
+  renderInline('['.repeat(100000));
+  renderInline('[a](b'.repeat(30000));
+  renderMarkdown('>'.repeat(5000) + ' deep');
+  assert.ok(Date.now() - t0 < 2000, `took ${Date.now() - t0} ms`);
 });

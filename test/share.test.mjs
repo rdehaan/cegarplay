@@ -29,3 +29,12 @@ test('share links: bad data gives a readable error; shareData reads #p=', async 
   assert.equal(shareData('#p=abc'), 'abc');
   assert.equal(shareData('#manual-x'), null);
 });
+
+test('share links: a link that unpacks to too much is refused', async () => {
+  const big = new TextEncoder().encode('{"a":"' + 'x'.repeat(9 * 1024 * 1024) + '"}');
+  const s = new Blob([big]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+  const bytes = new Uint8Array(await new Response(s).arrayBuffer());
+  let b = ''; for (let i = 0; i < bytes.length; i += 0x8000) b += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  const data = 'z' + btoa(b).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  await assert.rejects(decodeShare(data), /unpacks to more than 8 MB/);
+});

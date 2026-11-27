@@ -23,10 +23,15 @@ export function slugify(text) {
     .replace(/^-+|-+$/g, '') || 'section';
 }
 
-function safeUrl(url) {
-  const u = url.trim();
+// An allowlist: http(s), mailto, or a relative link without a scheme. A URL with a control
+// character or whitespace anywhere is dropped: the browser's URL parser strips or ignores
+// those, so "\x01javascript:" or "java\tscript:" would otherwise reach the href as a scheme.
+export function safeUrl(url) {
+  const u = String(url).trim();
+  if (!u || /[\u0000-\u0020\u007f-\u009f\\]/.test(u)) return null;
   if (/^(https?:|mailto:)/i.test(u)) return u;
   if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return null;        // javascript:, data:, ...
+  if (u.startsWith('//')) return null;                      // protocol-relative: another origin
   return u;
 }
 
@@ -40,12 +45,12 @@ export function renderInline(text) {
   });
   s = escapeHtml(s);
   // links: [text](url)
-  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, label, href) => {
+  s = s.replace(/\[([^\[\]]{1,500})\]\(([^)\s]{1,2000})\)/g, (m, label, href) => {
     const raw = href.replace(/&amp;/g, '&');
     const url = safeUrl(raw);
     if (url === null) return label;
     const ex = /^\?(?:.*&)?example=([A-Za-z0-9_-]+)/.exec(url);
-    const extra = ex ? ` data-load-example="${ex[1]}"` : /^https?:/i.test(url) ? ' target="_blank" rel="noopener"' : '';
+    const extra = ex ? ` data-load-example="${ex[1]}"` : /^https?:/i.test(url) ? ' target="_blank" rel="noopener noreferrer"' : '';
     return `<a href="${escapeHtml(url)}"${extra}>${label}</a>`;
   });
   s = s.replace(/\*\*([^*]+?)\*\*/g, '<b>$1</b>');
@@ -180,7 +185,10 @@ export function renderMarkdown(text, opts = {}) {
       flush();
       const body = [];
       while (i < lines.length && /^\s*>/.test(lines[i])) { body.push(lines[i].replace(/^\s*> ?/, '')); i++; }
-      out.push(`<blockquote>${renderMarkdown(body.join('\n'), { idPrefix: prefix + 'q-' })}</blockquote>`);
+      const depth = (opts.depth || 0) + 1;
+      const inner = depth > 16 ? `<p>${renderInline(body.join(' '))}</p>`
+        : renderMarkdown(body.join('\n'), { idPrefix: prefix + 'q-', depth });
+      out.push(`<blockquote>${inner}</blockquote>`);
       continue;
     }
     para.push(line.trim());

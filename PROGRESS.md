@@ -2655,3 +2655,24 @@ file); `tools/aspq-check.py` checks them by brute force. Manual: *ASP(Q) example
   through `insertText` so Ctrl+Z undoes them; Esc then Tab leaves the field (no keyboard trap, as in
   ACE); the hint is in the title and `aria-description`. The project description stays a plain
   field (one paragraph). Tests: `editor-help.test.mjs` (tabEdit), `directions.test.mjs` (both fields).
+
+## Consolidation (2026-11-27)
+
+Review of UI, security, implementation and docs debt; the owner chose four groups, in order.
+
+- **Group 1, security and bugs: done.**
+  - Readme links: `safeUrl` (`js/markdown.js`) is an allowlist (http(s), mailto, relative) and
+    drops any URL with a control character, whitespace or backslash (a leading `\x01` before
+    `javascript:` reached the href). Link pattern bounded (`[^\[\]]{1,500}`), quotes nested at
+    most 16 deep: a share link of `[[[...` froze the page. External links `noopener noreferrer`.
+  - Share links unpack to at most 8 MB (`MAX_SHARE_BYTES`, `js/share.js`); readmes at most
+    200,000 characters (`MAX_README`, `js/project.js`).
+  - Content-Security-Policy meta in `index.html` and every guide page (`script-src 'self'
+    'wasm-unsafe-eval'`, styles may be inline for ACE). The inline `window.coi` script moved to
+    `js/coi-config.js`. Checked in Chromium: no violations on every tab, a threaded run, a guide page.
+  - A run whose engine failed to start now ends as a trap (`js/engine.js`); the Lua files are
+    fetched with a status check (`init.js` `start`); the Refinery's staleness poll runs only while
+    it is on screen; leaving a tab ends that tab's tour card; the Refinery's info links show `?`;
+    the anatomy box puts its counts on two lines; the Loop tab fits 390 px (variant cards and
+    note labels could not shrink); "Shown:" becomes "Still shown (the new run did not start):"
+    after a run that did not start (test 4b in `browser/page.test.mjs`).

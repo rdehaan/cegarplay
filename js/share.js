@@ -21,9 +21,27 @@ function fromBase64url(text) {
   return out;
 }
 
-async function pipe(bytes, stream) {
-  const s = new Blob([bytes]).stream().pipeThrough(stream);
-  return new Uint8Array(await new Response(s).arrayBuffer());
+// The largest project a share link may unpack to: a few KB of deflate can expand to gigabytes.
+export const MAX_SHARE_BYTES = 8 * 1024 * 1024;
+
+async function pipe(bytes, stream, limit = Infinity) {
+  const reader = new Blob([bytes]).stream().pipeThrough(stream).getReader();
+  const parts = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.length;
+    if (size > limit) {
+      reader.cancel().catch(() => {});
+      throw new RangeError(`the share link unpacks to more than ${limit / 1048576} MB`);
+    }
+    parts.push(value);
+  }
+  const out = new Uint8Array(size);
+  let at = 0;
+  for (const p of parts) { out.set(p, at); at += p.length; }
+  return out;
 }
 
 // The data part of a share link for project p ({ compress: false } forces the plain form).
@@ -40,8 +58,11 @@ export async function decodeShare(data) {
   let bytes = fromBase64url(body);
   if (kind === 'z') {
     if (typeof DecompressionStream !== 'function') throw new Error('this browser cannot read compressed share links');
-    try { bytes = await pipe(bytes, new DecompressionStream('deflate-raw')); }
-    catch { throw new Error('the share link is damaged (cannot decompress)'); }
+    try { bytes = await pipe(bytes, new DecompressionStream('deflate-raw'), MAX_SHARE_BYTES); }
+    catch (e) {
+      if (e instanceof RangeError) throw new Error(e.message);
+      throw new Error('the share link is damaged (cannot decompress)');
+    }
   } else if (kind !== 'u') {
     throw new Error('the share link is damaged (unknown format)');
   }

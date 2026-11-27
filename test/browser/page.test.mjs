@@ -73,6 +73,24 @@ test('3. abort a long run, then run the default example again', async () => {
   await context.close();
 });
 
+test('4b. a run that does not start leaves the earlier results marked as still shown', async () => {
+  const { page, context } = await B.openPage(browser, server, '?example=tutorial-first-run');
+  await page.click('#run-button');
+  assert.equal(await B.waitState(page, ['error', 'finished']), 'finished');
+  assert.match(await page.textContent('#shown-line'), /^Shown: the run/);
+  const text = await B.getEditor(page, 'editor-check');
+  await B.setEditor(page, 'editor-check', 'a :- b\nc.\n' + text);
+  await page.click('#run-button');
+  assert.equal(await B.waitState(page, ['error', 'finished', 'running']), 'error');
+  assert.match(await page.textContent('#shown-line'), /^Still shown \(the new run did not start\): the run/);
+  assert.equal(await page.$eval('#shown-line', (e) => e.dataset.state), 'stale');
+  await B.setEditor(page, 'editor-check', text);
+  await page.click('#run-button');
+  assert.equal(await B.waitState(page, ['error', 'finished']), 'finished');
+  assert.match(await page.textContent('#shown-line'), /^Shown: the run/);
+  await context.close();
+});
+
 test('4. a syntax error in a fragment: annotation, status error, no run', async () => {
   const { page, context } = await B.openPage(browser, server);
   const text = await B.getEditor(page, 'editor-check');

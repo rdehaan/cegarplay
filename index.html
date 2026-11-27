@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <title>CegarPlay</title>
@@ -11,15 +12,7 @@
   <meta property="og:description" content="Play with CEGAR loops in answer set programming: write the abstraction, the check and the loop, and run them with clingo in your browser.">
   <meta property="og:type" content="website">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232c5f8a'/%3E%3Cpath d='M16 6a10 10 0 1 0 9.2 6' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M26.5 5.5l-.8 7.6-7.4-2.2z' fill='orange'/%3E%3C/svg%3E">
-  <script>
-    // Cross-origin isolation through a service worker (pause, step, stop, threads).
-    // ?nocoi=1 skips it and removes an earlier registration.
-    window.coi = {
-      shouldRegister: () => !/[?&]nocoi=1\b/.test(location.search),
-      shouldDeregister: () => /[?&]nocoi=1\b/.test(location.search),
-      quiet: true,
-    };
-  </script>
+  <script src="js/coi-config.js"></script>
   <script src="coi-serviceworker.js"></script>
   <script src="js/theme.js"></script>
   <link rel="stylesheet" href="vendor/fonts/fonts.css">
