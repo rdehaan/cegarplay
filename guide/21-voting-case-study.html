@@ -73,24 +73,27 @@ relevant(use_axiom_instance(Profiles,Axiom)) :-
           <thead><tr><th>faith-cancel-reinf-pareto-k3</th><th class="num">Candidates</th><th class="num">Mean clause</th></tr></thead>
           <tbody>
             <tr><td>Strategy 2 (default)</td>
-              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3]:candidates">1,364</span></td>
-              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3]:meanClause">219.4</span></td></tr>
+              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3]:candidates">1,413</span></td>
+              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3]:meanClause">215.1</span></td></tr>
             <tr><td>Strategy 1</td>
-              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](falsified):candidates">405</span></td>
-              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](falsified):meanClause">189.4</span></td></tr>
+              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](falsified):candidates">492</span></td>
+              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](falsified):meanClause">195.6</span></td></tr>
             <tr><td>Reference (blocking)</td>
-              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](reference):candidates">1,407</span></td>
+              <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](reference):candidates">1,336</span></td>
               <td class="num"><span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](reference):meanClause">248.0</span></td></tr>
           </tbody>
         </table>
         <p>Two findings. First, strategy 1 is the only one that beats blocking clearly (also on
           <code>faith-pareto-neutral-reinf-k4</code>:
-          <span data-stat="voting-justification[faith-pareto-neutral-reinf-k4](falsified):candidates">44</span>
+          <span data-stat="voting-justification[faith-pareto-neutral-reinf-k4](falsified):candidates">42</span>
           candidates against
           <span data-stat="voting-justification[faith-pareto-neutral-reinf-k4]:candidates">146</span>).
-          Second, the default strategy is barely better than blocking, and the clause lengths say why:
-          219 literals against 248. Every strategy marks every profile atom relevant, so every clause is
-          nearly a block. A strategy that marked only the profiles the counterexample's falsified
+          Second, the default strategy is no better than blocking (here it even needs a few more
+          candidates, which is down to the order of clasp's search), and the clause lengths say why:
+          <span data-stat="voting-justification[faith-cancel-reinf-pareto-k3]:meanClause">215.1</span>
+          literals against
+          <span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](reference):meanClause">248.0</span>.
+          Every strategy marks every profile atom relevant, so every clause is nearly a block. A strategy that marked only the profiles the counterexample's falsified
           instances touch would be shorter; whether it is sound is the kind of question chapter 4 teaches
           you to test.</p>
         <p>The project answers it with strategy 6 (variant <code>profile-free</code>). A counterexample is an
@@ -99,10 +102,10 @@ relevant(use_axiom_instance(Profiles,Axiom)) :-
           profile atoms can go: the clause says “use one of the instances this outcome falsifies”, and it
           holds for every candidate, whatever its profiles (the symbolic audit proves it sound). On
           <code>faith-cancel-reinf-pareto-k3</code> it needs
-          <span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](profile-free):candidates">139</span>
+          <span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](profile-free):candidates">149</span>
           candidates. Because such a clause holds everywhere, every extra counterexample is a free lemma:
           the variant <code>multi</code> takes up to five per candidate and needs
-          <span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](multi):candidates">63</span>.
+          <span data-stat="voting-justification[faith-cancel-reinf-pareto-k3](multi):candidates">92</span>.
           Further variants check partial candidates or use an optimal check; the suite <code>paper</code> runs them on the questions of
           Nardi, Boixel and Endriss. The example <code>voting-justification-ihs</code> asks the same
           questions for the smallest justifications, by implicit hitting sets.</p>
@@ -113,8 +116,8 @@ relevant(use_axiom_instance(Profiles,Axiom)) :-
             marks no cell ✗.</li>
           <li><b>Audit</b> and <b>Fuzz</b> test a strategy on small questions; the generator
             <code>vote-question</code> draws random ones (<code>random-1</code>: strategy 1 needs
-            <span data-stat="voting-justification[random-1](falsified):candidates">405</span> candidates, the
-            default <span data-stat="voting-justification[random-1]:candidates">2,526</span>).</li>
+            <span data-stat="voting-justification[random-1](falsified):candidates">386</span> candidates, the
+            default <span data-stat="voting-justification[random-1]:candidates">2,375</span>).</li>
           <li><code>tools/cegarcheck.py</code> runs the loop with Python clingo, independently of the
             page's runtime.</li>
           <li>The question the original file has switched on, <code>cancel-reinf-posresp-k4</code>,

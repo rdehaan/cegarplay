@@ -707,8 +707,8 @@ function voteIhs(vote) {
 // grounder enumerates; the axioms' relations between profiles (swap, move, sum) and their
 // single-profile conditions are computed once. A derives the same profile/4 atoms, so the check,
 // the refinement, the view and the solutions are those of voting-justification-ihs (counts agree
-// on every instance, Nov 2026). The original sorts same-size profiles by a constraint that never
-// fires (interprof_lex_dom with its arguments swapped); this encoding copies that.
+// on every instance, Nov 2026). Like the other two voting examples it does not sort profiles of
+// the same size (the original file's constraint for that never fired and was removed).
 const VOTE_VALUES = `%%% Profiles as values. A ballot is a permutation of the candidates, numbered in
 %%% lexicographic order; a profile is a sorted list of ballot numbers
 %%% (p(B1,p(B2,...nil)), B1 <= B2 <= ...), so voter V has the V-th ballot. The grounder
@@ -903,10 +903,10 @@ smallest justifications). Tags \`slow\` and \`bench\` are set from this example'
    candidates and 3 voters). Compare with \`voting-justification-ihs\` on the paper questions.
 2. Could the grounder enumerate only the profiles that can occur: those reachable from the
    target by swaps, moves, sums and their parts?
-3. The original encoding sorts profiles of the same size, but that constraint never fires (it
-   reads \`interprof_lex_dom\` with its arguments in the wrong order), so solutions that differ
-   only by the order of such profiles all count. With values the sorting is a single comparison
-   of two lists. How much does it save, in both encodings, and how do the counts change?
+3. None of the voting examples sorts profiles of the same size (the original file has a
+   constraint for it that never fires, so it was removed), and solutions that differ only by the
+   order of such profiles all count. With values the sorting is a single comparison of two
+   lists. How much would it save, in both encodings, and how do the counts change?
 4. A value is a multiset of ballots, so the order of the voters is gone. Instances that name a
    voter (positive responsiveness) still do: should they name a ballot instead?
 5. Would values combine with the other ideas of \`voting-justification-ihs\` (minimum correction
@@ -1087,6 +1087,36 @@ export function buildExamples() {
 %         use_axiom_instance(triple(Prof1,Prof2,Prof3),Axiom) },
 %     S = 1 + S2 + S3.
 % :- max_num_profiles(S), profile_used(S+1).
+
+`);
+      // The file sorts same-size profiles with a constraint that never fires: it asks for
+      // interprof_lex_dom(Prof2,Prof1) with Prof1 < Prof2, but that predicate is only derived for
+      // a smaller first argument. Removed with its helper rules (Nov 2026); counts are unchanged.
+      ab.text = cut(ab.text, `%%% Symmetry breaking: ensure that same-size profiles (except no 1)
+%%% are lexicographically sorted
+interprof_vote_lex_eq_until(Prof1,Prof2,V,0) :-
+    profile_num(Prof1), profile_num(Prof2), Prof1 < Prof2, voter(V).
+interprof_vote_lex_eq_until(Prof1,Prof2,V,Pos) :-
+    profile_num(Prof1), profile_num(Prof2), Prof1 < Prof2, voter(V),
+    position(Pos), interprof_vote_lex_eq_until(Prof1,Prof2,V,Pos-1),
+    profile(Prof1,V,C,Pos), profile(Prof2,V,C,Pos).
+interprof_vote_lex_dom(Prof1,Prof2,V) :-
+    profile_num(Prof1), profile_num(Prof2), Prof1 < Prof2, voter(V),
+    profile(Prof1,V,C1,Pos), profile(Prof2,V,C2,Pos), C2 < C1,
+    interprof_vote_lex_eq_until(Prof1,Prof2,V,Pos-1).
+interprof_lex_eq_until(Prof1,Prof2,0) :-
+    profile_num(Prof1), profile_num(Prof2), Prof1 < Prof2.
+interprof_lex_eq_until(Prof1,Prof2,V) :-
+    profile_num(Prof1), profile_num(Prof2), Prof1 < Prof2, voter(V),
+    interprof_lex_eq_until(Prof1,Prof2,V-1),
+    votes_identical(Prof1,V,Prof2,V).
+interprof_lex_dom(Prof1,Prof2) :-
+    profile_num(Prof1), profile_num(Prof2), Prof1 < Prof2, voter(V),
+    interprof_lex_eq_until(Prof1,Prof2,V-1),
+    interprof_vote_lex_dom(Prof1,Prof2,V).
+:- profile_num(Prof1), profile_num(Prof2), Prof1 < Prof2,
+    num_active_voters(Prof1,N), num_active_voters(Prof2,N),
+    interprof_lex_dom(Prof2,Prof1).
 
 `);
       const gl = frag(p, 'glue');

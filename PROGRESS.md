@@ -2420,3 +2420,11 @@ one), and loop variants that might be faster, to learn which loops suit the prob
   never fires: it reads interprof_lex_dom(Prof2,Prof1) with Prof1 < Prof2, but the predicate
   is only defined for a smaller first argument. Both encodings keep this behaviour, so their
   counts agree; it is open question 3 of the new readme.
+- Removed (same day, on request): the original file's same-size profile sorting
+  (interprof_vote_lex_eq_until, interprof_vote_lex_dom, interprof_lex_eq_until,
+  interprof_lex_dom and the constraint), cut in tools/make-examples.mjs. Its constraint never
+  fires (checked with clingo: no interprof_lex_dom atom with a larger first argument is ever
+  derived); all other symmetry breaking does fire. Counts unchanged on every instance; the
+  smaller program changes clasp's search order, so ten candidate counts in guide chapter 21
+  changed (guide/numbers.json regenerated; the default now needs slightly more candidates than
+  blocking on faith-cancel-reinf-pareto-k3, and the text says so).
