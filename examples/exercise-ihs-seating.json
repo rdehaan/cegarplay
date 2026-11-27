@@ -1,0 +1,144 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Exercise: implicit hitting sets (1), seating rivals",
+  "description": "Two tables, and some guests are rivals who must not share one. Uninvite guests of least total cost so that everyone else can be seated. Write the abstraction, the glue, the check and the loop yourself (the readme guides you), then press Check exercise in the Instances tab.",
+  "readme": "# Implicit hitting sets from scratch (part 1)\n\n## The problem\n\nTwo tables, a list of guests, and some pairs of rivals who must not sit at the same table. Not\nevery guest list can be seated: three guests who are rivals of each other cannot, nor can any ring\nof rivals of odd length. You may uninvite guests; uninviting guest `G` costs `C` (the instance's\n`guest(G,C)`). Find a set of guests of least total cost whose removal lets everyone else be\nseated. (In graph terms: a minimum-weight odd cycle transversal.)\n\nA single ASP program can solve this. The point of the exercise is to build the loop of MaxHS\n(Davies and Bacchus) and see why it works: *implicit hitting sets* (IHS), [guide chapter 14](guide/14-hitting-sets.html).\n\n## The idea\n\nThe check is easy: given the uninvited guests, seat the others. When that fails, clingo can say\n*why*: an **unsatisfiable core**, a set of guests who cannot all stay (it contains an odd ring of\nrivals). Every solution uninvites at least one of them. So solver A collects these sets and\ncomputes a **cheapest hitting set**, a set that contains a guest of every core found so far. Its\ncost is a lower bound on the optimum. When C can seat the rest, the hitting set is a solution, and\nsince its cost is a lower bound, it is optimal.\n\n## Step 1: the abstraction (solver A)\n\nA chooses `out(G)` for any set of guests, minimises the total cost, and shows `out/1`. Nothing\nelse: A must not know about rivals or tables. All it ever learns comes from the cores.\n\n## Step 2: the glue\n\nC must see which guests are out. Which atoms are the interface? (One `glue/1` rule.)\n\n## Step 3: the check (solver C), a witness\n\nEarlier exercises had a check that searches for a **counterexample** (something wrong with the\ncandidate). This check is different: it searches for a **witness**, a seating of the guests who are\nnot out. Each such guest sits at table 1 or 2, and no two rivals sit at the same table. Guests who\nare out need no seat.\n\nSo a satisfiable check means *the candidate is good*, and an unsatisfiable one means *it is bad*.\nThere is no model to read `relevant/1` from, so `G.clause(M, X)` is of no use. The refinement\nis `G.core(C)`: the core of C's last solve, as a clause for A (\"one of the assumed values in the core\nmust change\").\n\n## Step 4: the loop\n\nThe loop has a different shape from `search` with `on candidate`:\n\n1. `M = A.solve(optimal)`: the cheapest hitting set (stop if there is none).\n2. `C.solve(assume G(M))`: try to seat the rest.\n3. If that works: `accept M` and `stop`. This is the optimum; do not look further.\n4. Otherwise `A.add(...)` the refinement and go round again.\n\nWhy not `search A`? A search goes through the models of A's program one by one. Here every\ncandidate must be optimal for the cores found so far, and the loop ends at the first good one.\n\n## Step 5: check yourself\n\n- Run `ring5` and read the trace (Output tab): what is the first candidate, and what is its core?\n- **First try blocking**: refine with `A.add(G.block(M))` (rule out exactly this candidate). It\n  finds the optimum, so the small instances pass, but `tables19` and `dense18` stop at the candidate\n  limit (500, Loop tab) and the audit cannot work with blocking. Why does blocking need so many\n  candidates when A's solve is optimal?\n- Then refine with the core. Press **Check exercise** (Instances tab): every optimum, a sound audit\n  on three small instances, and the budgets on `tables19` (at most 20 candidates) and `dense18` (at\n  most 60).\n\n## Questions\n\n1. What goes wrong with `A.solve()` instead of `A.solve(optimal)`? Try it: which check fails, and why?\n2. The cores here: is each one an odd ring of rivals? Is each one minimal? (Print it:\n   `log G.core(C)` before adding it, and compare `C.core.minimal.on(G)`.)\n3. Why may the loop stop at the first candidate that C can seat? Write the argument down with\n   \"lower bound\".\n4. The audit on `petersen` reports 806 solutions. What are they? (The audit asks whether a\n   refinement could cut a candidate that C accepts, not just the optimal one.)\n5. What happens on an instance where the rivals can already be seated, like `calm6`?\n\n## Hints (read only when stuck)\n\n1. Abstraction: `{ out(G) : guest(G,_) }.` and `#minimize { C,G : out(G), guest(G,C) }.`\n2. Check: `1 { at(G,1) ; at(G,2) } 1 :- guest(G,_), not out(G).` plus one constraint for rivals.\n3. Loop: `if C.solve(assume G(M)):` takes a model or `none`; after it, `A.add(G.core(C))`.\n4. The run says \"the glue fragments derive no glue/1 atom\": step 2 is missing.\n",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The instance (Instances tab) gives:\n%   guest(G,C)   guest G; uninviting G costs C\n%   rival(A,B)   A and B must not sit at the same table\n% There are two tables, 1 and 2. Rules that every solver needs go here (you may need none).\n",
+      "description": "Added to every solver."
+    },
+    {
+      "name": "abstraction",
+      "text": "% Solver A chooses which guests to uninvite (readme, step 1). It knows nothing about rivals:\n% it only learns what the loop adds to it.\n",
+      "description": "Solver A, the hitting-set solver: which guests to uninvite."
+    },
+    {
+      "name": "glue",
+      "text": "% The interface between A and C (readme, step 2): glue(T) for every atom T of A whose\n% value C must see.\n",
+      "description": "The interface atoms: every glue(T) makes T an interface atom."
+    },
+    {
+      "name": "check",
+      "text": "% Solver C seats the guests who are not uninvited, rivals apart (readme, step 3).\n% It looks for a witness, not for a counterexample.\n",
+      "description": "Solver C: seat the guests who are still invited, rivals apart."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# The implicit hitting set loop (readme, step 4):\n#   1. the cheapest candidate of A (an optimal hitting set of the cores so far)\n#   2. ask C for a seating, assuming the candidate\n#   3. seated: the candidate is optimal; accept it and stop\n#   4. not seated: refine A from C's unsatisfiable core, and go round again\nstop \"the loop is not written yet\"\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 30,
+    "candidates": 500,
+    "trace": 200,
+    "seed": 0,
+    "instance": "ring5"
+  },
+  "runs": [],
+  "instances": [
+    {
+      "id": "ring5",
+      "facts": "% Five guests in a ring of rivalries.\nguest(ada,2). guest(bob,1). guest(cy,3). guest(dee,2). guest(eve,2).\nrival(ada,bob). rival(bob,cy). rival(cy,dee). rival(dee,eve). rival(eve,ada).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "calm6",
+      "facts": "% A ring of six with one more rivalry: two tables are enough for everyone.\nguest(ada,1). guest(bob,1). guest(cy,1). guest(dee,1). guest(eve,1). guest(fay,1).\nrival(ada,bob). rival(bob,cy). rival(cy,dee). rival(dee,eve). rival(eve,fay). rival(fay,ada). rival(ada,dee).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 0
+      },
+      "tags": []
+    },
+    {
+      "id": "petersen",
+      "facts": "% The Petersen graph: ten guests, each with three rivals; every uninvitation costs 1.\nguest(ada,1). guest(bob,1). guest(cy,1). guest(dee,1). guest(eve,1). guest(fay,1). guest(gus,1). guest(hal,1). guest(ivy,1). guest(jo,1).\nrival(ada,bob). rival(bob,cy). rival(cy,dee). rival(dee,eve). rival(eve,ada). rival(fay,hal). rival(gus,ivy). rival(hal,jo). rival(ivy,fay). rival(jo,gus). rival(ada,fay). rival(bob,gus). rival(cy,hal). rival(dee,ivy). rival(eve,jo).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 3
+      },
+      "tags": []
+    },
+    {
+      "id": "party12",
+      "facts": "% 12 guests, 20 random rivalries, costs 1 to 3.\nguest(ada,3). guest(bob,1). guest(cy,3). guest(dee,2). guest(eve,2). guest(fay,1). guest(gus,3). guest(hal,3). guest(ivy,1). guest(jo,3). guest(kit,1). guest(lu,2).\nrival(ada,fay). rival(ada,gus). rival(ada,hal). rival(ada,jo). rival(ada,lu). rival(bob,cy). rival(bob,dee). rival(bob,eve). rival(bob,hal). rival(bob,jo). rival(cy,jo). rival(dee,eve). rival(dee,fay). rival(dee,ivy). rival(dee,kit). rival(eve,hal). rival(gus,kit). rival(gus,lu). rival(hal,lu). rival(ivy,kit).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 5
+      },
+      "tags": []
+    },
+    {
+      "id": "party16",
+      "facts": "% 16 guests, 30 random rivalries, costs 1 to 3.\nguest(ada,3). guest(bob,2). guest(cy,3). guest(dee,3). guest(eve,3). guest(fay,1). guest(gus,3). guest(hal,1). guest(ivy,3). guest(jo,3). guest(kit,1). guest(lu,3). guest(max,2). guest(ned,2). guest(oz,2). guest(pia,3).\nrival(ada,kit). rival(ada,ned). rival(ada,oz). rival(bob,cy). rival(bob,eve). rival(bob,lu). rival(cy,jo). rival(cy,pia). rival(dee,eve). rival(dee,hal). rival(dee,pia). rival(eve,fay). rival(eve,ned). rival(eve,oz). rival(eve,pia). rival(gus,jo). rival(gus,ned). rival(gus,pia). rival(hal,ivy). rival(hal,jo). rival(hal,oz). rival(ivy,kit). rival(ivy,lu). rival(ivy,pia). rival(jo,max). rival(jo,ned). rival(kit,pia). rival(lu,max). rival(max,ned). rival(oz,pia).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 8
+      },
+      "tags": []
+    },
+    {
+      "id": "dense14",
+      "facts": "% 14 guests, 45 random rivalries (a quarrelsome family), costs 1 to 3.\nguest(ada,1). guest(bob,2). guest(cy,2). guest(dee,1). guest(eve,2). guest(fay,2). guest(gus,3). guest(hal,1). guest(ivy,3). guest(jo,1). guest(kit,3). guest(lu,2). guest(max,3). guest(ned,1).\nrival(ada,bob). rival(ada,dee). rival(ada,eve). rival(ada,gus). rival(ada,hal). rival(ada,ivy). rival(ada,jo). rival(ada,kit). rival(ada,max). rival(ada,ned). rival(bob,cy). rival(bob,fay). rival(bob,gus). rival(bob,ivy). rival(bob,jo). rival(bob,kit). rival(bob,lu). rival(bob,max). rival(cy,dee). rival(cy,jo). rival(dee,ivy). rival(dee,jo). rival(dee,max). rival(dee,ned). rival(eve,fay). rival(eve,gus). rival(eve,hal). rival(eve,kit). rival(eve,lu). rival(eve,ned). rival(fay,hal). rival(fay,max). rival(gus,hal). rival(gus,lu). rival(hal,ivy). rival(hal,jo). rival(hal,kit). rival(hal,max). rival(hal,ned). rival(ivy,jo). rival(ivy,max). rival(jo,kit). rival(jo,max). rival(kit,lu). rival(max,ned).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 8
+      },
+      "tags": []
+    },
+    {
+      "id": "tables19",
+      "facts": "% 19 guests in 5 separate odd rings of rivalries (sizes 3, 5, 3, 5, 3), plus 3 rivalries between rings; costs 1 to 3.\nguest(ada,1). guest(bob,2). guest(cy,2). guest(dee,1). guest(eve,1). guest(fay,3). guest(gus,1). guest(hal,1). guest(ivy,1). guest(jo,1). guest(kit,3). guest(lu,1). guest(max,2). guest(ned,3). guest(oz,1). guest(pia,2). guest(quin,2). guest(rex,2). guest(sam,2).\nrival(ada,bob). rival(ada,cy). rival(bob,cy). rival(cy,eve). rival(dee,eve). rival(dee,hal). rival(dee,ivy). rival(eve,fay). rival(fay,gus). rival(gus,hal). rival(ivy,jo). rival(ivy,kit). rival(jo,kit). rival(lu,max). rival(lu,pia). rival(max,ned). rival(max,pia). rival(ned,oz). rival(oz,pia). rival(quin,rex). rival(quin,sam). rival(rex,sam).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 6
+      },
+      "tags": []
+    },
+    {
+      "id": "dense18",
+      "facts": "% 18 guests, 60 random rivalries (a quarrelsome family), costs 1 to 3.\nguest(ada,1). guest(bob,3). guest(cy,3). guest(dee,2). guest(eve,1). guest(fay,2). guest(gus,3). guest(hal,2). guest(ivy,1). guest(jo,2). guest(kit,1). guest(lu,1). guest(max,2). guest(ned,1). guest(oz,3). guest(pia,2). guest(quin,2). guest(rex,2).\nrival(ada,bob). rival(ada,eve). rival(ada,ivy). rival(ada,jo). rival(ada,kit). rival(ada,ned). rival(bob,eve). rival(bob,gus). rival(bob,hal). rival(bob,kit). rival(bob,lu). rival(bob,max). rival(bob,rex). rival(cy,eve). rival(cy,gus). rival(cy,ivy). rival(cy,ned). rival(cy,quin). rival(cy,rex). rival(dee,fay). rival(dee,jo). rival(dee,kit). rival(eve,fay). rival(eve,hal). rival(eve,ivy). rival(eve,kit). rival(eve,lu). rival(eve,max). rival(eve,ned). rival(eve,oz). rival(eve,pia). rival(eve,quin). rival(fay,hal). rival(fay,kit). rival(fay,ned). rival(fay,quin). rival(fay,rex). rival(gus,hal). rival(gus,jo). rival(gus,lu). rival(gus,ned). rival(hal,jo). rival(hal,lu). rival(hal,pia). rival(ivy,jo). rival(ivy,lu). rival(ivy,ned). rival(ivy,oz). rival(ivy,rex). rival(jo,ned). rival(jo,quin). rival(kit,oz). rival(lu,ned). rival(lu,oz). rival(max,oz). rival(max,rex). rival(ned,rex). rival(oz,pia). rival(oz,rex). rival(pia,quin).\n",
+      "constants": {},
+      "expected": {
+        "solutions": null,
+        "optimum": 11
+      },
+      "tags": []
+    }
+  ],
+  "exercise": {
+    "text": "Build the implicit hitting set loop. Every instance must give its optimum, the audit must be sound on ring5, calm6 and petersen, tables19 must need at most 20 candidates and dense18 at most 60. A loop that blocks refuted candidates cannot meet the budgets.",
+    "instances": "all",
+    "audit": [
+      "ring5",
+      "calm6",
+      "petersen"
+    ],
+    "budgets": [
+      {
+        "instance": "tables19",
+        "candidates": 20
+      },
+      {
+        "instance": "dense18",
+        "candidates": 60
+      }
+    ]
+  }
+}

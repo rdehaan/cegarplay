@@ -2596,3 +2596,29 @@ file); `tools/aspq-check.py` checks them by brute force. Manual: *ASP(Q) example
   with lift as default the audit would now decline it instead of passing it).
 - Tests: full suite 1,512 tests, 1,413 pass, 0 fail, 99 skipped (75 bench, 23 slow, 1 native clingo
   with Lua), 17 min.
+
+## Loop exercises: IHS and CEGIS from scratch (2026-11-27, on request)
+
+- Four new self-checking exercises in the library group `exercises`, built by `tools/exercises.mjs`
+  (instance data in `tools/exercise-data.mjs`; optima from a one-program encoding in Python clingo)
+  and hooked into `tools/make-examples.mjs` (`LOOP_EXERCISES`; a readme does not make an exercise a
+  `project`). Unlike the two refinement exercises, the starters leave the abstraction, glue, check
+  and loop empty (comments only); a `readme` guides step by step, with questions and hints. Part 2
+  of each loop starts from the worked solution of part 1.
+  - `exercise-ihs-seating`: two tables, rivals apart, uninvite guests of least cost (weighted odd
+    cycle transversal); the check is a witness, so the refinement must be `G.core(C)`. Budgets:
+    tables19 ≤ 20 candidates (blocking: candidate limit 500), dense18 ≤ 60 (cores: 35).
+  - `exercise-ihs-seating-2`: several disjoint cores per round (inner loop, `E.without`). Budgets:
+    tables19/23/24 ≤ 3 (one core per round: 6-7; several: 2), dense18 ≤ 25 (17). Minimal cores
+    barely matter on these graphs (clasp's cores are already near-minimal), so they are only a question.
+  - `exercise-cegis-voting`: the lightest weighted vote (weights 0..wmax, a quota) with exactly the
+    winners of a rule; `two-pairs` has none. Blocking and a sound clause from `relevant/1` both hit the
+    candidate limit (1000); learning the coalition (`#program refine(k)`, `A.expand`) needs 9-15.
+    Budgets: vetoes5, steps6 ≤ 25, council6 ≤ 40. The audit of the expansion works on dictator3,
+    unanimity3 (n = 3, wmax = 2).
+  - `exercise-cegis-voting-2`: several counterexamples per round (`C.models(..., limit 3)`). Budgets:
+    council6 ≤ 9, majority5 ≤ 8, steps6 ≤ 6 (limit 3: 7, 5, 5; one per round: 15, 13, 9).
+- Linked from the tutorial (lesson 12, four Load buttons), guide chapters 14 and 16 ("Build it
+  yourself" after Exercise 1), the instructors' page and the manual's library table.
+- Tests: `exercise.test.mjs` (each starter fails, each worked solution passes, blocking misses the
+  part-1 budgets); `coverage.mjs` lets the four have no variants (a variant would give the loop away).

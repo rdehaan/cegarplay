@@ -49,8 +49,9 @@ test('warnings: none on the library, the typical mistakes on purpose', () => {
     const p = JSON.parse(H.read(`examples/${e.id}.json`));
     for (const x of lintProject(p)) if (x.severity === 'warning') warn.push(`${e.id} ${x.where.name || 'loop'}:${x.where.line} ${x.message}`);
   }
-  // the one example that shows this mistake on purpose
-  assert.deepEqual(warn.map((w) => w.split(' ')[0]), ['guide-09-missing-k'], warn.join('\n'));
+  // the one example that shows this mistake on purpose, and the loop exercises' starters (their
+  // glue is left to the reader, so the editor says what is missing)
+  assert.deepEqual(warn.map((w) => w.split(' ')[0]), ['guide-09-missing-k', 'exercise-ihs-seating', 'exercise-cegis-voting'], warn.join('\n'));
   const typo = lint(variant((p, F) => { F('check').text = F('check').text.replace('relevant(pick(X)) :- sum(X,Y).', 'relevant(pick(X)) :- summ(X,Y).'); }));
   assert.deepEqual(typo, ['check:10 warning summ/2 is used here, but no rule of solver C (shared + check) and no instance defines it: did you mean sum/2?']);
   const noRel = lint(variant((p, F) => { F('check').text = F('check').text.replace(/relevant/g, 'relevent'); }));

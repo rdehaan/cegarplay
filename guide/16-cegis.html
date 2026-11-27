@@ -128,6 +128,13 @@ w(k,G) :- arg(G,A,B), op(G,nand), not w(k,B).
               <span data-stat="guide-16-ex1:counterexamples">4</span> counterexamples.
               <a class="play" href="../?example=guide-16-ex1&amp;fragment=check&amp;from=guide/16-cegis.html%23exercise-1-solution" target="cegarplay">Open the parity loop</a></p>
           </details>
+          <p><b>Build it yourself.</b> The library exercise <code>exercise-cegis-voting</code> asks for a CEGIS
+            loop from scratch: the lightest weights and quota that give exactly the winning coalitions of a
+            voting rule, or a proof that there are none. Its readme guides each step and has you compare
+            blocking, a clause from <code>relevant/1</code> and learning the counterexample; <b>Check exercise</b>
+            (Instances tab) checks the optima, the audit and budgets that only the last one meets. Part 2,
+            <code>exercise-cegis-voting-2</code>, learns several counterexamples per round.
+            <a class="play" href="../?example=exercise-cegis-voting&amp;from=guide/16-cegis.html%23exercise-1" target="cegarplay">Open the exercise</a></p>
         </section>
 
         <section class="tools web-only" id="tools">

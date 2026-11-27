@@ -1910,7 +1910,7 @@ may set `library.level` and `library.after`).
 | `voting` | `kemeny-rankings`, `slater-rankings`, `dodgson-winners`, `young-winners`, `kemeny-control`, `voting-justification`, `voting-justification-ihs`, `voting-justification-values` |
 | `judgment` | `ja-kemeny`, `ja-slater`, `ja-leximax`, `ja-msa`, `ja-young`, `ja-dodgson` |
 | `planning` | `benders-tardiness`, `conformant-growing`, `conformant-planning`, `knapsack-bounds`, `knapsack-fortification`, `knapsack-interdiction`, `knapsack-optimum`, `robust-facilities` |
-| `exercises` | `exercise-sum-free`, `exercise-triangles` |
+| `exercises` | `exercise-sum-free`, `exercise-triangles`, `exercise-ihs-seating`, `exercise-ihs-seating-2`, `exercise-cegis-voting`, `exercise-cegis-voting-2` |
 | `puzzles` | `akari`, `binairo`, `fewest-clues`, `futoshiki`, `queens-omission`, `slitherlink`, `sudoku-graded`, `sudoku-hard`, `sudoku-symmetry`, `sudoku-unavoidable`, `sudoku-unique` |
 
 Each example is at `examples/<id>.json` and loads with `?example=<id>`.

@@ -10,7 +10,8 @@ const LIB = JSON.parse(H.read('examples/library.json')).examples;
 export const COVERED = LIB.filter((e) => !['guide', 'tutorial'].includes(e.group)).map((e) => e.id).sort();
 // Exceptions, with the reason (also in PROGRESS.md):
 // - exercise-triangles: its loop is the blocking loop the reader replaces; a finished variant would give the answer away.
-const FEW_VARIANTS = { 'exercise-triangles': 0, 'exercise-sum-free': 1 };
+// - the loop exercises (tools/exercises.mjs): built from scratch; a variant would give the loop away.
+const FEW_VARIANTS = { 'exercise-triangles': 0, 'exercise-sum-free': 1, 'exercise-ihs-seating': 0, 'exercise-ihs-seating-2': 0, 'exercise-cegis-voting': 0, 'exercise-cegis-voting-2': 0 };
 const SLOW_TAGS = ['slow', 'hard', 'original'];
 // bench: for the benchmark suites only (tools/bench.mjs, the Campaign tab), never in the tests,
 // not even with SLOW=1 (the large elections of the Voting group, where some variants need minutes)

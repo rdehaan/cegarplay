@@ -6,6 +6,7 @@ import { GROUPS, PROBLEMS, buildLibrary, GENERATORS, RECIPES, SUITES, VIEWS, PRO
 import { compile } from '../js/compiler.js';
 import { boundedPlan } from '../js/driver.js';
 import { buildGuide } from './guide.mjs';
+import { LOOP_EXERCISES } from './exercises.mjs';
 
 const root = new URL('..', import.meta.url);
 const src = (f) => fs.readFileSync(new URL(`reference/declarative-cegar/${f}`, root), 'utf8');
@@ -1280,6 +1281,14 @@ export function buildAll({ contribDir } = {}) {
     p.version = 2;
     entries.push({ id: x.id, group: 'exercises', summary: x.summary, shape: 'shape1', tags: ['exercise'], expected: null, project: p });
   }
+  // the loop exercises (tools/exercises.mjs): built from scratch, with a readme that guides
+  for (const x of LOOP_EXERCISES) {
+    const b = x.build();
+    const p = { format: 'cegarplay', version: 2, title: x.title, description: x.description, readme: x.readme,
+      fragments: b.fragments, loop: { language: 'loop', text: b.loop }, settings: b.settings, runs: [],
+      instances: b.instances, exercise: { text: x.text, ...b.exercise } };
+    entries.push({ id: x.id, group: 'exercises', summary: x.summary, shape: 'custom', tags: ['exercise'], expected: null, project: p });
+  }
   entries.push(...loadContrib(contribDir, new Set(entries.map((e) => e.id))));
   const built = Object.fromEntries(entries.map((e) => [e.id, e.project]));
   for (const e of entries) {
@@ -1307,7 +1316,7 @@ export function buildAll({ contribDir } = {}) {
       e.project.version = 2;
     }
     if (PROJECT_CARDS[e.id]) e.project.readme = PROJECT_CARDS[e.id];
-    if (e.project.readme && !(e.tags || []).includes('project')) e.tags = [...(e.tags || []), 'project'];
+    if (e.project.readme && !e.project.exercise && !(e.tags || []).includes('project')) e.tags = [...(e.tags || []), 'project'];
     if (RECIPES[e.id]) e.project.instances = [...(e.project.instances || []), ...structuredClone(RECIPES[e.id]).map((x) => ({ constants: {}, ...x }))];
     // PLAN3: spaces (S7) and the expected symbolic-audit verdict of every instance (S6)
     if (SPACES[e.id]) { e.project.spaces = structuredClone(SPACES[e.id]); e.project.version = 2; }

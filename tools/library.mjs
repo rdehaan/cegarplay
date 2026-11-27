@@ -841,6 +841,7 @@ export const LEVELS = {
   'lang-second-solver': [3, 6], 'lang-two-stage': [3, 10], 'lang-core': [3, 10], 'lang-raw-lua': [4, 12],
   'gc-shape1': [2, 8], 'gc-shape2': [2, 8], 'gc-shape3': [2, 8], 'gc-shape4': [2, 8], 'gc-reference': [2, 8],
   'exercise-sum-free': [1, 4], 'exercise-triangles': [1, 3],
+  'exercise-ihs-seating': [3, 14], 'exercise-ihs-seating-2': [4, 14], 'exercise-cegis-voting': [3, 16], 'exercise-cegis-voting-2': [4, 16],
   qbf: [2, 3], 'stable-models': [2, 3], 'strategic-companies': [2, 3], 'qbf-blame-solver': [3, 6], 'qbf-optimal': [3, 11],
   'cegis-circuit': [3, 9], 'integer-expressions': [3, 9], 'min-dnf': [3, 9],
   'qbf-expansion': [4, 13], 'qbf-deep': [4, 13], 'qbf-three-blocks': [4, 13],

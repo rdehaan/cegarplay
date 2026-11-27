@@ -1,0 +1,171 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Exercise: counterexample-guided synthesis (1), weighted voting",
+  "description": "A committee decides by a rule that says which coalitions win. Find the lightest weighted vote (a weight per player and a quota) with exactly the same winners, or show that there is none. Write the abstraction, the glue, the check and the loop yourself (the readme guides you), then press Check exercise in the Instances tab.",
+  "readme": "# Counterexample-guided synthesis from scratch (part 1)\n\n## The problem\n\nA committee of `n` players decides by a rule that says which coalitions win (the instance's\n`wins(S)`). Find a **weighted vote** that gives exactly the same winners: a weight `0..wmax` for\nevery player and a quota `1..n*wmax`, such that a coalition wins if and only if the weights of its\nmembers add up to at least the quota. Among all of these, find one with the **least total weight**.\nIf there is none (instance `two-pairs`), the loop must say so: no solution.\n\nThis is an exists-forall problem: *there are* weights such that *for every* coalition the vote is\nright. The loop is CEGIS (counterexample-guided inductive synthesis, [guide chapter 16](guide/16-cegis.html)): A proposes\nweights, C looks for a coalition they get wrong, and A learns from that coalition.\n\n## Step 1: the abstraction (solver A)\n\nA weight `w(P,W)` for every player, a quota `quota(Q)`, a `#minimize` over the weights, `#show`\nof both. Nothing about `wins`: A learns which coalitions matter from the loop.\n\n## Step 2: the glue\n\nWhich atoms of A must C see? Name every possible one (all weights and quotas), not only the true ones.\n\n## Step 3: the check (solver C), a counterexample\n\nC picks one coalition `bad(S)`, computes its weight under the candidate (`#sum`), and keeps it only\nif the vote gets it **wrong**: it wins but its weight is below the quota, or it loses but its weight\nreaches the quota. Get the direction right: a constraint removes the models you do *not* want.\nTest it: on `chair4` the first candidate (all weights 0) must be refuted by a winning coalition.\n\n## Step 4: the loop and the refinement\n\nThe shape is the one of part 1 of the IHS exercise: `M = A.solve(optimal)`, check, refine, solve\nagain; accept and stop at the first candidate without a counterexample. (Why is it optimal?)\n\nThen try three refinements, in this order, and look at the number of candidates:\n\n1. **Block**: `A.add(G.block(M))`. This rules out one vote. It hits the candidate limit (1000, Loop\n   tab) on most instances. Why so many candidates?\n2. **A clause from `relevant/1`**: mark the weights of the members of `S` and the quota, and use\n   `A.add(G.clause(M, X))`. The audit says it is sound. It is still too weak. Why? What can a\n   clause over interface atoms say, and what can it not say?\n3. **Learn the coalition**: add to A the requirement that coalition `S` must be classified\n   correctly, for every future candidate. That is not a clause but a few rules, a copy of the\n   specification for one input. Write them in a part `#program refine(k).` at the end of the\n   abstraction, reading the coalition from `cex(k,bad(S))`, and call\n   `A.expand(refine, cex = X.atoms(bad/1))` (manual, \"#program refine(k)\").\n\n## Step 5: check yourself\n\n**Check exercise**: every optimum (and no solution for `two-pairs`), a sound audit on `dictator3` and\n`unanimity3`, and at most 25 candidates on `vetoes5` and `steps6`, at most 40 on `council6`.\n\n## Questions\n\n1. Why is the first weighting without a counterexample optimal?\n2. `two-pairs` (1 and 2 win, 3 and 4 win, nobody else) has no weighted vote. Read the\n   counterexamples in the trace: which four coalitions together prove it? Does the loop prove\n   \"no weighted vote at all\" or \"none with weights up to `wmax`\"?\n3. A one-program encoding checks all `2^n` coalitions. How many does the loop use on `council6`\n   (64 coalitions)?\n4. Compare with the IHS loop: in both, A is a relaxation that grows. What does each learn, and from\n   what (a core of a witness search, or a counterexample)?\n\n## Hints (read only when stuck)\n\n1. Abstraction: `1 { w(P,0..wmax) } 1 :- player(P).` and `1 { quota(1..n*wmax) } 1.`\n2. Check: `weight(S,X) :- bad(S), X = #sum { W,P : in(P,S), w(P,W) }.`, then\n   `:- bad(S), wins(S), weight(S,X), quota(Q), X >= Q.` and the other direction.\n3. In `refine(k)`, every head must contain `k` (`weight(k,X)`), or clingo ignores the rules of the\n   second refinement and the loop stops with \"no progress\".\n4. Inside `refine(k)` the constraints are those of the check with the opposite effect: they\n   remove the weightings that get coalition `S` wrong.\n",
+  "fragments": [
+    {
+      "name": "shared",
+      "text": "% The instance (Instances tab) gives the players, player(P) for P = 1..n, and the rule to\n% imitate: wins(S) for every coalition S that wins. A coalition is a number 0..2^n - 1:\n% player P is in coalition S when bit P - 1 of S is set. The constants n and wmax (the\n% largest weight) come with the instance.\ncoalition(0..2**n-1).\nin(P,S) :- player(P), coalition(S), (S / 2**(P-1)) \\ 2 = 1.\n",
+      "description": "Added to every solver: coalitions and their members."
+    },
+    {
+      "name": "abstraction",
+      "text": "% Solver A proposes a weighted vote (readme, step 1): a weight w(P,W) for every player and\n% a quota quota(Q), the lightest first. Later: the rules it learns per counterexample.\n",
+      "description": "Solver A: a weight for every player and a quota."
+    },
+    {
+      "name": "glue",
+      "text": "% The interface between A and C (readme, step 2).\n",
+      "description": "The interface atoms: every glue(T) makes T an interface atom."
+    },
+    {
+      "name": "check",
+      "text": "% Solver C looks for one coalition bad(S) that the weights classify wrongly (readme, step 3).\n",
+      "description": "Solver C: a coalition that the weights classify wrongly."
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + abstraction\nsolver C = shared + check\nlink   G = A -> C via shared + glue\n\n# The CEGIS loop (readme, step 4):\n#   1. the lightest candidate of A\n#   2. ask C for a coalition it classifies wrongly, assuming the candidate\n#   3. none: the candidate is optimal; accept it and stop\n#   4. one: refine A with it (block, clause, or learn the coalition), and go round again\nstop \"the loop is not written yet\"\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 30,
+    "candidates": 1000,
+    "trace": 200,
+    "seed": 0,
+    "instance": "chair4"
+  },
+  "runs": [],
+  "instances": [
+    {
+      "id": "dictator3",
+      "facts": "% Player 1 decides alone.\nplayer(1..3).\nwins(S) :- coalition(S), in(1,S).\n",
+      "constants": {
+        "n": "3",
+        "wmax": "2"
+      },
+      "expected": {
+        "solutions": null,
+        "optimum": 1
+      },
+      "tags": []
+    },
+    {
+      "id": "unanimity3",
+      "facts": "% Everyone must agree.\nplayer(1..3).\nwins(S) :- coalition(S), #count { P : in(P,S) } = 3.\n",
+      "constants": {
+        "n": "3",
+        "wmax": "2"
+      },
+      "expected": {
+        "solutions": null,
+        "optimum": 3
+      },
+      "tags": []
+    },
+    {
+      "id": "majority5",
+      "facts": "% Simple majority of five.\nplayer(1..5).\nwins(S) :- coalition(S), #count { P : in(P,S) } >= 3.\n",
+      "constants": {
+        "n": "5",
+        "wmax": "6"
+      },
+      "expected": {
+        "solutions": null,
+        "optimum": 5
+      },
+      "tags": []
+    },
+    {
+      "id": "chair4",
+      "facts": "% the chair (1) and at least two others, or all three others\nplayer(1..4).\nwins(S) :- coalition(S), in(1,S), #count { P : in(P,S), P > 1 } >= 2.\nwins(S) :- coalition(S), in(2,S), in(3,S), in(4,S).\n",
+      "constants": {
+        "n": "4",
+        "wmax": "6"
+      },
+      "expected": {
+        "solutions": null,
+        "optimum": 4
+      },
+      "tags": []
+    },
+    {
+      "id": "vetoes5",
+      "facts": "% players 1 and 2 have a veto; they need at least two of 3, 4, 5\nplayer(1..5).\nwins(S) :- coalition(S), in(1,S), in(2,S), #count { P : in(P,S), P > 2 } >= 2.\n",
+      "constants": {
+        "n": "5",
+        "wmax": "6"
+      },
+      "expected": {
+        "solutions": null,
+        "optimum": 7
+      },
+      "tags": []
+    },
+    {
+      "id": "two-pairs",
+      "facts": "% (1 and 2) or (3 and 4): not a weighted game\nplayer(1..4).\nwins(S) :- coalition(S), in(1,S), in(2,S).\nwins(S) :- coalition(S), in(3,S), in(4,S).\n",
+      "constants": {
+        "n": "4",
+        "wmax": "6"
+      },
+      "expected": {
+        "solutions": 0,
+        "optimum": null
+      },
+      "tags": []
+    },
+    {
+      "id": "council6",
+      "facts": "% 1 alone with any two others, or 2 and 3 with any two of 4, 5, 6, or everyone but 1\nplayer(1..6).\nwins(S) :- coalition(S), in(1,S), #count { P : in(P,S), P > 1 } >= 2.\nwins(S) :- coalition(S), in(2,S), in(3,S), #count { P : in(P,S), P > 3 } >= 2.\nwins(S) :- coalition(S), #count { P : in(P,S), P > 1 } >= 5.\n",
+      "constants": {
+        "n": "6",
+        "wmax": "6"
+      },
+      "expected": {
+        "solutions": null,
+        "optimum": 18
+      },
+      "tags": []
+    },
+    {
+      "id": "steps6",
+      "facts": "% 1 counts thrice, 2 and 3 twice, the rest once; quota 6\nplayer(1..6).\nwins(S) :- coalition(S), #sum { 3,P : in(P,S), P = 1; 2,P : in(P,S), P = 2..3; 1,P : in(P,S), P > 3 } >= 6.\n",
+      "constants": {
+        "n": "6",
+        "wmax": "6"
+      },
+      "expected": {
+        "solutions": null,
+        "optimum": 10
+      },
+      "tags": []
+    }
+  ],
+  "exercise": {
+    "text": "Build the CEGIS loop. Every instance must give its optimum (two-pairs: no solution), the audit must be sound on dictator3 and unanimity3, vetoes5 and steps6 must need at most 25 candidates and council6 at most 40. Neither blocking nor a clause from relevant/1 meets the budgets.",
+    "instances": "all",
+    "audit": [
+      "dictator3",
+      "unanimity3"
+    ],
+    "budgets": [
+      {
+        "instance": "vetoes5",
+        "candidates": 25
+      },
+      {
+        "instance": "steps6",
+        "candidates": 25
+      },
+      {
+        "instance": "council6",
+        "candidates": 40
+      }
+    ]
+  }
+}

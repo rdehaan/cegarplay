@@ -3366,6 +3366,74 @@
       },
       "level": 1,
       "after": 3
+    },
+    {
+      "id": "exercise-ihs-seating",
+      "title": "Exercise: implicit hitting sets (1), seating rivals",
+      "group": "exercises",
+      "summary": "Build an implicit hitting set loop from scratch: the cheapest guests to uninvite so that rivals sit at different tables.",
+      "shape": "custom",
+      "tags": [
+        "exercise"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 8,
+        "readme": 1
+      },
+      "level": 3,
+      "after": 14
+    },
+    {
+      "id": "exercise-ihs-seating-2",
+      "title": "Exercise: implicit hitting sets (2), several cores per round",
+      "group": "exercises",
+      "summary": "Extend the IHS loop of part 1 with an inner loop that finds disjoint cores, so that one round learns several.",
+      "shape": "custom",
+      "tags": [
+        "exercise"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 11,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 14
+    },
+    {
+      "id": "exercise-cegis-voting",
+      "title": "Exercise: counterexample-guided synthesis (1), weighted voting",
+      "group": "exercises",
+      "summary": "Build a CEGIS loop from scratch: the lightest weights and quota that give exactly the winning coalitions of a rule.",
+      "shape": "custom",
+      "tags": [
+        "exercise"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 8,
+        "readme": 1
+      },
+      "level": 3,
+      "after": 16
+    },
+    {
+      "id": "exercise-cegis-voting-2",
+      "title": "Exercise: counterexample-guided synthesis (2), more per round",
+      "group": "exercises",
+      "summary": "Extend the CEGIS loop of part 1 so that each round learns several counterexamples.",
+      "shape": "custom",
+      "tags": [
+        "exercise"
+      ],
+      "expected": null,
+      "has": {
+        "instances": 8,
+        "readme": 1
+      },
+      "level": 4,
+      "after": 16
     }
   ]
 }

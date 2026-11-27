@@ -2601,6 +2601,8 @@ More papers are on the [bibliography page](#bibliography).
 The library example `smallest-mus` looks for a set of at most k clauses of a formula that are unsatisfiable together. It is the dual of MaxSAT. What plays the role of the cores there, and what is the hitting-set problem?
 
 [Solution](#c14-exercise-1-solution)
+
+**Build it yourself.** The library exercise `exercise-ihs-seating` asks for this loop from scratch on a fresh problem (uninvite the cheapest guests so that rivals can sit at two tables), with a readme that guides each step; **Check exercise** (Instances tab) checks the optima, the audit and a budget that blocking cannot meet. Part 2, `exercise-ihs-seating-2`, adds several cores per round. [Playground: exercise-ihs-seating]{.play}
 :::
 
 ::: recap
@@ -2862,6 +2864,8 @@ The library example `min-dnf` synthesises shortest DNF formulas the same way. Mo
 Change the specification to the parity (exclusive or) of m = 2 inputs. How many gates does the smallest circuit need, and how many inputs does CEGIS use to find out?
 
 [Solution](#c16-exercise-1-solution)
+
+**Build it yourself.** The library exercise `exercise-cegis-voting` asks for a CEGIS loop from scratch: the lightest weights and quota that give exactly the winning coalitions of a voting rule, or a proof that there are none. Its readme guides each step and has you compare blocking, a clause from `relevant/1` and learning the counterexample; **Check exercise** (Instances tab) checks the optima, the audit and budgets that only the last one meets. Part 2, `exercise-cegis-voting-2`, learns several counterexamples per round. [Playground: exercise-cegis-voting]{.play}
 :::
 
 ::: recap
@@ -4077,6 +4081,10 @@ If a counterexample has no relevant atom, its clause is empty: the run ends ther
 An exercise is a project with a task and its own checks. **Check exercise** (Instances tab) runs every instance with all solutions and compares the counts, audits where the task asks for it, and compares the number of candidates with a budget, which a blocking loop cannot meet. Each item is marked ✓ or ✗, and an item that could not be checked counts as ✗.
 
 [Playground: exercise-sum-free]{.play} [Playground: exercise-triangles]{.play}
+
+Four more exercises build a whole loop from scratch, with a readme (under the project title) that guides each step, asks questions, and has hints for when you are stuck. Each loop comes in two parts; part 2 starts from the solution of part 1. Implicit hitting sets (guide chapter 14): seat rivals at two tables by uninviting the cheapest guests, then learn several cores per round. Counterexample-guided synthesis (guide chapter 16): find the lightest weighted vote with the winners of a given rule, then learn several counterexamples per round.
+
+[Playground: exercise-ihs-seating]{.play} [Playground: exercise-ihs-seating-2]{.play} [Playground: exercise-cegis-voting]{.play} [Playground: exercise-cegis-voting-2]{.play}
 
 Teachers can grade a folder of submissions with `node tools/grade.mjs submissions/ --exercise exercise-triangles`: the exercise and its instances come from the reference, the fragments and the loop from each submission.
 
