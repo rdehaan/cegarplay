@@ -129,7 +129,7 @@ two-space indentation.
 | `title` | string | `"Untitled"` | Shown on Home, next to the Project menu and in the page title. |
 | `description` | string | `""` | Shown under the title; one paragraph, also the library's text. |
 | `exercise` | object | absent | A self-checking exercise: `text` (the task), `instances` (ids or `"all"`: their expected count or optimum must match), `audit` (`true` or ids: the audit must be sound), `budgets` (`[{ instance, candidates, refinements }]`: at most this many). **Check exercise** (Instances tab) and `node tools/grade.mjs <files or folder> [--exercise reference.json] [--json]` check every item; an item that could not be checked fails. |
-| `readme` | string (Markdown) | absent | A project kit: background, what the abstraction and the check model, the baseline and the variants, what "better" means, open questions. Shown folded under the description (**Readme**), edited with **Edit**; the library tags such examples `project` and lists them under **Projects**. |
+| `readme` | string (Markdown) | absent | A project kit: background, what the abstraction and the check model, the baseline and the variants, what "better" means, open questions. Shown folded under the description (**Readme**), edited with **Edit** (Tab indents there; Esc then Tab leaves the field); the library tags such examples `project` and lists them under **Projects**. |
 | `fragments` | list | (required) | Ordered (the order of the Programs tab: drag a fragment by the grip **⠿** before its name, or press Arrow Up or Arrow Down on the grip; not during a run). |
 | `fragments[].name` | string | (required) | Matches `[a-z][a-z0-9_]*`; unique. |
 | `fragments[].text` | string | `""` | ASP text. |
@@ -286,7 +286,7 @@ replaces itself by `solver_seeds` with the seeds drawn, so the suite records the
 prints them instead, and refuses to draw with `--shard` or `--resume`). Every row carries its seed.
 `randomize: true` gives every cell a randomized search (`--rand-freq=0.2 --sign-def=rnd`, as **Run
 options**); without it clingo searches the same way for every seed, and only the times differ (the
-tab says so). The bar **Solver seeds** above the suite's JSON writes these keys: a number, **seeds 0,
+tab says so). In the suite's JSON, Tab indents and Shift+Tab outdents (the selected lines, or two spaces at the caret); Esc then Tab moves on to the next control. The bar **Solver seeds** above the suite's JSON writes these keys: a number, **seeds 0,
 1, 2, …** or **random seeds** (drawn at once and shown), **randomized search**, **Set seeds**. With
 rows of more than one seed the matrix gets a **Seeds** picker: the median over the seeds (the
 default), the mean with its standard deviation (`2.000 ± 0.140`; a cell where some seeds did not

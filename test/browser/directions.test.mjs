@@ -276,6 +276,33 @@ test('I3: a 1,000-cell suite finishes; after a reload, Start runs zero cells', {
   await context.close();
 });
 
+test('Tab indents in the suite editor and in the readme editor; Esc then Tab leaves', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=10');
+  await page.click('#suite-text');
+  await page.$eval('#suite-text', (t) => { t.value = '{\n"a": 1,\n"b": 2\n}'; t.setSelectionRange(2, 2); });
+  await page.keyboard.press('Tab');
+  assert.equal(await page.evaluate(() => document.activeElement.id), 'suite-text');
+  assert.equal(await page.$eval('#suite-text', (t) => t.value), '{\n  "a": 1,\n"b": 2\n}');
+  await page.$eval('#suite-text', (t) => t.setSelectionRange(2, 18));    // both lines: indent, then outdent
+  await page.keyboard.press('Tab');
+  assert.equal(await page.$eval('#suite-text', (t) => t.value), '{\n    "a": 1,\n  "b": 2\n}');
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Shift+Tab');
+  assert.equal(await page.$eval('#suite-text', (t) => t.value), '{\n"a": 1,\n"b": 2\n}');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Tab');
+  assert.notEqual(await page.evaluate(() => document.activeElement.id), 'suite-text');
+  // the readme editor (Home, Edit)
+  await page.click('label[for="tab1"]');
+  await page.evaluate(() => document.getElementById('edit-project-button').click());
+  await page.click('#project-readme-input');
+  await page.$eval('#project-readme-input', (t) => { t.value = '- a\n- b'; t.setSelectionRange(4, 4); });
+  await page.keyboard.press('Tab');
+  assert.equal(await page.$eval('#project-readme-input', (t) => t.value), '- a\n  - b');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
 test('campaign seeds: random seeds written into the suite, randomized search, the matrix per seed and as a mean', { timeout: 120000 }, async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&tab=10');
   await page.evaluate(() => {

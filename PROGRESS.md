@@ -2646,3 +2646,12 @@ file); `tools/aspq-check.py` checks them by brute force. Manual: *ASP(Q) example
 - Ties (later the same day, on request): every tied best cell of a matrix row is bold (`bests` in
   `resultMatrix`; `best` stays the unique winner or null); the CSV `best` column lists the tied
   variants separated by spaces; a mean is compared at the precision shown (one decimal).
+
+## Tab in plain text areas (2026-11-27, on request)
+
+- The Campaign tab's suite JSON and the readme editor (Home, Edit) are plain text areas, where Tab
+  moved the focus to the next control. `js/textarea-tab.js` (`tabIndent`, the pure `tabEdit`):
+  Tab inserts two spaces at the caret or indents the selected lines, Shift+Tab outdents; edits go
+  through `insertText` so Ctrl+Z undoes them; Esc then Tab leaves the field (no keyboard trap, as in
+  ACE); the hint is in the title and `aria-description`. The project description stays a plain
+  field (one paragraph). Tests: `editor-help.test.mjs` (tabEdit), `directions.test.mjs` (both fields).

@@ -19,6 +19,7 @@ import { SpaceView } from './space-view.js';
 import { Cursor, bindKeys } from './cursor.js';
 import { ObservatoryBar, lectureMode } from './observatory.js';
 import { renderMarkdown } from './markdown.js';
+import { tabIndent } from './textarea-tab.js';
 import { Workspace, WS_INDEX, WS_NAME } from './workspace.js';
 import { Snapshots, SNAP_INDEX, projectKey } from './snapshots.js';
 import { setupTopbar } from './topbar.js';
@@ -401,6 +402,7 @@ function saveProjectInfo() {
   app.dirty();
 }
 $('edit-project-button').addEventListener('click', () => editProjectInfo(true));
+tabIndent($('project-readme-input'));
 $('save-project-info').addEventListener('click', saveProjectInfo);
 $('cancel-project-info').addEventListener('click', () => editProjectInfo(false));
 $('project-form').addEventListener('keydown', (e) => {

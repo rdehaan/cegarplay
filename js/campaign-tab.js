@@ -4,6 +4,7 @@ import { runSuite, expandSuite, cellKey, inconsistencies, scaling, growthFit, so
 import { Pool, defaultPoolSize } from './pool.js';
 import { IdbStore, MemoryStore, exportRows, importRows } from './store.js';
 import { fmt } from './output.js';
+import { tabIndent } from './textarea-tab.js';
 
 const $ = (id) => document.getElementById(id);
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -49,6 +50,7 @@ export class CampaignTab {
     this.select.addEventListener('change', () => { this.current = this.select.value; this.showSuite(); this.refresh(); });
     this.text = h('textarea', { id: 'suite-text', rows: 9, spellcheck: 'false', 'aria-label': 'Suite (JSON)' });
     this.text.addEventListener('change', () => this.saveText());
+    tabIndent(this.text);
     this.status = h('p', { id: 'campaign-status', class: 'note', role: 'status', 'aria-live': 'polite' });
     this.jobs = h('input', { id: 'campaign-jobs', size: 3, inputmode: 'numeric', value: String(defaultPoolSize()), 'aria-label': 'Parallel runs (engines)' });
     const b = (id, label, fn) => h('button', { class: 'control-button', id, onclick: fn }, label);

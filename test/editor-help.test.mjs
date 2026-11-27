@@ -144,3 +144,14 @@ test('templateFor: a script\'s own declarations stay when they declare A, C and 
   assert.equal(templateFor('shape1', ''), template('shape1'));
   assert.equal(templateFor('shape1', 'solver A = a\nsolver C = c\nlink G = A -> C via g legacy\n'), 'solver A = a\nsolver C = c\nlink G = A -> C via g legacy\n\n' + template('shape1').split('\n').slice(4).join('\n'));
 });
+
+test('Tab in a plain text area: indent at the caret, indent and outdent whole lines', async () => {
+  const { tabEdit } = await import('../js/textarea-tab.js');
+  assert.deepEqual(tabEdit('{\n"a": 1\n}', 2, 2), { value: '{\n  "a": 1\n}', start: 4, end: 4 });
+  assert.deepEqual(tabEdit('{\n"a": 1,\n"b": 2\n}', 2, 15), { value: '{\n  "a": 1,\n  "b": 2\n}', start: 4, end: 19 });
+  assert.deepEqual(tabEdit('{\n  "a": 1,\n  "b": 2\n}', 2, 19, true), { value: '{\n"a": 1,\n"b": 2\n}', start: 2, end: 15 });
+  assert.deepEqual(tabEdit('{\n  "a": 1\n}', 4, 4, true), { value: '{\n"a": 1\n}', start: 2, end: 2 });
+  assert.deepEqual(tabEdit('x\n y', 0, 4, true), { value: 'x\ny', start: 0, end: 3 });
+  // a selection that ends just after a newline does not take in the next line
+  assert.deepEqual(tabEdit('ab\ncd\n', 0, 3), { value: '  ab\ncd\n', start: 2, end: 5 });
+});
