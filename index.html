@@ -42,6 +42,7 @@
             <hr>
             <button type="button" class="menu-item" role="menuitem" data-dialog="dialog-versions"><span>Workspace and snapshots&hellip;</span><small>versions kept in this browser</small></button>
             <button type="button" class="menu-item" role="menuitem" data-dialog="dialog-versions" data-scroll="recordings"><span>Recordings&hellip;</span><small>download a run, or replay one</small></button>
+            <button type="button" class="menu-item" role="menuitem" data-open-tab="tab7" id="menu-internals" hidden><span>Internals</span><small>for developers: the engine, the generated Lua and program</small></button>
           </div>
         </span>
         <span class="topbar-project" id="topbar-project"></span>
@@ -109,7 +110,8 @@
 
     <!-- The tabs. The radios come first, in the order of the tab row, and stay siblings of the
          sections ("#tabN:checked ~ #section-..." shows a section); the labels are in the tab bar,
-         grouped (Write, Results, Learn) and sticky under the top bar on large screens. -->
+         grouped (Home, Write: Programs, Loop, Instances; Read: the group tabs Results, Analyse and Learn,
+         whose sub-tabs show in a second row) and sticky under the top bar on large screens. -->
     <input id="tab1" aria-controls="section-control" type="radio" name="tabs" checked>
     <input id="tab3" aria-controls="section-programs" type="radio" name="tabs">
     <input id="tab4" aria-controls="section-loop" type="radio" name="tabs">
@@ -126,21 +128,38 @@
     <!-- where the tab bar is in the page while it sticks (js/topbar.js measures it) -->
     <div id="tab-bar-anchor" aria-hidden="true"></div>
     <nav class="tab-bar" id="tab-bar" aria-label="Tabs">
-      <label for="tab1" class="tab-label" title="Home"><span class="tab-text">Home</span></label>
-      <span class="tab-group" aria-hidden="true">Write</span>
-      <label for="tab3" class="tab-label" id="label-programs" title="Programs"><span class="tab-text">Programs</span></label>
-      <label for="tab4" class="tab-label" id="label-loop" title="Loop"><span class="tab-text">Loop</span></label>
-      <label for="tab9" class="tab-label" id="label-instances" title="Instances"><span class="tab-text">Instances</span></label>
-      <span class="tab-group" aria-hidden="true">Results</span>
-      <label for="tab5" class="tab-label" id="label-output" title="Output"><span class="tab-text">Output</span></label>
-      <label for="tab6" class="tab-label" title="Statistics"><span class="tab-text">Statistics</span></label>
-      <label for="tab11" class="tab-label" id="label-observatory" title="Observatory"><span class="tab-text">Observatory</span></label>
-      <label for="tab10" class="tab-label" id="label-campaign" title="Campaign"><span class="tab-text">Campaign</span></label>
-      <label for="tab12" class="tab-label" id="label-lab" hidden title="Refinery" aria-label="Refinery"><span class="tab-text">Refinery</span></label>
-      <label for="tab7" class="tab-label" title="Internals"><span class="tab-text">Internals</span></label>
-      <span class="tab-group" aria-hidden="true">Learn</span>
-      <label for="tab2" class="tab-label" title="Tutorial"><span class="tab-text">Tutorial</span></label>
-      <label for="tab8" class="tab-label" id="label-manual" hidden title="Manual"><span class="tab-text">Manual</span></label>
+      <div class="tab-row">
+        <label for="tab1" class="tab-label" title="Home"><span class="tab-text">Home</span></label>
+        <span class="tab-group" aria-hidden="true">Write</span>
+        <label for="tab3" class="tab-label" id="label-programs" title="Programs"><span class="tab-text">Programs</span></label>
+        <label for="tab4" class="tab-label" id="label-loop" title="Loop"><span class="tab-text">Loop</span></label>
+        <label for="tab9" class="tab-label" id="label-instances" title="Instances"><span class="tab-text">Instances</span></label>
+        <span class="tab-group" aria-hidden="true">Read</span>
+        <!-- a group tab opens the sub-tab last used in it; its sub-tabs are the row below -->
+        <button type="button" class="tab-label group-tab" id="group-results" data-group="results" title="Results: Output and Statistics" aria-controls="subtabs-results"><span class="tab-text">Results</span></button>
+        <button type="button" class="tab-label group-tab" id="group-analyse" data-group="analyse" title="Analyse: Observatory, Campaign, Refinery" aria-controls="subtabs-analyse"><span class="tab-text">Analyse</span></button>
+        <button type="button" class="tab-label group-tab" id="group-learn" data-group="learn" title="Learn: Tutorial, Manual, Guide" aria-controls="subtabs-learn"><span class="tab-text">Learn</span></button>
+      </div>
+      <div class="sub-tabs" id="subtabs-results" data-group="results">
+        <label for="tab5" class="tab-label sub-tab" id="label-output" title="Output"><span class="tab-text">Output</span></label>
+        <label for="tab6" class="tab-label sub-tab" title="Statistics"><span class="tab-text">Statistics</span></label>
+      </div>
+      <div class="sub-tabs" id="subtabs-analyse" data-group="analyse">
+        <label for="tab11" class="tab-label sub-tab" id="label-observatory" title="Observatory"><span class="tab-text">Observatory</span></label>
+        <label for="tab10" class="tab-label sub-tab" id="label-campaign" title="Campaign"><span class="tab-text">Campaign</span></label>
+        <label for="tab12" class="tab-label sub-tab" id="label-lab" hidden title="Refinery" aria-label="Refinery"><span class="tab-text">Refinery</span></label>
+        <a href="#" class="sub-tab-link" data-dialog="dialog-settings">Choose these tabs&hellip;</a>
+      </div>
+      <div class="sub-tabs" id="subtabs-learn" data-group="learn">
+        <label for="tab2" class="tab-label sub-tab" title="Tutorial"><span class="tab-text">Tutorial</span></label>
+        <label for="tab8" class="tab-label sub-tab" id="label-manual" hidden title="Manual"><span class="tab-text">Manual</span></label>
+        <a href="guide/" class="sub-tab-link" target="cegarplay-guide">Design guide &#x2197;</a>
+        <a href="#" class="sub-tab-link" data-tour>Guided tour</a>
+        <a href="#" class="sub-tab-link" data-loop-walkthrough>The loop language, step by step</a>
+      </div>
+      <div class="sub-tabs" id="subtabs-developer" data-group="developer">
+        <label for="tab7" class="tab-label sub-tab" title="Internals"><span class="tab-text">Internals</span></label>
+      </div>
     </nav>
 
     <!-- 1. Home: the project, and the example library. The file actions are in the Project menu,
@@ -150,7 +169,7 @@
         CegarPlay runs CEGAR loops (counterexample-guided abstraction refinement) written in answer
         set programming, with clingo running in your browser. Pick an example below, or start one from
         <b>Project</b>. A project is written in the <b>Write</b> tabs; press <b>Run</b> (or <b>Audit</b>)
-        and read the run in the <b>Results</b> tabs. New here? Take the <a href="#" data-tour>guided tour</a> (five minutes), or start with the <a href="#" data-open-tab="tab2">Tutorial</a>.
+        and read the run under <b>Results</b> (and <b>Analyse</b>). New here? Take the <a href="#" data-tour>guided tour</a> (five minutes), or start with the <a href="#" data-open-tab="tab2">Tutorial</a>.
         <span class="home-more">The advanced tabs (Observatory, Campaign, Refinery) can be switched on
           in <a href="#" data-dialog="dialog-settings">Settings</a>.</span>
       </p>

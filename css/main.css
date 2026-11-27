@@ -137,7 +137,7 @@ button, select, input, textarea { font-family: inherit; font-size: 13px; }
 /* a label that wraps its control: a little room between the words and the box */
 label > :is(input:not([type="checkbox"], [type="radio"]), select, textarea) { margin-left: 4px; }
 
-label.tab-label {
+.tab-label {
   display: inline-block;
   margin: 0 0 -1px;
   padding: 12px 16px;
@@ -147,7 +147,7 @@ label.tab-label {
   border: 1px solid transparent;
 }
 
-label.tab-label:before {
+.tab-label:before {
   font-family: fontawesome;
   font-weight: normal;
   margin-right: 10px;
@@ -164,8 +164,13 @@ label[for='tab8']:before { content: '\f02d'; }
 label[for='tab9']:before { content: '\f03a'; }
 label[for='tab11']:before { content: '\f06e'; }
 label[for='tab10']:before { content: '\f0ce'; }
+#group-results:before { content: '\f080'; }
+#group-analyse:before { content: '\f002'; }
+#group-learn:before { content: '\f19d'; }
+/* (no extra specificity: the narrow-screen sizes of .tab-label apply to the group tabs too) */
+:where(button).tab-label { background: none; font-family: inherit; font-size: inherit; line-height: inherit; color: var(--tab-text); cursor: pointer; }
 
-label.tab-label:hover {
+.tab-label:hover {
   color: var(--tab-hover);
   cursor: pointer;
 }
@@ -181,12 +186,29 @@ main:has(#tab8:checked) label[for="tab8"],
 main:has(#tab9:checked) label[for="tab9"],
 main:has(#tab10:checked) label[for="tab10"],
 main:has(#tab11:checked) label[for="tab11"],
-main:has(#tab12:checked) label[for="tab12"] {
+main:has(#tab12:checked) label[for="tab12"],
+main:has(#tab5:checked, #tab6:checked) #group-results,
+main:has(#tab10:checked, #tab11:checked, #tab12:checked) #group-analyse,
+main:has(#tab2:checked, #tab8:checked) #group-learn {
   color: var(--text);
   border: 1px solid var(--border);
   border-top: 2px solid var(--accent);
   border-bottom: 1px solid var(--panel);
 }
+/* the sub-tabs of the open group: a second row, the current one underlined */
+.sub-tabs { display: none; flex-wrap: wrap; align-items: center; gap: 0 2px; padding: 0 4px; border-top: 1px solid var(--border); }
+main:has(#tab5:checked, #tab6:checked) #subtabs-results,
+main:has(#tab10:checked, #tab11:checked, #tab12:checked) #subtabs-analyse,
+main:has(#tab2:checked, #tab8:checked) #subtabs-learn,
+main:has(#tab7:checked) #subtabs-developer { display: flex; }
+.tab-label.sub-tab { padding: 8px 12px 6px; font-size: 13px; border: 0; border-bottom: 2px solid transparent; margin: 0; }
+.tab-label.sub-tab:before { margin-right: 6px; }
+main .tab-bar .tab-label.sub-tab:is(main:has(#tab2:checked) [for="tab2"], main:has(#tab5:checked) [for="tab5"], main:has(#tab6:checked) [for="tab6"],
+  main:has(#tab7:checked) [for="tab7"], main:has(#tab8:checked) [for="tab8"], main:has(#tab10:checked) [for="tab10"],
+  main:has(#tab11:checked) [for="tab11"], main:has(#tab12:checked) [for="tab12"]) {
+  border: 0; border-bottom: 2px solid var(--accent); color: var(--text);
+}
+.sub-tab-link { font-size: 13px; margin-left: 14px; }
 
 #tab1:checked ~ #section-control,
 #tab2:checked ~ #section-tutorial,
@@ -205,7 +227,7 @@ main:has(#tab12:checked) label[for="tab12"] {
 /* Narrow screens: the icon with a short text under it (the text stays the accessible name). */
 @media screen and (max-width: 650px) {
 
-  label.tab-label {
+  .tab-label {
     padding: 8px 4px 6px;
     min-width: 56px;
     font-size: 11px;
@@ -214,14 +236,17 @@ main:has(#tab12:checked) label[for="tab12"] {
     vertical-align: bottom;
   }
 
-  label.tab-label:before {
+  .tab-label:before {
     display: block;
     margin: 0 0 3px;
     font-size: 18px;
   }
+  .tab-label.sub-tab { min-width: 0; font-size: 12px; padding: 8px 8px 6px; }
+  .tab-label.sub-tab:before { display: inline; font-size: 13px; margin: 0 4px 0 0; }
+  .sub-tab-link { font-size: 12px; margin-left: 8px; }
 }
 @media screen and (max-width: 400px) {
-  label.tab-label {
+  .tab-label {
     padding: 8px 2px 6px;
     min-width: 0;
     font-size: 10px;
@@ -1339,19 +1364,15 @@ kbd {
 .toast.error { background: var(--error-bg); color: var(--error); border: 1px solid var(--error); }
 .toast[hidden] { display: none; }
 
-/* ---- The tab bar: Home | Write | Results | Learn (at the right end) ---- */
-.tab-bar {
-  display: flex; flex-wrap: wrap; align-items: flex-end;
-  border-bottom: 1px solid var(--border); background: var(--panel);
-}
+/* ---- The tab bar: Home | Write: Programs, Loop, Instances | Read: Results, Analyse, Learn;
+   the sub-tabs of the open group in a second row ---- */
+.tab-bar { border-bottom: 1px solid var(--border); background: var(--panel); }
+.tab-row { display: flex; flex-wrap: wrap; align-items: flex-end; }
 .tab-group {
   align-self: center; margin: 6px 10px 0 18px; padding-left: 14px; line-height: 28px;
   border-left: 1px solid var(--border);
   font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint);
 }
-.tab-group:last-of-type { margin-left: auto; }
-/* a group with no tab shown says nothing (Learn, when the Tutorial is hidden and the Manual off) */
-.tab-bar:not(:has(label[for="tab2"]:not([hidden]), label[for="tab8"]:not([hidden]))) .tab-group:last-of-type { display: none; }
 /* sticky under the top bar on screens that can spare the room */
 @media (min-width: 1000px) and (min-height: 640px) {
   /* top: the top bar's height, set by js/topbar.js (which also sets the page's scroll-padding-top) */
@@ -1360,7 +1381,6 @@ kbd {
 }
 @media (max-width: 760px) {
   .tab-group { font-size: 0; margin: 0 4px; padding: 0; height: 28px; }
-  .tab-group:last-of-type { margin-left: 4px; }
 }
 
 /* ---- each tab's help: its title and a "?", the intro under it (open on the first visit) ---- */

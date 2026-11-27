@@ -103,11 +103,11 @@ test('B4, B5: at 390 px every tab has a name and a tooltip, and no tab scrolls s
   const { page, context } = await B.openPage(browser, server, '?internals=true&manual=true', { contextOptions: { viewport: { width: 390, height: 800 } } });
   for (const t of [1, 2, 3, 4, 5, 6, 7, 8]) {
     const sel = `label[for="tab${t}"]`;
-    if (await page.isHidden(sel)) continue;
+    if (await page.$eval(sel, (l) => l.hidden)) continue;
     const [name, title, size] = await page.$eval(sel, (l) => [l.textContent.trim(), l.title, parseFloat(getComputedStyle(l.querySelector('.tab-text') || l).fontSize)]);
     assert.ok(name.length > 2 && title.length > 2, `tab ${t} has a name and a title`);
     assert.ok(size > 0, `tab ${t}: the text is not zero-sized`);
-    await page.click(sel);
+    await B.openTab(page, t);
     await page.waitForTimeout(150);
     const [sw, w] = await page.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
     assert.equal(sw, w, `tab ${t} scrolls sideways (${sw} > ${w})`);
@@ -165,7 +165,7 @@ test('B7: the audit group, the Spaces editor, next steps and result cards are na
   await page.waitForFunction(() => document.getElementById('run-status').dataset.state === 'finished' && !window.cegarplay.control.batch, null, { timeout: 60000 });
   assert.equal(await page.getAttribute('#audit-panel', 'aria-live'), 'polite');
   assert.equal(await page.$eval('#audit-panel', (e) => document.getElementById(e.getAttribute('aria-labelledby')).textContent), 'Space frameworks: sound up to size = 2');
-  await page.click('label[for="tab5"]');
+  await B.openTab(page, 5);
   const next = await page.$$eval('#audit-panel .audit-next button', (l) => l.map((b) => [b.textContent, b.type, b.title.length > 0]));
   assert.deepEqual(next, [['Try a larger bound', 'button', true]]);
   await page.keyboard.press('Shift');   // keyboard use: the focus that follows is a keyboard focus
@@ -179,7 +179,7 @@ test('B5: at 1400, 700 and 400 px the Control, Instances, Output and Observatory
   for (const width of [1400, 700, 400]) {
     const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant', { contextOptions: { viewport: { width, height: 800 } } });
     for (const t of [1, 9, 5, 11]) {
-      await page.click(`label[for="tab${t}"]`);
+      await B.openTab(page, t);
       await page.waitForTimeout(150);
       const [sw, w] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
       assert.equal(sw, w, `tab ${t} at ${width} px scrolls sideways (${sw} > ${w})`);

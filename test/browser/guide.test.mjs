@@ -122,7 +122,7 @@ test('the soundness test of page 4: one changed loop line, and the run history m
   await B.setEditor(page, 'loop-editor', loop.replace('reject M with G.clause(M, X)', 'reject M with G.block(M)'));
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error', 'stopped']), 'finished');
-  await page.click('label[for="tab6"]');
+  await B.openTab(page, 6);
   const rows = await page.$$eval('#history-table tbody tr', (l) => l.map((r) => ({ m: r.dataset.mismatch === 'true', text: r.textContent })));
   assert.equal(rows.length, 2);
   assert.ok(rows.every((r) => r.m && r.text.includes('⚠')), JSON.stringify(rows));

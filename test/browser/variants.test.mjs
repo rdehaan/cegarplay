@@ -20,7 +20,7 @@ test('the voting example: the picker lists its variants, and a run with one says
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
   assert.match(await page.textContent('#live-line'), /2 solutions/);
-  await page.click('label[for="tab6"]');
+  await B.openTab(page, 6);
   assert.match(await page.textContent('#history-table'), /\[cancel-posresp-k2\] \(variant falsified\)/);
   assert.equal(await page.evaluate(() => window.cegarplay.project.settings.variant), 'falsified');
   // a project without variants has no picker

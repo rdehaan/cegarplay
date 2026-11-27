@@ -106,7 +106,7 @@ for (const theme of ['light', 'dark']) {
     await page.click('#run-button');
     await B.waitState(page, ['finished']);
     for (const t of [1, 2, 3, 4, 5, 6, 7, 8]) {
-      await page.click(`label[for="tab${t}"]`);
+      await B.openTab(page, t);
       await page.waitForTimeout(t === 2 || t === 8 ? 600 : 150);
       await page.screenshot({ path: `${SHOTS}${theme}-tab${t}.png`, fullPage: true });
       if (theme === 'dark') assert.deepEqual(await page.evaluate(LIGHT_BOXES), [], `light boxes on tab ${t}`);

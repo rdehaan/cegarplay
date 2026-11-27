@@ -64,7 +64,7 @@ export function setupTopbar() {
       if (t.dataset.history !== undefined) $('include-history').checked = t.dataset.history === '1';
       $(t.dataset.click).click();
     } else if (t.dataset.dialog) openDialog(t.dataset.dialog, t.dataset.scroll);
-    else { const r = $(t.dataset.openTab); r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); }
+    else { closeAll(); const r = $(t.dataset.openTab); r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); }
   }, true);   // capture: a pop-up stops the bubbling of its clicks (so that it stays open)
 
   // the library's intro behind its "?" (inside the summary: the click must not fold the library)
@@ -154,6 +154,36 @@ export function setupTopbar() {
   // The run summary ("Shown: ...", the live counts, a run's error) sticks under the top bar except
   // on a phone; on large screens the tab bar sticks under the summary.
   const bar = $('topbar'), tabbar = $('tab-bar'), main = document.querySelector('main');
+
+  // ---- the group tabs (Results, Analyse, Learn): a click opens the sub-tab last used in the
+  // group (else its first shown one); a group with no sub-tab shown is hidden
+  const groupTabs = [...tabbar.querySelectorAll('.group-tab')];
+  const lastIn = {};
+  const subLabels = (g) => [...tabbar.querySelectorAll(`.sub-tabs[data-group="${g}"] label.sub-tab`)];
+  for (const b of groupTabs) {
+    b.addEventListener('click', () => {
+      const shown = subLabels(b.dataset.group).filter((l) => !l.hidden);
+      const pick = shown.find((l) => l.htmlFor === lastIn[b.dataset.group]) || shown[0];
+      if (!pick) return;
+      const r = $(pick.htmlFor);
+      if (!r.checked) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); }
+    });
+  }
+  const syncGroups = () => {
+    const on = document.querySelector('input[name="tabs"]:checked');
+    for (const b of groupTabs) {
+      const labels = subLabels(b.dataset.group);
+      // (write only on a change: the observer below sees every write of hidden, even of the same value)
+      const hide = !labels.some((l) => !l.hidden);
+      if (b.hidden !== hide) b.hidden = hide;
+      const current = !!on && labels.some((l) => l.htmlFor === on.id);
+      if (b.getAttribute('aria-expanded') !== String(current)) b.setAttribute('aria-expanded', String(current));
+      if (current) lastIn[b.dataset.group] = on.id;
+    }
+  };
+  for (const r of document.querySelectorAll('input[name="tabs"]')) r.addEventListener('change', syncGroups);
+  new MutationObserver(syncGroups).observe(tabbar, { subtree: true, attributes: true, attributeFilter: ['hidden'] });   // (the labels' hidden: js/init.js showTabs)
+  syncGroups();
   const summary = document.querySelector('.run-summary');
   // (set here, not as a CSS variable: css/theme.css defines every variable the stylesheets use)
   const large = matchMedia('(min-width: 1000px) and (min-height: 640px)');

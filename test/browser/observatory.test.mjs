@@ -14,7 +14,7 @@ test('domain view: a solution is not a step after a cut trace; Show: solutions s
   await page.fill('#trace-input', '3');
   await page.dispatchEvent('#trace-input', 'change');
   await B.runOptions(page, () => page.selectOption('#solutions-select', '0'));
-  await page.click('label[for="tab11"]');
+  await B.openTab(page, 11);
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
   await page.keyboard.press('End');
@@ -36,7 +36,7 @@ test('domain view: a solution is not a step after a cut trace; Show: solutions s
   await page.check('#view-show-steps');
   await page.click('label[for="tab4"]');
   await page.selectOption('#record-select', 'all');
-  await page.click('label[for="tab11"]');
+  await B.openTab(page, 11);
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error']), 'finished');
   await page.check('#view-show-solutions');
@@ -75,7 +75,7 @@ test('a space audit to the candidate space: which run the map shows, the refinem
   // after an audit alone the map explains why it has nothing to show
   await page.evaluate(() => window.cegarplay.space.compute());
   assert.match(await page.textContent('#space-message'), /The last action was an audit, which records no steps of the loop/);
-  await page.click('label[for="tab5"]');
+  await B.openTab(page, 5);
   await page.click('#audit-panel button[data-action="space-candidate-space"]');
   await page.waitForFunction(() => Number(document.getElementById('space-map').dataset.cells) > 0, null, { timeout: 120000 });
   assert.equal(await page.$eval('#instance-select', (s) => s.value), 'regression-n2');

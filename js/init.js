@@ -57,10 +57,12 @@ function urlForgetProject() {
   if (now.has('example') || now.has('fragment') || shareData(location.hash) !== null) setUrl({});
 }
 
-// Internals tab only with ?internals=true
-if (params.get('internals') !== 'true') {
-  $('tab7').style.display = 'none';
-  document.querySelector('label[for="tab7"]').style.display = 'none';
+// Internals tab only with ?internals=true (opened from the Project menu)
+{
+  const on = params.get('internals') === 'true';
+  $('tab7').hidden = !on;
+  document.querySelector('label[for="tab7"]').hidden = !on;
+  $('menu-internals').hidden = !on;
 }
 // ---- the technical manual (tab 8): hidden unless the toggle is on or ?manual=true ---------
 const MANUAL_KEY = 'cegarplay.manual';
@@ -308,11 +310,10 @@ app.cursor = new Cursor();
 bindKeys(app.cursor, () => ($('tab11').checked || document.body.classList.contains('lecture')) && !document.querySelector('dialog[open], .modal.is-visible'));
 bindPageKeys(app);
 app.tour = new Tour(app);
-// the short tours of the advanced tabs: offered the first time the tab is opened (not on a page
-// load that opens it), and from Settings and the tabs' help
+// the short tours of the advanced tabs: started from the tab's help ("Tour of this tab") and from
+// Settings; they no longer pop up on a tab's first visit
 app.tabTours = Object.fromEntries(Object.entries(TAB_TOURS).map(([tab, t]) => [tab, new Tour(app, t)]));
 app.loopWalkthrough = new Tour(app, { key: WALKTHROUGH_KEY, steps: walkthroughSteps, begin: walkthroughBegin });
-const anyTour = () => app.tour.running || app.loopWalkthrough.running || Object.values(app.tabTours).some((t) => t.running);
 app.startLoopWalkthrough = () => {
   app.tour.stop(false, false);
   for (const x of Object.values(app.tabTours)) x.stop(false, false);
@@ -327,21 +328,21 @@ document.addEventListener('click', (e) => {
   if (app.tour.running) app.tour.stop(true);
   app.startLoopWalkthrough();
 });
-const offerTabTour = (tab, force = false) => {
+const startTabTour = (tab) => {
   const t = app.tabTours[tab];
-  if (!t || (!force && (t.seen || anyTour() || !app.ready))) return;
-  if (force) { app.tour.stop(false, false); for (const x of Object.values(app.tabTours)) x.stop(false, false); }
+  if (!t) return;
+  app.tour.stop(false, false);
+  for (const x of Object.values(app.tabTours)) x.stop(false, false);
   setTimeout(() => { if ($(tab).checked) t.start(); }, 250);      // (the Refinery is built when it opens)
 };
-// Leaving a tab ends its tour: an offer that was not taken up (first card) is made again next
-// time, a tour under way counts as closed. Otherwise its card stays on every other tab.
+// Leaving a tab ends its tour (a tour under way counts as closed); otherwise its card would stay
+// on every other tab.
 const endOtherTabTours = (tab) => {
   for (const [id, t] of Object.entries(app.tabTours)) if (id !== tab && t.running) t.stop(false, t.index > 0);
 };
 for (const r of document.querySelectorAll('input[name="tabs"]')) r.addEventListener('change', () => {
   if (!r.checked) return;
   endOtherTabTours(r.id);
-  offerTabTour(r.id);
 });
 for (const a of document.querySelectorAll('[data-tab-tour]')) a.addEventListener('click', (e) => {
   e.preventDefault();
@@ -350,7 +351,7 @@ for (const a of document.querySelectorAll('[data-tab-tour]')) a.addEventListener
   const pref = Object.keys(TAB_PREFS).find((n) => TAB_PREFS[n].tabs.includes(tab));
   if (pref && !tabShown(pref)) showTabs(pref, true, { store: false });      // for this visit
   if (!$(tab).checked) { $(tab).checked = true; $(tab).dispatchEvent(new Event('change', { bubbles: true })); }
-  offerTabTour(tab, true);
+  startTabTour(tab);
 });
 for (const a of document.querySelectorAll('[data-tour]')) a.addEventListener('click', (e) => { e.preventDefault(); for (const d of document.querySelectorAll('dialog[open]')) d.close(); app.tour.start(); });
 for (const a of document.querySelectorAll('[data-shortcuts]')) a.addEventListener('click', (e) => { e.preventDefault(); for (const d of document.querySelectorAll('dialog[open]')) d.close(); openShortcuts(); });

@@ -35,7 +35,7 @@ test('the tour is offered on a first visit, runs through the basics, and is not 
   await page.waitForSelector('#tour-card .tour-after');
   assert.match(await page.textContent('#tour-card .tour-after'), /61 solutions/);
   await next(page);
-  await page.click('label[for="tab5"]');
+  await B.openTab(page, 5);
   await page.waitForFunction(() => document.getElementById('tour-title').textContent === 'Step through the trace');
   await page.click('#trace-label');
   await page.keyboard.press('ArrowRight');

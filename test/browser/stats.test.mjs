@@ -83,7 +83,7 @@ test('run history: a too weak relevant/1 vs the reference run are marked as a mi
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished', 'error'], 120000), 'finished');
   assert.match(await page.textContent('#live-line'), /61 solutions/);
-  await page.click('label[for="tab6"]');
+  await B.openTab(page, 6);
   const rows = await page.$$eval('#history-table tbody tr', (l) => l.map((r) => ({ m: r.dataset.mismatch === 'true', text: r.textContent })));
   assert.equal(rows.length, 2);
   assert.ok(rows.every((r) => r.m), JSON.stringify(rows));
@@ -139,7 +139,7 @@ test('the tutorial is shown with code blocks; internals show the generated Lua',
   assert.ok((await page.textContent('#tutorial')).length > 3000);
   await page.click('#run-button');
   await B.waitState(page, ['finished']);
-  await page.click('label[for="tab7"]');
+  await B.openTab(page, 7);
   assert.match(await B.getEditor(page, 'generated-lua'), /rt\.prepare\(\)/);
   assert.match(await page.textContent('#raw-events'), /^@@H /);
   assert.deepEqual(errors, []);
@@ -184,7 +184,7 @@ test('Clear removes the last run\'s results and keeps the run history', async ()
   assert.equal(await page.$eval('#download-recording-button', (b) => b.disabled), false);
   const before = await historyRows(page);
   assert.ok(before >= 1);
-  await page.click('label[for=tab5]');  // Clear is in the Output tab
+  await B.openTab(page, 5);  // Clear is in the Output tab
   await page.click('#clear-button');
   assert.equal(await page.textContent('#run-status'), 'idle');
   assert.match((await page.textContent('#result-line')).trim(), /^(No run yet\.)?$/, 'as on a fresh load');
@@ -237,13 +237,13 @@ test('what the tabs show: the marked history row, the Summary and notes after an
   assert.match(await page.textContent('#svg-hist'), /an audit adds no clauses/);
   assert.equal(await page.$$eval('#history-table tr[data-shown="true"]', (l) => l.length), 1);
   assert.match(await page.$eval('#history-table tr[data-shown="true"]', (tr) => tr.textContent), /sound/);
-  await page.click('label[for="tab5"]');
+  await B.openTab(page, 5);
   assert.match(await page.textContent('#solutions-note'), /An audit does not run the loop: no solutions are listed here/);
   assert.match(await page.textContent('#trace-empty'), /An audit does not run the loop, so it has no trace/);
   assert.match(await page.textContent('#result-line'), /refinements checked\)/);
   assert.match(await page.textContent('#audit-panel'), /refined with G\.(clause|clauses|block)/);
   // Clear: nothing is shown, no row is marked
-  await page.click('label[for=tab5]');  // Clear is in the Output tab
+  await B.openTab(page, 5);  // Clear is in the Output tab
   await page.click('#clear-button');
   assert.equal(await page.$$eval('#history-table tr[data-shown="true"]', (l) => l.length), 0);
   await page.waitForFunction(() => /^Shown: no results yet/.test(document.getElementById('shown-line').textContent));

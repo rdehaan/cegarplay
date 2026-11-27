@@ -55,7 +55,7 @@ test('digits open the tabs shown; ? opens the shortcuts; editors and fields keep
   assert.equal(await shownTab(page), 'tab3');
   assert.notEqual(await B.getEditor(page, 'editor-abstraction'), before);
   // ? opens the dialog, with the tabs numbered as the digits open them
-  await page.click('.tab-bar');
+  await page.click('.tab-bar .tab-group');      // (the caption: not a tab)
   await page.keyboard.press('?');
   assert.equal(await page.$eval('#dialog-keys', (d) => d.open), true);
   const tabs = await page.$$eval('#keys-tabs li', (l) => l.map((x) => x.textContent));

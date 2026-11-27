@@ -40,12 +40,15 @@ recorded, whether the candidate space was computed for it, and, in amber, when t
 edited since (or another project was loaded): the results are then of the earlier version. Then
 the live counts. Both lines are empty until the first run.
 
-The tabs follow the work, in groups: **Home** (the project's title, description and readme, and the
+The tabs follow the work: **Home** (the project's title, description and readme, and the
 example library); **Write**: **Programs** (the ASP fragments), **Loop** (the loop script, constants,
 limits, recording and certificates) and **Instances** (inputs, generators, Run all instances, Fuzz);
-**Results**: **Output**, **Statistics**, **Observatory** and **Campaign** (many runs), and the
-[**Refinery**](#manual-refinery-tab), which shows what a loop could have done; **Learn**:
-**Tutorial** and **Manual**, at the right end. The run summary under the top bar (**Shown:** which run, audit
+then three group tabs, whose sub-tabs show in a second row under the tab row when the group is open
+(a group tab opens the sub-tab last used in it): **Results** (**Output** and **Statistics**),
+**Analyse** (**Observatory**, **Campaign** (many runs) and the [**Refinery**](#manual-refinery-tab),
+which shows what a loop could have done; shown when one of them is switched on) and **Learn**
+(**Tutorial**, **Manual**, and links to the design guide, the guided tour and the loop walkthrough).
+**Internals** is opened from the **Project** menu (with `?internals=true`). The run summary under the top bar (**Shown:** which run, audit
 or replay the Output, Statistics and Observatory tabs show; the live counts; a run's error) stays
 under the top bar while the page scrolls, on every screen. On a screen of at least 1000 × 640 px the
 tab row stays under it too, and a tab chosen there opens at its top. Each tab
@@ -54,7 +57,7 @@ is folded by default; one that is opened stays open until it is folded again (ke
 The **?** next to a fragment's name (Programs) and next to the loop script (Loop) has the same style
 and works the same way: it unfolds a short explanation of that fragment or of the loop script in a
 blue box under the heading.
-**Manual** and **Internals** appear when asked for. **Settings** has toggles kept in this browser:
+**Manual** appears when asked for. **Settings** has toggles kept in this browser:
 **Tutorial** (shown by default), **Technical manual**, and **Advanced** with three indented toggles
 under it, **Campaign**, **Observatory** and **Refinery**, all off by default. **Advanced** turns all
 three on or off; it is ticked when all three are on and shows a dash when some are. The Tutorial
@@ -1861,7 +1864,7 @@ or while a dialog or menu is open; a slider and the tab row keep their own arrow
 | Shift+← / → | ten steps back / on (trace and Observatory) |
 | Home / End | the first / last step (trace and Observatory) |
 | Space | Pause or Resume a run (isolated page only; on a focused button Space presses that button). While a run is paused, the Output tab says so above the trace, and ← / → step through the steps recorded so far |
-| 1 … 9 | the first nine tabs shown in the tab row, in its order (which tabs are shown depends on Settings) |
+| 1 … 9 | the tabs of the tab row in its order: Home, Programs, Loop, Instances, then the group tabs Results, Analyse (when an advanced tab is on) and Learn; a group tab opens the sub-tab last used in it |
 | ? | the **Keyboard shortcuts** dialog (also in the footer and in Settings), with the tabs as the digits number them |
 | Shift+C / O / R / T / M | the Campaign, Observatory, Refinery, Tutorial or Manual tab on or off, as its checkbox in Settings (kept in this browser); a note at the bottom says which |
 | Shift+A | the three advanced tabs (Campaign, Observatory, Refinery) on or off, as Settings' Advanced |

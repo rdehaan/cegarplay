@@ -14,7 +14,7 @@ test('1. the page loads with no console error and no request to another origin',
   const { page, context, errors, foreign } = await B.openPage(browser, server);
   assert.equal(await B.runState(page), 'idle');
   assert.equal(await page.isHidden('#pause-button'), true, 'pause is hidden on a page that is not isolated');
-  for (const t of [2, 3, 4, 5, 6]) await page.click(`label[for="tab${t}"]`);
+  for (const t of [2, 3, 4, 5, 6]) await B.openTab(page, t);
   await page.waitForTimeout(300);
   assert.deepEqual(errors, []);
   assert.deepEqual(foreign, []);
@@ -31,7 +31,7 @@ test('2. the default example runs to the reference numbers', async () => {
   assert.match(live, /31,776 candidates · 21,078 counterexamples · 21,078 refinements/);
   assert.equal(await page.$$eval('#solutions li', (l) => l.length), 1000);
   // the download holds all solutions, not only the 1,000 shown
-  await page.click('label[for="tab5"]');
+  await B.openTab(page, 5);
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#download-solutions-button')]);
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'cegarplay-')), dl.suggestedFilename());
   await dl.saveAs(file);
@@ -217,7 +217,7 @@ test('a Load button in the tutorial loads its example and stays in the tab', asy
 
 test('editors are sized when their tab is shown; Ctrl+Enter runs; clingo infos mark the line', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=graph-coloring');
-  await page.click('label[for="tab2"]');
+  await B.openTab(page, 2);
   await page.waitForTimeout(200);
   const cropped = await page.$$eval('#tutorial .ace_editor', (l) => l.filter((e) => {
     const ed = e.env.editor;
@@ -314,10 +314,10 @@ test('the Manual tab: hidden by default, shown by the toggle (remembered) and by
   const { page, context, errors } = await B.openPage(browser, server, '?tab=8');
   assert.equal(await page.isHidden('label[for="tab8"]'), true);
   assert.equal(await page.$eval('#tab2', (e) => e.checked) || await page.$eval('#tab1', (e) => e.checked), true, '?tab=8 is ignored while hidden');
-  await page.click('label[for="tab2"]');
+  await B.openTab(page, 2);
   await page.check('#section-tutorial .manual-checkbox');
   assert.equal(await page.isVisible('label[for="tab8"]'), true);
-  await page.click('label[for="tab8"]');
+  await B.openTab(page, 8);
   await page.waitForFunction(() => document.querySelectorAll('#manual h2').length >= 12);
   await page.waitForFunction(() => document.querySelectorAll('#manual .ace_editor').length > 5);
   assert.ok(await page.$$eval('#manual-toc a', (l) => l.length) > 20);
@@ -333,7 +333,7 @@ test('the Manual tab: hidden by default, shown by the toggle (remembered) and by
   await B.inDialog(page, 'settings', () => page.uncheck('#dialog-settings .manual-checkbox'));
   assert.equal(await page.isHidden('label[for="tab8"]'), true);
   // a link from the tutorial into the manual opens it at that section
-  await page.click('label[for="tab2"]');
+  await B.openTab(page, 2);
   await page.click('#tutorial a[href="#manual-troubleshooting"]');
   await page.waitForFunction(() => document.getElementById('tab8').checked && document.getElementById('manual-troubleshooting'));
   assert.equal(await page.isVisible('#manual-troubleshooting'), true);

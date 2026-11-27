@@ -38,9 +38,9 @@ test('the Advanced tabs are off by default; each has a toggle, the Advanced togg
   assert.equal(await shown(page, 'tab11'), true, 'remembered after a reload');
   assert.equal(await shown(page, 'tab10'), true, 'remembered after a reload');
   // switching the Observatory off while on it goes back to the Control tab
-  await page.click('label[for="tab11"]');
+  await B.openTab(page, 11);
   await page.click('label[for="tab1"]');
-  await page.click('label[for="tab11"]');
+  await B.openTab(page, 11);
   await page.evaluate(() => { const c = document.querySelector('#dialog-settings .observatory-checkbox'); c.checked = false; c.dispatchEvent(new Event('change')); });
   assert.equal(await shown(page, 'tab11'), false);
   assert.equal(await shown(page, 'tab10'), true);
@@ -88,9 +88,37 @@ test('the Tutorial can be hidden and comes back; a lesson link shows it for the 
   await context.close();
 });
 
+test('group tabs: Results opens Output, then the sub-tab last used; Analyse shows when an advanced tab is on', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run', { advanced: false });
+  const checked = () => page.$eval('input[name="tabs"]:checked', (r) => r.id);
+  assert.equal(await page.isVisible('#subtabs-results'), false);
+  await page.click('#group-results');
+  assert.equal(await checked(), 'tab5');
+  assert.equal(await page.isVisible('#subtabs-results'), true);
+  await page.click('label[for="tab6"]');
+  assert.equal(await checked(), 'tab6');
+  await page.click('label[for="tab1"]');
+  assert.equal(await page.isVisible('#subtabs-results'), false);
+  await page.click('#group-results');
+  assert.equal(await checked(), 'tab6', 'the sub-tab last used');
+  assert.equal(await page.isVisible('#group-analyse'), false, 'no advanced tab on');
+  await B.inDialog(page, 'settings', () => page.check('#dialog-settings .observatory-checkbox'));
+  assert.equal(await page.isVisible('#group-analyse'), true);
+  await page.click('#group-analyse');
+  assert.equal(await checked(), 'tab11');
+  // the digits number the tab row: 5 is Results, 6 Analyse, 7 Learn
+  await page.click('label[for="tab1"]');
+  await page.click('.home-intro');
+  await page.keyboard.press('7');
+  assert.equal(await checked(), 'tab2');
+  assert.deepEqual(errors, []);
+  await context.close();
+});
+
 test('the tab bar: grouped, sticky under the top bar on a large screen; a tab chosen there opens at its top', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=5', { advanced: false, contextOptions: { viewport: { width: 1400, height: 900 } } });
-  assert.deepEqual(await page.$$eval('#tab-bar .tab-group', (g) => g.map((x) => x.textContent)), ['Write', 'Results', 'Learn']);
+  assert.deepEqual(await page.$$eval('#tab-bar .tab-group', (g) => g.map((x) => x.textContent)), ['Write', 'Read']);
+  assert.deepEqual(await page.$$eval('#tab-bar .group-tab:not([hidden])', (g) => g.map((x) => x.textContent.trim())), ['Results', 'Learn']);
   await page.click('#run-button');
   await page.waitForFunction(() => document.getElementById('run-status').dataset.state === 'finished');
   await page.mouse.wheel(0, 600);

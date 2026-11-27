@@ -56,7 +56,7 @@ test('the toggle shows the Refinery tab and is remembered; ?refinery=1 and ?tab=
   await page.reload();
   await page.waitForSelector('body[data-ready="true"]');
   assert.equal(await shown(page, 'tab12'), true, 'remembered');
-  await page.click('label[for="tab12"]');
+  await B.openTab(page, 12);
   await page.waitForSelector('#lab-compute');
   assert.match(new URL(page.url()).search, /tab=12/);
   await page.evaluate(() => { const c = document.querySelector('#dialog-settings .lab-checkbox'); c.checked = false; c.dispatchEvent(new Event('change')); });
@@ -115,7 +115,7 @@ test('from a run: gc-shape2 n3 recorded with every step; the run against the bou
   await B.runOptions(page, () => page.selectOption('#solutions-select', '0'));
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished']), 'finished');
-  await page.click('label[for="tab12"]');
+  await B.openTab(page, 12);
   await page.waitForSelector('#lab-compute');
   assert.equal(await page.$eval('#lab-instance', (s) => s.value), 'n3', 'starts from the run bar');
   await page.selectOption('#lab-source', 'latest');
@@ -176,7 +176,7 @@ test('review fixes: omniscient bounds and the run share no slot; a recording of 
   await B.runOptions(page, () => page.selectOption('#solutions-select', '0'));
   await page.click('#run-button');
   assert.equal(await B.waitState(page, ['finished']), 'finished');
-  await page.click('label[for="tab12"]');
+  await B.openTab(page, 12);
   await page.waitForSelector('#lab-compute');
   // the latest run is of n4; the Refinery's space of n3: no step lands on it, so free mode, without an error
   await page.selectOption('#lab-instance', 'n3');
@@ -241,7 +241,7 @@ test('Record a run and place it, New seed, the busy line with Stop, and the run 
   assert.equal(await page.$eval('#record-select', (s) => s.value), 'off');
   assert.equal(await page.isChecked('#record-calls'), false);
   assert.equal(await page.evaluate(() => window.cegarplay.project.settings.record), undefined);
-  await page.click('label[for="tab12"]');
+  await B.openTab(page, 12);
   await page.selectOption('#lab-source', 'latest');
   await page.click('#lab-compute');
   await waitStatus(page, /^space: 19 candidates/);
@@ -277,7 +277,7 @@ test('Record a run and place it, New seed, the busy line with Stop, and the run 
 // without a recording and never again, so Place this run did not appear. Here in that order on purpose.
 test('a run of the page that ends after the bounds: the run\'s part follows it (Place this run appears)', async () => {
   const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3&refinery=1', { advanced: false });
-  await page.click('label[for="tab12"]');
+  await B.openTab(page, 12);
   await page.selectOption('#lab-source', 'latest');
   await page.click('#lab-compute');
   await waitStatus(page, /^space: 19 candidates/);

@@ -30,7 +30,6 @@ code does now.
   are per origin); a first CI run on GitHub (`.github/workflows/test.yml`, never run); filing the
   trap report (`docs/upstream-trap-report.md`, repro in `docs/trap-repro/`); a read of the guide
   by a person; Firefox and Safari checks of recent UI changes.
-- Proposal pending (consolidation, 2026-11-27): fewer tabs and one help system (see below).
 - Smaller ideas left open are under "Not done" in `docs/history.md`, per feature.
 
 ## Known problems
@@ -155,4 +154,20 @@ Review of UI, security, implementation and docs debt; the owner chose four group
     would be the next step); the loop-header `DECL` of `tools/library.mjs` lacks
     `options "--heuristic=Domain"` for C, unlike `js/project.js` and `tools/guide.mjs` (changing
     it would change generated examples, replays and numbers).
+- **Tab bar and help (owner approved the proposal): done.**
+  - Tab row: Home · Write: Programs, Loop, Instances · Read: the group tabs **Results** (Output,
+    Statistics), **Analyse** (Observatory, Campaign, Refinery; hidden while all three are off) and
+    **Learn** (Tutorial, Manual, links to the guide, the guided tour and the loop walkthrough).
+    A group's sub-tabs are a second row (`.sub-tabs`, shown by CSS `:has` on the checked radio);
+    a group tab opens the sub-tab last used in it (`js/topbar.js`). Every radio, section and
+    `?tab=N` id is unchanged. Internals is a Project-menu item (`#menu-internals`, with
+    `?internals=true`). Digits 1-7 number the tab row (a group tab opens its last sub-tab).
+  - Deviation from the proposal: Statistics stays a tab of its own (a sub-tab of Results) instead
+    of a section of Output; the run summary and many tests address it as tab 6.
+  - Help: the tab tours no longer pop up on a tab's first visit; "Tour of this tab" in each tab's
+    fold and Settings start them. The Refinery's "?" already opened inline like the others.
+  - Tests: `B.openTab(page, n)` (harness) opens a sub-tab through its group; a new test in
+    `browser/tabs.test.mjs` covers the groups. Gotcha: a MutationObserver on `hidden` sees every
+    write, even of the same value; `syncGroups` writes only on a change (it looped and the page
+    never fired load).
 

@@ -18,7 +18,13 @@ export const TOUR_KEY = 'cegarplay.tour';
 export const TOUR_EXAMPLE = 'tutorial-first-run';
 const POLL_MS = 200;
 
-const tabLabel = (id) => document.querySelector(`#tab-bar label[for="${id}"]`);
+// a tab's label; for a sub-tab whose row is not shown, its group tab (Results, Analyse, Learn)
+const tabLabel = (id) => {
+  const l = document.querySelector(`#tab-bar label[for="${id}"]`);
+  if (!l || l.offsetParent !== null) return l;
+  const g = l.closest('.sub-tabs');
+  return (g && document.getElementById(`group-${g.dataset.group}`)) || l;
+};
 const tabOpen = (id) => $(id).checked;
 function openTab(id) {
   const r = $(id);
@@ -109,7 +115,7 @@ function makeSteps(app) {
     {
       title: 'The results',
       target: () => tabLabel('tab5'),
-      text: '<p>The <b>Output</b> tab shows the result of the run. Open it.</p>',
+      text: '<p>The <b>Output</b> tab shows the result of the run. Open it: <b>Results</b> in the tab row, then <b>Output</b>.</p>',
       done: () => tabOpen('tab5'),
       doIt: () => openTab('tab5'),
       autoNext: true,

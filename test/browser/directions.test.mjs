@@ -161,7 +161,7 @@ test('S2: with certificates on, the Statistics tab counts refinements per level'
   await page.selectOption('#certify-select', 'report');
   await page.click('#run-button');
   await settled(page);
-  await page.click('label[for="tab6"]');
+  await B.openTab(page, 6);
   assert.equal(await page.isVisible('#certificates-block'), true);
   const cells = await page.$$eval('#certificates-table tbody td', (t) => t.map((x) => x.textContent));
   assert.deepEqual(cells.slice(0, 6), ['0', '0', '46', '0', '0', '0']);

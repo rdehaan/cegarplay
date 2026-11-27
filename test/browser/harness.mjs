@@ -107,6 +107,19 @@ export async function closeDialog(page, name) {
   await page.evaluate((id) => { const d = document.getElementById(id); if (d.open) d.close(); }, `dialog-${name}`);
 }
 // Open a dialog, do one thing, close it again.
+// Open tab N (the radio #tabN) as a reader would: a sub-tab (Output, Statistics, Observatory,
+// Campaign, Refinery, Tutorial, Manual) through its group tab when its row is not shown;
+// Internals (7) from the Project menu.
+export async function openTab(page, n) {
+  if (n === 7) { await page.click('#project-menu-button'); await page.click('#menu-internals'); return; }
+  const label = `label[for="tab${n}"]`;
+  if (!(await page.isVisible(label))) {
+    const group = await page.$eval(label, (l) => { const g = l.closest('.sub-tabs'); return g ? g.dataset.group : null; });
+    if (group) await page.click(`#group-${group}`);
+  }
+  if (!(await page.$eval(`#tab${n}`, (r) => r.checked))) await page.click(label);
+}
+
 export async function inDialog(page, name, action) {
   await openDialog(page, name);
   const r = await action();

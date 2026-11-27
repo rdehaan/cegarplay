@@ -81,7 +81,7 @@ test('Space pauses and resumes a run (when no button has the focus)', async () =
   await page.keyboard.press(' ');
   assert.equal(await B.runState(page), 'paused');
   // while paused: the steps so far, with the arrow keys (Output tab)
-  await page.click('label[for="tab5"]');
+  await B.openTab(page, 5);
   assert.equal(await page.isVisible('#trace-paused'), true);
   await page.click('#result-line');
   const before = await page.textContent('#trace-label');

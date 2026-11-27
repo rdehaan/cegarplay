@@ -48,7 +48,7 @@ test('C2: the loaded example and the tab are kept in the address bar', async () 
   await B.openLibrary(page);
   await page.click('#library [data-load-example="nash"]');
   await page.waitForFunction(() => window.cegarplay.exampleId === 'nash');
-  await page.click('label[for="tab5"]');
+  await B.openTab(page, 5);
   assert.match(page.url(), /[?&]example=nash\b/);
   assert.match(page.url(), /[?&]tab=5\b/);
   assert.match(page.url(), /[?&]nocoi=1\b/);

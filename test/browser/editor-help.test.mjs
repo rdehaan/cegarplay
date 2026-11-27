@@ -82,23 +82,27 @@ test('after a run: the run in words, tooltips on the trace and the statistics', 
   assert.match(await page.textContent('#run-story'), /^Solver A proposed 107 candidates\. The check \(solver C\) refuted 46 of them/);
   assert.match(await page.getAttribute('#trace-candidate .atom.hl', 'title'), /occurs in the refinement/);
   assert.match(await page.getAttribute('#trace-refinement .atom', 'title'), /^The refinement clause: /);
-  await page.click('label[for="tab6"]');
+  await B.openTab(page, 6);
   assert.match(await page.getAttribute('#solver-table th:has-text("Sat")', 'title'), /For a check: the counterexamples found/);
   // a new run clears it until it ends
-  await page.click('label[for="tab5"]');
+  await B.openTab(page, 5);
   await page.click('#clear-button');
   assert.equal(await page.isHidden('#run-story'), true);
   assert.deepEqual(errors, []);
   await context.close();
 });
 
-test('the Observatory\'s short tour: offered the first time the tab opens, then not again', async () => {
+test('the Observatory\'s short tour: not offered on opening the tab; started from the tab\'s help and from Settings', async () => {
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.addInitScript(() => { if (localStorage.getItem('cegarplay.tour') === null) localStorage.setItem('cegarplay.tour', '"seen"'); localStorage.setItem('cegarplay.observatory', '1'); });
   await page.goto(server.url + 'index.html?nocoi=1&example=tutorial-first-run');
   await page.waitForSelector('body[data-ready="true"]');
-  await page.click('label[for="tab11"]');
+  await B.openTab(page, 11);
+  await page.waitForTimeout(500);
+  assert.equal(await page.$('#tour-card'), null, 'no tour on opening the tab');
+  await page.click('#section-observatory .help-fold > summary');
+  await page.click('#section-observatory [data-tab-tour="tab11"]');
   await page.waitForSelector('#tour-card');
   assert.equal(await page.textContent('#tour-title'), 'The Observatory');
   await page.click('#tour-card .tour-next');
@@ -106,7 +110,7 @@ test('the Observatory\'s short tour: offered the first time the tab opens, then 
   assert.equal(await page.$eval('#cursor-region', (e) => e.classList.contains('tour-target')), true);
   await page.click('#tour-card .tour-close');
   await page.click('label[for="tab1"]');
-  await page.click('label[for="tab11"]');
+  await B.openTab(page, 11);
   await page.waitForTimeout(500);
   assert.equal(await page.$('#tour-card'), null);
   // from Settings, for a tab that is off: shown for the visit

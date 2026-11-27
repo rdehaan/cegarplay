@@ -3,7 +3,7 @@
 //   ← / →        the previous / next step: the trace (Output tab), the Refinery's refinements
 //                (Shift: ten steps in the trace); Home / End: the first / last traced step
 //   Space        pause or resume a run (isolated page only)
-//   1 … 9        the first nine tabs shown in the tab row
+//   1 … 9        the tabs of the tab row (a group tab opens its last-used sub-tab)
 //   Shift+C, O, R, T, M   the Campaign, Observatory, Refinery, Tutorial or Manual tab on or off
 //   Shift+A      the three advanced tabs (Campaign, Observatory, Refinery) on or off
 //   ?            the list of shortcuts (a dialog)
@@ -48,12 +48,13 @@ function toggleTab(letter) {
 // a dialog, a modal or a pop-up menu is open: its own keys only
 const overlayOpen = () => !!document.querySelector('dialog[open], .modal.is-visible, .popover:not([hidden])');
 
-// the tabs shown in the tab row, in order
+// the tabs shown in the tab row (not the sub-tabs of a group), in order
 export function shownTabs() {
-  return [...document.querySelectorAll('#tab-bar label.tab-label')].filter((l) => !l.hidden && l.offsetParent !== null);
+  return [...document.querySelectorAll('#tab-bar .tab-row .tab-label')].filter((l) => !l.hidden && l.offsetParent !== null);
 }
 
 function openTab(label) {
+  if (label.classList.contains('group-tab')) { label.click(); return; }     // Results, Analyse, Learn
   const r = $(label.htmlFor);
   if (!r || r.checked) return;
   r.checked = true;
