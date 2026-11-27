@@ -169,16 +169,17 @@ function makeSteps(app) {
         <b>read</b> the results (Output, Statistics).</p>
         <p>The <a href="#" data-open-tab="tab2">Tutorial</a> tab has lessons with an example each, the
         <a href="guide/" target="cegarplay-guide">Guide</a> is a course on designing CEGAR loops,
-        <a href="#" data-loop-walkthrough>The loop language, step by step</a> explains every line of a loop script, and
-        <a href="#" data-dialog="dialog-settings">Settings</a> switches on the advanced tabs (Observatory, Campaign,
-        Refinery). This tour is on Home and in Settings, to take again.</p>`,
+        <a href="#" data-loop-walkthrough>The loop language, step by step</a> explains every line of a loop script.
+        When a loop works, <b>Analyse</b> looks deeper: the Observatory shows a run as pictures, the Campaign
+        compares variants on many instances, and the Refinery shows what the loop could have done.
+        This tour is on Home and in Settings, to take again.</p>`,
       next: 'Finish',
     },
   ];
 }
 
 
-// ---- the short tours of the advanced tabs: started from the tab's help and from Settings (js/init.js)
+// ---- the short tours of the Analyse tabs: started from the tab's help and from Settings (js/init.js)
 const tabTarget = (id) => () => { const e = document.getElementById(id); return e && !e.hidden && e.offsetParent !== null ? e : null; };
 export const TAB_TOURS = {
   tab11: {

@@ -805,7 +805,7 @@ What "sound up to k" does not say: anything about k + 1, or about instances the 
 
 Which solutions a too-strong refinement removes depends on which counterexamples the check happens to return, and so on the search order, the loop shape and the instance. A wrong loop can lose nothing on one instance and lose many on the next. Apply the soundness test to several small instances, and to several values of the constants.
 
-The playground keeps them together. The Instances tab holds the instances of one project, each with its expected count; **Run all instances** marks every count that differs. **Fuzz** audits instances from small to large, stops at the first unsound one and shrinks it. A campaign (Campaign tab, an Advanced tab) runs your loop and the blocking loop, as a variant, over a grid of instances, and marks every instance where the two disagree.
+The playground keeps them together. The Instances tab holds the instances of one project, each with its expected count; **Run all instances** marks every count that differs. **Fuzz** audits instances from small to large, stops at the first unsound one and shrinks it. A campaign (Campaign tab, under Analyse) runs your loop and the blocking loop, as a variant, over a grid of instances, and marks every instance where the two disagree.
 
 ### Too weak and too strong {#c04-both-ways}
 
@@ -855,7 +855,7 @@ Write `lift` after a link's fragments (`link G = A -> C via shared + glue lift`)
 
 The audit names one witness. To see every candidate at once, the Observatory's **Candidate space** draws one square per candidate of the unrefined abstraction and marks the solutions a refinement removed; its blame matrix shows which atoms each clause relies on. The map shows one run; when its search avoids the bad refinement, **Find a run that loses one** tries seeds until a run does not. When the instance is large, **Fuzz** (Instances tab) audits instances from small to large and shrinks the first unsound one to a handful of facts. The how-to hunting an unsound refinement walks through both on this chapter's example.
 
-To see what the right clause would have been, the **Refinery** (a switch in Settings, the gear in the top bar) takes the witness candidate and lists every clause the loop could make there: which are sound, how much each removes, and the smallest sound one. It also names the **forced** atoms, those every sound clause must contain, each with the solution that differs from the candidate only there. A forced atom that `relevant/1` did not mark is the atom this chapter's test looks for.
+To see what the right clause would have been, the **Refinery** (a tab under Analyse) takes the witness candidate and lists every clause the loop could make there: which are sound, how much each removes, and the smallest sound one. It also names the **forced** atoms, those every sound clause must contain, each with the solution that differs from the candidate only there. A forced atom that `relevant/1` did not mark is the atom this chapter's test looks for.
 :::
 
 ::: exercise
@@ -3618,7 +3618,7 @@ The examples are in the playground's library. [Playground: qbf]{.play}
 
 # Part II: The playground {#part-2}
 
-The playground (CegarPlay) is the browser application in which every example of this book runs. A project has **fragments** of ASP text, a **loop script** that says how the solvers call each other, and **instances** (the input of the problem). Its tabs follow the work: a project is written in the Programs, Loop and Instances tabs, run, and looked at in the Output, Statistics and Observatory tabs; the Campaign tab compares many runs. Each lesson below names the library example it uses, as in \[Playground: tutorial-first-run\], and describes what a run of it shows. The Observatory and the Campaign tab belong to the playground's Advanced mode; the Refinery tab (the Refinery, lesson 6) has a switch of its own.
+The playground (CegarPlay) is the browser application in which every example of this book runs. A project has **fragments** of ASP text, a **loop script** that says how the solvers call each other, and **instances** (the input of the problem). Its tabs follow the work: a project is written in the Programs, Loop and Instances tabs, run, and looked at in the Output, Statistics and Observatory tabs; the Campaign tab compares many runs, and the Refinery tab (lesson 6) shows what a loop could have done. Each lesson below names the library example it uses, as in \[Playground: tutorial-first-run\], and describes what a run of it shows.
 
 ## What CEGAR is {#t01}
 

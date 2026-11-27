@@ -65,7 +65,7 @@ test('snapshots: without browser storage the page works and Undo still brings th
   await context.addInitScript(() => {
     Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('blocked', 'SecurityError'); } });
   });
-  const { page, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=1', { context, advanced: false });
+  const { page, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=1', { context });
   page.on('dialog', (d) => d.accept());
   assert.match(await page.textContent('#snapshot-unavailable'), /Browser storage is not available here/);
   assert.equal(await page.isDisabled('#snapshot-save-button'), true);
@@ -84,13 +84,12 @@ test('snapshots: without browser storage the page works and Undo still brings th
 });
 
 test('Reset everything forgets the project, workspace, snapshots and choices; Cancel keeps them', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=1', { advanced: false });
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=1');
   await B.openDialog(page, 'versions');
   await page.click('#snapshot-save-button');
   await page.fill('#workspace-name', 'mine');
   await page.click('#workspace-save-button');
   await B.closeDialog(page, 'versions');
-  await B.inDialog(page, 'settings', () => page.check('#dialog-settings .observatory-checkbox'));
   await B.setEditor(page, 'editor-check', '% my edit\n');
   await page.waitForFunction(() => localStorage.getItem('cegarplay.project') && /my edit/.test(localStorage.getItem('cegarplay.project')));
   const ours = () => page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('cegarplay')).sort());
@@ -106,7 +105,6 @@ test('Reset everything forgets the project, workspace, snapshots and choices; Ca
   await page.waitForSelector('body[data-ready="true"]');
   assert.equal(new URL(page.url()).search, '');
   assert.equal(await page.evaluate(() => window.cegarplay.project.title), 'Sum-free sets');
-  assert.equal(await page.isVisible('label[for="tab11"]'), false, 'Advanced mode is off again');
   assert.equal(await page.$$eval('#snapshot-list li[data-snapshot]', (l) => l.length), 0);
   assert.equal(await page.$$eval('#workspace-list li', (l) => l.length), 0);
   assert.deepEqual(errors, []);

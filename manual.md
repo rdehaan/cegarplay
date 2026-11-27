@@ -46,7 +46,7 @@ limits, recording and certificates) and **Instances** (inputs, generators, Run a
 then three group tabs, whose sub-tabs show in a second row under the tab row when the group is open
 (a group tab opens the sub-tab last used in it): **Results** (**Output** and **Statistics**),
 **Analyse** (**Observatory**, **Campaign** (many runs) and the [**Refinery**](#manual-refinery-tab),
-which shows what a loop could have done; shown when one of them is switched on) and **Learn**
+which shows what a loop could have done; a line after these sub-tabs says what the open one is for) and **Learn**
 (**Tutorial**, **Manual**, and links to the design guide, the guided tour and the loop walkthrough).
 **Internals** is opened from the **Project** menu (with `?internals=true`). The run summary under the top bar (**Shown:** which run, audit
 or replay the Output, Statistics and Observatory tabs show; the live counts; a run's error) stays
@@ -57,14 +57,10 @@ is folded by default; one that is opened stays open until it is folded again (ke
 The **?** next to a fragment's name (Programs) and next to the loop script (Loop) has the same style
 and works the same way: it unfolds a short explanation of that fragment or of the loop script in a
 blue box under the heading.
-**Manual** appears when asked for. **Settings** has toggles kept in this browser:
-**Tutorial** (shown by default), **Technical manual**, and **Advanced** with three indented toggles
-under it, **Campaign**, **Observatory** and **Refinery**, all off by default. **Advanced** turns all
-three on or off; it is ticked when all three are on and shows a dash when some are. The Tutorial
-tab repeats the Observatory and Campaign toggles. Settings also has the colour theme, the **Guided tour**, the
-**Keyboard shortcuts** and **Reset everything**. A link that opens one of these tabs (`?tab=2`, `?tab=10`, `?tab=11`, `?tab=12`,
-`?lecture=1`, `?view=`, `?step=`, `?refinery=1`, a link to a tutorial lesson) shows it for
-that visit without changing the stored choice.
+Every tab is always shown (until 2026-11-27 the Tutorial, Manual, Campaign, Observatory and Refinery
+could be switched off; the page forgets those old choices). The Manual's text (`manual.md`) and the
+Refinery's code are loaded when the tab first opens. **Settings** has the **Guided tour** and the
+short tours of the Analyse tabs, the **Keyboard shortcuts**, the colour theme and **Reset everything**.
 
 ## Model and terms
 
@@ -1596,8 +1592,7 @@ facts: draw what the instance fixes in the scene part.
 
 ### Refinery tab
 
-Tab 12 (`?tab=12`), shown with the toggle **Refinery** in **Settings**
-(`cegarplay.lab`), or for one visit with `?refinery=1`. It shows what a loop *could* have done, not
+Tab 12 (`?tab=12`), under **Analyse**; its code and its own engine are loaded when it first opens. It shows what a loop *could* have done, not
 just what it did: at one step, every refinement clause that was possible there, and over a whole run,
 how its length compares with the best and worst runs that the same refinements allow. Everything is
 computed on small instances by enumerating the candidate space, as the [audit](#manual-audit) does,
@@ -1771,11 +1766,8 @@ prints them as `{"kind": ..., "data": ...}`.
 | `?example=<id>` | Load the library example `<id>`. It does not replace the project kept in the browser until you edit it. |
 | `&fragment=<name>` | With `?example`: open the Programs tab on that fragment's editor (`loop` opens the Loop tab; a view fragment opens its view's editor in the Observatory, **Edit this view**). Overrides `?tab`. An unknown name is ignored with a note in the status line. |
 | `&from=guide/<page>.html#<anchor>` | Show a link "← Back to the guide" in the top bar, to that guide page. Only a page of the guide is accepted. |
-| `?tab=N` | Open tab N: 1 Home, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual (when the manual is shown), 9 Instances, 10 Campaign, 11 Observatory, 12 Refinery. The numbers are fixed; they are not the order on screen. |
+| `?tab=N` | Open tab N: 1 Home, 2 Tutorial, 3 Programs, 4 Loop, 5 Output, 6 Statistics, 7 Internals (with `?internals=true`), 8 Manual, 9 Instances, 10 Campaign, 11 Observatory, 12 Refinery. The numbers are fixed; they are not the order on screen. |
 | `&instance=<id>` | Pick that instance of the project in the top bar. An unknown id is ignored with a note. |
-| `?manual=true` | Show the Manual tab (without changing the remembered toggle). |
-| `?tab=10`, `?tab=11` | Also show the Campaign or the Observatory tab for this visit (without changing the remembered toggles); `?lecture=1`, `?view=` and `?step=` show the Observatory too. |
-| `?refinery=1` | Show the [Refinery](#manual-refinery-tab) tab for this visit, without changing the remembered toggle. `?tab=12` implies it. |
 | `?internals=true` | Add **Internals** to the Project menu: a tab with the engine facts, generated Lua, raw event lines. |
 | `?fresh=1` | Start from the default example (`tutorial-first-run`), ignoring the kept project. |
 | `#p=<data>` | A share link (**Copy share link** in the Project menu): the whole project without its run history, in the URL fragment, which never reaches the server. `<data>` is `z` + base64url of the deflate-raw compressed project JSON (`u` + base64url of the plain JSON in a browser without `CompressionStream`). Takes precedence over the kept project and, like `?example`, does not replace it until you edit. A damaged link opens the default example with an error in the status line. Links over 8,000 characters get a warning. |
@@ -1822,11 +1814,7 @@ the page); Undo brings that project
   "same as the project now" and its Restore is disabled), different from every snapshot, or without
   snapshots. "The same" ignores the run history and follows each edit. **Last action** names what the
   block did last, with the time.
-- `cegarplay.manual`: `"1"` when "Show the technical manual" is ticked.
-- `cegarplay.campaign`, `cegarplay.observatory`: `"1"` when that tab is on (absent when off).
-- `cegarplay.tutorial`: `"0"` when the Tutorial tab is hidden (absent when shown).
-- `cegarplay.lab`: `"1"` when the Refinery is on (absent when off); `cegarplay.lab.*`: the
-  Refinery's settings (its Limits, the source of steps, the candidate order, the scheme), as JSON.
+- `cegarplay.lab.*`: the Refinery's settings (its Limits, the source of steps, the candidate order, the scheme), as JSON.
 - `cegarplay.theme`: `"light"` or `"dark"` when the colour theme was chosen by hand (absent for Auto).
 - `cegarplay.help-open`: the tabs whose explanation (the **?**) was opened, as JSON.
 - `cegarplay.tour`: `{ state, at }` once the guided tour was started, closed or finished; while it is
@@ -1852,8 +1840,7 @@ It starts from **Home** ("guided tour" in the opening lines), from **Settings** 
 
 The Observatory, Campaign and Refinery tabs have short tours of their own (`TAB_TOURS` in
 `js/tour.js`, three or four cards on the tab's parts): they start from the tab's help ("Tour of
-this tab") or from **Settings** (Guided tour), not on their own; a tab that is off is shown for
-that visit.
+this tab") or from **Settings** (Guided tour), not on their own.
 
 Keyboard shortcuts when not typing (`js/keys.js`; none applies in an editor, a text field, a list
 or while a dialog or menu is open; a slider and the tab row keep their own arrow keys):
@@ -1864,10 +1851,8 @@ or while a dialog or menu is open; a slider and the tab row keep their own arrow
 | Shift+← / → | ten steps back / on (trace and Observatory) |
 | Home / End | the first / last step (trace and Observatory) |
 | Space | Pause or Resume a run (isolated page only; on a focused button Space presses that button). While a run is paused, the Output tab says so above the trace, and ← / → step through the steps recorded so far |
-| 1 … 9 | the tabs of the tab row in its order: Home, Programs, Loop, Instances, then the group tabs Results, Analyse (when an advanced tab is on) and Learn; a group tab opens the sub-tab last used in it |
+| 1 … 9 | the tabs of the tab row in its order: Home, Programs, Loop, Instances, then the group tabs Results, Analyse and Learn; a group tab opens the sub-tab last used in it |
 | ? | the **Keyboard shortcuts** dialog (also in the footer and in Settings), with the tabs as the digits number them |
-| Shift+C / O / R / T / M | the Campaign, Observatory, Refinery, Tutorial or Manual tab on or off, as its checkbox in Settings (kept in this browser); a note at the bottom says which |
-| Shift+A | the three advanced tabs (Campaign, Observatory, Refinery) on or off, as Settings' Advanced |
 
 The trace's Previous and Next and the Pause button name their keys in their tooltips.
 

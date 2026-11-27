@@ -95,7 +95,7 @@ test('after a run: the run in words, tooltips on the trace and the statistics', 
 test('the Observatory\'s short tour: not offered on opening the tab; started from the tab\'s help and from Settings', async () => {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.addInitScript(() => { if (localStorage.getItem('cegarplay.tour') === null) localStorage.setItem('cegarplay.tour', '"seen"'); localStorage.setItem('cegarplay.observatory', '1'); });
+  await page.addInitScript(() => { if (localStorage.getItem('cegarplay.tour') === null) localStorage.setItem('cegarplay.tour', '"seen"'); });
   await page.goto(server.url + 'index.html?nocoi=1&example=tutorial-first-run');
   await page.waitForSelector('body[data-ready="true"]');
   await B.openTab(page, 11);
@@ -113,7 +113,7 @@ test('the Observatory\'s short tour: not offered on opening the tab; started fro
   await B.openTab(page, 11);
   await page.waitForTimeout(500);
   assert.equal(await page.$('#tour-card'), null);
-  // from Settings, for a tab that is off: shown for the visit
+  // from Settings
   await page.click('#settings-button');
   await page.click('#dialog-settings [data-tab-tour="tab10"]');
   await page.waitForSelector('#tour-card');

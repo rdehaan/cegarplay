@@ -101,7 +101,7 @@ const LIGHT_BOXES = `(() => {
 
 for (const theme of ['light', 'dark']) {
   test(`screenshots of every tab in the ${theme} theme`, async () => {
-    const { page, context, errors } = await open('?example=clique-interdiction&internals=true&manual=true&tab=1', { colorScheme: theme });
+    const { page, context, errors } = await open('?example=clique-interdiction&internals=true&tab=1', { colorScheme: theme });
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.click('#run-button');
     await B.waitState(page, ['finished']);

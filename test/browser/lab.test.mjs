@@ -1,5 +1,5 @@
-// The Refinery tab (tab 12): off by default and invisible then; the toggle,
-// ?refinery=1 and ?tab=12; its own worker beside the main engine; the inspector, bounds and the run
+// The Refinery tab (tab 12): always shown, its code loaded when it first opens; ?tab=12; its own
+// worker beside the main engine; the inspector, bounds and the run
 // against the bounds; Reset everything clears its keys.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,30 +14,25 @@ const stored = (page, key) => page.evaluate((k) => localStorage.getItem(k), key)
 const status = (page) => page.$eval('#lab-status', (e) => e.textContent);
 const waitStatus = (page, re, timeout = 120000) => page.waitForFunction((r) => new RegExp(r).test(document.getElementById('lab-status').textContent), re.source, { timeout });
 
-// Taken from the page before the lab existed (fresh visit, Advanced mode off).
-// (in the order of the grouped tab row: Home, Write, Results, Learn)
-const TABS_BEFORE = ['tab1', 'tab3', 'tab4', 'tab9', 'tab5', 'tab6', 'tab2'];
+// Every tab label but Internals (in the order of the grouped tab row: Home, Write, Results, Analyse, Learn).
+const TABS = ['tab1', 'tab3', 'tab4', 'tab9', 'tab5', 'tab6', 'tab11', 'tab10', 'tab12', 'tab2', 'tab8'];
 const CONTROL_IDS_BEFORE = ['project-info', 'edit-project-button', 'project-heading', 'project-description', 'project-readme', 'project-readme-body', 'project-form', 'project-title-input',
   'project-description-input', 'project-readme-input', 'save-project-info', 'cancel-project-info', 'library-section', 'library-filter', 'library-level', 'library-read', 'library', 'load-status',
-  'storage-status', 'new-button', 'new-status', 'file-button', 'file-input', 'upload-status', 'download-button', 'include-history', 'keys-status', 'workspace-name', 'workspace-save-button', 'workspace-list',
+  'storage-status', 'new-button', 'new-status', 'file-button', 'file-input', 'upload-status', 'download-button', 'include-history', 'workspace-name', 'workspace-save-button', 'workspace-list',
   'workspace-status', 'snapshot-current', 'snapshot-status', 'snapshot-name', 'snapshot-save-button', 'snapshot-undo', 'snapshot-undo-text', 'snapshot-undo-button', 'snapshot-list-title',
   'snapshot-list', 'snapshot-others', 'download-recording-button', 'open-recording-button', 'recording-input', 'recording-status', 'share-button', 'share-status', 'export-standalone-button',
   'export-status', 'factory-reset-button',
   // the reorganised page: the library's "?", the dialogs' titles, Recordings as a target
   'library-help-button', 'library-help', 'dialog-versions-title', 'recordings', 'dialog-settings-title'].sort();
 
-test('lab off (the default): the same tabs and Home as before, no lab code or worker loaded', async () => {
-  const { page, context, errors, foreign } = await B.openPage(browser, server, '?fresh=1', { advanced: false });
+test('the Refinery tab is shown; Home as before; no Refinery code or worker loaded until it opens', async () => {
+  const { page, context, errors, foreign } = await B.openPage(browser, server, '?fresh=1');
   const requests = [];
   page.on('request', (r) => requests.push(r.url()));
   const tabs = await page.$$eval('label.tab-label', (ls) => ls.filter((l) => !l.hidden && getComputedStyle(l).display !== 'none').map((l) => l.getAttribute('for')));
-  assert.deepEqual(tabs, TABS_BEFORE);
+  assert.deepEqual(tabs, TABS);
   // Home, and the dialogs that took over the rest of the old Control tab
   assert.deepEqual(await page.$$eval('#section-control [id], #dialog-versions [id], #dialog-settings [id]', (es) => es.map((e) => e.id).sort()), CONTROL_IDS_BEFORE);
-  // the one visible change: the toggle, unticked
-  assert.equal(await page.$eval('#dialog-settings .lab-checkbox', (c) => c.checked), false);
-  assert.equal(await page.$$eval('.lab-checkbox', (l) => l.length), 1, 'only in Settings');
-  assert.equal(await stored(page, 'cegarplay.lab'), null);
   await page.click('label[for="tab3"]');
   await page.waitForTimeout(300);
   assert.ok(!requests.some((u) => /\/js\/lab\//.test(u)), 'no lab module requested');
@@ -47,36 +42,19 @@ test('lab off (the default): the same tabs and Home as before, no lab code or wo
   await context.close();
 });
 
-test('the toggle shows the Refinery tab and is remembered; ?refinery=1 and ?tab=12 show it for the visit only', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?fresh=1', { advanced: false });
-  assert.equal(await shown(page, 'tab12'), false);
-  await B.inDialog(page, 'settings', () => page.check('#dialog-settings .lab-checkbox'));
-  assert.equal(await shown(page, 'tab12'), true);
-  assert.equal(await stored(page, 'cegarplay.lab'), '1');
-  await page.reload();
-  await page.waitForSelector('body[data-ready="true"]');
-  assert.equal(await shown(page, 'tab12'), true, 'remembered');
-  await B.openTab(page, 12);
+test('?tab=12 opens the Refinery and loads it; the address bar follows a tab chosen later', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?fresh=1&tab=12');
+  assert.equal(await page.$eval('#tab12', (r) => r.checked), true);
   await page.waitForSelector('#lab-compute');
+  await page.click('label[for="tab1"]');
+  await B.openTab(page, 12);
   assert.match(new URL(page.url()).search, /tab=12/);
-  await page.evaluate(() => { const c = document.querySelector('#dialog-settings .lab-checkbox'); c.checked = false; c.dispatchEvent(new Event('change')); });
-  assert.equal(await shown(page, 'tab12'), false);
-  assert.equal(await page.$eval('#tab1', (r) => r.checked), true);
-  assert.equal(await stored(page, 'cegarplay.lab'), null, 'absent when off');
-  await context.close();
-  for (const q of ['?fresh=1&refinery=1', '?fresh=1&tab=12']) {
-    const o = await B.openPage(browser, server, q, { advanced: false });
-    assert.equal(await shown(o.page, 'tab12'), true, q);
-    assert.equal(await stored(o.page, 'cegarplay.lab'), null, `${q}: nothing stored`);
-    if (q.includes('tab=12')) { assert.equal(await o.page.$eval('#tab12', (r) => r.checked), true); await o.page.waitForSelector('#lab-compute'); }
-    assert.deepEqual(o.errors, []);
-    await o.context.close();
-  }
   assert.deepEqual(errors, []);
+  await context.close();
 });
 
 test('free mode: space, inspector (verdict, atom table, option map, lattice), counterexamples, bounds with the histogram', async () => {
-  const { page, context, errors, foreign } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=12&refinery=1', { advanced: false });
+  const { page, context, errors, foreign } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=12');
   await page.waitForSelector('#lab-compute');
   assert.match(await page.textContent('#lab-inspect'), /Disabled until the space is computed/);
   await page.selectOption('#lab-source', 'free');
@@ -109,7 +87,7 @@ test('free mode: space, inspector (verdict, atom table, option map, lattice), co
 });
 
 test('from a run: gc-shape2 n3 recorded with every step; the run against the bounds; Run works while the Refinery computes; Cancel stops only the Refinery', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3&refinery=1', { advanced: false });
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3');
   await page.click('label[for="tab4"]');
   await page.selectOption('#record-select', 'all');
   await B.runOptions(page, () => page.selectOption('#solutions-select', '0'));
@@ -155,8 +133,7 @@ test('from a run: gc-shape2 n3 recorded with every step; the run against the bou
 });
 
 test('Reset everything also removes the Refinery\'s keys', async () => {
-  const { page, context } = await B.openPage(browser, server, '?fresh=1&tab=12', { advanced: false });
-  await B.inDialog(page, 'settings', () => page.check('#dialog-settings .lab-checkbox'));
+  const { page, context } = await B.openPage(browser, server, '?fresh=1&tab=12');
   await page.waitForSelector('#lab-compute');
   await page.selectOption('#lab-source', 'free');
   assert.equal(await stored(page, 'cegarplay.lab.source'), '"free"');
@@ -165,12 +142,12 @@ test('Reset everything also removes the Refinery\'s keys', async () => {
   await Promise.all([page.waitForNavigation(), page.click('#factory-reset-button')]);
   await page.waitForSelector('body[data-ready="true"]');
   assert.deepEqual(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('cegarplay.lab'))), []);
-  assert.equal(await shown(page, 'tab12'), false);
+  assert.equal(await shown(page, 'tab12'), true);
   await context.close();
 });
 
 test('review fixes: omniscient bounds and the run share no slot; a recording of another instance gives free mode; a request while busy keeps Cancel', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n4&refinery=1', { advanced: false });
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n4');
   await page.click('label[for="tab4"]');
   await page.selectOption('#record-select', 'all');
   await B.runOptions(page, () => page.selectOption('#solutions-select', '0'));
@@ -221,7 +198,7 @@ test('review fixes: omniscient bounds and the run share no slot; a recording of 
 });
 
 test('Record a run and place it, New seed, the busy line with Stop, and the run bar\'s "record steps"', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3&refinery=1', { advanced: false });
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3');
   // the run bar's toggle: every step and every call, or no recording at all
   assert.equal(await page.isChecked('#run-record'), false);
   await B.runOptions(page, () => page.check('#run-record'));
@@ -276,7 +253,7 @@ test('Record a run and place it, New seed, the busy line with Stop, and the run 
 // CI failure 2026-11-25: the bounds were ready before the page's run ended, the run's part was drawn
 // without a recording and never again, so Place this run did not appear. Here in that order on purpose.
 test('a run of the page that ends after the bounds: the run\'s part follows it (Place this run appears)', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3&refinery=1', { advanced: false });
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&instance=n3');
   await B.openTab(page, 12);
   await page.selectOption('#lab-source', 'latest');
   await page.click('#lab-compute');

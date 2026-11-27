@@ -18,9 +18,8 @@
   runs. A project has <b>fragments</b> of ASP text, a <b>loop script</b> that says how the solvers call each other,
   and <b>instances</b> (the input of the problem). Its tabs follow the work: a project is written in the Programs,
   Loop and Instances tabs, run, and looked at in the Output, Statistics and Observatory tabs; the Campaign tab
-  compares many runs. Each lesson below names the library example it uses, as in [Playground: tutorial-first-run],
-  and describes what a run of it shows. The Observatory and the Campaign tab belong to the playground's Advanced
-  mode; the Refinery tab (the Refinery, lesson 6) has a switch of its own.</p>
+  compares many runs, and the Refinery tab (lesson 6) shows what a loop could have done. Each lesson below names the
+  library example it uses, as in [Playground: tutorial-first-run], and describes what a run of it shows.</p>
 <p class="web-only">Every lesson has a <b>Load</b> button. It replaces the project you are editing (the page asks first
   if you changed it), and you stay in this tab. Press <b>Run</b> or <b>Ctrl+Enter</b> (<b>Cmd+Enter</b> on a
   Mac): the line under the top bar shows the counts while you read on. All examples are also in the
@@ -28,10 +27,8 @@
 <p class="web-only">The tabs follow the work: you <b>write</b> a project (Programs, Loop, Instances), <b>run</b> it and
   <b>look</b> at the run (Output, Statistics, Observatory), and <b>compare</b> many runs (Campaign).
   Lessons 2 to 6 use one small problem throughout; lessons 7 to 11 add the tools for larger ones.</p>
-<p class="web-only">The Observatory and Campaign tabs are advanced tabs: tick them at the top of this tab or in
-  <b>Settings</b> (the gear at the right of the top bar; lessons 5, 6 and 8 use them). There you can also hide this tab
-  once you no longer need it, and turn on the third advanced tab, the <b>Refinery</b> (the end of lesson 6); the page
-  remembers these choices.</p>
+<p class="web-only">The Observatory, Campaign and Refinery tabs are under <b>Analyse</b>; lessons 5, 6 and 8 use
+  them. Until then, the Write tabs and Results are all you need.</p>
 <p class="web-only">This tutorial shows where each tool is. The <a href="guide/index.html#howto" target="cegarplay-guide">how-to
   pages</a> of the design guide show how to use the tools to answer a question (compare strategies, find
   where the time goes, hunt an unsound refinement, ...), and its <a href="guide/reading-order.html"
@@ -249,8 +246,8 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
   which atoms the refinements relied on.</p>
 <h3 id="tut-lab">What the loop could have done: the Refinery</h3>
 <p>The candidate space shows what one run did. The <b>Refinery</b> tab shows what the loop
-  <em>could</em> have done, from the same enumeration as the audit. <span class="web-only">Turn on <b>Refinery</b> in
-  <b>Settings</b> and open the Refinery tab. With this project loaded, set <b>Steps from</b> to free and
+  <em>could</em> have done, from the same enumeration as the audit. <span class="web-only">Open the
+  Refinery tab (under <b>Analyse</b>). With this project loaded, set <b>Steps from</b> to free and
   press <b>Compute space</b>; under <b>Space</b>, <b>Inspect this candidate</b> opens the audit's witness in the
   <b>Step inspector</b>.</span><span class="book-only">Its <b>step inspector</b>, on the audit's witness, shows the
   following.</span> The candidate <code>{pick(2) pick(4)}</code> has one counterexample, <code>sum(2,2)</code>. Its clause
@@ -306,7 +303,7 @@ relevant(pick(X+Y)) :- sum(X,Y).</div>
 <p>A <b>suite</b> is a grid of runs: instances × variants × solver seeds, each with all solutions. A <b>variant</b>
   changes the project for a run, for example its loop. The too weak sum-free sets have a suite <code>scaling</code>:
   <code>n</code> from 4 to 8, with the project's loop (<code>default</code>) and with the Reference run (<code>reference</code>).</p>
-<p><span class="web-only">Open the <b>Campaign</b> tab (tick it at the top of this tab) and press <b>Start</b>.</span><span class="book-only">The <b>Campaign</b> tab runs the suite.</span> The ten runs share several engines and take under a second.
+<p><span class="web-only">Open the <b>Campaign</b> tab (under <b>Analyse</b>) and press <b>Start</b>.</span><span class="book-only">The <b>Campaign</b> tab runs the suite.</span> The ten runs share several engines and take under a second.
   Then:</p>
 <ul>
   <li>the summary: per variant, the median time and candidates, and how fast they grow with <code>n</code>;</li>
@@ -633,7 +630,7 @@ if Y: reject M with GXC.core(C)</div>
   <a href="#manual-certificates">certificates</a>, the <a href="#manual-observatory-tab">Observatory</a>, the
   <a href="#manual-refinement-variants">refinement variants</a>, <a href="#manual-settings">settings and limits</a>,
   the <a href="#manual-raw-lua-projects">Lua runtime</a>, and a <a href="#manual-troubleshooting">troubleshooting</a> table.
-  <span class="web-only">Tick <b>Show the technical manual</b> at the top of this tab to give it a tab of its own; a link to it opens it too.</span><span class="book-only">It has a tab of its own in the playground (Manual).</span>
+  <span class="web-only">It is the <b>Manual</b> tab, next to this one under <b>Learn</b>; a link to it opens it too.</span><span class="book-only">It has a tab of its own in the playground (Manual).</span>
   It is written to be read by AI agents as well: they can fetch <a href="manual.md" target="_blank">manual.md</a> directly.</p>
 <p>The tutorial shows how the tool works. How to <b>design</b> a loop (what goes in the abstraction, how a
   counterexample becomes a refinement, how a refinement goes wrong, which loop shape to choose) is the subject of

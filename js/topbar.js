@@ -182,7 +182,7 @@ export function setupTopbar() {
     }
   };
   for (const r of document.querySelectorAll('input[name="tabs"]')) r.addEventListener('change', syncGroups);
-  new MutationObserver(syncGroups).observe(tabbar, { subtree: true, attributes: true, attributeFilter: ['hidden'] });   // (the labels' hidden: js/init.js showTabs)
+  new MutationObserver(syncGroups).observe(tabbar, { subtree: true, attributes: true, attributeFilter: ['hidden'] });   // (a label's hidden: Internals, js/init.js)
   syncGroups();
   const summary = document.querySelector('.run-summary');
   // (set here, not as a CSS variable: css/theme.css defines every variable the stylesheets use)

@@ -73,33 +73,14 @@ test('digits open the tabs shown; ? opens the shortcuts; editors and fields keep
   await context.close();
 });
 
-test('Shift+letter switches a tab on and off, as its Settings checkbox (kept); not while typing', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?tab=1', { advanced: false });
-  const shown = (id) => page.$eval(`label[for="${id}"]`, (l) => !l.hidden);
-  assert.equal(await shown('tab11'), false);
+test('Shift+letter no longer hides a tab (every tab is always shown)', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?tab=1');
+  const shown = () => page.$$eval('label.tab-label', (ls) => ls.filter((l) => !l.hidden).map((l) => l.htmlFor).join(' '));
+  const before = await shown();
   await page.click('.home-intro');
-  await page.keyboard.press('Shift+O');
-  assert.equal(await shown('tab11'), true);
-  assert.equal(await page.evaluate(() => localStorage.getItem('cegarplay.observatory')), '1', 'kept, as the checkbox does');
-  await page.waitForSelector('#toast:not([hidden])');
-  assert.match(await page.textContent('#toast'), /Observatory tab: on \(Shift\+O switches it off again/);
-  await page.keyboard.press('Shift+O');
-  assert.equal(await shown('tab11'), false);
-  // the three advanced tabs at once, and the manual
-  await page.keyboard.press('Shift+A');
-  assert.deepEqual([await shown('tab10'), await shown('tab11'), await shown('tab12')], [true, true, true]);
-  await page.keyboard.press('Shift+A');
-  assert.deepEqual([await shown('tab10'), await shown('tab11'), await shown('tab12')], [false, false, false]);
-  await page.keyboard.press('Shift+M');
-  assert.equal(await shown('tab8'), true);
-  await page.keyboard.press('Shift+T');
-  assert.equal(await shown('tab2'), false);
-  // while typing in an editor: a capital letter
-  await page.click('label[for="tab3"]');
-  await page.click('#editor-abstraction');
-  await page.keyboard.press('Shift+C');
-  assert.equal(await shown('tab10'), false);
-  assert.match(await B.getEditor(page, 'editor-abstraction'), /C/);
+  for (const k of ['C', 'O', 'R', 'T', 'M', 'A']) await page.keyboard.press(`Shift+${k}`);
+  assert.equal(await shown(), before);
+  assert.equal(await page.$eval('#tab1', (r) => r.checked), true);
   assert.deepEqual(errors, []);
   await context.close();
 });

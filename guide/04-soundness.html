@@ -21,7 +21,7 @@
     <nav>
       <a href="../">Playground</a>
       <a href="../?tab=2">Tutorial</a>
-      <a href="../?manual=true&amp;tab=8">Manual</a>
+      <a href="../?tab=8">Manual</a>
       <button class="theme-toggle" data-theme-toggle type="button">&#x25D0; Auto</button>
     </nav>
   </header>
@@ -146,7 +146,7 @@ relevant(del(V)) :- q(V), not busier(V).</pre>
         <p>The playground keeps them together. The Instances tab holds the instances of one
           project, each with its expected count; <b>Run all instances</b> marks every count that differs.
           <b>Fuzz</b> audits instances from small to large, stops at the first unsound one and
-          shrinks it. A campaign (Campaign tab, an Advanced tab) runs your loop and the blocking loop, as a variant,
+          shrinks it. A campaign (Campaign tab, under Analyse) runs your loop and the blocking loop, as a variant,
           over a grid of instances, and marks every instance where the two disagree.</p>
 
         <h2 id="both-ways">Too weak and too strong</h2>
@@ -208,7 +208,7 @@ relevant(leaf_color(N,C)) :- leaf_color(N,C), leaf(N).</pre>
             first unsound one to a handful of facts. The how-to <a href="howto-unsound.html">hunting an unsound
             refinement</a> walks through both on this chapter's example.</p>
           <p id="lab">To see what the right clause would have been, the <b>Refinery</b> (a
-            switch in Settings, the gear in the top bar) takes the witness candidate and lists every clause the loop
+            tab under Analyse) takes the witness candidate and lists every clause the loop
             could make there: which are sound, how much each removes, and the smallest sound one. It also
             names the <b>forced</b> atoms, those every sound clause must contain, each with the solution
             that differs from the candidate only there. A forced atom that <code>relevant/1</code> did not

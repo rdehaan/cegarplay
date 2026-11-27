@@ -2658,3 +2658,25 @@ file); `tools/aspq-check.py` checks them by brute force. Manual: *ASP(Q) example
   through `insertText` so Ctrl+Z undoes them; Esc then Tab leaves the field (no keyboard trap, as in
   ACE); the hint is in the title and `aria-description`. The project description stays a plain
   field (one paragraph). Tests: `editor-help.test.mjs` (tabEdit), `directions.test.mjs` (both fields).
+
+## Every tab always shown (2026-11-27, on request)
+
+- With the group tabs, the toggles no longer kept the tab row short (it is Home, Programs, Loop,
+  Instances, Results, Analyse, Learn either way), and hiding cost more than it saved: new users had
+  to find Settings, lessons and guide pages said "switch on the Observatory first", and links forced
+  hidden tabs on for one visit. The owner weighed the cost of a shown tab as user-friendliness and
+  chose all tabs always shown over one "Show Analyse tabs" setting.
+- Removed: the Settings "Tabs" section (Tutorial, Technical manual, Advanced with Campaign,
+  Observatory, Refinery), the Tutorial tab's copies, Home's "can be switched on" sentence, the
+  Analyse row's "Choose these tabs…" link, Shift+C/O/R/T/M/A and `#keys-status`, `showTabs`,
+  `showManual`, `?manual=true` and `?refinery=1` (now ignored; guide links use `?tab=8`), the CSS
+  `.no-*` body classes. The old keys `cegarplay.{manual,campaign,observatory,tutorial,lab}` are
+  removed at start-up. Internals stays behind `?internals=true` (a debugging view).
+- To keep the Analyse tabs from overwhelming a beginner: a line after the Analyse sub-tabs says what
+  the open one is for (`.sub-tab-note`), the sub-tabs' tooltips name their purpose, the tutorial says
+  the Write tabs and Results suffice until lesson 5, and the tour's last card names the three.
+- The Manual's text is fetched when its tab first opens (it was fetched whenever the tab was shown);
+  the audit's "See it in the candidate space" is offered whenever the verdict is unsound.
+- Tests: `tabs.test.mjs` (every tab shown after old "off" choices; the manual fetched lazily; the
+  purpose line), `lab.test.mjs`, `keys.test.mjs`, `page.test.mjs` (Manual) rewritten; the harness's
+  `advanced` option removed; `a11y.test.mjs` checks all twelve tabs at 390 px.

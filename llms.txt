@@ -39,7 +39,7 @@
   each; the input format `issue/1`, `cl/1`, `pos/2`, `neg/2`, `voter/1`, `yes/2`). Each example's own
   readme is the `readme` field of its project file.
 - Open an example in the page: `index.html?example=<id>`; add `&tab=4` for the loop script,
-  `&manual=true&tab=8` for the manual.
+  `&tab=8` for the manual.
 
 ## Running without a browser
 

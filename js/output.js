@@ -119,11 +119,11 @@ export class Output {
     if (a.mode === 'space') {
       if (a.verdict === 'unsound') act('save-and-audit', 'Save it and audit it', 'Keep the instance as a regression instance and audit it by enumeration: the full list of unsound refinements');
       if (a.verdict === 'unsound') act('space-seed-sweep', 'Find a run that loses it', 'Run the instance to all solutions with a randomized search, seeds 1 to 50, until a run finds fewer solutions than there are; then record that run and show its bad refinement in the candidate space (Observatory)');
-      if (a.verdict === 'unsound' && ctx.observatory) act('space-candidate-space', 'See it in the candidate space', 'Keep the instance as a regression instance, run the loop on it with every step recorded, and draw every candidate (Observatory). The map shows the refinements this run makes; its search order may avoid the unsound one, which the witness above shows.');
+      if (a.verdict === 'unsound') act('space-candidate-space', 'See it in the candidate space', 'Keep the instance as a regression instance, run the loop on it with every step recorded, and draw every candidate (Observatory). The map shows the refinements this run makes; its search order may avoid the unsound one, which the witness above shows.');
       if (a.verdict === 'sound') act('larger-bound', 'Try a larger bound', `The same space with ${a.bound || 'k'} two higher`);
     } else {
       if (a.verdict === 'unsound') act('seed-sweep', 'Find a run that loses it', 'Run the instance to all solutions with a randomized search, seeds 1 to 50, until a run finds fewer solutions than there are; then record that run and show its bad refinement in the candidate space (Observatory)');
-      if (a.verdict === 'unsound' && ctx.observatory) act('candidate-space', 'See it in the candidate space', 'Run with every step recorded and draw every candidate, with the lost solutions marked (Observatory)');
+      if (a.verdict === 'unsound') act('candidate-space', 'See it in the candidate space', 'Run with every step recorded and draw every candidate, with the lost solutions marked (Observatory)');
       if (a.verdict === 'limit') act('symbolic', 'Audit by symbolic search', 'The same question in one search, without listing the candidates');
       if (a.verdict === 'sound' || a.verdict === 'unsound') {
         if (ctx.spaces) act('space', 'Check a space', 'Every instance of a space up to a bound: is the verdict the same on the others?');

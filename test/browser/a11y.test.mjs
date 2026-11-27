@@ -100,8 +100,8 @@ test('B6: a fragment\'s "?" opens its explanation inline with the keyboard, and 
 });
 
 test('B4, B5: at 390 px every tab has a name and a tooltip, and no tab scrolls sideways', async () => {
-  const { page, context } = await B.openPage(browser, server, '?internals=true&manual=true', { contextOptions: { viewport: { width: 390, height: 800 } } });
-  for (const t of [1, 2, 3, 4, 5, 6, 7, 8]) {
+  const { page, context } = await B.openPage(browser, server, '?internals=true', { contextOptions: { viewport: { width: 390, height: 800 } } });
+  for (const t of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) {
     const sel = `label[for="tab${t}"]`;
     if (await page.$eval(sel, (l) => l.hidden)) continue;
     const [name, title, size] = await page.$eval(sel, (l) => [l.textContent.trim(), l.title, parseFloat(getComputedStyle(l.querySelector('.tab-text') || l).fontSize)]);

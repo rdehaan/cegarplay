@@ -4,8 +4,6 @@
 //                (Shift: ten steps in the trace); Home / End: the first / last traced step
 //   Space        pause or resume a run (isolated page only)
 //   1 … 9        the tabs of the tab row (a group tab opens its last-used sub-tab)
-//   Shift+C, O, R, T, M   the Campaign, Observatory, Refinery, Tutorial or Manual tab on or off
-//   Shift+A      the three advanced tabs (Campaign, Observatory, Refinery) on or off
 //   ?            the list of shortcuts (a dialog)
 import { $ } from './dom.js';
 
@@ -15,34 +13,12 @@ export function keysTaken(t, key) {
   if (!t || !t.closest) return false;
   if (t.isContentEditable || t.closest('.ace_editor, textarea, select, [contenteditable="true"]')) return true;
   if (t.tagName === 'INPUT') {
-    if (/^(radio|range)$/.test(t.type)) return key !== '?' && !/^[1-9]$/.test(key) && !/^[A-Z]$/.test(key);
+    if (/^(radio|range)$/.test(t.type)) return key !== '?' && !/^[1-9]$/.test(key);
     if (/^(checkbox|button|submit|reset|file|color)$/.test(t.type)) return key === ' ';
     return true;                                   // text, number, ...: every key is typing
   }
   if (key === ' ' && t.closest('button, a[href], summary, [role="menuitem"], [role="button"]')) return true;
   return false;
-}
-
-// Shift+letter: a tab on or off, as its checkbox in Settings (the choice is kept in this browser)
-export const TAB_TOGGLES = {
-  C: { box: '.campaign-checkbox', name: 'Campaign' },
-  O: { box: '.observatory-checkbox', name: 'Observatory' },
-  R: { box: '.lab-checkbox', name: 'Refinery' },
-  T: { box: '.tutorial-checkbox', name: 'Tutorial' },
-  M: { box: '.manual-checkbox', name: 'Manual' },
-  A: { box: '.advanced-checkbox', name: 'Advanced (Campaign, Observatory and Refinery)', plural: true },
-};
-function toggleTab(letter) {
-  const t = TAB_TOGGLES[letter];
-  const box = t && document.querySelector(t.box);
-  if (!box) return false;
-  box.click();
-  const s = $('keys-status');
-  if (s) {
-    s.textContent = '';
-    s.textContent = `${t.name} tab${t.plural ? 's' : ''}: ${box.checked ? 'on' : 'off'} (Shift+${letter} switches ${t.plural ? 'them' : 'it'} ${box.checked ? 'off' : 'on'} again; also in Settings)`;
-  }
-  return true;
 }
 
 // a dialog, a modal or a pop-up menu is open: its own keys only
@@ -93,10 +69,6 @@ export function bindPageKeys(app) {
     if (overlayOpen() || document.body.classList.contains('lecture')) return;
     if (keysTaken(e.target, e.key)) return;
     if (e.key === '?') { e.preventDefault(); openShortcuts(); return; }
-    if (e.shiftKey && /^[A-Z]$/.test(e.key) && TAB_TOGGLES[e.key]) {
-      if (toggleTab(e.key)) e.preventDefault();
-      return;
-    }
     if (/^[1-9]$/.test(e.key) && !e.shiftKey) {
       const label = shownTabs()[Number(e.key) - 1];
       if (label) { e.preventDefault(); openTab(label); }

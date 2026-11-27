@@ -111,7 +111,7 @@ test('a space audit to the candidate space: which run the map shows, the refinem
 });
 
 test('a view is edited in the Observatory, not in the Programs tab; a new fragment has its height', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=3', { advanced: false });
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=3');
   await page.waitForSelector('#fragments [data-fragment="check"]');
   // the view's rules are not among the program fragments; a note leads to them
   assert.deepEqual(await page.$$eval('#fragments .fragment', (l) => l.map((x) => x.dataset.fragment)), ['shared', 'abstraction', 'glue', 'check']);
@@ -120,7 +120,7 @@ test('a view is edited in the Observatory, not in the Programs tab; a new fragme
   page.once('dialog', (d) => d.accept('extra'));
   await page.click('#add-fragment-button');
   assert.ok(await page.$eval('[data-fragment="extra"] .editor', (e) => e.getBoundingClientRect().height) > 30);
-  // the note's button opens the Observatory (an Advanced tab) with the view's editor
+  // the note's button opens the Observatory with the view's editor
   await page.click('#open-view-editor');
   await page.waitForFunction(() => document.getElementById('tab11').checked && document.getElementById('view-edit').open);
   await page.waitForFunction(() => document.querySelector('#view-fragments [data-fragment="view"] .editor').getBoundingClientRect().height > 100);
@@ -150,7 +150,7 @@ test('a view is edited in the Observatory, not in the Programs tab; a new fragme
 });
 
 test('?fragment=view opens the view\'s editor in the Observatory', async () => {
-  const { page, context, errors } = await B.openPage(browser, server, '?example=guide-03-hit-clique&fragment=view', { advanced: false });
+  const { page, context, errors } = await B.openPage(browser, server, '?example=guide-03-hit-clique&fragment=view');
   await page.waitForFunction(() => document.getElementById('tab11').checked && document.getElementById('view-edit').open);
   assert.equal(await page.isVisible('#view-fragments [data-fragment="view"] .ace_editor'), true);
   assert.deepEqual(errors, []);

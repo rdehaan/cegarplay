@@ -40,7 +40,7 @@ const app = { ready: false, project: Project.newProject() };
 window.cegarplay = app;
 
 // ---- the address bar: ?example=<id> and ?tab=N follow the page (replaceState, no history entries)
-const KEEP_PARAMS = ['nocoi', 'manual', 'internals', 'from', 'tab', 'instance', 'replay', 'view', 'step', 'lecture', 'lab', 'refinery'];
+const KEEP_PARAMS = ['nocoi', 'internals', 'from', 'tab', 'instance', 'replay', 'view', 'step', 'lecture'];
 function setUrl({ example, tab, keepHash = false } = {}) {
   const now = new URLSearchParams(location.search);
   const next = new URLSearchParams();
@@ -64,85 +64,9 @@ function urlForgetProject() {
   document.querySelector('label[for="tab7"]').hidden = !on;
   $('menu-internals').hidden = !on;
 }
-// ---- the technical manual (tab 8): hidden unless the toggle is on or ?manual=true ---------
-const MANUAL_KEY = 'cegarplay.manual';
-const manualForced = params.get('manual') === 'true';
-function manualStored() {
-  try { return localStorage.getItem(MANUAL_KEY) === '1'; } catch { return false; }
-}
-function showManual(on, { store = true } = {}) {
-  if (store) {
-    try { if (on) localStorage.setItem(MANUAL_KEY, '1'); else localStorage.removeItem(MANUAL_KEY); } catch { /* no storage */ }
-  }
-  const visible = on || manualForced;
-  $('tab8').hidden = !visible;
-  $('label-manual').hidden = !visible;
-  for (const c of document.querySelectorAll('.manual-checkbox')) c.checked = visible;
-  if (!visible && $('tab8').checked) $('tab1').checked = true;
-  if (visible) loadManual();
-}
-showManual(manualStored(), { store: false });
-for (const c of document.querySelectorAll('.manual-checkbox')) {
-  c.addEventListener('change', () => showManual(c.checked));
-}
-
-// ---- which tabs show: the Advanced tabs (Campaign, Observatory, Refinery) and the Tutorial ----------------
-// Both are kept in this browser. A link that opens one of these tabs (?tab=, ?lecture=, ?view=,
-// ?step=, ?refinery=1, a #tut- link) shows it for this visit without changing the stored choice.
-// The Advanced tabs (Campaign, Observatory, Refinery) each have a toggle; the Advanced
-// toggle above them turns all three on or off (checked: all on; indeterminate: some on).
-const TAB_PREFS = {
-  campaign: { key: 'cegarplay.campaign', fallback: false, tabs: ['tab10'], box: '.campaign-checkbox' },
-  observatory: { key: 'cegarplay.observatory', fallback: false, tabs: ['tab11'], box: '.observatory-checkbox' },
-  tutorial: { key: 'cegarplay.tutorial', fallback: true, tabs: ['tab2'], box: '.tutorial-checkbox' },
-  lab: { key: 'cegarplay.lab', fallback: false, tabs: ['tab12'], box: '.lab-checkbox' },
-};
-const ADVANCED = ['campaign', 'observatory', 'lab'];
-function prefStored(name) {
-  const p = TAB_PREFS[name];
-  try {
-    const v = localStorage.getItem(p.key);
-    if (v !== null) return v === '1';
-    return p.fallback;
-  } catch { return p.fallback; }
-}
-function tabShown(name) { return !$(TAB_PREFS[name].tabs[0]).hidden; }
-function syncAdvancedBox() {
-  const on = ADVANCED.filter(tabShown).length;
-  for (const c of document.querySelectorAll('.advanced-checkbox')) { c.checked = on === ADVANCED.length; c.indeterminate = on > 0 && on < ADVANCED.length; }
-}
-function showTabs(name, on, { store = true } = {}) {
-  // 'advanced': Campaign and Observatory, as the old Advanced mode (links that need one of them)
-  if (name === 'advanced') { showTabs('campaign', on, { store }); showTabs('observatory', on, { store }); return; }
-  const p = TAB_PREFS[name];
-  if (store) {
-    try {
-      if (on === p.fallback) localStorage.removeItem(p.key); else localStorage.setItem(p.key, on ? '1' : '0');
-    } catch { /* no storage */ }
-  }
-  for (const id of p.tabs) {
-    $(id).hidden = !on;
-    document.querySelector(`label[for="${id}"]`).hidden = !on;
-    if (!on && $(id).checked) { $('tab1').checked = true; $('tab1').dispatchEvent(new Event('change', { bubbles: true })); }
-  }
-  for (const c of document.querySelectorAll(p.box)) c.checked = on;
-  document.body.classList.toggle(`no-${name}`, !on);
-  syncAdvancedBox();
-}
-app.showTabs = showTabs;
-{
-  showTabs('campaign', prefStored('campaign') || params.get('tab') === '10', { store: false });
-  showTabs('observatory', prefStored('observatory') || params.get('tab') === '11' ||
-    params.has('lecture') || params.has('view') || params.has('step'), { store: false });
-  showTabs('tutorial', prefStored('tutorial') || params.get('tab') === '2', { store: false });
-  showTabs('lab', prefStored('lab') || params.get('refinery') === '1' || params.get('tab') === '12', { store: false });
-}
-for (const name of Object.keys(TAB_PREFS)) {
-  for (const c of document.querySelectorAll(TAB_PREFS[name].box)) c.addEventListener('change', () => showTabs(name, c.checked));
-}
-for (const c of document.querySelectorAll('.advanced-checkbox')) {
-  c.addEventListener('change', () => { const on = c.checked; for (const n of ADVANCED) showTabs(n, on); });
-}
+// ---- every tab is shown (the Tutorial, Manual, Campaign, Observatory and Refinery could be hidden
+// until 2026-11-27): forget the old on/off choices kept in this browser
+try { for (const k of ['manual', 'campaign', 'observatory', 'tutorial', 'lab']) localStorage.removeItem(`cegarplay.${k}`); } catch { /* no storage */ }
 
 // ?from=guide/<page>.html#<anchor>: a link back to the guide page that opened this example.
 // Only a guide page of this site is accepted, never an arbitrary URL.
@@ -157,6 +81,7 @@ const FROM_PATTERN = /^guide\/[a-z0-9-]+\.html(#[a-z0-9-]+)?$/;
 
 const tab = params.get('tab');
 if (tab && /^([1-9]|1[012])$/.test(tab) && $('tab' + tab) && (tab !== '7' || params.get('internals') === 'true') && !$('tab' + tab).hidden) $('tab' + tab).checked = true;
+if ($('tab8').checked) loadManual();
 
 app.engine = new Engine({ threads: false });
 app.editors = new Editors(app);
@@ -247,7 +172,7 @@ app.output.trace.stepNote = (t) => {
   return p ? ` (recorded step ${p.i} of ${rec.steps.length}, as in the Observatory)` : '';
 };
 // the verdict panel's next steps (js/output.js nextSteps)
-app.output.auditContext = () => ({ spaces: (app.project.spaces || []).length > 0, observatory: !$('tab11').hidden });
+app.output.auditContext = () => ({ spaces: (app.project.spaces || []).length > 0 });
 const showTab = (n) => { $('tab' + n).checked = true; $('tab' + n).dispatchEvent(new Event('change', { bubbles: true })); };
 // a next step that changes the top bar's mode keeps it with the project, as a choice in the bar does
 const auditMode = (m) => { $('audit-mode').value = m; app.instancesTab.renderSpaceBar(); app.instancesTab.storeAuditSetting(); app.dirty(); };
@@ -298,7 +223,6 @@ app.sweepAndShow = async ({ instance, target }) => {
   const lost = r.target - r.solutions;
   const what = `Seed sweep: seed ${r.seed} loses ${lost} solution${lost === 1 ? '' : 's'} (${r.solutions} of ${r.target} found)`;
   app.control.runMessage(`${what}. The seed (Run options) is now ${r.seed}, randomized, so Run repeats this run.`);
-  if ($('tab11').hidden) showTabs('observatory', true, { store: false });
   showTab(11);
   await app.space.recordAndRun();
   app.control.runMessage(`${what}; the candidate space (Observatory) shows the refinement that removes it. The seed (Run options) is now ${r.seed}, randomized: Run repeats this run.`);
@@ -310,7 +234,7 @@ app.cursor = new Cursor();
 bindKeys(app.cursor, () => ($('tab11').checked || document.body.classList.contains('lecture')) && !document.querySelector('dialog[open], .modal.is-visible'));
 bindPageKeys(app);
 app.tour = new Tour(app);
-// the short tours of the advanced tabs: started from the tab's help ("Tour of this tab") and from
+// the short tours of the Analyse tabs: started from the tab's help ("Tour of this tab") and from
 // Settings; they no longer pop up on a tab's first visit
 app.tabTours = Object.fromEntries(Object.entries(TAB_TOURS).map(([tab, t]) => [tab, new Tour(app, t)]));
 app.loopWalkthrough = new Tour(app, { key: WALKTHROUGH_KEY, steps: walkthroughSteps, begin: walkthroughBegin });
@@ -348,8 +272,6 @@ for (const a of document.querySelectorAll('[data-tab-tour]')) a.addEventListener
   e.preventDefault();
   for (const d of document.querySelectorAll('dialog[open]')) d.close();
   const tab = a.dataset.tabTour;
-  const pref = Object.keys(TAB_PREFS).find((n) => TAB_PREFS[n].tabs.includes(tab));
-  if (pref && !tabShown(pref)) showTabs(pref, true, { store: false });      // for this visit
   if (!$(tab).checked) { $(tab).checked = true; $(tab).dispatchEvent(new Event('change', { bubbles: true })); }
   startTabTour(tab);
 });
@@ -358,9 +280,8 @@ for (const a of document.querySelectorAll('[data-shortcuts]')) a.addEventListene
 app.anatomy = new Anatomy(app, $('anatomy'));
 app.campaign = new CampaignTab(app);
 app.views = new ViewPanel(app, $('domain-view'));
-// A view's rules are edited in the Observatory (an Advanced tab): open it for this visit.
+// A view's rules are edited in the Observatory.
 app.views.openTab = () => {
-  if ($('tab11').hidden) showTabs('observatory', true, { store: false });
   $('tab11').checked = true;
   $('tab11').dispatchEvent(new Event('change', { bubbles: true }));
 };
@@ -470,7 +391,7 @@ function saveNow() {
 // rows in IndexedDB) and load the page afresh, without query or hash.
 app.factoryReset = async () => {
   const ok = window.confirm('Reset everything?\n\nThis forgets the project being edited and its run history, the workspace, ' +
-    'all snapshots, the campaign rows and your choices of tabs and theme, in this browser. It cannot be undone.');
+    'all snapshots, the campaign rows, the theme, the opened help and the Refinery settings, in this browser. It cannot be undone.');
   if (!ok) return false;
   app.resetting = true;
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
@@ -921,7 +842,7 @@ $('export-standalone-button').addEventListener('click', () => {
   catch (e) { status('export-status', e.message || String(e), true); }
 });
 
-wireDocLinks({ resizeVisibleEditors: () => resizeVisibleEditors(), showManual: (on) => showManual(on), showTabs: (n, on, o) => showTabs(n, on, o) });
+wireDocLinks({ resizeVisibleEditors: () => resizeVisibleEditors() });
 
 // ---- tabs ---------------------------------------------------------------------------
 // ACE editors built inside a hidden tab measure themselves wrongly; resize them when shown.
@@ -935,6 +856,7 @@ for (const r of document.querySelectorAll('input[name="tabs"]')) {
     requestAnimationFrame(resizeVisibleEditors);
     if (r.checked && r.id === 'tab10') requestAnimationFrame(() => app.campaign.draw());
     if (r.checked && r.id === 'tab12' && app.ready) showLab();
+    if (r.checked && r.id === 'tab8') loadManual();      // (fetched on the tab's first show)
     if (r.checked && r.id === 'tab11') requestAnimationFrame(() => { app.anatomy.dirty = { diagram: true, timeline: true, table: true }; app.anatomy.render(); app.views.updateSteps(); app.views.show(); });
     if (r.checked) setUrl({ example: new URLSearchParams(location.search).get('example'), tab: r.id === 'tab1' ? '' : r.id.slice(3), keepHash: true });
   });

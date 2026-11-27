@@ -23,14 +23,14 @@ The page's tabs follow the work:
   hold, and when the project was edited since; *Output* (solutions, trace, messages, the audit's verdict:
   by enumeration, by a symbolic search, or over a space up to a bound),
   *Statistics* (counts, solver tables, charts, the run history) and, under
-  *Analyse* (advanced tabs), *Observatory* (the loop's anatomy and call timeline, a picture
+  *Analyse*, *Observatory* (the loop's anatomy and call timeline, a picture
   of each step in the problem's own terms, every candidate at once in the
   candidate space, all driven by one cursor; exports for slides and a lecture
   mode).
-- **Compare** (*Analyse*, an advanced tab): *Campaign* (grids of instances × variants ×
+- **Compare** (under *Analyse*): *Campaign* (grids of instances × variants ×
   seeds on several engines, with plots and the runs whose counts disagree in
   red).
-- **What the loop could have done** (the *Refinery*, under *Analyse*, its own toggle): for a
+- **What the loop could have done** (the *Refinery*, under *Analyse*): for a
   step of a run, every clause the loop could have added there, which are sound,
   how much each removes and which atoms every sound clause needs; the shortest
   and longest runs the same refinements allow, exact on small instances; and a
@@ -38,9 +38,7 @@ The page's tabs follow the work:
 
 The tab row is Home, Programs, Loop, Instances and three group tabs whose sub-tabs open in a
 second row: *Results* (Output, Statistics), *Analyse* (Observatory, Campaign, Refinery) and
-*Learn* (Tutorial, Manual, links to the guide and the tours). The advanced tabs (Observatory,
-Campaign, Refinery), the Tutorial and the Manual are toggles in *Settings* (the gear in the top
-bar); the browser remembers them. The *Project*
+*Learn* (Tutorial, Manual, links to the guide and the tours); every tab is always shown. The *Project*
 menu opens, downloads, shares and exports projects, and keeps named projects
 (the workspace) and snapshots of the project being edited, with an Undo after a
 restore or after loading another project over an edited one. **Reset
@@ -74,7 +72,7 @@ and open <http://localhost:8000/>. (Opening `index.html` as a file does not
 work: workers and modules need http.) URL parameters: `?example=nash` loads
 `examples/nash.json` from the example library,
 `?tab=4` opens the Loop tab (tab numbers are fixed ids, not positions: the
-manual's URL parameters table lists them), `?manual=true` shows the Manual tab (tab 8),
+manual's URL parameters table lists them), `?tab=8` opens the Manual,
 `?internals=true` adds the Internals tab to the Project menu, `?fresh=1` ignores the project kept
 in the browser.
 
@@ -85,8 +83,8 @@ tools in thirteen lessons, each with an example to load: a first run, fragments
 and links, the trace and statistics, the Observatory, unsound refinements and
 the audit, instances, campaigns, loop shapes, loop scripts, certificates and
 recordings, and a recipe for your own problem. The technical manual (`manual.md`) is the
-complete reference, for lookup and for AI agents; the page renders it in a
-Manual tab that "Show the technical manual" (Tutorial tab or Settings) turns on.
+complete reference, for lookup and for AI agents; the page renders it in the
+Manual tab (under Learn).
 `llms.txt` points agents to the manual, the library and the headless runner.
 
 The design guide (`guide/`, static pages) teaches how to design a loop in

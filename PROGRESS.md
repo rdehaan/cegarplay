@@ -11,8 +11,8 @@ the tutorial, the manual, the Refinery and the UI reorganisation. `manual.md` de
 code does now.
 
 - **App** (`index.html`, `js/`, `lua/`): tabs Home (1), Tutorial (2), Programs (3), Loop (4),
-  Output (5), Statistics (6), Internals (7, `?internals=true`), Manual (8), Instances (9), and the
-  advanced tabs Campaign (10), Observatory (11), Refinery (12), switched on in Settings. Top bar
+  Output (5), Statistics (6), Internals (7, `?internals=true`), Manual (8), Instances (9), Campaign
+  (10), Observatory (11), Refinery (12); every tab but Internals is always shown. Top bar
   with the Project menu, Run/Audit, instance, variant, run options. Autosave, workspace, snapshots,
   share links (`#p=`), recordings and replays.
 - **Library**: 165 examples in 13 groups (`examples/library.json`; built by
@@ -20,7 +20,7 @@ code does now.
   `examples/contrib/*.json`); 148 replays in `examples/replays/`.
 - **Guide** (`guide/`): 22 chapters in two parts plus how-to pages; every number on a page is
   measured (`tools/guide-numbers.mjs --check`). **Book**: `book/cegarplay.md`, generated.
-- **Tests**: 82 files. Full suite on 2026-11-27: 1,534 tests, 1,435 pass, 0 fail, 99 skipped
+- **Tests**: 82 files. Full suite on 2026-11-27: 1,533 tests, 1,434 pass, 0 fail, 99 skipped
   (75 benchmark-only, 23 `SLOW=1`, 1 native clingo with Lua), about 18 min on 4 cores; the
   voting-justification coverage tests take about 11 of those minutes.
 
@@ -170,4 +170,7 @@ Review of UI, security, implementation and docs debt; the owner chose four group
     `browser/tabs.test.mjs` covers the groups. Gotcha: a MutationObserver on `hidden` sees every
     write, even of the same value; `syncGroups` writes only on a change (it looped and the page
     never fired load).
-
+- **Every tab always shown (owner's request): done.** No tab toggles remain (Settings, Tutorial tab,
+  Shift+letter keys); old stored choices are removed at start-up; a line after the Analyse sub-tabs
+  says what the open one is for; the Manual is fetched on its tab's first opening. `?manual=true`
+  and `?refinery=1` are ignored. Details in `docs/history.md`.

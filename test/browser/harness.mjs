@@ -33,9 +33,7 @@ export async function launch() {
 // By default the page is opened with ?nocoi=1 (not isolated); pass { coi: true } to let the
 // service worker shim isolate it (the page reloads once).
 // contextOptions go to browser.newContext (for instance { colorScheme: 'dark' }); path is the page to open.
-// advanced: open the page with the Observatory and Campaign tabs shown, as most tests need;
-// the stored choice is set before the page's scripts run. advanced: false leaves storage alone.
-export async function openPage(browser, server, query = '', { acceptDownloads = true, coi = false, contextOptions = {}, path = 'index.html', context: given, advanced = true, tour = false } = {}) {
+export async function openPage(browser, server, query = '', { acceptDownloads = true, coi = false, contextOptions = {}, path = 'index.html', context: given, tour = false } = {}) {
   if (!coi) query = query ? query + '&nocoi=1' : '?nocoi=1';
   const context = given || await browser.newContext({ acceptDownloads, ...contextOptions });
   const page = await context.newPage();
@@ -43,14 +41,6 @@ export async function openPage(browser, server, query = '', { acceptDownloads = 
   if (!tour) await page.addInitScript(() => {
     try { for (const k of ['cegarplay.tour', 'cegarplay.tour.observatory', 'cegarplay.tour.campaign', 'cegarplay.tour.refinery']) if (localStorage.getItem(k) === null) localStorage.setItem(k, '"seen"'); } catch { /* no storage */ }
   });
-  if (advanced) {
-    await page.addInitScript(() => {
-      try {
-        const keys = ['cegarplay.campaign', 'cegarplay.observatory'];
-        if (keys.every((k) => localStorage.getItem(k) === null)) { localStorage.setItem('cegarplay.campaign', '1'); localStorage.setItem('cegarplay.observatory', '1'); }
-      } catch { /* no storage */ }
-    });
-  }
   const errors = [], foreign = [];
   page.on('console', (m) => { if (m.type() === 'error' && !/chrome:\/\/juggler/.test(m.text())) errors.push(m.text()); });  // juggler: Playwright's Firefox instrumentation
   page.on('pageerror', (e) => errors.push(String(e)));

@@ -120,10 +120,10 @@
     <input id="tab6" aria-controls="section-statistics" type="radio" name="tabs">
     <input id="tab11" aria-controls="section-observatory" type="radio" name="tabs">
     <input id="tab10" aria-controls="section-campaign" type="radio" name="tabs">
-    <input id="tab12" aria-controls="section-lab" type="radio" name="tabs" hidden>
+    <input id="tab12" aria-controls="section-lab" type="radio" name="tabs">
     <input id="tab7" aria-controls="section-internals" type="radio" name="tabs">
     <input id="tab2" aria-controls="section-tutorial" type="radio" name="tabs">
-    <input id="tab8" aria-controls="section-manual" type="radio" name="tabs" hidden>
+    <input id="tab8" aria-controls="section-manual" type="radio" name="tabs">
 
     <!-- where the tab bar is in the page while it sticks (js/topbar.js measures it) -->
     <div id="tab-bar-anchor" aria-hidden="true"></div>
@@ -145,14 +145,17 @@
         <label for="tab6" class="tab-label sub-tab" title="Statistics"><span class="tab-text">Statistics</span></label>
       </div>
       <div class="sub-tabs" id="subtabs-analyse" data-group="analyse">
-        <label for="tab11" class="tab-label sub-tab" id="label-observatory" title="Observatory"><span class="tab-text">Observatory</span></label>
-        <label for="tab10" class="tab-label sub-tab" id="label-campaign" title="Campaign"><span class="tab-text">Campaign</span></label>
-        <label for="tab12" class="tab-label sub-tab" id="label-lab" hidden title="Refinery" aria-label="Refinery"><span class="tab-text">Refinery</span></label>
-        <a href="#" class="sub-tab-link" data-dialog="dialog-settings">Choose these tabs&hellip;</a>
+        <label for="tab11" class="tab-label sub-tab" id="label-observatory" title="Observatory: a run as pictures"><span class="tab-text">Observatory</span></label>
+        <label for="tab10" class="tab-label sub-tab" id="label-campaign" title="Campaign: many runs compared"><span class="tab-text">Campaign</span></label>
+        <label for="tab12" class="tab-label sub-tab" id="label-lab" title="Refinery: what a loop could have done" aria-label="Refinery"><span class="tab-text">Refinery</span></label>
+        <!-- what the open sub-tab is for (css/main.css shows the one of the checked tab) -->
+        <span class="sub-tab-note" data-for="tab11">a run as pictures: its anatomy, call timeline, domain view and candidate space</span>
+        <span class="sub-tab-note" data-for="tab10">many runs compared: variants &times; instances &times; engines, as tables and plots</span>
+        <span class="sub-tab-note" data-for="tab12">what a loop could have done: every possible refinement, and the shortest and longest runs</span>
       </div>
       <div class="sub-tabs" id="subtabs-learn" data-group="learn">
-        <label for="tab2" class="tab-label sub-tab" title="Tutorial"><span class="tab-text">Tutorial</span></label>
-        <label for="tab8" class="tab-label sub-tab" id="label-manual" hidden title="Manual"><span class="tab-text">Manual</span></label>
+        <label for="tab2" class="tab-label sub-tab" title="Tutorial: lessons with an example each"><span class="tab-text">Tutorial</span></label>
+        <label for="tab8" class="tab-label sub-tab" id="label-manual" title="Manual: the complete reference"><span class="tab-text">Manual</span></label>
         <a href="guide/" class="sub-tab-link" target="cegarplay-guide">Design guide &#x2197;</a>
         <a href="#" class="sub-tab-link" data-tour>Guided tour</a>
         <a href="#" class="sub-tab-link" data-loop-walkthrough>The loop language, step by step</a>
@@ -163,15 +166,13 @@
     </nav>
 
     <!-- 1. Home: the project, and the example library. The file actions are in the Project menu,
-         the tabs, theme and reset in Settings (the dialogs after </main>). -->
+         the theme and reset in Settings (the dialogs after </main>). -->
     <section id="section-control">
       <p class="home-intro">
         CegarPlay runs CEGAR loops (counterexample-guided abstraction refinement) written in answer
         set programming, with clingo running in your browser. Pick an example below, or start one from
         <b>Project</b>. A project is written in the <b>Write</b> tabs; press <b>Run</b> (or <b>Audit</b>)
         and read the run under <b>Results</b> (and <b>Analyse</b>). New here? Take the <a href="#" data-tour>guided tour</a> (five minutes), or start with the <a href="#" data-open-tab="tab2">Tutorial</a>.
-        <span class="home-more">The advanced tabs (Observatory, Campaign, Refinery) can be switched on
-          in <a href="#" data-dialog="dialog-settings">Settings</a>.</span>
       </p>
       <div class="project-box">
         <div id="project-info">
@@ -236,22 +237,15 @@
         <p id="share-status" class="status-line toast-source"></p>
         <button class="control-button" id="export-standalone-button">Export for clingo</button>
         <p id="export-status" class="status-line toast-source"></p>
-        <p id="keys-status" class="status-line toast-source"></p>
       </div>
     </section>
 
     <!-- 2. Tutorial -->
     <section id="section-tutorial">
-      <p class="manual-toggle tab-toggles">
-        <label class="inline-label" title="The complete reference, for lookup and for AI agents, in its own tab"><input type="checkbox" class="manual-checkbox"> Technical manual</label>
-        <label class="inline-label" title="The Observatory tab (lessons 5 and 6)"><input type="checkbox" class="observatory-checkbox"> Observatory</label>
-        <label class="inline-label" title="The Campaign tab (lesson 8)"><input type="checkbox" class="campaign-checkbox"> Campaign</label>
-        <label class="inline-label" title="Settings (the gear in the top bar) brings it back"><input type="checkbox" class="tutorial-checkbox" checked> Show this tab</label>
-        <span class="note">Kept in this browser; also in Settings.</span></p>
       <div id="tutorial"></div>
     </section>
 
-    <!-- 8. Manual (hidden unless the toggle is on or ?manual=true) -->
+    <!-- 8. Manual (manual.md is fetched when the tab first opens) -->
     <section id="section-manual">
       <p class="note">The complete reference, also as <a href="manual.md" target="_blank">raw Markdown</a>
         (for AI agents: start from <a href="llms.txt" target="_blank">llms.txt</a>).</p>
@@ -447,7 +441,7 @@
       <div id="candidate-space" class="observatory-region" hidden></div>
     </section>
 
-    <!-- 12. Refinery (hidden unless its toggle is on, ?refinery=1 or ?tab=12) -->
+    <!-- 12. Refinery (its code is loaded when the tab first opens) -->
     <section id="section-lab">
       <details class="help-fold" data-help="section-lab">
         <summary><span class="help-title">Refinery</span> <span class="help-q" title="What is this tab?">?</span></summary>
@@ -529,34 +523,14 @@
       <header class="dialog-header"><h2 id="dialog-settings-title">Settings</h2>
         <button class="icon-button" type="button" data-close-dialog aria-label="Close">&#x2715;</button></header>
       <div class="dialog-body">
-        <h3>Tabs</h3>
-        <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="tutorial-checkbox" checked>
-          Tutorial</label> <span class="note">lessons with an example each; hide it once you know your way around</span></p>
-        <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="manual-checkbox">
-          Technical manual</label> <span class="note">the complete reference, for lookup and for AI agents</span></p>
-        <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="advanced-checkbox">
-          Advanced</label> <span class="note">all three tabs below, on or off</span></p>
-        <div class="advanced-toggles">
-          <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="campaign-checkbox">
-            Campaign</label> <span class="note">grids of runs on several engines, instances and variants</span></p>
-          <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="observatory-checkbox">
-            Observatory</label> <span class="note">a run as pictures: anatomy, call timeline, domain view, candidate space</span></p>
-          <p class="manual-toggle"><label class="inline-label"><input type="checkbox" class="lab-checkbox">
-            Refinery</label> <span class="note">a tab of its own: every refinement a loop could have made
-            at a step, and the shortest and longest runs its refinements allow (small instances)</span></p>
-        </div>
-        <p class="note">These choices are kept in this browser. Keyboard (when not typing): <kbd>Shift</kbd>+<kbd>T</kbd> Tutorial,
-          <kbd>Shift</kbd>+<kbd>M</kbd> Manual, <kbd>Shift</kbd>+<kbd>A</kbd> Advanced, <kbd>Shift</kbd>+<kbd>C</kbd> Campaign,
-          <kbd>Shift</kbd>+<kbd>O</kbd> Observatory, <kbd>Shift</kbd>+<kbd>R</kbd> Refinery.</p>
-
         <h3>Guided tour</h3>
         <p><button class="control-button" type="button" data-tour>Start the guided tour</button>
           <span class="note">a first run, step by step (about five minutes); it loads the example Sum-free sets</span></p>
         <p><button class="control-button" type="button" data-loop-walkthrough>The loop language, step by step</button>
           <span class="note">every line of a loop script, what it does exactly, with experiments that change and run it (about ten minutes)</span></p>
-        <p>Short tours of the advanced tabs: <a href="#" data-tab-tour="tab11">Observatory</a> ·
+        <p>Short tours of the Analyse tabs: <a href="#" data-tab-tour="tab11">Observatory</a> ·
           <a href="#" data-tab-tour="tab10">Campaign</a> · <a href="#" data-tab-tour="tab12">Refinery</a>
-          <span class="note">(also in each tab's help, "Tour of this tab"; a tab that is off is switched on for the visit)</span></p>
+          <span class="note">(also in each tab's help, "Tour of this tab")</span></p>
 
         <h3>Keyboard</h3>
         <p><a href="#" data-shortcuts>Keyboard shortcuts</a> <span class="note">(or press <kbd>?</kbd> when not typing)</span></p>
@@ -568,7 +542,7 @@
         <h3>Reset</h3>
         <p class="note">Start from a clean slate: forget everything CegarPlay keeps in this browser (the
           project being edited and its run history, the workspace, all snapshots, the campaign rows, the
-          choices of tabs and theme) and start again as on a first visit. Download what you want to keep first.</p>
+          theme, the opened help and the Refinery's settings) and start again as on a first visit. Download what you want to keep first.</p>
         <button class="control-button danger-button" id="factory-reset-button">Reset everything</button>
       </div>
     </div>
@@ -592,16 +566,6 @@
           <dt><kbd>Home</kbd> <kbd>End</kbd></dt><dd>the first / last step (trace and Observatory)</dd>
           <dt><kbd>Space</kbd></dt><dd>pause or resume a run (when the page can pause runs); while it is paused, <kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd> step through the steps recorded so far</dd>
           <dt><kbd>?</kbd></dt><dd>this list</dd>
-        </dl>
-        <h3>Tabs on and off</h3>
-        <p class="note">As the checkboxes in Settings: the choice is kept in this browser.</p>
-        <dl class="keys-list">
-          <dt><kbd>Shift</kbd>+<kbd>C</kbd></dt><dd>Campaign</dd>
-          <dt><kbd>Shift</kbd>+<kbd>O</kbd></dt><dd>Observatory</dd>
-          <dt><kbd>Shift</kbd>+<kbd>R</kbd></dt><dd>Refinery</dd>
-          <dt><kbd>Shift</kbd>+<kbd>A</kbd></dt><dd>all three advanced tabs (Campaign, Observatory, Refinery)</dd>
-          <dt><kbd>Shift</kbd>+<kbd>T</kbd></dt><dd>Tutorial</dd>
-          <dt><kbd>Shift</kbd>+<kbd>M</kbd></dt><dd>Manual</dd>
         </dl>
         <h3>Tabs</h3>
         <ol class="keys-tabs" id="keys-tabs"></ol>

@@ -5,7 +5,7 @@ import { h as make, $ } from './dom.js';
 import { renderMarkdown } from './markdown.js';
 import { makeEditor } from './editors.js';
 
-// page: { resizeVisibleEditors, showManual(on), showTabs(name, on, opts) } from js/init.js
+// page: { resizeVisibleEditors } from js/init.js
 let page = null;
 let manualLoading = null;       // the promise of the rendered manual
 let tutorialLoading = null;     // the promise of the loaded tutorial
@@ -90,7 +90,6 @@ export function wireDocLinks(pageHooks) {
     ev.preventDefault();
     const modal = a.closest('.modal');
     if (modal) modal.classList.remove('is-visible');
-    if ($('tab8').hidden) page.showManual(true);
     await loadManual();
     $('tab8').checked = true;
     requestAnimationFrame(() => {
@@ -105,7 +104,6 @@ export function wireDocLinks(pageHooks) {
     ev.preventDefault();
     const modal = a.closest('.modal');
     if (modal) modal.classList.remove('is-visible');
-    if ($('tab2').hidden) page.showTabs('tutorial', true, { store: false });
     $('tab2').checked = true;
     $('tab2').dispatchEvent(new Event('change', { bubbles: true }));
     await loadTutorial();
