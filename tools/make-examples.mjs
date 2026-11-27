@@ -136,7 +136,7 @@ const frag = (p, n) => p.fragments.find((f) => f.name === n);
 
 // voting-justification: explain1.lp keeps its questions as commented-out blocks of facts and
 // #const lines (one active). Each block becomes an instance: its facts, its constants, and an
-// id from its axioms. VOTE_INFO adds expected counts and tags (measured, see PROGRESS.md).
+// id from its axioms. VOTE_INFO adds expected counts and tags (measured, see docs/history.md).
 const VOTE_AXIOMS = `%%% The axioms. An instance switches axioms on with facts use_axiom(A), for A in
 %%% pareto, faithfulness, unanimity, cancellation, reinforcement, condorcet,
 %%% neutrality2, pos_responsiveness. It also gives the target profile

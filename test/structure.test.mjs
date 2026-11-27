@@ -112,7 +112,7 @@ const FAMILIES = [
 test('coverage: every one of the 18 loop families runs as a loop script (one family is not built: partial checks)', async () => {
   assert.equal(FAMILIES.length, 18);
   for (const [family, id, want] of FAMILIES) {
-    if (id === 'skip') continue;                               // G5 is not built (PROGRESS.md, L2)
+    if (id === 'skip') continue;                               // G5 is not built (docs/history.md, L2)
     if (id === null) {
       // optimisation inside one search: search A optimal (G8)
       const p = ex('knapsack-interdiction');

@@ -107,7 +107,7 @@ test('row 27: graph-coloring n = 6, every step recorded (21,078 rejects), file u
   assert.equal(H.finalStats(plain).solutions, 10698);
   const size = (await rec.toBlob()).size;
   assert.ok(size < 3 * 1024 * 1024, `${size} bytes`);
-  // the plan's budget is 10%; measured about 28% on this machine (PROGRESS.md). Guard against regressions.
+  // the plan's budget is 10%; measured about 28% on this machine (docs/history.md). Guard against regressions.
   assert.ok(tRec < tPlain * 1.6, `recorded ${tRec} ms against ${tPlain} ms`);
 });
 

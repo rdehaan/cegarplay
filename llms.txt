@@ -12,9 +12,12 @@
   and a workflow for agents.
 - [Tutorial](tutorial.html): lessons for people, as an HTML fragment (shown in the page's
   Tutorial tab).
-- [Design guide](guide/index.html): twelve pages on designing CEGAR loops (abstraction, check,
-  relevant/1, soundness testing, loop shapes, rule refinements, cores, optimisation), each step
-  an example of the library group "guide"; page 12 has a checklist of all its rules.
+- [Design guide](guide/index.html): twenty-two chapters on designing CEGAR loops. Part I (1-12):
+  abstraction, check, relevant/1, soundness testing, loop shapes, rule refinements, cores,
+  optimisation; chapter 12 has a checklist of all its rules. Part II (13-22): loops from the
+  literature (QBF, implicit hitting sets, MARCO, CEGIS, OLL, Benders, more levels, lazy grounding
+  and omission, a voting case study, from a paper to a loop). Plus how-to pages. Each step is an
+  example of the library group "guide".
 
 - The page's tabs: Instances (9), Campaign (10), Observatory (11), Refinery (12); the manual
   describes each (instances, generators, campaigns, fuzz, recordings, audit, certificates, proof

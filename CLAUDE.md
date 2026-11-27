@@ -10,9 +10,13 @@ programming, solved with clingo compiled to WebAssembly.
   prototypes and measurements (`spike2/`, `spike3/`) are done and were removed; they are in the git
   history. `manual.md` is the reference for what the code does now.
 - `FUTURE-DIRECTIONS.md`: what was considered and not built (language, tools, views, library).
-- `PROGRESS.md`: what is done and what is next. **Read it first after any
-  context clear. Update it at every checkpoint.**
+- `PROGRESS.md`: where the project stands, open items, known problems, notes. **Read it first
+  after any context clear. Update it at every checkpoint.** Keep it short: the dated log of
+  how things were built is `docs/history.md` (search it for the reason behind a decision).
 - `spike/`: verified prototype code. Read-only; copy from it.
+- `docs/`: what is left there is live: the chat-package template (`docs/chat-package/`, read by
+  `tools/make-chat-package.mjs`), the trap repro (`docs/trap-repro/`) and the unfiled upstream
+  report (`docs/upstream-trap-report.md`).
 - `reference/`: clones of logic-game and declarative-cegar. Read-only, git-ignored.
 - `guide/`: the design guide (static pages, `chapters.js`, `numbers.json`).
   Its examples are built by `tools/guide.mjs`; `tools/guide-numbers.mjs`
@@ -30,12 +34,13 @@ programming, solved with clingo compiled to WebAssembly.
 2. Propagator tables need `init` and all hooks at registration time.
 3. After `control:add_clause` returns false, return from `check`.
 4. Never read `ctl.statistics` of a control that is solving.
-5. Read models from a solve handle only with `h:iter()`.
+5. Read models from a solve handle only with `h:iter()` (never `h:get`/`h:model`). A plain
+   `ctl:solve{ on_model = f }` is fine when `f` runs in its own `xpcall` (`Solver:search`).
 6. Clause forms: `control:add_clause{ lits }` in `check`; `init:add_clause(lits)` in `init`.
 7. No build step, no framework, no request to another origin.
 8. `js/compiler.js`, `js/driver.js`, `js/project.js` must not use the DOM or Node APIs.
-9. Trust tests over the plan; record deviations in `PROGRESS.md`. Do not change
-   the reference numbers in the tests without finding the cause.
+9. Trust tests over the plan; record deviations in `PROGRESS.md` (notes) and `docs/history.md`
+   (the log). Do not change the reference numbers in the tests without finding the cause.
 10. An atom that the backend adds to a control before it is grounded must also reach the
     grounder as program text (a choice rule or a fact): clingo 5.8 grounds a rule that projects
     backend-only choice atoms away (`b :- q(X).`) with one instance. See `iface_part` in
@@ -69,10 +74,16 @@ pip install clingo                                                  # Python cli
 
 ```
 cd spike && npm install && npm test          # sanity check of the environment (9 checks)
-cd test && npm install && npm test           # the project's tests (node --test)
+cd test && npm install && npm test           # the project's tests (node --test; about 18 min on 4 cores)
+cd test && npm run test:slow                 # also the SLOW=1 tests (every variant, slow instances)
 node tools/vendor.mjs                        # copy the engine into vendor/
 node tools/make-examples.mjs                 # rebuild examples/*.json (+ examples/contrib/*.json)
 node tools/make-replays.mjs                  # rebuild examples/replays/*.cprec (after a runtime or example change)
+node tools/run.mjs <id|project.json> [-c n=5] [--json]   # run a project headless (as the page)
+node tools/bench.mjs <id> --suite NAME [--jobs N]  # a campaign suite headless (rows as JSONL)
+node tools/report.mjs <rows.jsonl>           # campaign rows -> matrix (Markdown, CSV), cactus plot
+node tools/mine.mjs <id> [--generator NAME]  # mine hard instances of a generator
+node tools/grade.mjs <project|folder|id>     # grade self-checking exercises
 node tools/audit.mjs <id> [--json]           # audit a project (exit 0 sound, 1 unsound)
 node tools/audit.mjs <id> --symbolic         # the symbolic audit (exit 3 budget, 4 unsupported)
 node tools/audit.mjs <id> --space NAME --bound K   # bounded verification over a space
@@ -81,6 +92,11 @@ node tools/survey.mjs [id ...] [--variants]  # per instance: counts, refinements
 node tools/make-chat-package.mjs             # dist/chat-package/: docs for writing examples in web chat
 node tools/guide-numbers.mjs [--check]       # measure the guide's examples into guide/numbers.json
 python3 tools/cegarcheck.py <project.json>   # check a project with Python clingo
+python3 tools/multicheck.py <project.json>   # brute-force reference for loops with several checks
+python3 tools/certcheck.py <project.json> <log.jsonl>   # check a proof log (tools/run.mjs --proof)
+python3 tools/make-{aspq,bsml,ja}.py         # write examples/contrib/{aspq,bsml,ja}-*.json (then make-examples)
+python3 tools/{aspq,bsml,ja}-check.py ...    # brute-force checks of those examples
+node tools/make-draw-vectors.mjs             # test/draw-vectors.json (only after a change to lua/draw.lua's mixer)
 python3 tools/export-book.py [--check|--lint] # rebuild book/cegarplay.md (after ANY change to guide/ or tutorial.html)
 python3 test/serve.py 8811                   # serve the site; add "coi" for isolation headers
 ```

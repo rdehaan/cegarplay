@@ -1026,7 +1026,7 @@ export const SPACES = {
 
 // The symbolic audit's verdict per library instance where it is not 'sound' (null: no verdict
 // within 60 s, the field is left out). Every other instance of a clause-based example is sound.
-// Measured with a seed sweep (PROGRESS.md, phase S6; the script is in the git history).
+// Measured with a seed sweep (docs/history.md, phase S6; the script is in the git history).
 export const SYMBOLIC = {
   'exercise-sum-free': { n4: 'unsound', n5: 'unsound', n6: 'unsound', n7: 'unsound', n8: 'unsound' },   // broken on purpose
   'slitherlink': { example: null },

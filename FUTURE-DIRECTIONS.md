@@ -2,7 +2,7 @@
 
 What was considered but not built, as of Nov 24, 2026 (after PLAN3). Every item of the previous version of this
 file (the learning plan A–F, the loop-language, checking, statistics and library items) was built
-except the ones below; `PROGRESS.md` says where each built item lives. The reasoning behind the
+except the ones below; `docs/history.md` says where each built item lives. The reasoning behind the
 older items was in `docs/directions/breadth.md` and `docs/directions/generality.md` (removed; in the
 git history). Labels such
 as D9 or F1 in code comments refer to that version (`git show 652e5bb:FUTURE-DIRECTIONS.md`).

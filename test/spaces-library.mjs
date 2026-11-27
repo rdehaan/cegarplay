@@ -5,7 +5,7 @@ import { SLOW } from './helpers.mjs';
 import { loadTarget, spaceAudit } from '../tools/audit.mjs';
 import { SPACES } from '../tools/library.mjs';
 
-// spaces whose last step takes more than a few seconds (PROGRESS.md, phase S7)
+// spaces whose last step takes more than a few seconds (docs/history.md, phase S7)
 export const SLOW_SPACES = new Set(['default-extensions/theories', 'strong-nash/games', 'stable-models/programs', 'abduction/theories', 'min-dnf/n', 'slitherlink/n', 'sudoku-unique/k', 'akari/n']);
 
 export async function checkSpaces(shard, shards) {

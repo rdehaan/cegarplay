@@ -5,10 +5,14 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # the full suite takes about 18 minutes on 4 cores (the voting coverage tests alone about 11)
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: test
@@ -33,6 +37,11 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('test/package-lock.json') }}
       # --with-deps installs the system libraries even when the browser comes from the cache
       - run: npx playwright install --with-deps chromium
-      # The native clingo export test and the Python checker tests skip themselves when
-      # clingo with Lua or the Python clingo module is missing.
+      # Python clingo: tools/cegarcheck.py and tools/certcheck.py (the draw, certcheck and
+      # multicheck tests skip without it)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install clingo
+      # The native clingo export test skips itself without a clingo built with Lua.
       - run: npm test

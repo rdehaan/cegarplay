@@ -70,7 +70,8 @@ repository root with any static server, for example
 and open <http://localhost:8000/>. (Opening `index.html` as a file does not
 work: workers and modules need http.) URL parameters: `?example=nash` loads
 `examples/nash.json` from the example library (`?file=` is the older name),
-`?tab=4` opens the fourth tab, `?manual=true` shows the Manual tab (tab 8),
+`?tab=4` opens the Loop tab (tab numbers are fixed ids, not positions: the
+manual's URL parameters table lists them), `?manual=true` shows the Manual tab (tab 8),
 `?internals=true` shows the Internals tab, `?fresh=1` ignores the project kept
 in the browser.
 
@@ -85,9 +86,12 @@ complete reference, for lookup and for AI agents; the page renders it in a
 Manual tab that "Show the technical manual" (Tutorial tab or Settings) turns on.
 `llms.txt` points agents to the manual, the library and the headless runner.
 
-The design guide (`guide/`, twelve static pages) teaches how to design a loop:
-the abstraction, the check, refinements and their soundness, loop shapes,
-rule refinements, cores and optimisation. Every step is a library example
+The design guide (`guide/`, static pages) teaches how to design a loop in
+twenty-two chapters: Part I (chapters 1 to 12) covers the abstraction, the
+check, refinements and their soundness, loop shapes, rule refinements, cores
+and optimisation; Part II (13 to 22) rebuilds loops from the literature (QBF,
+implicit hitting sets, MARCO, CEGIS, OLL, Benders, ...). How-to pages show how
+to use the tools to answer a question. Every step is a library example
 (group "Guide") opened with one click, and every number on a page is measured:
 `node tools/guide-numbers.mjs --check` and `test/guide.test.mjs` keep them true.
 
