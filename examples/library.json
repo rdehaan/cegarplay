@@ -1551,6 +1551,65 @@
       "after": 8
     },
     {
+      "id": "aspq-deep",
+      "title": "ASP(Q) with any number of levels",
+      "group": "logic",
+      "summary": "ASP(Q) with any number of levels (build, cut, repair: exists forall exists, 14 quantified answer sets): solver families and a recursive refute with relevant/1 at every level.",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "aspq",
+        "several-solvers",
+        "rareqs"
+      ],
+      "expected": {
+        "solutions": 14
+      },
+      "has": {
+        "instances": 6
+      },
+      "level": 4,
+      "after": 19
+    },
+    {
+      "id": "aspq-minmax-clique",
+      "title": "Minmax Clique in ASP(Q)",
+      "group": "logic",
+      "summary": "Minmax Clique as ASP(Q): the picks of one block per row that leave no k-clique, refuted by the clique over the fewest rows (6 of 8 picks).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "aspq"
+      ],
+      "expected": {
+        "solutions": 6
+      },
+      "has": {
+        "instances": 5
+      },
+      "level": 3,
+      "after": 13
+    },
+    {
+      "id": "aspq",
+      "title": "ASP(Q), two levels",
+      "group": "logic",
+      "summary": "Two-level ASP(Q), exists P1 forall P2 : C, for any program given as facts: lift on the link, a generic relevant/1 and blocking compared (a network that survives any one cut: 19 quantified answer sets).",
+      "shape": "custom",
+      "tags": [
+        "fast",
+        "aspq"
+      ],
+      "expected": {
+        "solutions": 19
+      },
+      "has": {
+        "instances": 9
+      },
+      "level": 3,
+      "after": 13
+    },
+    {
       "id": "bsml-entailment",
       "title": "BSML entailment",
       "group": "logic",

@@ -1,0 +1,146 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "Minmax Clique in ASP(Q)",
+  "description": "Minmax Clique (Ko and Lin 1995), a Pi-2-complete benchmark for ASP(Q) solvers, written level by level: for every pick t of one block per row (P1, forall) the picked blocks hold a clique of k vertices (P2, exists), and C is empty. The loop checks the dual, exists P1 forall P2 : false, so its solutions are the picks without such a clique: a candidate survives exactly when P2 has no answer set, vacuously. The property holds when the loop finds no solution (instance every-pick). The hand-written relevant/1 names the blocks of the clique, and the check prefers cliques over few rows (#minimize, an optimal solve), so the clauses are short; lift finds clauses as strong but takes far longer, and reference blocks. tools/make-aspq.py --qasp DIR writes the instances as qasp files for comparison.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "The graph and its partition into blocks. Added to every solver.",
+      "text": "% The graph (see the Instances tab): v(V,I,J) puts vertex V in block (I,J) of the\n% partition, e(U,V) is an edge (U < V); k is the clique size. Row I has the blocks (I,J).\nrow(I) :- v(_,I,_).\ncol(I,J) :- v(_,I,J).\nedge(U,V) :- e(U,V).\nedge(V,U) :- e(U,V).\n"
+    },
+    {
+      "name": "p1",
+      "description": "P1: one block per row (solver A).",
+      "text": "% P1 (forall in the ASP(Q) program, exists in the loop): t picks one block per row.\n1 { t(I,J) : col(I,J) } 1 :- row(I).\n#show t/2.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: the picks.",
+      "text": "% The interface atoms: the picks of t.\nglue(t(I,J)) :- col(I,J).\n"
+    },
+    {
+      "name": "p2",
+      "description": "P2: a clique of k vertices in the picked blocks (solver C).",
+      "text": "% P2 (exists in the ASP(Q) program): a clique of k vertices among the picked blocks.\n% C is empty, so the loop's check, forall P2 : false, is refuted by any answer set of P2:\n% a candidate t survives only when P2 has no answer set, i.e. vacuously.\n{ in(V) } :- v(V,I,J), t(I,J).\n:- in(U), in(V), U < V, not edge(U,V).\n:- #count { V : in(V) } != k.\n#show in/1.\n"
+    },
+    {
+      "name": "relevant",
+      "description": "The hand-written relevant/1: the blocks of the clique.",
+      "text": "% The clique stays a clique as long as t keeps the blocks of its vertices: one of them must\n% change. The rows of the clique, not its vertices, name the atoms.\nused(I,J) :- in(V), v(V,I,J).\nrelevant(t(I,J)) :- used(I,J).\n"
+    },
+    {
+      "name": "fewest",
+      "description": "A clique over few rows first.",
+      "text": "% Prefer cliques that use few rows: shorter clauses (with C.solve(..., optimal)).\n#minimize { 1,I : used(I,J) }.\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + p1\nsolver C = shared + p2 + relevant + fewest\nlink   G = A -> C via shared + glue\n\n# A candidate is a pick t; the check looks for a k-clique among the picked blocks, the one\n# that spans the fewest rows; the clause says: one of those rows picks another block.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M), optimal)\n        if X: reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {
+      "k": "3"
+    },
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% Three rows of two blocks of two vertices, 17 random edges (mm_random(3, 3, 2, 2, 35, 3)),\n% k = 3: the picks t that leave no triangle.\nv(1,1,1). v(2,1,1). v(3,1,2). v(4,1,2). v(5,2,1). v(6,2,1). v(7,2,2). v(8,2,2). v(9,3,1). v(10,3,1). v(11,3,2). v(12,3,2).\ne(1,2). e(1,7). e(1,8). e(1,10). e(1,11). e(2,7). e(3,4). e(3,7). e(3,8). e(4,12). e(5,6). e(5,7). e(5,11). e(7,12). e(9,11). e(10,12). e(11,12).\n",
+      "constants": {
+        "k": "3"
+      },
+      "expected": {
+        "solutions": 6
+      },
+      "tags": [
+        "library"
+      ],
+      "symbolic": "sound"
+    },
+    {
+      "id": "every-pick",
+      "facts": "% The same partition with denser edges (50 %): every pick leaves a triangle, so the Minmax\n% Clique property holds and the loop finds no solution.\nv(1,1,1). v(2,1,1). v(3,1,2). v(4,1,2). v(5,2,1). v(6,2,1). v(7,2,2). v(8,2,2). v(9,3,1). v(10,3,1). v(11,3,2). v(12,3,2).\ne(1,2). e(1,3). e(1,4). e(1,5). e(1,6). e(1,7). e(1,11). e(2,3). e(2,4). e(2,5). e(2,6). e(2,11). e(2,12). e(3,8). e(3,12). e(4,5). e(4,6). e(4,10). e(5,9). e(5,11). e(5,12). e(6,7). e(6,9). e(6,10). e(6,12). e(7,9). e(7,10). e(7,12). e(8,9). e(8,10). e(8,12). e(9,10). e(9,12). e(11,12).\n",
+      "constants": {
+        "k": "3"
+      },
+      "expected": {
+        "solutions": 0
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "three-per-block",
+      "facts": "% Six rows of three blocks of three vertices (729 picks), k = 3: a triangle can lie in one\n% or two rows, so cliques over few rows give short clauses (38 candidates, 67 with the\n% first clique the check finds).\nv(1,1,1). v(2,1,1). v(3,1,1). v(4,1,2). v(5,1,2). v(6,1,2). v(7,1,3). v(8,1,3). v(9,1,3). v(10,2,1). v(11,2,1). v(12,2,1). v(13,2,2). v(14,2,2). v(15,2,2). v(16,2,3). v(17,2,3). v(18,2,3). v(19,3,1). v(20,3,1). v(21,3,1). v(22,3,2). v(23,3,2). v(24,3,2). v(25,3,3). v(26,3,3). v(27,3,3). v(28,4,1). v(29,4,1). v(30,4,1). v(31,4,2). v(32,4,2). v(33,4,2). v(34,4,3). v(35,4,3). v(36,4,3). v(37,5,1). v(38,5,1). v(39,5,1). v(40,5,2). v(41,5,2). v(42,5,2). v(43,5,3). v(44,5,3). v(45,5,3). v(46,6,1). v(47,6,1). v(48,6,1). v(49,6,2). v(50,6,2). v(51,6,2). v(52,6,3). v(53,6,3). v(54,6,3).\ne(1,5). e(1,6). e(1,14). e(1,16). e(1,18). e(1,20). e(1,25). e(1,26). e(1,29). e(1,32). e(1,34). e(1,37). e(1,39). e(1,40). e(1,47). e(2,4). e(2,5). e(2,10). e(2,14). e(2,18). e(2,20). e(2,22). e(2,26). e(2,28). e(2,34). e(2,37). e(2,40). e(2,44). e(2,45). e(2,46). e(2,51). e(3,5). e(3,12). e(3,20). e(3,25). e(3,28). e(3,45). e(3,54). e(4,11). e(4,15). e(4,19). e(4,20). e(4,27). e(4,30). e(4,33). e(4,36). e(4,39). e(4,41). e(4,45). e(4,49). e(4,53). e(5,19). e(5,20). e(5,23). e(5,32). e(5,45). e(5,46). e(5,50). e(6,9). e(6,12). e(6,14). e(6,16). e(6,17). e(6,18). e(6,21). e(6,22). e(6,26). e(6,53). e(6,54). e(7,8). e(7,9). e(7,10). e(7,11). e(7,12). e(7,13). e(7,20). e(7,21). e(7,24). e(7,29). e(7,30). e(7,41). e(7,42). e(7,52). e(8,10). e(8,13). e(8,19). e(8,22). e(8,33). e(8,35). e(8,46). e(8,48). e(8,53). e(9,12). e(9,13). e(9,26). e(9,35). e(9,41). e(9,47). e(9,48). e(9,49). e(9,51). e(9,52). e(10,14). e(10,15). e(10,21). e(10,29). e(10,31). e(10,36). e(10,40). e(10,51). e(11,13). e(11,24). e(11,25). e(11,26). e(11,28). e(11,30). e(11,33). e(11,37). e(11,49). e(11,50). e(11,53). e(12,24). e(12,29). e(12,30). e(12,32). e(12,33). e(12,42). e(12,47). e(12,48). e(12,49). e(12,50). e(13,22). e(13,25). e(13,26). e(13,28). e(13,36). e(13,41). e(13,43). e(13,46). e(13,47). e(13,51). e(13,52). e(14,17). e(14,21). e(14,24). e(14,27). e(14,28). e(14,34). e(14,36). e(14,37). e(14,40). e(14,41). e(14,43). e(14,45). e(14,47). e(14,52). e(14,53). e(15,18). e(15,21). e(15,22). e(15,27). e(15,29). e(15,39). e(15,46). e(15,47). e(15,48). e(15,49). e(16,20). e(16,22). e(16,30). e(16,36). e(16,37). e(16,38). e(16,39). e(16,42). e(16,47). e(16,50). e(16,51). e(17,20). e(17,21). e(17,25). e(17,28). e(17,29). e(17,32). e(17,33). e(17,37). e(17,38). e(17,41). e(17,42). e(17,44). e(17,45). e(17,47). e(17,52). e(18,19). e(18,21). e(18,25). e(18,42). e(18,46). e(18,47). e(18,48). e(18,50). e(18,54). e(19,23). e(19,31). e(19,33). e(19,44). e(19,50). e(19,51). e(19,53). e(20,21). e(20,24). e(20,28). e(20,29). e(20,31). e(20,37). e(20,38). e(20,40). e(20,48). e(20,53). e(21,25). e(21,26). e(21,29). e(21,32). e(21,33). e(21,37). e(21,43). e(21,44). e(21,51). e(21,53). e(22,26). e(22,32). e(22,42). e(22,44). e(22,50). e(22,52). e(23,26). e(23,28). e(23,39). e(23,48). e(23,49). e(23,52). e(23,54). e(24,26). e(24,31). e(24,54). e(25,30). e(25,34). e(25,38). e(25,40). e(25,45). e(25,46). e(25,52). e(26,30). e(26,31). e(26,35). e(26,40). e(26,44). e(26,45). e(26,46). e(27,30). e(27,35). e(27,37). e(27,38). e(27,39). e(27,44). e(27,52). e(27,54). e(28,36). e(28,40). e(29,37). e(29,39). e(29,41). e(29,43). e(29,47). e(29,49). e(30,31). e(30,41). e(30,53). e(31,42). e(31,50). e(31,54). e(32,39). e(32,41). e(32,48). e(32,49). e(32,50). e(32,52). e(32,53). e(33,34). e(33,37). e(33,43). e(33,45). e(33,52). e(33,53). e(34,35). e(34,36). e(34,37). e(34,40). e(34,42). e(34,50). e(34,53). e(35,37). e(35,42). e(35,43). e(35,50). e(35,53). e(36,41). e(36,42). e(37,42). e(37,43). e(37,46). e(37,50). e(37,53). e(38,40). e(38,41). e(38,44). e(39,41). e(39,42). e(39,46). e(39,51). e(40,41). e(40,42). e(40,43). e(41,45). e(41,49). e(41,51). e(41,52). e(41,53). e(42,44). e(42,46). e(42,50). e(42,51). e(43,46). e(43,50). e(44,47). e(45,48). e(45,51). e(46,48). e(46,53). e(47,53). e(48,51). e(49,54). e(50,51). e(50,52). e(51,54). e(52,54). e(53,54).\n",
+      "constants": {
+        "k": "3"
+      },
+      "expected": {
+        "solutions": 4
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "four-per-row",
+      "facts": "% Five rows of four blocks of three vertices (1,024 picks), k = 3.\nv(1,1,1). v(2,1,1). v(3,1,1). v(4,1,2). v(5,1,2). v(6,1,2). v(7,1,3). v(8,1,3). v(9,1,3). v(10,1,4). v(11,1,4). v(12,1,4). v(13,2,1). v(14,2,1). v(15,2,1). v(16,2,2). v(17,2,2). v(18,2,2). v(19,2,3). v(20,2,3). v(21,2,3). v(22,2,4). v(23,2,4). v(24,2,4). v(25,3,1). v(26,3,1). v(27,3,1). v(28,3,2). v(29,3,2). v(30,3,2). v(31,3,3). v(32,3,3). v(33,3,3). v(34,3,4). v(35,3,4). v(36,3,4). v(37,4,1). v(38,4,1). v(39,4,1). v(40,4,2). v(41,4,2). v(42,4,2). v(43,4,3). v(44,4,3). v(45,4,3). v(46,4,4). v(47,4,4). v(48,4,4). v(49,5,1). v(50,5,1). v(51,5,1). v(52,5,2). v(53,5,2). v(54,5,2). v(55,5,3). v(56,5,3). v(57,5,3). v(58,5,4). v(59,5,4). v(60,5,4).\ne(1,2). e(1,14). e(1,15). e(1,21). e(1,24). e(1,26). e(1,28). e(1,29). e(1,37). e(1,40). e(1,41). e(1,44). e(1,46). e(1,49). e(1,51). e(1,53). e(1,55). e(1,57). e(2,7). e(2,9). e(2,12). e(2,13). e(2,16). e(2,25). e(2,30). e(2,38). e(2,39). e(2,40). e(2,41). e(2,44). e(3,7). e(3,12). e(3,13). e(3,15). e(3,24). e(3,25). e(3,26). e(3,28). e(3,30). e(3,37). e(3,43). e(3,47). e(3,54). e(3,57). e(3,60). e(4,11). e(4,14). e(4,16). e(4,25). e(4,26). e(4,35). e(4,43). e(4,44). e(4,49). e(4,50). e(4,51). e(4,54). e(4,55). e(4,58). e(5,9). e(5,13). e(5,24). e(5,26). e(5,31). e(5,38). e(5,40). e(5,42). e(5,43). e(5,58). e(6,7). e(6,8). e(6,10). e(6,12). e(6,15). e(6,20). e(6,23). e(6,25). e(6,30). e(6,34). e(6,36). e(6,38). e(6,40). e(6,44). e(6,55). e(6,57). e(6,58). e(6,60). e(7,8). e(7,14). e(7,23). e(7,28). e(7,30). e(7,32). e(7,33). e(7,35). e(7,36). e(7,38). e(7,39). e(7,45). e(7,47). e(7,50). e(7,56). e(7,57). e(8,16). e(8,18). e(8,26). e(8,28). e(8,36). e(8,55). e(9,12). e(9,14). e(9,20). e(9,21). e(9,24). e(9,27). e(9,29). e(9,30). e(9,32). e(9,33). e(9,41). e(9,43). e(9,45). e(9,46). e(9,49). e(9,51). e(9,53). e(9,58). e(10,21). e(10,24). e(10,32). e(10,37). e(10,38). e(10,39). e(10,40). e(10,47). e(10,49). e(11,15). e(11,19). e(11,24). e(11,26). e(11,28). e(11,29). e(11,37). e(11,43). e(11,46). e(11,52). e(11,56). e(11,57). e(11,60). e(12,18). e(12,21). e(12,23). e(12,25). e(12,40). e(12,42). e(12,49). e(12,51). e(12,52). e(12,53). e(12,55). e(12,60). e(13,15). e(13,16). e(13,17). e(13,21). e(13,28). e(13,29). e(13,30). e(13,32). e(13,35). e(13,42). e(13,46). e(13,47). e(13,50). e(13,51). e(13,53). e(13,60). e(14,15). e(14,19). e(14,25). e(14,26). e(14,27). e(14,29). e(14,30). e(14,31). e(14,35). e(14,37). e(14,41). e(14,46). e(14,50). e(14,55). e(15,17). e(15,18). e(15,19). e(15,21). e(15,24). e(15,27). e(15,29). e(15,30). e(15,31). e(15,33). e(15,34). e(15,35). e(15,38). e(15,39). e(15,40). e(15,42). e(15,52). e(15,54). e(15,58). e(15,59). e(16,19). e(16,20). e(16,21). e(16,22). e(16,25). e(16,31). e(16,35). e(16,38). e(16,40). e(16,41). e(16,42). e(16,44). e(16,50). e(16,52). e(16,54). e(17,21). e(17,26). e(17,36). e(17,38). e(17,44). e(17,45). e(17,52). e(17,55). e(18,20). e(18,26). e(18,27). e(18,28). e(18,39). e(18,42). e(18,43). e(18,53). e(18,55). e(19,23). e(19,25). e(19,29). e(19,31). e(19,37). e(19,41). e(19,43). e(19,46). e(19,51). e(19,52). e(19,56). e(19,58). e(20,22). e(20,25). e(20,26). e(20,30). e(20,31). e(20,34). e(20,38). e(20,40). e(20,41). e(20,47). e(20,48). e(20,49). e(20,59). e(21,23). e(21,28). e(21,31). e(21,33). e(21,51). e(21,55). e(22,23). e(22,32). e(22,34). e(22,58). e(23,32). e(23,34). e(23,38). e(23,39). e(23,46). e(23,47). e(23,50). e(23,56). e(23,58). e(23,59). e(23,60). e(24,25). e(24,27). e(24,29). e(24,30). e(24,37). e(24,38). e(24,41). e(24,46). e(24,47). e(24,53). e(24,55). e(24,56). e(24,60). e(25,50). e(25,51). e(25,54). e(25,56). e(25,58). e(25,60). e(26,28). e(26,33). e(26,37). e(26,39). e(26,46). e(26,50). e(26,53). e(26,59). e(27,29). e(27,32). e(27,33). e(27,37). e(27,41). e(27,43). e(27,44). e(27,46). e(27,47). e(27,50). e(27,52). e(27,59). e(27,60). e(28,31). e(28,32). e(28,35). e(28,38). e(28,39). e(28,41). e(28,46). e(28,48). e(28,51). e(28,53). e(28,55). e(28,57). e(28,58). e(29,33). e(29,35). e(29,37). e(29,39). e(29,41). e(29,42). e(29,44). e(29,58). e(29,59). e(29,60). e(30,38). e(30,46). e(30,48). e(30,49). e(30,50). e(30,56). e(30,60). e(31,36). e(31,48). e(31,50). e(31,52). e(31,54). e(31,56). e(31,57). e(31,59). e(31,60). e(32,35). e(32,36). e(32,38). e(32,44). e(32,46). e(32,47). e(32,48). e(32,51). e(32,52). e(32,53). e(33,35). e(33,38). e(33,40). e(33,42). e(33,43). e(33,49). e(33,59). e(33,60). e(34,38). e(34,41). e(34,43). e(34,45). e(34,52). e(34,56). e(35,39). e(35,42). e(35,43). e(35,45). e(35,46). e(35,49). e(35,56). e(35,60). e(36,37). e(36,40). e(36,49). e(36,52). e(36,53). e(36,57). e(37,41). e(37,43). e(37,45). e(37,51). e(37,53). e(37,58). e(38,46). e(38,50). e(38,52). e(38,57). e(39,47). e(39,48). e(39,49). e(39,53). e(39,58). e(39,59). e(40,44). e(40,52). e(40,54). e(41,42). e(41,46). e(41,51). e(42,45). e(42,57). e(43,47). e(43,48). e(43,50). e(43,51). e(43,53). e(43,58). e(44,54). e(44,57). e(44,58). e(45,47). e(45,49). e(45,53). e(45,58). e(45,60). e(46,55). e(46,57). e(46,58). e(46,59). e(47,48). e(47,49). e(47,58). e(47,59). e(48,54). e(48,57). e(48,58). e(49,53). e(49,54). e(49,59). e(51,52). e(51,54). e(51,60). e(53,60). e(54,57). e(55,58). e(55,59). e(55,60). e(58,60). e(59,60).\n",
+      "constants": {
+        "k": "3"
+      },
+      "expected": {
+        "solutions": 4
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "five-rows",
+      "facts": "% Five rows of three blocks of two vertices (243 picks), k = 4.\nv(1,1,1). v(2,1,1). v(3,1,2). v(4,1,2). v(5,1,3). v(6,1,3). v(7,2,1). v(8,2,1). v(9,2,2). v(10,2,2). v(11,2,3). v(12,2,3). v(13,3,1). v(14,3,1). v(15,3,2). v(16,3,2). v(17,3,3). v(18,3,3). v(19,4,1). v(20,4,1). v(21,4,2). v(22,4,2). v(23,4,3). v(24,4,3). v(25,5,1). v(26,5,1). v(27,5,2). v(28,5,2). v(29,5,3). v(30,5,3).\ne(1,3). e(1,4). e(1,6). e(1,9). e(1,12). e(1,13). e(1,17). e(1,18). e(1,19). e(1,24). e(1,26). e(1,27). e(1,30). e(2,3). e(2,4). e(2,5). e(2,6). e(2,8). e(2,11). e(2,12). e(2,14). e(2,15). e(2,17). e(2,19). e(2,22). e(2,23). e(2,24). e(2,26). e(2,27). e(2,30). e(3,4). e(3,6). e(3,8). e(3,11). e(3,14). e(3,15). e(3,18). e(3,21). e(3,23). e(3,24). e(3,28). e(3,29). e(4,7). e(4,10). e(4,12). e(4,13). e(4,14). e(4,15). e(4,16). e(4,17). e(4,19). e(4,21). e(4,26). e(4,28). e(4,29). e(5,6). e(5,7). e(5,9). e(5,11). e(5,13). e(5,14). e(5,16). e(5,20). e(5,21). e(5,22). e(5,23). e(5,26). e(5,27). e(5,29). e(5,30). e(6,9). e(6,13). e(6,15). e(6,20). e(6,21). e(6,23). e(6,25). e(6,27). e(6,28). e(6,29). e(7,9). e(7,10). e(7,15). e(7,22). e(7,25). e(7,28). e(8,11). e(8,13). e(8,15). e(8,20). e(8,24). e(8,25). e(8,26). e(8,28). e(8,29). e(8,30). e(9,12). e(9,14). e(9,16). e(9,22). e(9,23). e(9,24). e(9,26). e(9,27). e(9,28). e(9,29). e(10,12). e(10,16). e(10,18). e(10,19). e(10,21). e(10,22). e(10,24). e(10,25). e(10,27). e(10,28). e(11,12). e(11,13). e(11,14). e(11,15). e(11,24). e(11,25). e(11,26). e(11,29). e(12,13). e(12,14). e(12,15). e(12,19). e(12,20). e(12,21). e(12,22). e(12,23). e(12,25). e(12,28). e(12,30). e(13,14). e(13,19). e(13,21). e(13,22). e(13,26). e(13,29). e(14,15). e(14,17). e(14,18). e(14,20). e(14,21). e(14,22). e(14,23). e(14,27). e(14,30). e(15,17). e(15,18). e(15,19). e(15,20). e(15,21). e(15,25). e(15,27). e(16,19). e(16,20). e(16,23). e(16,24). e(16,26). e(16,30). e(17,18). e(17,21). e(17,22). e(17,23). e(17,26). e(17,27). e(17,29). e(18,23). e(18,25). e(19,21). e(19,22). e(19,26). e(20,22). e(20,23). e(20,26). e(20,28). e(20,29). e(20,30). e(21,22). e(21,23). e(21,27). e(21,28). e(21,29). e(22,23). e(22,30). e(23,24). e(23,26). e(23,27). e(23,29). e(24,26). e(24,29). e(25,27). e(25,28). e(25,29). e(25,30). e(26,28). e(26,30). e(27,28). e(27,30). e(28,29). e(28,30). e(29,30).\n",
+      "constants": {
+        "k": "4"
+      },
+      "expected": {
+        "solutions": 74
+      },
+      "tags": [],
+      "symbolic": "sound"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + p1\nsolver C = shared + p2\nlink   G = A -> C via shared + glue\n\n# The blocking loop: each refuted candidate is ruled out on its own.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "first-clique",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + p1\nsolver C = shared + p2 + relevant\nlink   G = A -> C via shared + glue\n\n# The first clique the check finds, with the hand-written relevant/1 (no optimisation).\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clause(M, X)\n"
+      }
+    },
+    {
+      "name": "lift",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + p1\nsolver C = shared + p2\nlink   G = A -> C via shared + glue lift\n\n# No relevant/1: lift computes each clause from the ground programs.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "runs": []
+}

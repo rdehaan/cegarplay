@@ -1091,6 +1091,7 @@ of these loops step by step (2QBF, implicit hitting sets, MARCO, ...).
 | Logic-based Benders decomposition (Hooker and Ottosson) | An optimal master and an optimal subproblem; optimality cuts as rules from `refine(k)`; bounds read with `M.cost`, `X.cost`, `a.arg(i)` | [benders-tardiness](?example=benders-tardiness), [knapsack-bounds](?example=knapsack-bounds) | `benders` |
 | Optimisation over a Σ2 check, 2-ASP(Q) with weak constraints | An optimal abstraction whose first surviving candidate is optimal (`A.solve(optimal)` or `search A optimal`) | [knapsack-optimum](?example=knapsack-optimum), [reasons-by-size](?example=reasons-by-size); a weak constraint on the outer level: [robust-facilities](?example=robust-facilities) | `bounds`, `aspq` |
 | Recursive CEGAR for any number of quantifier blocks: RAReQS (Janota, Klieber, Marques-Silva and Clarke) | Solver and link families and a recursive `def` | [qbf-deep](?example=qbf-deep) | `rareqs` |
+| Quantified answer set programs, ASP(Q) (Amendola, Ricca and Truszczyński), as qasp and pyqasp solve them by a translation to QBF | One meta-encoding per level with the outer atoms fixed; a `relevant/1` written once for every program, or `lift`; for more levels the families of `qbf-deep` with `relevant/1` at every level | [aspq](?example=aspq), [aspq-deep](?example=aspq-deep), [aspq-minmax-clique](?example=aspq-minmax-clique) | `aspq` |
 | Clausal abstraction, multi-level QBF: CAQE (Rabe and Tentrup), QESTO | A chain of solvers; cores along the chain with `core.on(G)`; an inner `search ... keep` | [qbf-three-blocks](?example=qbf-three-blocks), [qbf-caqe](?example=qbf-caqe) (clause-satisfaction atoms on the links), [knapsack-fortification](?example=knapsack-fortification) | `caqe` |
 | Theta-2 as P^NP[log] (Wagner): a binary search over a bound with one NP query per step, then one query per candidate | `C.ground(bound, k)` grounds the bound of a query; `S.atom("within", k)` assumes it; `//` halves the interval | [dodgson-winners](?example=dodgson-winners); a doubling search first: [ja-dodgson](?example=ja-dodgson) | `bounds` |
 | Lexicographic optimisation one level at a time (Algorithm 5 of Conati, Niskanen and Järvisalo for Leximax) | A `#minimize` over the level assumed by a choice atom (`focus(R)`); the optimum of each level kept as an order-encoding assumption `atmost(R,G)`; at the end the assumptions become unit clauses and `S.models()` lists the optimal models | [ja-leximax](?example=ja-leximax) | `bounds` |
@@ -1898,7 +1899,7 @@ may set `library.level` and `library.after`).
 | `language` | `lang-basics`, `lang-several-cex`, `lang-optimal`, `lang-two-stage`, `lang-clauses`, `lang-core`, `lang-second-solver`, `lang-legacy`, `lang-raw-lua` |
 | `shapes` | `gc-shape1`, `gc-shape2`, `gc-shape3`, `gc-shape4`, `gc-reference` |
 | `guide` | `guide-<chapter>-<slug>`: the examples of the design guide (`guide/`), each linked from its page |
-| `logic` | `cegis-circuit`, `integer-expressions`, `marco`, `maxsat-ihs`, `maxsat-oll`, `min-dnf`, `qbf-blame-solver`, `qbf-deep`, `qbf-expansion`, `qbf-optimal`, `qbf-three-blocks`, `qbf`, `smallest-mus`, `stable-models`, `strategic-companies`, `maxsat-oll-weighted`, `qbf-caqe`, `bsml-entailment`, `bsml-proofs` |
+| `logic` | `cegis-circuit`, `integer-expressions`, `marco`, `maxsat-ihs`, `maxsat-oll`, `min-dnf`, `qbf-blame-solver`, `qbf-deep`, `qbf-expansion`, `qbf-optimal`, `qbf-three-blocks`, `qbf`, `smallest-mus`, `stable-models`, `strategic-companies`, `maxsat-oll-weighted`, `qbf-caqe`, `bsml-entailment`, `bsml-proofs`, `aspq`, `aspq-deep`, `aspq-minmax-clique` |
 | `reasoning` | `abduction-two-checks`, `abduction`, `actual-cause`, `af-preferred`, `af-semi-stable`, `belief-update`, `default-extensions`, `diagnosis`, `minimal-reasons`, `reasons-by-shrinking`, `reasons-by-size`, `sufficient-reason`, `abduction-ihs` |
 | `graphs` | `graph-coloring`, `arrowing`, `choosability`, `clique-colouring`, `clique-interdiction`, `colourable-partial`, `triangle-free-lazy` |
 | `games` | `nash`, `agenda-safety`, `boolean-game`, `fair-division`, `hedonic-core`, `strong-nash`, `subset-sum-game` |
@@ -2114,6 +2115,62 @@ not reach faded, and at a refinement the atoms of its clause ringed; in `bsml-pr
 proof line by line (formula, rule, the lines it uses). Formulas are printed with ¬ ◇ □ ∧ ∨ ⩔ NE ⊥
 by a small Lua function in the view fragment (`#script (lua)`; a fragment may contain one: the driver
 cuts `#end` in the long strings of the program's own Lua block).
+
+### ASP(Q) examples
+
+Three examples in the group **Logic** solve quantified answer set programs (ASP(Q); Amendola, Ricca
+and Truszczyński, *Beyond NP: Quantifying over answer sets*, TPLP 2019): ∃P1 ∀P2 … : C, where a
+level is a program whose answer sets are computed with the atoms of the outer levels fixed (the
+fix_P of the paper: an outer atom is a fact if true, forbidden if false; derived outer atoms too),
+and C is a program of constraints. The quantified answer sets are the answer sets of P1 for which
+the rest holds, and the examples count them.
+
+| Example | Program | Loop |
+| --- | --- | --- |
+| `aspq` | Any two-level program ∃P1 ∀P2 : C, given as facts | A candidate is an answer set of P1 (solver A); the check (solver C) looks for an answer set of P2 that violates C. `relevant/1` is written once, for every program: a cone of influence from the violated constraint and the constraints of P2 (a true atom keeps its supporting rules, a false one keeps one false literal per rule for it), and every atom of P2 when P2 has a cycle through negation. Variants: `lift` (no `relevant/1`), `reference`. |
+| `aspq-deep` | Any program with alternating levels, ∃ first (constant `depth`) | The solver families and the recursive `refute` of `qbf-deep`, with the cores minimised (`core.minimal`). Variants: `reference`, `search`, `plain-cores`. |
+| `aspq-minmax-clique` | Minmax Clique (Ko and Lin 1995), written level by level | For every pick t of one block per row, the picked blocks hold a k-clique: ∀P1 ∃P2 with an empty C, checked through its dual ∃P1 ∀P2 : ⊥. The solutions are the picks without a clique (none: the property holds). A hand-written `relevant/1` (the blocks of the clique) and an optimal check (the clique over the fewest rows). Variants: `first-clique`, `lift`, `reference`. |
+
+An instance of `aspq` and `aspq-deep` is an ASP(Q) program as facts: `rule(R,L)` with level `L` =
+1, 2, … or `c` for C, `head(R,A)`, `choice(R)`, `pos(R,A)`, `neg(R,A)` (ground normal rules, choice
+rules without bounds and constraints; no disjunction). Its comment holds the same program in the
+input format of qasp (`%@exists`, `%@forall`, `%@constraint`). An atom belongs to the first level
+that mentions it (`owner/2`), and the fragment `meta` gives the answer sets of the level `level`:
+a rule of a later level whose head is an outer atom only checks it.
+
+What differs from a QBF, and where the instances show it:
+
+- **Vacuity.** When a candidate leaves P2 without answer sets, the ∀ holds and the candidate is a
+  solution: the empty network of `aspq`'s example, the single solution of `aspq-deep`'s
+  `no-repair`, and every solution of `aspq-minmax-clique` (whose C is false).
+- **Non-monotonic reading.** A counterexample can depend on an outer atom being false
+  (`negative-literal`: `x :- not a`), so the clause has negative literals; and making an outer
+  atom true can remove every answer set of P2 (`odd-loop`: `p :- not p, q` with `q :- o`), so the
+  clause must name atoms that the violated constraint never reads. The cone alone would miss `o`
+  there; the fallback for cycles through negation keeps it.
+- **Legal moves depend on the outer levels.** In `aspq-deep` the answer of an inner level is an
+  answer set only for some outer values, so its clause names them (`relevant/1` at every level, not
+  only the innermost, as in `qbf-deep`), and the atoms of level i that a later level reads must keep
+  their values, since the core of level i + 1 is cut down to the atoms of level i − 1
+  (`derived-read-later`).
+
+Measured (`tools/run.mjs`, all solutions): on `nine-links` the generic `relevant/1` needs 34
+candidates in 0.04 s, `lift` 36 in 1.2 s, `reference` 384. In `aspq-minmax-clique` on
+`three-per-block` (729 picks) the fewest-rows check needs 38 candidates, the first clique 67, `lift`
+50 (4.5 s) and `reference` 729. The audit checks the `relevant/1` atoms of a check, not the clauses
+of a `lift` link: a check without `relevant/1` audits as unsound.
+
+`python3 tools/make-aspq.py` writes the three project files from one source (`--check` compares
+them; `--qasp DIR` also writes every instance as a qasp file). `python3 tools/aspq-check.py
+instances` counts the quantified answer sets of every instance by brute force (no solver: the
+answer sets of a level are the least models of its reducts, guessed on the atoms that occur
+negatively or in a choice), `minmax` does the same for the Minmax Clique instances on the graph
+itself, and `random N [--depth D] [--loops] [--qasp PATH]` compares random programs with every
+variant of the loop and with pyqasp. pyqasp 0.0.1 (github.com/MazzottaG/pyqasp) gives the same
+counts on every instance written in its syntax and on random programs in which no atom is the head
+of both a choice rule and a normal rule and no inner rule has an outer head (`--plain`); on the
+others it differs (`{ a; b }. b :- a.` has 3 answer sets, pyqasp counts 2), while clingo on P2 ∪
+fix_P1(M1) agrees with the brute force.
 
 ## For agents
 

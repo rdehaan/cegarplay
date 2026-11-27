@@ -2515,3 +2515,66 @@ Two new library examples (group `logic`), after rdehaan/bsml-sat and Aloni, Antt
   recording every step with calls, 10 to 35 % run time (gc-shape1 0.35 → 0.38 s, graph-coloring
   6.9 → 9.2 s, sudoku-unavoidable 12.7 → 13.7 s) plus the memory of every step and call of every
   run in the session. The manual's Recordings section now gives these numbers.
+
+## ASP(Q): quantified answer set programs (2026-11-27, on request)
+
+Three new library examples (group `logic`, tag `aspq`), after Amendola, Ricca and Truszczyński,
+*Beyond NP: Quantifying over answer sets* (TPLP 2019). All three project files are written by
+`python3 tools/make-aspq.py` (one source; `--check`; `--qasp DIR` writes every instance as a qasp
+file); `tools/aspq-check.py` checks them by brute force. Manual: *ASP(Q) examples*.
+
+- **`aspq`** (two levels, any program, 9 instances): an instance is an ASP(Q) program as facts
+  (`rule/2` with level 1, 2 or `c`, `head/2`, `choice/1`, `pos/2`, `neg/2`; its qasp text in the
+  comment), parsed from the qasp format with clingo's AST. A meta-encoding (`meta`) gives the
+  answer sets of level `level` with the outer atoms fixed (fix_P: an atom belongs to the first level
+  that mentions it; a rule of a later level with an outer head only checks it). The check looks for
+  an answer set of P2 that violates C. Default: a `relevant/1` written once for every program (a
+  cone of influence from the violated constraint and the constraints of P2; when P2 has a cycle
+  through negation, every atom of P2 keeps its value). Variants `lift` (no `relevant/1`) and
+  `reference`. Measured: example 31 candidates (lift 31, reference 48); nine-links 34 in 0.04 s,
+  lift 36 in 1.2 s, reference 384.
+- **`aspq-deep`** (any depth, 6 instances): the families and `refute` of `qbf-deep` over the same
+  meta-encoding, with `core.minimal` (20 candidates instead of 24 on the example, 10 instead of 16
+  on no-repair, same time; variant `plain-cores`), plus `reference` and `search`. Example: build,
+  cut, repair (∃∀∃, 14 solutions).
+- **`aspq-minmax-clique`** (Minmax Clique, Ko and Lin; 5 instances): written level by level, ∀P1 ∃P2
+  with empty C checked as the dual ∃P1 ∀P2 : ⊥, so a candidate survives only vacuously. Hand-written
+  `relevant/1` (the blocks of the clique) and an optimal check for the clique over the fewest rows:
+  three-per-block 38 candidates (first clique 67, lift 50 in 4.5 s, reference 729).
+- **Found on the way** (all fixed before the commit): (1) the deep glue passed only atoms that a
+  later level reads, so `accept M; S[1].add(G[1].block(M))` blocked other answer sets of P1 that
+  differ only on unread atoms (undercounts on random programs; `search` was right): level 1 now
+  passes all its atoms. (2) At an inner level the answer's atoms that later levels read must keep
+  their values (the core of level i + 1 drops level i's atoms): `need/1` roots for them. Removing
+  them was not caught with clasp's plain cores (they contained every assumption, which hid the
+  gap); with `core.minimal` the instance `derived-read-later` catches it. (3) Supports of a true
+  atom: keeping one is unsound on positive loops (`a :- b. b :- a. a :- o.`); all are kept.
+  (4) `#show true(A) : ...` alone does not hide other atoms; `#show.` added.
+- **Verification.** Brute force (`aspq-check.py`: no solver; the answer sets of a level are the
+  least models of its reducts, guessed on the atoms that occur negatively or in a choice) agrees with
+  every variant on every instance and on 360 random programs (depths 2 to 4, with negative cycles,
+  inner rules with outer heads, atoms both chosen and defined). Mutations of the generic
+  `relevant/1` (positive literals only; no fallback for negative cycles; no inner `need`) are each
+  caught by an instance (`negative-literal`, `odd-loop`, `derived-read-later`) under five randomized
+  seeds. Audits: `aspq` and `aspq-minmax-clique` sound on every instance (also the symbolic audit
+  of `aspq`); `aspq-deep` cannot be audited (families, as `qbf-deep`).
+- **pyqasp** (github.com/MazzottaG/pyqasp 0.0.1, `-s quabs -g gringo --no-wf --count-qans`;
+  installed in a venv, the PyPI package `qasp` is an unrelated quantum library): agrees on every
+  instance in its syntax (aspq, the Minmax Clique files in ASP-Core-2 syntax: 6, 0, 4, 4, 74) and
+  on 280 random plain programs (240 with two levels, 40 with three). It differs on programs where an atom heads both a choice rule and
+  a normal rule (`{a; b}. b :- a.`: 3 answer sets, pyqasp 2) and where an inner rule has an outer
+  head (`a1 :- not a1.` in P2: pyqasp makes every candidate vacuous although a1 is a fact under
+  fix_P1); clingo on P2 ∪ fix_P1(M1) agreed with the brute force there. It exits 20 without a count
+  when P1 has no answer set (read as 0). pyqasp takes 0.2 to 4.5 s on the Minmax Clique instances,
+  the loop 0.01 to 0.07 s.
+- **Deviation**: the two-level default is the generic `relevant/1`, not `lift`, and `lift` is a
+  variant. With `lift` as default the audit sweep (`test/audit.test.mjs`) reports `aspq` unsound:
+  the audit checks a check's `relevant/1` atoms, not the clauses of a `lift` link (a pre-existing
+  limitation, not changed; the generic `relevant/1` is also about as strong and 4 to 30 times
+  faster).
+- Tests: `cd test && CHROMIUM_PATH=/opt/pw-browsers/chromium npm test`: 1,511 tests, 1,412 pass, 0 fail,
+  99 skipped (75 bench, 23 slow, 1 native clingo with Lua), 17 min. Every variant of the three examples
+  gives every instance's count with `tools/run.mjs --instance all` (what `SLOW=1` coverage adds).
+- Not done: disjunctive heads (the meta-encoding needs normal programs; saturation would be needed),
+  bounds on choices and aggregates in the generic format, C with rules other than constraints,
+  ASP(Q) with weak constraints (robust-facilities covers the outer case), and a domain view.

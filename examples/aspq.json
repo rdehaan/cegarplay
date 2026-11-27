@@ -1,0 +1,179 @@
+{
+  "format": "cegarplay",
+  "version": 2,
+  "title": "ASP(Q), two levels",
+  "description": "Quantified answer set programs (ASP(Q), Amendola, Ricca and Truszczynski 2019) with two levels, exists P1 forall P2 : C, for any program: an instance is the program as facts (its text, as a qasp file, is in the comment of the instance), and one meta-encoding computes the answer sets of a level with the atoms of the outer level fixed. A candidate is an answer set of P1; a counterexample is an answer set of P2, with all atoms of P1 fixed (derived ones too), that violates C. Two things differ from a QBF. P2 may have no answer set for a candidate: the forall then holds vacuously and the candidate is a solution (the empty network of the example). And P2 reads the candidate non-monotonically: a counterexample can depend on an atom being false, and making an atom true can remove every answer set of P2 (instance odd-loop), so the clause has to name atoms the violated constraint never reads. The loop reads a relevant/1 written once for every program: a cone of influence from the violated constraint (every atom of P2 when P2 has a cycle through negation). The variant lift computes the clauses from the ground programs instead, with no relevant/1: about as strong, several times slower. The variant reference blocks.",
+  "fragments": [
+    {
+      "name": "shared",
+      "description": "Which level each atom belongs to. Added to every solver and to the glue.",
+      "text": "% An ASP(Q) program as facts (see the Instances tab): rule(R,L) puts rule R in level L\n% (1, 2, ...; c is the constraint program C), head(R,A), choice(R), pos(R,A), neg(R,A).\n% An atom belongs to the first level that mentions it. Later levels read it as fixed\n% (fix_P(M) of Amendola, Ricca and Truszczynski): true or false, never derived again.\nmention(A,L) :- rule(R,L), head(R,A).\nmention(A,L) :- rule(R,L), pos(R,A).\nmention(A,L) :- rule(R,L), neg(R,A).\nowner(A,L) :- mention(A,_), L = #min { L2 : mention(A,L2) }.\n"
+    },
+    {
+      "name": "meta",
+      "description": "The answer sets of one level (the constant level), with the atoms of the outer levels fixed.",
+      "text": "% The answer sets of the rules of this level (the constant level), with the atoms of the\n% outer levels fixed. true(A) holds the atom A; the solver reads true(A) of an outer atom\n% from the candidate (an interface atom of the link).\nhere(R) :- rule(R,level).\nok(R) :- here(R), true(A) : pos(R,A); not true(A) : neg(R,A).\ntrue(A) :- here(R), head(R,A), not choice(R), owner(A,level), ok(R).\n{ true(A) } :- here(R), head(R,A), choice(R), owner(A,level), ok(R).\n% A rule whose head belongs to an outer level cannot derive it: it only checks it.\n:- here(R), head(R,A), not choice(R), owner(A,L), L < level, ok(R), not true(A).\nhashead(R) :- head(R,_).\n:- here(R), not hashead(R), ok(R).\n"
+    },
+    {
+      "name": "exists",
+      "description": "Level 1 (solver A): the candidates are the answer sets of P1.",
+      "text": "% Level 1 (exists): the candidates are the answer sets of P1.\n#const level = 1.\n#show true/1.\n"
+    },
+    {
+      "name": "glue",
+      "description": "The interface atoms: every atom of level 1.",
+      "text": "% The interface atoms: every atom of level 1 (derived atoms too: fix_P1 fixes them all).\nglue(true(A)) :- owner(A,1).\n"
+    },
+    {
+      "name": "forall",
+      "description": "Level 2 (solver C): an answer set of P2 that violates C.",
+      "text": "% Level 2 (forall): a counterexample is an answer set of P2, with the candidate's atoms\n% fixed, that violates C. A candidate with no counterexample is a quantified answer set,\n% also when P2 has no answer set at all (the forall holds vacuously).\n#const level = 2.\n:- not violated.\n#show.\n#show true(A) : true(A), owner(A,2).\n"
+    },
+    {
+      "name": "violate",
+      "description": "When the constraint program C is violated.",
+      "text": "% C is violated: the body of one of its constraints holds.\nokc(R) :- rule(R,c), true(A) : pos(R,A); not true(A) : neg(R,A).\nviolated :- okc(R).\n"
+    },
+    {
+      "name": "relevant",
+      "description": "relevant/1 for any program: the level-1 atoms the counterexample depends on.",
+      "text": "% relevant/1 for any program: outer atoms whose values keep a counterexample.\n% keep_true(R): the body of rule R must stay true, so every literal of it keeps its value;\n% keep_false(R): it must stay false, so one false literal keeps its value (one of this\n% level if there is one). An atom of this level that must keep its value is need/1; an\n% outer one is relevant/1. Negative literals count: an outer atom false here may be needed\n% false.\nouter(A) :- owner(A,L), L < level.\nlit(R,A,1) :- here(R), pos(R,A).\nlit(R,A,0) :- here(R), neg(R,A).\nlit(R,A,0) :- here(R), head(R,A), not choice(R), outer(A).   % \"not A\" of a checked head\nfails(R,A) :- lit(R,A,1), not true(A).\nfails(R,A) :- lit(R,A,0), true(A).\n% The constraints of this level, and its checks of outer heads, must stay false.\nkeep_false(R) :- here(R), not hashead(R).\nkeep_false(R) :- here(R), head(R,A), not choice(R), outer(A).\n\n% Without a cycle through negation among the atoms of this level, an answer set is fixed\n% by its choices: only the atoms that the kept rules read need keep their values (a cone\n% of influence from the violated constraint and the constraints of this level). A true\n% atom keeps its supporting rules (all of them: one alone could be circular, a :- b, b :- a);\n% a false one keeps every rule for it false (a false choice atom is simply not chosen).\ndep(H,B) :- here(R), head(R,H), owner(H,level), lit(R,B,_), owner(B,level).\nndep(H,B) :- here(R), head(R,H), owner(H,level), neg(R,B), owner(B,level).\npath(H,B) :- dep(H,B).\npath(H,B) :- dep(H,C), path(C,B).\nfull :- ndep(H,B), path(B,H).\nkeep_true(R) :- need(A), true(A), not full, here(R), head(R,A), ok(R).\nkeep_false(R) :- need(A), not true(A), not full, here(R), head(R,A), not choice(R).\n\n% With such a cycle (full), every atom of this level keeps its value: every rule that\n% supports a true atom stays true, every rule with a false head stays false.\nneed(A) :- full, here(R), head(R,A), owner(A,level).\nkeep_true(R) :- full, here(R), head(R,A), owner(A,level), true(A), ok(R).\nkeep_false(R) :- full, here(R), head(R,A), owner(A,level), not true(A), not choice(R).\n\nneed(A) :- keep_true(R), lit(R,A,_), not outer(A).\nrelevant(true(A)) :- keep_true(R), lit(R,A,_), outer(A).\nown_fails(R) :- keep_false(R), fails(R,A), not outer(A).\nneed(A) :- keep_false(R), own_fails(R), A = #min { B : fails(R,B), not outer(B) }.\nrelevant(true(A)) :- keep_false(R), not own_fails(R), A = #min { B : fails(R,B) }.\n"
+    },
+    {
+      "name": "relevant_c",
+      "description": "relevant/1 for the violated constraint of C.",
+      "text": "% The violated constraint of C with the smallest number stays violated.\ncpick(R) :- okc(R), R = #min { Q : okc(Q) }.\nneed(A) :- cpick(R), pos(R,A), not outer(A).\nneed(A) :- cpick(R), neg(R,A), not outer(A).\nrelevant(true(A)) :- cpick(R), pos(R,A), outer(A).\nrelevant(true(A)) :- cpick(R), neg(R,A), outer(A).\n"
+    }
+  ],
+  "loop": {
+    "language": "loop",
+    "text": "solver A = shared + meta + exists\nsolver C = shared + meta + forall + violate + relevant + relevant_c\nlink   G = A -> C via shared + glue\n\n# A candidate is an answer set of P1; the check looks for an answer set of P2 that violates C.\n# relevant/1 (written once, for every program) names the level-1 atoms it depends on.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clause(M, X)\n"
+  },
+  "settings": {
+    "constants": {},
+    "solutions": 0,
+    "seconds": 60,
+    "candidates": 0,
+    "trace": 200,
+    "seed": 0
+  },
+  "instances": [
+    {
+      "id": "example",
+      "facts": "% A network that survives the loss of any one link. P1 builds some of six links (s-t and a-b\n% not both) and derives hard(s,t) when it builds s-t: that link cannot be cut. P2 cuts exactly\n% one built link that is not hard; C: t is still reached from s. Links are used both ways,\n% which gives positive loops in P2; P2 reads link/2 under negation (a cut needs a built\n% link) and the derived hard/2 (fix_P1 fixes derived atoms too). The empty network and\n% the network with s-t alone are solutions: P2 has no answer set (no link to cut), so the\n% forall holds vacuously.\n% %@exists\n% { link(s,a); link(s,b); link(a,b); link(a,t); link(b,t); link(s,t) }.\n% hard(s,t) :- link(s,t).\n% :- link(s,t), link(a,b).\n% %@forall\n% { cut(s,a); cut(s,b); cut(a,b); cut(a,t); cut(b,t); cut(s,t) }.\n% :- cut(s,a), not link(s,a).\n% :- cut(s,b), not link(s,b).\n% :- cut(a,b), not link(a,b).\n% :- cut(a,t), not link(a,t).\n% :- cut(b,t), not link(b,t).\n% :- cut(s,t), not link(s,t).\n% :- cut(s,t), hard(s,t).\n% some :- cut(s,a).\n% some :- cut(s,b).\n% some :- cut(a,b).\n% some :- cut(a,t).\n% some :- cut(b,t).\n% some :- cut(s,t).\n% two :- cut(s,a), cut(s,b).\n% two :- cut(s,a), cut(a,b).\n% two :- cut(s,a), cut(a,t).\n% two :- cut(s,a), cut(b,t).\n% two :- cut(s,a), cut(s,t).\n% two :- cut(s,b), cut(a,b).\n% two :- cut(s,b), cut(a,t).\n% two :- cut(s,b), cut(b,t).\n% two :- cut(s,b), cut(s,t).\n% two :- cut(a,b), cut(a,t).\n% two :- cut(a,b), cut(b,t).\n% two :- cut(a,b), cut(s,t).\n% two :- cut(a,t), cut(b,t).\n% two :- cut(a,t), cut(s,t).\n% two :- cut(b,t), cut(s,t).\n% :- not some.\n% :- two.\n% up(s,a) :- link(s,a), not cut(s,a).\n% up(s,b) :- link(s,b), not cut(s,b).\n% up(a,b) :- link(a,b), not cut(a,b).\n% up(a,t) :- link(a,t), not cut(a,t).\n% up(b,t) :- link(b,t), not cut(b,t).\n% up(s,t) :- link(s,t), not cut(s,t).\n% reach(s).\n% reach(a) :- reach(s), up(s,a).\n% reach(s) :- reach(a), up(s,a).\n% reach(b) :- reach(s), up(s,b).\n% reach(s) :- reach(b), up(s,b).\n% reach(b) :- reach(a), up(a,b).\n% reach(a) :- reach(b), up(a,b).\n% reach(t) :- reach(a), up(a,t).\n% reach(a) :- reach(t), up(a,t).\n% reach(t) :- reach(b), up(b,t).\n% reach(b) :- reach(t), up(b,t).\n% reach(t) :- reach(s), up(s,t).\n% reach(s) :- reach(t), up(s,t).\n% %@constraint\n% :- not reach(t).\nquant(1,exists).\nquant(2,forall).\nrule(1,1). choice(1). head(1,link(s,a)). head(1,link(s,b)). head(1,link(a,b)). head(1,link(a,t)). head(1,link(b,t)). head(1,link(s,t)).\nrule(2,1). head(2,hard(s,t)). pos(2,link(s,t)).\nrule(3,1). pos(3,link(s,t)). pos(3,link(a,b)).\nrule(4,2). choice(4). head(4,cut(s,a)). head(4,cut(s,b)). head(4,cut(a,b)). head(4,cut(a,t)). head(4,cut(b,t)). head(4,cut(s,t)).\nrule(5,2). pos(5,cut(s,a)). neg(5,link(s,a)).\nrule(6,2). pos(6,cut(s,b)). neg(6,link(s,b)).\nrule(7,2). pos(7,cut(a,b)). neg(7,link(a,b)).\nrule(8,2). pos(8,cut(a,t)). neg(8,link(a,t)).\nrule(9,2). pos(9,cut(b,t)). neg(9,link(b,t)).\nrule(10,2). pos(10,cut(s,t)). neg(10,link(s,t)).\nrule(11,2). pos(11,cut(s,t)). pos(11,hard(s,t)).\nrule(12,2). head(12,some). pos(12,cut(s,a)).\nrule(13,2). head(13,some). pos(13,cut(s,b)).\nrule(14,2). head(14,some). pos(14,cut(a,b)).\nrule(15,2). head(15,some). pos(15,cut(a,t)).\nrule(16,2). head(16,some). pos(16,cut(b,t)).\nrule(17,2). head(17,some). pos(17,cut(s,t)).\nrule(18,2). head(18,two). pos(18,cut(s,a)). pos(18,cut(s,b)).\nrule(19,2). head(19,two). pos(19,cut(s,a)). pos(19,cut(a,b)).\nrule(20,2). head(20,two). pos(20,cut(s,a)). pos(20,cut(a,t)).\nrule(21,2). head(21,two). pos(21,cut(s,a)). pos(21,cut(b,t)).\nrule(22,2). head(22,two). pos(22,cut(s,a)). pos(22,cut(s,t)).\nrule(23,2). head(23,two). pos(23,cut(s,b)). pos(23,cut(a,b)).\nrule(24,2). head(24,two). pos(24,cut(s,b)). pos(24,cut(a,t)).\nrule(25,2). head(25,two). pos(25,cut(s,b)). pos(25,cut(b,t)).\nrule(26,2). head(26,two). pos(26,cut(s,b)). pos(26,cut(s,t)).\nrule(27,2). head(27,two). pos(27,cut(a,b)). pos(27,cut(a,t)).\nrule(28,2). head(28,two). pos(28,cut(a,b)). pos(28,cut(b,t)).\nrule(29,2). head(29,two). pos(29,cut(a,b)). pos(29,cut(s,t)).\nrule(30,2). head(30,two). pos(30,cut(a,t)). pos(30,cut(b,t)).\nrule(31,2). head(31,two). pos(31,cut(a,t)). pos(31,cut(s,t)).\nrule(32,2). head(32,two). pos(32,cut(b,t)). pos(32,cut(s,t)).\nrule(33,2). neg(33,some).\nrule(34,2). pos(34,two).\nrule(35,2). head(35,up(s,a)). pos(35,link(s,a)). neg(35,cut(s,a)).\nrule(36,2). head(36,up(s,b)). pos(36,link(s,b)). neg(36,cut(s,b)).\nrule(37,2). head(37,up(a,b)). pos(37,link(a,b)). neg(37,cut(a,b)).\nrule(38,2). head(38,up(a,t)). pos(38,link(a,t)). neg(38,cut(a,t)).\nrule(39,2). head(39,up(b,t)). pos(39,link(b,t)). neg(39,cut(b,t)).\nrule(40,2). head(40,up(s,t)). pos(40,link(s,t)). neg(40,cut(s,t)).\nrule(41,2). head(41,reach(s)).\nrule(42,2). head(42,reach(a)). pos(42,reach(s)). pos(42,up(s,a)).\nrule(43,2). head(43,reach(s)). pos(43,reach(a)). pos(43,up(s,a)).\nrule(44,2). head(44,reach(b)). pos(44,reach(s)). pos(44,up(s,b)).\nrule(45,2). head(45,reach(s)). pos(45,reach(b)). pos(45,up(s,b)).\nrule(46,2). head(46,reach(b)). pos(46,reach(a)). pos(46,up(a,b)).\nrule(47,2). head(47,reach(a)). pos(47,reach(b)). pos(47,up(a,b)).\nrule(48,2). head(48,reach(t)). pos(48,reach(a)). pos(48,up(a,t)).\nrule(49,2). head(49,reach(a)). pos(49,reach(t)). pos(49,up(a,t)).\nrule(50,2). head(50,reach(t)). pos(50,reach(b)). pos(50,up(b,t)).\nrule(51,2). head(51,reach(b)). pos(51,reach(t)). pos(51,up(b,t)).\nrule(52,2). head(52,reach(t)). pos(52,reach(s)). pos(52,up(s,t)).\nrule(53,2). head(53,reach(s)). pos(53,reach(t)). pos(53,up(s,t)).\nrule(54,c). neg(54,reach(t)).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 19
+      },
+      "tags": [
+        "library"
+      ],
+      "symbolic": "sound"
+    },
+    {
+      "id": "nine-links",
+      "facts": "% A larger network: nine links between s, a, b, c, d and t (a-c and b-d not both), no hard\n% link.\n% %@exists\n% { link(s,a); link(s,b); link(a,b); link(a,c); link(b,c); link(b,d); link(c,t); link(d,t); link(c,d) }.\n% :- link(a,c), link(b,d).\n% %@forall\n% { cut(s,a); cut(s,b); cut(a,b); cut(a,c); cut(b,c); cut(b,d); cut(c,t); cut(d,t); cut(c,d) }.\n% :- cut(s,a), not link(s,a).\n% :- cut(s,b), not link(s,b).\n% :- cut(a,b), not link(a,b).\n% :- cut(a,c), not link(a,c).\n% :- cut(b,c), not link(b,c).\n% :- cut(b,d), not link(b,d).\n% :- cut(c,t), not link(c,t).\n% :- cut(d,t), not link(d,t).\n% :- cut(c,d), not link(c,d).\n% some :- cut(s,a).\n% some :- cut(s,b).\n% some :- cut(a,b).\n% some :- cut(a,c).\n% some :- cut(b,c).\n% some :- cut(b,d).\n% some :- cut(c,t).\n% some :- cut(d,t).\n% some :- cut(c,d).\n% two :- cut(s,a), cut(s,b).\n% two :- cut(s,a), cut(a,b).\n% two :- cut(s,a), cut(a,c).\n% two :- cut(s,a), cut(b,c).\n% two :- cut(s,a), cut(b,d).\n% two :- cut(s,a), cut(c,t).\n% two :- cut(s,a), cut(d,t).\n% two :- cut(s,a), cut(c,d).\n% two :- cut(s,b), cut(a,b).\n% two :- cut(s,b), cut(a,c).\n% two :- cut(s,b), cut(b,c).\n% two :- cut(s,b), cut(b,d).\n% two :- cut(s,b), cut(c,t).\n% two :- cut(s,b), cut(d,t).\n% two :- cut(s,b), cut(c,d).\n% two :- cut(a,b), cut(a,c).\n% two :- cut(a,b), cut(b,c).\n% two :- cut(a,b), cut(b,d).\n% two :- cut(a,b), cut(c,t).\n% two :- cut(a,b), cut(d,t).\n% two :- cut(a,b), cut(c,d).\n% two :- cut(a,c), cut(b,c).\n% two :- cut(a,c), cut(b,d).\n% two :- cut(a,c), cut(c,t).\n% two :- cut(a,c), cut(d,t).\n% two :- cut(a,c), cut(c,d).\n% two :- cut(b,c), cut(b,d).\n% two :- cut(b,c), cut(c,t).\n% two :- cut(b,c), cut(d,t).\n% two :- cut(b,c), cut(c,d).\n% two :- cut(b,d), cut(c,t).\n% two :- cut(b,d), cut(d,t).\n% two :- cut(b,d), cut(c,d).\n% two :- cut(c,t), cut(d,t).\n% two :- cut(c,t), cut(c,d).\n% two :- cut(d,t), cut(c,d).\n% :- not some.\n% :- two.\n% up(s,a) :- link(s,a), not cut(s,a).\n% up(s,b) :- link(s,b), not cut(s,b).\n% up(a,b) :- link(a,b), not cut(a,b).\n% up(a,c) :- link(a,c), not cut(a,c).\n% up(b,c) :- link(b,c), not cut(b,c).\n% up(b,d) :- link(b,d), not cut(b,d).\n% up(c,t) :- link(c,t), not cut(c,t).\n% up(d,t) :- link(d,t), not cut(d,t).\n% up(c,d) :- link(c,d), not cut(c,d).\n% reach(s).\n% reach(a) :- reach(s), up(s,a).\n% reach(s) :- reach(a), up(s,a).\n% reach(b) :- reach(s), up(s,b).\n% reach(s) :- reach(b), up(s,b).\n% reach(b) :- reach(a), up(a,b).\n% reach(a) :- reach(b), up(a,b).\n% reach(c) :- reach(a), up(a,c).\n% reach(a) :- reach(c), up(a,c).\n% reach(c) :- reach(b), up(b,c).\n% reach(b) :- reach(c), up(b,c).\n% reach(d) :- reach(b), up(b,d).\n% reach(b) :- reach(d), up(b,d).\n% reach(t) :- reach(c), up(c,t).\n% reach(c) :- reach(t), up(c,t).\n% reach(t) :- reach(d), up(d,t).\n% reach(d) :- reach(t), up(d,t).\n% reach(d) :- reach(c), up(c,d).\n% reach(c) :- reach(d), up(c,d).\n% %@constraint\n% :- not reach(t).\nquant(1,exists).\nquant(2,forall).\nrule(1,1). choice(1). head(1,link(s,a)). head(1,link(s,b)). head(1,link(a,b)). head(1,link(a,c)). head(1,link(b,c)). head(1,link(b,d)). head(1,link(c,t)). head(1,link(d,t)). head(1,link(c,d)).\nrule(2,1). pos(2,link(a,c)). pos(2,link(b,d)).\nrule(3,2). choice(3). head(3,cut(s,a)). head(3,cut(s,b)). head(3,cut(a,b)). head(3,cut(a,c)). head(3,cut(b,c)). head(3,cut(b,d)). head(3,cut(c,t)). head(3,cut(d,t)). head(3,cut(c,d)).\nrule(4,2). pos(4,cut(s,a)). neg(4,link(s,a)).\nrule(5,2). pos(5,cut(s,b)). neg(5,link(s,b)).\nrule(6,2). pos(6,cut(a,b)). neg(6,link(a,b)).\nrule(7,2). pos(7,cut(a,c)). neg(7,link(a,c)).\nrule(8,2). pos(8,cut(b,c)). neg(8,link(b,c)).\nrule(9,2). pos(9,cut(b,d)). neg(9,link(b,d)).\nrule(10,2). pos(10,cut(c,t)). neg(10,link(c,t)).\nrule(11,2). pos(11,cut(d,t)). neg(11,link(d,t)).\nrule(12,2). pos(12,cut(c,d)). neg(12,link(c,d)).\nrule(13,2). head(13,some). pos(13,cut(s,a)).\nrule(14,2). head(14,some). pos(14,cut(s,b)).\nrule(15,2). head(15,some). pos(15,cut(a,b)).\nrule(16,2). head(16,some). pos(16,cut(a,c)).\nrule(17,2). head(17,some). pos(17,cut(b,c)).\nrule(18,2). head(18,some). pos(18,cut(b,d)).\nrule(19,2). head(19,some). pos(19,cut(c,t)).\nrule(20,2). head(20,some). pos(20,cut(d,t)).\nrule(21,2). head(21,some). pos(21,cut(c,d)).\nrule(22,2). head(22,two). pos(22,cut(s,a)). pos(22,cut(s,b)).\nrule(23,2). head(23,two). pos(23,cut(s,a)). pos(23,cut(a,b)).\nrule(24,2). head(24,two). pos(24,cut(s,a)). pos(24,cut(a,c)).\nrule(25,2). head(25,two). pos(25,cut(s,a)). pos(25,cut(b,c)).\nrule(26,2). head(26,two). pos(26,cut(s,a)). pos(26,cut(b,d)).\nrule(27,2). head(27,two). pos(27,cut(s,a)). pos(27,cut(c,t)).\nrule(28,2). head(28,two). pos(28,cut(s,a)). pos(28,cut(d,t)).\nrule(29,2). head(29,two). pos(29,cut(s,a)). pos(29,cut(c,d)).\nrule(30,2). head(30,two). pos(30,cut(s,b)). pos(30,cut(a,b)).\nrule(31,2). head(31,two). pos(31,cut(s,b)). pos(31,cut(a,c)).\nrule(32,2). head(32,two). pos(32,cut(s,b)). pos(32,cut(b,c)).\nrule(33,2). head(33,two). pos(33,cut(s,b)). pos(33,cut(b,d)).\nrule(34,2). head(34,two). pos(34,cut(s,b)). pos(34,cut(c,t)).\nrule(35,2). head(35,two). pos(35,cut(s,b)). pos(35,cut(d,t)).\nrule(36,2). head(36,two). pos(36,cut(s,b)). pos(36,cut(c,d)).\nrule(37,2). head(37,two). pos(37,cut(a,b)). pos(37,cut(a,c)).\nrule(38,2). head(38,two). pos(38,cut(a,b)). pos(38,cut(b,c)).\nrule(39,2). head(39,two). pos(39,cut(a,b)). pos(39,cut(b,d)).\nrule(40,2). head(40,two). pos(40,cut(a,b)). pos(40,cut(c,t)).\nrule(41,2). head(41,two). pos(41,cut(a,b)). pos(41,cut(d,t)).\nrule(42,2). head(42,two). pos(42,cut(a,b)). pos(42,cut(c,d)).\nrule(43,2). head(43,two). pos(43,cut(a,c)). pos(43,cut(b,c)).\nrule(44,2). head(44,two). pos(44,cut(a,c)). pos(44,cut(b,d)).\nrule(45,2). head(45,two). pos(45,cut(a,c)). pos(45,cut(c,t)).\nrule(46,2). head(46,two). pos(46,cut(a,c)). pos(46,cut(d,t)).\nrule(47,2). head(47,two). pos(47,cut(a,c)). pos(47,cut(c,d)).\nrule(48,2). head(48,two). pos(48,cut(b,c)). pos(48,cut(b,d)).\nrule(49,2). head(49,two). pos(49,cut(b,c)). pos(49,cut(c,t)).\nrule(50,2). head(50,two). pos(50,cut(b,c)). pos(50,cut(d,t)).\nrule(51,2). head(51,two). pos(51,cut(b,c)). pos(51,cut(c,d)).\nrule(52,2). head(52,two). pos(52,cut(b,d)). pos(52,cut(c,t)).\nrule(53,2). head(53,two). pos(53,cut(b,d)). pos(53,cut(d,t)).\nrule(54,2). head(54,two). pos(54,cut(b,d)). pos(54,cut(c,d)).\nrule(55,2). head(55,two). pos(55,cut(c,t)). pos(55,cut(d,t)).\nrule(56,2). head(56,two). pos(56,cut(c,t)). pos(56,cut(c,d)).\nrule(57,2). head(57,two). pos(57,cut(d,t)). pos(57,cut(c,d)).\nrule(58,2). neg(58,some).\nrule(59,2). pos(59,two).\nrule(60,2). head(60,up(s,a)). pos(60,link(s,a)). neg(60,cut(s,a)).\nrule(61,2). head(61,up(s,b)). pos(61,link(s,b)). neg(61,cut(s,b)).\nrule(62,2). head(62,up(a,b)). pos(62,link(a,b)). neg(62,cut(a,b)).\nrule(63,2). head(63,up(a,c)). pos(63,link(a,c)). neg(63,cut(a,c)).\nrule(64,2). head(64,up(b,c)). pos(64,link(b,c)). neg(64,cut(b,c)).\nrule(65,2). head(65,up(b,d)). pos(65,link(b,d)). neg(65,cut(b,d)).\nrule(66,2). head(66,up(c,t)). pos(66,link(c,t)). neg(66,cut(c,t)).\nrule(67,2). head(67,up(d,t)). pos(67,link(d,t)). neg(67,cut(d,t)).\nrule(68,2). head(68,up(c,d)). pos(68,link(c,d)). neg(68,cut(c,d)).\nrule(69,2). head(69,reach(s)).\nrule(70,2). head(70,reach(a)). pos(70,reach(s)). pos(70,up(s,a)).\nrule(71,2). head(71,reach(s)). pos(71,reach(a)). pos(71,up(s,a)).\nrule(72,2). head(72,reach(b)). pos(72,reach(s)). pos(72,up(s,b)).\nrule(73,2). head(73,reach(s)). pos(73,reach(b)). pos(73,up(s,b)).\nrule(74,2). head(74,reach(b)). pos(74,reach(a)). pos(74,up(a,b)).\nrule(75,2). head(75,reach(a)). pos(75,reach(b)). pos(75,up(a,b)).\nrule(76,2). head(76,reach(c)). pos(76,reach(a)). pos(76,up(a,c)).\nrule(77,2). head(77,reach(a)). pos(77,reach(c)). pos(77,up(a,c)).\nrule(78,2). head(78,reach(c)). pos(78,reach(b)). pos(78,up(b,c)).\nrule(79,2). head(79,reach(b)). pos(79,reach(c)). pos(79,up(b,c)).\nrule(80,2). head(80,reach(d)). pos(80,reach(b)). pos(80,up(b,d)).\nrule(81,2). head(81,reach(b)). pos(81,reach(d)). pos(81,up(b,d)).\nrule(82,2). head(82,reach(t)). pos(82,reach(c)). pos(82,up(c,t)).\nrule(83,2). head(83,reach(c)). pos(83,reach(t)). pos(83,up(c,t)).\nrule(84,2). head(84,reach(t)). pos(84,reach(d)). pos(84,up(d,t)).\nrule(85,2). head(85,reach(d)). pos(85,reach(t)). pos(85,up(d,t)).\nrule(86,2). head(86,reach(d)). pos(86,reach(c)). pos(86,up(c,d)).\nrule(87,2). head(87,reach(c)). pos(87,reach(d)). pos(87,up(c,d)).\nrule(88,c). neg(88,reach(t)).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 5
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "no-solution",
+      "facts": "% The network with one link out of s (s-a): cutting it separates t, and the empty network\n% is excluded. No solution.\n% %@exists\n% { link(s,a); link(s,b); link(a,b); link(a,t); link(b,t); link(s,t) }.\n% :- link(s,t).\n% :- link(s,b).\n% :- not link(s,a).\n% %@forall\n% { cut(s,a); cut(s,b); cut(a,b); cut(a,t); cut(b,t); cut(s,t) }.\n% :- cut(s,a), not link(s,a).\n% :- cut(s,b), not link(s,b).\n% :- cut(a,b), not link(a,b).\n% :- cut(a,t), not link(a,t).\n% :- cut(b,t), not link(b,t).\n% :- cut(s,t), not link(s,t).\n% some :- cut(s,a).\n% some :- cut(s,b).\n% some :- cut(a,b).\n% some :- cut(a,t).\n% some :- cut(b,t).\n% some :- cut(s,t).\n% two :- cut(s,a), cut(s,b).\n% two :- cut(s,a), cut(a,b).\n% two :- cut(s,a), cut(a,t).\n% two :- cut(s,a), cut(b,t).\n% two :- cut(s,a), cut(s,t).\n% two :- cut(s,b), cut(a,b).\n% two :- cut(s,b), cut(a,t).\n% two :- cut(s,b), cut(b,t).\n% two :- cut(s,b), cut(s,t).\n% two :- cut(a,b), cut(a,t).\n% two :- cut(a,b), cut(b,t).\n% two :- cut(a,b), cut(s,t).\n% two :- cut(a,t), cut(b,t).\n% two :- cut(a,t), cut(s,t).\n% two :- cut(b,t), cut(s,t).\n% :- not some.\n% :- two.\n% up(s,a) :- link(s,a), not cut(s,a).\n% up(s,b) :- link(s,b), not cut(s,b).\n% up(a,b) :- link(a,b), not cut(a,b).\n% up(a,t) :- link(a,t), not cut(a,t).\n% up(b,t) :- link(b,t), not cut(b,t).\n% up(s,t) :- link(s,t), not cut(s,t).\n% reach(s).\n% reach(a) :- reach(s), up(s,a).\n% reach(s) :- reach(a), up(s,a).\n% reach(b) :- reach(s), up(s,b).\n% reach(s) :- reach(b), up(s,b).\n% reach(b) :- reach(a), up(a,b).\n% reach(a) :- reach(b), up(a,b).\n% reach(t) :- reach(a), up(a,t).\n% reach(a) :- reach(t), up(a,t).\n% reach(t) :- reach(b), up(b,t).\n% reach(b) :- reach(t), up(b,t).\n% reach(t) :- reach(s), up(s,t).\n% reach(s) :- reach(t), up(s,t).\n% %@constraint\n% :- not reach(t).\nquant(1,exists).\nquant(2,forall).\nrule(1,1). choice(1). head(1,link(s,a)). head(1,link(s,b)). head(1,link(a,b)). head(1,link(a,t)). head(1,link(b,t)). head(1,link(s,t)).\nrule(2,1). pos(2,link(s,t)).\nrule(3,1). pos(3,link(s,b)).\nrule(4,1). neg(4,link(s,a)).\nrule(5,2). choice(5). head(5,cut(s,a)). head(5,cut(s,b)). head(5,cut(a,b)). head(5,cut(a,t)). head(5,cut(b,t)). head(5,cut(s,t)).\nrule(6,2). pos(6,cut(s,a)). neg(6,link(s,a)).\nrule(7,2). pos(7,cut(s,b)). neg(7,link(s,b)).\nrule(8,2). pos(8,cut(a,b)). neg(8,link(a,b)).\nrule(9,2). pos(9,cut(a,t)). neg(9,link(a,t)).\nrule(10,2). pos(10,cut(b,t)). neg(10,link(b,t)).\nrule(11,2). pos(11,cut(s,t)). neg(11,link(s,t)).\nrule(12,2). head(12,some). pos(12,cut(s,a)).\nrule(13,2). head(13,some). pos(13,cut(s,b)).\nrule(14,2). head(14,some). pos(14,cut(a,b)).\nrule(15,2). head(15,some). pos(15,cut(a,t)).\nrule(16,2). head(16,some). pos(16,cut(b,t)).\nrule(17,2). head(17,some). pos(17,cut(s,t)).\nrule(18,2). head(18,two). pos(18,cut(s,a)). pos(18,cut(s,b)).\nrule(19,2). head(19,two). pos(19,cut(s,a)). pos(19,cut(a,b)).\nrule(20,2). head(20,two). pos(20,cut(s,a)). pos(20,cut(a,t)).\nrule(21,2). head(21,two). pos(21,cut(s,a)). pos(21,cut(b,t)).\nrule(22,2). head(22,two). pos(22,cut(s,a)). pos(22,cut(s,t)).\nrule(23,2). head(23,two). pos(23,cut(s,b)). pos(23,cut(a,b)).\nrule(24,2). head(24,two). pos(24,cut(s,b)). pos(24,cut(a,t)).\nrule(25,2). head(25,two). pos(25,cut(s,b)). pos(25,cut(b,t)).\nrule(26,2). head(26,two). pos(26,cut(s,b)). pos(26,cut(s,t)).\nrule(27,2). head(27,two). pos(27,cut(a,b)). pos(27,cut(a,t)).\nrule(28,2). head(28,two). pos(28,cut(a,b)). pos(28,cut(b,t)).\nrule(29,2). head(29,two). pos(29,cut(a,b)). pos(29,cut(s,t)).\nrule(30,2). head(30,two). pos(30,cut(a,t)). pos(30,cut(b,t)).\nrule(31,2). head(31,two). pos(31,cut(a,t)). pos(31,cut(s,t)).\nrule(32,2). head(32,two). pos(32,cut(b,t)). pos(32,cut(s,t)).\nrule(33,2). neg(33,some).\nrule(34,2). pos(34,two).\nrule(35,2). head(35,up(s,a)). pos(35,link(s,a)). neg(35,cut(s,a)).\nrule(36,2). head(36,up(s,b)). pos(36,link(s,b)). neg(36,cut(s,b)).\nrule(37,2). head(37,up(a,b)). pos(37,link(a,b)). neg(37,cut(a,b)).\nrule(38,2). head(38,up(a,t)). pos(38,link(a,t)). neg(38,cut(a,t)).\nrule(39,2). head(39,up(b,t)). pos(39,link(b,t)). neg(39,cut(b,t)).\nrule(40,2). head(40,up(s,t)). pos(40,link(s,t)). neg(40,cut(s,t)).\nrule(41,2). head(41,reach(s)).\nrule(42,2). head(42,reach(a)). pos(42,reach(s)). pos(42,up(s,a)).\nrule(43,2). head(43,reach(s)). pos(43,reach(a)). pos(43,up(s,a)).\nrule(44,2). head(44,reach(b)). pos(44,reach(s)). pos(44,up(s,b)).\nrule(45,2). head(45,reach(s)). pos(45,reach(b)). pos(45,up(s,b)).\nrule(46,2). head(46,reach(b)). pos(46,reach(a)). pos(46,up(a,b)).\nrule(47,2). head(47,reach(a)). pos(47,reach(b)). pos(47,up(a,b)).\nrule(48,2). head(48,reach(t)). pos(48,reach(a)). pos(48,up(a,t)).\nrule(49,2). head(49,reach(a)). pos(49,reach(t)). pos(49,up(a,t)).\nrule(50,2). head(50,reach(t)). pos(50,reach(b)). pos(50,up(b,t)).\nrule(51,2). head(51,reach(b)). pos(51,reach(t)). pos(51,up(b,t)).\nrule(52,2). head(52,reach(t)). pos(52,reach(s)). pos(52,up(s,t)).\nrule(53,2). head(53,reach(s)). pos(53,reach(t)). pos(53,up(s,t)).\nrule(54,c). neg(54,reach(t)).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 0
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "qasp-example",
+      "facts": "% The example of the pyqasp distribution (disjunctions written as a choice and two\n% constraints): pyqasp counts 3 quantified answer sets.\n% %@exists\n% { o(1); o(2) }.\n% a :- o(1).\n% b :- o(2).\n% { c; d } :- a.\n% :- a, not c, not d.\n% :- c, d.\n% %@forall\n% { g; h } :- c.\n% :- c, not g, not h.\n% :- g, h.\n% g :- not c.\n% %@constraint\n% :- g, b.\nquant(1,exists).\nquant(2,forall).\nrule(1,1). choice(1). head(1,o(1)). head(1,o(2)).\nrule(2,1). head(2,a). pos(2,o(1)).\nrule(3,1). head(3,b). pos(3,o(2)).\nrule(4,1). choice(4). head(4,c). head(4,d). pos(4,a).\nrule(5,1). pos(5,a). neg(5,c). neg(5,d).\nrule(6,1). pos(6,c). pos(6,d).\nrule(7,2). choice(7). head(7,g). head(7,h). pos(7,c).\nrule(8,2). pos(8,c). neg(8,g). neg(8,h).\nrule(9,2). pos(9,g). pos(9,h).\nrule(10,2). head(10,g). neg(10,c).\nrule(11,c). pos(11,g). pos(11,b).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 3
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "even-loop",
+      "facts": "% P2 decides x or y by an even loop through negation, so the generic relevant/1 falls back\n% to keeping every atom of P2, and lift falls back to blocking.\n% %@exists\n% { p; q; r; s }.\n% :- p, q, r.\n% %@forall\n% x :- not y, p.\n% y :- not x.\n% z :- x, q.\n% z :- y, r.\n% w :- y, s.\n% :- w, not q.\n% %@constraint\n% :- z, not s.\nquant(1,exists).\nquant(2,forall).\nrule(1,1). choice(1). head(1,p). head(1,q). head(1,r). head(1,s).\nrule(2,1). pos(2,p). pos(2,q). pos(2,r).\nrule(3,2). head(3,x). pos(3,p). neg(3,y).\nrule(4,2). head(4,y). neg(4,x).\nrule(5,2). head(5,z). pos(5,x). pos(5,q).\nrule(6,2). head(6,z). pos(6,y). pos(6,r).\nrule(7,2). head(7,w). pos(7,y). pos(7,s).\nrule(8,2). pos(8,w). neg(8,q).\nrule(9,c). pos(9,z). neg(9,s).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 10
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "negative-literal",
+      "facts": "% P2 derives x from a false atom of P1 (x :- not a): the counterexample depends on a being\n% false, so the clause must name a (a negative literal of the clause: a must become true).\n% %@exists\n% { a; p; q }.\n% %@forall\n% { y }.\n% x :- not a.\n% x :- y, q.\n% %@constraint\n% :- x, not p.\nquant(1,exists).\nquant(2,forall).\nrule(1,1). choice(1). head(1,a). head(1,p). head(1,q).\nrule(2,2). choice(2). head(2,y).\nrule(3,2). head(3,x). neg(3,a).\nrule(4,2). head(4,x). pos(4,y). pos(4,q).\nrule(5,c). pos(5,x). neg(5,p).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 5
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "odd-loop",
+      "facts": "% o makes P2 incoherent (p :- not p, q and q :- o): every candidate with o is a solution,\n% vacuously. A counterexample for a candidate without o must name o although the violated\n% constraint does not read it; the generic relevant/1 keeps every atom of P2 here (a cycle\n% through negation), so it names o.\n% %@exists\n% { o; r1; r2 }.\n% %@forall\n% { z }.\n% q :- o.\n% p :- not p, q.\n% %@constraint\n% :- z, not r1.\nquant(1,exists).\nquant(2,forall).\nrule(1,1). choice(1). head(1,o). head(1,r1). head(1,r2).\nrule(2,2). choice(2). head(2,z).\nrule(3,2). head(3,q). pos(3,o).\nrule(4,2). head(4,p). pos(4,q). neg(4,p).\nrule(5,c). pos(5,z). neg(5,r1).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 6
+      },
+      "tags": [],
+      "symbolic": "sound"
+    },
+    {
+      "id": "random-81",
+      "facts": "% A random program (tools/make-aspq.py, rnd(81)): 5 atoms per level.\n% %@exists\n% { a3; a4; a2; a1 }.\n% a5 :- a2.\n% a5 :- not a3, a5.\n% a5 :- a5, a2.\n% a5 :- not a4.\n% a5 :- a3, not a5.\n% a5 :- a1.\n% a5 :- a2.\n% %@forall\n% { b5; b3 } :- not a1.\n% b2 :- not a3.\n% b1 :- a1.\n% b1 :- b1.\n% b4 :- a1, not b2.\n% b1 :- a4, b1.\n% :- b4, not b2.\n% b4 :- a5, b2.\n% %@constraint\n% :- not b4.\n% :- not a2, a4, a5.\n% :- not b3.\nquant(1,exists).\nquant(2,forall).\nrule(1,1). choice(1). head(1,a3). head(1,a4). head(1,a2). head(1,a1).\nrule(2,1). head(2,a5). pos(2,a2).\nrule(3,1). head(3,a5). pos(3,a5). neg(3,a3).\nrule(4,1). head(4,a5). pos(4,a5). pos(4,a2).\nrule(5,1). head(5,a5). neg(5,a4).\nrule(6,1). head(6,a5). pos(6,a3). neg(6,a5).\nrule(7,1). head(7,a5). pos(7,a1).\nrule(8,1). head(8,a5). pos(8,a2).\nrule(9,2). choice(9). head(9,b5). head(9,b3). neg(9,a1).\nrule(10,2). head(10,b2). neg(10,a3).\nrule(11,2). head(11,b1). pos(11,a1).\nrule(12,2). head(12,b1). pos(12,b1).\nrule(13,2). head(13,b4). pos(13,a1). neg(13,b2).\nrule(14,2). head(14,b1). pos(14,a4). pos(14,b1).\nrule(15,2). pos(15,b4). neg(15,b2).\nrule(16,2). head(16,b4). pos(16,a5). pos(16,b2).\nrule(17,c). neg(17,b4).\nrule(18,c). pos(18,a4). pos(18,a5). neg(18,a2).\nrule(19,c). neg(19,b3).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 4
+      },
+      "tags": [
+        "generated"
+      ],
+      "symbolic": "sound"
+    },
+    {
+      "id": "random-322",
+      "facts": "% A random program (tools/make-aspq.py, rnd(322)): 5 atoms per level.\n% %@exists\n% { a2; a1; a4; a5 }.\n% a3 :- not a5, a2.\n% a3 :- a2.\n% a3 :- a3, a5.\n% a3 :- not a5.\n% a3 :- not a3, a5.\n% a3 :- not a2, not a5.\n% :- a2, not a3.\n% %@forall\n% { b3 }.\n% b5 :- a2, a3.\n% b2 :- a5, not b4.\n% b2 :- not b5.\n% :- b4, not a4.\n% :- b4.\n% b1 :- a2.\n% b5 :- b2, not a1.\n% %@constraint\n% :- a3.\nquant(1,exists).\nquant(2,forall).\nrule(1,1). choice(1). head(1,a2). head(1,a1). head(1,a4). head(1,a5).\nrule(2,1). head(2,a3). pos(2,a2). neg(2,a5).\nrule(3,1). head(3,a3). pos(3,a2).\nrule(4,1). head(4,a3). pos(4,a3). pos(4,a5).\nrule(5,1). head(5,a3). neg(5,a5).\nrule(6,1). head(6,a3). pos(6,a5). neg(6,a3).\nrule(7,1). head(7,a3). neg(7,a2). neg(7,a5).\nrule(8,1). pos(8,a2). neg(8,a3).\nrule(9,2). choice(9). head(9,b3).\nrule(10,2). head(10,b5). pos(10,a2). pos(10,a3).\nrule(11,2). head(11,b2). pos(11,a5). neg(11,b4).\nrule(12,2). head(12,b2). neg(12,b5).\nrule(13,2). pos(13,b4). neg(13,a4).\nrule(14,2). pos(14,b4).\nrule(15,2). head(15,b1). pos(15,a2).\nrule(16,2). head(16,b5). pos(16,b2). neg(16,a1).\nrule(17,c). pos(17,a3).\n",
+      "constants": {},
+      "expected": {
+        "solutions": 2
+      },
+      "tags": [
+        "generated"
+      ],
+      "symbolic": "sound"
+    }
+  ],
+  "variants": [
+    {
+      "name": "reference",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + meta + exists\nsolver C = shared + meta + forall + violate\nlink   G = A -> C via shared + glue\n\n# The blocking loop: each refuted candidate is ruled out on its own.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.block(M)\n"
+      }
+    },
+    {
+      "name": "lift",
+      "swap": {},
+      "constants": {},
+      "loop": {
+        "language": "loop",
+        "text": "solver A = shared + meta + exists\nsolver C = shared + meta + forall + violate\nlink   G = A -> C via shared + glue lift\n\n# No relevant/1: lift computes each clause from the ground programs of A and C.\nsearch A:\n    on candidate M:\n        X = C.solve(assume G(M))\n        if X: reject M with G.clause(M, X)\n"
+      }
+    }
+  ],
+  "runs": []
+}
