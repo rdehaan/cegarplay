@@ -8,7 +8,6 @@
 export const popcount32 = (x) => { x -= (x >>> 1) & 0x55555555; x = (x & 0x33333333) + ((x >>> 2) & 0x33333333); return (((x + (x >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24; };
 export function popcount(bits) { let c = 0; for (let k = 0; k < bits.length; k++) c += popcount32(bits[k]); return c; }
 export function andCount(a, b) { let c = 0; for (let k = 0; k < a.length; k++) c += popcount32(a[k] & b[k]); return c; }
-export const maskCount = popcount;
 export function maskHas(w, j) { return ((w[(j - 1) >> 5] >>> ((j - 1) & 31)) & 1) === 1; }       // j 1-based
 export function maskOf(list, W) { const w = new Uint32Array(W); for (const j of list) w[(j - 1) >> 5] |= 1 << ((j - 1) & 31); return w; }
 export function maskList(w, n) { const out = []; for (let j = 1; j <= n; j++) if (maskHas(w, j)) out.push(j); return out; }

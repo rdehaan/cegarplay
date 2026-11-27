@@ -5,17 +5,16 @@ import { verifySpace } from './bounded.js';
 import { compile } from './compiler.js';
 import { TEMPLATES, template, derive, pickedVariant, deriveSpace, spaceBound } from './project.js';
 import { resolveProject } from './instances.js';
-import { hashText, auditLiveText } from './stats.js';
-import { fmt, symbolicText } from './output.js';
+import { auditLiveText } from './stats.js';
+import { fragmentsHash, programHash } from './project.js';
+import { symbolicText } from './output.js';
+import { fmt } from './util.js';
 import { Recording } from './recording.js';
+import { $ } from './dom.js';
 
 // What a run's result depends on: the derived project's fragments (instance and variant applied),
 // its loop script and constants. The Instances tab compares it with the project as it is now.
-export function programHash(project) {
-  return hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.loop && project.loop.text, project.settings.constants]));
-}
 
-const $ = (id) => document.getElementById(id);
 
 export function loopLabel(loop) {
   if (loop.language === 'lua') return 'raw Lua';
@@ -316,7 +315,7 @@ export class Control {
     document.body.dataset.lastMode = mode;   // shows the audit notes in Statistics and Observatory
     this.audit = null;
     app.recording = new Recording({ title: project.title || '', instance: instanceId, variant: project.variant || null, mode, engine: app.engineVersion || '',
-      example: app.exampleId || null, fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])) });
+      example: app.exampleId || null, fragmentsHash: fragmentsHash(project) });
     // the project as it was at the start (in memory only, not in the recording's header): the
     // top bar's "Shown" line says when the project was edited since
     app.recording.sourceHash = app.sourceHash ? app.sourceHash() : null;
@@ -332,7 +331,7 @@ export class Control {
       loopLabel: (mode === 'audit' ? 'audit: ' : mode === 'bounded' ? (spaceRun ? `space ${spaceRun.name}: ` : 'symbolic audit: ') : '') + loopLabel(project.loop) + (instanceId ? ` [${instanceId}]` : '') +
         (project.variant ? ` (variant ${project.variant})` : ''), mode, instance: instanceId, variant: project.variant || null, settings: { ...project.settings, constants: { ...project.settings.constants } },
       engine: app.engineVersion, solvers: compiled ? compiled.solvers : [], noHistory,
-      fragmentsHash: hashText(JSON.stringify([project.fragments.map((f) => [f.name, f.text]), project.settings.constants])),
+      fragmentsHash: fragmentsHash(project),
       programHash: programHash(project),
       // the facts the run used (a recipe instance's are generated): to tell later whether it still holds
       instanceFacts: ((project.fragments || []).find((f) => f.name === 'instance') || {}).text ?? null,

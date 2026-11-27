@@ -6,18 +6,12 @@ import fs from 'node:fs';
 import zlib from 'node:zlib';
 import { load } from '../js/project.js';
 import { runProject, recordingOf } from './run.mjs';
-import factory from '../vendor/clingo-wasm/clingo.js';
-import { viewProject, sceneProgram, viewProgram, frameFacts, viewAtoms, hashText, VIEW_OPTIONS } from '../js/views.js';
+import { engineRun } from './engine.mjs';
+import { viewProject, sceneProgram, viewProgram, frameFacts, viewAtoms, VIEW_OPTIONS } from '../js/views.js';
+import { hashText } from '../js/util.js';
 import { pairSteps } from '../js/recording.js';
 
 // precomputed frames of an example's first view: program hash -> marks (examples/views/<id>.json)
-async function engineRun(program, options) {
-  const out = [], err = [];
-  const m = await factory({ print: (l) => out.push(l), printErr: (l) => err.push(l) });
-  let status;
-  try { status = m.ccall('run', 'number', ['string', 'string'], [program, options]); } catch (e) { status = 'trap'; }
-  return { status, out, err };
-}
 async function viewFrames(project, rec) {
   const v = (project.views || [])[0];
   if (!v) return null;

@@ -128,5 +128,3 @@ export function outsideReason(run, { length, best, worst, shape1, longest = null
     return `longer than every idealised run found (at most ${longest}; the worst is not proven, so not certainly outside): ${why()}`;
   return null;
 }
-
-export const isAgree = agrees;

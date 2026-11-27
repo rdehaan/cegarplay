@@ -17,23 +17,12 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
-import factory from '../vendor/clingo-wasm/clingo.js';
+import { engineRun, lua } from './engine.mjs';
 import { load } from '../js/project.js';
 import { runSuite, parseShard, inconsistencies, Reducer, engineTag, drawSuiteSeeds } from '../js/campaign.js';
 import { MemoryStore, importRows } from '../js/store.js';
-import { parseEvent } from '../js/driver.js';
 
 const root = new URL('..', import.meta.url);
-const lua = (name) => fs.readFileSync(new URL(`lua/${name}`, root), 'utf8');
-
-async function engineRun(program, options = '--outf=3') {
-  const out = [], err = [];
-  const m = await factory({ print: (l) => out.push(l), printErr: (l) => err.push(l) });
-  let status;
-  try { status = m.ccall('run', 'number', ['string', 'string'], [program, options]); }
-  catch (e) { status = 'trap'; err.push(String(e)); }
-  return { status, out, err, events: out.map(parseEvent).filter(Boolean) };
-}
 
 // worker thread: one job at a time, reduced in the thread
 if (!isMainThread && workerData && workerData.cegarplayBench) {

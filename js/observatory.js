@@ -4,23 +4,8 @@
 import { ticksOf } from './cursor.js';
 import { pairSteps } from './recording.js';
 import { frameSVG, svgFile, Palette, layoutScene } from './views.js';
+import { h, $, download } from './dom.js';
 
-const $ = (id) => document.getElementById(id);
-const h = (tag, attrs = {}, ...kids) => {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else if (v !== undefined && v !== null && v !== false) e.setAttribute(k, v === true ? '' : v);
-  }
-  for (const k of kids) if (k !== null && k !== undefined) e.append(k);
-  return e;
-};
-function download(name, blob) {
-  const a = h('a', { href: URL.createObjectURL(blob), download: name });
-  document.body.append(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
 
 export class ObservatoryBar {
   constructor(app, root) {

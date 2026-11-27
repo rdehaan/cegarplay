@@ -7,12 +7,11 @@
 // Fenced code with the language loop, asp (or gringo, lp) becomes a read-only ACE block on the
 // page: <div class="example-code" data-mode="...">. Other languages become <pre><code>.
 // A link to ?example=<id> also carries data-load-example="<id>", so a click loads that example.
+import { escapeHtml } from './util.js';
 
 const ACE_MODES = { loop: 'loop', asp: 'gringo', gringo: 'gringo', lp: 'gringo' };
 
-export function escapeHtml(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+export { escapeHtml };
 
 // "Loop language: grammar" -> "loop-language-grammar"
 export function slugify(text) {

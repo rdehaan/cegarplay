@@ -115,7 +115,6 @@ export function cheapBounds(inc) {
   }
   return { lower: Math.max(ratio, packing), upper: inc.bad - matching, ratio, packing, matching };
 }
-export const trivialBounds = cheapBounds;
 
 // The program. Candidates and options are numbered 1.. in the facts (b/1 bad candidate, o/2
 // option of a candidate, r/2 option removes a bad candidate). The Lua main solves with

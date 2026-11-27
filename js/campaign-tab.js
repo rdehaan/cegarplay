@@ -3,28 +3,10 @@
 import { runSuite, expandSuite, cellKey, inconsistencies, scaling, growthFit, solvedCurves, SuiteError, engineTag, resultMatrix, matrixCSV, matricesCSV, seedMatrices, rowSeeds, drawSeeds, drawSuiteSeeds } from './campaign.js';
 import { Pool, defaultPoolSize } from './pool.js';
 import { IdbStore, MemoryStore, exportRows, importRows } from './store.js';
-import { fmt } from './output.js';
+import { fmt } from './util.js';
 import { tabIndent } from './textarea-tab.js';
+import { h, svg, cssVar as css, $, download } from './dom.js';
 
-const $ = (id) => document.getElementById(id);
-const SVGNS = 'http://www.w3.org/2000/svg';
-const h = (tag, attrs = {}, ...kids) => {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else if (v !== undefined && v !== null && v !== false) e.setAttribute(k, v === true ? '' : v);
-  }
-  for (const k of kids) if (k !== null && k !== undefined) e.append(k);
-  return e;
-};
-const svg = (tag, attrs = {}, text) => {
-  const e = document.createElementNS(SVGNS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  if (text !== undefined) e.textContent = text;
-  return e;
-};
-const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#888';
 const COLORS = ['--chart-2', '--chart-1', '--chart-3', '--chart-4', '--chart-6', '--chart-5', '--chart-7'];
 const OUTCOME_COLOR = { finished: '--call-sat', limit: '--call-int', timeout: '--call-int', error: '--call-unsat', trap: '--call-unsat', invalid: '--call-unsat', skipped: '--chart-rest', aborted: '--chart-ground' };
 
@@ -279,20 +261,14 @@ export class CampaignTab {
   }
 
   exportFile() {
-    const blob = new Blob([exportRows(this.rows)], { type: 'application/x-ndjson' });
-    const a = h('a', { href: URL.createObjectURL(blob), download: `${this.current || 'campaign'}.jsonl` });
-    document.body.append(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    download(`${this.current || 'campaign'}.jsonl`, exportRows(this.rows), 'application/x-ndjson');
   }
 
   exportCSV() {
     const v = this.currentSeedView();
     const text = v === 'each' ? matricesCSV(seedMatrices(this.rows, this.metric, this.order())) : matrixCSV(this.matrixFor(v));
     const tag = v === 'each' ? '-per-seed' : v === 'mean' ? '-mean' : typeof v === 'number' ? `-seed${v}` : '';
-    const blob = new Blob([text], { type: 'text/csv' });
-    const a = h('a', { href: URL.createObjectURL(blob), download: `${this.current || 'campaign'}-${this.metric}${tag}.csv` });
-    document.body.append(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    download(`${this.current || 'campaign'}-${this.metric}${tag}.csv`, text, 'text/csv');
   }
 
   async importFile() {

@@ -2,6 +2,7 @@
 /* global ace */
 import { FRAGMENT_NAME, DEFAULT_FRAGMENTS, INSTANCE_FRAGMENT } from './project.js';
 import { sortable, grip } from './drag-order.js';
+import { h as el } from './dom.js';
 
 // The ACE theme follows the colour theme (js/theme.js); every editor made here switches with it.
 const LIVE = new Set();
@@ -35,16 +36,6 @@ export function makeEditor(el, mode, { readOnly = false } = {}) {
   return ed;
 }
 
-const el = (tag, attrs = {}, ...kids) => {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else if (v !== undefined && v !== null) e.setAttribute(k, v);
-  }
-  for (const k of kids) e.append(k);
-  return e;
-};
 
 export class Editors {
   constructor(app) {

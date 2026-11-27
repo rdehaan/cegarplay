@@ -3,37 +3,21 @@
 // project, top bar and latest recording, and changes none of them.
 import { Recording } from '../recording.js';
 import { fnv, projectText, LAB_LIMITS } from './space.js';
+import { h, SVGNS, download } from '../dom.js';
+import { fmt, csvRows as csv } from '../util.js';
 
-const SVGNS = 'http://www.w3.org/2000/svg';
-const h = (tag, attrs = {}, ...kids) => {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else if (v !== undefined && v !== null && v !== false) e.setAttribute(k, v === true ? '' : v);
-  }
-  for (const k of kids.flat()) if (k !== null && k !== undefined && k !== false) e.append(k);
-  return e;
-};
 const s = (tag, attrs = {}, ...kids) => {
   const e = document.createElementNS(SVGNS, tag);
   for (const [k, v] of Object.entries(attrs)) if (v !== undefined && v !== null) e.setAttribute(k, v);
   for (const k of kids.flat()) if (k !== null && k !== undefined) e.append(k);
   return e;
 };
-const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('en-US') : n == null ? '–' : String(n));
 const STORE = 'cegarplay.lab.';
 const store = {
   get(k, d) { try { const v = localStorage.getItem(STORE + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem(STORE + k, JSON.stringify(v)); } catch { /* no storage */ } },
 };
 const projectHash = (p) => fnv(projectText(p));
-const download = (name, text, type = 'text/plain') => {
-  const a = h('a', { href: URL.createObjectURL(new Blob([text], { type })), download: name });
-  document.body.append(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-};
-const csv = (rows) => rows.map((r) => r.map((x) => { const t = x == null ? '' : String(x); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; }).join(',')).join('\n') + '\n';
 const svgText = (svg) => {
   const c = svg.cloneNode(true);
   c.setAttribute('xmlns', SVGNS);

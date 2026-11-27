@@ -1,8 +1,8 @@
 // The top bar's pop-ups (the Project menu, Run options), the dialogs (Settings; Workspace,
 // snapshots and recordings), the toast that shows the status lines of the file actions, and
 // the folded tab help. Only the page uses it; it drives the existing buttons by their ids.
+import { $ } from './dom.js';
 
-const $ = (id) => document.getElementById(id);
 export const TOAST_MS = 5000;
 const narrow = () => matchMedia('(max-width: 760px)').matches;
 

@@ -2,8 +2,9 @@
 import { Engine } from './engine.js';
 import * as Project from './project.js';
 import { Editors } from './editors.js';
-import { Output, fmt as fmtNum } from './output.js';
-import { Stats, hashText } from './stats.js';
+import { Output } from './output.js';
+import { fmt as fmtNum, escapeHtml as escHtml } from './util.js';
+import { Stats } from './stats.js';
 import { verdictText } from './compare.js';
 import { Control } from './control.js';
 import { LoopTab } from './loop-tab.js';
@@ -30,8 +31,8 @@ import { attachLoopTips, attachTooltip } from './loop-tips.js';
 import { projectModel, lintProject, aspWordHelp } from './asp-scan.js';
 import { loopCompletions, aspCompletions } from './completions.js';
 import { encodeShare, decodeShare, shareData, SHARE_PREFIX, LONG_LINK } from './share.js';
+import { h as make, $, download as saveFile } from './dom.js';
 
-const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 setupTopbar();
 const app = { ready: false, project: Project.newProject() };
@@ -200,7 +201,6 @@ app.lintNow = () => {
 };
 app.editors.onEdit = () => { model = null; clearTimeout(lintTimer); lintTimer = setTimeout(app.lintNow, 400); };
 // autocompletion (ACE's language tools): as one types, and with Ctrl+Space
-const escHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function completeWith(editor, list) {
   if (!ace.require('ace/ext/language_tools')) return;
   editor.completers = [{
@@ -527,7 +527,7 @@ app.sourceHash = () => {
   const p = app.project;
   if (!p) return null;
   try { app.collect(); } catch { /* editors not built yet */ }
-  return hashText(JSON.stringify([p.fragments.map((f) => [f.name, f.text]), p.loop && p.loop.text, p.settings && p.settings.constants, p.variants || []]));
+  return Project.sourceHash(p);
 };
 app.updateShown = () => {
   const el = $('shown-line');
@@ -608,12 +608,6 @@ app.library = fetch('examples/library.json').then((r) => {
 }).catch(() => null);
 
 const exampleLink = (id) => `${location.origin}${location.pathname}?example=${encodeURIComponent(id)}`;
-const make = (tag, attrs = {}, ...kids) => {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  e.append(...kids);
-  return e;
-};
 
 async function buildLibrary() {
   const box = $('library');
@@ -723,14 +717,7 @@ function flash(btn, text, error = false) {
   n.classList.toggle('error-text', error);
 }
 
-function download(name, text, type = 'application/json') {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], { type }));
-  a.download = name;
-  document.body.append(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-}
+const download = (name, text, type = 'application/json') => saveFile(name, text, type);
 const slug = (s) => (s || 'project').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'project';
 const guard = () => {
   if (app.control.busy) { window.alert('Not possible during a run.'); return false; }
@@ -958,13 +945,7 @@ $('new-button').addEventListener('click', () => {
 // ---- recordings: download the last run, open one and replay it
 $('download-recording-button').addEventListener('click', async () => {
   if (!app.recording) return;
-  const blob = await app.recording.toBlob();
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = slug(app.project.title) + '.cprec';
-  document.body.append(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  saveFile(slug(app.project.title) + '.cprec', await app.recording.toBlob());
 });
 $('open-recording-button').addEventListener('click', () => $('recording-input').click());
 $('recording-input').addEventListener('change', async (ev) => {

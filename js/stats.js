@@ -1,11 +1,12 @@
 // Statistics tab, live line, charts, run history (spec-app.md section 10).
 import { GLOSSARY } from './glossary.js';
-import { fmt, spaceAt } from './output.js';
+import { spaceAt } from './output.js';
+import { fmt } from './util.js';
 import { refinementCounts, refinementSplitText, COUNT_TIP } from './driver.js';
+import { h, svg } from './dom.js';
 
 const MAX_POINTS = 500;
 const HIST_LABELS = ['1', '2', '3–4', '5–8', '9–16', '17–32', '33–64', '65+'];
-const SVGNS = 'http://www.w3.org/2000/svg';
 // Chart colours are tokens of css/theme.css, so the charts follow the colour theme without redrawing.
 const COLORS = [1, 2, 3, 4, 5, 6, 7].map((i) => `var(--chart-${i})`);
 
@@ -34,29 +35,7 @@ export function auditLiveText(a) {
     `${fmt(a.pairs)} refinements checked · ${verdict}`;
 }
 
-function svg(tag, attrs = {}, text) {
-  const e = document.createElementNS(SVGNS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  if (text !== undefined) e.textContent = text;
-  return e;
-}
-const h = (tag, attrs = {}, ...kids) => {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else e.setAttribute(k, v);
-  }
-  for (const k of kids) e.append(k);
-  return e;
-};
 
-// A simple string hash (for "same fragments" in the run history).
-export function hashText(s) {
-  let x = 2166136261;
-  for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619) >>> 0; }
-  return x.toString(16).padStart(8, '0');
-}
 
 export class Stats {
   constructor(app) {

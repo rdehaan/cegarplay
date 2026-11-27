@@ -5,20 +5,9 @@ import { Space, fates, mapOrder, blameMatrix, redundancy, refinementDetail } fro
 import { Recording, pairSteps } from './recording.js';
 import { auditPlan, auditBody, assemble, modulesFor, validate } from './driver.js';
 import { derive, selectedInstance } from './project.js';
-import { fmt } from './output.js';
+import { fmt } from './util.js';
+import { h, SVGNS, cssVar as css } from './dom.js';
 
-const SVGNS = 'http://www.w3.org/2000/svg';
-const h = (tag, attrs = {}, ...kids) => {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else if (v !== undefined && v !== null && v !== false) e.setAttribute(k, v === true ? '' : v);
-  }
-  for (const k of kids) if (k !== null && k !== undefined) e.append(k);
-  return e;
-};
-const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#888';
 
 export class SpaceView {
   constructor(app, root) {

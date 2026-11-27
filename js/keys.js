@@ -7,7 +7,7 @@
 //   Shift+C, O, R, T, M   the Campaign, Observatory, Refinery, Tutorial or Manual tab on or off
 //   Shift+A      the three advanced tabs (Campaign, Observatory, Refinery) on or off
 //   ?            the list of shortcuts (a dialog)
-const $ = (id) => document.getElementById(id);
+import { $ } from './dom.js';
 
 // Whether a key belongs to what has the focus: an editor, a text field, a list, a slider (its own
 // arrow keys), the tab row's radios (arrow keys switch tabs), a button (Space presses it).

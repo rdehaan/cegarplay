@@ -12,17 +12,7 @@
 //     actions     [{ name, label, title, id, class, onClick }]: buttons, data-action = name
 //
 // The container keeps its id; the card sets data-verdict and the classes it styles.
-const h = (tag, attrs = {}, ...kids) => {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (v === undefined || v === null || v === false) continue;
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else e.setAttribute(k, v === true ? '' : v);
-  }
-  for (const k of kids) if (k !== null && k !== undefined) e.append(k);
-  return e;
-};
+import { h } from './dom.js';
 
 // the colours of the card: a pass is a sound verdict, a fail an unsound one, budget a limit
 const TONE = { sound: 'sound', pass: 'sound', unsound: 'unsound', fail: 'unsound', limit: 'limit', budget: 'limit', unsupported: 'limit', info: 'info' };

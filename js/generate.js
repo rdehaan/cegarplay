@@ -4,9 +4,9 @@
 //   generator: { name, text, params: { n: 'int', p: 'permille' }, defaults: { n: 7, p: 300 } }
 //   recipe:    { generator: 'gnp', params: { n: 7, p: 300 }, seed: 1 }
 import { luaLongString, parseEvent, validateGenerator } from './driver.js';
+import { hashText } from './util.js';
 
 export const PARAM_TYPES = ['int', 'permille'];
-export const DRAW_FUNCTIONS = ['flip', 'int', 'weighted', 'perm', 'subset', 'mallows'];
 const NAME = /^[a-z][A-Za-z0-9_]*$/;
 
 // The parameter values of a recipe as clingo constants ["n=7", ...], with the problems found.
@@ -82,12 +82,6 @@ export async function runRecipe(project, recipe, luaTexts, engineRun) {
   return x;
 }
 
-// A short content hash (FNV-1a, 32 bits, hex) for caches.
-export function hashText(s) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-  return h.toString(16).padStart(8, '0');
-}
 
 export function recipeKey(project, recipe) {
   const g = (project.generators || []).find((x) => x.name === recipe.generator);

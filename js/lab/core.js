@@ -19,6 +19,7 @@ import { minimalSets } from './minimal.js';
 import { mapRun, aliveBefore } from './runs.js';
 import { schemeOptions, incidence, exactBounds, SCHEMES } from './bounds.js';
 import { simulate, greedy, histogram } from './simulate.js';
+import { plural } from '../util.js';
 
 export class LabError extends Error {
   constructor(message, code = 1) { super(message); this.code = code; }
@@ -173,7 +174,6 @@ export function inspect(sp, M, { alive = null, minimal = null, chosen = null, se
   };
 }
 
-const plural = (n, one, many = one + 's') => `${n} ${n === 1 ? one : many}`;
 export function verdictLine(sp, { run, sel, smallest, forced, options }) {
   const what = run ? 'The loop\'s clause' : sel.kind === 'relevant' ? 'The first counterexample\'s clause' : sel.kind === 'block' ? 'The block' : 'The selected clause';
   const s = run || sel;

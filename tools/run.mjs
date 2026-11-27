@@ -22,22 +22,14 @@
 import { resolveProject } from '../js/instances.js';
 import fs from 'node:fs';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
-import factory from '../vendor/clingo-wasm/clingo.js';
-import { load, derive, pickedVariant, ProjectError, expectedCheck, costTracker, costText } from '../js/project.js';
+import { engineRun, lua } from './engine.mjs';
+import { load, derive, pickedVariant, ProjectError, expectedCheck, costTracker, costText, fragmentsHash } from '../js/project.js';
 import { Recording } from '../js/recording.js';
-import { hashText } from '../js/stats.js';
 import { assemble, parseEvent, validate, auditPlan, auditBody, boundedPlan, boundedBody, modulesFor, refinementCounts } from '../js/driver.js';
 
 const root = new URL('..', import.meta.url);
 
-export async function engineRun(program, options = '--outf=3') {
-  const out = [], err = [];
-  const m = await factory({ print: (l) => out.push(l), printErr: (l) => err.push(l) });
-  let status;
-  try { status = m.ccall('run', 'number', ['string', 'string'], [program, options]); }
-  catch (e) { status = 'trap'; err.push(String(e)); }
-  return { status, out, err, events: out.map(parseEvent).filter(Boolean) };
-}
+export { engineRun };
 
 // The engine call blocks its thread: a run with a backstop goes to a worker thread.
 if (!isMainThread && workerData?.cegarplayRun) {
@@ -58,7 +50,6 @@ function usage(msg) {
   process.exit(2);
 }
 
-const lua = (name) => fs.readFileSync(new URL(`lua/${name}`, root), 'utf8');
 
 // audit: { link, limit } runs the audit mode (lua/audit.lua) instead of the loop.
 // instance, variant: derive the plain project first (js/project.js derive); constants given
@@ -187,7 +178,7 @@ async function main(argv) {
   }
   if (proofFile) {
     const d = r.project;
-    const rec = recordingOf(d, r.events, { fragmentsHash: hashText(JSON.stringify([d.fragments.map((f) => [f.name, f.text]), d.settings.constants])) });
+    const rec = recordingOf(d, r.events, { fragmentsHash: fragmentsHash(d) });
     fs.writeFileSync(proofFile, rec.text());
   }
   if (recordFile) {

@@ -11,12 +11,13 @@
 //
 // What it needs from the page (`app`): loadExample, snapshotBefore, edited, control (busy,
 // ends: the number of runs and audits that ended, lastEnd: { mode, state }), output.trace.
+import { $ } from './dom.js';
+import { escapeHtml as esc } from './util.js';
 
 export const TOUR_KEY = 'cegarplay.tour';
 export const TOUR_EXAMPLE = 'tutorial-first-run';
 const POLL_MS = 200;
 
-const $ = (id) => document.getElementById(id);
 const tabLabel = (id) => document.querySelector(`#tab-bar label[for="${id}"]`);
 const tabOpen = (id) => $(id).checked;
 function openTab(id) {
@@ -170,7 +171,6 @@ function makeSteps(app) {
   ];
 }
 
-const esc = (s) => s.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
 // ---- the short tours of the advanced tabs: offered the first time the tab is opened (js/init.js)
 const tabTarget = (id) => () => { const e = document.getElementById(id); return e && !e.hidden && e.offsetParent !== null ? e : null; };

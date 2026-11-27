@@ -17,6 +17,7 @@
 import { derive, ProjectError, costTracker } from './project.js';
 import { validate, assemble, modulesFor, parseEvent, refinementCounts } from './driver.js';
 import { resolveProject } from './instances.js';
+import { csvField } from './util.js';
 
 export class SuiteError extends Error {}
 
@@ -443,7 +444,6 @@ export function seedMatrices(rows, metric = 'time', order = {}) {
   return out;
 }
 
-const csvField = (x) => { const t = x === null || x === undefined ? '' : String(x); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
 const cellText = (c) => !c ? '' : c.solved ? String(c.value) : c.solvedN ? `${c.outcome} (${c.solvedN} of ${c.n} finished)` : c.outcome;
 
 // CSV: one row per instance, one column per variant (the metric, or the outcome of a cell that

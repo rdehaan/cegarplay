@@ -3,9 +3,9 @@
 // The pure helpers (layout, lineTable, binCalls) use no DOM; the Anatomy class draws.
 import { mapLine } from './driver.js';
 import { compile } from './compiler.js';
-import { fmt } from './output.js';
+import { fmt } from './util.js';
+import { h, svg, cssVar as css } from './dom.js';
 
-const SVGNS = 'http://www.w3.org/2000/svg';
 
 // ---- pure helpers -----------------------------------------------------------------------
 
@@ -75,23 +75,6 @@ export function binCalls(calls, { v0, v1, width, lanes, laneOf, searches = new S
 }
 
 // ---- drawing ------------------------------------------------------------------------------
-const svg = (tag, attrs = {}, text) => {
-  const e = document.createElementNS(SVGNS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  if (text !== undefined) e.textContent = text;
-  return e;
-};
-const h = (tag, attrs = {}, ...kids) => {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else if (v !== undefined && v !== null && v !== false) e.setAttribute(k, v === true ? '' : v);
-  }
-  for (const k of kids) if (k !== null && k !== undefined) e.append(k);
-  return e;
-};
-const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#888';
 const secs = (t) => (t >= 10 ? t.toFixed(1) : t >= 0.1 ? t.toFixed(2) : t.toFixed(4));
 
 const BOX_W = 190, BOX_H = 92, COL_GAP = 110, ROW_GAP = 26, PAD = 16;

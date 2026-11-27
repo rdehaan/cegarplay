@@ -6,18 +6,8 @@
 import { INSTANCE_ID, TEMPLATES, templateFor } from './project.js';
 import { compareVariants, hunks } from './compare.js';
 import { compile } from './compiler.js';
+import { h as el, $ } from './dom.js';
 
-const $ = (id) => document.getElementById(id);
-const el = (tag, attrs = {}, ...kids) => {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else if (v !== undefined && v !== null && v !== false) e.setAttribute(k, v === true ? '' : v);
-  }
-  for (const k of kids) if (k !== null && k !== undefined) e.append(k);
-  return e;
-};
 
 // "a=b, c=d" <-> { a: 'b', c: 'd' }
 export function parsePairs(text) {

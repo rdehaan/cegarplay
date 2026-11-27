@@ -3,25 +3,10 @@
 import { Engine } from './engine.js';
 import { pairSteps, solutionSteps } from './recording.js';
 import { viewAtoms as viewAtomsOf, frameSVG, svgFile } from './views.js';
-import { frameFacts, viewProgram, sceneProgram, parseMarks, layoutScene, suggestView, Palette, FrameSource, VIEW_OPTIONS, viewProject, hashText } from './views.js';
+import { frameFacts, viewProgram, sceneProgram, parseMarks, layoutScene, suggestView, Palette, FrameSource, VIEW_OPTIONS, viewProject } from './views.js';
+import { hashText } from './util.js';
+import { h, svg } from './dom.js';
 
-const SVGNS = 'http://www.w3.org/2000/svg';
-const h = (tag, attrs = {}, ...kids) => {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else if (v !== undefined && v !== null && v !== false) e.setAttribute(k, v === true ? '' : v);
-  }
-  for (const k of kids) if (k !== null && k !== undefined) e.append(k);
-  return e;
-};
-const svg = (tag, attrs = {}, text) => {
-  const e = document.createElementNS(SVGNS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  if (text !== undefined) e.textContent = text;
-  return e;
-};
 
 // What "New view" starts with: it runs as it is (one note per step) and says what goes where.
 const NEW_VIEW = `% A view: rules that derive marks draw(M). See Manual: Writing views.

@@ -115,7 +115,6 @@ export class Recording {
   }
 
   link(step) { return this.I && step.l ? this.I.links[step.l - 1] : null; }
-  solverName(step) { return this.I && step.s ? this.I.solvers[step.s - 1] : null; }
 
   // The true interface atoms of the step's candidate, as texts.
   candidateAtoms(step) {

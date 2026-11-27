@@ -24,7 +24,7 @@
 // Exit code (as tools/audit.mjs): 0 success, 1 error, 2 bad usage, 3 a limit or budget, 4 unsupported.
 import fs from 'node:fs';
 import zlib from 'node:zlib';
-import factory from '../vendor/clingo-wasm/clingo.js';
+import { engineRun } from './engine.mjs';
 import { loadTarget } from './audit.mjs';
 import { Recording } from '../js/recording.js';
 import * as Lab from '../js/lab/core.js';
@@ -35,13 +35,7 @@ const read = (p) => fs.readFileSync(new URL(p, root), 'utf8');
 export const LUA = { runtime: read('lua/runtime.lua'), lab: read('lua/lab.lua'), ground: read('lua/ground.lua'), draw: read('lua/draw.lua'), generate: read('lua/generate.lua'), audit: read('lua/audit.lua') };
 
 // One clingo-wasm run on a fresh instance (a trap leaves no state behind).
-export async function nodeExec(program, options = '--outf=3', onLine = null) {
-  const out = [], err = [];
-  const m = await factory({ print: (l) => { out.push(l); if (onLine) onLine(l); }, printErr: (l) => err.push(l) });
-  let status;
-  try { status = m.ccall('run', 'number', ['string', 'string'], [program, options]); } catch (e) { status = 'trap'; err.push(String(e)); }
-  return { status, out, err };
-}
+export const nodeExec = engineRun;
 
 export function readRecording(file) {
   const buf = fs.readFileSync(file);

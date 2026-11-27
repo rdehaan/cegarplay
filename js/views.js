@@ -6,6 +6,7 @@
 // instance, the named fragments (one of them holds `#program scene.` and `#program frame.`
 // parts) and the step facts. It runs as plain clingo: the scene and frame parts are renamed to
 // base, so no Lua main (and no trap) is involved; draw/1 atoms are the marks.
+import { hashText, escapeHtml as esc } from './util.js';
 
 // ---- terms --------------------------------------------------------------------------------
 // Parse a clingo symbol text into { name, args } | { num } | { str } | tuple { name: '', args }.
@@ -243,7 +244,6 @@ export function parseMarks(atoms, viewName = 'view') {
   }
   return out;
 }
-export const markCount = (atoms) => atoms.length;
 
 // fill / stroke classes -> eight palette slots, in order of first use (per view panel)
 export class Palette {
@@ -406,11 +406,6 @@ export class FrameCache {
   get(k) { const v = this.map.get(k); if (v) { this.map.delete(k); this.map.set(k, v); } return v; }
   set(k, v) { this.map.set(k, v); while (this.map.size > this.limit) this.map.delete(this.map.keys().next().value); }
 }
-export function hashText(s) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-  return h.toString(16).padStart(8, '0');
-}
 
 // Frames on one engine: a request for a step the cursor has left is dropped; cached frames
 // make no engine call. run(program, options) -> { status, out, err }.
@@ -446,7 +441,6 @@ export class FrameSource {
 // in the order of first use), elements in scene order. Deterministic: the same marks and
 // positions give the same text.
 export const EXPORT_PALETTE = ['#2980b9', '#e67e22', '#27ae60', '#8e44ad', '#c0392b', '#16a085', '#d4ac0d', '#7f8c8d'];
-const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const r1 = (x) => Math.round(x * 10) / 10;
 export function frameSVG(scene, frame, pos, { palette = new Palette(), title = 'view', x0 = 0 } = {}) {
   const out = [];

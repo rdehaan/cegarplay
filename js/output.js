@@ -3,6 +3,8 @@ import { TraceView } from './trace.js';
 import { explainError } from './error-help.js';
 import { costTracker } from './project.js';
 import { resultCard } from './result-card.js';
+import { download } from './dom.js';
+import { fmt, plural } from './util.js';
 
 const SHOW_SOLUTIONS = 1000;
 // the refinement kinds of an audit as the loop script writes them: G.clause, G.clauses, G.block
@@ -11,7 +13,6 @@ const kindText = (link, kinds) => (kinds || []).map((k) => (LINK_KINDS.has(k) ? 
 const AUDIT_NOTE = 'An audit does not run the loop: no solutions are listed here. Its own counts (candidates, solutions, refinements checked) are in the verdict above and in the Statistics tab.';
 const MAX_MESSAGES = 2000;
 const KEEP_SOLUTIONS = 200000;   // kept for the download
-export const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('en-US') : n == null ? '–' : String(n));
 
 export class Output {
   constructor(app) {
@@ -183,12 +184,7 @@ export class Output {
   }
 
   downloadSolutions() {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([this.solutionsText()], { type: 'text/plain' }));
-    a.download = 'solutions.txt';
-    document.body.append(a);
-    a.click();
-    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    download('solutions.txt', this.solutionsText());
   }
 
   message(text, kind = '') {
@@ -275,7 +271,6 @@ export class Output {
   }
 }
 
-const plural = (n, word) => `${fmt(n)} ${word}${n === 1 ? '' : 's'}`;
 
 // The steps of a space audit, runs of sound steps joined: "1-11 sound (1 round each) · 12 unsound (3 rounds)".
 function perKText(rows0) {

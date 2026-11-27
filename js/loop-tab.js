@@ -3,8 +3,8 @@ import { TEMPLATES, templateFor } from './project.js';
 import { compile } from './compiler.js';
 import { runOptionsSummary } from './topbar.js';
 import { explainError } from './error-help.js';
+import { $ } from './dom.js';
 
-const $ = (id) => document.getElementById(id);
 const NUMERIC = { 'seconds-input': 'seconds', 'candidates-input': 'candidates', 'trace-input': 'trace', 'seed-input': 'seed' };
 
 export class LoopTab {

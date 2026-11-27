@@ -1,6 +1,16 @@
 // Project model, load/save, import of cegar.py files, standalone export. No DOM, no Node APIs.
 import { compile } from './compiler.js';
 import { assemble, DEFAULT_SETTINGS, stripAspComments, modulesFor } from './driver.js';
+import { hashText } from './util.js';
+
+// Hashes of a project, for "the same program" (the JSON shapes are fixed: recordings and the
+// replays in examples/replays store them).
+// fragmentsHash: the fragments and constants (run history, recordings, certificate verdicts).
+export const fragmentsHash = (p) => hashText(JSON.stringify([p.fragments.map((f) => [f.name, f.text]), p.settings.constants]));
+// programHash: also the loop script (an instance's last count is of this program).
+export const programHash = (p) => hashText(JSON.stringify([p.fragments.map((f) => [f.name, f.text]), p.loop && p.loop.text, p.settings.constants]));
+// sourceHash: also the variants ("Shown:" says the results are of an earlier version).
+export const sourceHash = (p) => hashText(JSON.stringify([p.fragments.map((f) => [f.name, f.text]), p.loop && p.loop.text, p.settings && p.settings.constants, p.variants || []]));
 
 export const FORMAT = 'cegarplay';
 export const VERSION = 2;

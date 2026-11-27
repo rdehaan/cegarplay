@@ -6,15 +6,11 @@
 //   parseSpace(lines | events, meta)                   Y lines -> LabSpace (with per-atom bitsets)
 import { auditPlan, declarationLines } from '../driver.js';
 import { Space } from '../space.js';
+import { hashText as fnv } from '../util.js';
+export { fnv };
 
 export const LAB_LIMITS = { candidates: 200000, cex: 20, minimal: 200, exact: 3000, seconds: 30, runs: 1000 };
 
-// 32-bit FNV-1a of a text, as hex (the space's cache key; like hashText in js/stats.js).
-export function fnv(text) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
-  return h.toString(16).padStart(8, '0');
-}
 // The parts of a project that decide a space: the program, its instances (also generated ones), pools
 export const projectText = (p) => JSON.stringify({ fragments: p.fragments, loop: p.loop, instances: p.instances, generators: p.generators,
   pools: p.pools, variants: p.variants, constants: p.settings && p.settings.constants, poolsSetting: p.settings && p.settings.pools });

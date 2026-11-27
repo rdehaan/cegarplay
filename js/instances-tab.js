@@ -5,26 +5,18 @@ import { IMPORTERS, importerFor, freshId, checkFacts, ImportError, resolveInstan
 import { generate, PARAM_TYPES, generatorConstants } from './generate.js';
 import { fuzz, shrinkInstance, diagnose, defaultSource, auditOf, symbolicOf } from './fuzz.js';
 import { mine } from './mine.js';
-import { BatchStopped, programHash } from './control.js';
+import { BatchStopped } from './control.js';
+import { programHash } from './project.js';
 import { derive, spaceBound, spaceCombos, spaceKeeps, auditable, INSTANCE_ID, applyVariant, expectedCheck, costText, runAllSummary, exerciseItems, gradeItem, exerciseSummary } from './project.js';
-import { fmt, spaceAt } from './output.js';
+import { spaceAt } from './output.js';
+import { fmt } from './util.js';
 import { spaceProblems } from './bounded.js';
 import { resultCard } from './result-card.js';
 import { refinementCounts } from './driver.js';
+import { h as el, $ } from './dom.js';
 
-const $ = (id) => document.getElementById(id);
 // the Expected column: "12", "optimum 8" or both
 const expectedText = (e) => !e ? '–' : [Number.isInteger(e.solutions) ? fmt(e.solutions) : null, e.optimum != null ? `optimum ${costText(e.optimum)}` : null].filter(Boolean).join(', ') || '–';
-const el = (tag, attrs = {}, ...kids) => {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') e.className = v;
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else if (v !== undefined && v !== null && v !== false) e.setAttribute(k, v === true ? '' : v);
-  }
-  for (const k of kids) if (k !== null && k !== undefined) e.append(k);
-  return e;
-};
 // A card's "Add as instance" after a click: says so, and is not clicked twice
 function added(card, id) {
   const b = card.querySelector('button');

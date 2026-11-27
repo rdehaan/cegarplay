@@ -4,6 +4,7 @@
 // runtime does (lua/runtime.lua): rt.solver, rt.link, Solver:search, Solver:solve, Link:clause,
 // Model:reject, Solver:add, rt.accept. Only the page uses this module.
 import { template } from './project.js';
+import { $ } from './dom.js';
 
 export const WALKTHROUGH_KEY = 'cegarplay.tour.loop';
 const EXAMPLE = 'tutorial-first-run';
@@ -21,7 +22,6 @@ search A:
 
 const SHAPE2 = template('shape2');
 
-const $ = (id) => document.getElementById(id);
 const squeeze = (t) => t.replace(/#.*$/gm, '').replace(/\s+/g, '');
 const fmt = (n) => Number(n || 0).toLocaleString('en-US');
 
