@@ -301,7 +301,7 @@
         <label class="inline-label" for="template-select">Template:</label>
         <select id="template-select"></select>
         &nbsp;
-        <button class="control-button" id="insert-template-button">Insert</button>
+        <button class="control-button" id="insert-template-button" title="Replace the statements of the loop script with the chosen template; the declarations (solver, link) stay">Use template</button>
         &nbsp;
         <button class="control-button" id="edit-as-lua-button">Edit as Lua</button>
       </div>
@@ -410,17 +410,25 @@
       <p id="run-story" class="run-story" hidden></p>
       <div id="audit-panel" class="audit-panel" hidden></div>
       <!-- hidden until the first run (js/output.js result) -->
+      <!-- data-kind (js/output.js): "audit" or "not-started" hide Solutions and Trace, which have
+           nothing then; Messages shows only with a message (css/main.css) -->
       <div id="output-body" hidden>
+      <div id="output-solutions">
       <h3>Solutions <span id="solutions-count" class="note"></span>
         <button class="control-button small-button" id="download-solutions-button" hidden>Download</button></h3>
       <ol id="solutions" class="solutions"></ol>
       <p id="solutions-note" class="note"></p>
+      </div>
+      <div id="output-trace">
       <h3>Trace</h3>
       <p id="trace-paused" class="note trace-paused" hidden>The run is paused: step through the steps recorded so far with
         <kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd> (or Previous and Next); <kbd>Space</kbd> resumes.</p>
       <div id="trace"><p class="note">No steps recorded.</p></div>
+      </div>
+      <div id="output-messages">
       <h3>Messages</h3>
       <div id="messages" class="messages"></div>
+      </div>
       </div>
     </section>
 

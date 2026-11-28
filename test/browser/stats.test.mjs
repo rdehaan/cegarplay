@@ -238,9 +238,10 @@ test('what the tabs show: the marked history row, the Summary and notes after an
   assert.equal(await page.$$eval('#history-table tr[data-shown="true"]', (l) => l.length), 1);
   assert.match(await page.$eval('#history-table tr[data-shown="true"]', (tr) => tr.textContent), /sound/);
   await B.openTab(page, 5);
-  assert.match(await page.textContent('#solutions-note'), /An audit does not run the loop: no solutions are listed here/);
-  assert.match(await page.textContent('#trace-empty'), /An audit does not run the loop, so it has no trace/);
-  assert.match(await page.textContent('#result-line'), /refinements checked\)/);
+  // an audit lists no solutions and has no trace: those sections are not shown
+  assert.equal(await page.isVisible('#output-solutions'), false);
+  assert.equal(await page.isVisible('#output-trace'), false);
+  assert.equal(await page.textContent('#result-line'), 'Audit: sound for every candidate and counterexample of this instance.');
   assert.match(await page.textContent('#audit-panel'), /refined with G\.(clause|clauses|block)/);
   // Clear: nothing is shown, no row is marked
   await B.openTab(page, 5);  // Clear is in the Output tab

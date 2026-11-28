@@ -11,13 +11,17 @@ export class LoopTab {
   constructor(app) {
     this.app = app;
     const sel = $('template-select');
+    // no template is picked at first: the list does not claim a shape the script may not have
+    sel.append(Object.assign(document.createElement('option'), { value: '', textContent: 'Start from a template…' }));
+    sel.addEventListener('change', () => { $('insert-template-button').disabled = !sel.value || !!this.app.editors.readOnly; });
     for (const [k, t] of Object.entries(TEMPLATES)) {
       const o = document.createElement('option');
       o.value = k;
       o.textContent = t.label;
       sel.append(o);
     }
-    $('insert-template-button').addEventListener('click', () => this.insertTemplate(sel.value));
+    $('insert-template-button').disabled = true;
+    $('insert-template-button').addEventListener('click', () => { if (sel.value) this.insertTemplate(sel.value); });
     $('edit-as-lua-button').addEventListener('click', () => this.editAsLua());
     $('add-constant-button').addEventListener('click', () => { this.addConstantRow('', ''); });
     for (const [id, key] of Object.entries(NUMERIC)) {
@@ -180,6 +184,10 @@ export class LoopTab {
       if (!window.confirm('Replace the raw Lua loop by this template?')) return;
       ed.setLoop({ language: 'loop', text });
     } else {
+      // the template replaces the statements (the declarations stay): ask unless the script is a
+      // template as it was written, which loses nothing
+      const asTemplate = Object.keys(TEMPLATES).some((k) => templateFor(k, cur) === cur);
+      if (text !== cur && !asTemplate && !window.confirm(`Replace the statements of the loop script with the template "${TEMPLATES[key].label}"? The declarations stay; Ctrl+Z in the editor undoes it.`)) return;
       ed.loop.setValue(text, -1);
     }
   }

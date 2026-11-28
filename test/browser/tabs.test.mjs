@@ -169,3 +169,57 @@ test('empty states and folds: ready, Output before a run, Instances parts, the O
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('errors and controls: an unfinished last rule is marked, problems listed under the editor, Output after a failed start, the template list, record-and-run, the view slider', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=tutorial-first-run&tab=3');
+  const anns = () => page.evaluate(() => ace.edit(document.getElementById('editor-check')).session.getAnnotations());
+  // "unexpected EOF": past the text, put on its last line with text (line 1 of 2 here), as the message says
+  await B.setEditor(page, 'editor-check', '1 { sum(X,Y) : num(X)\n');
+  await page.waitForFunction(() => ace.edit(document.getElementById('editor-check')).session.getAnnotations().length > 0, null, { timeout: 5000 });
+  assert.equal((await anns())[0].row, 0);
+  await page.waitForSelector('#editor-check + .editor-problems li');
+  assert.match(await page.textContent('#editor-check + .editor-problems'), /^line 1: syntax error, unexpected EOF/);
+  // an unsafe variable: the short form in the list and first in the tooltip, clingo's text folded
+  await B.setEditor(page, 'editor-check', ':- sum(X,Y), not pick(Z).\n');
+  await page.waitForFunction(() => /unsafe variable Z/.test(document.querySelector('#editor-check + .editor-problems')?.textContent || ''), null, { timeout: 5000 });
+  assert.match((await anns())[0].text, /^unsafe variable Z \(every variable/);
+  assert.equal(await page.isVisible('#editor-check + .editor-problems details pre'), false);
+  // a click on "line 1" puts the cursor there
+  await page.click('#editor-check + .editor-problems .problem-line');
+  assert.equal(await page.evaluate(() => ace.edit(document.getElementById('editor-check')).getCursorPosition().row), 0);
+  // a run that does not start: Output has the messages only
+  await page.click('#run-button');
+  await B.waitState(page, ['error']);
+  await B.openTab(page, 5);
+  assert.match(await page.textContent('#result-line'), /^Not started/);
+  assert.equal(await page.isVisible('#output-solutions'), false);
+  assert.equal(await page.isVisible('#output-trace'), false);
+  assert.equal(await page.isVisible('#output-messages'), true);
+  // fixed: the list goes
+  await B.setEditor(page, 'editor-check', ':- sum(X,Y), not pick(X).\n1 { sum(X,Y) : num(X), num(Y) } 1.\n');
+  await page.waitForFunction(() => document.querySelector('#editor-check + .editor-problems')?.hidden !== false, null, { timeout: 5000 });
+  // Loop: no template claimed at first; Use template asks before replacing an edited script
+  await B.openTab(page, 4);
+  assert.equal(await page.$eval('#template-select', (s) => s.value), '');
+  assert.equal(await page.$eval('#insert-template-button', (b) => b.disabled), true);
+  await B.setEditor(page, 'loop-editor', (await B.getEditor(page, 'loop-editor')).replace('reject M with G.clause(M, X)', 'reject M with G.clause(M, X)   # my note'));
+  await page.selectOption('#template-select', 'shape2');
+  let asked = null;
+  page.once('dialog', (d) => { asked = d.message(); d.dismiss(); });
+  await page.click('#insert-template-button');
+  assert.match(asked, /Replace the statements of the loop script with the template "Shape 2/);
+  assert.match(await B.getEditor(page, 'loop-editor'), /# my note/, 'kept when dismissed');
+  // Observatory: without recorded calls, one button records them and runs; the view slider only with a view
+  await B.openTab(page, 11);
+  assert.equal(await page.isVisible('#view-steps-bar'), true, 'this project has a view');
+  await page.click('#anatomy-record-run');
+  await B.waitState(page, ['finished']);
+  assert.equal(await page.isChecked('#anatomy-calls'), true);
+  await page.waitForFunction(() => /\d+ calls?, /.test(document.getElementById('anatomy-note').textContent));
+  page.once('dialog', (d) => d.accept());      // (the project was edited)
+  await page.evaluate(() => window.cegarplay.loadExample('gc-shape2'));
+  await page.waitForFunction(() => window.cegarplay.project.title === 'Graph colouring, Shape 2');
+  assert.equal(await page.isVisible('#view-steps-bar'), false, 'no view, no slider');
+  assert.deepEqual(errors, []);
+  await context.close();
+});

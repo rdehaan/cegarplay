@@ -311,6 +311,7 @@ export class Control {
     app.output.clear();
     app.output.trace.clear(project.settings.trace);
     app.stats.start({});
+    if (auditing) app.output.bodyEl.dataset.kind = 'audit';     // no solutions or trace to show
     app.output.result(mode === 'audit' ? 'Auditing…' : mode === 'bounded' ? (spaceRun ? `Symbolic audit of space ${spaceRun.name} at ${spaceRun.at || `k = ${spaceRun.k}`}…` : 'Symbolic audit…') : 'Running…');
     this.mode = mode;
     document.body.dataset.lastMode = mode;   // shows the audit notes in Statistics and Observatory
@@ -450,9 +451,10 @@ export class Control {
     if (this.mode === 'audit' && D.outcome !== 'error') {
       if (!A) return `Audit ended without a verdict: ${D.outcome}${D.detail ? ` (${D.detail})` : ''}.`;
       if (A.verdict === 'limit') return `Audit stopped: more than ${fmt(A.limit)} candidates. Audit a smaller instance.`;
+      // the verdict only: its counts are in the card under this line and in the line under the top bar
       return A.verdict === 'sound'
-        ? `Audit: sound for every candidate and counterexample of this instance (${fmt(A.candidates)} candidates, ${fmt(A.pairs)} refinements checked).`
-        : `Audit: unsound. ${fmt(A.unsound)} of ${fmt(A.pairs)} refinements would remove a solution; ${fmt(A.at_risk)} solutions at risk.`;
+        ? 'Audit: sound for every candidate and counterexample of this instance.'
+        : 'Audit: unsound. The verdict below shows a refinement that removes a solution.';
     }
     if (this.mode === 'bounded' && D.outcome !== 'error') {
       if (!A) return `Symbolic audit ended without a verdict: ${D.outcome}${D.detail ? ` (${D.detail})` : ''}.`;

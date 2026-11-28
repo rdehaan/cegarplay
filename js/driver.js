@@ -262,8 +262,12 @@ export function joinForValidation(project, names) {
   for (const n of names) {
     const f = project.fragments.find((x) => x.name === n);
     lines.push(PART_HEADER);
-    starts.push({ name: n, first: lines.length + 1 });
-    lines.push(...(f ? f.text : '').split('\n'));
+    const own = (f ? f.text : '').split('\n');
+    // count: up to the last line with text (an error past it is put there; see locate)
+    let count = own.length;
+    while (count > 1 && !own[count - 1].trim()) count--;
+    starts.push({ name: n, first: lines.length + 1, count });
+    lines.push(...own);
   }
   return { text: lines.join('\n'), starts };
 }
@@ -271,7 +275,11 @@ export function joinForValidation(project, names) {
 function locate(starts, line) {
   let hit = null;
   for (const s of starts) if (line >= s.first) hit = s;
-  return hit ? { name: hit.name, line: line - hit.first + 1 } : { name: starts[0] && starts[0].name, line };
+  if (!hit) return { name: starts[0] && starts[0].name, line };
+  // past the fragment's last line with text ("unexpected EOF": an unfinished rule at the end):
+  // that line, so the mark lands where the rule is
+  const own = line - hit.first + 1;
+  return { name: hit.name, line: hit.count ? Math.min(own, hit.count) : own };
 }
 
 // clingo writes the rules of a non-base part with an internal body literal for the part,

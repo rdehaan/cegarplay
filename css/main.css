@@ -743,6 +743,8 @@ table.internals-table td.num, table.internals-table th.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+/* a value is not split over two lines ("0.142 ms", "--heuristic=Domain"); the table scrolls instead */
+table.internals-table td.num, #solver-table td:nth-child(3) { white-space: nowrap; }
 .stats-block {
   margin-bottom: 18px;
 }
@@ -1480,3 +1482,16 @@ body.drag-active, body.drag-active * { cursor: grabbing !important; user-select:
 .observatory-export { margin: 2px 0 6px; }
 .observatory-export > summary { cursor: pointer; color: var(--text-muted); font-size: 13px; }
 .observatory-export > .instances-bar { margin-top: 6px; }
+/* the marks of an editor as text under it (js/editors.js renderProblemList) */
+.editor-problems { margin: 4px 0 0; padding: 4px 10px 4px 24px; font-size: 13px; border-left: 3px solid var(--error); background: var(--error-bg); }
+.editor-problems li { margin: 2px 0; }
+.editor-problems li.warning { color: var(--text); }
+.editor-problems li.error { color: var(--error); }
+.editor-problems .problem-line { font-weight: 600; }
+.editor-problems details { display: inline; margin-left: 6px; color: var(--text-muted); }
+.editor-problems details[open] { display: block; }
+.editor-problems summary { cursor: pointer; display: inline; font-size: 12px; }
+.editor-problems pre { margin: 4px 0; white-space: pre-wrap; font-size: 12px; color: var(--text); }
+/* Output: what an audit or a run that did not start lacks is not shown; Messages only with one */
+#output-body:is([data-kind="audit"], [data-kind="not-started"]) :is(#output-solutions, #output-trace) { display: none; }
+#output-messages:not(:has(#messages > *)) { display: none; }

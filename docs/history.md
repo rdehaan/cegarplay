@@ -2703,3 +2703,28 @@ asked for all six in one commit.
   raw-Markdown note moved into it. The top bar's status reads "ready" instead of "idle"
   (`data-state` stays `idle`).
 - Test: `tabs.test.mjs` "empty states and folds".
+
+## Errors, Output sections and controls (2026-11-28, on request)
+
+A second walk, through flows (an audit, a syntax error, Run options, the library filter), dark mode
+and a phone, gave a bug and seven points; the owner asked for all eight in one commit.
+
+- Bug: an error past a fragment's text ("unexpected EOF" after an unfinished last rule) was put on a
+  line the editor does not have, so no line was marked, and the message said "line 3" of a two-line
+  fragment. `joinForValidation` records each fragment's last line with text and `locate` clamps to
+  it; `Editors.render` also clamps any mark to the last line.
+- The marks of clingo and the compiler are also a list under the editor (`renderProblemList`):
+  "line N: short message", a click goes to the line, the full message folds under it. `shortMessage`
+  turns clingo's "unsafe variables in: <rewritten rule> 'Z' is unsafe" into "unsafe variable Z (every
+  variable must occur in a positive body literal)"; the gutter tooltip starts with it.
+- Output: an audit (from its start) and a run that did not start hide Solutions and Trace
+  (`#output-body[data-kind]`); Messages shows only with a message. The audit's result line keeps the
+  verdict only (its counts are in the card and the line under the top bar).
+- Observatory: without recorded calls, the timeline's note has **Record calls and run again**. The
+  domain view's step bar shows only with a view. Fixed a race seen by the new test: a frame that
+  arrives after another project was loaded read the reset scene (`this.scene` null).
+- Loop: the template list starts at "Start from a template…" (it claimed Shape 1 for any script);
+  **Insert** is **Use template** (also on a variant's card) and asks before replacing a script that
+  is not a template as written (Ctrl+Z undoes it).
+- Statistics: numbers and the solver options do not wrap inside a value.
+- Test: `tabs.test.mjs` "errors and controls".

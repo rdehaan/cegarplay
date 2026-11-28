@@ -330,8 +330,19 @@ export class Anatomy {
     tracks.forEach(([name], i) => ctx.fillText(name, 4, MARK_H + (lanes + i) * LANE_H + 16));
     const t = performance.now();
     if (none) {
-      this.note.textContent = this.steps.length || this.S ? 'This run has no recorded calls: tick "Record calls" above and run again to see its timeline and the cost of each loop line.'
-        : 'Run the project (with "Record calls" ticked) to see its calls.';
+      // one click instead of two: tick Record calls (kept with the project, as the box does) and run
+      const ran = !!(this.steps.length || this.S);
+      this.note.textContent = ran ? 'This run has no recorded calls; the timeline and the cost of each loop line need them. '
+        : 'Run the project with its calls recorded to see them here. ';
+      const go = h('button', { class: 'control-button small-button', id: 'anatomy-record-run', type: 'button',
+        disabled: !this.app.ready || (this.app.control && this.app.control.busy) ? true : null,
+        title: 'Tick "Record calls" (kept with the project) and run the project now' },
+      ran ? 'Record calls and run again' : 'Record calls and run');
+      go.addEventListener('click', () => {
+        if (!this.callsBox.checked) { this.callsBox.checked = true; this.callsBox.dispatchEvent(new Event('change')); }
+        if (this.app.control && !this.app.control.busy) this.app.control.run();
+      });
+      this.note.append(go);
     }
     const searches = searchIds(this.calls);
     const lineOf = (n) => this.lineOf(n);

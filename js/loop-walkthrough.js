@@ -40,7 +40,7 @@ export function walkthroughSteps(app) {
   const run = () => { if (!c.busy) c.run(); };
   const result = () => ($('result-line').textContent || '').trim();
   // the Template list shows the shape the script has
-  const pick = (k) => { const sel = $('template-select'); if (sel && sel.value !== k) sel.value = k; };
+  const pick = (k) => { const sel = $('template-select'); if (sel && sel.value !== k) { sel.value = k; sel.dispatchEvent(new Event('change')); } };
   const base = (t) => () => { openLoop(); setScript(t); pick(t === SHAPE2 ? 'shape2' : 'shape1'); mark(); };
   // the first run's numbers, to compare the experiments with
   const first = { cand: 107, refuted: 46 };

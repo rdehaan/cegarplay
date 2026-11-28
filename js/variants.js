@@ -314,7 +314,7 @@ export class Variants {
     const tplSel = el('select', { class: 'variant-template', 'aria-label': `Template for the loop script of variant ${v.name}` },
       ...Object.entries(TEMPLATES).map(([k, t]) => el('option', { value: k }, t.label)));
     const tplBtn = el('button', { class: 'control-button small-button variant-insert-template', type: 'button',
-      title: 'Replace this variant\'s loop statements by the template; its declarations stay when they declare solvers A and C and the link G (Ctrl+Z in the editor undoes it)' }, 'Insert');
+      title: 'Replace this variant\'s loop statements by the template; its declarations stay when they declare solvers A and C and the link G (Ctrl+Z in the editor undoes it)' }, 'Use template');
     const tplRow = el('span', { class: 'variant-template-row' }, el('label', {}, 'Template ', tplSel), ' ', tplBtn);
     tplRow.hidden = !v.loop;
     tplBtn.addEventListener('click', () => {

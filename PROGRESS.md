@@ -20,7 +20,7 @@ code does now.
   `examples/contrib/*.json`); 148 replays in `examples/replays/`.
 - **Guide** (`guide/`): 22 chapters in two parts plus how-to pages; every number on a page is
   measured (`tools/guide-numbers.mjs --check`). **Book**: `book/cegarplay.md`, generated.
-- **Tests**: 82 files. Full suite on 2026-11-27: 1,534 tests, 1,435 pass, 0 fail, 99 skipped
+- **Tests**: 82 files. Full suite on 2026-11-28: 1,535 tests, 1,436 pass, 0 fail, 99 skipped
   (75 benchmark-only, 23 `SLOW=1`, 1 native clingo with Lua), about 18 min on 4 cores; the
   voting-justification coverage tests take about 11 of those minutes.
 
@@ -178,3 +178,8 @@ Review of UI, security, implementation and docs debt; the owner chose four group
   there is anything; Instances folds Generators and Spaces with a summary; the Observatory folds its
   exports; Campaign row buttons are disabled without rows; Tutorial and Manual have the tabs' help
   fold; the status says "ready". Details in `docs/history.md`.
+- **Errors, Output sections and controls (owner's request, 2026-11-28): done.** An "unexpected EOF"
+  is marked on the last line with text (it was marked nowhere); editor problems are listed as text
+  under the editor; Output hides what an audit or a failed start lacks; Record calls and run again;
+  "Use template" with a placeholder and a confirmation; no wrapping inside table values. Details in
+  `docs/history.md`.

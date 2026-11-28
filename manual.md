@@ -224,7 +224,7 @@ constants (the table above). The **Variants** block at the foot of the Loop tab 
 are checked: a swap that names a fragment that does not exist yet is kept as typed, with a note, and
 applied as soon as that fragment is made), **Constants** as `name=value, ...`, a **Note** (`note`: why the variant exists, a lab notebook), and **its own loop script** (an editor like the
 project's loop editor, with highlighting and the live check's marks, that starts as a copy of the
-project's loop, with **Template** and **Insert** as in the Loop tab). A renamed or deleted fragment is renamed in, or dropped
+project's loop, with **Template** and **Use template** as in the Loop tab). A renamed or deleted fragment is renamed in, or dropped
 from, every swap; a renamed or deleted variant also in the suites and in **Compare variants**
 (a comparison on screen is made again after each change of a variant). The top bar's **Variant** picker
 (shown only for a project with variants) chooses the variant of a run, an audit and Run all, and
@@ -793,7 +793,7 @@ replaces the script by this Lua and switches the project to raw Lua; it is one-w
 
 ## Templates
 
-The Loop tab inserts these scripts (Template, Insert), and so does a variant with its own loop script
+The Loop tab inserts these scripts (Template, Use template; a script that is not a template as written is replaced only after a confirmation), and so does a variant with its own loop script
 (its card in the Loop tab). When the script declares what the templates use (solvers `A` and `C` and
 a link `G = A -> C`), its own declarations stay (other fragments, options, `legacy`, more solvers)
 and only the statements are replaced (`templateFor` in `js/project.js`); otherwise the whole
@@ -1234,7 +1234,10 @@ constants; check `-t` against the engine. A run starts only without errors.
 While you type, each edited fragment is parsed on its own with `clingo --mode=gringo` 0.8 s after
 the last change (only while no run is active; a run cancels a pending check, and the result of an
 older edit is dropped). Syntax errors and unsafe variables are then marked at once, as the loop
-script is compiled 0.5 s after each edit.
+script is compiled 0.5 s after each edit. Each mark is in the gutter and, as text, in a list under the
+editor ("line 2: unsafe variable Z (…)"; a click on the line number goes there; clingo's full message
+folds under it). An error past the last line with text, such as "unexpected EOF" after an
+unfinished rule, is put on that line.
 
 | Run status | Meaning |
 | --- | --- |
@@ -1487,7 +1490,8 @@ search is a thin band; marks above the lanes show solutions, refinements and exp
 narrower than a pixel share a column split by the share of sat and unsat calls. Wheel zooms, drag
 pans, double click shows all. It shows where the run's time goes (which solver, which calls). A
 legend names the colours; without recorded calls the timeline and the line table are hidden and a
-line says to tick Record calls. **Cost per line**: one row per loop line with calls, sat, unsat,
+line says so, with a button **Record calls and run again** (it ticks Record calls, kept with the
+project, and runs). **Cost per line**: one row per loop line with calls, sat, unsat,
 exclusive time (nested calls subtracted) and time with nested calls, sorted by time; a click
 selects the line and filters the timeline; after a run the loop editor shows the same figures as
 info annotations. The **Domain view** (see [Writing views](#manual-writing-views)) and the **Candidate space** follow.

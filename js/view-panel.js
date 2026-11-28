@@ -92,7 +92,8 @@ export class ViewPanel {
       h('p', { class: 'note' }, 'A view draws each step of the run as a picture of the problem\'s domain. It is not part of the loop: ',
         'its rules only read the steps. Drag a node to fix its place.'),
       h('div', { class: 'instances-bar' }, this.select, this.buttons.add, this.buttons.suggest, this.buttons.rename, this.buttons.remove),
-      h('div', { class: 'instances-bar' }, this.showBox, this.stepBox, this.stepLabel, this.solBox, this.solLabel),
+      // (only with a view: without one there is nothing to step through)
+      this.stepsBar = h('div', { class: 'instances-bar', id: 'view-steps-bar' }, this.showBox, this.stepBox, this.stepLabel, this.solBox, this.solLabel),
       this.editBox,
       this.msg, h('div', { class: 'view-pair' }, this.svgBox, this.svgBoxB), this.notes);
   }
@@ -110,6 +111,7 @@ export class ViewPanel {
     this.select.value = this.current || '';
     if (!keep || was !== this.current) this.resetScene();
     if (!keep) { this.steps = []; this.updateSteps(); }
+    this.stepsBar.hidden = !this.views.length;
     this.msg.textContent = this.views.length ? '' : 'This project has no view. "New view" starts one; "Suggest a view" writes one from the predicates of a run.';
     this.syncEditor();
   }
@@ -362,6 +364,7 @@ export class ViewPanel {
     }
     const r = await this.source.frame(viewProgram(p, v, facts));
     if (!r) return;                                    // the cursor has moved on
+    if (!this.scene) return;                           // another project or view was loaded meanwhile
     if (r.error) { this.msg.textContent = `The frame: ${r.error}`; return; }
     const m = parseMarks(r.atoms, v.name);
     this.lastMarks = r.atoms.length;

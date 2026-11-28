@@ -44,6 +44,7 @@ export class Output {
     this.solCount.textContent = '';
     this.solNote.textContent = '';
     this.auditShown = false;
+    if (this.bodyEl) this.bodyEl.dataset.kind = '';
     const te = document.getElementById('trace-empty');
     if (te) te.textContent = 'No steps recorded.';
     this.trace.clear();
@@ -101,6 +102,7 @@ export class Output {
     resultCard(el, { verdict: a.verdict, title, paragraphs, rows, notes, actions: this.nextSteps(a) });
     // an audit does not run the loop: say so where its solutions and trace would be
     this.auditShown = true;
+    if (this.bodyEl) this.bodyEl.dataset.kind = 'audit';     // Solutions and Trace are not shown
     this.solNote.textContent = AUDIT_NOTE;
     const te = document.getElementById('trace-empty');
     if (te) te.textContent = 'An audit does not run the loop, so it has no trace. Press Run to see the loop step by step.';
@@ -139,7 +141,11 @@ export class Output {
     // no run: one line instead of empty Solutions, Trace and Messages sections
     this.resultEl.textContent = text || 'No run yet.';
     this.resultEl.className = 'result-line' + (kind ? ' ' + kind : '') + (text ? '' : ' empty');
-    if (this.bodyEl) this.bodyEl.hidden = !text;
+    if (this.bodyEl) {
+      this.bodyEl.hidden = !text;
+      // a run that did not start has only its messages
+      if (/^Not started/.test(text || '')) this.bodyEl.dataset.kind = 'not-started';
+    }
     if (!text) this.resultEl.append(h('span', { class: 'note' }, ' Press ', h('b', {}, 'Run'), ' (Ctrl+Enter) or ', h('b', {}, 'Audit'),
       ' in the top bar: the solutions, the trace and the messages appear here.'));
   }

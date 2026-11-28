@@ -4,6 +4,17 @@ import { FRAGMENT_NAME, DEFAULT_FRAGMENTS, INSTANCE_FRAGMENT } from './project.j
 import { sortable, grip } from './drag-order.js';
 import { h as el } from './dom.js';
 
+// One line for a mark: clingo's "unsafe variables in:\n<the rule as clingo rewrote it>\n'Y' is unsafe"
+// becomes "unsafe variable Y (every variable must occur in a positive body literal)"; otherwise the first line.
+export function shortMessage(text) {
+  const lines = String(text || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  if (/^unsafe variables in:$/.test(lines[0] || '')) {
+    const vars = lines.map((l) => /^'?([^']*)'? is unsafe$/.exec(l)).filter(Boolean).map((m) => m[1]);
+    if (vars.length) return `unsafe variable${vars.length > 1 ? 's' : ''} ${vars.join(', ')} (every variable must occur in a positive body literal)`;
+  }
+  return lines[0] || '';
+}
+
 // The ACE theme follows the colour theme (js/theme.js); every editor made here switches with it.
 const LIVE = new Set();
 const aceTheme = () => (window.cegarTheme && window.cegarTheme.isDark() ? 'ace/theme/cegarplay_dark' : 'ace/theme/textmate');
@@ -163,6 +174,7 @@ export class Editors {
     }
     for (const x of document.querySelectorAll('.frag-tool, #add-fragment-button, #insert-template-button, #edit-as-lua-button')) x.disabled = b;
     if (!b) document.getElementById('edit-as-lua-button').disabled = this.loopLanguage === 'lua';
+    if (!b) document.getElementById('insert-template-button').disabled = !document.getElementById('template-select').value;   // (a template is picked first)
     this.syncMoveButtons();
     if (this.app && this.app.instancesTab) this.app.instancesTab.setReadOnly(b);
     if (this.app && this.app.variants) this.app.variants.setReadOnly(b);
@@ -221,10 +233,36 @@ export class Editors {
   render(key) {
     const ed = this.editorOf(key);
     if (!ed) return;
-    const base = this.base.get(key) || [];
+    // a mark past the last line would not show in the gutter: on the last line
+    const last = Math.max(0, ed.session.getLength() - 1);
+    const base = (this.base.get(key) || []).map((a) => (a.row > last ? { ...a, row: last } : a));
     const rows = new Set(base.map((a) => a.row));
-    ed.session.setAnnotations([...base, ...(this.lint.get(key) || []).filter((a) => !rows.has(a.row))]);
+    // the gutter's tooltip: the short form first, then clingo's own text
+    const tip = (a) => { const s = shortMessage(a.text); return s === a.text ? a : { ...a, text: `${s}\n\n${a.text}` }; };
+    ed.session.setAnnotations([...base.map(tip), ...(this.lint.get(key) || []).filter((a) => !rows.has(a.row))]);
+    this.renderProblemList(key, ed, base.filter((a) => a.type !== 'info'));
   }
+
+  // The marks of clingo and the compiler as text under the editor: "line 3: unsafe variable Y",
+  // a click goes to the line; the full message (clingo's, or the compiler's) folds under it when it says more.
+  renderProblemList(key, ed, anns) {
+    let list = this.problemLists.get(key);
+    if (!anns.length) { if (list) list.hidden = true; return; }
+    if (!list || !list.isConnected) {
+      list = el('ul', { class: 'editor-problems', 'aria-label': `Problems in ${key === 'loop' ? 'the loop script' : `fragment ${key}`}` });
+      ed.container.after(list);
+      this.problemLists.set(key, list);
+    }
+    list.hidden = false;
+    list.textContent = '';
+    for (const a of [...anns].sort((x, y) => x.row - y.row)) {
+      const short = shortMessage(a.text);
+      const go = el('a', { href: '#', class: 'problem-line', onclick: (e) => { e.preventDefault(); ed.gotoLine(a.row + 1, a.column || 0, true); ed.focus(); } }, `line ${a.row + 1}`);
+      list.append(el('li', { class: a.type }, go, ': ', short,
+        short !== a.text.trim() ? el('details', {}, el('summary', {}, 'the full message'), el('pre', {}, a.text)) : null));
+    }
+  }
+  get problemLists() { if (!this._problemLists) this._problemLists = new Map(); return this._problemLists; }
   // problems: [{ line, col, message, severity }] (lines from 1), for one editor
   setLint(key, problems) {
     const anns = problems.map((p) => ({ row: Math.max(0, (p.line || 1) - 1), column: Math.max(0, (p.col || 1) - 1), text: p.message, type: p.severity || 'warning', lint: true }));
