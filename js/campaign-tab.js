@@ -446,7 +446,7 @@ export class CampaignTab {
       const rs = this.rows.filter((r) => r.variant === v && !r.skipped);
       const med = (k) => { const s = rs.map((r) => r[k]).filter((z) => typeof z === 'number').sort((a, b) => a - b); return s.length ? s[Math.floor((s.length - 1) / 2)] : null; };
       const fit = sc[v] ? growthFit(sc[v]) : null;
-      t.append(h('tr', { 'data-variant': v }, h('td', {}, v), h('td', { class: 'num' }, fmt(rs.length)), h('td', { class: 'num' }, fmt(rs.filter((r) => r.exhausted).length)),
+      t.append(h('tr', { 'data-variant': v }, h('td', {}, vname(v)), h('td', { class: 'num' }, fmt(rs.length)), h('td', { class: 'num' }, fmt(rs.filter((r) => r.exhausted).length)),
         h('td', { class: 'num' }, med('time') == null ? '–' : `${med('time').toFixed(3)} s`), h('td', { class: 'num' }, med('candidates') == null ? '–' : fmt(med('candidates'))),
         h('td', { class: 'num' }, fit ? `×${fit.factor.toFixed(2)} (90%: ${fit.lo.toFixed(2)}–${fit.hi.toFixed(2)})` : '–')));
     }
@@ -496,14 +496,15 @@ export class CampaignTab {
     this.plots.append(fig('Cactus plot: cells solved (finished) against time', this.solvedPlot(solvedCurves(this.rows), color), 'plot-solved'));
   }
 
-  frame(W = 360, H = 220) {
+  // top: room above the plotting area (for a legend: legendTop)
+  frame(W = 360, H = 220, top = 8) {
     const s = svg('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, class: 'campaign-plot', role: 'img' });
-    s.append(svg('line', { x1: 40, y1: H - 24, x2: W - 8, y2: H - 24, stroke: css('--chart-axis') }), svg('line', { x1: 40, y1: 8, x2: 40, y2: H - 24, stroke: css('--chart-axis') }));
-    return { s, W, H, x0: 40, x1: W - 8, y0: H - 24, y1: 8 };
+    s.append(svg('line', { x1: 40, y1: H - 24, x2: W - 8, y2: H - 24, stroke: css('--chart-axis') }), svg('line', { x1: 40, y1: top, x2: 40, y2: H - 24, stroke: css('--chart-axis') }));
+    return { s, W, H, x0: 40, x1: W - 8, y0: H - 24, y1: top };
   }
 
   linePlot(sc, color, xname) {
-    const f = this.frame();
+    const f = this.frame(360, 220, this.legendTop(Object.keys(sc)));
     const pts = Object.values(sc).flat();
     if (!pts.length) return f.s;
     const xs = pts.map((p) => p.x), ys = pts.flatMap((p) => [p.q1, p.q3]).filter((y) => y > 0);
@@ -526,11 +527,25 @@ export class CampaignTab {
     return f.s;
   }
 
+  // The legend goes above the plotting area, in rows across the plot (it covered the first points
+  // when it was drawn inside): its places, and the room it takes (legendTop).
+  legendPlaces(names, W = 360) {
+    const out = [];
+    let x = 40, row = 0;
+    for (const v of names) {
+      const w = 14 + 6.2 * vname(v).length + 14;       // swatch, text (about 6 px a character), gap
+      if (x > 40 && x + w > W - 8) { x = 40; row++; }
+      out.push({ v, x, y: 4 + row * 14 });
+      x += w;
+    }
+    return out;
+  }
+  legendTop(names) { const p = this.legendPlaces(names); return p.length ? p.at(-1).y + 18 : 8; }
   legend(f, names, color) {
-    names.forEach((v, i) => {
-      f.s.append(svg('rect', { x: f.x0 + 8, y: f.y1 + 4 + i * 14, width: 10, height: 10, fill: color(v) }));
-      f.s.append(svg('text', { x: f.x0 + 22, y: f.y1 + 13 + i * 14, class: 'plot-label' }, vname(v)));
-    });
+    for (const { v, x, y } of this.legendPlaces(names, f.W)) {
+      f.s.append(svg('rect', { x, y, width: 10, height: 10, fill: color(v) }));
+      f.s.append(svg('text', { x: x + 14, y: y + 9, class: 'plot-label' }, vname(v)));
+    }
   }
 
   heatMap(a, b, variant) {
@@ -567,7 +582,7 @@ export class CampaignTab {
   }
 
   solvedPlot(curves, color) {
-    const f = this.frame();
+    const f = this.frame(360, 220, this.legendTop(Object.keys(curves)));
     const tmax = Math.max(1e-3, ...Object.values(curves).flatMap((c) => c.times));
     const nmax = Math.max(1, ...Object.values(curves).map((c) => c.total));
     const X = (n) => f.x0 + n / nmax * (f.x1 - f.x0), Y = (t) => f.y0 - t / tmax * (f.y0 - f.y1);

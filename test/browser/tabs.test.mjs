@@ -223,3 +223,47 @@ test('errors and controls: an unfinished last rule is marked, problems listed un
   assert.deepEqual(errors, []);
   await context.close();
 });
+
+test('more consistency: variant templates, Campaign names and legends, the shown line while running, Aborted with counts, one snapshot empty line, no empty live row', async () => {
+  const { page, context, errors } = await B.openPage(browser, server, '?example=gc-shape2&tab=4');
+  // a variant's template list claims no shape; Use template waits for a pick
+  await page.waitForSelector('.variant-template');
+  assert.equal(await page.$eval('.variant-template', (s) => s.value), '');
+  assert.equal(await page.$eval('.variant-insert-template', (b) => b.disabled), true);
+  await page.selectOption('.variant-template >> nth=0', 'shape2');
+  assert.equal(await page.$eval('.variant-insert-template', (b) => b.disabled), false);
+  // the workspace dialog says once that there is no snapshot
+  await B.openDialog(page, 'versions');
+  assert.equal((await page.textContent('#dialog-versions')).match(/No snapshots? of this project yet/g).length, 1);
+  await B.closeDialog(page, 'versions');
+  // a long run: the shown line has no trace part while it runs; Abort says how far it got
+  page.once('dialog', (d) => d.accept());
+  await page.evaluate(() => window.cegarplay.loadExample('graph-coloring'));
+  await page.waitForFunction(() => window.cegarplay.project.title === 'Graph colouring');
+  await page.click('#run-button');
+  await page.waitForFunction(() => /\d+ solutions/.test(document.getElementById('live-line').textContent), null, { timeout: 30000 });
+  assert.doesNotMatch(await page.textContent('#shown-line'), /no steps recorded|trace of/);
+  await page.click('#abort-button');
+  await B.waitState(page, ['aborted']);
+  await B.openTab(page, 5);
+  assert.match(await page.textContent('#result-line'), /^Aborted after \d+\.\d s: [\d,]+ solutions? so far\./);
+  assert.deepEqual(errors, []);
+  await context.close();
+  // a first run that does not start: no empty row for the live counts (after a run they stay: still shown)
+  const f = await B.openPage(browser, server, '?example=tutorial-first-run&tab=3');
+  await B.setEditor(f.page, 'editor-check', 'a :- b\n');
+  await f.page.click('#run-button');
+  await B.waitState(f.page, ['error']);
+  assert.equal(await f.page.isVisible('#live-line'), false);
+  await f.context.close();
+  // Campaign: the plain project is "(no variant)" everywhere; the legend sits above the plotting area
+  const c = await B.openPage(browser, server, '?example=tutorial-weak-relevant&tab=10');
+  await c.page.click('#campaign-start');
+  await c.page.waitForSelector('#campaign-summary tr[data-variant="default"]', { timeout: 60000 });
+  await c.page.waitForFunction(() => /cells:/.test(document.getElementById('campaign-status').textContent), null, { timeout: 60000 });
+  assert.equal(await c.page.textContent('#campaign-summary tr[data-variant="default"] td'), '(no variant)');
+  const [rectBottom, axisTop] = await c.page.$eval('#plot-solved svg', (s) => [Math.max(...[...s.querySelectorAll('rect')].map((r) => Number(r.getAttribute('y')) + 10)), Number(s.querySelectorAll('line')[1].getAttribute('y1'))]);
+  assert.ok(rectBottom <= axisTop, `legend ${rectBottom} above the plotting area ${axisTop}`);
+  assert.deepEqual(c.errors, []);
+  await c.context.close();
+});

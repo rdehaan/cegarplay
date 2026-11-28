@@ -20,7 +20,7 @@ code does now.
   `examples/contrib/*.json`); 148 replays in `examples/replays/`.
 - **Guide** (`guide/`): 22 chapters in two parts plus how-to pages; every number on a page is
   measured (`tools/guide-numbers.mjs --check`). **Book**: `book/cegarplay.md`, generated.
-- **Tests**: 82 files. Full suite on 2026-11-28: 1,535 tests, 1,436 pass, 0 fail, 99 skipped
+- **Tests**: 82 files. Full suite on 2026-11-28: 1,536 tests, 1,437 pass, 0 fail, 99 skipped
   (75 benchmark-only, 23 `SLOW=1`, 1 native clingo with Lua), about 18 min on 4 cores; the
   voting-justification coverage tests take about 11 of those minutes.
 
@@ -183,3 +183,8 @@ Review of UI, security, implementation and docs debt; the owner chose four group
   under the editor; Output hides what an audit or a failed start lacks; Record calls and run again;
   "Use template" with a placeholder and a confirmation; no wrapping inside table values. Details in
   `docs/history.md`.
+- **Consistency pass (owner's request, 2026-11-28): done.** Variant template lists as the Loop tab's;
+  "(no variant)" throughout Campaign, legends above the plots; no trace part in the shown line while
+  running; Aborted with counts; one snapshot empty line; the Refinery's Space help folded and a
+  Record a run in the inspector; editors wrap below 760 px; no empty live row. Open: graph-colouring
+  has no default instance (a 20 s first run), a design question for the owner.

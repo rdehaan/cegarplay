@@ -1495,3 +1495,5 @@ body.drag-active, body.drag-active * { cursor: grabbing !important; user-select:
 /* Output: what an audit or a run that did not start lacks is not shown; Messages only with one */
 #output-body:is([data-kind="audit"], [data-kind="not-started"]) :is(#output-solutions, #output-trace) { display: none; }
 #output-messages:not(:has(#messages > *)) { display: none; }
+/* the live counts: no empty row before there are any (after a run that did not start) */
+.live-line:empty { display: none; }

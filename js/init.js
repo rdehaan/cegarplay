@@ -459,7 +459,8 @@ app.updateShown = () => {
     if (row.audit) parts.push(verdictText(row.audit));
     else parts.push(`${row.outcome}, ${fmtNum(row.solutions)} solution${row.solutions === 1 ? '' : 's'}${row.exhausted ? ' (all)' : ''}`);
   }
-  if (hd.mode === 'run' || state === 'replayed') {
+  // (while a run is active its recording is not final: the trace below shows the steps so far)
+  if ((hd.mode === 'run' && !active) || state === 'replayed') {
     parts.push(rec.steps.length ? `every step recorded (${fmtNum(rec.steps.length)})` : rec.traces.length ? (rec.traces.length >= Number(app.project.settings.trace ?? 200) ? `trace of the first ${fmtNum(rec.traces.length)} steps only` : `trace of all ${fmtNum(rec.traces.length)} steps`) : 'no steps recorded');
     if (app.space && app.space.rec === rec && app.space.F) parts.push('candidate space computed for it');
   }
@@ -724,7 +725,7 @@ function renderSnapshots() {
   $('snapshot-list-title').textContent = mineAll.length ? `Snapshots of this project (${mineAll.length}), newest first:` : '';
   const mine = all.filter((x) => x.project === key), rest = all.filter((x) => x.project !== key);
   for (const x of mine) ul.append(item(x, false));
-  if (!mine.length) ul.append(make('li', { class: 'note' }, 'No snapshots of this project yet.'));
+  // (no snapshot of this project: the line above already says so)
   if (rest.length) {
     const d = make('details', {});
     d.append(make('summary', {}, `Other projects (${rest.length})`));

@@ -2728,3 +2728,25 @@ and a phone, gave a bug and seven points; the owner asked for all eight in one c
   is not a template as written (Ctrl+Z undoes it).
 - Statistics: numbers and the solver options do not wrap inside a value.
 - Test: `tabs.test.mjs` "errors and controls".
+
+## Consistency pass (2026-11-28, on request)
+
+A third walk (a campaign with a suite, the Refinery after Compute space, variant cards, the
+workspace dialog, focus, a long run and Abort) gave ten points; the owner asked for all ten in one
+commit.
+
+- A variant card's template list starts at "Start from a template…" and its Use template asks
+  before replacing an edited script, as the Loop tab's (the previous commit fixed only the Loop tab).
+- Campaign: the per-variant table names the plain project "(no variant)" as the rest of the tab
+  (it said "default", the suite file's key). The legends of the line and cactus plots are drawn in
+  rows above the plotting area (`legendPlaces`, `legendTop`); they covered the first points.
+- The line under the top bar leaves out its trace part while a run is active (it said "no steps
+  recorded" while the trace showed steps). "Aborted." says how far the run got, as Stopped does.
+- Workspace dialog: "No snapshot of this project yet" once (the list repeated it).
+- Refinery: the Space section's "How to read this" is folded at first like the others; with no
+  recorded run the step inspector offers **Record a run** itself.
+- Editors wrap long lines below 760 px (they ran off a phone's screen).
+- The live counts line is empty, and not shown, until there are counts (a first run that did not
+  start left an empty row); after a run its counts stay, with the shown run.
+- Library: the Puzzles group's description names n queens by omission too (the data, not the UI).
+- Test: `tabs.test.mjs` "more consistency".

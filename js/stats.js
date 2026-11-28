@@ -118,7 +118,7 @@ export class Stats {
     this.tracks = new Map();
     this.audit = null;
     this.shownIndex = null;
-    this.live.textContent = ' ';
+    this.live.textContent = '';          // (empty: not shown, css/main.css)
     this.render();
   }
 

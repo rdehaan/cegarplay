@@ -1234,7 +1234,8 @@ constants; check `-t` against the engine. A run starts only without errors.
 While you type, each edited fragment is parsed on its own with `clingo --mode=gringo` 0.8 s after
 the last change (only while no run is active; a run cancels a pending check, and the result of an
 older edit is dropped). Syntax errors and unsafe variables are then marked at once, as the loop
-script is compiled 0.5 s after each edit. Each mark is in the gutter and, as text, in a list under the
+script is compiled 0.5 s after each edit. On a screen narrower than 760 px the editors wrap long
+lines. Each mark is in the gutter and, as text, in a list under the
 editor ("line 2: unsafe variable Z (…)"; a click on the line number goes there; clingo's full message
 folds under it). An error past the last line with text, such as "unexpected EOF" after an
 unfinished rule, is put on that line.
@@ -1245,7 +1246,7 @@ unfinished rule, is put on that line.
 | `validating`, `running`, `paused` | As named. |
 | `finished` | The run ended with outcome `finished`, `solutions`, `limit` or `stopped`. |
 | `error` | Problems before the run, a runtime error (outcome `error`), or the engine stopped unexpectedly. |
-| `aborted` | Abort was pressed; what arrived so far stays on screen. |
+| `aborted` | Abort was pressed; what arrived so far stays on screen, and the result line says how far the run got ("Aborted after 2.5 s: 4,035 solutions so far."). |
 
 | Outcome (`D` event) | Meaning |
 | --- | --- |

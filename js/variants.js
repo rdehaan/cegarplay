@@ -65,6 +65,8 @@ export class Variants {
     this.select.disabled = b;
     // comparing changes nothing: it stays usable in a read-only project
     for (const e of this.root.querySelectorAll('input, textarea, button')) if (!e.closest('.variant-compare')) e.disabled = b;
+    // Use template needs a template picked first
+    if (!b) for (const r of this.root.querySelectorAll('.variant-template-row')) r.querySelector('button').disabled = !r.querySelector('select').value;
     for (const ed of this.loopEditors || []) { ed.setReadOnly(b); ed.container.classList.toggle('locked', b); }
   }
 
@@ -311,14 +313,17 @@ export class Variants {
     // the editor is made once the card is in the page (ACE measures its container)
     if (v.loop) requestAnimationFrame(() => { if (text.isConnected && v.loop && !editor) editor = this.loopEditor(v, text); });
     // the templates of the Loop tab, for this variant's own script (shown while it has one)
+    // (no template picked at first: the list does not claim a shape the script may not have)
     const tplSel = el('select', { class: 'variant-template', 'aria-label': `Template for the loop script of variant ${v.name}` },
+      el('option', { value: '' }, 'Start from a template…'),
       ...Object.entries(TEMPLATES).map(([k, t]) => el('option', { value: k }, t.label)));
     const tplBtn = el('button', { class: 'control-button small-button variant-insert-template', type: 'button',
-      title: 'Replace this variant\'s loop statements by the template; its declarations stay when they declare solvers A and C and the link G (Ctrl+Z in the editor undoes it)' }, 'Use template');
+      title: 'Replace this variant\'s loop statements by the template; its declarations stay when they declare solvers A and C and the link G (Ctrl+Z in the editor undoes it)', disabled: true }, 'Use template');
+    tplSel.addEventListener('change', () => { tplBtn.disabled = !tplSel.value || !!this.readOnly; });
     const tplRow = el('span', { class: 'variant-template-row' }, el('label', {}, 'Template ', tplSel), ' ', tplBtn);
     tplRow.hidden = !v.loop;
     tplBtn.addEventListener('click', () => {
-      if (!v.loop || this.readOnly) return;
+      if (!v.loop || this.readOnly || !tplSel.value) return;
       const t = templateFor(tplSel.value, v.loop.language === 'lua' ? '' : v.loop.text || '');
       if (v.loop.language === 'lua') {
         if (!window.confirm(`Replace the raw Lua loop of variant ${v.name} by this template?`)) return;
@@ -328,6 +333,10 @@ export class Variants {
         this.changed();
         return;
       }
+      // as on the Loop tab: ask unless the script is a template as it was written
+      const cur = v.loop.text || '';
+      const asTemplate = Object.keys(TEMPLATES).some((k) => templateFor(k, cur) === cur);
+      if (t !== cur && !asTemplate && !window.confirm(`Replace the statements of variant ${v.name}'s loop script with the template "${TEMPLATES[tplSel.value].label}"? The declarations stay; Ctrl+Z in the editor undoes it.`)) return;
       if (!editor) editor = this.loopEditor(v, text);
       // (as an edit of the editor: its change handler stores it, and Ctrl+Z undoes it)
       editor.session.doc.setValue(t);

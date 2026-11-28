@@ -184,7 +184,7 @@ export class LabTab {
   help(key) {
     const d = h('details', { class: 'lab-help', id: `lab-help-${key}` }, h('summary', {}, 'How to read this'),
       h('dl', {}, HELP[key].flatMap(([a, b]) => [h('dt', {}, a), h('dd', {}, b)])));
-    d.open = store.get(`help.${key}`, key === 'space');
+    d.open = store.get(`help.${key}`, false);      // folded at first, as the tabs' help
     d.addEventListener('toggle', () => store.set(`help.${key}`, d.open));
     return d;
   }
@@ -464,7 +464,10 @@ export class LabTab {
         h('button', { class: 'control-button small-button lab-needs-idle', type: 'button', id: 'lab-inspect-go', onclick: () => this.inspectCandidate(Number(pick.value)) }, 'Inspect'));
       B.append(h('p', { class: 'note' }, this.source.value === 'free' ? 'Free mode: any bad candidate, with every candidate alive.'
         : this.runSteps && this.runSteps.steps.length ? 'The recording has no refinement of a bad candidate on this space (another instance, or a run that only accepted solutions): free mode.'
-          : 'No recorded run to step through (Record a run and place it, under This run against the bounds; or tick "record steps" under Run options and Run; or open a recording): free mode.'));
+          : ['No recorded run to step through: free mode. ',
+            h('button', { class: 'control-button small-button lab-needs-idle', type: 'button', id: 'lab-inspect-record', onclick: () => this.recordAndPlace(),
+              title: 'Run the loop on the instance and variant above, recording every step, and place it (as under This run against the bounds)' }, 'Record a run'),
+            ' (or open a recording under Steps from).']));
     }
     B.prepend(ctl);
     this.verdict = h('p', { id: 'lab-verdict', class: 'lab-verdict', role: 'status', 'aria-live': 'polite' });

@@ -60,7 +60,7 @@
     {
       "id": "puzzles",
       "title": "Puzzles",
-      "description": "Generating puzzles with a unique solution: Sudoku, Binairo, Futoshiki, Akari, Slitherlink."
+      "description": "Generating puzzles with a unique solution (Sudoku, Binairo, Futoshiki, Akari, Slitherlink), and n queens by omission-based abstraction."
     },
     {
       "id": "exercises",

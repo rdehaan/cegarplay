@@ -395,7 +395,11 @@ export class Control {
     let state;
     if (d.aborted) {
       state = 'aborted';
-      app.output.result(d.timeout ? 'Aborted: the time limit backstop ended a solve call that did not return.' : 'Aborted.', 'error');
+      // as Stopped and a limit say: how far the run got (an audit's counts are not solutions)
+      const S = app.stats.S;
+      const sofar = S && this.mode === 'run' && Number.isFinite(S.solutions)
+        ? ` after ${Number.isFinite(S.t) ? `${S.t.toFixed(1)} s` : 'a while'}: ${fmt(S.solutions)} solution${S.solutions === 1 ? '' : 's'} so far.` : '.';
+      app.output.result(d.timeout ? 'Aborted: the time limit backstop ended a solve call that did not return.' : `Aborted${sofar}`, 'error');
     } else if (this.D) {
       const D = this.D;
       state = D.outcome === 'error' ? 'error' : 'finished';

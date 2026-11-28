@@ -44,8 +44,14 @@ export function makeEditor(el, mode, { readOnly = false } = {}) {
     showPrintMargin: false,
   });
   ed.setReadOnly(readOnly);
+  // on a narrow screen long lines wrap (they ran off the right edge); elsewhere they scroll
+  ed.session.setUseWrapMode(NARROW.matches);
   return ed;
 }
+const NARROW = matchMedia('(max-width: 760px)');
+NARROW.addEventListener('change', () => {
+  for (const ed of LIVE) if (ed.container.isConnected && ed.session) ed.session.setUseWrapMode(NARROW.matches);
+});
 
 
 export class Editors {
